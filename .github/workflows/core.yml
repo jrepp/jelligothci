@@ -1,0 +1,30 @@
+name: Core portability
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Core on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      # Use each OS's default compiler/generator: GCC, AppleClang, and MSVC.
+      # No SDL or ESP-IDF setup: this job verifies that the core stands alone.
+      - name: Configure core only
+        run: >-
+          cmake -S . -B build/core-ci
+          -DJELLI_BUILD_SDL=OFF
+          -DBUILD_TESTING=ON
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_COMPILE_WARNING_AS_ERROR=ON
+      - name: Build core and tests
+        run: cmake --build build/core-ci --config Release --parallel
+      - name: Test core
+        run: ctest --test-dir build/core-ci --build-config Release --output-on-failure --no-tests=error

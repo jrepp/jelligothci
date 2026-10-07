@@ -51,6 +51,10 @@ make sanitize     # address + undefined behavior sanitizers
 make core-test    # no SDL dependency
 ```
 
+GitHub Actions builds and runs the core tests on Linux, macOS, and Windows,
+with SDL disabled. This checks host portability independently of the SDL and
+ESP32 ports. A separate Linux job runs the SDL smoke test and sanitizers.
+
 Without Make: `cmake --preset desktop`, `cmake --build --preset desktop`, then
 `./build/desktop/jelligotchi`. Resize the window freely; SDL maintains the aspect
 ratio and maps mouse coordinates back to the native display surface.

@@ -4,6 +4,20 @@ This docs-cms stores technical decisions, proposals, requirements, and findings
 alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md).
 
+## Architecture decisions
+
+These records capture explicit decisions from the 2026-10-07 project session.
+Their Accepted status records the user's direction, not hardware verification.
+
+| Record | Decision |
+| --- | --- |
+| [ADR-001](adr/adr-001-portable-c-core-and-host-adapters.md) | Share a portable C core across SDL and ESP32 hosts |
+| [ADR-002](adr/adr-002-inject-time-and-keep-pacing-in-hosts.md) | Inject time; let hosts pace frames |
+| [ADR-003](adr/adr-003-start-with-a-shapes-mvp.md) | Limit the first MVP to simple shapes |
+| [ADR-004](adr/adr-004-repository-local-pinned-toolchains.md) | Keep pinned tools local and generated artifacts out of Git |
+| [ADR-005](adr/adr-005-docs-cms-with-pinned-docuchango.md) | Use docs-cms and pinned Docuchango for project memory |
+| [ADR-006](adr/adr-006-validate-core-portability-in-ci.md) | Build and test the core across desktop platforms in CI |
+
 ## Layout
 
 ```text
