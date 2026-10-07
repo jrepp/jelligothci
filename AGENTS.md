@@ -30,6 +30,15 @@ Use `docs-cms/` as durable project memory. Before changing architecture or the
 development workflow, search and read the relevant ADRs, RFCs, PRDs, and memos.
 Start with `docs-cms/README.md` and `docs-cms/docs-project.yaml`.
 
+For build/release, runner onboarding, or hardware bring-up, also read
+[memo-004: Process learnings](docs-cms/memos/memo-004-process-learnings-and-context-remediation.md).
+Use its linked evidence for the relevant task; do not load the whole history.
+After a failure or deployment, capture the observation, remedy, verification,
+and remaining uncertainty. Put reusable guidance in the owning instruction or
+skill and link the memo, rather than duplicating the incident narrative.
+Historical observations are not current state: rediscover ports/host availability,
+and keep physical display/touch confirmation separate from serial startup.
+
 Record decisions as ADRs, proposals as RFCs, requirements as PRDs, and findings
 as memos. Copy a template from `docs-cms/templates/`, use the next available ID,
 set `project_id: jelligotchi`, and generate a unique UUID v4. Preserve that UUID

@@ -7,6 +7,8 @@ status](memos/memo-001-shapes-mvp-foundation.md) and
 
 Latest hardware status: [memo-003: First USB deployment](memos/memo-003-first-usb-deployment.md).
 
+Process guidance: [memo-004: Learnings and context remediation](memos/memo-004-process-learnings-and-context-remediation.md).
+
 ## Architecture decisions
 
 These records capture explicit decisions from the 2026-10-07 project session.

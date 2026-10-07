@@ -69,3 +69,22 @@ Report observed evidence: desktop tests, firmware build, physical display/touch,
 and any measured stack/heap/frame-time data. If no device test was performed,
 say so. Save durable findings in a memo; record new architectural choices as
 ADRs with status reflecting the user's actual decision.
+
+## Device verification learned from first deployment
+
+For bring-up, read the [first deployment evidence](../../../docs-cms/memos/memo-003-first-usb-deployment.md)
+and the device section of [process learnings](../../../docs-cms/memos/memo-004-process-learnings-and-context-remediation.md).
+Those are dated observations, not a substitute for discovering the current port.
+
+Check the image's app version as well as the source VERSION. After version/build
+changes, verify an incremental build; cleaning first can hide missing CMake
+configure dependencies. The pinned esptool uses `image_info --version 2` to
+inspect the application descriptor without contacting the board.
+
+After an authorized flash, check transfer hashes, the reset cause, reported app
+version, PSRAM test, panel/touch initialization, and the app-ready message.
+Distinguish a monitor-initiated USB reset from a panic. Inspect driver warnings
+in context before changing hardware configuration. Capture relevant serial
+output under ignored build output and close the monitor after observation.
+Ask for physical shape/color/motion and tap confirmation when no direct view is
+available; absent confirmation remains unverified even if startup succeeds.
