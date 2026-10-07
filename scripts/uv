@@ -13,7 +13,8 @@ if [[ ! -x "$uv_dir/uv" ]]; then
     mkdir -p "$uv_dir"
     curl --fail --silent --show-error --location \
         "https://astral.sh/uv/$JELLI_UV_VERSION/install.sh" --output "$uv_dir/install.sh"
-    UV_UNMANAGED_INSTALL="$uv_dir" sh "$uv_dir/install.sh" >&2
+    # CI images may export UV_INSTALL_DIR; it takes precedence over unmanaged.
+    UV_INSTALL_DIR="$uv_dir" UV_UNMANAGED_INSTALL="$uv_dir" sh "$uv_dir/install.sh" >&2
 fi
 if [[ "$("$uv_dir/uv" --version)" != "uv $JELLI_UV_VERSION"* ]]; then
     echo 'Local uv does not match toolchain.env.' >&2
