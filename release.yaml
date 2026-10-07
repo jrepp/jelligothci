@@ -1,0 +1,15 @@
+version: 1
+project: jelligotchi
+versioning:
+  provider: release-please
+  version_file: VERSION
+  tag_pattern: vX.Y.Z
+  conventional_commits: true
+release_pr:
+  required_validation:
+    - scripts/release-validate
+    - .github/workflows/release.yml
+release:
+  workflow: .github/workflows/release.yml
+  artifacts: [source-archive, sha256-checksums]
+  hardware_flash: false

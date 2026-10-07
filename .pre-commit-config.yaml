@@ -39,3 +39,9 @@ repos:
         files: '^((core|include|ports|tests)/|\.c-size-limits\.json$|scripts/check-c-size\.py$|scripts/c-lint$|toolchain\.env$)'
         exclude: '^ports/esp32/managed_components/'
         pass_filenames: false
+      - id: release-metadata
+        name: Release version consistency
+        language: system
+        entry: scripts/release-validate --metadata-only
+        files: '^(VERSION|release-please-config\.json|\.release-please-manifest\.json|scripts/release-validate|release\.yaml)$'
+        pass_filenames: false

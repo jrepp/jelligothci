@@ -1,0 +1,74 @@
+name: Release validation
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to validate (defaults to this commit)
+        type: string
+        required: false
+      publish:
+        description: Attach validated source assets to an existing version release
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+      publish:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  core:
+    uses: ./.github/workflows/core.yml
+    with:
+      ref: ${{ inputs.ref || github.sha }}
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y libsdl2-dev ninja-build
+      - run: ./scripts/release-validate
+      - run: make hooks-check
+      - run: make sanitize
+  source:
+    needs: [core, validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - name: Package validated source
+        env:
+          RELEASE_REF: ${{ inputs.ref || github.sha }}
+          PUBLISH: ${{ inputs.publish || false }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./scripts/release-validate --metadata-only
+          version=$(cat VERSION)
+          if [ "$PUBLISH" = true ]; then
+            test "$RELEASE_REF" = "v$version"
+            gh release view "$RELEASE_REF" > /dev/null
+          fi
+          mkdir -p build/release
+          git archive --format=tar.gz --prefix="jelligotchi-$version/" HEAD > "build/release/jelligotchi-$version-source.tar.gz"
+          (cd build/release && sha256sum ./*.tar.gz > SHA256SUMS)
+          if [ "$PUBLISH" = true ]; then
+            gh release upload "$RELEASE_REF" build/release/* --clobber
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validated-source
+          path: build/release/*
+          if-no-files-found: error

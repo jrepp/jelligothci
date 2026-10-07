@@ -251,3 +251,35 @@ References:
 - [Waveshare board documentation](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75)
 - [Board hardware reference and SKU mapping](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75/blob/main/HARDWARE_REFERENCE.md)
 - [Waveshare BSP 3.0.1](https://components.espressif.com/components/waveshare/esp32_s3_touch_amoled_1_75/versions/3.0.1/readme)
+
+## Versions and releases
+
+This project follows `~/d/jrepp.com/auth`: Conventional Commits feed Release
+Please, which opens a release PR updating `VERSION`, `CHANGELOG.md`, and
+`.release-please-manifest.json`. `fix:` means patch, `feat:` means minor, and
+`!` or a `BREAKING CHANGE:` footer means major. These rules also apply at 0.x.
+Use the same convention for PR titles, since squash merges become commits.
+
+Merging the release PR creates `vX.Y.Z` and a GitHub Release. The reusable
+release workflow validates metadata, builds/tests the core on all three desktop
+platforms, runs SDL sanitizers and C/docs checks, then attaches a source archive
+and `SHA256SUMS`. It does not publish prebuilt binaries or flash hardware.
+The release record is created before checks finish; verify the release workflow
+is green and its assets are present before using a release.
+
+```sh
+./scripts/release-validate  # metadata plus core CMake build/test
+# Revalidate a candidate; omit publish to avoid changing release assets.
+gh workflow run release.yml -f ref=main
+# Retry asset publication for an existing release after investigating failure.
+gh workflow run release.yml -f ref=v0.1.0 -F publish=true
+```
+
+The default GitHub token cannot trigger CI through bot-created PR/tag events.
+The automation explicitly dispatches release-PR validation and calls release
+validation after tagging, without a stored personal access token. The repository
+must allow GitHub Actions to create pull requests. CMake and ESP-IDF both read
+`VERSION`; generated build metadata therefore follows the release version.
+
+Private Linux core jobs install the pinned CMake package through repository-local
+uv. The shared runner image provides the compiler and Make.

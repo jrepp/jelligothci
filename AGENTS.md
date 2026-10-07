@@ -144,3 +144,16 @@ Follow existing C11 conventions: four-space indentation, explicit ownership,
 small functions, and `jelli_` prefixes for public functions. Keep dependencies
 minimal and maintain warning-clean builds. Update `README.md` when changing
 commands, prerequisites, host contracts, or the supported workflow.
+
+## Versioning and releases
+
+Use Conventional Commit titles for commits and PRs, following the sibling auth
+project: `fix:` bumps patch, `feat:` minor, and `!` or `BREAKING CHANGE:` major.
+Release Please maintains VERSION, its manifest, and CHANGELOG.md through a PR.
+Both CMake builds consume VERSION. Do not update only one version source.
+Run `scripts/release-validate` after release metadata or workflow changes and
+validate workflow syntax with actionlint. See `release.yaml` and ADR-008.
+Generated release PRs receive explicitly dispatched validation. Tag creation
+calls the reusable release workflow directly; do not rely on GITHUB_TOKEN
+writes triggering another workflow. Source assets are published after checks.
+Report hardware verification separately; releases never flash automatically.

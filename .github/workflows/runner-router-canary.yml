@@ -21,6 +21,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Install pinned CMake on private Linux
+        if: runner.os == 'Linux' && runner.environment == 'self-hosted'
+        shell: bash
+        run: |
+          source toolchain.env
+          ./scripts/uv tool install "cmake==$JELLI_CMAKE_VERSION"
+          echo "$PWD/.tools/bin" >> "$GITHUB_PATH"
       - name: Identify the selected runner
         shell: bash
         run: |
