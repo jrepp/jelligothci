@@ -2,7 +2,8 @@
 
 This docs-cms stores technical decisions, proposals, requirements, and findings
 alongside the code. Start with [memo-001: Shapes MVP foundation and validation
-status](memos/memo-001-shapes-mvp-foundation.md).
+status](memos/memo-001-shapes-mvp-foundation.md) and
+[memo-002: Build, release, and runner validation](memos/memo-002-build-release-and-runner-validation.md).
 
 ## Architecture decisions
 
