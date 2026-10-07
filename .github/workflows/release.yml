@@ -34,7 +34,11 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
-      - run: sudo apt-get update && sudo apt-get install -y libsdl2-dev ninja-build
+      - name: Install SDL build dependencies
+        timeout-minutes: 5
+        run: |
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y ninja-build libsdl2-dev
       - run: ./scripts/release-validate
       - run: make hooks-check
       - run: make sanitize

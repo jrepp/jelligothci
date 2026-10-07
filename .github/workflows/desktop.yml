@@ -3,8 +3,13 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - run: sudo apt-get update && sudo apt-get install -y ninja-build libsdl2-dev
+      - name: Install SDL build dependencies
+        timeout-minutes: 5
+        run: |
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y ninja-build libsdl2-dev
       - run: make sanitize
       - run: make core-test
