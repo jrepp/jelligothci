@@ -5,6 +5,8 @@ alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md) and
 [memo-002: Build, release, and runner validation](memos/memo-002-build-release-and-runner-validation.md).
 
+Latest hardware status: [memo-003: First USB deployment](memos/memo-003-first-usb-deployment.md).
+
 ## Architecture decisions
 
 These records capture explicit decisions from the 2026-10-07 project session.

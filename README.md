@@ -243,8 +243,11 @@ battery charging, sleep/wake, audio, RTC, and creature behavior are outside this
 Initial validation: desktop and SDL-free tests pass, including ASan/UBSan;
 the interactive SDL host runs; repository-local bootstrap, repeat sync, and
 ESP32-S3 firmware builds pass with the tracked pins. The USB serial device was
-detected at `/dev/cu.usbmodem101` on the development Mac. Firmware has not yet
-been flashed, so physical display/touch behavior remains unverified.
+detected at `/dev/cu.usbmodem101` on the development Mac. Firmware v0.1.1 has
+now been flashed successfully: PSRAM passed its memory test, panel and touch
+drivers initialized, and the application reached its ready message. Physical
+display/touch behavior still awaits visual confirmation. See the
+[USB deployment record](docs-cms/memos/memo-003-first-usb-deployment.md).
 
 References:
 
