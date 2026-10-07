@@ -95,6 +95,31 @@ GCC/Clang. MSVC uses `/W4 /WX`. The [project skills](AGENTS.md#project-skills)
 describe bounded embedded development and safe C11 practices. GitHub Actions
 runs the same hooks and tests the size checker against oversized fixtures.
 
+## Private runner routing
+
+The GitHub repository is [jrepp/jelligothci](https://github.com/jrepp/jelligothci).
+Private runner admission is owned by
+[t1-hosting](https://github.com/jrepp/t1-hosting/tree/main/runner-router), which
+holds host allowlists, GitHub App installation IDs, and pool policy. No runner
+App key or registration token belongs in this project.
+
+The `Private runner canary` workflow can be dispatched for `linux` or `macos`
+after the corresponding host policy is deployed. It builds and tests the
+SDL-free core using the approved `router-small` profile. Linux requests
+`self-hosted/linux/x64`; macOS requests `self-hosted/macos/arm64`.
+
+Regular core CI defaults to GitHub-hosted runners. Set the repository variable
+`PRIVATE_LINUX_RUNNERS=true` or `PRIVATE_MACOS_RUNNERS=true` only after that
+platform's private canary and cleanup checks pass. Windows remains hosted.
+Unset a variable or set it to `false` to restore hosted CI for that platform.
+Each variable controls routing at queue time; jobs do not automatically fall
+back if a private host goes offline. The other workflows currently use hosted
+Linux runners.
+
+The current onboarding status is recorded in t1-hosting's operational memo.
+Mac Studio was offline during the initial inspection, so macOS must remain
+hosted until its separate bring-up succeeds.
+
 Without Make: `cmake --preset desktop`, `cmake --build --preset desktop`, then
 `./build/desktop/jelligotchi`. Resize the window freely; SDL maintains the aspect
 ratio and maps mouse coordinates back to the native display surface.

@@ -1,0 +1,35 @@
+name: Private runner canary
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Approved private runner platform
+        type: choice
+        options: [linux, macos]
+        default: linux
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ${{ inputs.platform == 'macos' && fromJSON('["self-hosted","macos","arm64","router-small"]') || fromJSON('["self-hosted","linux","x64","router-small"]') }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Identify the selected runner
+        shell: bash
+        run: |
+          printf 'Runner: %s\n' "$RUNNER_NAME" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Platform: %s/%s\n' "$RUNNER_OS" "$RUNNER_ARCH" >> "$GITHUB_STEP_SUMMARY"
+          cmake --version
+      - name: Configure portable core
+        run: cmake -S . -B build/private-core -DJELLI_BUILD_SDL=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Build core
+        run: cmake --build build/private-core --config Release --parallel 2
+      - name: Test core
+        run: ctest --test-dir build/private-core --build-config Release --output-on-failure --no-tests=error
