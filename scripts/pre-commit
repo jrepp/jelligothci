@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../toolchain.env
+source "$repo_dir/toolchain.env"
+export PRE_COMMIT_HOME="$repo_dir/.tools/pre-commit"
+cd "$repo_dir"
+exec "$repo_dir/scripts/uvx" --from "pre-commit==$JELLI_PRE_COMMIT_VERSION" pre-commit "$@"

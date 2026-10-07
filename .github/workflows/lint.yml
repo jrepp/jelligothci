@@ -1,0 +1,11 @@
+name: C and documentation checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make hooks-check
+      - run: ./scripts/c-lint self-test

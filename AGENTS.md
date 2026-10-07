@@ -10,6 +10,20 @@ or a larger UI unless the task calls for it.
 
 Read `README.md` for setup, commands, and hardware bring-up details.
 
+## Project skills
+
+Load the relevant versioned skill when the task calls for it:
+
+- [jelli-safe-c](.agents/skills/jelli-safe-c/SKILL.md): C implementation,
+  refactoring, ownership, bounds, and analysis. Keep the core and steady-state
+  engine paths free of dynamic allocation; prefer fixed or caller-owned memory.
+- [jelli-embedded-development](.agents/skills/jelli-embedded-development/SKILL.md):
+  firmware, board integration, memory/latency budgets, tasks, and hardware tests.
+
+These apply to code and embedded work, not ordinary documentation edits. Read
+only the skill relevant to the current change. The current ESP32 adapter and
+SDK allocate at startup; do not describe the entire firmware as heap-free.
+
 ## Project memory
 
 Use `docs-cms/` as durable project memory. Before changing architecture or the
@@ -61,6 +75,10 @@ make test         # core tests and headless SDL smoke test
 make core-test    # verify the core builds without SDL
 make sanitize     # address and undefined behavior sanitizers
 make esp-build    # compile firmware with the repository-local SDK
+make hooks-install # activate this checkout's pre-commit hooks
+make hooks-check  # formatting, analysis, size limits, and documentation
+make lint-c       # all C checks without documentation validation
+make format-c     # apply the pinned C formatter
 ```
 
 Use deterministic fake time and input for behavior tests; do not introduce
@@ -73,6 +91,18 @@ wall-clock sleeps into core tests. Run checks appropriate to the change:
   `shellcheck -x scripts/esp` when ShellCheck is available; exercise affected
   commands.
 - Documentation-only changes do not require rebuilding firmware.
+
+Local builds use CMake with strict GCC/Clang diagnostics or MSVC `/W4`, and
+warnings as errors. Do not relax them to make a change pass. Core CI builds and
+tests Linux, macOS, and Windows without SDL. Cppcheck covers all project C;
+clang-tidy covers the portable core and tests. SDK-dependent runtime behavior
+still needs a port build and, where relevant, hardware verification.
+
+Respect `.c-size-limits.json`: 80 nonblank/noncomment lines per function, 400
+physical lines per C/header file, and complexity 20. Refactor responsibilities
+instead of compressing code or raising thresholds. Keep any diagnostic
+suppression local and explain the specific false positive. Size-gate changes
+also require `./scripts/c-lint self-test`.
 
 For a deterministic screenshot:
 

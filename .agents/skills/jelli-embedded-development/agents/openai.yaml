@@ -1,0 +1,3 @@
+interface:
+  display_name: "Jelligotchi Embedded Development"
+  short_description: "Bounded firmware changes and measured board bring-up"

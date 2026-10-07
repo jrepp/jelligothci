@@ -1,0 +1,3 @@
+interface:
+  display_name: "Jelligotchi Safe C"
+  short_description: "Portable C11 with explicit ownership and bounded work"

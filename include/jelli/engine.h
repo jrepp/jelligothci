@@ -15,7 +15,10 @@ typedef struct {
 } JelliSurface;
 
 typedef enum { JELLI_TAP, JELLI_TOGGLE_PAUSE, JELLI_QUIT } JelliInputKind;
-typedef struct { JelliInputKind kind; int x, y; } JelliInput;
+typedef struct {
+    JelliInputKind kind;
+    int x, y;
+} JelliInput;
 
 /* All callbacks execute on the engine's calling thread.
  * now_ms: injected monotonic milliseconds (real or simulated).

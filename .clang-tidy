@@ -1,0 +1,13 @@
+Checks: >-
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  portability-*,
+  -bugprone-easily-swappable-parameters,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+# The excluded analyzer check prescribes optional Annex K _s functions, including
+# fprintf_s for bounded test diagnostics. Those APIs are not portable to our
+# hosts/ESP-IDF. Keep the other buffer, bounds, and memory analyzer checks enabled.
+WarningsAsErrors: '*'
+HeaderFilterRegex: '(^|/)include/jelli/'
+FormatStyle: file

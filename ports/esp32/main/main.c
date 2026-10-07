@@ -18,7 +18,7 @@ static const char *TAG = "jelligotchi";
 static uint64_t now_ms(void *ctx)
 {
     (void)ctx;
-    return (uint64_t)esp_timer_get_time()/1000u;
+    return (uint64_t)esp_timer_get_time() / 1000u;
 }
 static bool poll_input(void *ctx, JelliInput *input)
 {
@@ -28,7 +28,8 @@ static void touch_event(lv_event_t *event)
 {
     Board *b = lv_event_get_user_data(event);
     lv_indev_t *device = lv_indev_active();
-    if (!device) return;
+    if (!device)
+        return;
     lv_point_t point;
     lv_indev_get_point(device, &point);
     JelliInput input = {JELLI_TAP, point.x, point.y};
@@ -41,8 +42,8 @@ static void present(void *ctx, const JelliSurface *surface)
     ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
     /* LVGL owns this second buffer. Never hand its async task engine memory. */
     for (unsigned y = 0; y < surface->height; ++y)
-        memcpy(b->canvas_pixels + y*JELLI_WIDTH, surface->pixels + y*surface->stride,
-               JELLI_WIDTH*sizeof(uint16_t));
+        memcpy(b->canvas_pixels + y * JELLI_WIDTH, surface->pixels + y * surface->stride,
+               JELLI_WIDTH * sizeof(uint16_t));
     lv_obj_invalidate(b->canvas);
     bsp_display_unlock();
 }
@@ -56,7 +57,7 @@ void app_main(void)
 {
     static Board board;
     static JelliEngine engine;
-    const size_t bytes = JELLI_WIDTH*JELLI_HEIGHT*sizeof(uint16_t);
+    const size_t bytes = JELLI_WIDTH * JELLI_HEIGHT * sizeof(uint16_t);
     uint16_t *pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     board.canvas_pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     board.input = xQueueCreate(8, sizeof(JelliInput));
@@ -79,5 +80,6 @@ void app_main(void)
     JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH};
     ESP_ERROR_CHECK(jelli_init(&engine, platform, surface) ? ESP_OK : ESP_FAIL);
     ESP_LOGI(TAG, "Shapes MVP ready: tap to pause/resume");
-    while (jelli_frame(&engine)) vTaskDelay(pdMS_TO_TICKS(33));
+    while (jelli_frame(&engine))
+        vTaskDelay(pdMS_TO_TICKS(33));
 }

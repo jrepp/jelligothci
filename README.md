@@ -55,6 +55,46 @@ GitHub Actions builds and runs the core tests on Linux, macOS, and Windows,
 with SDL disabled. This checks host portability independently of the SDL and
 ESP32 ports. A separate Linux job runs the SDL smoke test and sanitizers.
 
+## C quality checks and Git hooks
+
+```sh
+make hooks-install  # enable this checkout's pre-commit hook
+make hooks-check    # run every hook across tracked files
+make lint-c         # formatting, static analysis, function/file size checks
+make format-c       # apply formatting, then review and stage the diff
+```
+
+The installed hook runs through the pinned pre-commit wrapper. It checks the
+staged snapshot and does not auto-fix source or docs. Docuchango checks the full
+docs tree on every commit so changes to link targets are also caught. Hook
+environments and tools stay under `.tools/`. Repeat `make hooks-install` after
+cloning; it sets this repository's `core.hooksPath` to `.githooks`. Hooks need
+Bash (Git Bash on Windows), curl, and network access for initial tool downloads.
+To remove this checkout's hook setting, run `git config --local --unset core.hooksPath`.
+
+The checks are:
+
+| Check | Coverage |
+| --- | --- |
+| clang-format | Tracked project C sources and headers |
+| clang-tidy | Core and tests, with real C11 headers and the public interface |
+| Cppcheck | All project C, including SDL and ESP32 adapters, without SDK setup |
+| Lizard and file limits | 80 function NLOC, 400 physical file lines, complexity 20 |
+| Docuchango | Structured documents, frontmatter, and links |
+
+NLOC excludes blank lines and comments; file length includes them. Limits live
+in `.c-size-limits.json`. Split code by responsibility when a limit is reached.
+Cppcheck's analysis without vendor headers does not replace compiling the
+adapters or testing hardware. Narrow, explained suppressions cover known
+callback/borrowed-buffer modeling gaps; the clang-tidy config excludes the
+heuristic requiring optional Annex K `_s` APIs, which are not portable here.
+
+CMake enables `-Wall -Wextra -Wpedantic -Werror`, conversion/sign, shadow,
+prototype, format, undefined-macro, alignment, VLA, and other strict warnings on
+GCC/Clang. MSVC uses `/W4 /WX`. The [project skills](AGENTS.md#project-skills)
+describe bounded embedded development and safe C11 practices. GitHub Actions
+runs the same hooks and tests the size checker against oversized fixtures.
+
 Without Make: `cmake --preset desktop`, `cmake --build --preset desktop`, then
 `./build/desktop/jelligotchi`. Resize the window freely; SDL maintains the aspect
 ratio and maps mouse coordinates back to the native display surface.

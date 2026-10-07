@@ -1,0 +1,41 @@
+minimum_pre_commit_version: '4.6.2'
+default_stages: [pre-commit]
+repos:
+  - repo: local
+    hooks:
+      - id: c-format
+        name: C formatting (clang-format)
+        language: system
+        entry: scripts/c-lint format-check
+        files: '^((core|include|ports|tests)/.*\.[ch]$|\.clang-format$|toolchain\.env$|scripts/c-lint$)'
+        exclude: '^ports/esp32/managed_components/'
+        pass_filenames: false
+        require_serial: true
+      - id: c-analysis
+        name: Portable C static analysis (clang-tidy)
+        language: system
+        entry: scripts/c-lint analyze
+        files: '^(core/|include/|tests/|\.clang-tidy$|toolchain\.env$|scripts/c-lint$)'
+        pass_filenames: false
+        require_serial: true
+      - id: docuchango
+        name: Docuchango validation
+        language: system
+        entry: scripts/docs validate --dry-run --skip-build
+        always_run: true
+        pass_filenames: false
+      - id: cppcheck
+        name: All project C static analysis (Cppcheck)
+        language: system
+        entry: scripts/c-lint cppcheck
+        files: '^((core|include|ports|tests)/|toolchain\.env$|scripts/c-lint$)'
+        exclude: '^ports/esp32/managed_components/'
+        pass_filenames: false
+        require_serial: true
+      - id: c-size
+        name: C function, file, and complexity limits
+        language: system
+        entry: scripts/c-lint size
+        files: '^((core|include|ports|tests)/|\.c-size-limits\.json$|scripts/check-c-size\.py$|scripts/c-lint$|toolchain\.env$)'
+        exclude: '^ports/esp32/managed_components/'
+        pass_filenames: false

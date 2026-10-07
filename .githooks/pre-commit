@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_dir="$(git rev-parse --show-toplevel)"
+exec "$repo_dir/scripts/pre-commit" run --hook-stage pre-commit

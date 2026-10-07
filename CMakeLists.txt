@@ -6,11 +6,19 @@ set(CMAKE_C_EXTENSIONS OFF)
 option(JELLI_BUILD_SDL "Build the SDL2 desktop emulator" ON)
 option(JELLI_SANITIZE "Enable address and undefined behavior sanitizers" OFF)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+  add_compile_options(
+    -Wall -Wextra -Wpedantic -Werror
+    -Wconversion -Wsign-conversion -Wshadow
+    -Wstrict-prototypes -Wmissing-prototypes
+    -Wformat=2 -Wundef -Wcast-align -Wwrite-strings
+    -Wvla -Wdouble-promotion -Wswitch-enum
+  )
   if(JELLI_SANITIZE)
     add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
     add_link_options(-fsanitize=address,undefined)
   endif()
+elseif(MSVC)
+  add_compile_options(/W4 /WX)
 endif()
 add_library(jelli_core STATIC core/engine.c core/render.c)
 target_include_directories(jelli_core PUBLIC include)

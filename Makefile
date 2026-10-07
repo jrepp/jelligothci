@@ -1,4 +1,5 @@
 .PHONY: build run test sanitize core-test esp-bootstrap esp-sync esp-build esp-flash esp-monitor docs-check docs-fix docs-guide
+.PHONY: hooks-install hooks-check lint-c format-c
 
 build:
 	cmake --preset desktop
@@ -45,3 +46,16 @@ docs-fix:
 
 docs-guide:
 	./scripts/docs bootstrap
+
+hooks-install:
+	./scripts/pre-commit validate-config
+	git config --local core.hooksPath .githooks
+
+hooks-check:
+	./scripts/pre-commit run --all-files
+
+lint-c:
+	./scripts/c-lint check
+
+format-c:
+	./scripts/c-lint format
