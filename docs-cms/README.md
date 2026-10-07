@@ -18,7 +18,6 @@ Their Accepted status records the user's direction, not hardware verification.
 | [ADR-005](adr/adr-005-docs-cms-with-pinned-docuchango.md) | Use docs-cms and pinned Docuchango for project memory |
 | [ADR-006](adr/adr-006-validate-core-portability-in-ci.md) | Build and test the core across desktop platforms in CI |
 | [ADR-007](adr/adr-007-bounded-c-and-enforced-quality-checks.md) | Bound C resources and enforce quality checks |
-
 | [ADR-008](adr/adr-008-semantic-versioning-and-release-validation.md) | Use Conventional Commits, Release Please, and release validation |
 
 ## Layout

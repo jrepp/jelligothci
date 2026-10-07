@@ -20,7 +20,9 @@ Use Conventional Commits and Release Please's simple manifest strategy.
 `fix:` increments patch, `feat:` increments minor, and `!` or a
 `BREAKING CHANGE:` footer increments major, including before version 1.0.
 A release PR maintains VERSION, CHANGELOG.md, and the manifest. Merging it
-creates a vX.Y.Z tag and GitHub Release. Both CMake projects read VERSION.
+creates a vX.Y.Z tag and GitHub Release. Both CMake projects read VERSION and
+track it as a configure dependency, so incremental builds refresh metadata.
+Release validation tests version changes in an existing build directory.
 
 Reuse GitHub's repository token. Explicitly dispatch validation for generated
 release PRs and call the reusable release workflow after tag creation, since
