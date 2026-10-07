@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ "$repo_dir" =~ [[:space:]] ]]; then
+    echo 'ESP-IDF requires a checkout path without whitespace.' >&2
+    exit 1
+fi
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../toolchain.env
+source "$repo_dir/toolchain.env"
+export IDF_PATH="$repo_dir/.tools/esp-idf"
+export IDF_TOOLS_PATH="$repo_dir/.tools/espressif"
+export IDF_CCACHE_ENABLE=0
+export CCACHE_DIR="$repo_dir/.tools/ccache"
+export PIP_CACHE_DIR="$repo_dir/.tools/pip-cache"
+export XDG_CACHE_HOME="$repo_dir/.tools/cache"
+# Do not reuse a Python environment from another SDK activated by the caller.
+unset IDF_PYTHON_ENV_PATH
+
+usage() {
+    cat <<'HELP'
+Usage: scripts/esp COMMAND [arguments]
+  bootstrap | sync     Fetch the tracked SDK pin and install local tools
+  build                Build the ESP32-S3 firmware
+  flash PORT           Build and flash (overwrites device firmware)
+  monitor PORT         Open serial monitor; exit with Ctrl+]
+  ports                List serial ports without resetting the board
+  doctor               Show SDK/tool versions and serial ports
+  idf [arguments]      Run arbitrary idf.py commands in the local environment
+
+To upgrade, edit both pins in toolchain.env, then run sync and build.
+Requires Git and Python 3.10-3.13; set JELLI_PYTHON to choose Python.
+Tools are stored under .tools/; no shell profile changes are needed.
+HELP
+}
+choose_python() {
+    if [[ -n "${JELLI_PYTHON:-}" ]]; then
+        python_cmd="$JELLI_PYTHON"
+    else
+        python_cmd=""
+        for candidate in python3.13 python3.12 python3.11 python3.10 python3; do
+            if command -v "$candidate" >/dev/null 2>&1 &&
+               "$candidate" -c 'import sys; sys.exit(not ((3,10) <= sys.version_info[:2] <= (3,13)))'; then
+                python_cmd="$(command -v "$candidate")"
+                break
+            fi
+        done
+    fi
+    if [[ -z "$python_cmd" ]] || ! "$python_cmd" -c 'import sys; sys.exit(not ((3,10) <= sys.version_info[:2] <= (3,13)))'; then
+        echo 'Install Python 3.10-3.13 or set JELLI_PYTHON to its executable.' >&2
+        exit 1
+    fi
+}
+sync_sdk() {
+    choose_python
+    mkdir -p "$repo_dir/.tools"
+    if [[ ! -d "$IDF_PATH/.git" ]]; then
+        git clone --depth 1 --branch "$JELLI_IDF_VERSION" \
+            https://github.com/espressif/esp-idf.git "$IDF_PATH"
+    fi
+    if [[ -n "$(git -C "$IDF_PATH" status --porcelain --untracked-files=no)" ]]; then
+        echo 'Local ESP-IDF checkout has edits; preserve them before syncing.' >&2
+        exit 1
+    fi
+    git -C "$IDF_PATH" fetch --depth 1 origin "refs/tags/$JELLI_IDF_VERSION"
+    local fetched
+    fetched="$(git -C "$IDF_PATH" rev-parse 'FETCH_HEAD^{commit}')"
+    if [[ "$fetched" != "$JELLI_IDF_COMMIT" ]]; then
+        echo 'SDK tag does not match the tracked commit; check toolchain.env.' >&2
+        exit 1
+    fi
+    git -C "$IDF_PATH" checkout --detach "$JELLI_IDF_COMMIT"
+    git -C "$IDF_PATH" submodule sync --recursive
+    git -C "$IDF_PATH" submodule update --init --recursive --depth 1 --jobs 8
+    "$python_cmd" "$IDF_PATH/tools/idf_tools.py" install --targets esp32s3
+    "$python_cmd" "$IDF_PATH/tools/idf_tools.py" install-python-env
+    echo 'Local ESP32-S3 toolchain is ready. Run scripts/esp build.'
+}
+activate() {
+    if [[ ! -d "$IDF_PATH/.git" ]] ||
+       [[ "$(git -C "$IDF_PATH" rev-parse HEAD)" != "$JELLI_IDF_COMMIT" ]]; then
+        echo 'SDK is missing or differs from the pin. Run scripts/esp sync.' >&2
+        exit 1
+    fi
+    choose_python
+    local environment
+    # Use the bootstrap interpreter, not export.sh's first python3 on PATH.
+    environment="$("$python_cmd" "$IDF_PATH/tools/activate.py" --export --shell bash)"
+    # Upstream activation is not compatible with nounset in all versions.
+    set +u
+    eval "$environment"
+    set -u
+}
+idf() {
+    idf.py -C "$repo_dir/ports/esp32" -B "$repo_dir/build/esp32" \
+        -DIDF_TARGET=esp32s3 "$@"
+}
+command_name="${1:-help}"
+if [[ $# -gt 0 ]]; then shift; fi
+case "$command_name" in
+    bootstrap|sync) sync_sdk ;;
+    help|--help|-h) usage ;;
+    build) activate; idf build "$@" ;;
+    flash|monitor)
+        if [[ $# -ne 1 ]]; then echo "Usage: scripts/esp $command_name PORT" >&2; exit 2; fi
+        activate
+        idf -p "$1" "$command_name"
+        ;;
+    ports) activate; python -m serial.tools.list_ports -v ;;
+    doctor)
+        activate
+        git -C "$IDF_PATH" describe --tags --always
+        python --version
+        xtensa-esp-elf-gcc --version | head -n 1
+        python -m serial.tools.list_ports -v
+        ;;
+    idf) activate; idf "$@" ;;
+    *) usage >&2; exit 2 ;;
+esac

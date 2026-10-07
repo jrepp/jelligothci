@@ -1,0 +1,15 @@
+# Generated builds, SDKs, compilers, and caches
+/build/
+/.tools/
+/compile_commands.json
+
+# ESP-IDF generated files; keep dependencies.lock and sdkconfig.defaults tracked
+/ports/esp32/managed_components/
+/ports/esp32/sdkconfig
+/ports/esp32/sdkconfig.old
+
+# Local editor and OS files
+.DS_Store
+*.swp
+*.swo
+*~
