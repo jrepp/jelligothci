@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/jrepp/jelligothci/compare/v0.1.0...v0.1.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **build:** refresh version metadata in incremental CMake builds ([8a0c5cc](https://github.com/jrepp/jelligothci/commit/8a0c5cc394b1ed698e235d76ad1dc1128092b66b))
+
 ## 0.1.0 (2026-10-07)
 
 
