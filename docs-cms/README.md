@@ -9,6 +9,9 @@ Latest hardware status: [memo-003: First USB deployment](memos/memo-003-first-us
 
 Process guidance: [memo-004: Learnings and context remediation](memos/memo-004-process-learnings-and-context-remediation.md).
 
+Contributor entry point: [CONTRIBUTING.md](../CONTRIBUTING.md).
+Maintainer reference: [memo-005: Settings, ownership, and recovery](memos/memo-005-contributor-and-maintainer-handoff.md).
+
 ## Architecture decisions
 
 These records capture explicit decisions from the 2026-10-07 project session.

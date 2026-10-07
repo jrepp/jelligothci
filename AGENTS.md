@@ -8,7 +8,12 @@ one animates, and tap/Space toggles pause. Keep changes focused on the requested
 increment. Do not introduce creature simulation, persistence, networking, audio,
 or a larger UI unless the task calls for it.
 
-Read `README.md` for setup, commands, and hardware bring-up details.
+Read `CONTRIBUTING.md` for the human setup and validation path, and `README.md`
+for architecture, commands, and hardware bring-up details. For repository settings,
+access boundaries, releases, or recovery, read
+[memo-005: Maintainer handoff](docs-cms/memos/memo-005-contributor-and-maintainer-handoff.md).
+Keep contributor instructions in those shared documents; agent guidance should
+link to them instead of becoming the only source of operational knowledge.
 
 ## Project skills
 

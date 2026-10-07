@@ -5,6 +5,9 @@ ESP32-S3-Touch-AMOLED-1.75, SKU 31261**. It draws a square, triangle, and moving
 circle. Tap/click the round screen or press Space to pause/resume; Escape quits
 the desktop host. There is no creature simulation or persistence yet.
 
+New contributors: start with [CONTRIBUTING.md](CONTRIBUTING.md). Maintainers can
+use the [settings and recovery runbook](docs-cms/memos/memo-005-contributor-and-maintainer-handoff.md).
+
 ## Project documentation
 
 [docs-cms](docs-cms/README.md) holds project decisions, proposals, requirements,
@@ -257,7 +260,8 @@ References:
 
 ## Versions and releases
 
-This project follows `~/d/jrepp.com/auth`: Conventional Commits feed Release
+This project follows the [auth project](https://github.com/jrepp/auth) pattern
+(no local sibling checkout is required): Conventional Commits feed Release
 Please, which opens a release PR updating `VERSION`, `CHANGELOG.md`, and
 `.release-please-manifest.json`. `fix:` means patch, `feat:` means minor, and
 `!` or a `BREAKING CHANGE:` footer means major. These rules also apply at 0.x.
