@@ -2,6 +2,7 @@
 set -euo pipefail
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root_dir"
+python3 scripts/check-workflow-pins.py
 python3 - <<'CHECK'
 import json
 import re

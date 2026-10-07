@@ -23,16 +23,16 @@ jobs:
       matrix:
         include:
           - platform: linux
-            hosted: '["ubuntu-latest"]'
+            hosted: '["ubuntu-24.04"]'
             private: '["self-hosted","linux","x64","router-small"]'
           - platform: macos
-            hosted: '["macos-latest"]'
+            hosted: '["macos-15"]'
             private: '["self-hosted","macos","arm64","router-small"]'
           - platform: windows
-            hosted: '["windows-latest"]'
-            private: '["windows-latest"]'
+            hosted: '["windows-2025"]'
+            private: '["windows-2025"]'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           ref: ${{ inputs.ref || github.sha }}

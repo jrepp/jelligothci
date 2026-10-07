@@ -157,3 +157,8 @@ Generated release PRs receive explicitly dispatched validation. Tag creation
 calls the reusable release workflow directly; do not rely on GITHUB_TOKEN
 writes triggering another workflow. Source assets are published after checks.
 Report hardware verification separately; releases never flash automatically.
+
+Pin external workflow actions to full 40-character commit SHAs with exact release
+version comments. Use explicit hosted OS labels, never `*-latest`. Local reusable
+workflows resolve with the calling revision. Run `scripts/check-workflow-pins.py`
+when changing workflows; pre-commit and release validation enforce these rules.

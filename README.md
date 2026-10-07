@@ -283,3 +283,8 @@ must allow GitHub Actions to create pull requests. CMake and ESP-IDF both read
 
 Private Linux core jobs install the pinned CMake package through repository-local
 uv. The shared runner image provides the compiler and Make.
+
+External workflow actions use full commit SHAs with release-version comments.
+Hosted OS labels are explicit: Ubuntu 24.04, macOS 15, Windows 2025. GitHub still
+updates those hosted images; these are OS selections, not immutable VM images.
+`python3 scripts/check-workflow-pins.py` rejects floating actions and OS aliases.

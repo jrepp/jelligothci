@@ -45,3 +45,9 @@ repos:
         entry: scripts/release-validate --metadata-only
         files: '^(VERSION|release-please-config\.json|\.release-please-manifest\.json|scripts/release-validate|release\.yaml)$'
         pass_filenames: false
+      - id: workflow-pins
+        name: Immutable workflow action refs
+        language: system
+        entry: python3 scripts/check-workflow-pins.py
+        files: '^(\.github/workflows/|scripts/check-workflow-pins\.py$)'
+        pass_filenames: false

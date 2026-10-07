@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ inputs.platform == 'macos' && fromJSON('["self-hosted","macos","arm64","router-small"]') || fromJSON('["self-hosted","linux","x64","router-small"]') }}
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
       - name: Install pinned CMake on private Linux
