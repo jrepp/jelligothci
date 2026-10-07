@@ -10,6 +10,24 @@ or a larger UI unless the task calls for it.
 
 Read `README.md` for setup, commands, and hardware bring-up details.
 
+## Project memory
+
+Use `docs-cms/` as durable project memory. Before changing architecture or the
+development workflow, search and read the relevant ADRs, RFCs, PRDs, and memos.
+Start with `docs-cms/README.md` and `docs-cms/docs-project.yaml`.
+
+Record decisions as ADRs, proposals as RFCs, requirements as PRDs, and findings
+as memos. Copy a template from `docs-cms/templates/`, use the next available ID,
+set `project_id: jelligotchi`, and generate a unique UUID v4. Preserve that UUID
+and the created date across edits. For new proposals use `Proposed` (ADR) or
+`Draft` (RFC/PRD); memos need no status. Record approval only when the user has
+actually approved the decision; do not present agent proposals as accepted.
+
+Use `./scripts/docs` to run the pinned Docuchango through repository-local uvx.
+After documentation changes, run `make docs-check`, then `make docs-fix` and
+review any repairs before committing. Report unresolved findings. CI runs the
+read-only check. `./scripts/docs bootstrap --guide agent` prints the full guide.
+
 ## Architecture
 
 - `include/jelli/engine.h` defines the shared engine and host contracts.
@@ -73,6 +91,8 @@ ESP-IDF or change the developer's shell profile. Bootstrap with
 `make esp-bootstrap`; reconcile the tracked SDK pin with `make esp-sync`.
 
 - Track SDK release and commit in `toolchain.env`.
+- Track uv and Docuchango versions there too; use `scripts/uv`, `scripts/uvx`,
+  and `scripts/docs` to honor those pins without global installs.
 - Track direct component versions in `ports/esp32/main/idf_component.yml` and
   resolved dependencies in `ports/esp32/dependencies.lock`.
 - Track intentional board configuration in `ports/esp32/sdkconfig.defaults`.

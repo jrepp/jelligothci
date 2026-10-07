@@ -1,0 +1,156 @@
+# yaml-language-server: $schema=./docs-project.schema.json
+version: "1"
+docuchango_version: "1.19.0"
+
+project:
+  id: jelligotchi
+  name: Jelligotchi
+  description: Portable C shapes MVP and ESP32-S3 virtual pet development
+  # Base URL under which this repository's file tree is served. LNK-011 uses it
+  # to rewrite a link that leaves the repository root (LNK-002) into an absolute
+  # repository URL: the target's path relative to --repo-root is appended
+  # verbatim, so point this at whatever serves that directory. On GitHub that is
+  # the blob URL of the branch you publish from. Leave it unset and such links
+  # stay LNK-002 reports.
+  # repository_url: https://github.com/my-org/my-repo/blob/main
+
+structure:
+  adr_dir: adr
+  rfc_dir: rfcs
+  memo_dir: memos
+  prd_dir: prd
+  template_dir: templates
+  # Optional roots to scan (relative to this file). Useful in monorepos.
+  # Every document folder below - document_folders and doc_types folders
+  # alike - is resolved under each root. Defaults to this file's directory.
+  # docs_roots:
+  #   - .
+  #   - ../project-a/docs
+  #   - ../project-b/docs
+  # List of folders to scan for documents
+  # Override this to customize which folders are validated
+  document_folders:
+    - adr
+    - rfcs
+    - memos
+    - prd
+
+  # Scan Markdown files nested in subfolders of adr_dir/rfc_dir/memo_dir/prd_dir
+  # (for example adr/archive/ or rfcs/2024/) with the same id/uuid/link/filename
+  # rules as top-level files. Default is false: nested files are treated as
+  # support material and are not scanned.
+  # scan_subfolders: false
+
+  # Optional advanced mapping for mixed schemas/layouts in one repository.
+  # When doc_types is set, it takes precedence over adr_dir/rfc_dir/memo_dir/prd_dir.
+  # doc_types:
+  #   adr:
+  #     schema: adr
+  #     folders: [adr]
+  #     filename_pattern: "^(adr)-(\\d{3})-(.+)\\.md$"
+  #     enforce_filename_pattern: true
+  #   prfaq:
+  #     schema: generic
+  #     folders: [prfaq]
+  #     filename_pattern: "^prfaq-.+\\.md$"
+  #     enforce_filename_pattern: true
+  #   design-notes:
+  #     schema: generic
+  #     folders: [design]
+  #     filename_pattern: ".+\\.md$"
+  #     enforce_filename_pattern: false
+  #     require_frontmatter: false  # Allow plain Markdown design notes
+  #   # Example using named naming standards:
+  #   guides:
+  #     schema: generic
+  #     folders: [guides]
+  #     naming_standard: kebab-case  # Use built-in 'kebab-case' standard
+  #   runbooks:
+  #     schema: generic
+  #     folders: [ops/runbooks]
+  #     naming_standard: snake_case  # Use built-in 'snake_case' standard
+  #   # Example overriding scan_subfolders for one type only:
+  #   adr-archived:
+  #     schema: adr
+  #     folders: [adr]
+  #     filename_pattern: "^(adr)-(\\d{3})-(.+)\\.md$"
+  #     scan_subfolders: true  # Wins over structure.scan_subfolders above
+  #   # Example opting one type into the ID-010 numbering gap report. Off by
+  #   # default, because a gap is usually a deliberately retired number.
+  #   rfc:
+  #     schema: rfc
+  #     folders: [rfcs]
+  #     report_numbering_gaps: true  # Report rfc-004 missing between 003 and 005
+
+  # Named naming standards for document names.
+  # Built-in standards: nnn-name, year-month-day-name, kebab-case, snake_case,
+  #   camelCase, PascalCase, lowercase, uppercase
+  # Use naming_standard in doc_types to apply a named standard to a folder.
+  # Custom standards can override built-ins or define new patterns.
+  # naming_standards:
+  #   my-custom-standard: "^custom-.+\\.md$"
+  #   date-prefix: "^\\d{6}-.+\\.md$"
+
+security:
+  # Keep configured paths inside this docs-project.yaml directory by default.
+  # Use subprojects to include other docs roots instead of ../ path escapes.
+  allow_external_paths: false
+
+# Optional subproject docs configs. Paths are relative to this file and can point
+# to either a subproject directory or its docs-project.yaml file.
+# subprojects:
+#   - vendor/service-a
+#   - vendor/service-b/docs-project.yaml
+
+# Optional Markdown files that index other repository files.
+# These rules are stricter than normal docs validation: targets can be required,
+# extra Markdown links can be forbidden, and release/milestone indexes can require
+# entries under time or milestone bucket headings.
+# indexes:
+#   - name: Shared Design Index
+#     path: docs/design-index.md
+#     targets:
+#       - docs/design/**/*.md
+#     require_all_targets: true
+#     require_entries: true
+#     allow_extra_links: true
+#   - name: Weekly Release Notes
+#     path: docs/release-index.md
+#     targets:
+#       - docs/release-notes/*.md
+#     time_bucket:
+#       cadence: weekly  # weekly, monthly, quarterly, yearly, or milestone
+#       field: created
+#       heading_level: 2
+#       heading_pattern: "^\\d{4}-W\\d{2}$"
+#   - name: Milestone Changelog
+#     path: docs/milestone-changelog.md
+#     targets:
+#       - docs/plans/*.md
+#     time_bucket:
+#       cadence: milestone
+#       milestone_field: milestone
+#       heading_level: 2
+
+metadata:
+  created: "2026-10-07"
+  maintainers:
+    - Jacob Repp
+  purpose: Project documentation hub for architecture decisions, RFCs, memos, and PRDs
+
+readability:
+  # Enable/disable readability analysis
+  enabled: true
+  # Flesch Reading Ease: minimum score (0-100, higher = easier)
+  # 60+ = standard readability, 50-60 = fairly difficult
+  flesch_reading_ease_min: 60.0
+  # Grade-level metrics: maximum grade level (lower = easier)
+  # 10 = 10th grade, 12 = high school senior
+  flesch_kincaid_grade_max: 10.0
+  gunning_fog_max: 12.0
+  smog_index_max: 12.0
+  automated_readability_index_max: 10.0
+  coleman_liau_index_max: 10.0
+  dale_chall_max: 9.0
+  # Minimum paragraph length to analyze (in characters)
+  min_paragraph_length: 100

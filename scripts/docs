@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../toolchain.env
+source "$repo_dir/toolchain.env"
+cd "$repo_dir"
+exec "$repo_dir/scripts/uvx" --from "docuchango==$JELLI_DOCUCHANGO_VERSION" docuchango "$@"

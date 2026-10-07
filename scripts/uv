@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=../toolchain.env
+source "$repo_dir/toolchain.env"
+uv_dir="$repo_dir/.tools/uv/$JELLI_UV_VERSION"
+export UV_CACHE_DIR="$repo_dir/.tools/uv-cache"
+export UV_PYTHON_INSTALL_DIR="$repo_dir/.tools/uv-python"
+export UV_TOOL_DIR="$repo_dir/.tools/uv-tools"
+export UV_TOOL_BIN_DIR="$repo_dir/.tools/bin"
+if [[ ! -x "$uv_dir/uv" ]]; then
+    mkdir -p "$uv_dir"
+    curl --fail --silent --show-error --location \
+        "https://astral.sh/uv/$JELLI_UV_VERSION/install.sh" --output "$uv_dir/install.sh"
+    UV_UNMANAGED_INSTALL="$uv_dir" sh "$uv_dir/install.sh" >&2
+fi
+if [[ "$("$uv_dir/uv" --version)" != "uv $JELLI_UV_VERSION"* ]]; then
+    echo 'Local uv does not match toolchain.env.' >&2
+    exit 1
+fi
+exec "$uv_dir/uv" "$@"

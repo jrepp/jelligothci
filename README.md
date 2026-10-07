@@ -5,6 +5,36 @@ ESP32-S3-Touch-AMOLED-1.75, SKU 31261**. It draws a square, triangle, and moving
 circle. Tap/click the round screen or press Space to pause/resume; Escape quits
 the desktop host. There is no creature simulation or persistence yet.
 
+## Project documentation
+
+[docs-cms](docs-cms/README.md) holds project decisions, proposals, requirements,
+and findings. Begin with the [shapes MVP memo](docs-cms/memos/memo-001-shapes-mvp-foundation.md).
+
+```sh
+make docs-guide   # print the Docuchango bootstrap guide
+make docs-check   # validate without changing files
+make docs-fix     # apply available repairs; review the diff
+./scripts/docs bootstrap --guide agent
+```
+
+`toolchain.env` pins **uv 0.12.23** and **Docuchango 1.19.0**, the latest stable
+versions checked on 2026-10-07. `scripts/uv` downloads the pinned uv to `.tools/`
+on first use; `scripts/uvx` runs tools with that uv; `scripts/docs` runs the pinned
+Docuchango from the repository root. These commands need Bash, curl, and network
+access on first use. Python, tool environments, and caches managed by uv stay in
+`.tools/`; shell profiles and the system uv installation are unchanged.
+
+The initial setup used `./scripts/uvx docuchango==1.19.0 bootstrap`, followed by
+`./scripts/docs init --project-id jelligotchi --project-name Jelligotchi`.
+`uvx` already means `uv tool run`, so no extra `run` argument is needed. The
+`bootstrap` command prints instructions; `init` creates the docs tree. Existing
+checkouts only need the validation commands above.
+
+To upgrade, change the exact pins in `toolchain.env` and rerun validation. When
+upgrading Docuchango, review its config/schema changes and update
+`docs-cms/docs-project.yaml`'s `docuchango_version`. The repository currently
+stores and validates Markdown documents; it has no Docusaurus website build.
+
 ## Desktop
 
 Prerequisites: a C compiler, CMake 3.21+, Ninja, SDL2 2.0.18+, and Make (optional).

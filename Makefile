@@ -1,4 +1,4 @@
-.PHONY: build run test sanitize core-test esp-bootstrap esp-sync esp-build esp-flash esp-monitor
+.PHONY: build run test sanitize core-test esp-bootstrap esp-sync esp-build esp-flash esp-monitor docs-check docs-fix docs-guide
 
 build:
 	cmake --preset desktop
@@ -36,3 +36,12 @@ esp-flash:
 esp-monitor:
 	@test -n "$(PORT)" || (echo 'Usage: make esp-monitor PORT=/dev/cu.usbmodem…'; exit 2)
 	./scripts/esp monitor "$(PORT)"
+
+docs-check:
+	./scripts/docs validate --dry-run --skip-build
+
+docs-fix:
+	./scripts/docs validate --skip-build
+
+docs-guide:
+	./scripts/docs bootstrap

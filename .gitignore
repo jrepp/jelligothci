@@ -1,6 +1,7 @@
 # Generated builds, SDKs, compilers, and caches
 /build/
 /.tools/
+/.venv/
 /compile_commands.json
 
 # ESP-IDF generated files; keep dependencies.lock and sdkconfig.defaults tracked
