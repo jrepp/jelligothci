@@ -61,14 +61,16 @@ def create_menu_assets(root, palette):
                 d.point((x-1,13), fill=cream)
         elif name == "settings":
             points=[]
-            for tooth in range(8):
-                for fraction,radius in ((-.42,11),(-.24,14),(.24,14),(.42,11)):
-                    angle=(tooth+fraction)*math.pi/4
+            for tooth in range(6):
+                for fraction,radius in ((-.48,10),(-.30,14),(.30,14),(.48,10)):
+                    angle=(tooth+fraction)*math.pi/3
                     points.append((round(15.5+radius*math.cos(angle)),round(15.5+radius*math.sin(angle))))
             d.polygon(points,fill=ink)
-            d.ellipse((6,6,25,25),fill=lilac)
-            d.ellipse((10,10,21,21),fill=ink)
-            d.ellipse((13,13,18,18),fill=cream)
+            inset=[(round(15.5+(x-15.5)*.82),round(15.5+(y-15.5)*.82)) for x,y in points]
+            d.polygon(inset,fill=lilac)
+            d.ellipse((11,11,20,20),fill=ink)
+            d.ellipse((13,13,18,18),fill=shadow)
+            d.line([(9,10),(11,8),(15,7)],fill=cream,width=2)
         elif name in ("tea", "moments"):
             d.rounded_rectangle((6,13,22,26), radius=5, fill=ink)
             d.rounded_rectangle((8,15,20,24), radius=4, fill=mint)

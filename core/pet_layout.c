@@ -60,9 +60,7 @@ unsigned jelli_pet_moment(const JelliPet *pet)
 
 unsigned jelli_pet_suggested_moment(const JelliPet *pet, const JelliPetUi *ui)
 {
-    if (ui->clock_known && ui->clock_minute < 1440u)
-        return moment_hour(ui->clock_minute / 60u);
-    return jelli_pet_moment(pet);
+    return moment_hour(jelli_pet_clock_minute(ui, pet) / 60u);
 }
 
 unsigned jelli_pet_stat_score(uint16_t value)
@@ -71,4 +69,22 @@ unsigned jelli_pet_stat_score(uint16_t value)
     if (!score)
         return 1u;
     return score > 100u ? 100u : score;
+}
+
+bool jelli_pet_ring_button(const JelliPetUi *ui, unsigned slot, bool asleep,
+                           JelliPetUiButton *button)
+{
+    const JelliPetRenderKey *v = &ui->last_view;
+    if (v->ring_page == JELLI_UI_HEALTH &&
+        ((slot == 2u && (v->care_blocked & 1u)) || (slot == 3u && (v->care_blocked & 2u))))
+        return false;
+    if (v->ring_page == JELLI_UI_SETTINGS && v->ring_clock_edit)
+        return jelli_pet_clock_button(true, slot, button);
+    return jelli_pet_ui_button((JelliPetPage)v->ring_page, slot, asleep, true, button);
+}
+
+bool jelli_pet_ui_starts(unsigned page, unsigned slot)
+{
+    return page == JELLI_UI_MOMENTS ||
+           (page == JELLI_UI_CARE && (slot == 1u || slot == 3u || slot == 4u));
 }

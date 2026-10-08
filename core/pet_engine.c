@@ -44,6 +44,9 @@ static void input_event(JelliPetEngine *engine, JelliInput input)
         if (!engine->game.resuming)
             jelli_pet_ui_tap(&engine->ui, &engine->game, input.x, input.y);
         break;
+    case JELLI_SWIPE:
+        jelli_pet_ui_swipe(&engine->ui, &engine->game, input.x, input.y);
+        break;
     case JELLI_TOGGLE_PAUSE:
         engine->paused = !engine->paused;
         if (engine->platform.paused)

@@ -174,6 +174,8 @@ static void test_ring_moments_and_meter(void)
     CHECK(game.pets[0].activity == JELLI_PLAYING);
     for (unsigned i = 0; i < 10u; ++i)
         jelli_game_advance(&game, 800u);
+    CHECK(!ui.menu_open && ui.page == JELLI_UI_HOME);
+    tap_item(&ui, &game, 1u); /* Reopen Moments after the outing. */
     tap_item(&ui, &game, 3u);
     CHECK(game.pets[0].activity == JELLI_PLAYING);
     jelli_pet_ui_tap(&ui, &game, 233, 420);

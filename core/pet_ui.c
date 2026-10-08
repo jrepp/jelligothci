@@ -53,12 +53,6 @@ JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep)
     return (JelliPetUiItem){label ? label : "", value.action};
 }
 
-static JelliResult run_command(JelliGame *game, JelliCommandKind kind, uint32_t value)
-{
-    JelliCommand command = {kind, game->pets[game->active].id, value};
-    return jelli_game_command(game, command);
-}
-
 static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 {
     if (action == JELLI_UI_ACTION_MOMENTS)
@@ -78,59 +72,6 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
     return true;
 }
 
-static JelliResult run_moment(const JelliPetUi *ui, JelliGame *game, JelliPetUiAction action)
-{
-    unsigned moment = action == JELLI_UI_ACTION_SUGGEST
-                          ? jelli_pet_suggested_moment(&game->pets[game->active], ui)
-                          : (unsigned)action - JELLI_UI_ACTION_BREAKFAST;
-    if (moment >= 4u)
-        return JELLI_INVALID_TARGET;
-    return run_command(game, JELLI_CMD_MOMENT, moment);
-}
-
-static JelliResult dispatch_action(JelliGame *game, JelliPetUiAction action)
-{
-    static const JelliCommandKind command_kinds[] = {
-        JELLI_CMD_FEED,   JELLI_CMD_FEED,     JELLI_CMD_REST,    JELLI_CMD_FEED,
-        JELLI_CMD_FEED,   JELLI_CMD_FEED,     JELLI_CMD_CARE,    JELLI_CMD_PLAY,
-        JELLI_CMD_CLEAN,  JELLI_CMD_FEED,     JELLI_CMD_GIFT,    JELLI_CMD_CLAIM,
-        JELLI_CMD_TRAVEL, JELLI_CMD_ACTIVATE, JELLI_CMD_BEDTIME, JELLI_CMD_FEED};
-    if ((unsigned)action >= sizeof(command_kinds) / sizeof(command_kinds[0]))
-        return JELLI_INVALID_TARGET;
-    JelliPet *pet = &game->pets[game->active];
-    switch (command_kinds[action]) {
-    case JELLI_CMD_FEED:
-        return run_command(game, JELLI_CMD_FEED, 0u);
-    case JELLI_CMD_PLAY:
-        return run_command(game, JELLI_CMD_PLAY, 0u);
-    case JELLI_CMD_CLEAN:
-        return run_command(game, JELLI_CMD_CLEAN, 0u);
-    case JELLI_CMD_CARE:
-        return run_command(game, JELLI_CMD_CARE, 0u);
-    case JELLI_CMD_REST:
-        return run_command(game, pet->asleep ? JELLI_CMD_WAKE : JELLI_CMD_REST, 0u);
-    case JELLI_CMD_WAKE:
-        return run_command(game, JELLI_CMD_WAKE, 0u);
-    case JELLI_CMD_GIFT:
-        return run_command(game, JELLI_CMD_GIFT, 0u);
-    case JELLI_CMD_CLAIM:
-        return run_command(game, JELLI_CMD_CLAIM, 0u);
-    case JELLI_CMD_ACTIVATE: {
-        uint8_t target = game->active == 0u ? 1u : 0u;
-        return run_command(game, JELLI_CMD_ACTIVATE, game->pets[target].id);
-    }
-    case JELLI_CMD_TRAVEL:
-        return run_command(game, JELLI_CMD_TRAVEL, pet->location == 0u ? 1u : 0u);
-    case JELLI_CMD_TOUCH:
-    case JELLI_CMD_MOMENT:
-    case JELLI_CMD_HEALTH:
-        return JELLI_INVALID_TARGET;
-    case JELLI_CMD_BEDTIME:
-        return run_command(game, JELLI_CMD_BEDTIME, (pet->bedtime + 1u) % 24u);
-    }
-    return JELLI_INVALID_TARGET;
-}
-
 static bool action_persists(JelliPetUiAction action)
 {
     static const bool persists[] = {true,  false, true, false, false, false, true, true,
@@ -143,9 +84,12 @@ static bool hit_button(const JelliPetUiButton *button, int x, int y)
 {
     int dx = x - (int)(button->bounds.x + button->bounds.width / 2u);
     int dy = y - (int)(button->bounds.y + button->bounds.height / 2u);
+    int radius = (int)button->bounds.width / 2;
     if (button->circular)
-        return dx * dx + dy * dy <= 48 * 48;
-    return dx >= -72 && dx < 72 && dy >= -32 && dy < 32;
+        return dx * dx + dy * dy <= radius * radius;
+    return x >= (int)button->bounds.x && y >= (int)button->bounds.y &&
+           x < (int)(button->bounds.x + button->bounds.width) &&
+           y < (int)(button->bounds.y + button->bounds.height);
 }
 
 static void execute(JelliPetUi *ui, JelliGame *game, JelliPetUiAction action)
@@ -155,11 +99,15 @@ static void execute(JelliPetUi *ui, JelliGame *game, JelliPetUiAction action)
         return;
     }
     JelliResult result = JELLI_OK;
-    if (action >= JELLI_UI_ACTION_BREAKFAST && action <= JELLI_UI_ACTION_SUGGEST)
-        result = run_moment(ui, game, action);
-    else if (action != JELLI_UI_ACTION_SAVE)
-        result = dispatch_action(game, action);
+    JelliCommand command;
+    if (jelli_pet_ui_command(ui, game, action, &command))
+        result = jelli_game_command(game, command);
     ui->result = result;
+    if (result == JELLI_OK && game->pets[game->active].activity != JELLI_IDLE &&
+        action != JELLI_UI_ACTION_SAVE) {
+        ui->menu_open = false;
+        ui->page = JELLI_UI_HOME;
+    }
     if (result == JELLI_OK && action_persists(action)) {
         ui->save_requested = true;
         ui->save_status = JELLI_SAVE_PENDING;
@@ -170,6 +118,8 @@ static unsigned input_code(const JelliPetUi *ui, unsigned slot, bool asleep)
 {
     if (!slot)
         return !ui->menu_open ? 28u : ui->page == JELLI_UI_HOME ? 29u : 30u;
+    if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u))
+        return ui->clock_edit ? 33u + slot : 33u;
     if (ui->page >= JELLI_UI_BRUSH)
         return JELLI_UI_ACTION_BRUSH + (unsigned)ui->page - JELLI_UI_BRUSH;
     return (unsigned)jelli_pet_ui_item(ui->page, slot - 1u, asleep).action;
@@ -194,13 +144,34 @@ static void celebrate(JelliPetUi *ui, const JelliPet *pet, int x, int y)
     jelli_particles_burst_tuned(&ui->particles, x, y, ui->result == JELLI_OK, amount, spread);
 }
 
+static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
+{
+    if (slot == 0u) {
+        jelli_pet_ui_back(ui);
+        ui->result = JELLI_OK;
+    } else if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u)) {
+        jelli_pet_clock_action(ui, slot);
+    } else if (ui->page >= JELLI_UI_BRUSH) {
+        jelli_pet_health_tap(ui, game);
+    } else {
+        JelliPetUiItem selected =
+            jelli_pet_ui_item(ui->page, slot - 1u, game->pets[game->active].asleep);
+        execute(ui, game, selected.action);
+    }
+}
+
+static void sync_clock(const JelliPetUi *ui, JelliGame *game)
+{
+    game->clock_known = ui->clock_known || ui->clock_adjust || ui->timezone_minutes;
+    game->clock_minute = jelli_pet_clock_minute(ui, &game->pets[game->active]);
+}
+
 void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
 {
     if (ui == NULL || game == NULL || game->resuming || !jelli_game_valid(game) || x < 0 || y < 0 ||
         x >= 466 || y >= 466)
         return;
-    game->clock_known = ui->clock_known;
-    game->clock_minute = ui->clock_minute;
+    sync_clock(ui, game);
     if (jelli_pet_touch_actor(ui, game, x, y))
         return;
     for (unsigned slot = 0u; slot <= 6u; ++slot) {
@@ -216,16 +187,13 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
         uint32_t sequence = game->events ? game->events->sequence : 0u;
         if (game->events)
             game->events->input = (uint8_t)(code + 1u);
-        if (slot == 0u) {
-            jelli_pet_ui_back(ui);
-            ui->result = JELLI_OK;
-        } else if (ui->page >= JELLI_UI_BRUSH) {
-            jelli_pet_health_tap(ui, game);
-        } else {
-            JelliPetUiItem selected =
-                jelli_pet_ui_item(ui->page, slot - 1u, game->pets[game->active].asleep);
-            execute(ui, game, selected.action);
+        JelliResult available = jelli_pet_ui_available(ui, game, slot);
+        if (available != JELLI_OK) {
+            ui->result = available;
+            finish_event(ui, game, sequence, code, before);
+            return;
         }
+        activate_slot(ui, game, slot);
         finish_event(ui, game, sequence, code, before);
         if (ui->result == JELLI_OK)
             ui->sound_pending = true;
@@ -265,4 +233,29 @@ unsigned jelli_pet_ui_sound(JelliPetUi *ui, const JelliPet *pet, uint64_t now_ms
         return 0u;
     ui->coo_anchor_ms = now_ms; /* One cue after stalls; never catch up in bursts. */
     return 7u;
+}
+
+void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)
+{
+    if (!ui || !game || game->resuming || !jelli_game_valid(game))
+        return;
+    unsigned code;
+    if (dy < 0 && !ui->menu_open) {
+        jelli_pet_ui_back(ui);
+        code = 28u;
+    } else if (dy > 0 && ui->menu_open) {
+        code = ui->page == JELLI_UI_HOME ? 29u : 30u;
+        jelli_pet_ui_back(ui);
+    } else if (dx && !dy && !ui->menu_open && !ui->last_view.ring_moving) {
+        ui->stat_offset = (uint8_t)((ui->stat_offset + (dx < 0 ? 1u : 5u)) % 6u);
+        ui->tile_reset = true;
+        code = 31u;
+    } else {
+        return;
+    }
+    ui->sound_pending = true;
+    ui->result = JELLI_OK;
+    const JelliPet *pet = &game->pets[game->active];
+    jelli_game_emit(game, JELLI_EVENT_INPUT, code, JELLI_OK, (uint32_t)ui->page, pet,
+                    jelli_game_observe(game, pet));
 }

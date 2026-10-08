@@ -26,6 +26,16 @@ static size_t render(unsigned cue, int16_t *output, size_t block)
     return count;
 }
 
+static void check_pause(unsigned cue, unsigned start_ms, unsigned duration_ms)
+{
+    size_t count = render(cue, a, JELLI_SOUND_BLOCK);
+    size_t start = (size_t)start_ms * JELLI_SOUND_RATE / 1000u;
+    size_t end = start + (size_t)duration_ms * JELLI_SOUND_RATE / 1000u;
+    CHECK(end <= count);
+    for (size_t i = start; i < end; ++i)
+        CHECK(a[i] == 0);
+}
+
 int main(void)
 {
     for (unsigned cue = 0; cue < JELLI_SOUND_COUNT; ++cue) {
@@ -46,6 +56,9 @@ int main(void)
         CHECK(llabs(sum / (int64_t)count) < 100);
         CHECK(jelli_sound_name(cue) != NULL);
     }
+    check_pause(0u, 110u, 35u); /* Chirp. */
+    check_pause(3u, 300u, 50u); /* Hello. */
+    check_pause(4u, 220u, 60u); /* Sleepy. */
     JelliSynth synth = {0};
     CHECK(!jelli_sound_start(NULL, 0u));
     CHECK(!jelli_sound_start(&synth, JELLI_SOUND_COUNT));

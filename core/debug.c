@@ -106,6 +106,23 @@ static void tap(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **w
     jelli_debug_response(debug, id, "{\"ok\":true,\"input\":\"delivered\"}");
 }
 
+static void swipe(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
+                  unsigned count)
+{
+    uint32_t direction;
+    static const int deltas[4][2] = {{0, -80}, {0, 80}, {-80, 0}, {80, 0}};
+    if (count != 4u || !jelli_debug_number(words[3], &direction) || direction >= 4u) {
+        jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"range\"}");
+        return;
+    }
+    if (debug->captured || engine->game.resuming) {
+        jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"busy\"}");
+        return;
+    }
+    jelli_pet_ui_swipe(&engine->ui, &engine->game, deltas[direction][0], deltas[direction][1]);
+    jelli_debug_response(debug, id, "{\"ok\":true,\"input\":\"delivered\"}");
+}
+
 static void press(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
                   unsigned count)
 {
@@ -129,6 +146,20 @@ static void press(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char *
     jelli_pet_ui_tap(&engine->ui, &engine->game, (int)(button.bounds.x + button.bounds.width / 2u),
                      (int)(button.bounds.y + button.bounds.height / 2u));
     jelli_debug_response(debug, id, "{\"ok\":true,\"input\":\"delivered\"}");
+}
+
+static bool input_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
+                          unsigned count)
+{
+    if (!strcmp(words[2], "press"))
+        press(debug, engine, id, words, count);
+    else if (!strcmp(words[2], "swipe"))
+        swipe(debug, engine, id, words, count);
+    else if (!strcmp(words[2], "tap"))
+        tap(debug, engine, id, words, count);
+    else
+        return false;
+    return true;
 }
 
 static void dispatch(JelliDebug *debug, JelliPetEngine *engine, char **words, unsigned count,
@@ -158,10 +189,8 @@ static void dispatch(JelliDebug *debug, JelliPetEngine *engine, char **words, un
         jelli_debug_events(debug, engine, id, words, count);
     } else if (!strcmp(words[2], "sound")) {
         jelli_debug_sound(debug, id, words, count);
-    } else if (!strcmp(words[2], "press")) {
-        press(debug, engine, id, words, count);
-    } else if (!strcmp(words[2], "tap")) {
-        tap(debug, engine, id, words, count);
+    } else if (input_command(debug, engine, id, words, count)) {
+        /* Input handler owns the reply. */
     } else if (!strcmp(words[2], "pixels") || !strcmp(words[2], "release")) {
         capture_command(debug, engine, id, words, count, now);
     } else {

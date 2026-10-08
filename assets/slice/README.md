@@ -32,7 +32,7 @@ manifest and PNGs when built; editing a source image requires rebuilding it.
 | `creatures/` | Two forms, each with idle A/B, eating, happy, asleep, unwell, curious, and content; 32x32 pixels |
 | `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
 | `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
-| `meters/` | Five 32x32 stat pictograms; heart used at 2x for the single mood tile; other pictograms retained |
+| `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
 | `health/` | Five 32x32 brushing, medicine, shot, washing, and stretching clicker icons |
 | `effects/` | Eight 16x16 star, heart, orb, comet, fairy-wing, music, idea, and rainbow celebration sprites |
 | `backgrounds/` | Two 64x64 neutral home/garden scenes with black vignettes |
@@ -158,3 +158,6 @@ descriptor and derived screen bounds; drawing never rescans alpha for layout.
 Home uses contact (233,256); a healthy clicker uses (233,350) with its target above
 the cached head bound. Open rings center the creature and icons by full pixel
 centroid in both axes. See [the implementation and action audit](../../docs-cms/memos/memo-015-healthy-activities-and-action-audit.md).
+
+The settings gear uses six broad teeth, a small hub, and one highlight for a
+heavy cartoon silhouette. The clock reuses this asset at 1x; no new art payload.

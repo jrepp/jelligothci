@@ -1,5 +1,6 @@
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
+#include "jelli/gesture.h"
 #include "jelli/engine.h"
 #include "session.h"
 #include "debug_socket.h"
@@ -13,6 +14,7 @@
 enum { FRAME_MS = 8 };
 
 typedef struct {
+    JelliGesture gesture;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
@@ -29,7 +31,7 @@ static uint64_t now_ms(void *ctx)
 }
 static bool poll_input(void *ctx, JelliInput *input)
 {
-    (void)ctx;
+    Desktop *d = ctx;
     SDL_Event event;
     for (unsigned n = 0; n < 32 && SDL_PollEvent(&event); ++n) {
         if (event.type == SDL_QUIT) {
@@ -48,8 +50,14 @@ static bool poll_input(void *ctx, JelliInput *input)
         }
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
             /* SDL's logical-size renderer transforms mouse events for us. */
-            *input = (JelliInput){JELLI_TAP, event.button.x, event.button.y};
+            jelli_gesture_begin(&d->gesture, event.button.x, event.button.y);
+        }
+        if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT &&
+            jelli_gesture_end(&d->gesture, event.button.x, event.button.y, input)) {
             return true;
+        }
+        if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+            d->gesture.active = false;
         }
     }
     return false;

@@ -35,7 +35,7 @@
 </form><small>Needs and bond: 0–100. Food and gifts: 0–20. Changes are logged as Debug events.</small></details>
 <script>
 const $ = id => document.getElementById(id);
-const actions = ['Feed','Care menu','Rest / wake','Pets menu','Gifts menu','Settings menu','Basic care','Play','Clean / wake','Home','Give gift','Claim reward','Travel','Switch pet','Change bedtime','Save','Moments menu','Breakfast','Tea','Going out','Movie','Suggested moment','Health menu','Brush teeth','Medicine','Shot','Wash','Stretch','Open menu','Close menu','Back','View stat'];
+const actions = ['Feed','Care menu','Rest / wake','Pets menu','Gifts menu','Settings menu','Basic care','Play','Clean / wake','Home','Give gift','Claim reward','Travel','Switch pet','Change bedtime','Save','Moments menu','Breakfast','Tea','Going out','Movie','Suggested moment','Health menu','Brush teeth','Medicine','Shot','Wash','Stretch','Open menu','Close menu','Back','View stat','Pet touch','Clock settings','Timezone −','Timezone +','Hour −','Hour +','Minute −','Minute +'];
 const commands = ['Feed','Play','Clean','Basic care','Rest','Wake','Give gift','Claim reward','Switch pet','Travel','Change bedtime','Moment','Healthy activity','Pet touch'];
 const healthActions = ['Brush teeth','Medicine','Shot','Wash','Stretch','Floss','Mouthwash','Spit','Clean up'];
 const activities = ['Idle','Eating','Playing','Cleaning','Recovering','Giving a gift'];
@@ -54,7 +54,7 @@ function title(e) {
 }
 function category(e) {
     if(e.kind===4)return 'Debug';
-    if (e.kind===1) return 'Navigation';
+    if (e.kind===1) return e.code>=33 ? 'Settings' : 'Navigation';
     if (e.kind===3) return 'State';
     if (e.kind===2) return e.code===5 ? 'Gifts' : e.code===2 ? 'Moments' : 'Care';
     return ['Care','Moments','Care','Care','Sleep','Sleep','Gifts','Gifts','Pet','Pet','Settings','Moments','Care','Touch'][e.code] || 'State';
@@ -146,10 +146,10 @@ function updateState(v,buttons) {
     const signature=JSON.stringify(buttons);
     if(signature===lastButtons)return;
     lastButtons=signature;$('controls').replaceChildren();
-    for(const b of buttons){const button=el('button',b.label);button.onclick=async()=>{
+    for(const b of buttons){const button=el('button',b.label);button.disabled=b.enabled===false;button.onclick=async()=>{
         button.disabled=true;
         try{const r=await fetch('/api/press',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({button:b.label})});const data=await r.json();if(!r.ok)throw Error(data.error);}
-        catch(e){$('status').textContent=e.message;}finally{button.disabled=false;}
+        catch(e){$('status').textContent=e.message;}finally{button.disabled=b.enabled===false;}
     };$('controls').append(button);}
 }
 $('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume feed':'Pause feed';$('pause').setAttribute('aria-pressed',String(paused));if(!paused)render();};

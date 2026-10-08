@@ -172,6 +172,8 @@ def main():
         commands.add_parser(name)
     press = commands.add_parser("press")
     press.add_argument("button", help="Current label (quote spaces) or index 0–6")
+    swipe = commands.add_parser("swipe")
+    swipe.add_argument("direction", choices=("up", "down", "left", "right"))
     tap = commands.add_parser("tap")
     tap.add_argument("x", type=int, choices=range(466), metavar="X[0..465]")
     tap.add_argument("y", type=int, choices=range(466), metavar="Y[0..465]")
@@ -245,6 +247,8 @@ def main():
         elif args.command == "sound":
             cue = ("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo").index(args.cue)
             result = client.request(f"sound {cue} {args.volume}")
+        elif args.command == "swipe":
+            result = client.request(f"swipe {('up', 'down', 'left', 'right').index(args.direction)}")
         elif args.command == "tap":
             result = client.request(f"tap {args.x} {args.y}")
         else:

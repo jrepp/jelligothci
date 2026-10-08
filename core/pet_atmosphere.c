@@ -13,10 +13,7 @@ uint16_t jelli_pet_night_color(uint16_t color, uint8_t night)
 void jelli_pet_atmosphere(JelliPetUi *ui, const JelliPet *pet, uint64_t time,
                           JelliPetRenderKey *view)
 {
-    unsigned minute = ui->clock_known
-                          ? ui->clock_minute
-                          : (unsigned)((pet->ticks % JELLI_DAY_TICKS + pet->phase_offset) %
-                                       JELLI_DAY_TICKS / 600u);
+    unsigned minute = jelli_pet_clock_minute(ui, pet);
     uint8_t target = minute >= 1200u || minute < 360u ? 255u : 0u;
     if (!ui->atmosphere_ready) {
         ui->night_from = target;

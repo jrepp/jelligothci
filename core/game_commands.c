@@ -343,3 +343,12 @@ JelliResult jelli_game_command(JelliGame *game, JelliCommand command)
                     &game->pets[game->active], before);
     return result;
 }
+
+JelliResult jelli_game_check(const JelliGame *game, JelliCommand command, JelliGame *scratch)
+{
+    if (!game || !scratch || game == scratch)
+        return JELLI_INVALID_TARGET;
+    *scratch = *game;
+    scratch->events = NULL;
+    return command_impl(scratch, command);
+}

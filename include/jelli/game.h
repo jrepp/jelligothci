@@ -96,6 +96,9 @@ typedef struct {
 
 /* Caller-owned state. No clock, allocation, IO, or SDK dependencies. */
 void jelli_game_init(JelliGame *game);
+/* Caller-owned scratch must differ from game. Runs the real validation/dispatch
+ * on a copy without events, preferences, or changes to the live game. */
+JelliResult jelli_game_check(const JelliGame *game, JelliCommand command, JelliGame *scratch);
 unsigned jelli_pet_shot_goal(const JelliPet *pet);
 bool jelli_pet_health_ready(const JelliPet *pet, unsigned activity);
 unsigned jelli_pet_mood(const JelliPet *pet);

@@ -33,11 +33,20 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         wire = connect(path, app)
         debug = module.Client(wire)
         assert debug.state()["visual"]["page"] == "home"
-        debug.press("MENU")
+        debug.request("swipe 2")
+        assert debug.state()["visual"]["stat_index"] == 1
+        debug.request("swipe 3")
+        assert debug.state()["visual"]["stat_index"] == 0
+        debug.request("swipe 0")
         debug.press("CARE")
         assert debug.state()["visual"]["page"] == "care"
         debug.press("BACK")
         debug.press("SETTINGS")
+        debug.press("CLOCK")
+        minute = debug.state()["visual"]["clock_minute"]
+        debug.press("HR +")
+        assert debug.state()["visual"]["clock_minute"] == (minute + 60) % 1440
+        debug.request("swipe 1")
         debug.press("REST")
         assert debug.state()["visual"]["asleep"]
         output = Path(directory) / "screen.png"

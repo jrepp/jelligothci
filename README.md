@@ -619,3 +619,25 @@ to settle. Shots take 1–3 taps, medicine one small dose; each has a per-pet ho
 cooldown. Shot progress survives menu changes. The desktop checkpoint codec now
 writes version 2, migrates version 1, and rejects future versions without replacing
 them. Device checkpoints and portable pet-memory import are still planned.
+
+Touch navigation: swipe up to open the menu; swipe down to go back one level
+(or close the main ring). Swipe left/right on the main scene to select Mood,
+Fullness, Energy, Hygiene, Play, or Social. The selected stat stays put. Desktop
+mouse drags use the same recognizer: taps commit on release, swipes need 48 pixels
+and a clear dominant axis, and ambiguous drags do nothing.
+`./scripts/jelli-debug --socket build/pet.sock swipe left` exercises the same UI
+navigation over the debug interface; `up`, `down`, and `right` are also supported.
+
+Settings shows a smaller clock face with a gear button. Tap the gear for distinct
+TZ −/+, HR −/+, and MIN −/+ controls; Back returns to Settings. TZ changes a
+session offset relative to the host local clock (or the simulated pet clock on
+ESP32) in 30-minute steps, bounded to −12/+14 hours. Hour and minute adjustments
+wrap at midnight. These affect the display, atmosphere, and moment suggestions;
+they do not set the hardware RTC or persist across restarts yet. The sleep button
+has an ON/OFF badge showing actual sleep state. Menu movement uses a short
+acceleration followed by a long integer ease-out, with no extra frame buffers.
+
+Timed activity buttons carry a play badge and return to the pet scene when
+started. Unavailable actions are dimmed using the same game rules as execution;
+they produce no celebration or state change. The debug console also disables
+those buttons. Settings shows the VERSION-derived build number in large text.

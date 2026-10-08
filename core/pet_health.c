@@ -5,6 +5,8 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
 {
     if (!ui || !button)
         return false;
+    if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot && (ui->clock_edit || slot == 4u))
+        return jelli_pet_clock_button(ui->clock_edit, slot, button);
     if (ui->page == JELLI_UI_HEALTH && ((slot == 2u && (ui->last_view.care_blocked & 1u)) ||
                                         (slot == 3u && (ui->last_view.care_blocked & 2u))))
         return false;
@@ -106,7 +108,14 @@ void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game)
         game, (JelliCommand){JELLI_CMD_HEALTH, ui->clicker_pet, jelli_pet_health_action(ui)});
     if (ui->result == JELLI_OK) {
         ++ui->clicker_hits;
-        if (ui->clicker_hits >= ui->clicker_goal) {
+        JelliCommand next = {JELLI_CMD_HEALTH, ui->clicker_pet, jelli_pet_health_action(ui)};
+        bool satisfied = ui->page == JELLI_UI_BRUSH &&
+                         jelli_game_check(game, next, &ui->action_scratch) == JELLI_FULL;
+        if (satisfied) {
+            /* End gently when care has reached its cap; never strand a half-finished routine. */
+            ui->clicker_goal = ui->clicker_hits;
+            ui->clicker_done = true;
+        } else if (ui->clicker_hits >= ui->clicker_goal) {
             if (ui->page == JELLI_UI_BRUSH && ui->clicker_stage < 5u) {
                 ++ui->clicker_stage;
                 ui->clicker_hits = 0u;
@@ -122,6 +131,10 @@ void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game)
 
 void jelli_pet_ui_back(JelliPetUi *ui)
 {
+    if (ui->menu_open && ui->clock_edit) {
+        ui->clock_edit = false;
+        return;
+    }
     if (ui->menu_open && ui->page >= JELLI_UI_BRUSH)
         ui->page = JELLI_UI_HEALTH;
     else if (ui->menu_open && ui->page == JELLI_UI_HEALTH)

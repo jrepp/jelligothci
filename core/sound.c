@@ -87,7 +87,8 @@ static int16_t sample(JelliSynth *s)
     int32_t envelope = (int32_t)(attack < release ? attack : release);
     int32_t raw = oscillator(s, n) * 6000 / 32768;
     s->dc += (raw - s->dc) / 128;
-    int32_t value = (raw - s->dc) * envelope / 256;
+    /* Pause notes stay silent while the DC filter continues to settle. */
+    int32_t value = n->start_hz ? (raw - s->dc) * envelope / 256 : 0;
     if (++s->position >= s->length) {
         ++s->note;
         s->position = 0;

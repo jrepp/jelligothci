@@ -108,6 +108,35 @@ static void test_cached_centroid(void)
     }
 }
 
+static void test_activity_reaction_priority(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
+    JelliPet *pet = &game.pets[0];
+    for (unsigned form = 0u; form < 2u; ++form) {
+        pet->form = (uint8_t)form;
+        for (uint8_t reaction = 1u; reaction <= 3u; ++reaction) {
+            pet->reaction = reaction;
+            pet->reaction_ticks = 30u;
+            pet->activity = JELLI_EATING;
+            jelli_pet_render(&surface, &game, &ui, 0u, false);
+            CHECK(ui.actor_frame == jelli_asset_find(1003u + form * 6u));
+            pet->activity = JELLI_PLAYING;
+            jelli_pet_render(&surface, &game, &ui, 0u, false);
+            CHECK(ui.actor_frame == jelli_asset_find(1004u + form * 6u));
+            pet->activity = JELLI_GIVING;
+            jelli_pet_render(&surface, &game, &ui, 0u, false);
+            CHECK(ui.actor_frame == jelli_asset_find(1004u + form * 6u));
+            pet->activity = JELLI_IDLE;
+            jelli_pet_render(&surface, &game, &ui, 0u, false);
+            CHECK(ui.actor_frame == jelli_asset_find((reaction == 1u ? 1004u : 1006u) + form * 6u));
+        }
+    }
+}
+
 static void test_atmosphere_and_sound(void)
 {
     JelliGame g;
@@ -227,6 +256,7 @@ static void test_health_cooldowns(void)
 
 int main(void)
 {
+    test_activity_reaction_priority();
     test_health_cooldowns();
     test_idle_coos();
     test_routine_tuning();

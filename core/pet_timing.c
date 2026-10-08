@@ -3,17 +3,25 @@
 static void ring_phase(const JelliPetUi *ui, JelliPetRenderKey *view, uint64_t elapsed,
                        uint64_t duration, bool target)
 {
-    bool swap = ui->ring_from_open && target;
+    bool swap = ui->ring_from_open && target &&
+                (ui->ring_from_page != ui->page || ui->ring_from_clock_edit != ui->clock_edit);
     uint64_t phase_duration = swap ? duration / 2u : duration;
     if (phase_duration == 0u)
         return;
-    bool leaving = ui->ring_from_open && (!target || elapsed < phase_duration);
+    bool leaving = ui->ring_from_open && (!target || (swap && elapsed < phase_duration));
     uint64_t phase_time = swap && !leaving ? elapsed - phase_duration : elapsed;
     unsigned linear = (unsigned)(phase_time * 255u / phase_duration);
-    unsigned eased = 255u - (255u - linear) * (255u - linear) / 255u;
+    /* Brief ease-in (first 1/16), then a quartic tail: ~75% travel by 30% time.
+     * Integer arithmetic keeps the final pixel holds stable on the native panel. */
+    unsigned progress = linear < 16u ? linear * linear / 32u : linear - 8u;
+    unsigned remaining = 255u - progress * 255u / 247u;
+    unsigned square = remaining * remaining / 255u;
+    unsigned eased = 255u - square * square / 255u;
+    view->ring_clock_edit = leaving ? ui->ring_from_clock_edit : ui->clock_edit;
     view->ring_page = leaving ? ui->ring_from_page : (uint8_t)ui->page;
+    unsigned start = swap ? 0u : ui->ring_from_visible;
     view->ring_visible = (uint8_t)(leaving  ? ui->ring_from_visible * (255u - eased) / 255u
-                                   : target ? eased
+                                   : target ? start + (255u - start) * eased / 255u
                                             : 0u);
     view->ring_moving = true;
 }
@@ -22,11 +30,13 @@ static void ring_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, Jell
 {
     bool target = ui->menu_open && ui->page < JELLI_UI_BRUSH;
     bool changed = ui->rendered &&
-                   (ui->menu_open != ui->last_view.menu_open || ui->page != ui->last_view.page);
+                   (ui->menu_open != ui->last_view.menu_open || ui->page != ui->last_view.page ||
+                    ui->clock_edit != ui->last_view.clock_edit);
     if (changed) {
         ui->ring_anchor_ms = time;
         ui->ring_started = true;
         ui->ring_from_page = ui->last_view.ring_page;
+        ui->ring_from_clock_edit = ui->last_view.ring_clock_edit;
         ui->ring_from_visible = ui->last_view.ring_visible;
         ui->ring_from_open = ui->last_view.ring_visible > 0u;
     }
@@ -36,6 +46,7 @@ static void ring_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, Jell
     if (duration < 2u)
         duration = 2u;
     uint64_t elapsed = time >= ui->ring_anchor_ms ? time - ui->ring_anchor_ms : duration;
+    view->ring_clock_edit = ui->clock_edit;
     view->ring_page = (uint8_t)ui->page;
     view->ring_visible = target ? 255u : 0u;
     if (!ui->rendered || !ui->ring_started || elapsed >= duration) {
@@ -71,7 +82,7 @@ void jelli_pet_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliP
         pose = 0u; /* Some cycles stay quiet instead of repeating every gesture. */
     view->phase = pet->activity == JELLI_IDLE && !pet->asleep ? pose : 0u;
     ring_timing(ui, pet, time, view);
-    /* One stable mood tile; legacy carousel tunables remain wire-compatible. */
-    view->stat_index = 0u;
+    /* Manual pages only: never slide or wrap a tile automatically. */
+    view->stat_index = (uint8_t)(ui->stat_offset % 6u);
     view->tile_phase = 0u;
 }

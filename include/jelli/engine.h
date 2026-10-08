@@ -24,10 +24,10 @@ typedef struct {
     JelliRect damage;
 } JelliSurface;
 
-typedef enum { JELLI_TAP, JELLI_TOGGLE_PAUSE, JELLI_QUIT } JelliInputKind;
+typedef enum { JELLI_TAP, JELLI_TOGGLE_PAUSE, JELLI_QUIT, JELLI_SWIPE } JelliInputKind;
 typedef struct {
     JelliInputKind kind;
-    int x, y;
+    int x, y; /* TAP: position; SWIPE: signed displacement in surface pixels. */
 } JelliInput;
 
 /* All callbacks execute on the engine's calling thread.

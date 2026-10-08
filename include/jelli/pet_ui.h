@@ -81,7 +81,9 @@ typedef struct {
 typedef struct {
     uint32_t phase;
     uint8_t night, mood, reaction, care_blocked, ring_page, ring_visible;
-    bool ring_moving;
+    bool ring_moving, clock_edit, ring_clock_edit;
+    uint8_t unavailable;
+    int16_t timezone_minutes;
     uint16_t tile_phase;
     uint8_t stat_index;
     uint8_t clicker_hits, clicker_goal, clicker_stage;
@@ -119,6 +121,7 @@ typedef struct {
 typedef struct {
     /* Borrowed immutable metadata; no runtime alpha scans or allocation. */
     const JelliAsset *actor_frame;
+    JelliGame action_scratch; /* Fixed preflight workspace; never placed on the ESP task stack. */
     uint64_t tile_anchor_ms, idle_anchor_ms, last_animation_phase, last_pet_ticks;
     uint64_t last_sound_ms, coo_anchor_ms, night_anchor_ms, sleep_emit_ms, ring_anchor_ms;
     JelliPetRenderKey last_view;
@@ -136,7 +139,8 @@ typedef struct {
     uint8_t tuning_form;
     bool tile_reset;
     uint8_t last_page, ring_from_page, ring_from_visible;
-    bool ring_from_open, ring_started;
+    bool ring_from_open, ring_started, clock_edit, ring_from_clock_edit;
+    int16_t timezone_minutes, clock_adjust;
     bool save_requested, time_unavailable;
     uint8_t save_status;
     bool rendered, menu_open, clock_known;
@@ -152,6 +156,9 @@ void jelli_pet_ui_init(JelliPetUi *ui);
 JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep);
 bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool menu_open,
                          JelliPetUiButton *button);
+bool jelli_pet_ring_button(const JelliPetUi *ui, unsigned slot, bool asleep,
+                           JelliPetUiButton *button);
+bool jelli_pet_ui_starts(unsigned page, unsigned slot);
 bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
                           JelliPetUiButton *button);
 bool jelli_pet_health_select(JelliPetUi *ui, const JelliGame *game, JelliPetUiAction action);
@@ -165,6 +172,13 @@ unsigned jelli_pet_ui_sound(JelliPetUi *ui, const JelliPet *pet, uint64_t now_ms
 unsigned jelli_pet_stat_score(uint16_t value);
 unsigned jelli_pet_moment(const JelliPet *pet);
 unsigned jelli_pet_suggested_moment(const JelliPet *pet, const JelliPetUi *ui);
+bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetUiAction action,
+                          JelliCommand *command);
+JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsigned slot);
+uint16_t jelli_pet_clock_minute(const JelliPetUi *ui, const JelliPet *pet);
+bool jelli_pet_clock_button(bool editing, unsigned slot, JelliPetUiButton *button);
+void jelli_pet_clock_action(JelliPetUi *ui, unsigned slot);
+void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy);
 void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y);
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
                       uint64_t animation_ms, bool paused);

@@ -132,3 +132,78 @@ but the Linux SDL build caught an integer-promotion warning in screenshot hex
 encoding. Casting RGB565 to uint32 before shifting resolves the GCC sign warning
 without weakening diagnostics. This follow-up is separate from the flashed
 gameplay/visual changes. Windows packaging awaits a successful release workflow.
+
+# Swipe and clock follow-up
+
+Added a shared, allocation-free press/release recognizer to SDL and ESP32. It
+uses three scalar fields (12 bytes on these hosts) per host, lives on the input
+thread/LVGL task, and sends the existing bounded queue one tap or swipe on
+release. Canvas scrolling is disabled so LVGL does not claim game swipes.
+Invalid endpoints, ambiguous diagonals, and intermediate drags are dropped.
+Up opens; down backs out one level; horizontal swipes select six fixed stat
+pages without automatic movement. The debug protocol and CLI expose the same
+four directions. A cancelled press cannot produce a later tap.
+
+The gear has six broad teeth, a small hub, and one highlight. The settings clock
+is smaller and its own gear opens six explicit timezone/hour/minute controls.
+Sleep has a visible ON/OFF badge. Clock adjustments are session offsets from
+host-local or simulated time, not a hardware RTC write or saved device setting.
+Timezone increments are 30 minutes with −12/+14 hour bounds; hour/minute edits
+wrap at midnight. The clock edit view has its own Back step and debug fields.
+This is a scoped navigation improvement; collectible/gift and contextual food
+flows in RFC-002 remain future work.
+
+Menu motion has a brief ease-in followed by a quartic ease-out: roughly 75% of
+travel occurs in the first 30% of each phase; the remaining time settles onto
+integer pixels. Both entry and exit use that timing, preserving current-position
+retargeting. No new framebuffer, dynamic allocation, or particle pool was added.
+
+Small Sol-agent review fixes: active eating/play/gift poses take priority over
+lingering touch reactions; intentional sound-note pauses now output zero PCM.
+Review also caught oversized clock-gear hit testing, same-page transition reversal,
+and menus freezing while paused. Bounds-based hit tests, current-position
+retargeting, and immediate paused navigation now cover those cases. Dental
+routines finish early if their care benefits are already full, avoiding a stuck
+half-completed routine.
+
+Action availability uses the actual command implementation on a fixed caller-owned
+scratch game, with events detached; it never mutates the live pet or emits preview
+events. Disabled buttons are dimmed and exposed as disabled in the debug console.
+Activity-start buttons have play badges, and successful timed actions return to
+the pet scene. Settings displays the build's VERSION-derived release number in
+large text; this number does not imply that uncommitted changes were released.
+The small green clock label and save-status caption were removed/replaced.
+
+The preflight workspace is capped at 1280 bytes by a compile-time assertion
+(1272 bytes measured on macOS); total desktop UI state is 2384 bytes and engine
+state is 5816 bytes. It is engine-owned, not an ESP task-stack temporary. The
+existing framebuffer count and 127904-byte raw artwork payload are unchanged.
+
+Follow-up validation: desktop 23/23, portable core 10/10, ASan/UBSan 23/23,
+C analysis/format/size checks (83 files), artwork validation, docs check/fix,
+and ESP32 compilation passed. External desktop CLI verified swipes, fixed stat
+selection, clock edits, timed activity return, and disabled button state;
+Settings/clock/activity/disabled snapshots were visually inspected. UI tests
+cover same-position transition reversal, paused navigation, timezone bounds,
+midnight wrap, and input bounds. Actual physical touch feel remains unverified.
+
+Flashed this follow-up to rediscovered USB VID:PID 303A:1001, verified transfer
+hashes and startup. Image is 815408 bytes (233168 bytes free in the app partition),
+SHA-256 `32a92a7a438d8fc4e1ec3f2f3dbadf6bd0903872f5e630690a4570ac237d1e91`.
+Startup reported app 0.1.1 / IDF 5.5.5, ELF prefix `b1adaa3a9`, PSRAM memory test
+OK, display and CST9217 touch ready, audio mono PCM16 22050 Hz, and debug ready.
+The LVGL built-in gesture warning is expected: this implementation uses ordinary
+press/release pointer events with its own shared recognizer. Sound heap delta
+is 6788 bytes, free internal heap 253031. One changed frame sampled render 110 ms
+and present 100 ms; ordinary engine updates 50–57 Hz, not panel FPS.
+USB debug reached Settings and Clock, then returned to the closed main scene.
+An immediate horizontal command during the closing transition was ignored by
+the transition guard; settled horizontal navigation is desktop-tested. The
+viewer reconnected on loopback 8766. Physical display/touch/audio remain separate
+user checks.
+
+Release workflow follow-up: Linux validation, all core platforms, and Windows
+packaging passed run 37734291508, but macOS `debug_local` exceeded its 40-second
+limit before publication. The exact stalled stage is not yet established;
+466 sequential screenshot requests and paced request/reply frames are a latency
+candidate. No tagged download release has been published for this slice yet.

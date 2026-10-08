@@ -15,14 +15,22 @@ static size_t buttons(char *out, size_t capacity, const JelliPetUi *ui)
             continue;
         int size =
             snprintf(out + used, capacity - used,
-                     "%s{\"id\":%u,\"label\":\"%s\",\"x\":%u,\"y\":%u,\"icon\":%u}",
+                     "%s{\"id\":%u,\"label\":\"%s\",\"x\":%u,\"y\":%u,\"icon\":%u,\"enabled\":%s}",
                      used ? "," : "", i, button.label, button.bounds.x + button.bounds.width / 2u,
-                     button.bounds.y + button.bounds.height / 2u, (unsigned)button.icon);
+                     button.bounds.y + button.bounds.height / 2u, (unsigned)button.icon,
+                     (ui->last_view.unavailable & (1u << i)) ? "false" : "true");
         if (size < 0 || (size_t)size >= capacity - used)
             return 0;
         used += (size_t)size;
     }
     return used;
+}
+
+static unsigned stat_score(const JelliPetRenderKey *view)
+{
+    return view->stat_index
+               ? jelli_pet_stat_score(view->needs[(view->stat_index - 1u) % JELLI_NEED_COUNT])
+               : view->mood;
 }
 
 void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id)
@@ -40,7 +48,8 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
         "\"clicker_hits\":%u,\"clicker_goal\":%u,\"clicker_stage\":%u,\"clicker_done\":%s,"
         "\"health\":%u,\"activity\":%u,\"asleep\":%s,\"animation_phase\":"
         "%" PRIu32 ","
-        "\"clock_known\":%s,\"clock_minute\":%u,\"menu_open\":%s,\"stat_index\":%u,\"stat_score\":%"
+        "\"clock_edit\":%s,\"timezone_minutes\":%d,\"clock_known\":%s,\"clock_minute\":%u,\"menu_"
+        "open\":%s,\"stat_index\":%u,\"stat_score\":%"
         "u,\"tile_phase\":%u,\"paused\":%s,\"resuming\":%s,\"time_"
         "unavailable\":%s,\"save_status\":%u,"
         "\"result\":\"%s\",\"day\":%" PRIu64 ",\"minute\":%" PRIu32 ","
@@ -54,8 +63,9 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
         (unsigned)v->form, (unsigned)v->location, (unsigned)v->clicker_hits,
         (unsigned)v->clicker_goal, (unsigned)v->clicker_stage, v->clicker_done ? "true" : "false",
         (unsigned)v->health, (unsigned)v->activity, v->asleep ? "true" : "false", v->phase,
+        v->clock_edit ? "true" : "false", (int)v->timezone_minutes,
         v->clock_known ? "true" : "false", (unsigned)v->clock_minute,
-        v->menu_open ? "true" : "false", (unsigned)v->stat_index, (unsigned)v->mood,
+        v->menu_open ? "true" : "false", (unsigned)v->stat_index, stat_score(v),
         (unsigned)v->tile_phase, v->paused ? "true" : "false", v->resuming ? "true" : "false",
         v->time_unavailable ? "true" : "false", (unsigned)v->save_status,
         jelli_game_result_name(v->result), v->day, v->minute, (unsigned)v->needs[0],

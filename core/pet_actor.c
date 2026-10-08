@@ -7,13 +7,14 @@ static uint32_t frame_id(const JelliPetRenderKey *v)
         return base + 5u;
     if (v->health == JELLI_UNWELL || v->health == JELLI_RECOVERING)
         return base + 6u;
-    if (v->reaction >= 2u)
-        return base + 6u;
-    if (v->reaction == 1u)
-        return base + 4u;
+    /* Keep care feedback visible even when a recent touch reaction is active. */
     if (v->activity == JELLI_EATING)
         return base + 3u;
     if (v->activity == JELLI_PLAYING || v->activity == JELLI_GIVING)
+        return base + 4u;
+    if (v->reaction >= 2u)
+        return base + 6u;
+    if (v->reaction == 1u)
         return base + 4u;
     if (v->phase >= 2u)
         return 1021u + (v->form ? 2u : 0u) + (v->phase == 3u ? 1u : 0u);

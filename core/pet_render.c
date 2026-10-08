@@ -11,14 +11,29 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     uint64_t day_phase =
         (pet->ticks % JELLI_DAY_TICKS + pet->phase_offset % JELLI_DAY_TICKS) % JELLI_DAY_TICKS;
     jelli_pet_timing(ui, pet, animation_ms, &key);
+    if (paused) {
+        /* Pausing the pet must not strand navigation behind a frozen transition. */
+        key.ring_visible = ui->menu_open && ui->page < JELLI_UI_BRUSH ? 255u : 0u;
+        key.ring_page = (uint8_t)ui->page;
+        key.ring_clock_edit = ui->clock_edit;
+        key.ring_moving = false;
+        ui->ring_started = false;
+    }
     jelli_pet_atmosphere(ui, pet, animation_ms, &key);
     key.menu_open = ui->menu_open;
+    if (ui->menu_open) {
+        for (unsigned slot = 1; slot <= 6u; ++slot)
+            if (jelli_pet_ui_available(ui, game, slot) != JELLI_OK)
+                key.unavailable |= (uint8_t)(1u << slot);
+    }
     key.clicker_hits = ui->clicker_hits;
     key.clicker_goal = ui->clicker_goal;
     key.clicker_stage = ui->clicker_stage;
     key.clicker_done = ui->clicker_done;
     key.clock_known = ui->clock_known;
-    key.clock_minute = ui->clock_minute;
+    key.clock_minute = jelli_pet_clock_minute(ui, pet);
+    key.clock_edit = ui->clock_edit;
+    key.timezone_minutes = ui->timezone_minutes;
     key.minute = (uint32_t)(day_phase / 600u);
     key.day =
         pet->ticks / JELLI_DAY_TICKS +
@@ -63,7 +78,9 @@ static bool same_activity_key(const JelliPetRenderKey *a, const JelliPetRenderKe
 
 static bool same_ring_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->ring_page == b->ring_page && a->ring_visible == b->ring_visible &&
+    return a->unavailable == b->unavailable && a->ring_page == b->ring_page &&
+           a->ring_visible == b->ring_visible && a->clock_edit == b->clock_edit &&
+           a->ring_clock_edit == b->ring_clock_edit && a->timezone_minutes == b->timezone_minutes &&
            a->ring_moving == b->ring_moving && a->care_blocked == b->care_blocked;
 }
 

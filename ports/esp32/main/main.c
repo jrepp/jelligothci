@@ -1,3 +1,4 @@
+#include "jelli/gesture.h"
 #include "jelli/pet_engine.h"
 #include "debug_wire.h"
 #include "sound_output.h"
@@ -14,6 +15,7 @@
 enum { FRAME_MS = 16 };
 
 typedef struct {
+    JelliGesture gesture;
     lv_obj_t *canvas;
     uint16_t *canvas_pixels;
     QueueHandle_t input;
@@ -38,9 +40,17 @@ static void touch_event(lv_event_t *event)
         return;
     lv_point_t point;
     lv_indev_get_point(device, &point);
-    JelliInput input = {JELLI_TAP, point.x, point.y};
-    /* The LVGL task produces events; the engine task consumes them. */
-    (void)xQueueSend(b->input, &input, 0);
+    lv_event_code_t code = lv_event_get_code(event);
+    if (code == LV_EVENT_PRESSED)
+        jelli_gesture_begin(&b->gesture, point.x, point.y);
+    else if (code == LV_EVENT_PRESS_LOST)
+        b->gesture.active = false;
+    else if (code == LV_EVENT_RELEASED) {
+        JelliInput input;
+        /* The LVGL task produces events; the engine task consumes them. */
+        if (jelli_gesture_end(&b->gesture, point.x, point.y, &input))
+            (void)xQueueSend(b->input, &input, 0);
+    }
 }
 static void present(void *ctx, const JelliSurface *surface)
 {
@@ -126,8 +136,11 @@ void app_main(void)
     lv_canvas_set_buffer(board.canvas, board.canvas_pixels, JELLI_WIDTH, JELLI_HEIGHT,
                          LV_COLOR_FORMAT_RGB565);
     lv_obj_center(board.canvas);
+    lv_obj_remove_flag(board.canvas, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(board.canvas, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(board.canvas, touch_event, LV_EVENT_PRESSED, &board);
+    lv_obj_add_event_cb(board.canvas, touch_event, LV_EVENT_RELEASED, &board);
+    lv_obj_add_event_cb(board.canvas, touch_event, LV_EVENT_PRESS_LOST, &board);
     bsp_display_unlock();
     ESP_ERROR_CHECK(bsp_display_brightness_set(60));
 
