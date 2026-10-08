@@ -41,8 +41,11 @@ void jelli_pet_clock_action(JelliPetUi *ui, unsigned slot)
         ui->clock_edit = true;
     } else if (slot <= 2u) {
         int zone = ui->timezone_minutes + (slot == 1u ? -30 : 30);
-        if (zone >= -720 && zone <= 840)
-            ui->timezone_minutes = (int16_t)zone;
+        if (zone < -720 || zone > 840) {
+            ui->result = JELLI_NOT_READY;
+            return;
+        }
+        ui->timezone_minutes = (int16_t)zone;
     } else {
         int delta = slot <= 4u ? 60 : 1;
         int adjusted = ui->clock_adjust + (slot % 2u ? -delta : delta);

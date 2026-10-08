@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+exec "$repo_dir/scripts/uv" run --python 3.12 "$repo_dir/tools/assets/live_assets.py" "$@"

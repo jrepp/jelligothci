@@ -2,12 +2,14 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+static const char *truth(bool value) { return value ? "true" : "false"; }
+
 static size_t buttons(char *out, size_t capacity, const JelliPetUi *ui)
 {
     if (ui->last_view.page >= JELLI_UI_PAGE_COUNT)
         return 0;
     size_t used = 0;
-    for (unsigned i = 0; i <= 6u; ++i) {
+    for (unsigned i = 0; i <= JELLI_PRIZE_COUNT; ++i) {
         if (i && ui->last_view.ring_moving)
             continue;
         JelliPetUiButton button;
@@ -28,9 +30,26 @@ static size_t buttons(char *out, size_t capacity, const JelliPetUi *ui)
 
 static unsigned stat_score(const JelliPetRenderKey *view)
 {
-    return view->stat_index
-               ? jelli_pet_stat_score(view->needs[(view->stat_index - 1u) % JELLI_NEED_COUNT])
-               : view->mood;
+    return jelli_pet_stat_score(view->stat_value);
+}
+
+static size_t collection(char *out, size_t capacity, const JelliPetRenderKey *v)
+{
+    unsigned owned = 0u;
+    for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+        if (v->prize_owned & (1u << i))
+            ++owned;
+    const uint32_t *origins = v->prize_origins;
+    int size = snprintf(
+        out, capacity,
+        ",\"collection\":{\"owned_count\":%u,\"owned_mask\":%u,\"discovered_mask\":%u,"
+        "\"offered\":%u,\"held\":%u,\"highlighted\":%u,\"origin_pet\":["
+        "%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ","
+        "%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 "]}},\"buttons\":[",
+        owned, (unsigned)v->prize_owned, (unsigned)v->prize_discovered, (unsigned)v->offered_prize,
+        (unsigned)v->latched_prize, (unsigned)v->highlighted_prize, origins[0], origins[1],
+        origins[2], origins[3], origins[4], origins[5], origins[6], origins[7], origins[8]);
+    return size < 0 || (size_t)size >= capacity ? 0u : (size_t)size;
 }
 
 void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id)
@@ -50,34 +69,36 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
         "%" PRIu32 ","
         "\"clock_edit\":%s,\"timezone_minutes\":%d,\"clock_known\":%s,\"clock_minute\":%u,\"menu_"
         "open\":%s,\"stat_index\":%u,\"stat_score\":%"
-        "u,\"tile_phase\":%u,\"paused\":%s,\"resuming\":%s,\"time_"
+        "u,\"reward_active\":%s,\"reward_index\":%u,\"tile_phase\":%u,\"paused\":%s,\"resuming\":%"
+        "s,\"time_"
         "unavailable\":%s,\"save_status\":%u,"
         "\"result\":\"%s\",\"day\":%" PRIu64 ",\"minute\":%" PRIu32 ","
         "\"needs\":[%u,%u,%u,%u,%u],\"bond\":%u,\"food\":%u,\"gifts\":%u,"
         "\"reward_pending\":%s,\"reward_claimed\":%s,\"bedtime\":%u,"
         "\"active_slot\":%u,\"pet_count\":%u,\"stored_id\":%" PRIu32
-        ",\"stored_form\":%u,\"stored_asleep\":%s,\"mood\":%u,\"reaction\":%u,\"night\":%u},"
-        "\"buttons\":[",
-        id, debug->captured ? debug->capture_id : 0u, engine->ui.rendered ? "true" : "false",
-        v->ring_moving ? "true" : "false", engine->game.ticks, page, v->active_id,
-        (unsigned)v->form, (unsigned)v->location, (unsigned)v->clicker_hits,
-        (unsigned)v->clicker_goal, (unsigned)v->clicker_stage, v->clicker_done ? "true" : "false",
-        (unsigned)v->health, (unsigned)v->activity, v->asleep ? "true" : "false", v->phase,
-        v->clock_edit ? "true" : "false", (int)v->timezone_minutes,
-        v->clock_known ? "true" : "false", (unsigned)v->clock_minute,
-        v->menu_open ? "true" : "false", (unsigned)v->stat_index, stat_score(v),
-        (unsigned)v->tile_phase, v->paused ? "true" : "false", v->resuming ? "true" : "false",
-        v->time_unavailable ? "true" : "false", (unsigned)v->save_status,
-        jelli_game_result_name(v->result), v->day, v->minute, (unsigned)v->needs[0],
-        (unsigned)v->needs[1], (unsigned)v->needs[2], (unsigned)v->needs[3], (unsigned)v->needs[4],
-        (unsigned)v->bond, (unsigned)v->food, (unsigned)v->gifts,
-        v->reward_pending ? "true" : "false", v->reward_claimed ? "true" : "false",
+        ",\"stored_form\":%u,\"stored_asleep\":%s,\"mood\":%u,\"reaction\":%u,\"night\":%u",
+        id, debug->captured ? debug->capture_id : 0u, truth(engine->ui.rendered),
+        truth(v->ring_moving), engine->game.ticks, page, v->active_id, (unsigned)v->form,
+        (unsigned)v->location, (unsigned)v->clicker_hits, (unsigned)v->clicker_goal,
+        (unsigned)v->clicker_stage, truth(v->clicker_done), (unsigned)v->health,
+        (unsigned)v->activity, truth(v->asleep), v->phase, truth(v->clock_edit),
+        (int)v->timezone_minutes, truth(v->clock_known), (unsigned)v->clock_minute,
+        truth(v->menu_open), (unsigned)v->stat_index, stat_score(v), truth(v->reward_active),
+        (unsigned)v->reward_index, (unsigned)v->tile_phase, truth(v->paused), truth(v->resuming),
+        truth(v->time_unavailable), (unsigned)v->save_status, jelli_game_result_name(v->result),
+        v->day, v->minute, (unsigned)v->needs[0], (unsigned)v->needs[1], (unsigned)v->needs[2],
+        (unsigned)v->needs[3], (unsigned)v->needs[4], (unsigned)v->bond, (unsigned)v->food,
+        (unsigned)v->gifts, truth(v->reward_pending), truth(v->reward_claimed),
         (unsigned)v->bedtime, (unsigned)v->active, (unsigned)v->count, v->stored_id,
-        (unsigned)v->stored_form, v->stored_asleep ? "true" : "false", (unsigned)v->mood,
-        (unsigned)v->reaction, (unsigned)v->night);
+        (unsigned)v->stored_form, truth(v->stored_asleep), (unsigned)v->mood, (unsigned)v->reaction,
+        (unsigned)v->night);
     if (size < 0 || (size_t)size >= sizeof(debug->reply))
         return;
     size_t used = (size_t)size;
+    size_t summary = collection(debug->reply + used, sizeof(debug->reply) - used, v);
+    if (!summary)
+        return;
+    used += summary;
     size_t extra = buttons(debug->reply + used, sizeof(debug->reply) - used, &engine->ui);
     if (!extra || used + extra + 4u >= sizeof(debug->reply))
         return;

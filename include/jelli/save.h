@@ -14,6 +14,12 @@ typedef struct {
 
 /* Explicit versioned little-endian codec; decode failure leaves output unchanged. */
 size_t jelli_save_encode(const JelliSave *save, uint8_t *bytes, size_t capacity);
+/* Convenience decoder places a full JelliSave on the calling stack. */
 bool jelli_save_decode(JelliSave *save, const uint8_t *bytes, size_t size);
+
+/* Caller-owned scratch avoids a full JelliSave on embedded task stacks.
+ * Scratch must be distinct from output and input storage; scratch may change on failure. */
+bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t size,
+                                 JelliSave *scratch);
 
 #endif

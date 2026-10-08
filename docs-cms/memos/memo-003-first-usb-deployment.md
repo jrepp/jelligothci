@@ -64,4 +64,4 @@ peripherals remain outside the MVP bring-up scope.
 # References
 
 - [Build and release validation](memo-002-build-release-and-runner-validation.md)
-- [Hardware bring-up instructions](../../README.md#hardware-bring-up)
+- [Hardware bring-up instructions](../../docs/hardware.md#hardware-bring-up)

@@ -11,4 +11,8 @@ void jelli_debug_events(JelliDebug *debug, const JelliPetEngine *engine, uint32_
                         unsigned count);
 void jelli_debug_cheat(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
                        unsigned count);
+void jelli_debug_clock(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
+                       unsigned count);
+void jelli_debug_habits(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id,
+                        const char *command, unsigned count);
 #endif

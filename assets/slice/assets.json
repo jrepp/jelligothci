@@ -1393,6 +1393,177 @@
       ],
       "form": "grown",
       "pose": "content"
+    },
+    {
+      "id": 11001,
+      "key": "prizes.butterfly",
+      "path": "prizes/butterfly.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        1,
+        1,
+        31,
+        29
+      ],
+      "purpose": "Butterfly collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11002,
+      "key": "prizes.pearl-tooth",
+      "path": "prizes/pearl-tooth.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        4,
+        3,
+        28,
+        30
+      ],
+      "purpose": "Pearl Tooth collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11003,
+      "key": "prizes.breakfast-sun",
+      "path": "prizes/breakfast-sun.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        1,
+        1,
+        31,
+        31
+      ],
+      "purpose": "Breakfast Sun collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11004,
+      "key": "prizes.tea-sprite",
+      "path": "prizes/tea-sprite.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        2,
+        31,
+        30
+      ],
+      "purpose": "Tea Sprite collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11005,
+      "key": "prizes.movie-star",
+      "path": "prizes/movie-star.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        1,
+        1,
+        31,
+        31
+      ],
+      "purpose": "Movie Star collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11006,
+      "key": "prizes.bubble-gem",
+      "path": "prizes/bubble-gem.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "purpose": "Bubble Gem collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11007,
+      "key": "prizes.moon-charm",
+      "path": "prizes/moon-charm.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        1,
+        30,
+        31
+      ],
+      "purpose": "Moon Charm collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11008,
+      "key": "prizes.rainbow-seed",
+      "path": "prizes/rainbow-seed.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        31
+      ],
+      "purpose": "Rainbow Seed collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11009,
+      "key": "prizes.friendship-bow",
+      "path": "prizes/friendship-bow.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        4,
+        30,
+        30
+      ],
+      "purpose": "Friendship Bow collectible; shared catch target, collection slot, and gift latch"
     }
   ],
   "clips": [

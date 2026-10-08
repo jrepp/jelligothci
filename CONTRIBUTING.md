@@ -78,14 +78,14 @@ cmake --build build/core-native --config Release --parallel 2
 ctest --test-dir build/core-native --build-config Release --output-on-failure --no-tests=error
 ```
 
-Expect all six core/storage tests to pass. Native Windows core CI does not establish that
+Expect all core/storage tests to pass. Native Windows core CI does not establish that
 the shell wrappers, Python lint wheels, SDL, or USB workflow work on Windows.
 Use a supported macOS/Linux environment for those checks.
 
 ## Make and review a change
 
 Create a branch and keep the change within the requested increment. Read the
-[architecture and ownership contracts](README.md#boundary-between-engine-and-host)
+[architecture and ownership contracts](docs/development.md#boundary-between-engine-and-host)
 and [project instructions](AGENTS.md). The core receives memory, time, input,
 and output from hosts; it must not gain SDK dependencies or heap allocation.
 
@@ -121,7 +121,7 @@ make esp-build
 
 Build success does not deploy anything. When deploying to your intended board,
 use the discovered port and the separate flash/monitor commands in the
-[hardware guide](README.md#hardware-bring-up). Flashing overwrites firmware and
+[hardware guide](docs/hardware.md#hardware-bring-up). Flashing overwrites firmware and
 the partition table. Monitor startup, close the monitor with Ctrl+], and record
 physical observations separately from serial logs. This project targets SKU
 31261, not the similarly named 1.75C board.

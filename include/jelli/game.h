@@ -2,6 +2,9 @@
 #define JELLI_GAME_H
 
 #include "jelli/events.h"
+#include "jelli/habits.h"
+#include "jelli/prizes.h"
+#include "jelli/sleep_log.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -9,7 +12,7 @@
 #define JELLI_NEED_COUNT 5u
 #define JELLI_STACK_LIMIT 20u
 #define JELLI_DAY_TICKS 864000u
-#define JELLI_OFFLINE_CAP_MS 21600000u
+#define JELLI_OFFLINE_CAP_MS 86400000u
 
 typedef enum {
     JELLI_SATIETY,
@@ -55,6 +58,8 @@ typedef enum {
 
 typedef struct {
     uint32_t id;
+    JelliHabits habits;
+    JelliPrizeProgress prize_progress;
     uint64_t ticks, stage_ticks, interaction_due, nap_due, awake_until;
     uint64_t wake_override_until, hunger_due;
     uint64_t shot_until, medicine_until;
@@ -74,6 +79,8 @@ typedef struct {
 
 typedef struct {
     JelliPet pets[JELLI_PET_CAPACITY];
+    JelliSleepLog sleep_log;
+    JelliPrizes prizes;
     uint64_t ticks, discarded_ms, resume_remaining_ms;
     uint32_t backlog_ms, revision;
     uint16_t food, gifts;
@@ -83,6 +90,11 @@ typedef struct {
     JelliEventLog *events;
     bool clock_known;
     uint16_t clock_minute;
+    /* Current host observation; never a saved or invented wall timestamp. */
+    uint64_t wall_seconds;
+    bool wall_known;
+    /* Persisted display offsets, independently of host clock availability. */
+    int16_t timezone_minutes, clock_adjust;
 } JelliGame;
 
 typedef struct {
@@ -103,12 +115,17 @@ unsigned jelli_pet_shot_goal(const JelliPet *pet);
 bool jelli_pet_health_ready(const JelliPet *pet, unsigned activity);
 unsigned jelli_pet_mood(const JelliPet *pet);
 unsigned jelli_pet_favorite(const JelliPet *pet, unsigned minute);
+/* Completion triggers are submitted once by the activity/event owner. SLEEP
+ * means a qualified >= six-hour rest; GIFT means a real cross-pet collection gift. */
+void jelli_prize_complete(JelliGame *game, unsigned trigger);
+JelliResult jelli_prize_catch(JelliGame *game);
+JelliResult jelli_prize_gift(JelliGame *game, unsigned index);
 bool jelli_game_valid(const JelliGame *game);
 JelliResult jelli_game_command(JelliGame *game, JelliCommand command);
 /* At most eight 100 ms ticks/call, at most two seconds retained backlog. */
 void jelli_game_advance(JelliGame *game, uint64_t elapsed_ms);
 void jelli_game_resume_begin(JelliGame *game, uint64_t elapsed_ms);
-/* At most eight minute segments/call; true when resume is complete. */
+/* At most one minute (600 simulated ticks)/call; true when resume is complete. */
 bool jelli_game_resume_step(JelliGame *game);
 const char *jelli_game_result_name(JelliResult result);
 

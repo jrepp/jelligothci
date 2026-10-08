@@ -656,7 +656,7 @@ link maps, queue high-water marks, and hardware measurements, not current usage.
 | Mutable world + UI + queues + animation metadata | 32 KiB caller-owned storage, excluding IO buffers |
 | Decoded content tables and indexes | 32 KiB caller-owned storage; immutable after load |
 | Save snapshot and IO scratch | 16 KiB total, explicitly partitioned, not task-local arrays |
-| Initial compiled definitions and simple assets | 144 KiB flash pack; see healthy activities and visual pass in memo-015 |
+| Initial compiled definitions and simple assets | 160 KiB flash pack; see healthy activities and visual pass in memo-015 |
 | Optional sprite cache | Up to 128 KiB PSRAM, allocated once at host startup when needed |
 | Existing two RGB565 frames | 868624 bytes PSRAM; BSP/DMA allocations are additional |
 | Command queue / presentation notifications | 32 / 64 fixed entries; reject commands or drop/coalesce cosmetic notices |
@@ -739,11 +739,12 @@ The proposed uncompressed flash accounting is deliberately small:
 | 9 health icons, 32 x 32, RGB565 plus 1-bit mask | 19,584 |
 | 8 effect sprites, 16 x 16, RGB565 plus 1-bit mask | 4,352 |
 | 2 backgrounds, 64 x 64, RGB565 plus 1-bit mask | 17,408 |
+| 9 collectible prize sprites, 32 x 32, RGB565 plus 1-bit mask | 19,584 |
 | 96 glyphs, 8 x 12, 1-bit | 1,152 |
 | Definition allowance | 8,192 |
 | Headers, indexes, clip metadata, strings, alignment allowance | 4,096 |
-| Total planned pack | 140,192 |
-| Headroom within the 147,456-byte pack ceiling | 7,264 |
+| Total planned pack | 159,776 |
+| Headroom within the 163,840-byte pack ceiling | 4,064 |
 
 These are payload estimates, not measurements of a linked image. Built-in fallback
 art and renderer code add firmware bytes outside the pack. Report generated and

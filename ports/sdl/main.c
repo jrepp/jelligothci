@@ -4,6 +4,7 @@
 #include "jelli/engine.h"
 #include "session.h"
 #include "debug_socket.h"
+#include "asset_reload.h"
 #include "sound_output.h"
 #include <errno.h>
 #include <limits.h>
@@ -15,6 +16,7 @@ enum { FRAME_MS = 8 };
 
 typedef struct {
     JelliGesture gesture;
+    JelliAssetReload *asset_reload;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
@@ -114,14 +116,24 @@ static void play_feedback(JelliPetEngine *pet, uint64_t now, bool enabled)
         (void)jelli_sdl_sound_request(NULL, cue - 1u, cue == 6u ? 25u : 18u);
 }
 
+static void prepare_frame(Desktop *d, JelliPetEngine *pet, const JelliOptions *options,
+                          JelliSession *session, uint64_t now, unsigned long frame, bool frozen)
+{
+    if (d->pet && !frozen) {
+        jelli_sdl_asset_reload_poll(d->asset_reload, pet, now);
+        jelli_sdl_session_clock(session, pet, options);
+    }
+    if (options->demo && !frozen)
+        jelli_sdl_demo(pet, frame);
+}
+
 static void run_frames(JelliEngine *shapes, JelliPetEngine *pet, Desktop *d,
                        const JelliOptions *options, JelliSession *session)
 {
     for (unsigned long frame = 0; !options->max_frames || frame < options->max_frames; ++frame) {
         uint64_t start = SDL_GetTicks64();
         bool frozen = d->pet && jelli_sdl_debug_poll(pet);
-        if (options->demo && !frozen)
-            jelli_sdl_demo(pet, frame);
+        prepare_frame(d, pet, options, session, start, frame, frozen);
         bool running =
             d->pet ? (frozen ? pet->running : jelli_pet_frame(pet)) : jelli_frame(shapes);
         play_feedback(pet, start, d->pet && !frozen);
@@ -150,6 +162,12 @@ static bool save_snapshot(uint16_t *pixels, const char *path)
     return saved == 0;
 }
 
+static void open_audio(const Desktop *d, const JelliOptions *options)
+{
+    if (d->pet && (!d->headless || options->audio) && !jelli_sdl_sound_open())
+        fprintf(stderr, "Sound unavailable: %s\n", SDL_GetError());
+}
+
 int main(int argc, char **argv)
 {
     JelliOptions options;
@@ -170,10 +188,14 @@ int main(int argc, char **argv)
         fprintf(stderr, "Framebuffer allocation failed\n");
         goto cleanup;
     }
+    d.asset_reload = jelli_sdl_asset_reload_open(options.asset_pack);
+    if (options.asset_pack && !d.asset_reload) {
+        fprintf(stderr, "Live artwork workspace allocation failed\n");
+        goto cleanup;
+    }
     if (!create_display(&d))
         goto sdl_error;
-    if (d.pet && (!d.headless || options.audio) && !jelli_sdl_sound_open())
-        fprintf(stderr, "Sound unavailable: %s\n", SDL_GetError());
+    open_audio(&d, &options);
     if (!jelli_sdl_debug_open(options.debug_socket))
         goto cleanup;
     JelliSurface surface = {
@@ -205,6 +227,7 @@ cleanup:
     SDL_DestroyTexture(d.texture);
     SDL_DestroyRenderer(d.renderer);
     SDL_DestroyWindow(d.window);
+    free(d.asset_reload);
     free(pixels);
     SDL_Quit();
     return result;

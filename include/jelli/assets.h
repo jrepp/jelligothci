@@ -2,6 +2,7 @@
 #define JELLI_ASSETS_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct {
     uint32_t id;
@@ -16,6 +17,16 @@ typedef struct {
     uint16_t centroid_x_q8, centroid_y_q8;
     uint8_t left, top, right, bottom; /* Cached exclusive alpha bounds. */
 } JelliAsset;
+
+/* Optional host-owned artwork. Storage must stay valid throughout a frame.
+ * NULL uses the immutable embedded assets (including on ESP32). */
+typedef struct {
+    const JelliAsset *items;
+    size_t count;
+    const uint8_t *glyphs; /* Exactly 96 * 12 bytes, or NULL for embedded font. */
+} JelliAssetSet;
+const JelliAsset *jelli_asset_lookup(const JelliAssetSet *set, uint32_t id);
+const uint8_t *jelli_asset_lookup_glyph(const JelliAssetSet *set, uint8_t codepoint);
 
 /* Generated from assets/slice/assets.json by tools/assets/embed_slice.py. */
 const JelliAsset *jelli_asset_find(uint32_t id);

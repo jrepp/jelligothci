@@ -42,7 +42,7 @@ with tempfile.TemporaryDirectory(prefix="jelli-session-") as folder:
     assert run(base, second_anchor - 10000).returncode == 0
     assert ticks(latest(base)) == ticks(third)  # reversed clock is forgiven
     assert run(base, second_anchor + 100000000).returncode == 0
-    assert ticks(latest(base)) == ticks(third) + 216000  # six-hour cap
+    assert ticks(latest(base)) == ticks(third) + 864000  # 24-hour cap
     paths = [Path(str(base) + suffix) for suffix in (".0", ".1")]
     for path in paths:
         path.write_bytes(b"interrupted-write")

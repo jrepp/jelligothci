@@ -14,7 +14,9 @@ typedef enum {
 } JelliEventKind;
 typedef struct {
     uint16_t needs[5], bond, food, gifts;
-    uint8_t location, health, activity, flags; /* asleep=1, reward pending=2, claimed=4 */
+    /* flags: asleep=1, reward pending=2, claimed=4, reaction=bits3/4,
+     * active linked manual sleep journal=32. */
+    uint8_t location, health, activity, flags;
 } JelliEventSnapshot;
 typedef struct {
     uint64_t tick;

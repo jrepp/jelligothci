@@ -5,11 +5,12 @@
 """A loopback-only readable event companion; one owner of the game debug wire."""
 import argparse
 import json
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 import serial
-from jelli_debug import Client, SocketWire, DebugError
+from jelli_debug import Client, SocketWire, DebugError, host_clock
 
 
 CHEATS = {name: 100 for name in ('fullness', 'energy', 'clean', 'fun', 'connection', 'bond')}
@@ -45,6 +46,8 @@ def main():
         wire = SocketWire(args.socket, 3)
     client = Client(wire)
     origin = f'http://127.0.0.1:{args.http_port}'
+    history = {}
+    history_sampled = 0.0
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -60,6 +63,7 @@ def main():
             self.wfile.write(data)
 
         def do_GET(self):
+            nonlocal history_sampled
             url = urlparse(self.path)
             if url.path == '/':
                 data = Path(__file__).with_name('viewer.html').read_bytes()
@@ -84,13 +88,19 @@ def main():
                     reply['next'] = extra['next']
                     reply['more'] = extra['more']
                 reply['state'] = client.state()
+                if time.monotonic() - history_sampled >= 3:
+                    history.update(habits=client.request('habits'),
+                                   sleep_log=client.request('sleep-log'), clock=client.request('clock'))
+                    history_sampled = time.monotonic()
+                reply.update(history)
                 self.respond(reply)
             except (ValueError, DebugError, OSError) as exc:
                 self.respond({'error': str(exc)}, 503)
 
         def do_POST(self):
+            nonlocal history_sampled
             # Only controls from our own loopback page; no arbitrary wire command endpoint.
-            if self.headers.get('Origin') != origin or self.path not in ('/api/press', '/api/cheat'):
+            if self.headers.get('Origin') != origin or self.path not in ('/api/press', '/api/cheat', '/api/clock-sync'):
                 self.respond({'error': 'Origin or path rejected'}, 403)
                 return
             try:
@@ -98,6 +108,12 @@ def main():
                 if not 0 < size <= 128:
                     raise ValueError('Invalid body size')
                 body = json.loads(self.rfile.read(size))
+                if self.path == '/api/clock-sync':
+                    seconds, offset = host_clock()
+                    result = client.set_clock(seconds, offset)
+                    history_sampled = 0.0
+                    self.respond(result)
+                    return
                 if self.path == '/api/cheat':
                     self.respond(client.request(cheat_command(body)))
                     return

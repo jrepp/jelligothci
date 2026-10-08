@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
+from package_art import stage_art, verify_art
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
@@ -29,9 +30,12 @@ with tempfile.TemporaryDirectory(prefix='jelli-windows-') as temporary:
         'Click to play; Escape quits. The default session is unsaved.\n'
         'For saves: jelligotchi.exe --save "%LOCALAPPDATA%\\jelligotchi-pet"\n'
         'This build is unsigned. Live debug sockets are not supported on Windows yet.\n', encoding='utf-8')
+    stage_art(folder)
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as output:
-        for path in sorted(folder.iterdir()):
-            output.write(path, path.name)
+        for path in sorted(folder.rglob('*')):
+            if path.is_file():
+                output.write(path, path.relative_to(folder))
+    verify_art(archive)
     extracted = folder / 'extracted'
     with zipfile.ZipFile(archive) as output:
         output.extractall(extracted)

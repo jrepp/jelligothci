@@ -116,9 +116,8 @@ static void test_navigation_and_actions(void)
     jelli_pet_ui_tap(&ui, &game, 233, 420);
     CHECK(ui.page == JELLI_UI_HOME);
     tap_item(&ui, &game, 4u);
-    CHECK(ui.page == JELLI_UI_MORE);
-    tap_item(&ui, &game, 0u);
-    CHECK(game.pets[game.active].activity == JELLI_GIVING);
+    CHECK(ui.page == JELLI_UI_COLLECTION);
+    CHECK(game.pets[game.active].activity == JELLI_IDLE);
     CHECK(ui.save_requested);
 
     jelli_game_init(&game);
@@ -325,6 +324,29 @@ static void test_grounded_poses(void)
     }
 }
 
+static void test_provider_refreshes_actor_cache(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, STRIDE, {0}};
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    const JelliAsset *original = ui.actor_frame;
+    CHECK(original && original->ground_x_q8 >= 256u);
+    int original_x = ui.actor_x;
+    JelliAsset changed = *original;
+    changed.ground_x_q8 -= 256u;
+    const JelliAssetSet provider = {.items = &changed, .count = 1u};
+    ui.assets = &provider;
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(ui.actor_frame == &changed && ui.actor_x == original_x + 6);
+    CHECK(surface.damage.width == JELLI_WIDTH);
+    ui.assets = NULL;
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(ui.actor_frame == original && ui.actor_x == original_x);
+}
+
 int main(void)
 {
     JelliGame game;
@@ -340,6 +362,7 @@ int main(void)
     test_particles();
     test_manual_stat_timing();
     test_grounded_poses();
+    test_provider_refreshes_actor_cache();
     puts("Pet UI, page actions, and renderer damage behavior verified.");
     return 0;
 }

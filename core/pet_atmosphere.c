@@ -73,7 +73,7 @@ void jelli_pet_sleep_particles(JelliPetUi *ui, bool asleep, uint64_t time)
 
 void jelli_pet_draw_background(JelliSurface *s, const JelliPetRenderKey *view, JelliRect region)
 {
-    const JelliAsset *a = jelli_asset_find(view->location ? 10002u : 10001u);
+    const JelliAsset *a = jelli_asset_lookup(view->assets, view->location ? 10002u : 10001u);
     if (!a)
         return;
     for (unsigned y = region.y; y < region.y + region.height; ++y) {

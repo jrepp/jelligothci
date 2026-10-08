@@ -135,8 +135,12 @@ int main(void)
     JelliSave fourth = fixture(4u);
     CHECK(jelli_sdl_storage_write(base_path, &fourth, work, sizeof(work)) ==
           JELLI_STORAGE_INCOMPATIBLE);
-    set_record_byte(".jelli-storage-test.0", 4L, 2u);
+    set_record_byte(".jelli-storage-test.0", 29L, 1u);
+    set_record_byte(".jelli-storage-test.0", 4L, 4u);
     CHECK(load(&loaded, work) == JELLI_STORAGE_INCOMPATIBLE);
+    CHECK(jelli_sdl_storage_write(base_path, &fourth, work, sizeof(work)) ==
+          JELLI_STORAGE_INCOMPATIBLE);
+    CHECK(same_save(&loaded, &before_io));
     remove_slots();
     puts("PASS: SDL save slots recover newest valid snapshot and preserve incompatible data");
     return 0;

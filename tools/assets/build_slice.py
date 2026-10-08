@@ -42,8 +42,8 @@ def load_assets():
     palette = {tuple(bytes.fromhex(c[1:])) for c in manifest["palette"]}
     require(len(palette) <= 16, "Palette exceeds 16 opaque colors")
     images, ids, paths = {}, set(), set()
-    counts = {"creatures": 0, "icons": 0, "props": 0, "font": 0, "menus": 0, "meters": 0, "health": 0, "effects": 0, "backgrounds": 0}
-    expected = {"creatures": (32, 32), "icons": (16, 16), "props": (24, 24), "font": (128, 72), "menus": (32, 32), "meters": (32, 32), "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64)}
+    counts = {"creatures": 0, "icons": 0, "props": 0, "font": 0, "menus": 0, "meters": 0, "health": 0, "effects": 0, "backgrounds": 0, "prizes": 0}
+    expected = {"creatures": (32, 32), "icons": (16, 16), "props": (24, 24), "font": (128, 72), "menus": (32, 32), "meters": (32, 32), "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64), "prizes": (32, 32)}
     for asset in manifest["assets"]:
         key, ident, path = asset["key"], asset["id"], asset["path"]
         require(key not in images and ident not in ids and path not in paths, f"Duplicate asset: {key}")
@@ -71,7 +71,9 @@ def load_assets():
         paths.add(path)
         counts[asset["kind"]] += 1
         images[key] = image
-    require(counts == {"creatures": 16, "icons": 12, "props": 4, "font": 1, "menus": 13, "meters": 5, "health": 9, "effects": 8, "backgrounds": 2}, "Incomplete slice inventory")
+    require(counts == {"creatures": 16, "icons": 12, "props": 4, "font": 1, "menus": 13, "meters": 5, "health": 9, "effects": 8, "backgrounds": 2, "prizes": 9}, "Incomplete slice inventory")
+    prize_pixels = {image.tobytes() for key, image in images.items() if key.startswith("prizes.")}
+    require(len(prize_pixels) == 9, "Collectible prizes must have nine distinct pixel designs")
     clip_keys = set()
     for clip in manifest["clips"]:
         require(clip["id"] not in ids and clip["key"] not in clip_keys, "Duplicate clip")
@@ -108,10 +110,10 @@ def export_pixels(output, manifest, images):
                         **({"ground_anchor_q8": asset["ground_anchor_q8"]} if asset["kind"] == "creatures" else {}),
                         "files": {k: {"bytes": len(v), "sha256": hashlib.sha256(v).hexdigest()} for k, v in payloads.items()}})
     total = sum(r["bytes"] for r in records)
-    require(total == 127904, f"Unexpected pixel payload: {total}")
-    require(total + 8192 + 4096 <= 147456, "Art exceeds 144 KiB planned pack budget")
+    require(total == 147488, f"Unexpected pixel payload: {total}")
+    require(total + 8192 + 4096 <= 163840, "Art exceeds 160 KiB planned pack budget")
     report = {"pixel_bytes": total, "definition_allowance": 8192, "metadata_allowance": 4096,
-              "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": 147456,
+              "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": 163840,
               "note": "Raw pixels are real exports; definitions, metadata and pack assembly remain allowances, not a compiled game pack.", "assets": records}
     (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     return report

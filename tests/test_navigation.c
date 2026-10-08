@@ -26,7 +26,7 @@ static void navigation(void)
     CHECK(ui.last_view.stat_index == 1);
     jelli_pet_ui_swipe(&ui, &game, 80, 0);
     jelli_pet_ui_swipe(&ui, &game, 80, 0);
-    CHECK(ui.stat_offset == 5);
+    CHECK(ui.stat_offset == JELLI_PET_STAT_COUNT - 1u);
     jelli_pet_ui_swipe(&ui, &game, -80, 0);
     CHECK(ui.stat_offset == 0);
     jelli_pet_ui_swipe(&ui, &game, 0, -80);

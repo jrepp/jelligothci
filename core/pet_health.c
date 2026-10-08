@@ -1,10 +1,13 @@
 #include "jelli/pet_ui.h"
+#include "pet_gallery.h"
 
 bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
                           JelliPetUiButton *button)
 {
     if (!ui || !button)
         return false;
+    if (jelli_pet_gallery_button(ui, slot, button))
+        return true;
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot && (ui->clock_edit || slot == 4u))
         return jelli_pet_clock_button(ui->clock_edit, slot, button);
     if (ui->page == JELLI_UI_HEALTH && ((slot == 2u && (ui->last_view.care_blocked & 1u)) ||

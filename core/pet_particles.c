@@ -40,9 +40,9 @@ static uint16_t blend(uint16_t back, uint16_t front, unsigned alpha)
     return (uint16_t)((r << 11) | (g << 5) | b);
 }
 
-static void draw_magic(JelliSurface *s, const JelliParticle *p)
+static void draw_magic(JelliSurface *s, const JelliParticle *p, const JelliAssetSet *assets)
 {
-    const JelliAsset *a = jelli_asset_find(9001u + (p->style & 7u));
+    const JelliAsset *a = jelli_asset_lookup(assets, 9001u + (p->style & 7u));
     if (!a)
         return;
     unsigned scale = (p->style & 8u) ? 2u : 1u;
@@ -66,9 +66,10 @@ static void draw_magic(JelliSurface *s, const JelliParticle *p)
     }
 }
 
-static void sleep_layer(JelliSurface *s, const JelliParticle *p, int offset, uint16_t color)
+static void sleep_layer(JelliSurface *s, const JelliParticle *p, int offset, uint16_t color,
+                        const JelliAssetSet *assets)
 {
-    const uint8_t *rows = jelli_asset_glyph('Z');
+    const uint8_t *rows = jelli_asset_lookup_glyph(assets, 'Z');
     const unsigned scale = 2u;
     unsigned alpha = p->life < 8u ? (unsigned)p->life * 2u : 16u;
     for (unsigned y = 0; y < 12u * scale; ++y) {
@@ -88,10 +89,10 @@ static void sleep_layer(JelliSurface *s, const JelliParticle *p, int offset, uin
     }
 }
 
-static void draw_sleep(JelliSurface *s, const JelliParticle *p)
+static void draw_sleep(JelliSurface *s, const JelliParticle *p, const JelliAssetSet *assets)
 {
-    sleep_layer(s, p, 2, 0x0841u);
-    sleep_layer(s, p, 0, 0x64dfu);
+    sleep_layer(s, p, 2, 0x0841u, assets);
+    sleep_layer(s, p, 0, 0x64dfu, assets);
 }
 
 void jelli_pet_draw_particles(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui)
@@ -107,9 +108,9 @@ void jelli_pet_draw_particles(JelliSurface *surface, const JelliGame *game, Jell
     for (unsigned i = 0; i < JELLI_PARTICLE_CAPACITY; ++i)
         if (p->items[i].life) {
             if (p->items[i].style & 64u)
-                draw_sleep(surface, &p->items[i]);
+                draw_sleep(surface, &p->items[i], ui->assets);
             else if (p->items[i].style & 128u)
-                draw_magic(surface, &p->items[i]);
+                draw_magic(surface, &p->items[i], ui->assets);
             else
                 draw_particle(surface, &p->items[i]);
         }

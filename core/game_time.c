@@ -49,18 +49,25 @@ static void integrate_need(JelliPet *pet, JelliNeed need, uint64_t ticks, uint32
     pet->needs[need] = apply_need_delta(pet->needs[need], whole_delta, floor);
 }
 
+static uint64_t slower_ticks(const JelliPet *pet, uint64_t ticks, unsigned divisor)
+{
+    /* Absolute injected phase preserves fractional decay across host batches
+     * and sleep transitions without changing the saved remainder units. */
+    return pet->ticks / divisor - (pet->ticks - ticks) / divisor;
+}
+
 static void integrate_needs(JelliPet *pet, uint64_t ticks)
 {
     if (pet->asleep) {
         integrate_need(pet, JELLI_ENERGY, ticks, 10u, true);
-        integrate_need(pet, JELLI_SATIETY, ticks, 4u, false);
-        integrate_need(pet, JELLI_HYGIENE, ticks, 2u, false);
-        integrate_need(pet, JELLI_AMUSEMENT, ticks, 1u, false);
-        integrate_need(pet, JELLI_SOCIAL, ticks, 1u, false);
+        /* Rest saves appetite/cleanliness and preserves fun and connection. */
+        integrate_need(pet, JELLI_SATIETY, slower_ticks(pet, ticks, 4u), 1u, false);
+        integrate_need(pet, JELLI_HYGIENE, slower_ticks(pet, ticks, 8u), 1u, false);
     } else {
-        integrate_need(pet, JELLI_SATIETY, ticks, 8u, false);
-        integrate_need(pet, JELLI_ENERGY, ticks, 4u, false);
-        integrate_need(pet, JELLI_HYGIENE, ticks, 3u, false);
+        integrate_need(pet, JELLI_SATIETY, ticks, 1u, false);
+        unsigned energy_rate = jelli_habits_sleep_score(&pet->habits) < 250u ? 5u : 4u;
+        integrate_need(pet, JELLI_ENERGY, ticks, energy_rate, false);
+        integrate_need(pet, JELLI_HYGIENE, slower_ticks(pet, ticks, 4u), 1u, false);
         integrate_need(pet, JELLI_AMUSEMENT, ticks, 2u, false);
         integrate_need(pet, JELLI_SOCIAL, ticks, 2u, false);
     }
@@ -68,6 +75,8 @@ static void integrate_needs(JelliPet *pet, uint64_t ticks)
 
 static void adjust_need(JelliPet *pet, JelliNeed need, int32_t delta)
 {
+    if (delta > 0 && (need == JELLI_AMUSEMENT || need == JELLI_SOCIAL))
+        delta = (int32_t)jelli_habits_social_gain(&pet->habits, (unsigned)delta);
     uint16_t floor = (pet->health == JELLI_RECOVERING) ? 400u : 0u;
     int64_t candidate = (int64_t)pet->needs[need] + delta;
     if (candidate < floor || (candidate == floor && pet->need_remainders[need] > 0u) ||
@@ -83,6 +92,8 @@ void jelli_game_add_clock(JelliGame *game, JelliPet *pet, uint64_t ticks)
     pet->ticks = saturating_add(pet->ticks, ticks);
     pet->stage_ticks = saturating_add(pet->stage_ticks, ticks);
     integrate_needs(pet, pet->ticks - old_ticks);
+    jelli_habits_advance(&pet->habits, old_ticks, pet->ticks - old_ticks, pet->asleep,
+                         pet->activity == JELLI_PLAYING);
     jelli_pet_touch_decay(pet, pet->ticks - old_ticks);
 }
 
@@ -101,8 +112,19 @@ bool jelli_game_window(const JelliPet *pet, uint64_t *remaining_ticks)
     return false;
 }
 
+static bool needs_safe_for_sleep_healing(const JelliPet *pet)
+{
+    for (unsigned i = 0u; i < JELLI_NEED_COUNT; ++i) {
+        if (pet->needs[i] < 400u)
+            return false;
+    }
+    return true;
+}
+
 static void update_health_and_hunger(JelliPet *pet)
 {
+    if (pet->asleep && pet->health == JELLI_UNWELL && needs_safe_for_sleep_healing(pet))
+        pet->health = JELLI_WELL;
     if (pet->health != JELLI_RECOVERING &&
         (pet->needs[JELLI_SATIETY] <= 100u || pet->needs[JELLI_ENERGY] <= 100u ||
          pet->needs[JELLI_HYGIENE] <= 100u || pet->needs[JELLI_AMUSEMENT] <= 100u ||
@@ -142,7 +164,9 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
         if (game->food > 0u) {
             bool useful = pet->needs[JELLI_SATIETY] < 700u;
             --game->food;
+            jelli_habits_record_meal(&pet->habits, pet->ticks);
             adjust_need(pet, JELLI_SATIETY, 300);
+            adjust_need(pet, JELLI_HYGIENE, -10);
             if (useful && !pet->reward_claimed) {
                 pet->reward_pending = true;
                 if (pet->feeds < UINT16_MAX)
@@ -155,6 +179,7 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
     case JELLI_PLAYING:
         adjust_need(pet, JELLI_AMUSEMENT, 250);
         adjust_need(pet, JELLI_ENERGY, -50);
+        adjust_need(pet, JELLI_HYGIENE, -20);
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
         break;
@@ -199,8 +224,16 @@ static void evolve_if_due(JelliPet *pet)
     }
 }
 
-static void resolve_sleep(JelliPet *pet)
+static void resolve_sleep(const JelliGame *game, JelliPet *pet)
 {
+    if (game->sleep_log.active && game->sleep_log.pet_id == pet->id) {
+        if (!pet->asleep && pet->activity == JELLI_IDLE) {
+            pet->asleep = true;
+            pet->scheduled_sleep = false;
+            pet->nap_due = UINT64_MAX;
+        }
+        return;
+    }
     uint64_t remaining = 0u;
     bool in_window = jelli_game_window(pet, &remaining);
     if (pet->asleep) {
@@ -238,7 +271,7 @@ void jelli_game_endpoint(JelliGame *game, JelliPet *pet, uint64_t ticks, bool of
     uint8_t form = pet->form;
     update_health_and_hunger(pet);
     evolve_if_due(pet);
-    resolve_sleep(pet);
+    resolve_sleep(game, pet);
     if (before.health != (uint8_t)pet->health || ((before.flags & 1u) != 0u) != pet->asleep ||
         form != pet->form)
         jelli_game_emit(game, JELLI_EVENT_STATUS, form != pet->form ? 1u : 0u, JELLI_OK, pet->form,

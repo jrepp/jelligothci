@@ -40,8 +40,10 @@ void jelli_game_preference(JelliGame *game, JelliCommand command)
     if (command.kind != JELLI_CMD_MOMENT || command.value != jelli_pet_favorite(pet, minute))
         return;
     unsigned bonus = ((pet->id & 1u) ? minute < 900u : minute >= 900u) ? 60u : 30u;
-    pet->needs[JELLI_AMUSEMENT] = adjusted(pet->needs[JELLI_AMUSEMENT], (int)bonus, 0u);
-    pet->needs[JELLI_SOCIAL] = adjusted(pet->needs[JELLI_SOCIAL], (int)bonus / 2, 0u);
+    pet->needs[JELLI_AMUSEMENT] = adjusted(pet->needs[JELLI_AMUSEMENT],
+                                           (int)jelli_habits_social_gain(&pet->habits, bonus), 0u);
+    pet->needs[JELLI_SOCIAL] = adjusted(
+        pet->needs[JELLI_SOCIAL], (int)jelli_habits_social_gain(&pet->habits, bonus / 2u), 0u);
     pet->bond = adjusted(pet->bond, 10, 0u);
 }
 
@@ -53,7 +55,7 @@ JelliResult jelli_game_touch(JelliPet *pet)
     pet->reaction = pet->touch_load >= 900u ? 3u : pet->touch_load >= 600u ? 2u : 1u;
     pet->reaction_ticks = 30u;
     unsigned floor = pet->health == JELLI_RECOVERING ? 400u : 0u;
-    int change = pet->reaction == 1u ? 15 : -20;
+    int change = pet->reaction == 1u ? (int)jelli_habits_social_gain(&pet->habits, 15u) : -20;
     pet->needs[JELLI_SOCIAL] = adjusted(pet->needs[JELLI_SOCIAL], change, floor);
     pet->needs[JELLI_AMUSEMENT] = adjusted(pet->needs[JELLI_AMUSEMENT], change, floor);
     if (pet->reaction == 1u)

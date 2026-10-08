@@ -1,5 +1,6 @@
 #include "jelli/pet_ui.h"
 #include "game_internal.h"
+#include "pet_gallery.h"
 #include <stddef.h>
 
 typedef struct {
@@ -13,7 +14,7 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
                                       {JELLI_UI_ACTION_MOMENTS, "MOMENTS", NULL},
                                       {0},
                                       {0},
-                                      {JELLI_UI_ACTION_MORE, "GIFTS", NULL},
+                                      {JELLI_UI_ACTION_COLLECTION, "GIFTS", NULL},
                                       {JELLI_UI_ACTION_SETTINGS, "SETTINGS", NULL}},
                                      {{JELLI_UI_ACTION_FEED, "FEED", NULL},
                                       {JELLI_UI_ACTION_BASIC_CARE, "BASIC CARE", NULL},
@@ -149,8 +150,18 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
     if (slot == 0u) {
         jelli_pet_ui_back(ui);
         ui->result = JELLI_OK;
+    } else if (ui->page == JELLI_UI_COLLECTION) {
+        jelli_pet_gallery_select(ui, game, slot);
     } else if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u)) {
+        int16_t zone = ui->timezone_minutes, adjust = ui->clock_adjust;
         jelli_pet_clock_action(ui, slot);
+        if (ui->result == JELLI_OK &&
+            (zone != ui->timezone_minutes || adjust != ui->clock_adjust)) {
+            game->timezone_minutes = ui->timezone_minutes;
+            game->clock_adjust = ui->clock_adjust;
+            ui->save_requested = true;
+            ui->save_status = JELLI_SAVE_PENDING;
+        }
     } else if (ui->page >= JELLI_UI_BRUSH) {
         jelli_pet_health_tap(ui, game);
     } else {
@@ -172,9 +183,11 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
         x >= 466 || y >= 466)
         return;
     sync_clock(ui, game);
+    if (jelli_pet_gallery_tap(ui, game, x, y))
+        return;
     if (jelli_pet_touch_actor(ui, game, x, y))
         return;
-    for (unsigned slot = 0u; slot <= 6u; ++slot) {
+    for (unsigned slot = 0u; slot <= JELLI_PRIZE_COUNT; ++slot) {
         if (slot && ui->last_view.ring_moving)
             continue;
         JelliPetUiButton button;
@@ -247,7 +260,8 @@ void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)
         code = ui->page == JELLI_UI_HOME ? 29u : 30u;
         jelli_pet_ui_back(ui);
     } else if (dx && !dy && !ui->menu_open && !ui->last_view.ring_moving) {
-        ui->stat_offset = (uint8_t)((ui->stat_offset + (dx < 0 ? 1u : 5u)) % 6u);
+        jelli_pet_rewards_cancel(&ui->rewards);
+        ui->stat_offset = (uint8_t)((ui->stat_offset + (dx < 0 ? 1u : 7u)) % JELLI_PET_STAT_COUNT);
         ui->tile_reset = true;
         code = 31u;
     } else {

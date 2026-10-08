@@ -1,4 +1,5 @@
 #include "pet_draw.h"
+#include "pet_gallery.h"
 #include <stddef.h>
 
 static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint64_t animation_ms,
@@ -7,13 +8,16 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     const JelliPet *pet = &game->pets[game->active];
     uint8_t other_index = game->active == 0u ? 1u : 0u;
     const JelliPet *other = &game->pets[other_index];
-    JelliPetRenderKey key = {0};
+    JelliPetRenderKey key = {.assets = ui->assets};
     uint64_t day_phase =
         (pet->ticks % JELLI_DAY_TICKS + pet->phase_offset % JELLI_DAY_TICKS) % JELLI_DAY_TICKS;
     jelli_pet_timing(ui, pet, animation_ms, &key);
+    jelli_pet_gallery_key(ui, game, animation_ms, &key);
     if (paused) {
         /* Pausing the pet must not strand navigation behind a frozen transition. */
-        key.ring_visible = ui->menu_open && ui->page < JELLI_UI_BRUSH ? 255u : 0u;
+        key.ring_visible =
+            ui->menu_open && ui->page < JELLI_UI_BRUSH && ui->page != JELLI_UI_COLLECTION ? 255u
+                                                                                          : 0u;
         key.ring_page = (uint8_t)ui->page;
         key.ring_clock_edit = ui->clock_edit;
         key.ring_moving = false;
@@ -22,10 +26,13 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     jelli_pet_atmosphere(ui, pet, animation_ms, &key);
     key.menu_open = ui->menu_open;
     if (ui->menu_open) {
-        for (unsigned slot = 1; slot <= 6u; ++slot)
+        for (unsigned slot = 1; slot <= JELLI_PRIZE_COUNT; ++slot)
             if (jelli_pet_ui_available(ui, game, slot) != JELLI_OK)
-                key.unavailable |= (uint8_t)(1u << slot);
+                key.unavailable |= (uint16_t)(1u << slot);
     }
+    if (!ui->menu_open && ui->latched_prize && !game->prizes.offered &&
+        jelli_pet_gallery_available(ui, game, 1u) != JELLI_OK)
+        key.unavailable |= 2u;
     key.clicker_hits = ui->clicker_hits;
     key.clicker_goal = ui->clicker_goal;
     key.clicker_stage = ui->clicker_stage;
@@ -84,14 +91,21 @@ static bool same_ring_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b
            a->ring_moving == b->ring_moving && a->care_blocked == b->care_blocked;
 }
 
+static bool same_tile_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
+{
+    return a->stat_index == b->stat_index && a->stat_value == b->stat_value &&
+           a->sleep_score == b->sleep_score && a->reward_index == b->reward_index &&
+           a->reward_active == b->reward_active && a->tile_phase == b->tile_phase;
+}
+
 static bool same_frame_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return same_ring_key(a, b) && a->night == b->night && same_activity_key(a, b) &&
-           a->clock_known == b->clock_known && a->clock_minute == b->clock_minute &&
-           a->menu_open == b->menu_open && a->stat_index == b->stat_index &&
-           a->tile_phase == b->tile_phase && a->phase == b->phase && a->minute == b->minute &&
-           a->day == b->day && a->active == b->active && a->count == b->count &&
-           a->page == b->page && a->result == b->result && a->save_status == b->save_status &&
+    return same_ring_key(a, b) && same_tile_key(a, b) && same_activity_key(a, b) &&
+           a->night == b->night && a->clock_known == b->clock_known &&
+           a->clock_minute == b->clock_minute && a->menu_open == b->menu_open &&
+           a->phase == b->phase && a->minute == b->minute && a->day == b->day &&
+           a->active == b->active && a->count == b->count && a->page == b->page &&
+           a->result == b->result && a->save_status == b->save_status &&
            a->time_unavailable == b->time_unavailable && a->paused == b->paused &&
            a->resuming == b->resuming;
 }
@@ -115,7 +129,8 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return same_frame_key(a, b) && same_pet_key(a, b);
+    return a->assets == b->assets && same_frame_key(a, b) && same_pet_key(a, b) &&
+           jelli_pet_gallery_same(a, b);
 }
 
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
@@ -138,6 +153,10 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
     previous.mood = view.mood;
     previous.stat_index = view.stat_index;
     previous.tile_phase = view.tile_phase;
+    previous.stat_value = view.stat_value;
+    previous.sleep_score = view.sleep_score;
+    previous.reward_index = view.reward_index;
+    previous.reward_active = view.reward_active;
     for (unsigned i = 0; i < JELLI_NEED_COUNT; ++i)
         previous.needs[i] = view.needs[i];
     bool tile_only = ui->rendered && !ui->menu_open && same_render_key(&view, &previous);

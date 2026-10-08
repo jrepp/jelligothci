@@ -1,7 +1,7 @@
 # Jelligotchi slice artwork
 
-The first review set contains 70 PNG files: 16 creature frames, 12 small icons, 13 ring icons,
-five meter pictograms, nine health icons, eight celebration sprites, two backgrounds, four props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
+The first review set contains 79 PNG files: 16 creature frames, 12 small icons, 13 ring icons,
+five meter pictograms, nine health icons, eight celebration sprites, nine collectible prizes, two backgrounds, four props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
 form. The SDL and ESP32 pet builds embed these assets using
 `tools/assets/embed_slice.py`. Physical board appearance remains unverified.
 
@@ -35,6 +35,7 @@ manifest and PNGs when built; editing a source image requires rebuilding it.
 | `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
 | `health/` | Five 32x32 brushing, medicine, shot, washing, and stretching clicker icons |
 | `effects/` | Eight 16x16 star, heart, orb, comet, fairy-wing, music, idea, and rainbow celebration sprites |
+| `prizes/` | Nine unique 32x32 keepsakes: butterfly, pearl tooth, breakfast sun, tea sprite, movie star, bubble gem, moon charm, rainbow seed, friendship bow |
 | `backgrounds/` | Two 64x64 neutral home/garden scenes with black vignettes |
 | `props/` | Food bowl, closed/open gift, and bed; 24x24 pixels |
 | `font/` | 128x72 atlas: 16 columns by six rows of 8x12 cells, ASCII 32–127 |
@@ -69,8 +70,8 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw pixel payload is 127,904 bytes. The RFC's 8,192-byte definition and
-4,096-byte metadata allowances bring the planned pack to 140,192 bytes; those
+Actual raw pixel payload is 147,488 bytes. The RFC's 8,192-byte definition and
+4,096-byte metadata allowances bring the planned pack to 159,776 bytes; those
 allowances are not a completed game pack or a linked firmware measurement.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
@@ -126,8 +127,8 @@ healthy activity uses up to 24. Rejected presses use three quiet square/cross ma
 Celebration particles last at most 1.74 seconds at the default 300 percent UI duration scale.
 Each particle remains eight bytes; the 24-slot pool fits within 224 bytes, with
 no extra framebuffer or runtime allocation. Particle type and scale are packed
-into the style byte. The art budget is now 144 KiB; actual raw pixels plus existing
-allowances use 140,192 bytes. Physical readability and touch feel still need review.
+into the style byte. The art budget is now 160 KiB; actual raw pixels plus existing
+allowances use 159,776 bytes. Physical readability and touch feel still need review.
 
 Menu plates use a thin neutral edge and plain gray fill, supporting the icon
 rather than competing with it. The movie screen/clapper is squared off and loose

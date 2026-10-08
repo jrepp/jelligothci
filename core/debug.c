@@ -128,7 +128,7 @@ static void press(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char *
 {
     uint32_t page = 0, item = 0;
     if (count != 5u || !jelli_debug_number(words[3], &page) ||
-        !jelli_debug_number(words[4], &item) || page >= JELLI_UI_PAGE_COUNT || item > 6u) {
+        !jelli_debug_number(words[4], &item) || page >= JELLI_UI_PAGE_COUNT || item > 9u) {
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"range\"}");
         return;
     }
@@ -162,11 +162,25 @@ static bool input_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t id
     return true;
 }
 
+static bool history_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
+                            unsigned count)
+{
+    if (!strcmp(words[2], "clock"))
+        jelli_debug_clock(debug, engine, id, words, count);
+    else if (!strcmp(words[2], "habits") || !strcmp(words[2], "sleep-log"))
+        jelli_debug_habits(debug, engine, id, words[2], count);
+    else
+        return false;
+    return true;
+}
+
 static void dispatch(JelliDebug *debug, JelliPetEngine *engine, char **words, unsigned count,
                      uint64_t now)
 {
     uint32_t id = 0;
     if (count < 3u || strcmp(words[0], "@J1") != 0 || !jelli_debug_number(words[1], &id))
+        return;
+    if (history_command(debug, engine, id, words, count))
         return;
     if (!strcmp(words[2], "state") && count == 3u) {
         jelli_debug_state(debug, engine, id);

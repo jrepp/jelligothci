@@ -12,8 +12,10 @@ JelliEventSnapshot jelli_game_observe(const JelliGame *game, const JelliPet *pet
         .location = pet->location,
         .health = (uint8_t)pet->health,
         .activity = (uint8_t)pet->activity,
-        .flags = (uint8_t)((pet->asleep ? 1u : 0u) | (pet->reward_pending ? 2u : 0u) |
-                           (pet->reward_claimed ? 4u : 0u) | ((unsigned)pet->reaction << 3))};
+        .flags =
+            (uint8_t)((pet->asleep ? 1u : 0u) | (pet->reward_pending ? 2u : 0u) |
+                      (pet->reward_claimed ? 4u : 0u) | ((unsigned)pet->reaction << 3) |
+                      (game->sleep_log.active && game->sleep_log.pet_id == pet->id ? 32u : 0u))};
     for (unsigned i = 0; i < JELLI_NEED_COUNT; ++i)
         v.needs[i] = pet->needs[i];
     return v;

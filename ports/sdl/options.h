@@ -7,7 +7,7 @@
 typedef struct {
     bool headless, pet, demo, audio;
     unsigned long max_frames;
-    const char *snapshot, *save_path, *debug_socket;
+    const char *snapshot, *save_path, *debug_socket, *asset_pack;
     uint64_t wall_ms;
 } JelliOptions;
 

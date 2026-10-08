@@ -23,7 +23,7 @@ boundaries below remain the evidence from interface implementation.
 
 # Usage
 
-Use [the README instructions](../../README.md#debug-cli) for port discovery,
+Use [the README instructions](../../docs/playing.md#debug-cli) for port discovery,
 firmware setup, and CLI commands. Only one client should open the port. The CLI
 avoids intentional DTR/RTS reset pulses; OS/driver open behavior is not yet verified.
 Do not confuse detecting a serial port with running this debug firmware.

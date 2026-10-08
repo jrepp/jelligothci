@@ -125,6 +125,22 @@ Do not require an extra claim button. Repeated taps during that transition must
 not duplicate the reward. A full collection stack needs an explicit policy
 before spawning; closing or resetting must not lose an already caught item.
 
+## Current slice boundary
+
+The current implementation work is recorded in
+[memo-018](../memos/memo-018-sleep-habits-and-collectible-presents.md).
+Nine original 32x32 source PNGs are present in the asset manifest and HTML preview.
+The bounded collection model keeps one owned item per type plus discovery history;
+there are no stacks or item-detail provenance screens yet. Re-earning an owned
+type does not duplicate it. Progress is per pet and persisted in save codec v3.
+
+Prototype qualifications currently use three completed tea moments rather than a
+session cooldown, three distinct morning days for breakfast, and a linked manual
+sleep lasting at least six hours for the Moon Charm. The more elaborate flight
+patterns and opening animation above remain polish proposals. Medicine and shots
+must not unlock prizes, including indirect progress toward the Rainbow Seed.
+Individual pet memory import/export remains separate future work.
+
 # Minigame candidates and learning
 
 Start with three tiny prototypes: catch a falling star (tap timing), echo a short

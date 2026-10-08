@@ -157,7 +157,7 @@ cleanup as well as job success before enabling private routing again.
 | Repeated flash or boot failure | Retain the error/serial log and investigate; do not escalate to full erase or eFuse changes |
 | Serial ready but display/touch unknown | Request physical observation; driver initialization alone is insufficient |
 
-See the [hardware guide](../../README.md#hardware-bring-up) for exact board
+See the [hardware guide](../../docs/hardware.md#hardware-bring-up) for exact board
 references. Capture firmware version, reset cause, transfer verification,
 startup milestones, runtime errors, and physical observations in a dated memo.
 Keep raw logs in ignored build output and remove secrets before sharing.

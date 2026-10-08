@@ -1,6 +1,7 @@
 #include "jelli/pet_ui.h"
+#include "pet_gallery.h"
 
-_Static_assert(sizeof(JelliGame) <= 1280u, "Action preflight workspace exceeds budget");
+_Static_assert(sizeof(JelliGame) <= 4096u, "Action preflight workspace exceeds budget");
 
 bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetUiAction action,
                           JelliCommand *command)
@@ -57,6 +58,9 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
 
 JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsigned slot)
 {
+    if (slot && (ui->page == JELLI_UI_COLLECTION ||
+                 (!ui->menu_open && (ui->catch_seen || ui->latched_prize))))
+        return jelli_pet_gallery_available(ui, game, slot);
     if (!slot || slot > 6u)
         return JELLI_OK;
     if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u)) {

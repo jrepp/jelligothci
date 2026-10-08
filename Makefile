@@ -1,5 +1,5 @@
 .PHONY: build run test sanitize core-test esp-bootstrap esp-sync esp-build esp-flash esp-monitor docs-check docs-fix docs-guide
-.PHONY: run-shapes
+.PHONY: run-shapes run-live
 .PHONY: hooks-install hooks-check lint-c format-c
 
 build:
@@ -8,6 +8,9 @@ build:
 
 run: build
 	./build/desktop/jelligotchi --pet --save build/pet-save --debug-socket build/jelli-debug.sock
+
+run-live: build
+	./scripts/jelli-art-live -- --save build/pet-save --debug-socket build/jelli-debug.sock
 
 run-shapes: build
 	./build/desktop/jelligotchi --shapes

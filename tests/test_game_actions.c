@@ -174,7 +174,7 @@ static void test_touch_and_events(void)
         CHECK(command(&g, JELLI_CMD_TOUCH, 0u) == JELLI_OK);
     CHECK(g.pets[0].reaction == 3u && g.pets[0].touch_load == 1000u);
     CHECK(log.count == 5u && jelli_events_at(&log, 0u)->code == JELLI_CMD_TOUCH);
-    CHECK(jelli_events_at(&log, 4u)->after.flags >> 3 == 3u);
+    CHECK(((jelli_events_at(&log, 4u)->after.flags >> 3) & 3u) == 3u);
     for (unsigned i = 0; i < 20u; ++i)
         jelli_game_advance(&g, 800u);
     CHECK(g.pets[0].touch_load == 0u && g.pets[0].reaction == 0u);

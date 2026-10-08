@@ -43,7 +43,7 @@ static JelliResult activate_pet(JelliGame *game, JelliCommand command, const Jel
     uint8_t target_index = find_pet(game, command.value);
     if (target_index >= game->count)
         return JELLI_INVALID_TARGET;
-    if (game->resuming || active->activity != JELLI_IDLE)
+    if (game->resuming || game->sleep_log.active || active->activity != JELLI_IDLE)
         return JELLI_NOT_READY;
     if (target_index == game->active)
         return JELLI_NOT_READY;
@@ -124,7 +124,7 @@ static JelliResult start_gift(const JelliGame *game, JelliPet *pet)
     return begin_activity(pet, JELLI_GIVING, 50u) ? JELLI_OK : JELLI_NOT_READY;
 }
 
-static JelliResult rest(JelliPet *pet)
+static JelliResult rest(JelliGame *game, JelliPet *pet)
 {
     if (pet->asleep)
         return JELLI_ASLEEP;
@@ -132,16 +132,29 @@ static JelliResult rest(JelliPet *pet)
         return JELLI_BUSY;
     if (UINT64_MAX - pet->ticks < UINT64_C(36000))
         return JELLI_NOT_READY;
+    if (!jelli_sleep_log_begin(&game->sleep_log, pet->id, pet->ticks, game->wall_known,
+                               game->wall_seconds))
+        return JELLI_NOT_READY;
+    unsigned last = ((unsigned)game->sleep_log.head + JELLI_SLEEP_SESSION_CAPACITY - 1u) %
+                    JELLI_SLEEP_SESSION_CAPACITY;
+    JelliSleepSession *session = &game->sleep_log.sessions[last];
+    session->bed_energy = pet->needs[JELLI_ENERGY];
+    session->bed_sleep_score = jelli_habits_sleep_score(&pet->habits);
+    session->flags |= JELLI_SLEEP_STATS_KNOWN;
     pet->asleep = true;
     pet->scheduled_sleep = false;
-    pet->nap_due = deadline_after(pet, UINT64_C(36000));
+    pet->nap_due = UINT64_MAX;
     return JELLI_OK;
 }
 
-static JelliResult wake(JelliPet *pet)
+static JelliResult wake(JelliGame *game, JelliPet *pet)
 {
-    if (!pet->asleep)
+    bool linked = game->sleep_log.active && game->sleep_log.pet_id == pet->id;
+    if (!pet->asleep && !linked)
         return JELLI_NOT_READY;
+    if (linked)
+        (void)jelli_sleep_log_finish(&game->sleep_log, pet->ticks, game->wall_known,
+                                     game->wall_seconds);
     uint64_t remaining = 0u;
     if (jelli_game_window(pet, &remaining))
         pet->wake_override_until = deadline_after(pet, remaining);
@@ -186,6 +199,8 @@ static bool boost_need(JelliPet *pet, JelliNeed need, unsigned amount)
 {
     if (pet->needs[need] >= 1000u)
         return false;
+    if (need == JELLI_AMUSEMENT || need == JELLI_SOCIAL)
+        amount = jelli_habits_social_gain(&pet->habits, amount);
     unsigned value = pet->needs[need] + amount;
     pet->needs[need] = (uint16_t)(value > 1000u ? 1000u : value);
     pet->need_remainders[need] = 0u;
@@ -294,9 +309,9 @@ static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliP
     case JELLI_CMD_CLAIM:
         return pet->activity == JELLI_IDLE ? claim_reward(game, pet) : JELLI_BUSY;
     case JELLI_CMD_REST:
-        return rest(pet);
+        return rest(game, pet);
     case JELLI_CMD_WAKE:
-        return wake(pet);
+        return wake(game, pet);
     case JELLI_CMD_TRAVEL:
         return travel(pet, command.value);
     case JELLI_CMD_BEDTIME:

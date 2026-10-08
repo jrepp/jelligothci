@@ -28,7 +28,7 @@ static void ring_phase(const JelliPetUi *ui, JelliPetRenderKey *view, uint64_t e
 
 static void ring_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliPetRenderKey *view)
 {
-    bool target = ui->menu_open && ui->page < JELLI_UI_BRUSH;
+    bool target = ui->menu_open && ui->page < JELLI_UI_BRUSH && ui->page != JELLI_UI_COLLECTION;
     bool changed = ui->rendered &&
                    (ui->menu_open != ui->last_view.menu_open || ui->page != ui->last_view.page ||
                     ui->clock_edit != ui->last_view.clock_edit);
@@ -74,6 +74,8 @@ void jelli_pet_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliP
     ui->tuning_pet = pet->id;
     ui->tuning_form = pet->form;
     uint32_t idle = jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_IDLE_MS);
+    uint32_t scale =
+        jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_ANIMATION_SCALE);
     /* Uneven holds and occasional posture changes; no frame-count RNG or catch-up. */
     static const uint8_t poses[] = {0, 1, 0, 0, 2, 0, 1, 1, 0, 3, 3, 0, 0, 1, 0, 0};
     uint64_t beat = (time - ui->idle_anchor_ms) / idle;
@@ -83,6 +85,13 @@ void jelli_pet_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliP
     view->phase = pet->activity == JELLI_IDLE && !pet->asleep ? pose : 0u;
     ring_timing(ui, pet, time, view);
     /* Manual pages only: never slide or wrap a tile automatically. */
-    view->stat_index = (uint8_t)(ui->stat_offset % 6u);
+    view->stat_index = (uint8_t)(ui->stat_offset % JELLI_PET_STAT_COUNT);
+    view->stat_value = jelli_pet_reward_stat(pet, view->stat_index);
+    view->sleep_score = jelli_habits_sleep_score(&pet->habits);
+    view->reward_active =
+        jelli_pet_rewards_animate(&ui->rewards, &ui->particles, time, 300u * scale / 100u,
+                                  !ui->menu_open, &ui->stat_offset, &view->stat_value);
+    view->stat_index = ui->stat_offset;
+    view->reward_index = ui->rewards.index;
     view->tile_phase = 0u;
 }

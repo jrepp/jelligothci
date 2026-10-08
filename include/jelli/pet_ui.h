@@ -6,6 +6,7 @@
 #include "jelli/game.h"
 #include "jelli/particles.h"
 #include "jelli/tunables.h"
+#include "jelli/pet_rewards.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -79,10 +80,16 @@ typedef struct {
 } JelliPetUiButton;
 
 typedef struct {
+    const JelliAssetSet *assets;
     uint32_t phase;
     uint8_t night, mood, reaction, care_blocked, ring_page, ring_visible;
     bool ring_moving, clock_edit, ring_clock_edit;
-    uint8_t unavailable;
+    uint16_t unavailable;
+    uint16_t stat_value, sleep_score, prize_owned, prize_discovered;
+    uint32_t prize_origins[JELLI_PRIZE_COUNT];
+    uint8_t reward_index, offered_prize, latched_prize, highlighted_prize;
+    uint8_t catch_phase;
+    bool reward_active;
     int16_t timezone_minutes;
     uint16_t tile_phase;
     uint8_t stat_index;
@@ -119,8 +126,12 @@ typedef struct {
 } JelliPetRenderKey;
 
 typedef struct {
+    const JelliAssetSet *assets; /* Host-owned override; NULL uses embedded art. */
     /* Borrowed immutable metadata; no runtime alpha scans or allocation. */
     const JelliAsset *actor_frame;
+    JelliPetRewards rewards;
+    uint64_t catch_anchor_ms;
+    uint8_t latched_prize, highlighted_prize, catch_seen;
     JelliGame action_scratch; /* Fixed preflight workspace; never placed on the ESP task stack. */
     uint64_t tile_anchor_ms, idle_anchor_ms, last_animation_phase, last_pet_ticks;
     uint64_t last_sound_ms, coo_anchor_ms, night_anchor_ms, sleep_emit_ms, ring_anchor_ms;
@@ -133,6 +144,9 @@ typedef struct {
     uint32_t result_until_ms, last_revision, coo_pet;
     JelliRect actor_bounds;
     JelliParticles particles;
+    uint64_t wall_set_seconds;
+    int16_t wall_set_offset_minutes;
+    bool wall_set_requested;
     uint16_t clock_minute;
     uint8_t clicker_hits, clicker_goal, clicker_stage;
     bool clicker_done;

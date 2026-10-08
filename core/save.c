@@ -1,82 +1,43 @@
 #include "jelli/save.h"
+#include "save_codec.h"
 
 #include <string.h>
 
-#define SAVE_VERSION 2u
+#define SAVE_VERSION 3u
 #define SAVE_CONTENT_VERSION 1u
 #define SAVE_HEADER_SIZE 32u
 #define SAVE_TRAILER_SIZE 8u
 
-typedef struct {
-    uint8_t *bytes;
-    size_t size;
-    size_t offset;
-    bool failed;
-} Writer;
-
-typedef struct {
-    const uint8_t *bytes;
-    size_t size;
-    size_t offset;
-    bool failed;
-    uint8_t version;
-} Reader;
-
-static void put_u8(Writer *writer, uint8_t value)
+static void write_habits(Writer *writer, const JelliHabits *habits)
 {
-    if (writer->offset >= writer->size) {
-        writer->failed = true;
-        return;
+    for (size_t i = 0; i < JELLI_HABIT_BIN_COUNT; ++i) {
+        put_u16(writer, habits->bins[i].sleep_ticks);
+        put_u16(writer, habits->bins[i].play_ticks);
+        put_u16(writer, habits->bins[i].meals);
     }
-    writer->bytes[writer->offset++] = value;
+    put_u64(writer, habits->lifetime_sleep_ticks);
+    put_u64(writer, habits->lifetime_play_ticks);
+    put_u64(writer, habits->observed_ticks);
+    put_u64(writer, habits->cursor_ticks);
+    put_u32(writer, habits->lifetime_meals);
+    put_u8(writer, habits->head);
 }
 
-static void put_u16(Writer *writer, uint16_t value)
+static void read_habits(Reader *reader, JelliHabits *habits)
 {
-    put_u8(writer, (uint8_t)(value & 0xffu));
-    put_u8(writer, (uint8_t)(value >> 8u));
-}
-
-static void put_u32(Writer *writer, uint32_t value)
-{
-    put_u16(writer, (uint16_t)(value & 0xffffu));
-    put_u16(writer, (uint16_t)(value >> 16u));
-}
-
-static void put_u64(Writer *writer, uint64_t value)
-{
-    put_u32(writer, (uint32_t)(value & UINT64_C(0xffffffff)));
-    put_u32(writer, (uint32_t)(value >> 32u));
-}
-
-static uint8_t get_u8(Reader *reader)
-{
-    if (reader->offset >= reader->size) {
+    for (size_t i = 0; i < JELLI_HABIT_BIN_COUNT; ++i) {
+        habits->bins[i].sleep_ticks = get_u16(reader);
+        habits->bins[i].play_ticks = get_u16(reader);
+        habits->bins[i].meals = get_u16(reader);
+    }
+    habits->lifetime_sleep_ticks = get_u64(reader);
+    habits->lifetime_play_ticks = get_u64(reader);
+    habits->observed_ticks = get_u64(reader);
+    habits->cursor_ticks = get_u64(reader);
+    habits->lifetime_meals = get_u32(reader);
+    habits->head = get_u8(reader);
+    if (!jelli_habits_valid(habits))
         reader->failed = true;
-        return 0u;
-    }
-    return reader->bytes[reader->offset++];
-}
-
-static uint16_t get_u16(Reader *reader)
-{
-    uint16_t low = get_u8(reader);
-    uint16_t high = get_u8(reader);
-    return (uint16_t)(low | (uint16_t)(high << 8u));
-}
-
-static uint32_t get_u32(Reader *reader)
-{
-    uint32_t low = get_u16(reader);
-    uint32_t high = get_u16(reader);
-    return low | (high << 16u);
-}
-
-static uint64_t get_u64(Reader *reader)
-{
-    uint64_t low = get_u32(reader);
-    uint64_t high = get_u32(reader);
-    return low | (high << 32u);
 }
 
 static void write_pet(Writer *writer, const JelliPet *pet)
@@ -114,6 +75,11 @@ static void write_pet(Writer *writer, const JelliPet *pet)
     put_u64(writer, pet->medicine_until);
     put_u8(writer, pet->shot_goal);
     put_u8(writer, pet->shot_hits);
+    write_habits(writer, &pet->habits);
+    for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+        put_u16(writer, pet->prize_progress.counts[i]);
+    put_u64(writer, pet->prize_progress.last_breakfast_day);
+    put_u8(writer, pet->prize_progress.breakfast_day_known ? 1u : 0u);
 }
 
 static bool read_bool(Reader *reader, bool *value)
@@ -164,6 +130,53 @@ static void read_pet(Reader *reader, JelliPet *pet)
         pet->shot_goal = get_u8(reader);
         pet->shot_hits = get_u8(reader);
     }
+    if (reader->version >= 3u) {
+        read_habits(reader, &pet->habits);
+        for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+            pet->prize_progress.counts[i] = get_u16(reader);
+        pet->prize_progress.last_breakfast_day = get_u64(reader);
+        (void)read_bool(reader, &pet->prize_progress.breakfast_day_known);
+    }
+}
+
+static void write_sleep_log(Writer *writer, const JelliSleepLog *log)
+{
+    for (unsigned i = 0u; i < JELLI_SLEEP_SESSION_CAPACITY; ++i) {
+        const JelliSleepSession *session = &log->sessions[i];
+        put_u64(writer, session->bed_unix_seconds);
+        put_u64(writer, session->wake_unix_seconds);
+        put_u64(writer, session->start_tick);
+        put_u32(writer, session->duration_seconds);
+        put_u8(writer, session->flags);
+        put_u16(writer, session->bed_energy);
+        put_u16(writer, session->bed_sleep_score);
+    }
+    put_u64(writer, log->total_seconds);
+    put_u8(writer, log->head);
+    put_u8(writer, log->count);
+    put_u8(writer, log->active ? 1u : 0u);
+    put_u32(writer, log->pet_id);
+}
+
+static void read_sleep_log(Reader *reader, JelliSleepLog *log)
+{
+    for (unsigned i = 0u; i < JELLI_SLEEP_SESSION_CAPACITY; ++i) {
+        JelliSleepSession *session = &log->sessions[i];
+        session->bed_unix_seconds = get_u64(reader);
+        session->wake_unix_seconds = get_u64(reader);
+        session->start_tick = get_u64(reader);
+        session->duration_seconds = get_u32(reader);
+        session->flags = get_u8(reader);
+        session->bed_energy = get_u16(reader);
+        session->bed_sleep_score = get_u16(reader);
+    }
+    log->total_seconds = get_u64(reader);
+    log->head = get_u8(reader);
+    log->count = get_u8(reader);
+    (void)read_bool(reader, &log->active);
+    log->pet_id = get_u32(reader);
+    if (!jelli_sleep_log_valid(log))
+        reader->failed = true;
 }
 
 static void write_game(Writer *writer, const JelliGame *game)
@@ -180,6 +193,15 @@ static void write_game(Writer *writer, const JelliGame *game)
     put_u8(writer, game->resuming ? 1u : 0u);
     for (size_t i = 0; i < game->count; ++i)
         write_pet(writer, &game->pets[i]);
+    write_sleep_log(writer, &game->sleep_log);
+    put_u16(writer, (uint16_t)game->timezone_minutes);
+    put_u16(writer, (uint16_t)game->clock_adjust);
+    put_u16(writer, game->prizes.owned);
+    put_u16(writer, game->prizes.discovered);
+    for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+        put_u32(writer, game->prizes.origin_pet[i]);
+    put_u8(writer, game->prizes.offered);
+    put_u32(writer, game->prizes.offered_pet);
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -200,6 +222,20 @@ static bool read_game(Reader *reader, JelliGame *game)
     }
     for (size_t i = 0; i < game->count; ++i)
         read_pet(reader, &game->pets[i]);
+    if (reader->version >= 3u) {
+        read_sleep_log(reader, &game->sleep_log);
+        game->timezone_minutes = get_i16(reader);
+        game->clock_adjust = get_i16(reader);
+        game->prizes.owned = get_u16(reader);
+        game->prizes.discovered = get_u16(reader);
+        for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+            game->prizes.origin_pet[i] = get_u32(reader);
+        game->prizes.offered = get_u8(reader);
+        game->prizes.offered_pet = get_u32(reader);
+        if (game->prizes.owned > JELLI_PRIZE_MASK || game->prizes.discovered > JELLI_PRIZE_MASK ||
+            game->prizes.offered > JELLI_PRIZE_COUNT)
+            reader->failed = true;
+    }
     return !reader->failed;
 }
 
@@ -251,13 +287,15 @@ static bool header_valid(const uint8_t *bytes, size_t size)
 {
     return size >= SAVE_HEADER_SIZE + SAVE_TRAILER_SIZE && bytes[0] == (uint8_t)'J' &&
            bytes[1] == (uint8_t)'L' && bytes[2] == (uint8_t)'S' && bytes[3] == (uint8_t)'V' &&
-           (bytes[4] == 1u || bytes[4] == SAVE_VERSION) && bytes[5] == 0u &&
+           bytes[4] >= 1u && bytes[4] <= SAVE_VERSION && bytes[5] == 0u &&
            bytes[6] == SAVE_HEADER_SIZE && bytes[7] == 0u;
 }
 
-bool jelli_save_decode(JelliSave *save, const uint8_t *bytes, size_t size)
+bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t size,
+                                 JelliSave *candidate)
 {
-    if (save == NULL || bytes == NULL || size > JELLI_SAVE_CAPACITY || !header_valid(bytes, size))
+    if (save == NULL || candidate == NULL || save == candidate || bytes == NULL ||
+        size > JELLI_SAVE_CAPACITY || !header_valid(bytes, size))
         return false;
     Reader header = {.bytes = bytes, .size = size, .offset = 8u};
     uint32_t declared_size = get_u32(&header);
@@ -270,19 +308,24 @@ bool jelli_save_decode(JelliSave *save, const uint8_t *bytes, size_t size)
         return false;
     Reader reader = {.bytes = bytes, .size = size - SAVE_TRAILER_SIZE, .offset = SAVE_HEADER_SIZE};
     reader.version = bytes[4];
-    JelliSave candidate;
-    memset(&candidate, 0, sizeof(candidate));
+    memset(candidate, 0, sizeof(*candidate));
     reader.offset = 12u;
-    candidate.sequence = get_u64(&reader);
-    candidate.anchor_ms = get_u64(&reader);
-    (void)read_bool(&reader, &candidate.anchor_valid);
+    candidate->sequence = get_u64(&reader);
+    candidate->anchor_ms = get_u64(&reader);
+    (void)read_bool(&reader, &candidate->anchor_valid);
     if (get_u8(&reader) != SAVE_CONTENT_VERSION || get_u8(&reader) != 0u || get_u8(&reader) != 0u)
         reader.failed = true;
-    (void)read_game(&reader, &candidate.game);
-    if (reader.failed || reader.offset != reader.size || candidate.game.resuming ||
-        candidate.game.resume_remaining_ms != 0u || candidate.game.backlog_ms >= 100u ||
-        !jelli_game_valid(&candidate.game))
+    (void)read_game(&reader, &candidate->game);
+    if (reader.failed || reader.offset != reader.size || candidate->game.resuming ||
+        candidate->game.resume_remaining_ms != 0u || candidate->game.backlog_ms >= 100u ||
+        !jelli_game_valid(&candidate->game))
         return false;
-    *save = candidate;
+    *save = *candidate;
     return true;
+}
+
+bool jelli_save_decode(JelliSave *save, const uint8_t *bytes, size_t size)
+{
+    JelliSave candidate;
+    return jelli_save_decode_workspace(save, bytes, size, &candidate);
 }

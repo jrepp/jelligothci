@@ -9,6 +9,7 @@ import argparse
 import json
 from menu_icons import create_menu_assets, create_meter_assets
 from healthy_art import create_healthy_assets
+from prize_art import create_prize_assets
 source_root = Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--output", type=Path, default=source_root.parents[1] / "build/assets/reimport")
@@ -171,6 +172,7 @@ for form in ('baby','grown'):
 assets.extend(create_healthy_assets(root, palette))
 assets.extend(create_menu_assets(root, palette))
 assets.extend(create_meter_assets(root, palette))
+assets.extend(create_prize_assets(root, palette))
 manifest=dict(schema_version=1,name='Jelligotchi vertical slice',status='Ring menu artwork integrated; physical readability review pending',pixel_format='RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks',palette=palette,assets=assets,clips=clips)
 (root/'assets.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print(f'Created {len(assets)} PNG assets from atlas {atlas.size}; {len(clips)} clips')

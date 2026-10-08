@@ -140,16 +140,16 @@ static void rate_remainders_and_sleep_transition(void)
     JelliGame game;
     jelli_game_init(&game);
     advance_ms(&game, 30000u);
-    CHECK(game.pets[0].needs[JELLI_SATIETY] == 496u);
+    CHECK(game.pets[0].needs[JELLI_SATIETY] == 500u);
     CHECK(game.pets[0].needs[JELLI_ENERGY] == 698u);
-    CHECK(game.pets[0].needs[JELLI_HYGIENE] == 699u);
-    CHECK(game.pets[0].need_remainders[JELLI_HYGIENE] == 300u);
+    CHECK(game.pets[0].needs[JELLI_HYGIENE] == 700u);
+    CHECK(game.pets[0].need_remainders[JELLI_HYGIENE] == 75u);
     CHECK(command(&game, JELLI_CMD_REST, 1u, 0u) == JELLI_OK);
     advance_ms(&game, 30000u);
-    CHECK(game.pets[0].needs[JELLI_SATIETY] == 494u);
+    CHECK(game.pets[0].needs[JELLI_SATIETY] == 500u);
     CHECK(game.pets[0].needs[JELLI_ENERGY] == 703u);
-    CHECK(game.pets[0].needs[JELLI_HYGIENE] == 698u);
-    CHECK(game.pets[0].need_remainders[JELLI_HYGIENE] == 300u);
+    CHECK(game.pets[0].needs[JELLI_HYGIENE] == 700u);
+    CHECK(game.pets[0].need_remainders[JELLI_HYGIENE] == 113u);
 }
 
 static void energy_remainder_survives_direction_change(void)
@@ -315,16 +315,16 @@ static void capped_resume_and_command_lock(void)
     CHECK(game.resuming && game.resume_remaining_ms == JELLI_OFFLINE_CAP_MS);
     CHECK(game.discarded_ms == 1000u);
     CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_BUSY);
-    uint8_t calls = 0u;
+    uint16_t calls = 0u;
     while (!jelli_game_resume_step(&game)) {
         CHECK(jelli_game_valid(&game));
         ++calls;
-        CHECK(calls < 45u);
+        CHECK(calls < 1440u);
     }
     CHECK(jelli_game_valid(&game));
     CHECK(!game.resuming && game.resume_remaining_ms == 0u);
     CHECK(game.pets[0].ticks == original + JELLI_OFFLINE_CAP_MS / 100u);
-    CHECK(game.pets[1].ticks == 0u && calls == 44u);
+    CHECK(game.pets[1].ticks == 0u && calls == 1439u);
 }
 
 int main(void)

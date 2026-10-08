@@ -56,12 +56,30 @@ static JelliSave fixture(void)
     save.game.discarded_ms = 1800u;
     save.game.backlog_ms = 50u;
     save.game.revision = 11u;
+    save.game.timezone_minutes = -330;
+    save.game.clock_adjust = 25;
+    save.game.prizes.owned = 1u;
+    save.game.prizes.discovered = 3u;
+    save.game.prizes.origin_pet[0] = 1u;
+    save.game.prizes.origin_pet[1] = 2u;
+    save.game.prizes.offered = 3u;
+    save.game.prizes.offered_pet = 2u;
+    save.game.pets[0].prize_progress.counts[0] = 3u;
+    save.game.pets[1].prize_progress.counts[1] = 2u;
+    save.game.pets[1].prize_progress.breakfast_day_known = true;
+    save.game.pets[1].prize_progress.last_breakfast_day = 12u;
     save.game.pets[0].hunger_due = 60000u;
     save.game.pets[0].hunger_low = true;
     for (size_t i = 0; i < JELLI_NEED_COUNT; ++i)
         save.game.pets[0].need_remainders[i] = (uint16_t)(10u + i);
     save.game.pets[0].reward_claimed = true;
     save.game.pets[1].reward_pending = true;
+    save.game.sleep_log =
+        (JelliSleepLog){.total_seconds = 3600u, .head = 1u, .count = 1u, .pet_id = 1u};
+    save.game.sleep_log.sessions[0] = (JelliSleepSession){.bed_unix_seconds = 1700000000u,
+                                                          .wake_unix_seconds = 1700003600u,
+                                                          .duration_seconds = 3600u,
+                                                          .flags = 7u};
     return save;
 }
 
@@ -79,6 +97,21 @@ static void round_trip_is_canonical(void)
     CHECK(decoded.game.backlog_ms == 50u && decoded.game.pets[0].hunger_low);
     CHECK(decoded.game.pets[0].need_remainders[0] == 10u);
     CHECK(decoded.game.pets[0].reward_claimed && decoded.game.pets[1].reward_pending);
+    CHECK(decoded.game.sleep_log.total_seconds == 3600u);
+    CHECK(decoded.game.sleep_log.sessions[0].wake_unix_seconds == 1700003600u);
+    CHECK(decoded.game.timezone_minutes == -330 && decoded.game.clock_adjust == 25);
+    CHECK(decoded.game.prizes.owned == 1u && decoded.game.prizes.discovered == 3u);
+    CHECK(decoded.game.prizes.origin_pet[1] == 2u && decoded.game.prizes.offered == 3u);
+    CHECK(decoded.game.pets[1].prize_progress.last_breakfast_day == 12u);
+    CHECK(jelli_sleep_log_begin(&original.game.sleep_log, 1u, original.game.pets[0].ticks, true,
+                                1700086400u));
+    original.game.wall_seconds = 1700086400u;
+    original.game.wall_known = true;
+    size = encode(&original, bytes);
+    CHECK(jelli_save_decode(&decoded, bytes, size));
+    CHECK(decoded.game.sleep_log.active && decoded.game.sleep_log.count == 2u);
+    CHECK(decoded.game.sleep_log.sessions[1].bed_unix_seconds == 1700086400u);
+    CHECK(!decoded.game.wall_known && decoded.game.wall_seconds == 0u);
 }
 
 static void failed_decodes_preserve_output(void)
@@ -100,7 +133,7 @@ static void failed_decodes_preserve_output(void)
     CHECK(!jelli_save_decode(&output, broken, size));
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
-    broken[4] = 3u;
+    broken[4] = 4u;
     CHECK(!jelli_save_decode(&output, broken, size));
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
@@ -208,14 +241,17 @@ static void interaction_claim_and_sleep_round_trip(void)
     saved = fixture();
     CHECK(jelli_game_command(&saved.game, (JelliCommand){.kind = JELLI_CMD_REST, .actor_id = 1u}) ==
           JELLI_OK);
-    saved.game.pets[0].nap_due = saved.game.pets[0].ticks + 2u;
     size = encode(&saved, bytes);
     CHECK(jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.pets[0].asleep && !loaded.game.pets[0].scheduled_sleep);
     CHECK(loaded.game.pets[0].nap_due == saved.game.pets[0].nap_due);
     advance_ms(&saved.game, 200u);
     advance_ms(&loaded.game, 200u);
-    CHECK(!saved.game.pets[0].asleep && !loaded.game.pets[0].asleep);
+    CHECK(saved.game.pets[0].asleep && loaded.game.pets[0].asleep);
+    CHECK(jelli_game_command(&saved.game, (JelliCommand){.kind = JELLI_CMD_WAKE, .actor_id = 1u}) ==
+          JELLI_OK);
+    CHECK(jelli_game_command(&loaded.game,
+                             (JelliCommand){.kind = JELLI_CMD_WAKE, .actor_id = 1u}) == JELLI_OK);
     check_same_save(&saved, &loaded);
 }
 
@@ -226,17 +262,17 @@ static void need_rate_phase_survives_save(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     for (size_t i = 0; i < JELLI_NEED_COUNT; ++i)
         saved.game.pets[0].need_remainders[i] = 0u;
-    advance_ms(&saved.game, 100u);
+    advance_ms(&saved.game, 400u);
     size_t size = encode(&saved, bytes);
     CHECK(jelli_save_decode(&loaded, bytes, size));
-    CHECK(loaded.game.pets[0].need_remainders[JELLI_SATIETY] == 8u);
-    CHECK(loaded.game.pets[0].need_remainders[JELLI_ENERGY] == 4u);
-    CHECK(loaded.game.pets[0].need_remainders[JELLI_HYGIENE] == 3u);
-    advance_ms(&saved.game, 59900u);
-    advance_ms(&loaded.game, 59900u);
-    CHECK(saved.game.pets[0].needs[JELLI_SATIETY] == 492u);
+    CHECK(loaded.game.pets[0].need_remainders[JELLI_SATIETY] == 4u);
+    CHECK(loaded.game.pets[0].need_remainders[JELLI_ENERGY] == 16u);
+    CHECK(loaded.game.pets[0].need_remainders[JELLI_HYGIENE] == 1u);
+    advance_ms(&saved.game, 59600u);
+    advance_ms(&loaded.game, 59600u);
+    CHECK(saved.game.pets[0].needs[JELLI_SATIETY] == 499u);
     CHECK(saved.game.pets[0].needs[JELLI_ENERGY] == 696u);
-    CHECK(saved.game.pets[0].needs[JELLI_HYGIENE] == 697u);
+    CHECK(saved.game.pets[0].needs[JELLI_HYGIENE] == 700u);
     check_same_save(&saved, &loaded);
 }
 
@@ -250,31 +286,105 @@ static void health_history_and_v1_migration(void)
     pet->shot_hits = 1u;
     uint8_t bytes[JELLI_SAVE_CAPACITY], legacy[JELLI_SAVE_CAPACITY];
     size_t size = encode(&save, bytes);
-    CHECK(bytes[4] == 2u && jelli_save_decode(&loaded, bytes, size));
+    CHECK(bytes[4] == 3u && jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.pets[0].shot_until == pet->shot_until);
     CHECK(loaded.game.pets[0].medicine_until == pet->medicine_until);
     CHECK(loaded.game.pets[0].shot_goal == 3u && loaded.game.pets[0].shot_hits == 1u);
-    /* V1 has the same header/game prefix and 112-byte pet records, without history. */
-    memcpy(legacy, bytes, 71u);
-    size_t old_size = 71u;
-    for (unsigned i = 0; i < save.game.count; ++i) {
-        memcpy(legacy + old_size, bytes + 71u + (size_t)i * 130u, 112u);
-        old_size += 112u;
+    size_t pet_size = 130u + JELLI_HABIT_BIN_COUNT * 6u + 37u + JELLI_PRIZE_COUNT * 2u + 9u;
+    for (unsigned version = 1u; version <= 2u; ++version) {
+        /* Both legacy versions share the header/game prefix. */
+        size_t legacy_pet_size = version == 1u ? 112u : 130u;
+        memcpy(legacy, bytes, 71u);
+        size_t old_size = 71u;
+        for (unsigned i = 0; i < save.game.count; ++i) {
+            memcpy(legacy + old_size, bytes + 71u + (size_t)i * pet_size, legacy_pet_size);
+            old_size += legacy_pet_size;
+        }
+        memcpy(legacy + old_size, bytes + size - 8u, 8u);
+        old_size += 8u;
+        legacy[4] = (uint8_t)version;
+        for (unsigned i = 0; i < 4u; ++i)
+            legacy[8u + i] = (uint8_t)(old_size >> (i * 8u));
+        repair_checksum(legacy, old_size);
+        CHECK(jelli_save_decode(&loaded, legacy, old_size));
+        CHECK(loaded.game.pets[0].shot_until == (version == 1u ? 0u : pet->shot_until));
+        CHECK(loaded.game.pets[0].medicine_until == (version == 1u ? 0u : pet->medicine_until));
+        CHECK(loaded.game.pets[0].shot_goal == (version == 1u ? 0u : 3u));
+        CHECK(loaded.game.pets[0].shot_hits == (version == 1u ? 0u : 1u));
+        CHECK(loaded.game.sleep_log.count == 0u && !loaded.game.sleep_log.active);
+        CHECK(loaded.game.timezone_minutes == 0 && loaded.game.clock_adjust == 0);
+        CHECK(loaded.game.prizes.owned == 0u && loaded.game.prizes.discovered == 0u);
+        CHECK(loaded.game.pets[0].prize_progress.counts[0] == 0u);
+        CHECK(loaded.game.pets[0].habits.observed_ticks == 0u);
+        CHECK(loaded.game.pets[0].habits.lifetime_sleep_ticks == 0u);
+        CHECK(loaded.game.pets[0].habits.lifetime_play_ticks == 0u);
+        CHECK(loaded.game.pets[0].habits.lifetime_meals == 0u);
+        CHECK(loaded.game.pets[0].bond == pet->bond && loaded.sequence == save.sequence);
     }
-    memcpy(legacy + old_size, bytes + size - 8u, 8u);
-    old_size += 8u;
-    legacy[4] = 1u;
-    for (unsigned i = 0; i < 4u; ++i)
-        legacy[8u + i] = (uint8_t)(old_size >> (i * 8u));
-    repair_checksum(legacy, old_size);
-    CHECK(jelli_save_decode(&loaded, legacy, old_size));
-    CHECK(loaded.game.pets[0].shot_until == 0u && loaded.game.pets[0].medicine_until == 0u);
-    CHECK(loaded.game.pets[0].shot_goal == 0u && loaded.game.pets[0].shot_hits == 0u);
-    CHECK(loaded.game.pets[0].bond == pet->bond && loaded.sequence == save.sequence);
+}
+
+static void rolling_history_round_trip(void)
+{
+    JelliSave save = fixture(), loaded;
+    for (unsigned p = 0u; p < save.game.count; ++p) {
+        JelliPet *pet = &save.game.pets[p];
+        for (unsigned hour = 0u; hour < 28u; ++hour) {
+            uint64_t start = (uint64_t)hour * JELLI_HABIT_HOUR_TICKS;
+            jelli_habits_advance(&pet->habits, start, JELLI_HABIT_HOUR_TICKS, hour % 3u == p,
+                                 hour % 3u == 2u);
+            jelli_habits_record_meal(&pet->habits, start + JELLI_HABIT_HOUR_TICKS);
+        }
+        pet->ticks = pet->habits.cursor_ticks;
+    }
+    uint8_t bytes[JELLI_SAVE_CAPACITY];
+    size_t size = encode(&save, bytes);
+    CHECK(jelli_save_decode(&loaded, bytes, size));
+    check_same_save(&save, &loaded);
+    for (unsigned p = 0u; p < save.game.count; ++p) {
+        CHECK(loaded.game.pets[p].habits.lifetime_meals == 28u);
+        CHECK(loaded.game.pets[p].habits.head == 3u);
+        JelliHabitTotals expected = jelli_habits_totals(&save.game.pets[p].habits);
+        JelliHabitTotals actual = jelli_habits_totals(&loaded.game.pets[p].habits);
+        CHECK(actual.sleep_ticks == expected.sleep_ticks &&
+              actual.play_ticks == expected.play_ticks);
+        CHECK(actual.meals_q16 == expected.meals_q16 &&
+              actual.coverage_ticks == expected.coverage_ticks);
+    }
+    JelliSave before = loaded;
+    /* First pet's rolling-bin sleep duration cannot exceed one hour. */
+    bytes[201] = UINT8_MAX;
+    bytes[202] = UINT8_MAX;
+    repair_checksum(bytes, size);
+    CHECK(!jelli_save_decode(&loaded, bytes, size));
+    CHECK(unchanged(&loaded, &before));
+    size = encode(&save, bytes);
+    bytes[387] = JELLI_HABIT_BIN_COUNT; /* Ring head follows 150-byte bins and 36-byte totals. */
+    repair_checksum(bytes, size);
+    CHECK(!jelli_save_decode(&loaded, bytes, size));
+    CHECK(unchanged(&loaded, &before));
+    size = encode(&save, bytes);
+    bytes[size - 52u] = 2u; /* Owned bit nine is outside the nine prize slots. */
+    repair_checksum(bytes, size);
+    CHECK(!jelli_save_decode(&loaded, bytes, size));
+    CHECK(unchanged(&loaded, &before));
+    size = encode(&save, bytes);
+    bytes[size - 13u] = JELLI_PRIZE_COUNT + 1u;
+    repair_checksum(bytes, size);
+    CHECK(!jelli_save_decode(&loaded, bytes, size));
+    CHECK(unchanged(&loaded, &before));
+    save.game.count = JELLI_PET_CAPACITY;
+    for (unsigned p = 2u; p < save.game.count; ++p) {
+        save.game.pets[p] = save.game.pets[0];
+        save.game.pets[p].id = p + 1u;
+    }
+    size = encode(&save, bytes);
+    CHECK(size <= JELLI_SAVE_CAPACITY && jelli_save_decode(&loaded, bytes, size));
+    check_same_save(&save, &loaded);
 }
 
 int main(void)
 {
+    rolling_history_round_trip();
     health_history_and_v1_migration();
     round_trip_is_canonical();
     failed_decodes_preserve_output();

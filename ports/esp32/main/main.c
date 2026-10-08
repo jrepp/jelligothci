@@ -2,6 +2,7 @@
 #include "jelli/pet_engine.h"
 #include "debug_wire.h"
 #include "sound_output.h"
+#include "session.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -77,13 +78,14 @@ static void paused(void *ctx, bool value)
     ESP_LOGI(TAG, "Animation %s", value ? "paused" : "running");
 }
 
-static void run_engine(JelliPetEngine *engine, const Board *board)
+static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSession *session)
 {
     uint64_t report_start = now_ms(NULL);
     unsigned frames = 0;
     for (;;) {
         uint64_t start = now_ms(NULL);
         bool frozen = jelli_debug_wire_poll(engine, start);
+        jelli_esp_session_update(session, engine, frozen);
         if (!frozen && !jelli_pet_frame(engine))
             return;
         unsigned cue =
@@ -92,10 +94,7 @@ static void run_engine(JelliPetEngine *engine, const Board *board)
                 : 0u;
         if (cue)
             (void)jelli_sound_output_request(NULL, cue - 1u, cue == 6u ? 25u : 18u);
-        if (engine->ui.save_requested) {
-            engine->ui.save_requested = false;
-            engine->ui.save_status = JELLI_SAVE_UNAVAILABLE;
-        }
+        jelli_esp_session_update(session, engine, frozen);
         if (!frozen)
             ++frames;
         uint64_t end = now_ms(NULL);
@@ -120,6 +119,7 @@ void app_main(void)
 {
     static Board board;
     static JelliPetEngine engine;
+    static JelliEspSession session;
     const size_t bytes = JELLI_WIDTH * JELLI_HEIGHT * sizeof(uint16_t);
     uint16_t *pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     board.canvas_pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
@@ -148,10 +148,10 @@ void app_main(void)
     JelliSurface surface = {
         .pixels = pixels, .width = JELLI_WIDTH, .height = JELLI_HEIGHT, .stride = JELLI_WIDTH};
     ESP_ERROR_CHECK(jelli_pet_init(&engine, platform, surface) ? ESP_OK : ESP_FAIL);
-    engine.ui.time_unavailable = true;
-    ESP_LOGI(TAG, "Pet slice ready: tap menus; volatile session, RTC/save integration pending");
+    jelli_esp_session_open(&session, &engine);
+    ESP_LOGI(TAG, "Pet slice ready: tap menus; NVS checkpoint and RTC session initialized");
     if (!jelli_sound_output_init())
         ESP_LOGW(TAG, "Sound unavailable; game remains playable");
     jelli_debug_wire_init();
-    run_engine(&engine, &board);
+    run_engine(&engine, &board, &session);
 }

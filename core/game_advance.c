@@ -6,7 +6,7 @@
 #define LIVE_TICK_LIMIT 8u
 #define LIVE_BACKLOG_LIMIT UINT64_C(2000)
 #define RESUME_SEGMENT_MS UINT64_C(60000)
-#define RESUME_SEGMENT_LIMIT 8u
+#define RESUME_SEGMENT_LIMIT 1u
 
 static uint64_t saturating_add(uint64_t left, uint64_t right)
 {
@@ -34,9 +34,8 @@ static void advance_ticks(JelliGame *game, uint64_t ticks, bool offline)
 
 static void advance_segment(JelliGame *game, uint64_t ticks)
 {
-    JelliPet *pet = &game->pets[game->active];
-    jelli_game_endpoint(game, pet, ticks, true);
-    game->ticks = saturating_add(game->ticks, ticks);
+    /* One bounded minute per call follows the same transitions as live ticks. */
+    advance_ticks(game, ticks, true);
 }
 
 void jelli_game_advance(JelliGame *game, uint64_t elapsed_ms)

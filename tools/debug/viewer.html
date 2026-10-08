@@ -13,6 +13,12 @@
 <div><h2>LIVE PET</h2><div id="pet-line">Waiting for the game</div><div id="pet-context">Care and activity state will appear here.</div></div>
 <div class="metrics" id="needs"></div>
 </section>
+<section class="panel controls-panel" aria-label="Sleep and recent habits">
+<div class="section-head"><h2 id="sleep-score">Sleep score · waiting</h2><button id="clock-sync">Sync device clock</button></div>
+<div id="sleep-summary" class="muted">Bedtime and wake observations will appear here.</div>
+<div id="habits-summary" class="muted"></div><div id="clock-status" role="status"></div>
+<details><summary>Last eight sleep sessions</summary><div id="sleep-history"></div></details>
+</section>
 <div id="notice" role="status"></div>
 <section class="panel" aria-label="Event history">
 <div class="toolbar">
@@ -66,9 +72,10 @@ function changes(e) {
     numeric('Bond',e.before.bond,e.after.bond,10);
     numeric('Food',e.before.food,e.after.food); numeric('Gifts',e.before.gifts,e.after.gifts);
     const state=(label,a,b,names)=>{if(a!==b)out.push({label,before:names[a]??a,after:names[b]??b});};
-    state('Feeling',e.before.flags>>3,e.after.flags>>3,['Settled','Enjoying touch','Needs space','Overwhelmed']);
+    state('Feeling',(e.before.flags>>3)&3,(e.after.flags>>3)&3,['Settled','Enjoying touch','Needs space','Overwhelmed']);
     state('Location',e.before.location,e.after.location,['Home','Garden']);
     state('Sleep',e.before.flags&1,e.after.flags&1,['Awake','Asleep']);
+    state('Bedtime journal',(e.before.flags>>5)&1,(e.after.flags>>5)&1,['Finished','In progress']);
     state('Health',e.before.health,e.after.health,['Well','Unwell','Recovering']);
     state('Activity',e.before.activity,e.after.activity,activities);
     state('Reward',(e.before.flags>>1)&1,(e.after.flags>>1)&1,['Unavailable','Ready to claim']);
@@ -136,7 +143,7 @@ function updateState(v,buttons) {
     let activity=v.asleep?'Asleep':activities[v.activity]||'Idle';
     if(v.page==='brush')activity+=` · Dental step ${v.clicker_stage+1}/6`;
     if(v.clicker_goal&&['brush','medicine','shot','wash','stretch'].includes(v.page))activity+=v.clicker_done?' · Complete':` · ${v.clicker_hits}/${v.clicker_goal} taps`;
-    $('pet-context').textContent=`${activity} · ${['Well','Unwell','Recovering'][v.health]} · Food ${v.food} · Gifts ${v.gifts}`;
+    $('pet-context').textContent=`${activity} · ${['Well','Unwell','Recovering'][v.health]} · Food ${v.food} · Presents ${v.collection?.owned_count??0}`;
     $('needs').replaceChildren(...[...needNames,'Bond'].map((name,i)=>{
         const value=(i===5?v.bond:v.needs[i])/10, item=el('div','','metric');
         item.append(el('span',name),el('strong',number(value)));
@@ -152,6 +159,26 @@ function updateState(v,buttons) {
         catch(e){$('status').textContent=e.message;}finally{button.disabled=b.enabled===false;}
     };$('controls').append(button);}
 }
+function wallTime(seconds, flags, bit, offset) {
+    if(!(flags&bit))return 'Unknown';
+    const date=new Date((seconds+offset*60)*1000);
+    return Number.isFinite(date.getTime())?date.toISOString().replace('T',' ').slice(0,16):'Unknown';
+}
+function updateHistory(data) {
+    if(!data.habits||!data.sleep_log||!data.clock)return;
+    const h=data.habits, log=data.sleep_log, clock=data.clock, offset=clock.timezone_minutes||0;
+    $('sleep-score').textContent=`Sleep score ${number(h.scores.sleep/10)}/100${h.provisional?' · provisional':''}`;
+    $('habits-summary').textContent=`Pet's rolling 24h · Sleep ${number(h.rolling.sleep_seconds/3600)}h · Meals ${number(h.rolling.meals_q16/65536)} · Play ${number(h.rolling.play_seconds/60)}min · Observed ${number(h.rolling.coverage_seconds/3600)}h`;
+    const last=log.sessions.at(-1);
+    $('sleep-summary').textContent=last?`Bed ${wallTime(last.bed_unix_seconds,last.flags,1,offset)} · Wake ${last.active?'In progress':wallTime(last.wake_unix_seconds,last.flags,2,offset)} · ${last.active?'':number(last.duration_seconds/3600)+'h '+(last.real_duration?'wall time':'pet simulation time')}`:'No linked bedtime recorded yet. Use Rest to begin and Wake to finish.';
+    $('clock-status').textContent=clock.pending?'Clock sync pending…':clock.clock_known?`Device clock set · UTC offset ${offset} min`:'Device clock unknown · sync explicitly before tracking real bedtime.';
+    $('sleep-history').replaceChildren(...[...log.sessions].reverse().map(s=>el('div',`${wallTime(s.bed_unix_seconds,s.flags,1,offset)} → ${s.active?'In progress':wallTime(s.wake_unix_seconds,s.flags,2,offset)} · ${number(s.duration_seconds/3600)}h · ${s.real_duration?'wall time':'pet simulation time'}${s.flags&8?' · Energy at bed '+number(s.bed_energy/10)+' · Sleep score '+number(s.bed_sleep_score/10):''}`,'muted')));
+}
+$('clock-sync').onclick=async()=>{
+    const button=$('clock-sync');button.disabled=true;$('clock-status').textContent='Syncing…';
+    try{const response=await fetch('/api/clock-sync',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const result=await response.json();if(!response.ok)throw Error(result.error);$('clock-status').textContent='Clock synchronized';}
+    catch(error){$('clock-status').textContent=error.message;}finally{button.disabled=false;}
+};
 $('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume feed':'Pause feed';$('pause').setAttribute('aria-pressed',String(paused));if(!paused)render();};
 $('follow').onclick=()=>{following=true;paused=false;$('pause').textContent='Pause feed';$('pause').setAttribute('aria-pressed','false');render();};
 $('feed').onscroll=()=>{const f=$('feed');following=f.scrollHeight-f.scrollTop-f.clientHeight<30;};
@@ -161,7 +188,7 @@ async function poll() {
         const r=await fetch('/api/poll?after='+cursor), data=await r.json();if(!r.ok)throw Error(data.error);
         if(data.reset||data.dropped){rows=[];$('notice').textContent=data.reset?'Game restarted. Event history reset.':'Some older device events expired. History resumes below.';}
         cursor=data.next;data.events.forEach(ingest);
-        $('status').textContent='● Connected · Live state';updateState(data.state.visual,data.state.buttons);
+        $('status').textContent='● Connected · Live state';updateState(data.state.visual,data.state.buttons);updateHistory(data);
         if(!paused&&following&&(data.events.length||data.reset||data.dropped))render();
         else $('pending').textContent=unread?`${unread} new · Follow latest to view`:paused?'Feed paused':'';
     }catch(e){$('status').textContent='Disconnected · '+e.message;}

@@ -4,6 +4,7 @@
 # ///
 """Small request/response client for Jelligotchi local/USB serial debug protocol v1."""
 import argparse
+from datetime import datetime
 import json
 from pathlib import Path
 import secrets
@@ -76,11 +77,27 @@ class Client:
         matches = [item for item in options if str(item["id"]) == button
                    or item["label"].casefold() == button.casefold()]
         if len(matches) != 1:
-            raise DebugError("Button must uniquely match a current label or index 0–6")
+            raise DebugError("Button must uniquely match a current label or index 0–9")
         item = matches[0]
         # The device validates the page before dispatching through normal UI hit testing.
         page = ["home", "care", "more", "collection", "settings", "moments", "health", "brush", "medicine", "shot", "wash", "stretch"].index(state["visual"]["page"])
         return self.request(f"press {page} {item['id']}")
+
+    def set_clock(self, seconds, offset_minutes):
+        if not 946684800 <= seconds < 4102444800 or not -720 <= offset_minutes <= 840:
+            raise DebugError("Clock requires 2000–2099 UTC seconds and offset −720..840 minutes")
+        self.request(f"clock {seconds} {offset_minutes + 720}")
+        deadline = time.monotonic() + self.timeout
+        while time.monotonic() < deadline:
+            state = self.request("clock")
+            if not state.get("pending"):
+                if (not state.get("clock_known") or state.get("result") != "ok" or
+                        abs(state.get("unix_seconds", 0) - seconds) > 5 or
+                        state.get("timezone_minutes") != offset_minutes):
+                    raise DebugError("Clock sync rejected or RTC unavailable; inspect clock state")
+                return state
+            time.sleep(.03)
+        raise DebugError("Clock sync remains pending; inspect clock state before retrying")
 
     def screenshot(self, path):
         state = self.request("capture")
@@ -161,6 +178,14 @@ class SocketWire:
         self.socket.close()
 
 
+def host_clock():
+    local = datetime.now().astimezone()
+    offset = local.utcoffset()
+    if offset is None:
+        raise DebugError("Host UTC offset unavailable")
+    return int(local.timestamp()), int(offset.total_seconds() // 60)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     transport = parser.add_mutually_exclusive_group()
@@ -168,10 +193,14 @@ def main():
     transport.add_argument("--socket", help="Local SDL Unix socket; defaults to build/jelli-debug.sock")
     parser.add_argument("--timeout", type=float, default=3.0)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("ports", "state", "buttons"):
+    for name in ("ports", "state", "buttons", "habits", "sleep-log"):
         commands.add_parser(name)
+    clock = commands.add_parser("clock", help="Read clock, or explicitly sync/set UTC time")
+    clock.add_argument("action", nargs="?", choices=("sync", "set"))
+    clock.add_argument("seconds", nargs="?", type=int, help="UTC Unix seconds for set")
+    clock.add_argument("--offset", type=int, default=0, help="Local UTC offset in minutes for set")
     press = commands.add_parser("press")
-    press.add_argument("button", help="Current label (quote spaces) or index 0–6")
+    press.add_argument("button", help="Current label (quote spaces) or index 0–9")
     swipe = commands.add_parser("swipe")
     swipe.add_argument("direction", choices=("up", "down", "left", "right"))
     tap = commands.add_parser("tap")
@@ -216,6 +245,12 @@ def main():
                 parser.error("heal takes no value")
         elif args.value is None or not 0 <= args.value <= (20 if args.name in ("food", "gifts") else 100):
             parser.error("cheat needs a value: 0–100 for needs/bond, 0–20 for inventory")
+    if args.command == "clock":
+        if args.action == "set" and (args.seconds is None or
+                not 946684800 <= args.seconds < 4102444800 or not -720 <= args.offset <= 840):
+            parser.error("clock set needs UTC seconds for 2000–2099 and --offset −720..840")
+        if args.action != "set" and args.seconds is not None:
+            parser.error("Only clock set takes Unix seconds")
     wire = None
     try:
         if args.port:
@@ -232,6 +267,16 @@ def main():
         client = Client(wire, args.timeout)
         if args.command == "cheat":
             result = client.request("cheat " + args.name + ("" if args.name == "heal" else f" {args.value}"))
+        elif args.command == "clock":
+            if args.action == "sync":
+                seconds, offset = host_clock()
+                result = client.set_clock(seconds, offset)
+            elif args.action == "set":
+                result = client.set_clock(args.seconds, args.offset)
+            else:
+                result = client.request("clock")
+        elif args.command in ("habits", "sleep-log"):
+            result = client.request(args.command)
         elif args.command == "state":
             result = client.state()
         elif args.command == "buttons":

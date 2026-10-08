@@ -44,10 +44,9 @@ static bool is_incompatible(const uint8_t *bytes, size_t size)
     bool save_record = size >= 6u && bytes[0] == (uint8_t)'J' && bytes[1] == (uint8_t)'L' &&
                        bytes[2] == (uint8_t)'S' && bytes[3] == (uint8_t)'V';
     bool save_version_mismatch =
-        save_record && ((bytes[4] != 1u && bytes[4] != 2u) || bytes[5] != 0u);
-    bool content_version_mismatch = save_record && size >= 30u &&
-                                    (bytes[4] == 1u || bytes[4] == 2u) && bytes[5] == 0u &&
-                                    bytes[29] != 1u;
+        save_record && ((bytes[4] < 1u || bytes[4] > 3u) || bytes[5] != 0u);
+    bool content_version_mismatch = save_record && size >= 30u && bytes[4] >= 1u &&
+                                    bytes[4] <= 3u && bytes[5] == 0u && bytes[29] != 1u;
     return save_version_mismatch || content_version_mismatch;
 }
 

@@ -105,6 +105,7 @@ static int parser_tests(void)
     request("@J1 1 state\r\n");
     CHECK(contains("\"page\":\"home\""));
     CHECK(contains("\"label\":\"MENU\""));
+    CHECK(contains("\"collection\":{\"owned_count\":0,\"owned_mask\":0,\"discovered_mask\":0"));
     request("@J1 1 press 0 0\n");
     request("@J1 2 press 0 1\n");
     CHECK(engine.ui.page == JELLI_UI_CARE);

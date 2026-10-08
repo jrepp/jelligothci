@@ -24,8 +24,9 @@ static uint32_t frame_id(const JelliPetRenderKey *v)
 void jelli_pet_actor_layout(JelliPetUi *ui, const JelliPetRenderKey *view)
 {
     uint32_t id = frame_id(view);
-    if (!ui->actor_frame || ui->actor_frame->id != id)
-        ui->actor_frame = jelli_asset_find(id);
+    if (!ui->actor_frame || ui->actor_frame->id != id ||
+        (ui->rendered && ui->last_view.assets != ui->assets))
+        ui->actor_frame = jelli_asset_lookup(ui->assets, id);
     const JelliAsset *a = ui->actor_frame;
     if (!a)
         return;

@@ -92,7 +92,8 @@ static bool pet_sleep_valid(const JelliPet *pet)
     if (pet->asleep != (pet->scheduled_sleep || pet->nap_due != 0u))
         return false;
     if ((pet->scheduled_sleep && pet->nap_due != 0u) ||
-        (pet->asleep && !pet->scheduled_sleep && pet->nap_due <= pet->ticks))
+        (pet->asleep && !pet->scheduled_sleep && pet->nap_due <= pet->ticks &&
+         pet->ticks != UINT64_MAX))
         return false;
     return true;
 }
@@ -120,7 +121,9 @@ static bool pet_lifecycle_valid(const JelliPet *pet)
 
 static bool pet_valid(const JelliPet *pet)
 {
-    return pet->shot_goal <= 3u && pet->shot_hits <= pet->shot_goal &&
+    return jelli_prize_progress_valid(&pet->prize_progress) && jelli_habits_valid(&pet->habits) &&
+           pet->habits.cursor_ticks <= pet->ticks && pet->shot_goal <= 3u &&
+           pet->shot_hits <= pet->shot_goal &&
            (pet->shot_goal == 0u ? pet->shot_until == 0u : pet->shot_until > 0u) &&
            pet_profile_valid(pet) && pet_needs_valid(pet) && pet_activity_valid(pet) &&
            pet_lifecycle_valid(pet);
@@ -128,10 +131,11 @@ static bool pet_valid(const JelliPet *pet)
 
 static bool game_header_valid(const JelliGame *game)
 {
-    return game != NULL && game->count >= 2u && game->count <= JELLI_PET_CAPACITY &&
-           game->active < game->count && game->food <= JELLI_STACK_LIMIT &&
-           game->gifts <= JELLI_STACK_LIMIT && game->backlog_ms <= 2000u &&
-           game->resume_remaining_ms <= JELLI_OFFLINE_CAP_MS &&
+    return game != NULL && jelli_sleep_log_valid(&game->sleep_log) &&
+           jelli_prizes_valid(&game->prizes) && game->count >= 2u &&
+           game->count <= JELLI_PET_CAPACITY && game->active < game->count &&
+           game->food <= JELLI_STACK_LIMIT && game->gifts <= JELLI_STACK_LIMIT &&
+           game->backlog_ms <= 2000u && game->resume_remaining_ms <= JELLI_OFFLINE_CAP_MS &&
            (!game->resuming || game->resume_remaining_ms != 0u) &&
            (game->resuming || game->resume_remaining_ms == 0u);
 }
@@ -152,6 +156,13 @@ static bool pet_reservation_valid(const JelliGame *game, uint8_t index)
 
 static bool game_pets_valid(const JelliGame *game)
 {
+    if (game->sleep_log.active) {
+        unsigned last = ((unsigned)game->sleep_log.head + JELLI_SLEEP_SESSION_CAPACITY - 1u) %
+                        JELLI_SLEEP_SESSION_CAPACITY;
+        if (game->sleep_log.pet_id != game->pets[game->active].id ||
+            game->sleep_log.sessions[last].start_tick > game->pets[game->active].ticks)
+            return false;
+    }
     for (uint8_t i = 0u; i < game->count; ++i) {
         if (!pet_valid(&game->pets[i]) || !pet_reservation_valid(game, i))
             return false;
@@ -167,9 +178,31 @@ static bool game_pets_valid(const JelliGame *game)
     return true;
 }
 
+static bool prize_pet_known(const JelliGame *game, uint32_t id)
+{
+    if (!id)
+        return true;
+    for (unsigned i = 0u; i < game->count; ++i) {
+        if (game->pets[i].id == id)
+            return true;
+    }
+    return false;
+}
+
+static bool prize_sources_valid(const JelliGame *game)
+{
+    if (!prize_pet_known(game, game->prizes.offered_pet))
+        return false;
+    for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i) {
+        if (!prize_pet_known(game, game->prizes.origin_pet[i]))
+            return false;
+    }
+    return true;
+}
+
 bool jelli_game_valid(const JelliGame *game)
 {
-    return game_header_valid(game) && game_pets_valid(game);
+    return game_header_valid(game) && game_pets_valid(game) && prize_sources_valid(game);
 }
 
 const char *jelli_game_result_name(JelliResult result)

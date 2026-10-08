@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
+from package_art import stage_art, verify_art
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,7 +24,7 @@ def run(*args):
 def archive(folder, destination):
     with zipfile.ZipFile(destination, 'w', zipfile.ZIP_DEFLATED) as output:
         for path in sorted(folder.rglob('*')):
-            if path.is_file():
+            if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc" and path.name != ".DS_Store":
                 output.write(path, path.relative_to(folder))
 
 
@@ -108,8 +109,10 @@ def main():
     with tempfile.TemporaryDirectory(prefix='jelli-package-') as temporary:
         stage = Path(temporary)
         native(args.binary.resolve(), stage)
+        stage_art(stage)
         game_zip = args.output / f'jelligotchi-{version}-macos-{platform.machine()}.zip'
         archive(stage, game_zip)
+        verify_art(game_zip)
     art_zip = args.output / f'jelligotchi-{version}-source-art.zip'
     archive(ROOT / 'assets', art_zip)
     preview = ROOT / 'build/assets/preview.html'
