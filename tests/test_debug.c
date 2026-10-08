@@ -1,5 +1,6 @@
 #include "jelli/debug.h"
 #include <stdio.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -153,7 +154,7 @@ static int cheat_tests(void)
     request("@J1 45 cheat heal\n");
     CHECK(contains("busy") && pet->needs[JELLI_SATIETY] == 250u);
     char release[48];
-    (void)snprintf(release, sizeof(release), "@J1 46 release %u\n", debug.capture_id);
+    (void)snprintf(release, sizeof(release), "@J1 46 release %" PRIu32 "\n", debug.capture_id);
     request(release);
     request("@J1 47 cheat heal\n");
     CHECK(contains("applied") && pet->needs[JELLI_SATIETY] == 1000u);

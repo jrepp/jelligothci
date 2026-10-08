@@ -336,7 +336,7 @@ static void test_provider_refreshes_actor_cache(void)
     CHECK(original && original->ground_x_q8 >= 256u);
     int original_x = ui.actor_x;
     JelliAsset changed = *original;
-    changed.ground_x_q8 -= 256u;
+    changed.ground_x_q8 = (uint16_t)(changed.ground_x_q8 - 256u);
     const JelliAssetSet provider = {.items = &changed, .count = 1u};
     ui.assets = &provider;
     jelli_pet_render(&surface, &game, &ui, 0u, false);

@@ -140,7 +140,10 @@ on all three operating systems but GCC's SDL sanitizer build rejected an integer
 promotion in the reward interpolation ternary. Local Clang had accepted it. The
 fix assigns the terminal value directly and uses a separate, range-bounded cast
 for the interpolated branch; warning flags remain unchanged. The release is held
-until cross-platform validation passes.
+until cross-platform validation passes. A subsequent GCC pass exposed the same
+narrowing class in the new renderer test; its already-checked subtraction now
+uses an explicit cast. Strict GCC 14 syntax checks were then extended across all
+core and test sources, also correcting one pre-existing test format to PRIu32.
 
 # Remaining polish
 
