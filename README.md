@@ -284,6 +284,22 @@ References:
 - [Board hardware reference and SKU mapping](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75/blob/main/HARDWARE_REFERENCE.md)
 - [Waveshare BSP 3.0.1](https://components.espressif.com/components/waveshare/esp32_s3_touch_amoled_1_75/versions/3.0.1/readme)
 
+## Slice artwork preview
+
+Review artwork for the proposed pet slice lives in [assets/slice](assets/slice/README.md).
+It includes both creature forms, care icons, gifts/props, and a bitmap font. These
+assets are not yet used by the running shapes demo.
+
+```sh
+./scripts/uv run --python 3.12 tools/assets/build_slice.py
+open build/assets/preview.html  # macOS; otherwise open the file in a browser
+```
+
+The command validates all 29 PNGs and creates a self-contained interactive HTML
+sheet, contact sheet, and raw RGB565/mask exports under ignored `build/assets/`.
+Python 3.12 and Pillow 12.0.0 are supplied through repository-local uv. See the
+asset README for formats, provenance, reproduction, and remaining integration work.
+
 ## Versions and releases
 
 This project follows the [auth project](https://github.com/jrepp/auth) pattern

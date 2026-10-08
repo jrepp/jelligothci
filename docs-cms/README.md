@@ -16,9 +16,12 @@ Maintainer reference: [memo-005: Settings, ownership, and recovery](memos/memo-0
 ## Proposed game architecture
 
 [RFC-001: Virtual pet systems](rfcs/rfc-001-virtual-pet-systems-architecture.md)
-covers lifecycle, evolution, multiple creatures, objects, locations, menus, state
-machines, content loading, saves, resource budgets, and staged implementation.
+covers lifecycle, evolution, multiple creatures, gifts and rewards, sleep/wake,
+objects, locations, menus, state machines, content loading, saves, resource budgets,
+a vertical slice asset plan, and staged implementation.
 It is a draft; the working shapes MVP remains the implemented baseline.
+[Memo-007](memos/memo-007-slice-artwork-and-preview.md) records the first slice
+artwork, local HTML preview, export checks, and remaining integration work.
 
 ## Architecture decisions
 

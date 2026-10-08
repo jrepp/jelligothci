@@ -1,0 +1,694 @@
+{
+  "schema_version": 1,
+  "name": "Jelligotchi vertical slice",
+  "status": "Review artwork; not integrated into firmware",
+  "pixel_format": "RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks",
+  "palette": [
+    "#291b35",
+    "#49334f",
+    "#72516b",
+    "#187b79",
+    "#43bca2",
+    "#85e4b6",
+    "#cff5cf",
+    "#7655a3",
+    "#a47bdb",
+    "#d2b8f3",
+    "#fff4cf",
+    "#ffffff",
+    "#d84f70",
+    "#fa8c99",
+    "#f5c764",
+    "#ae7855"
+  ],
+  "assets": [
+    {
+      "id": 1001,
+      "key": "creatures.baby-idle-a",
+      "path": "creatures/baby-idle-a.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        6,
+        12,
+        27,
+        29
+      ],
+      "form": "baby",
+      "pose": "idle-a"
+    },
+    {
+      "id": 1002,
+      "key": "creatures.baby-idle-b",
+      "path": "creatures/baby-idle-b.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        6,
+        14,
+        26,
+        29
+      ],
+      "form": "baby",
+      "pose": "idle-b"
+    },
+    {
+      "id": 1003,
+      "key": "creatures.baby-eating",
+      "path": "creatures/baby-eating.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        6,
+        12,
+        26,
+        29
+      ],
+      "form": "baby",
+      "pose": "eating"
+    },
+    {
+      "id": 1004,
+      "key": "creatures.baby-happy",
+      "path": "creatures/baby-happy.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        5,
+        12,
+        26,
+        29
+      ],
+      "form": "baby",
+      "pose": "happy"
+    },
+    {
+      "id": 1005,
+      "key": "creatures.baby-asleep",
+      "path": "creatures/baby-asleep.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        6,
+        18,
+        28,
+        30
+      ],
+      "form": "baby",
+      "pose": "asleep"
+    },
+    {
+      "id": 1006,
+      "key": "creatures.baby-unwell",
+      "path": "creatures/baby-unwell.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        6,
+        14,
+        26,
+        30
+      ],
+      "form": "baby",
+      "pose": "unwell"
+    },
+    {
+      "id": 1007,
+      "key": "creatures.grown-idle-a",
+      "path": "creatures/grown-idle-a.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        6,
+        27,
+        30
+      ],
+      "form": "grown",
+      "pose": "idle-a"
+    },
+    {
+      "id": 1008,
+      "key": "creatures.grown-idle-b",
+      "path": "creatures/grown-idle-b.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        9,
+        27,
+        30
+      ],
+      "form": "grown",
+      "pose": "idle-b"
+    },
+    {
+      "id": 1009,
+      "key": "creatures.grown-eating",
+      "path": "creatures/grown-eating.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        5,
+        4,
+        28,
+        29
+      ],
+      "form": "grown",
+      "pose": "eating"
+    },
+    {
+      "id": 1010,
+      "key": "creatures.grown-happy",
+      "path": "creatures/grown-happy.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        3,
+        28,
+        29
+      ],
+      "form": "grown",
+      "pose": "happy"
+    },
+    {
+      "id": 1011,
+      "key": "creatures.grown-asleep",
+      "path": "creatures/grown-asleep.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        3,
+        9,
+        28,
+        29
+      ],
+      "form": "grown",
+      "pose": "asleep"
+    },
+    {
+      "id": 1012,
+      "key": "creatures.grown-unwell",
+      "path": "creatures/grown-unwell.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        4,
+        27,
+        29
+      ],
+      "form": "grown",
+      "pose": "unwell"
+    },
+    {
+      "id": 3001,
+      "key": "props.food-bowl",
+      "path": "props/food-bowl.png",
+      "kind": "props",
+      "width": 24,
+      "height": 24,
+      "pivot": [
+        12,
+        22
+      ],
+      "bounds": [
+        4,
+        7,
+        20,
+        19
+      ]
+    },
+    {
+      "id": 3002,
+      "key": "props.gift-closed",
+      "path": "props/gift-closed.png",
+      "kind": "props",
+      "width": 24,
+      "height": 24,
+      "pivot": [
+        12,
+        22
+      ],
+      "bounds": [
+        5,
+        4,
+        19,
+        19
+      ]
+    },
+    {
+      "id": 3003,
+      "key": "props.gift-open",
+      "path": "props/gift-open.png",
+      "kind": "props",
+      "width": 24,
+      "height": 24,
+      "pivot": [
+        12,
+        22
+      ],
+      "bounds": [
+        3,
+        6,
+        22,
+        19
+      ]
+    },
+    {
+      "id": 3004,
+      "key": "props.bed",
+      "path": "props/bed.png",
+      "kind": "props",
+      "width": 24,
+      "height": 24,
+      "pivot": [
+        12,
+        22
+      ],
+      "bounds": [
+        3,
+        4,
+        21,
+        20
+      ]
+    },
+    {
+      "id": 2001,
+      "key": "icons.basic-care",
+      "path": "icons/basic-care.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        2,
+        3,
+        15,
+        14
+      ]
+    },
+    {
+      "id": 2002,
+      "key": "icons.food",
+      "path": "icons/food.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        1,
+        2,
+        15,
+        14
+      ]
+    },
+    {
+      "id": 2003,
+      "key": "icons.play",
+      "path": "icons/play.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        2,
+        2,
+        14,
+        14
+      ]
+    },
+    {
+      "id": 2004,
+      "key": "icons.clean",
+      "path": "icons/clean.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        3,
+        1,
+        14,
+        13
+      ]
+    },
+    {
+      "id": 2005,
+      "key": "icons.rest",
+      "path": "icons/rest.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        2,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "id": 2006,
+      "key": "icons.wake",
+      "path": "icons/wake.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        0,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "id": 2007,
+      "key": "icons.medicine",
+      "path": "icons/medicine.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        4,
+        1,
+        12,
+        14
+      ]
+    },
+    {
+      "id": 2008,
+      "key": "icons.gift",
+      "path": "icons/gift.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        1,
+        1,
+        15,
+        14
+      ]
+    },
+    {
+      "id": 2009,
+      "key": "icons.reward",
+      "path": "icons/reward.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        1,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "id": 2010,
+      "key": "icons.inventory",
+      "path": "icons/inventory.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        3,
+        2,
+        13,
+        14
+      ]
+    },
+    {
+      "id": 2011,
+      "key": "icons.back",
+      "path": "icons/back.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        1,
+        2,
+        15,
+        15
+      ]
+    },
+    {
+      "id": 2012,
+      "key": "icons.confirm",
+      "path": "icons/confirm.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        1,
+        3,
+        15,
+        14
+      ]
+    },
+    {
+      "id": 4001,
+      "key": "font.jelli-smallcaps",
+      "path": "font/jelli-smallcaps.png",
+      "kind": "font",
+      "width": 128,
+      "height": 72,
+      "pivot": [
+        64,
+        70
+      ],
+      "bounds": [
+        1,
+        2,
+        126,
+        69
+      ],
+      "glyph_width": 8,
+      "glyph_height": 12,
+      "columns": 16,
+      "first_codepoint": 32,
+      "glyph_count": 96,
+      "advance": 8
+    }
+  ],
+  "clips": [
+    {
+      "id": 5001,
+      "key": "baby.idle",
+      "frames": [
+        "creatures.baby-idle-a",
+        "creatures.baby-idle-b"
+      ],
+      "durations_ms": [
+        450,
+        450
+      ],
+      "loop": true
+    },
+    {
+      "id": 5002,
+      "key": "baby.eating",
+      "frames": [
+        "creatures.baby-eating"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5003,
+      "key": "baby.happy",
+      "frames": [
+        "creatures.baby-happy"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5004,
+      "key": "baby.asleep",
+      "frames": [
+        "creatures.baby-asleep"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5005,
+      "key": "baby.unwell",
+      "frames": [
+        "creatures.baby-unwell"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5006,
+      "key": "grown.idle",
+      "frames": [
+        "creatures.grown-idle-a",
+        "creatures.grown-idle-b"
+      ],
+      "durations_ms": [
+        450,
+        450
+      ],
+      "loop": true
+    },
+    {
+      "id": 5007,
+      "key": "grown.eating",
+      "frames": [
+        "creatures.grown-eating"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5008,
+      "key": "grown.happy",
+      "frames": [
+        "creatures.grown-happy"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5009,
+      "key": "grown.asleep",
+      "frames": [
+        "creatures.grown-asleep"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5010,
+      "key": "grown.unwell",
+      "frames": [
+        "creatures.grown-unwell"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    }
+  ]
+}
