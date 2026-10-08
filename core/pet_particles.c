@@ -66,26 +66,32 @@ static void draw_magic(JelliSurface *s, const JelliParticle *p)
     }
 }
 
-static void draw_sleep(JelliSurface *s, const JelliParticle *p)
+static void sleep_layer(JelliSurface *s, const JelliParticle *p, int offset, uint16_t color)
 {
     const uint8_t *rows = jelli_asset_glyph('Z');
-    unsigned scale = (p->style & 8u) ? 2u : 1u;
+    const unsigned scale = 2u;
     unsigned alpha = p->life < 8u ? (unsigned)p->life * 2u : 16u;
     for (unsigned y = 0; y < 12u * scale; ++y) {
         for (unsigned x = 0; x < 8u * scale; ++x) {
             if (!(rows[y / scale] & (1u << (7u - x / scale))))
                 continue;
-            int px = p->x / 16 + (int)x - (int)(4u * scale);
-            int py = p->y / 16 + (int)y - (int)(6u * scale);
+            int px = p->x / 16 + offset + (int)x - (int)(4u * scale);
+            int py = p->y / 16 + offset + (int)y - (int)(6u * scale);
             if (px < 0 || py < 0 || px >= JELLI_WIDTH || py >= JELLI_HEIGHT)
                 continue;
             int rx = 2 * px - 465, ry = 2 * py - 465;
             if (rx * rx + ry * ry > 466 * 466)
                 continue;
             uint16_t *dest = &s->pixels[(unsigned)py * s->stride + (unsigned)px];
-            *dest = blend(*dest, 0x547bu, alpha);
+            *dest = blend(*dest, color, alpha);
         }
     }
+}
+
+static void draw_sleep(JelliSurface *s, const JelliParticle *p)
+{
+    sleep_layer(s, p, 2, 0x0841u);
+    sleep_layer(s, p, 0, 0x64dfu);
 }
 
 void jelli_pet_draw_particles(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui)

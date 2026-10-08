@@ -107,3 +107,8 @@ Native home and settings screenshots were inspected. The macOS ZIP was extracted
 outside the repository and passed headless launch, deep signature verification,
 non-system dependency inspection, license presence, ZIP integrity, and SHA-256
 checks. Windows CI execution and hardware checks are separate pending evidence.
+
+Final readability follow-up: sleep Zs now consistently render at 2× with a dark
+two-pixel shadow and brighter medium-blue fill. Their bounds remain within the
+existing 16-pixel particle radius. The wake/sun icon now has four short symmetrical
+rays instead of eight long strokes. No particle-pool or art-payload growth.

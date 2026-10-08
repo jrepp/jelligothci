@@ -91,7 +91,7 @@ for n,key in enumerate(['basic-care','food','play','clean','rest','wake','medici
     if (x-7.5)**2+(y-7.5)**2>7**2: im.putpixel((x,y),(0,0,0,0))
  elif key=='wake':
   d.ellipse((4,4,11,11),fill=ink);d.ellipse((5,5,10,10),fill=gold)
-  for pts in [[(7,0),(7,2)],[(7,13),(7,15)],[(0,7),(2,7)],[(13,7),(15,7)],[(2,2),(3,3)],[(12,12),(13,13)],[(2,13),(3,12)],[(12,3),(13,2)]]:line(pts,gold)
+  for box in ((7,1,8,2),(7,13,8,14),(1,7,2,8),(13,7,14,8)):rect(box,gold)
  elif key=='medicine':
   rect((5,1,10,3),ink);rect((4,4,11,13),ink);rect((5,5,10,12),cream)
   rect((7,6,8,10),coral);rect((6,7,9,9),coral)
