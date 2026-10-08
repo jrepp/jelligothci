@@ -13,6 +13,13 @@ Process guidance: [memo-004: Learnings and context remediation](memos/memo-004-p
 Contributor entry point: [CONTRIBUTING.md](../CONTRIBUTING.md).
 Maintainer reference: [memo-005: Settings, ownership, and recovery](memos/memo-005-contributor-and-maintainer-handoff.md).
 
+## Proposed game architecture
+
+[RFC-001: Virtual pet systems](rfcs/rfc-001-virtual-pet-systems-architecture.md)
+covers lifecycle, evolution, multiple creatures, objects, locations, menus, state
+machines, content loading, saves, resource budgets, and staged implementation.
+It is a draft; the working shapes MVP remains the implemented baseline.
+
 ## Architecture decisions
 
 These records capture explicit decisions from the 2026-10-07 project session.

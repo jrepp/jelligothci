@@ -58,6 +58,11 @@ read-only check. `./scripts/docs bootstrap --guide agent` prints the full guide.
 
 ## Architecture
 
+For planned game systems, read
+[RFC-001](docs-cms/rfcs/rfc-001-virtual-pet-systems-architecture.md).
+It is a draft architecture, not authorization to implement every proposed system
+or a claim that gameplay defaults have been approved.
+
 - `include/jelli/engine.h` defines the shared engine and host contracts.
 - `core/` is platform-independent C. Do not include SDL, ESP-IDF, LVGL, or
   FreeRTOS APIs here.
