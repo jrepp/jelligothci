@@ -13,5 +13,7 @@ void jelli_pet_gallery_key(const JelliPetUi *ui, const JelliGame *game, uint64_t
 bool jelli_pet_gallery_same(const JelliPetRenderKey *a, const JelliPetRenderKey *b);
 void jelli_pet_gallery_draw(Canvas *canvas, const JelliPetRenderKey *view);
 void jelli_pet_gallery_draw_latched(Canvas *canvas, const JelliPetRenderKey *view);
+/* Fixed rectangle covering the home-scene present at every bob height. */
+JelliRect jelli_pet_gallery_catch_bounds(void);
 
 #endif

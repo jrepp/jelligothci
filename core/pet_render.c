@@ -140,7 +140,7 @@ static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey 
            jelli_pet_gallery_same(a, b) && jelli_pet_battery_same(a, b);
 }
 
-typedef enum { DRAW_FULL, DRAW_TILE, DRAW_BATTERY } DrawScope;
+typedef enum { DRAW_FULL, DRAW_TILE, DRAW_BATTERY, DRAW_CATCH } DrawScope;
 
 /* Smallest redraw that covers the change; anything else repaints the full frame. */
 static DrawScope draw_scope(const JelliPetUi *ui, const JelliPetRenderKey *view)
@@ -161,7 +161,13 @@ static DrawScope draw_scope(const JelliPetUi *ui, const JelliPetRenderKey *view)
         return DRAW_TILE;
     previous = ui->last_view;
     jelli_pet_battery_copy(&previous, view);
-    return same_render_key(view, &previous) ? DRAW_BATTERY : DRAW_FULL;
+    if (same_render_key(view, &previous))
+        return DRAW_BATTERY;
+    /* A bobbing present only moves inside its own rectangle; repainting the whole panel
+     * for each 180 ms step cost about 200 ms per frame on the ESP32. */
+    previous = ui->last_view;
+    previous.catch_phase = view->catch_phase;
+    return same_render_key(view, &previous) ? DRAW_CATCH : DRAW_FULL;
 }
 
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
@@ -186,8 +192,9 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
     if (scope == DRAW_TILE) {
         surface->damage = (JelliRect){90u, 282u, 286u, 100u};
         jelli_pet_draw_tile(surface, &view);
-    } else if (scope == DRAW_BATTERY) {
-        surface->damage = jelli_pet_battery_bounds();
+    } else if (scope == DRAW_BATTERY || scope == DRAW_CATCH) {
+        surface->damage =
+            scope == DRAW_BATTERY ? jelli_pet_battery_bounds() : jelli_pet_gallery_catch_bounds();
         jelli_pet_draw_region(surface, game, ui, &view, surface->damage);
     } else {
         surface->damage = (JelliRect){0u, 0u, JELLI_WIDTH, JELLI_HEIGHT};

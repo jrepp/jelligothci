@@ -148,15 +148,25 @@ void jelli_pet_gallery_draw(Canvas *c, const JelliPetRenderKey *v)
         jelli_canvas_centered(c, names[v->highlighted_prize - 1u], 376, 1u, PALE);
 }
 
+/* The offered or latched present on the home scene. An offered present bobs up by at most
+ * CATCH_RISE pixels, so the disk always stays inside jelli_pet_gallery_catch_bounds(). */
+enum { CATCH_X = 233, CATCH_Y = 110, CATCH_RADIUS = 39, CATCH_RISE = 5 };
+
+JelliRect jelli_pet_gallery_catch_bounds(void)
+{
+    return (JelliRect){CATCH_X - CATCH_RADIUS, CATCH_Y - CATCH_RISE - CATCH_RADIUS,
+                       2 * CATCH_RADIUS + 1, CATCH_RISE + 2 * CATCH_RADIUS + 1};
+}
+
 void jelli_pet_gallery_draw_latched(Canvas *c, const JelliPetRenderKey *v)
 {
     unsigned prize = v->offered_prize ? v->offered_prize : v->latched_prize;
     if (!prize || prize > JELLI_PRIZE_COUNT)
         return;
-    static const int bob[] = {0, -3, -5, -3};
-    int y = 110 + (v->offered_prize ? bob[v->catch_phase % 4u] : 0);
-    jelli_canvas_disk(c, 233, y, 39, v->offered_prize ? GOLD : TEAL);
-    jelli_canvas_disk(c, 233, y, 35, BG);
-    jelli_canvas_centered_sprite(c, 11000u + prize, 233, y, 2u);
+    static const int bob[] = {0, -3, -CATCH_RISE, -3};
+    int y = CATCH_Y + (v->offered_prize ? bob[v->catch_phase % 4u] : 0);
+    jelli_canvas_disk(c, CATCH_X, y, CATCH_RADIUS, v->offered_prize ? GOLD : TEAL);
+    jelli_canvas_disk(c, CATCH_X, y, CATCH_RADIUS - 4, BG);
+    jelli_canvas_centered_sprite(c, 11000u + prize, CATCH_X, y, 2u);
     jelli_canvas_centered(c, v->offered_prize ? "CATCH" : "GIVE", 154, 1u, PALE);
 }
