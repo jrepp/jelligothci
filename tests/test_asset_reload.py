@@ -22,10 +22,15 @@ def pack(color, center=8192, duplicate=False):
     return struct.pack('<4sIII', b'JLAP', 1, 2 if duplicate else 1, zlib.crc32(body)) + body
 
 
+# Bare Settings background: right of the SOUND ring button (center x 61, radius 48)
+# and left of the center clock disk (center x 233, radius 74).
+SAMPLE_X, SAMPLE_Y = 135, 233
+
+
 def pixel(client):
     token = client.request('capture')['capture']
     try:
-        return int(client.request(f'pixels {token} {233 * 466 + 100} 1')['rgb565'], 16)
+        return int(client.request(f'pixels {token} {SAMPLE_Y * 466 + SAMPLE_X} 1')['rgb565'], 16)
     finally:
         client.request(f'release {token}')
 

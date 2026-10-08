@@ -285,6 +285,7 @@ static void health_history_and_v1_migration(void)
     pet->shot_goal = 3u;
     pet->shot_hits = 1u;
     save.game.battery_display = false; /* Legacy loads must not inherit the v4 value. */
+    save.game.sound_level = 0u;        /* Nor the v6 sound level. */
     uint8_t bytes[JELLI_SAVE_CAPACITY], legacy[JELLI_SAVE_CAPACITY];
     size_t size = encode(&save, bytes);
     CHECK(bytes[4] == JELLI_SAVE_VERSION && jelli_save_decode(&loaded, bytes, size));
@@ -322,6 +323,7 @@ static void health_history_and_v1_migration(void)
         CHECK(loaded.game.pets[0].habits.lifetime_meals == 0u);
         CHECK(loaded.game.pets[0].bond == pet->bond && loaded.sequence == save.sequence);
         CHECK(loaded.game.battery_display); /* Versions 1 and 2 predate the setting: shown. */
+        CHECK(loaded.game.sound_level == JELLI_SOUND_LEVEL_DEFAULT);
     }
 }
 

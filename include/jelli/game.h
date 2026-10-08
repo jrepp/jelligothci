@@ -5,6 +5,7 @@
 #include "jelli/habits.h"
 #include "jelli/prizes.h"
 #include "jelli/sleep_log.h"
+#include "jelli/sound.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -107,6 +108,9 @@ typedef struct {
     int16_t timezone_minutes, clock_adjust;
     /* Persisted Settings toggle for the home battery indicator; defaults on. */
     bool battery_display;
+    /* Persisted Settings sound output level 0..JELLI_SOUND_LEVEL_MAX (0 mutes); hosts
+     * map it to a request volume with jelli_sound_volume. Defaults to the middle. */
+    uint8_t sound_level;
 } JelliGame;
 
 typedef struct {

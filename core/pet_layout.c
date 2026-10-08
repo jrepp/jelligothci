@@ -1,14 +1,15 @@
 #include "jelli/pet_ui.h"
 
-/* The Settings BATTERY toggle shows the three-bar battery art. */
+/* The Settings BATTERY toggle shows the three-bar battery art; SOUND reuses the
+ * 16x16 music note effect (9006), drawn at 3x like the 32px menu art's footprint. */
 _Static_assert(JELLI_BATTERY_ASSET_BASE + JELLI_BATTERY_HIGH == 12004u, "Battery ring icon ID");
 
 static uint32_t action_icon(JelliPetUiAction action, bool asleep)
 {
-    static const uint32_t icons[] = {6001u, 6002u, 6003u, 6004u, 6008u, 6006u, 2001u, 2003u,
-                                     2004u, 2011u, 2008u, 2009u, 6011u, 6004u, 2005u, 2012u,
-                                     6007u, 6009u, 6010u, 6011u, 6012u, 6007u, 8002u, 8001u,
-                                     8002u, 8003u, 8004u, 8005u, 12004u};
+    static const uint32_t icons[] = {6001u, 6002u, 6003u, 6004u, 6008u,  6006u, 2001u, 2003u,
+                                     2004u, 2011u, 2008u, 2009u, 6011u,  6004u, 2005u, 2012u,
+                                     6007u, 6009u, 6010u, 6011u, 6012u,  6007u, 8002u, 8001u,
+                                     8002u, 8003u, 8004u, 8005u, 12004u, 9006u};
     if (asleep && action == JELLI_UI_ACTION_REST_WAKE)
         return 2006u;
     return (unsigned)action < sizeof(icons) / sizeof(icons[0]) ? icons[action] : 6005u;
@@ -84,6 +85,8 @@ bool jelli_pet_ring_button(const JelliPetUi *ui, unsigned slot, bool asleep,
     if (v->ring_page == JELLI_UI_HEALTH &&
         ((slot == 2u && (v->care_blocked & 1u)) || (slot == 3u && (v->care_blocked & 2u))))
         return false;
+    if (v->ring_page == JELLI_UI_SETTINGS && v->ring_sound_edit)
+        return jelli_pet_sound_button(slot, button);
     if (v->ring_page == JELLI_UI_SETTINGS && v->ring_clock_edit)
         return jelli_pet_clock_button(true, slot, button);
     return jelli_pet_ui_button((JelliPetPage)v->ring_page, slot, asleep, true, button);

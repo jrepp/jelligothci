@@ -64,7 +64,7 @@ bool jelli_sdl_sound_open(void)
 bool jelli_sdl_sound_request(void *ctx, unsigned cue, unsigned volume)
 {
     (void)ctx;
-    if (!device || cue >= JELLI_SOUND_COUNT || volume > 80u)
+    if (!device || cue >= JELLI_SOUND_COUNT || volume > JELLI_SOUND_VOLUME_MAX)
         return false;
     SDL_LockAudioDevice(device);
     bool accepted = queued < 4u;

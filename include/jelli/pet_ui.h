@@ -65,12 +65,18 @@ typedef enum {
     JELLI_UI_ACTION_SHOT,
     JELLI_UI_ACTION_WASH,
     JELLI_UI_ACTION_STRETCH,
-    JELLI_UI_ACTION_BATTERY
+    JELLI_UI_ACTION_BATTERY,
+    JELLI_UI_ACTION_SOUND
 } JelliPetUiAction;
 
 /* Event input code for the Settings BATTERY toggle. Codes 28..40 already mean
  * menu navigation, stat swipes, pet touch, clock controls, and catching a present. */
 #define JELLI_UI_INPUT_BATTERY 41u
+/* Event input codes for the sound level editor: the Settings SOUND button opens it
+ * (42); while editing, VOL - (slot 1) and VOL + (slot 2) report 42 + slot. */
+#define JELLI_UI_INPUT_SOUND 42u
+/* Settings ring slot of the SOUND button; slot IDs are stable for debug clients. */
+#define JELLI_UI_SOUND_SLOT 6u
 
 typedef struct {
     const char *label;
@@ -90,6 +96,9 @@ typedef struct {
     uint32_t phase;
     uint8_t night, mood, reaction, care_blocked, ring_page, ring_visible;
     bool ring_moving, clock_edit, ring_clock_edit;
+    /* Sound editor shown in the center and ring; persisted level 0..10. */
+    bool sound_edit, ring_sound_edit;
+    uint8_t sound_level;
     uint16_t unavailable;
     uint16_t stat_value, sleep_score, prize_owned, prize_discovered;
     uint32_t prize_origins[JELLI_PRIZE_COUNT];
@@ -163,6 +172,8 @@ typedef struct {
     bool tile_reset;
     uint8_t last_page, ring_from_page, ring_from_visible;
     bool ring_from_open, ring_started, clock_edit, ring_from_clock_edit;
+    /* Settings sound level editor; never open together with the clock editor. */
+    bool sound_edit, ring_from_sound_edit;
     int16_t timezone_minutes, clock_adjust;
     bool save_requested, time_unavailable;
     uint8_t save_status;
@@ -206,6 +217,15 @@ JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsign
 uint16_t jelli_pet_clock_minute(const JelliPetUi *ui, const JelliPet *pet);
 bool jelli_pet_clock_button(bool editing, unsigned slot, JelliPetUiButton *button);
 void jelli_pet_clock_action(JelliPetUi *ui, unsigned slot);
+/* True when a Settings slot belongs to the sound editor: SOUND while closed, every
+ * ring slot while editing. Never true during clock editing. */
+bool jelli_pet_sound_slot(const JelliPetUi *ui, unsigned slot);
+/* Editor ring buttons: slot 1 VOL - on the left, slot 2 VOL + on the right. */
+bool jelli_pet_sound_button(unsigned slot, JelliPetUiButton *button);
+/* NOT_READY for VOL - at level 0 and VOL + at the maximum; otherwise OK. */
+JelliResult jelli_pet_sound_available(const JelliPetUi *ui, const JelliGame *game, unsigned slot);
+/* Opens the editor, or changes the level by one step and requests a save. */
+void jelli_pet_sound_action(JelliPetUi *ui, JelliGame *game, unsigned slot);
 void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy);
 void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y);
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,

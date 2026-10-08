@@ -2,6 +2,7 @@
 #include "pet_battery.h"
 #include "pet_canvas.h"
 #include "pet_gallery.h"
+#include "pet_sound.h"
 #include "jelli/assets.h"
 #include <stdio.h>
 #include <string.h>
@@ -113,14 +114,23 @@ static void start_badge(Canvas *c, int x, int y)
         jelli_canvas_rect(c, x + 22 + column, y + 16 + column, 1, 23 - column * 2, 0xffffu);
 }
 
-/* ON/OFF state for Settings toggles: REST (slot 3) shows sleep, BATTERY (slot 5) display. */
+/* Settings state badges: REST (slot 3) shows sleep and BATTERY (slot 5) the display
+ * as ON/OFF; SOUND (slot 6) shows its level number, or OFF when muted. */
 static void settings_badge(Canvas *c, const JelliPetRenderKey *v, unsigned slot, int x, int y)
 {
-    if (v->ring_page != JELLI_UI_SETTINGS || v->ring_clock_edit || (slot != 3u && slot != 5u))
+    if (v->ring_page != JELLI_UI_SETTINGS || v->ring_clock_edit || v->ring_sound_edit ||
+        (slot != 3u && slot != 5u && slot != JELLI_UI_SOUND_SLOT))
         return;
-    bool on = slot == 3u ? v->asleep : v->battery_display;
+    bool on = slot == 3u ? v->asleep : slot == 5u ? v->battery_display : v->sound_level > 0u;
+    char level[4] = "ON";
+    if (slot == JELLI_UI_SOUND_SLOT && on) {
+        int size = snprintf(level, sizeof(level), "%u", (unsigned)v->sound_level);
+        if (size <= 0 || (size_t)size >= sizeof(level))
+            return;
+    }
+    const char *text = on ? level : "OFF";
     jelli_canvas_rect(c, x - 28, y + 20, 56, 24, on ? TEAL : BG);
-    jelli_canvas_text(c, on ? "ON" : "OFF", x - (on ? 16 : 24), y + 20, 2u, 0xffffu);
+    jelli_canvas_text(c, text, x - (int)strlen(text) * 8, y + 20, 2u, 0xffffu);
 }
 
 static void ring(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
@@ -141,7 +151,7 @@ static void ring(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
         int x = 233 + ((int)b.bounds.x + 48 - 233) * factor / 255;
         int y = 233 + ((int)b.bounds.y + 48 - 233) * factor / 255;
         c->dim = v->ring_page == ui->page && v->ring_clock_edit == ui->clock_edit &&
-                 (v->unavailable & (1u << slot));
+                 v->ring_sound_edit == ui->sound_edit && (v->unavailable & (1u << slot));
         jelli_canvas_disk(c, x, y, 48, edge);
         jelli_canvas_disk(c, x, y, 46, 0x4a49u);
         if (b.icon)
@@ -175,17 +185,28 @@ static void menu_button(Canvas *c, const JelliPetUi *ui)
     jelli_canvas_text(c, button.label, left + 40, 407, 2u, PALE);
 }
 
+/* The Settings caption describes the open editor, otherwise the bedtime. */
+static int settings_value(char *value, size_t capacity, const JelliGame *game, const JelliPetUi *ui)
+{
+    int zone = ui->timezone_minutes, magnitude = zone < 0 ? -zone : zone;
+    if (ui->sound_edit && !game->sound_level)
+        return snprintf(value, capacity, "MUTED");
+    if (ui->sound_edit)
+        return snprintf(value, capacity, "LEVEL %u OF %u", (unsigned)game->sound_level,
+                        JELLI_SOUND_LEVEL_MAX);
+    if (ui->clock_edit)
+        return snprintf(value, capacity, "TZ%c%02d:%02d", zone < 0 ? '-' : '+', magnitude / 60,
+                        magnitude % 60);
+    return snprintf(value, capacity, "BED %02u:00", (unsigned)game->pets[game->active].bedtime);
+}
+
 static void page_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
 {
     const JelliPet *pet = &game->pets[game->active];
     char value[18];
     const char *label = status(&ui->last_view);
     if (ui->page == JELLI_UI_SETTINGS) {
-        int zone = ui->timezone_minutes;
-        int size = ui->clock_edit
-                       ? snprintf(value, sizeof(value), "TZ%c%02d:%02d", zone < 0 ? '-' : '+',
-                                  (zone < 0 ? -zone : zone) / 60, (zone < 0 ? -zone : zone) % 60)
-                       : snprintf(value, sizeof(value), "BED %02u:00", (unsigned)pet->bedtime);
+        int size = settings_value(value, sizeof(value), game, ui);
         if (size > 0 && (size_t)size < sizeof(value))
             jelli_canvas_caption(c, value, 304, 0xffffu);
         label = JELLI_VERSION_LABEL;
@@ -258,7 +279,9 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     }
     jelli_canvas_heading(&c, pet_name(view->form), 16, 3u);
     jelli_canvas_heading(&c, view->location ? "@ GARDEN" : "@ HOME", 57, 2u);
-    if (ui->menu_open && ui->page == JELLI_UI_SETTINGS)
+    if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && view->sound_edit)
+        jelli_pet_sound_draw(&c, view);
+    else if (ui->menu_open && ui->page == JELLI_UI_SETTINGS)
         settings_clock(&c, view);
     else if (ui->actor_frame)
         jelli_canvas_sprite(&c, ui->actor_frame->id, ui->actor_x, ui->actor_y, 6u);

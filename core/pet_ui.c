@@ -29,7 +29,8 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
                                       {JELLI_UI_ACTION_SWITCH_PET, "SWITCH PET", NULL},
                                       {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"},
                                       {0},
-                                      {JELLI_UI_ACTION_BATTERY, "BATTERY", NULL}},
+                                      {JELLI_UI_ACTION_BATTERY, "BATTERY", NULL},
+                                      {JELLI_UI_ACTION_SOUND, "SOUND", NULL}},
                                      {{JELLI_UI_ACTION_BREAKFAST, "BREAKFAST", NULL},
                                       {JELLI_UI_ACTION_TEA, "TEA", NULL},
                                       {JELLI_UI_ACTION_OUTING, "GOING OUT", NULL},
@@ -87,7 +88,7 @@ static bool action_persists(JelliPetUiAction action)
     static const bool persists[] = {true,  false, true,  false, false, false, true,  true,
                                     true,  false, true,  true,  true,  true,  true,  true,
                                     false, true,  true,  true,  true,  true,  false, false,
-                                    false, false, false, false, true};
+                                    false, false, false, false, true,  false};
     return (unsigned)action < sizeof(persists) / sizeof(persists[0]) && persists[action];
 }
 
@@ -133,6 +134,8 @@ static unsigned input_code(const JelliPetUi *ui, unsigned slot, bool asleep)
         return !ui->menu_open ? 28u : ui->page == JELLI_UI_HOME ? 29u : 30u;
     if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u))
         return ui->clock_edit ? 33u + slot : 33u;
+    if (jelli_pet_sound_slot(ui, slot))
+        return JELLI_UI_INPUT_SOUND + (ui->sound_edit ? slot : 0u);
     if (ui->page >= JELLI_UI_BRUSH)
         return JELLI_UI_ACTION_BRUSH + (unsigned)ui->page - JELLI_UI_BRUSH;
     JelliPetUiAction action = jelli_pet_ui_item(ui->page, slot - 1u, asleep).action;
@@ -165,6 +168,8 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
         ui->result = JELLI_OK;
     } else if (ui->page == JELLI_UI_COLLECTION) {
         jelli_pet_gallery_select(ui, game, slot);
+    } else if (jelli_pet_sound_slot(ui, slot)) {
+        jelli_pet_sound_action(ui, game, slot); /* A device setting, not care. */
     } else if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u)) {
         int16_t zone = ui->timezone_minutes, adjust = ui->clock_adjust;
         jelli_pet_clock_action(ui, slot);

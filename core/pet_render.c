@@ -22,6 +22,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
                                                                                           : 0u;
         key.ring_page = (uint8_t)ui->page;
         key.ring_clock_edit = ui->clock_edit;
+        key.ring_sound_edit = ui->sound_edit;
         key.ring_moving = false;
         ui->ring_started = false;
     }
@@ -42,6 +43,8 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.clock_known = ui->clock_known;
     key.clock_minute = jelli_pet_clock_minute(ui, pet);
     key.clock_edit = ui->clock_edit;
+    key.sound_edit = ui->sound_edit;
+    key.sound_level = game->sound_level;
     key.timezone_minutes = ui->timezone_minutes;
     key.minute = (uint32_t)(day_phase / 600u);
     key.day =
@@ -90,7 +93,9 @@ static bool same_ring_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b
     return a->unavailable == b->unavailable && a->ring_page == b->ring_page &&
            a->ring_visible == b->ring_visible && a->clock_edit == b->clock_edit &&
            a->ring_clock_edit == b->ring_clock_edit && a->timezone_minutes == b->timezone_minutes &&
-           a->ring_moving == b->ring_moving && a->care_blocked == b->care_blocked;
+           a->ring_moving == b->ring_moving && a->care_blocked == b->care_blocked &&
+           a->sound_edit == b->sound_edit && a->ring_sound_edit == b->ring_sound_edit &&
+           a->sound_level == b->sound_level;
 }
 
 static bool same_tile_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)

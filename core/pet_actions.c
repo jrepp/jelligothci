@@ -56,6 +56,23 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
     return true;
 }
 
+/* Settings editor slots (SOUND and its VOL buttons, CLOCK and its controls) are
+ * device settings, not care: true when the slot is one, with its availability. */
+static bool settings_editor(const JelliPetUi *ui, const JelliGame *game, unsigned slot,
+                            JelliResult *result)
+{
+    if (jelli_pet_sound_slot(ui, slot)) {
+        *result = jelli_pet_sound_available(ui, game, slot);
+        return true;
+    }
+    if (ui->page != JELLI_UI_SETTINGS || (!ui->clock_edit && slot != 4u))
+        return false;
+    bool limit =
+        (slot == 1u && ui->timezone_minutes <= -720) || (slot == 2u && ui->timezone_minutes >= 840);
+    *result = ui->clock_edit && limit ? JELLI_NOT_READY : JELLI_OK;
+    return true;
+}
+
 JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsigned slot)
 {
     if (slot && (ui->page == JELLI_UI_COLLECTION ||
@@ -63,12 +80,9 @@ JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsign
         return jelli_pet_gallery_available(ui, game, slot);
     if (!slot || slot > 6u)
         return JELLI_OK;
-    if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u)) {
-        if (ui->clock_edit && ((slot == 1u && ui->timezone_minutes <= -720) ||
-                               (slot == 2u && ui->timezone_minutes >= 840)))
-            return JELLI_NOT_READY;
-        return JELLI_OK;
-    }
+    JelliResult editor = JELLI_OK;
+    if (settings_editor(ui, game, slot, &editor))
+        return editor;
     if (ui->page >= JELLI_UI_BRUSH && ui->clicker_done)
         return JELLI_NOT_READY;
     JelliPetUiAction action =

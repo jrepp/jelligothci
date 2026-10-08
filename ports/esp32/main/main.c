@@ -1,5 +1,6 @@
 #include "jelli/gesture.h"
 #include "jelli/pet_engine.h"
+#include "jelli/sound.h"
 #include "debug_wire.h"
 #include "sound_output.h"
 #include "session.h"
@@ -96,8 +97,10 @@ static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSessi
             !frozen && !engine->paused
                 ? jelli_pet_ui_sound(&engine->ui, &engine->game.pets[engine->game.active], start)
                 : 0u;
-        if (cue)
-            (void)jelli_sound_output_request(NULL, cue - 1u, cue == 6u ? 25u : 18u);
+        /* After the frame, so a Settings level change is heard at its new level. */
+        unsigned volume = cue ? jelli_sound_volume(engine->game.sound_level, cue - 1u) : 0u;
+        if (volume) /* Level 0 mutes: no request at all. */
+            (void)jelli_sound_output_request(NULL, cue - 1u, volume);
         jelli_esp_session_update(session, engine, frozen);
         if (!frozen)
             ++frames;

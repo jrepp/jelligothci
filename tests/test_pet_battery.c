@@ -333,7 +333,8 @@ static void settings_toggle_asleep(void)
         if (awake_labels[slot - 1u])
             CHECK(jelli_pet_ui_control(&ui, slot, false, &button) &&
                   strcmp(button.label, awake_labels[slot - 1u]) == 0);
-    CHECK(!jelli_pet_ui_control(&ui, 6u, false, &button));
+    /* Slot 6 is the SOUND setting (tests/test_pet_sound.c); slot 4's ring spot stays free. */
+    CHECK(jelli_pet_ui_control(&ui, 6u, false, &button) && strcmp(button.label, "SOUND") == 0);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_REST, game.pets[0].id, 0u}) ==
           JELLI_OK);
     CHECK(jelli_pet_ui_control(&ui, 3u, true, &rest) && strcmp(rest.label, "WAKE") == 0);

@@ -50,6 +50,7 @@ void jelli_game_init(JelliGame *game)
     game->food = 5u;
     game->gifts = 3u;
     game->battery_display = true;
+    game->sound_level = JELLI_SOUND_LEVEL_DEFAULT;
     game->pets[0] = new_pet(1u, JELLI_FORM_MINT);
     game->pets[1] = new_pet(2u, JELLI_FORM_MINT);
     game->pets[2] = new_pet(JELLI_NINJA_PET_ID, JELLI_FORM_NINJA);
@@ -144,7 +145,8 @@ static bool game_header_valid(const JelliGame *game, uint8_t min_count)
            jelli_prizes_valid(&game->prizes) && game->count >= min_count &&
            game->count <= JELLI_PET_CAPACITY && game->active < game->count &&
            game->food <= JELLI_STACK_LIMIT && game->gifts <= JELLI_STACK_LIMIT &&
-           game->backlog_ms <= 2000u && game->resume_remaining_ms <= JELLI_OFFLINE_CAP_MS &&
+           game->sound_level <= JELLI_SOUND_LEVEL_MAX && game->backlog_ms <= 2000u &&
+           game->resume_remaining_ms <= JELLI_OFFLINE_CAP_MS &&
            (!game->resuming || game->resume_remaining_ms != 0u) &&
            (game->resuming || game->resume_remaining_ms == 0u);
 }

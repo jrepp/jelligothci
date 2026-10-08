@@ -109,3 +109,18 @@ size_t jelli_sound_render(JelliSynth *s, int16_t *output, size_t capacity)
         output[count++] = sample(s);
     return count;
 }
+
+unsigned jelli_sound_volume(unsigned level, unsigned cue)
+{
+    if (cue >= JELLI_SOUND_COUNT)
+        return 0u;
+    unsigned clamped = level > JELLI_SOUND_LEVEL_MAX ? JELLI_SOUND_LEVEL_MAX : level;
+    unsigned base = cue == JELLI_SOUND_TAP ? 25u : 18u;
+    /* Round to nearest: base * 10 / 5 <= 50 keeps every request below the host cap. */
+    return (base * clamped + JELLI_SOUND_LEVEL_DEFAULT / 2u) / JELLI_SOUND_LEVEL_DEFAULT;
+}
+
+_Static_assert((25u * JELLI_SOUND_LEVEL_MAX + JELLI_SOUND_LEVEL_DEFAULT / 2u) /
+                       JELLI_SOUND_LEVEL_DEFAULT <=
+                   JELLI_SOUND_VOLUME_MAX,
+               "Loudest sound level exceeds the host volume cap");

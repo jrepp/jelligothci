@@ -273,6 +273,46 @@ static int battery_parse_tests(void)
     return 0;
 }
 
+/* The state reply reports the Settings sound level, its editor, and the volumes it
+ * yields; pressing through the protocol opens the editor and changes the level. */
+static int sound_state_tests(void)
+{
+    request("@J1 120 state\n");
+    CHECK(contains("\"sound\":{\"level\":5,\"max\":10,\"edit\":false,\"tap_volume\":25,"
+                   "\"voice_volume\":18}"));
+    engine.ui.menu_open = true;
+    engine.ui.page = JELLI_UI_SETTINGS;
+    for (unsigned i = 0u; i < 20u; ++i) { /* Let the ring transition settle. */
+        clock_ms += 100u;
+        CHECK(jelli_pet_frame(&engine));
+    }
+    request("@J1 121 state\n");
+    CHECK(contains("{\"id\":6,\"label\":\"SOUND\",\"x\":61,\"y\":233,\"icon\":9006"));
+    request("@J1 122 press 4 6\n");
+    CHECK(engine.ui.sound_edit && engine.game.sound_level == 5u);
+    for (unsigned i = 0u; i < 20u; ++i) {
+        clock_ms += 100u;
+        CHECK(jelli_pet_frame(&engine));
+    }
+    request("@J1 123 press 4 2\n");
+    CHECK(engine.game.sound_level == 6u && engine.ui.save_requested);
+    CHECK(jelli_pet_frame(&engine));
+    request("@J1 124 state\n");
+    CHECK(contains("\"sound\":{\"level\":6,\"max\":10,\"edit\":true,\"tap_volume\":30,"));
+    CHECK(contains("\"label\":\"VOL -\"") && contains("\"label\":\"VOL +\""));
+    engine.game.sound_level = 10u; /* Longest sound object on the busiest page still fits. */
+    engine.ui.sound_edit = false;
+    engine.ui.page = JELLI_UI_COLLECTION;
+    CHECK(jelli_pet_frame(&engine));
+    request("@J1 125 state\n");
+    CHECK(contains("\"level\":10,") && contains("]}\n"));
+    engine.game.sound_level = JELLI_SOUND_LEVEL_DEFAULT;
+    engine.ui.menu_open = false;
+    engine.ui.page = JELLI_UI_HOME;
+    CHECK(jelli_pet_frame(&engine));
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     JelliPlatform platform = {.now_ms = now, .present = present};
@@ -303,6 +343,7 @@ int main(int argc, char **argv)
     CHECK(cheat_tests() == 0);
     CHECK(battery_tests() == 0);
     CHECK(battery_parse_tests() == 0);
+    CHECK(sound_state_tests() == 0);
     printf("debug state: %zu bytes\n", sizeof(JelliDebug));
     return 0;
 }

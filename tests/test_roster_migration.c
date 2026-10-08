@@ -26,7 +26,10 @@
         }                                                                                          \
     } while (0)
 
-enum { TRAILER = 8u, PREFIX = 71u, COUNT_OFFSET = 68u, SETTING_FROM_END = TRAILER + 1u };
+/* Version 4 added the battery setting and version 6 the sound level after it. */
+enum { TRAILER = 8u, PREFIX = 71u, COUNT_OFFSET = 68u, SETTING_FROM_END = TRAILER + 2u };
+/* Versions before 5 predate the ninja; only they are migrated. */
+enum { NINJA_VERSION = 5u };
 enum { NO_NINJA = JELLI_PET_CAPACITY, ID_POOL = 12u, CYCLES = 3u };
 static const size_t PET_SIZE =
     130u + JELLI_HABIT_BIN_COUNT * 6u + 37u + JELLI_PRIZE_COUNT * 2u + 9u;
@@ -84,17 +87,19 @@ static size_t encode_layout(const JelliSave *save, uint8_t *bytes)
     return size - extra;
 }
 
-/* Rewrites as an older version: 4 and 5 share a layout, 3 lacks the settings byte,
- * and 1 and 2 lack the newer per-pet fields and everything after the pets. */
+/* Rewrites as an older version: 4 and 5 share a layout without the v6 sound level,
+ * 3 also lacks the battery setting, and 1 and 2 lack the newer per-pet fields and
+ * everything after the pets. */
 static size_t encode_as(const JelliSave *save, unsigned version, uint8_t *out)
 {
     static uint8_t current[JELLI_SAVE_CAPACITY];
     size_t size = encode_layout(save, current), length = size;
-    if (version >= 4u) {
+    if (version >= 6u) {
         memcpy(out, current, size);
-    } else if (version == 3u) {
-        length = size - 1u;
-        memcpy(out, current, size - SETTING_FROM_END);
+    } else if (version >= 3u) {
+        size_t dropped = version == 3u ? 2u : 1u;
+        length = size - dropped;
+        memcpy(out, current, size - TRAILER - dropped);
         memcpy(out + length - TRAILER, current + size - TRAILER, TRAILER);
     } else {
         size_t legacy_pet = version == 1u ? 112u : 130u;
@@ -182,6 +187,7 @@ static JelliSave build_case(const Shape *shape, uint32_t seed)
         save.game.prizes.discovered = 1u;
         save.game.prizes.origin_pet[0] = save.game.pets[next_random(&seed) % shape->count].id;
     }
+    save.game.sound_level = (uint8_t)(next_random(&seed) % (JELLI_SOUND_LEVEL_MAX + 1u));
     return save;
 }
 
@@ -244,6 +250,7 @@ static void check_accepted(const Shape *shape, const JelliSave *legacy, const Je
                seed);
     CHECK_SEED(loaded->game.food == legacy->game.food, seed);
     CHECK_SEED(loaded->game.battery_display == legacy->game.battery_display, seed);
+    CHECK_SEED(loaded->game.sound_level == JELLI_SOUND_LEVEL_DEFAULT, seed); /* Pre-v6. */
     for (unsigned p = 0u; p < shape->count; ++p)
         CHECK_SEED(same_pet(&loaded->game.pets[p], &legacy->game.pets[p]), seed);
     if (shape->version >= 3u)
@@ -279,23 +286,26 @@ static void run_case(const Shape *shape, uint32_t seed, Tally *tally)
     tally->grown += grows ? 1u : 0u;
     tally->full += !has_ninja && !grows ? 1u : 0u;
     tally->id3_taken += grows && expected_ninja_id(&legacy.game) != JELLI_NINJA_PET_ID ? 1u : 0u;
-    /* The same record labelled version 5 is never migrated: it is complete or refused. */
-    size = encode_as(&legacy, 4u, bytes);
-    bytes[4] = (uint8_t)JELLI_SAVE_VERSION;
-    repair(bytes, size);
-    accepted = decode_checked(bytes, size, &loaded);
-    CHECK_SEED(accepted == (shape->count >= JELLI_ROSTER_MIN), seed);
-    if (accepted)
-        CHECK_SEED(loaded.game.count == shape->count &&
-                       ninja_count(&loaded.game) == (has_ninja ? 1u : 0u),
-                   seed);
+    /* The same roster as version 5 or 6 is never migrated: it is complete or refused.
+     * Version 6 keeps its sound level; version 5 loads the default. */
+    for (unsigned version = NINJA_VERSION; version <= JELLI_SAVE_VERSION; ++version) {
+        size = encode_as(&legacy, version, bytes);
+        accepted = decode_checked(bytes, size, &loaded);
+        CHECK_SEED(accepted == (shape->count >= JELLI_ROSTER_MIN), seed);
+        if (accepted)
+            CHECK_SEED(loaded.game.count == shape->count &&
+                           ninja_count(&loaded.game) == (has_ninja ? 1u : 0u) &&
+                           loaded.game.sound_level == (version >= 6u ? legacy.game.sound_level
+                                                                     : JELLI_SOUND_LEVEL_DEFAULT),
+                       seed);
+    }
 }
 
 /* Every version x count x active slot x ninja slot (or none), each with two seeds. */
 static void every_roster_shape(void)
 {
     Tally tally = {0};
-    for (unsigned version = 1u; version < JELLI_SAVE_VERSION; ++version) {
+    for (unsigned version = 1u; version < NINJA_VERSION; ++version) {
         for (unsigned count = 2u; count <= JELLI_PET_CAPACITY; ++count) {
             for (unsigned active = 0u; active < count; ++active) {
                 for (unsigned ninja = 0u; ninja <= count; ++ninja) {

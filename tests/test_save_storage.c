@@ -114,12 +114,13 @@ static void write_file(const char *path, const uint8_t *bytes, size_t size)
     CHECK(fclose(file) == 0);
 }
 
-/* Rewrites a version 4 record as version 3 by dropping the settings byte. */
-static size_t as_version3(uint8_t *bytes, size_t size)
+/* Rewrites a current record as an older version by dropping trailing settings bytes:
+ * versions 4 and 5 lack the version 6 sound level; version 3 also the battery setting. */
+static size_t as_version(uint8_t *bytes, size_t size, uint8_t version)
 {
-    size_t old_size = size - 1u;
+    size_t old_size = size - (version < 4u ? 2u : 1u);
     memmove(bytes + old_size - 8u, bytes + size - 8u, 8u);
-    bytes[4] = 3u;
+    bytes[4] = version;
     for (unsigned i = 0; i < 4u; ++i)
         bytes[8u + i] = (uint8_t)(old_size >> (8u * i));
     uint32_t crc = UINT32_C(0xffffffff);
@@ -133,7 +134,7 @@ static size_t as_version3(uint8_t *bytes, size_t size)
     return old_size;
 }
 
-/* Shared JELLI_SAVE_VERSION: v3 files still load (indicator shown), v4 keeps the
+/* Shared JELLI_SAVE_VERSION: v3 files still load (indicator shown), v4+ keeps the
  * stored setting, and versions outside 1..JELLI_SAVE_VERSION are preserved. */
 static void battery_setting_versions(uint8_t *work)
 {
@@ -146,7 +147,7 @@ static void battery_setting_versions(uint8_t *work)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&hidden, bytes, sizeof(bytes));
     CHECK(size != 0u);
-    size_t old_size = as_version3(bytes, size);
+    size_t old_size = as_version(bytes, size, 3u);
     write_file(".jelli-storage-test.0", bytes, old_size);
     CHECK(load(&loaded, work) == JELLI_STORAGE_OK && loaded.sequence == 5u);
     CHECK(loaded.game.battery_display);
@@ -158,6 +159,31 @@ static void battery_setting_versions(uint8_t *work)
         CHECK(jelli_sdl_storage_write(base_path, &hidden, work, JELLI_SAVE_CAPACITY) ==
               JELLI_STORAGE_INCOMPATIBLE);
     }
+    remove_slots();
+}
+
+/* Version 6 keeps the stored sound level; the same game written as version 5 loads
+ * the default, and the next save writes version 6 with that default. */
+static void sound_setting_versions(uint8_t *work)
+{
+    remove_slots();
+    JelliSave quiet = fixture(6u), loaded = fixture(90u);
+    quiet.game.sound_level = 9u;
+    write_save(&quiet, work);
+    CHECK(load(&loaded, work) == JELLI_STORAGE_OK && loaded.game.sound_level == 9u);
+    remove_slots();
+    uint8_t bytes[JELLI_SAVE_CAPACITY];
+    size_t size = jelli_save_encode(&quiet, bytes, sizeof(bytes));
+    CHECK(size != 0u && bytes[4] == JELLI_SAVE_VERSION && bytes[size - 9u] == 9u);
+    size_t old_size = as_version(bytes, size, 5u);
+    write_file(".jelli-storage-test.0", bytes, old_size);
+    CHECK(load(&loaded, work) == JELLI_STORAGE_OK && loaded.sequence == 6u);
+    CHECK(loaded.game.sound_level == JELLI_SOUND_LEVEL_DEFAULT);
+    loaded.sequence = 7u;
+    write_save(&loaded, work);
+    JelliSave again = fixture(90u);
+    CHECK(load(&again, work) == JELLI_STORAGE_OK && again.sequence == 7u);
+    CHECK(again.game.sound_level == JELLI_SOUND_LEVEL_DEFAULT);
     remove_slots();
 }
 
@@ -198,6 +224,7 @@ int main(void)
     CHECK(same_save(&loaded, &before_io));
     remove_slots();
     battery_setting_versions(work);
+    sound_setting_versions(work);
     puts("PASS: SDL save slots recover newest valid snapshot and preserve incompatible data");
     return 0;
 }

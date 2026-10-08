@@ -14,7 +14,8 @@
         }                                                                                          \
     } while (0)
 
-enum { TRAILER = 8u, PREFIX = 71u, SETTING_FROM_END = TRAILER + 1u };
+/* SETTING_FROM_END locates the battery setting in the v4/v5 layout that encode_as writes. */
+enum { TRAILER = 8u, PREFIX = 71u, SETTING_FROM_END = TRAILER + 1u }; /* v4/v5 battery byte */
 
 static JelliResult command(JelliGame *game, JelliCommandKind kind, uint32_t value)
 {
@@ -79,6 +80,7 @@ static JelliSave legacy_fixture(void)
     save.game.pets[0].bond = 420u;
     save.game.active = 1u;
     save.game.battery_display = false;
+    save.game.sound_level = 2u; /* Dropped by every pre-v6 layout; loads as the default. */
     return save;
 }
 
@@ -106,19 +108,20 @@ static size_t encode_current(const JelliSave *save, uint8_t *bytes)
     return size - extra * PET_SIZE;
 }
 
-/* Rewrites the current layout as an older version. Version 5 kept the version 4
- * layout; 3 lacks the settings byte; 1 and 2 also lack the newer per-pet fields and
- * everything after the pets. */
+/* Rewrites the current layout as an older version. Versions 4 and 5 lack the v6
+ * sound level; 3 also lacks the battery setting; 1 and 2 also lack the newer per-pet
+ * fields and everything after the pets. */
 static size_t encode_as(const JelliSave *save, unsigned version, uint8_t *out)
 {
     static uint8_t current[JELLI_SAVE_CAPACITY];
     size_t size = encode_current(save, current);
     size_t length = size;
-    if (version >= 4u) {
+    if (version >= 6u) {
         memcpy(out, current, size);
-    } else if (version == 3u) {
-        length = size - 1u;
-        memcpy(out, current, size - SETTING_FROM_END);
+    } else if (version >= 3u) {
+        size_t dropped = version == 3u ? 2u : 1u;
+        length = size - dropped;
+        memcpy(out, current, size - TRAILER - dropped);
         memcpy(out + length - TRAILER, current + size - TRAILER, TRAILER);
     } else {
         size_t legacy_pet = version == 1u ? 112u : 130u;
@@ -292,10 +295,11 @@ static void legacy_saves_gain_one_ninja(void)
         CHECK(loaded.game.active == 1u && loaded.game.pets[0].form == JELLI_FORM_LILAC);
         CHECK(loaded.game.pets[0].bond == 420u && loaded.sequence == legacy.sequence);
         CHECK(loaded.game.battery_display == (version < 4u)); /* v4 kept the stored OFF. */
+        CHECK(loaded.game.sound_level == JELLI_SOUND_LEVEL_DEFAULT);
         size_t next = jelli_save_encode(&loaded, resaved, sizeof(resaved));
         CHECK(next != 0u && resaved[4] == JELLI_SAVE_VERSION);
         CHECK(jelli_save_decode(&again, resaved, next) && again.game.count == 3u);
-        CHECK(ninja_count(&again.game) == 1u); /* Reloading v5 never adds another. */
+        CHECK(ninja_count(&again.game) == 1u); /* Reloading v6 never adds another. */
     }
     /* A full legacy roster has no room; it loads unchanged rather than failing. */
     legacy.game.count = JELLI_PET_CAPACITY;
@@ -316,7 +320,7 @@ static void current_saves_are_not_migrated(void)
     save.game.active = 2u;
     save.game.pets[2].bond = 777u;
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
-    CHECK(size != 0u && bytes[4] == 5u && JELLI_SAVE_VERSION == 5u);
+    CHECK(size != 0u && bytes[4] == 6u && JELLI_SAVE_VERSION == 6u);
     CHECK(jelli_save_decode(&loaded, bytes, size) && loaded.game.count == 3u);
     CHECK(loaded.game.active == 2u && loaded.game.pets[2].bond == 777u);
     CHECK(jelli_save_encode(&loaded, again, sizeof(again)) == size);
@@ -391,6 +395,6 @@ int main(void)
     legacy_saves_gain_one_ninja();
     current_saves_are_not_migrated();
     invalid_legacy_roster_is_rejected();
-    puts("PASS: three-pet roster, ninja start/evolution/switching, v1-v4 to v5 migration");
+    puts("PASS: three-pet roster, ninja start/evolution/switching, v1-v4 to v6 migration");
     return 0;
 }

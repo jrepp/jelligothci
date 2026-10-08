@@ -5,6 +5,8 @@ alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md) and
 [memo-002: Build, release, and runner validation](memos/memo-002-build-release-and-runner-validation.md).
 
+Settings sound level (0–10, default 5) and v6 save: [memo-021](memos/memo-021-settings-sound-level.md).
+
 Ninja pet, three-pet roster, and v5 save migration: [memo-020](memos/memo-020-ninja-pet-and-three-pet-roster.md).
 
 Battery indicator and read-only AXP2101 reading: [memo-019](memos/memo-019-battery-status-indicator.md).

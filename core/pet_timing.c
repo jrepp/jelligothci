@@ -4,7 +4,8 @@ static void ring_phase(const JelliPetUi *ui, JelliPetRenderKey *view, uint64_t e
                        uint64_t duration, bool target)
 {
     bool swap = ui->ring_from_open && target &&
-                (ui->ring_from_page != ui->page || ui->ring_from_clock_edit != ui->clock_edit);
+                (ui->ring_from_page != ui->page || ui->ring_from_clock_edit != ui->clock_edit ||
+                 ui->ring_from_sound_edit != ui->sound_edit);
     uint64_t phase_duration = swap ? duration / 2u : duration;
     if (phase_duration == 0u)
         return;
@@ -18,6 +19,7 @@ static void ring_phase(const JelliPetUi *ui, JelliPetRenderKey *view, uint64_t e
     unsigned square = remaining * remaining / 255u;
     unsigned eased = 255u - square * square / 255u;
     view->ring_clock_edit = leaving ? ui->ring_from_clock_edit : ui->clock_edit;
+    view->ring_sound_edit = leaving ? ui->ring_from_sound_edit : ui->sound_edit;
     view->ring_page = leaving ? ui->ring_from_page : (uint8_t)ui->page;
     unsigned start = swap ? 0u : ui->ring_from_visible;
     view->ring_visible = (uint8_t)(leaving  ? ui->ring_from_visible * (255u - eased) / 255u
@@ -29,14 +31,16 @@ static void ring_phase(const JelliPetUi *ui, JelliPetRenderKey *view, uint64_t e
 static void ring_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliPetRenderKey *view)
 {
     bool target = ui->menu_open && ui->page < JELLI_UI_BRUSH && ui->page != JELLI_UI_COLLECTION;
-    bool changed = ui->rendered &&
-                   (ui->menu_open != ui->last_view.menu_open || ui->page != ui->last_view.page ||
-                    ui->clock_edit != ui->last_view.clock_edit);
+    bool changed =
+        ui->rendered &&
+        (ui->menu_open != ui->last_view.menu_open || ui->page != ui->last_view.page ||
+         ui->clock_edit != ui->last_view.clock_edit || ui->sound_edit != ui->last_view.sound_edit);
     if (changed) {
         ui->ring_anchor_ms = time;
         ui->ring_started = true;
         ui->ring_from_page = ui->last_view.ring_page;
         ui->ring_from_clock_edit = ui->last_view.ring_clock_edit;
+        ui->ring_from_sound_edit = ui->last_view.ring_sound_edit;
         ui->ring_from_visible = ui->last_view.ring_visible;
         ui->ring_from_open = ui->last_view.ring_visible > 0u;
     }
@@ -47,6 +51,7 @@ static void ring_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, Jell
         duration = 2u;
     uint64_t elapsed = time >= ui->ring_anchor_ms ? time - ui->ring_anchor_ms : duration;
     view->ring_clock_edit = ui->clock_edit;
+    view->ring_sound_edit = ui->sound_edit;
     view->ring_page = (uint8_t)ui->page;
     view->ring_visible = target ? 255u : 0u;
     if (!ui->rendered || !ui->ring_started || elapsed >= duration) {

@@ -2,6 +2,7 @@
 #include <SDL.h>
 #include "jelli/gesture.h"
 #include "jelli/engine.h"
+#include "jelli/sound.h"
 #include "session.h"
 #include "debug_socket.h"
 #include "asset_reload.h"
@@ -114,8 +115,10 @@ static void play_feedback(JelliPetEngine *pet, uint64_t now, bool enabled)
     if (!enabled || pet->paused)
         return;
     unsigned cue = jelli_pet_ui_sound(&pet->ui, &pet->game.pets[pet->game.active], now);
-    if (cue)
-        (void)jelli_sdl_sound_request(NULL, cue - 1u, cue == 6u ? 25u : 18u);
+    /* After the frame, so a Settings level change is heard at its new level. */
+    unsigned volume = cue ? jelli_sound_volume(pet->game.sound_level, cue - 1u) : 0u;
+    if (volume) /* Level 0 mutes: no request at all. */
+        (void)jelli_sdl_sound_request(NULL, cue - 1u, volume);
 }
 
 static void prepare_frame(Desktop *d, JelliPetEngine *pet, const JelliOptions *options,

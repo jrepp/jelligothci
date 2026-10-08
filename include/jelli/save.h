@@ -6,8 +6,9 @@
 
 #define JELLI_SAVE_CAPACITY 4096u
 /* Newest codec version written; decoders accept 1..JELLI_SAVE_VERSION. Version 5
- * keeps the version 4 layout; decoding an older version appends the ninja pet. */
-#define JELLI_SAVE_VERSION 5u
+ * keeps the version 4 layout; decoding an older version appends the ninja pet.
+ * Version 6 appends the sound level byte; older versions load the default level. */
+#define JELLI_SAVE_VERSION 6u
 
 typedef struct {
     JelliGame game;

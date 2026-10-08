@@ -203,6 +203,7 @@ static void write_game(Writer *writer, const JelliGame *game)
     put_u8(writer, game->prizes.offered);
     put_u32(writer, game->prizes.offered_pet);
     put_u8(writer, game->battery_display ? 1u : 0u); /* Version 4 settings. */
+    put_u8(writer, game->sound_level);               /* Version 6 settings. */
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -241,6 +242,13 @@ static bool read_game(Reader *reader, JelliGame *game)
     game->battery_display = true;
     if (reader->version >= 4u)
         (void)read_bool(reader, &game->battery_display);
+    /* Saves before version 6 predate the sound level; they load the default. */
+    game->sound_level = JELLI_SOUND_LEVEL_DEFAULT;
+    if (reader->version >= 6u) {
+        game->sound_level = get_u8(reader);
+        if (game->sound_level > JELLI_SOUND_LEVEL_MAX)
+            reader->failed = true;
+    }
     return !reader->failed;
 }
 

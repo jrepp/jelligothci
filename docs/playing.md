@@ -196,8 +196,10 @@ it checks every clicker, internal bond changes, completion guards, and screensho
 
 Six tiny procedural cues are available through `jelli-debug sound`: `chirp`,
 `happy`, `sparkle`, `hello`, `sleepy`, and `tap`. Hello and sleepy are vowel-like pet voices.
-Accepted menu presses play a quiet 65 ms tap at volume 25, coalesced within 120 ms.
-Pass `--volume 0..80` (default 35). Both native SDL and the ESP32 support this
+Accepted menu presses play a quiet 65 ms tap, coalesced within 120 ms, at the
+Settings [sound level](#sound-level) (volume 25 at the default level).
+Pass `--volume 0..80` (default 35); this command always plays at exactly that
+volume, ignoring the Settings level. Both native SDL and the ESP32 support this
 command; sound output is asynchronous and does not block the engine thread.
 Interactive SDL initializes audio at startup; headless SDL needs `--audio`.
 `SDL_AUDIODRIVER=dummy` enables silent integration checks. No sound plays on boot.
@@ -331,6 +333,34 @@ the percent is 0–100 or `unknown` (the default). `state` includes the same
 
 
 
+## Sound level
+
+Settings has a SOUND button on the left of the ring, drawn with the music-note
+art. Its badge shows the current level, 0 to 10, or OFF when muted. The default
+is 5, the middle of the range. Tap SOUND to open the level editor: the center
+shows the level as a large number above the word SOUND and a ten-segment bar.
+Filled segments are solid and empty ones are hollow outlines, so the level does
+not depend on color. The caption below reads `LEVEL 5 OF 10`, or `MUTED` at 0.
+VOL − (left) and VOL + (right) change the level by one step. VOL − at 0 and
+VOL + at 10 report NOT READY and are dimmed. Back, or a downward swipe, returns
+to Settings, as in the clock editor. Each change is saved with the game, and the
+confirming tap plays at the new level, so you hear the change. At 0 the game is
+silent: hosts request no taps or coos.
+
+The level scales each cue's host volume linearly, rounded to the nearest step,
+so level 5 reproduces the original fixed volumes and level 10 doubles them:
+
+| Level | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Tap | — | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 |
+| Other cues | — | 4 | 7 | 11 | 14 | 18 | 22 | 25 | 29 | 32 | 36 |
+
+Volumes use the hosts' 0–80 request scale: SDL scales samples linearly and the
+ESP32 sets the ES8311 codec's output volume. How loud each level sounds on the
+device speaker has not been measured. `jelli-debug state` reports the setting as
+`visual.sound` (`level`, `max`, `edit`, `tap_volume`, `voice_volume`). Opening
+the editor logs input code 42; VOL − and VOL + log 43 and 44.
+
 ## Linked sleep, habits, and checkpoints
 
 Settings REST starts both your bedtime record and the pet's sleep; WAKE ends both.
@@ -368,7 +398,9 @@ RTC cannot silently invent offline time. TZ/hour/minute settings survive saves.
 
 Save codec v3 adds habits, the sleep journal, clock settings, and nine collectible
 prize types; v1/v2 saves migrate with unknown history. Codec v4 adds the battery
-display setting; earlier saves load with it on. Newer unsupported files and
+display setting; earlier saves load with it on. Codec v5 keeps the v4 layout and
+gives older two-pet saves the ninja. Codec v6 adds the sound level; earlier saves
+load level 5, and values above 10 are rejected as corrupt. Newer unsupported files and
 unreadable ESP32 checkpoint blobs are preserved. ESP32 disables writes to a
 protected checkpoint and continues an unsaved session. Checkpoints use a bounded
 4 KiB codec buffer; NVS supplies the device transaction, desktop uses alternating

@@ -74,7 +74,7 @@ bool jelli_sound_output_init(void)
 bool jelli_sound_output_request(void *ctx, unsigned cue, unsigned volume)
 {
     (void)ctx;
-    if (!queue || cue >= JELLI_SOUND_COUNT || volume > 80u)
+    if (!queue || cue >= JELLI_SOUND_COUNT || volume > JELLI_SOUND_VOLUME_MAX)
         return false;
     Request request = {(uint8_t)cue, (uint8_t)volume};
     return xQueueSend(queue, &request, 0) == pdTRUE;

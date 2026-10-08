@@ -53,6 +53,18 @@ static size_t collection(char *out, size_t capacity, const JelliPetRenderKey *v)
     return size < 0 || (size_t)size >= capacity ? 0u : (size_t)size;
 }
 
+/* The persisted Settings level, the editor state, and the request volumes it yields. */
+static size_t sound(char *out, size_t capacity, const JelliPetEngine *engine)
+{
+    unsigned level = engine->game.sound_level;
+    int size = snprintf(out, capacity,
+                        ",\"sound\":{\"level\":%u,\"max\":%u,\"edit\":%s,\"tap_volume\":%u,"
+                        "\"voice_volume\":%u}",
+                        level, JELLI_SOUND_LEVEL_MAX, truth(engine->ui.last_view.sound_edit),
+                        jelli_sound_volume(level, JELLI_SOUND_TAP), jelli_sound_volume(level, 0u));
+    return size < 0 || (size_t)size >= capacity ? 0u : (size_t)size;
+}
+
 void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id)
 {
     const JelliPetRenderKey *v = &engine->ui.last_view;
@@ -106,6 +118,10 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
     if (!power)
         return;
     used += power;
+    size_t level = sound(debug->reply + used, sizeof(debug->reply) - used, engine);
+    if (!level)
+        return;
+    used += level;
     size_t summary = collection(debug->reply + used, sizeof(debug->reply) - used, v);
     if (!summary)
         return;

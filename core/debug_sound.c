@@ -5,7 +5,8 @@ void jelli_debug_sound(JelliDebug *debug, uint32_t id, char **words, unsigned co
 {
     uint32_t cue = 0, volume = 0;
     if (count != 5u || !jelli_debug_number(words[3], &cue) ||
-        !jelli_debug_number(words[4], &volume) || cue >= JELLI_SOUND_COUNT || volume > 80u) {
+        !jelli_debug_number(words[4], &volume) || cue >= JELLI_SOUND_COUNT ||
+        volume > JELLI_SOUND_VOLUME_MAX) {
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"sound_range\"}");
         return;
     }

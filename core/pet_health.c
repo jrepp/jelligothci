@@ -1,6 +1,13 @@
 #include "jelli/pet_ui.h"
 #include "pet_gallery.h"
 
+/* While an editor is open its buttons replace the Settings ring; CLOCK is the center. */
+static bool settings_editor_slot(const JelliPetUi *ui, unsigned slot)
+{
+    return ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot &&
+           (ui->sound_edit || ui->clock_edit || slot == 4u);
+}
+
 bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
                           JelliPetUiButton *button)
 {
@@ -8,8 +15,9 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
         return false;
     if (jelli_pet_gallery_button(ui, slot, button))
         return true;
-    if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot && (ui->clock_edit || slot == 4u))
-        return jelli_pet_clock_button(ui->clock_edit, slot, button);
+    if (settings_editor_slot(ui, slot))
+        return ui->sound_edit ? jelli_pet_sound_button(slot, button)
+                              : jelli_pet_clock_button(ui->clock_edit, slot, button);
     if (ui->page == JELLI_UI_HEALTH && ((slot == 2u && (ui->last_view.care_blocked & 1u)) ||
                                         (slot == 3u && (ui->last_view.care_blocked & 2u))))
         return false;
@@ -134,8 +142,9 @@ void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game)
 
 void jelli_pet_ui_back(JelliPetUi *ui)
 {
-    if (ui->menu_open && ui->clock_edit) {
+    if (ui->menu_open && (ui->clock_edit || ui->sound_edit)) {
         ui->clock_edit = false;
+        ui->sound_edit = false;
         return;
     }
     if (ui->menu_open && ui->page >= JELLI_UI_BRUSH)

@@ -1,4 +1,4 @@
-/* Property, mutation, and fuzz tests for the version 5 save codec.
+/* Property, mutation, and fuzz tests for the version 6 save codec.
  * Every generated case uses a fixed seed so a failure prints a replayable case. */
 #include "jelli/save.h"
 
@@ -24,7 +24,14 @@
         }                                                                                          \
     } while (0)
 
-enum { TRAILER = 8u, HEADER = 32u, SETTING_FROM_END = TRAILER + 1u, MUTATIONS = 6000u };
+/* The battery setting (v4) and the sound level (v6) are the last record bytes. */
+enum {
+    TRAILER = 8u,
+    HEADER = 32u,
+    SOUND_FROM_END = TRAILER + 1u,
+    SETTING_FROM_END = TRAILER + 2u,
+    MUTATIONS = 6000u
+};
 
 static uint32_t next_random(uint32_t *state)
 {
@@ -52,7 +59,7 @@ static void repair(uint8_t *bytes, size_t size)
         bytes[size - TRAILER + i] = (uint8_t)(crc >> (8u * i));
 }
 
-static JelliSave fixture(bool shown)
+static JelliSave fixture(bool shown, uint8_t level)
 {
     JelliSave save = {.sequence = 77u, .anchor_ms = 1700000000000u, .anchor_valid = true};
     jelli_game_init(&save.game);
@@ -66,6 +73,7 @@ static JelliSave fixture(bool shown)
     save.game.prizes.offered_pet = 2u;
     save.game.pets[1].reward_pending = true;
     save.game.battery_display = shown;
+    save.game.sound_level = level;
     return save;
 }
 
@@ -129,7 +137,9 @@ static void round_trip_property(void)
 {
     uint32_t seed = UINT32_C(0x5eed0004);
     for (unsigned i = 0; i < 64u; ++i) {
-        JelliSave save = fixture((next_random(&seed) & 1u) != 0u), loaded;
+        JelliSave save = fixture((next_random(&seed) & 1u) != 0u,
+                                 (uint8_t)(next_random(&seed) % (JELLI_SOUND_LEVEL_MAX + 1u))),
+                  loaded;
         save.sequence = next_random(&seed);
         save.anchor_valid = (next_random(&seed) & 1u) != 0u;
         save.game.count =
@@ -146,14 +156,16 @@ static void round_trip_property(void)
                    UINT32_C(0x5eed0004), i);
         CHECK_CASE(decode_checked(bytes, size, &loaded) && canonical(bytes, size),
                    UINT32_C(0x5eed0004), i);
+        CHECK_CASE(bytes[size - SOUND_FROM_END] == save.game.sound_level, UINT32_C(0x5eed0004), i);
         CHECK_CASE(loaded.game.battery_display == save.game.battery_display, UINT32_C(0x5eed0004),
                    i);
+        CHECK_CASE(loaded.game.sound_level == save.game.sound_level, UINT32_C(0x5eed0004), i);
     }
 }
 
 static void every_truncation_and_extension(void)
 {
-    JelliSave save = fixture(false), loaded;
+    JelliSave save = fixture(false, 0u), loaded;
     uint8_t bytes[JELLI_SAVE_CAPACITY], cut[JELLI_SAVE_CAPACITY];
     size_t size = encode(&save, bytes);
     for (size_t length = 0; length < size; ++length) {
@@ -165,13 +177,22 @@ static void every_truncation_and_extension(void)
         memcpy(cut + length - TRAILER, bytes + size - TRAILER, TRAILER);
         repair(cut, length);
         CHECK(!decode_checked(cut, length, NULL));
-        /* Labelled version 3, only the record minus the settings byte is valid. */
+        /* Labelled version 5, only the record minus the sound level is valid. */
+        cut[4] = 5u;
+        repair(cut, length);
+        bool v5 = decode_checked(cut, length, &loaded);
+        CHECK(v5 == (length == size - 1u));
+        if (v5) /* Pre-v6 saves load the middle level; the battery setting is kept. */
+            CHECK(loaded.game.sound_level == JELLI_SOUND_LEVEL_DEFAULT &&
+                  !loaded.game.battery_display);
+        /* Labelled version 3, only the record minus both settings bytes is valid. */
         cut[4] = 3u;
         repair(cut, length);
         bool v3 = decode_checked(cut, length, &loaded);
-        CHECK(v3 == (length == size - 1u));
-        if (v3)
-            CHECK(loaded.game.battery_display); /* Pre-v4 saves show the indicator. */
+        CHECK(v3 == (length == size - 2u));
+        if (v3) /* Pre-v4 saves show the indicator. */
+            CHECK(loaded.game.battery_display &&
+                  loaded.game.sound_level == JELLI_SOUND_LEVEL_DEFAULT);
     }
     for (size_t extra = 1u; extra <= 16u && size + extra <= JELLI_SAVE_CAPACITY; ++extra) {
         memcpy(cut, bytes, size - TRAILER);
@@ -185,10 +206,17 @@ static void every_truncation_and_extension(void)
 
 static void every_setting_and_version_byte(void)
 {
-    JelliSave save = fixture(true), loaded;
+    JelliSave save = fixture(true, JELLI_SOUND_LEVEL_DEFAULT), loaded;
     uint8_t bytes[JELLI_SAVE_CAPACITY], mutated[JELLI_SAVE_CAPACITY];
     size_t size = encode(&save, bytes);
     for (unsigned value = 0u; value < 256u; ++value) {
+        memcpy(mutated, bytes, size);
+        mutated[size - SOUND_FROM_END] = (uint8_t)value;
+        repair(mutated, size);
+        bool level = decode_checked(mutated, size, &loaded);
+        CHECK(level == (value <= JELLI_SOUND_LEVEL_MAX)); /* 11..255 are corrupt. */
+        if (level)
+            CHECK(loaded.game.sound_level == value && canonical(mutated, size));
         memcpy(mutated, bytes, size);
         mutated[size - SETTING_FROM_END] = (uint8_t)value;
         repair(mutated, size);
@@ -197,12 +225,10 @@ static void every_setting_and_version_byte(void)
         if (accepted)
             CHECK(loaded.game.battery_display == (value == 1u) && canonical(mutated, size));
         memcpy(mutated, bytes, size);
-        mutated[4] = (uint8_t)value; /* Version 5 kept the version 4 layout; 0, 3, 6, ... fail. */
+        mutated[4] =
+            (uint8_t)value; /* Only version 6 carries the sound level: 4, 5, 7, ... fail. */
         repair(mutated, size);
-        CHECK(decode_checked(mutated, size, &loaded) ==
-              (value == JELLI_SAVE_VERSION || value == 4u));
-        if (value == 4u) /* The fixture already has its ninja, so relabelling adds none. */
-            CHECK(loaded.game.count == JELLI_ROSTER_MIN && canonical(mutated, size));
+        CHECK(decode_checked(mutated, size, &loaded) == (value == JELLI_SAVE_VERSION));
         memcpy(mutated, bytes, size);
         mutated[5] = (uint8_t)value; /* High byte of the little-endian version. */
         repair(mutated, size);
@@ -212,7 +238,7 @@ static void every_setting_and_version_byte(void)
 
 static void every_single_bit_flip(void)
 {
-    JelliSave save = fixture(true);
+    JelliSave save = fixture(true, JELLI_SOUND_LEVEL_DEFAULT);
     uint8_t bytes[JELLI_SAVE_CAPACITY], mutated[JELLI_SAVE_CAPACITY];
     size_t size = encode(&save, bytes);
     unsigned accepted = 0u;
@@ -230,6 +256,34 @@ static void every_single_bit_flip(void)
     }
     /* Flipping a battery bit 0 is a legal setting change, so some flips must load. */
     CHECK(accepted > 0u && accepted < size * 8u);
+}
+
+/* Each stored level 0..10 with each single bit of the sound byte flipped and the CRC
+ * repaired: the result loads exactly when the new level is still 0..10, and then
+ * round-trips canonically; otherwise the output is untouched (decode_checked). */
+static void sound_byte_bit_flips(void)
+{
+    uint8_t bytes[JELLI_SAVE_CAPACITY], mutated[JELLI_SAVE_CAPACITY];
+    unsigned accepted = 0u;
+    for (unsigned level = 0u; level <= JELLI_SOUND_LEVEL_MAX; ++level) {
+        JelliSave save = fixture((level & 1u) != 0u, (uint8_t)level), loaded;
+        size_t size = encode(&save, bytes);
+        CHECK(bytes[size - SOUND_FROM_END] == level);
+        for (unsigned bit = 0u; bit < 8u; ++bit) {
+            unsigned flipped = level ^ (1u << bit);
+            memcpy(mutated, bytes, size);
+            mutated[size - SOUND_FROM_END] = (uint8_t)flipped;
+            CHECK(!decode_checked(mutated, size, NULL)); /* The CRC still guards it. */
+            repair(mutated, size);
+            bool ok = decode_checked(mutated, size, &loaded);
+            CHECK(ok == (flipped <= JELLI_SOUND_LEVEL_MAX));
+            if (ok)
+                CHECK(loaded.game.sound_level == flipped && canonical(mutated, size) &&
+                      loaded.game.battery_display == ((level & 1u) != 0u));
+            accepted += ok ? 1u : 0u;
+        }
+    }
+    CHECK(accepted == 34u); /* 34 of the 88 single-bit flips of 0..10 stay within 0..10. */
 }
 
 static size_t mutate(uint8_t *bytes, size_t size, uint32_t *seed)
@@ -266,7 +320,7 @@ static void seeded_mutation_fuzz(void)
     for (unsigned s = 0; s < sizeof(seeds) / sizeof(seeds[0]); ++s) {
         uint32_t state = seeds[s];
         for (unsigned i = 0; i < MUTATIONS; ++i) {
-            JelliSave save = fixture((i & 1u) != 0u);
+            JelliSave save = fixture((i & 1u) != 0u, (uint8_t)(i % (JELLI_SOUND_LEVEL_MAX + 1u)));
             size_t size = encode(&save, mutated);
             size = mutate(mutated, size, &state);
             if (next_random(&state) % 8u != 0u)
@@ -309,16 +363,17 @@ static void random_records(void)
 
 static void invalid_arguments(void)
 {
-    JelliSave save = fixture(true), out = fixture(false), scratch;
+    JelliSave save = fixture(true, JELLI_SOUND_LEVEL_MAX), out = fixture(false, 0u), scratch;
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = encode(&save, bytes);
     CHECK(!jelli_save_decode(NULL, bytes, size));
     CHECK(!jelli_save_decode(&out, NULL, size));
     CHECK(!jelli_save_decode_workspace(&out, bytes, size, NULL));
     CHECK(!jelli_save_decode_workspace(&out, bytes, size, &out));
-    CHECK(!out.game.battery_display); /* Unchanged by every rejected call. */
+    CHECK(!out.game.battery_display && !out.game.sound_level); /* Unchanged by rejections. */
     CHECK(jelli_save_decode_workspace(&out, bytes, size, &scratch) && out.game.battery_display);
-    CHECK(jelli_save_encode(&save, bytes, size - 1u) == 0u); /* One byte short of v5. */
+    CHECK(out.game.sound_level == JELLI_SOUND_LEVEL_MAX);
+    CHECK(jelli_save_encode(&save, bytes, size - 1u) == 0u); /* One byte short of v6. */
     CHECK(jelli_save_encode(&save, bytes, size) == size);
 }
 
@@ -328,9 +383,10 @@ int main(void)
     every_truncation_and_extension();
     every_setting_and_version_byte();
     every_single_bit_flip();
+    sound_byte_bit_flips();
     seeded_mutation_fuzz();
     random_records();
     invalid_arguments();
-    puts("PASS: v5 save codec truncation, bit-flip, byte-sweep, and seeded mutation properties");
+    puts("PASS: v6 save codec truncation, bit-flip, byte-sweep, and seeded mutation properties");
     return 0;
 }
