@@ -33,9 +33,12 @@ analyze() {
     if [[ "$(uname -s)" == Darwin ]]; then
         extra=(-isysroot "$(xcrun --show-sdk-path)")
     fi
+    local files=()
+    while IFS= read -r -d '' file; do files+=("$file"); done < <(
+        git ls-files -z -- 'core/*.c' 'tests/*.c'
+    )
     "$repo_dir/scripts/uvx" --from "clang-tidy==$JELLI_CLANG_TIDY_VERSION" \
-        clang-tidy core/engine.c core/render.c core/animation.c tests/test_engine.c tests/test_animation.c tests/test_render.c \
-        -- -std=c11 -Iinclude "${extra[@]}"
+        clang-tidy "${files[@]}" -- -std=c11 -Iinclude -Iports/sdl "${extra[@]}"
 }
 cppcheck_all() {
     local files=()

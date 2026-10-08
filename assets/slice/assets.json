@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "Jelligotchi vertical slice",
-  "status": "Review artwork; not integrated into firmware",
+  "status": "MVP renderer integrated; physical display review pending",
   "pixel_format": "RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks",
   "palette": [
     "#291b35",

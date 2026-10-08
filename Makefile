@@ -1,4 +1,5 @@
 .PHONY: build run test sanitize core-test esp-bootstrap esp-sync esp-build esp-flash esp-monitor docs-check docs-fix docs-guide
+.PHONY: run-shapes
 .PHONY: hooks-install hooks-check lint-c format-c
 
 build:
@@ -6,7 +7,10 @@ build:
 	cmake --build --preset desktop
 
 run: build
-	./build/desktop/jelligotchi
+	./build/desktop/jelligotchi --pet --save build/pet-save
+
+run-shapes: build
+	./build/desktop/jelligotchi --shapes
 
 test: build
 	ctest --preset desktop

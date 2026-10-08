@@ -145,6 +145,6 @@ for form in ['baby','grown']:
  for pose in ['idle','eating','happy','asleep','unwell']:
   keys=[f'creatures.{form}-idle-a',f'creatures.{form}-idle-b'] if pose=='idle' else [f'creatures.{form}-{pose}']
   clips.append(dict(id=len(clips)+5001,key=f'{form}.{pose}',frames=keys,durations_ms=[450]*len(keys),loop=pose=='idle'))
-manifest=dict(schema_version=1,name='Jelligotchi vertical slice',status='Review artwork; not integrated into firmware',pixel_format='RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks',palette=palette,assets=assets,clips=clips)
+manifest=dict(schema_version=1,name='Jelligotchi vertical slice',status='MVP renderer integrated; physical display review pending',pixel_format='RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks',palette=palette,assets=assets,clips=clips)
 (root/'assets.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print(f'Created {len(assets)} PNG assets from atlas {atlas.size}; {len(clips)} clips')

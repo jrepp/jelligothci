@@ -2,7 +2,8 @@
 
 The first review set contains 29 PNG files: 12 creature frames, 12 icons, four
 props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
-form. These assets are not yet wired into the SDL or ESP32 renderer.
+form. The SDL and ESP32 pet builds embed these assets using
+`tools/assets/embed_slice.py`. Physical board appearance remains unverified.
 
 ## Preview and validate
 

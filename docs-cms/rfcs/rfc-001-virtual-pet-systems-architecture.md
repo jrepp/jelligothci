@@ -18,9 +18,10 @@ tables first. Later, author content in JSON and compile a validated binary pack
 on the developer machine. The device loads bounded records, not a JSON tree or
 scripting runtime.
 
-This is a proposal, not an approved replacement for existing ADRs. The current
-shapes demo remains the working baseline. No game systems are implemented by this
-RFC. The first playable slice proves one pet in one location: feed, need changes,
+This is a proposal, not an approved replacement for existing ADRs. An initial playable subset now exists alongside the original shapes diagnostic;
+[memo-008](../memos/memo-008-playable-pet-mvp-and-polish-backlog.md) records
+implemented behavior, validation, and deferred work. This draft still describes
+the intended architecture beyond that subset. The first playable slice proves one pet in one location: feed, need changes,
 illness recovery, sleep/wake, one gift, one earned reward, one evolution, and
 save/resume through a small shared care menu. A bounded asset set makes each
 state visible without requiring the complete presentation system.

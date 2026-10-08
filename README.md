@@ -1,9 +1,13 @@
 # Jelligotchi
 
-A C11 drawing MVP for a future virtual pet on the **Waveshare
-ESP32-S3-Touch-AMOLED-1.75, SKU 31261**. It draws a square, triangle, and moving
-circle. Tap/click inside the round screen to change all three colors over
-300 ms. Space pauses/resumes circle motion; Escape quits the desktop host. There is no creature simulation or persistence yet.
+A C11 virtual pet MVP for the **Waveshare ESP32-S3-Touch-AMOLED-1.75,
+SKU 31261**, with a shared SDL desktop host. Feed, play, clean, give gifts, claim
+a first-care reward, rest/wake, recover from illness, evolve, switch between two
+pets, and visit two locations. The original shapes demo remains available.
+Desktop supports saves and bounded offline progress; firmware currently starts
+an explicitly unsaved session. This is a partial implementation of the draft
+[RFC-001](docs-cms/rfcs/rfc-001-virtual-pet-systems-architecture.md).
+See [the MVP record and polish backlog](docs-cms/memos/memo-008-playable-pet-mvp-and-polish-backlog.md).
 
 New contributors: start with [CONTRIBUTING.md](CONTRIBUTING.md). Maintainers can
 use the [settings and recovery runbook](docs-cms/memos/memo-005-contributor-and-maintainer-handoff.md).
@@ -41,6 +45,9 @@ stores and validates Markdown documents; it has no Docusaurus website build.
 ## Desktop
 
 Prerequisites: a C compiler, CMake 3.21+, Ninja, SDL2 2.0.18+, and Make (optional).
+SDL and ESP32 builds embed the PNG assets through repository-local uv, Python
+3.12, and Pillow 12.0.0; first use needs Bash, curl, and network access. The
+SDL-free C core build still needs only CMake and a compiler.
 
 ```sh
 # macOS
@@ -48,7 +55,8 @@ brew install cmake ninja sdl2
 # Debian/Ubuntu
 # sudo apt install build-essential cmake ninja-build libsdl2-dev
 
-make run
+make run          # pet; saves to build/pet-save.0 and .1
+make run-shapes   # original color/motion diagnostic
 make test
 make sanitize     # address + undefined behavior sanitizers
 make core-test    # no SDL dependency
@@ -130,17 +138,36 @@ ratio and maps mouse coordinates back to the native display surface.
 For repeatable rendering without a window:
 
 ```sh
-./build/desktop/jelligotchi --headless --frames 64 --snapshot build/shapes.bmp
+./build/desktop/jelligotchi --pet --headless --demo --frames 650 --snapshot build/pet.bmp
+./build/desktop/jelligotchi --shapes --headless --frames 64 --snapshot build/shapes.bmp
 ```
 
-Headless mode injects a simulated clock advancing 8 ms per frame. Interactive
+Headless mode injects a simulated clock advancing 8 ms per frame (100 ms with
+`--demo`, which scripts the care loop). Interactive
 mode injects SDL's monotonic clock. Tests inject their own time and input, so
 they never wait for animation to advance.
+
+Click/tap the labeled buttons to navigate Home, Care, More, Collection, and
+Settings. Space pauses live care on desktop; Escape exits. The baby evolves
+after 60 seconds of active time for this accelerated slice. Stored pets freeze
+until selected. Bedtime is a pet-relative routine, initially 22:00 for eight hours;
+it is independent of your computer's local time zone.
+
+Running the executable directly starts an unsaved session. Add `--save BASE` to
+use two alternating files `BASE.0` and `BASE.1`. Saves occur on explicit requests,
+selected progression actions, every 60 seconds, and exit. Resume advances at most
+six hours before committing the new time anchor and enabling input. Backward or
+unavailable clocks forgive elapsed time. `--wall-ms N` injects wall time in
+headless tests. A valid older slot can recover from a damaged newer one. If no
+valid slot remains, or a slot is incompatible, files are preserved and startup
+fails; choose a different base path or omit `--save` for an unsaved session. Do not run
+two processes against the same save path. Desktop file writes are synchronous;
+background IO and stronger crash durability remain in the backlog.
 
 ## Boundary between engine and host
 
 ```text
-                 core/engine.c + core/render.c
+                 core/game*.c + core/pet_*.c
                          C11, no SDK APIs
                                |
                       include/jelli/engine.h
@@ -162,7 +189,7 @@ LVGL, FreeRTOS, or ESP headers. Hosts own their run loops and frame pacing;
 animation speed depends on elapsed injected time, not on frame count. All engine
 calls are single-threaded.
 
-The first renderer deliberately uses the board's 466×466 resolution and clips
+Both renderers use the board's 466×466 resolution and clip
 the corners to emulate the round panel. Each framebuffer uses **434,312 bytes**.
 The ESP32 host keeps two buffers in PSRAM: the core renders into one, and
 `present` copies damaged rows into an LVGL canvas under the BSP display mutex
@@ -171,9 +198,15 @@ reads the core's working buffer asynchronously. Touch events cross from the
 LVGL task to the engine through a small FreeRTOS queue. DMA, byte order, and
 display initialization remain the BSP's responsibility.
 
+The pet engine uses fixed caller-owned state, a 100 ms simulation step, at most
+eight live ticks per frame, and bounded resume segments. Its renderer uses the
+embedded sprites and bitmap font. It redraws the round surface when visible
+state changes and reports zero damage otherwise; smaller dirty regions remain
+future work. The original shapes renderer retains its smaller damage rectangles.
+
 ## Input and animation
 
-A press anywhere inside the round surface cycles three fixed color palettes.
+In `make run-shapes`, a press anywhere inside the round surface cycles three fixed color palettes.
 Touches outside it are ignored. Each shape owns one linear RGB transition;
 repeated presses retarget from its current color without jumping or queuing
 animations. The transition reaches its target at 300 ms of injected elapsed
@@ -256,7 +289,7 @@ targets 16 ms for its engine loop and LVGL refresh timer. The ESP32 loop include
 render/presentation work in that interval and yields on overruns. Actual update
 rates are logged every five seconds and are not panel-refresh guarantees.
 Firmware uses performance compiler optimization with assertions retained.
-Dirty-region rendering measured 61–62 engine updates/second on the attached
+The earlier shapes firmware measured 61–62 engine updates/second on the attached
 board during motion; this is not a panel FPS or touch-latency measurement. See
 [memo-006](docs-cms/memos/memo-006-input-animation-and-frame-performance.md).
 
@@ -265,18 +298,18 @@ factory firmware you want to keep before the first flash. If automatic download
 mode fails, use the board's documented BOOT/reset sequence, check the enumerated
 port again, and retry. USB detection alone does not validate display or touch.
 
-Bring-up checks: confirm the three shapes appear, the circle moves, a single tap
-starts a 300 ms color transition on all shapes, colors are correct, and the display survives reset. Power,
-battery charging, sleep/wake, audio, RTC, and creature behavior are outside this MVP.
+Current firmware bring-up checks: confirm the pet and legible menu appear,
+buttons match touch coordinates, care completes, Rest/Wake changes the pose,
+and the display survives reset. The pet simulation's sleep state does not put
+the board into hardware sleep. Firmware currently has no retained wall clock or
+save adapter: resetting starts fresh, with Save unavailable. Power management,
+battery charging, audio, RTC retention, and physical interaction remain unverified.
 
-Initial validation: desktop and SDL-free tests pass, including ASan/UBSan;
-the interactive SDL host runs; repository-local bootstrap, repeat sync, and
-ESP32-S3 firmware builds pass with the tracked pins. The USB serial device was
-detected at `/dev/cu.usbmodem101` on the development Mac. Firmware v0.1.1 has
-now been flashed successfully: PSRAM passed its memory test, panel and touch
-drivers initialized, and the application reached its ready message. Physical
-display/touch behavior still awaits visual confirmation. See the
-[USB deployment record](docs-cms/memos/memo-003-first-usb-deployment.md).
+The pet firmware compiles with the pinned SDK but has not been flashed or
+physically verified in this increment. Earlier shapes firmware was flashed and
+reached its ready message; that evidence does not validate the new pet UI. See
+the [USB deployment record](docs-cms/memos/memo-003-first-usb-deployment.md) and
+[current MVP validation](docs-cms/memos/memo-008-playable-pet-mvp-and-polish-backlog.md).
 
 References:
 
@@ -286,9 +319,9 @@ References:
 
 ## Slice artwork preview
 
-Review artwork for the proposed pet slice lives in [assets/slice](assets/slice/README.md).
-It includes both creature forms, care icons, gifts/props, and a bitmap font. These
-assets are not yet used by the running shapes demo.
+Artwork for the pet slice lives in [assets/slice](assets/slice/README.md).
+It includes both creature forms, care icons, gifts/props, and a bitmap font.
+The SDL and ESP32 pet builds embed these assets as immutable C data.
 
 ```sh
 ./scripts/uv run --python 3.12 tools/assets/build_slice.py

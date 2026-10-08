@@ -1,4 +1,4 @@
-#include "jelli/engine.h"
+#include "jelli/pet_engine.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -65,14 +65,18 @@ static void paused(void *ctx, bool value)
     ESP_LOGI(TAG, "Animation %s", value ? "paused" : "running");
 }
 
-static void run_engine(JelliEngine *engine, const Board *board)
+static void run_engine(JelliPetEngine *engine, const Board *board)
 {
     uint64_t report_start = now_ms(NULL);
     unsigned frames = 0;
     for (;;) {
         uint64_t start = now_ms(NULL);
-        if (!jelli_frame(engine))
+        if (!jelli_pet_frame(engine))
             return;
+        if (engine->ui.save_requested) {
+            engine->ui.save_requested = false;
+            engine->ui.save_status = JELLI_SAVE_UNAVAILABLE;
+        }
         ++frames;
         uint64_t end = now_ms(NULL);
         if (end - report_start >= 5000u) {
@@ -94,7 +98,7 @@ static void run_engine(JelliEngine *engine, const Board *board)
 void app_main(void)
 {
     static Board board;
-    static JelliEngine engine;
+    static JelliPetEngine engine;
     const size_t bytes = JELLI_WIDTH * JELLI_HEIGHT * sizeof(uint16_t);
     uint16_t *pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     board.canvas_pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
@@ -119,7 +123,8 @@ void app_main(void)
     JelliPlatform platform = {&board, now_ms, poll_input, present, paused};
     JelliSurface surface = {
         .pixels = pixels, .width = JELLI_WIDTH, .height = JELLI_HEIGHT, .stride = JELLI_WIDTH};
-    ESP_ERROR_CHECK(jelli_init(&engine, platform, surface) ? ESP_OK : ESP_FAIL);
-    ESP_LOGI(TAG, "Shapes MVP ready: tap for 300 ms color transition");
+    ESP_ERROR_CHECK(jelli_pet_init(&engine, platform, surface) ? ESP_OK : ESP_FAIL);
+    engine.ui.time_unavailable = true;
+    ESP_LOGI(TAG, "Pet slice ready: tap menus; volatile session, RTC/save integration pending");
     run_engine(&engine, &board);
 }

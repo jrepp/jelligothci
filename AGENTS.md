@@ -2,11 +2,11 @@
 
 ## Scope
 
-This is a C11 foundation for a virtual pet on the Waveshare
-ESP32-S3-Touch-AMOLED-1.75, SKU 31261. The current MVP draws three simple shapes;
-one moves, tap/click triggers a 300 ms color transition, and Space pauses motion. Keep changes focused on the requested
-increment. Do not introduce creature simulation, persistence, networking, audio,
-or a larger UI unless the task calls for it.
+This is a C11 virtual pet MVP on the Waveshare ESP32-S3-Touch-AMOLED-1.75,
+SKU 31261, with an SDL host. See README.md for implemented care, gifts/rewards,
+sleep, collection, and desktop persistence, and memo-008 for the remaining work.
+The shapes diagnostic remains available. Keep changes focused on the requested
+increment; the draft RFC does not authorize every proposed system.
 
 Read `CONTRIBUTING.md` for the human setup and validation path, and `README.md`
 for architecture, commands, and hardware bring-up details. For repository settings,
@@ -93,7 +93,8 @@ the port/BSP.
 ## Development and validation
 
 ```sh
-make run          # interactive SDL demo; click changes colors, Space pauses, Escape exits
+make run          # pet care UI with desktop saves; Space pauses, Escape exits
+make run-shapes   # original input/color/motion diagnostic
 make test         # core tests and headless SDL smoke test
 make core-test    # verify the core builds without SDL
 make sanitize     # address and undefined behavior sanitizers
@@ -130,7 +131,7 @@ also require `./scripts/c-lint self-test`.
 For a deterministic screenshot:
 
 ```sh
-./build/desktop/jelligotchi --headless --frames 64 --snapshot build/shapes.bmp
+./build/desktop/jelligotchi --pet --headless --demo --frames 650 --snapshot build/pet.bmp
 ```
 
 Report separately what was compiled, tested in SDL, and verified on hardware.

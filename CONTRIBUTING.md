@@ -18,7 +18,8 @@ GitHub access. Host SSH access is a separate operator responsibility.
 | ESP-IDF bootstrap and firmware build | Tested locally | Supported wrapper path; fresh-machine setup not yet verified | Use the Linux path under WSL; USB forwarding is not verified |
 | USB flash and serial startup | Verified on the development Mac | Not verified | Not verified |
 
-These are scoped observations, not guarantees for every machine. Physical
+These are historical toolchain observations, not guarantees for every machine or
+validation of the latest pet implementation on every platform. Physical
 shape appearance and touch behavior still need confirmation; see
 [hardware evidence](docs-cms/memos/memo-003-first-usb-deployment.md).
 
@@ -50,13 +51,16 @@ Distribution packages may supply a newer unsupported Python. Check its version;
 set `JELLI_PYTHON` to a compatible executable for ESP-IDF. Package-manager tools
 and host compilers are prerequisites, not artifacts managed by this repository.
 Pinned Python utilities and ESP-IDF tools are managed locally by the wrappers.
+Rendered builds also fetch Python 3.12 and Pillow 12.0.0 through uv to embed the
+tracked PNG assets. Core-only builds do not run the asset generator.
 
 ```sh
 make hooks-install
 make test          # expect engine and headless SDL tests to pass
 make core-test     # verifies the core without SDL
 make hooks-check   # C formatting, analysis, size limits, docs, version/action pins
-make run           # three shapes; click changes colors, Space pauses, Escape quits
+make run           # pet care UI; desktop saves under build/
+make run-shapes    # original color/motion diagnostic
 ```
 
 Hooks are installed per checkout. Stage newly added source files before checking
@@ -74,13 +78,13 @@ cmake --build build/core-native --config Release --parallel 2
 ctest --test-dir build/core-native --build-config Release --output-on-failure --no-tests=error
 ```
 
-Expect the engine test to pass. Native Windows core CI does not establish that
+Expect all six core/storage tests to pass. Native Windows core CI does not establish that
 the shell wrappers, Python lint wheels, SDL, or USB workflow work on Windows.
 Use a supported macOS/Linux environment for those checks.
 
 ## Make and review a change
 
-Create a branch and keep the change within the current shapes MVP. Read the
+Create a branch and keep the change within the requested increment. Read the
 [architecture and ownership contracts](README.md#boundary-between-engine-and-host)
 and [project instructions](AGENTS.md). The core receives memory, time, input,
 and output from hosts; it must not gain SDK dependencies or heap allocation.

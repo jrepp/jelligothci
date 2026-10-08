@@ -1,6 +1,7 @@
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include "jelli/engine.h"
+#include "session.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -13,7 +14,7 @@ typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
-    bool headless, failed;
+    bool headless, failed, pet;
     uint64_t virtual_ms;
 } Desktop;
 
@@ -71,58 +72,15 @@ static void paused(void *ctx, bool value)
 {
     Desktop *d = ctx;
     SDL_SetWindowTitle(d->window,
-                       value ? "Jelligotchi | paused | Space resumes | click changes colors"
-                             : "Jelligotchi | shapes MVP | Space pauses | click changes colors");
+                       value ? "Jelligotchi | paused | Space resumes"
+                             : (d->pet ? "Jelligotchi | pet slice | Space pauses"
+                                       : "Jelligotchi | shapes diagnostic | click changes colors"));
 }
-static void usage(const char *name)
-{
-    printf("Usage: %s [--headless] [--frames N] [--snapshot file.bmp]\n"
-           "Left click: 300 ms color transition. Space: pause motion. Escape: quit.\n"
-           "Headless mode uses a deterministic injected clock (8 ms/frame).\n",
-           name);
-}
-typedef struct {
-    bool headless;
-    unsigned long max_frames;
-    const char *snapshot;
-} Options;
-
-/* Return -1 to continue, otherwise the requested process exit status. */
-static int parse_options(int argc, char **argv, Options *options)
-{
-    for (int i = 1; i < argc; ++i) {
-        if (!strcmp(argv[i], "--headless"))
-            options->headless = true;
-        else if (!strcmp(argv[i], "--frames") && i + 1 < argc) {
-            char *end = NULL;
-            const char *arg = argv[++i];
-            errno = 0;
-            options->max_frames = strtoul(arg, &end, 10);
-            if (errno || !*arg || *end || *arg == '-' || !options->max_frames ||
-                options->max_frames > UINT_MAX) {
-                fprintf(stderr, "--frames requires a positive integer <= %u\n", (unsigned)UINT_MAX);
-                return 2;
-            }
-        } else if (!strcmp(argv[i], "--snapshot") && i + 1 < argc)
-            options->snapshot = argv[++i];
-        else if (!strcmp(argv[i], "--help")) {
-            usage(argv[0]);
-            return 0;
-        } else {
-            usage(argv[0]);
-            return 2;
-        }
-    }
-    if (options->headless && !options->max_frames)
-        options->max_frames = 1;
-    return -1;
-}
-
 static bool create_display(Desktop *d)
 {
     d->window = SDL_CreateWindow(
-        "Jelligotchi | shapes MVP | Space pauses | click changes colors", SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED, JELLI_WIDTH, JELLI_HEIGHT,
+        d->pet ? "Jelligotchi | pet slice" : "Jelligotchi | shapes diagnostic",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, JELLI_WIDTH, JELLI_HEIGHT,
         d->headless ? SDL_WINDOW_HIDDEN : SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!d->window)
         return false;
@@ -137,14 +95,20 @@ static bool create_display(Desktop *d)
     return d->texture != NULL;
 }
 
-static void run_frames(JelliEngine *engine, Desktop *d, unsigned long max_frames)
+static void run_frames(JelliEngine *shapes, JelliPetEngine *pet, Desktop *d,
+                       const JelliOptions *options, JelliSession *session)
 {
-    for (unsigned long frame = 0; !max_frames || frame < max_frames; ++frame) {
+    for (unsigned long frame = 0; !options->max_frames || frame < options->max_frames; ++frame) {
         uint64_t start = SDL_GetTicks64();
-        if (!jelli_frame(engine) || d->failed)
+        if (options->demo)
+            jelli_sdl_demo(pet, frame);
+        bool running = d->pet ? jelli_pet_frame(pet) : jelli_frame(shapes);
+        if (!running || d->failed)
             break;
+        if (d->pet)
+            jelli_sdl_session_update(session, pet, options);
         if (d->headless)
-            d->virtual_ms += FRAME_MS;
+            d->virtual_ms += options->demo ? 100u : FRAME_MS;
         else {
             uint64_t elapsed = SDL_GetTicks64() - start;
             if (elapsed < FRAME_MS)
@@ -166,11 +130,11 @@ static bool save_snapshot(uint16_t *pixels, const char *path)
 
 int main(int argc, char **argv)
 {
-    Options options = {0};
-    int parsed = parse_options(argc, argv, &options);
+    JelliOptions options;
+    int parsed = jelli_sdl_options(argc, argv, &options);
     if (parsed >= 0)
         return parsed;
-    Desktop d = {.headless = options.headless};
+    Desktop d = {.headless = options.headless, .pet = options.pet};
     if (d.headless)
         SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
     SDL_SetMainReady();
@@ -189,10 +153,18 @@ int main(int argc, char **argv)
     JelliSurface surface = {
         .pixels = pixels, .width = JELLI_WIDTH, .height = JELLI_HEIGHT, .stride = JELLI_WIDTH};
     JelliPlatform platform = {&d, now_ms, poll_input, present, paused};
-    JelliEngine engine;
-    if (!jelli_init(&engine, platform, surface))
+    static JelliEngine shapes;
+    static JelliPetEngine pet;
+    static JelliSession session;
+    if (d.pet) {
+        if (!jelli_pet_init(&pet, platform, surface) ||
+            !jelli_sdl_session_open(&session, &pet, &options))
+            goto cleanup;
+    } else if (!jelli_init(&shapes, platform, surface))
         goto cleanup;
-    run_frames(&engine, &d, options.max_frames);
+    run_frames(&shapes, &pet, &d, &options, &session);
+    if (d.pet && !jelli_sdl_session_save(&session, &pet, &options))
+        goto cleanup;
     if (d.failed)
         goto cleanup;
     if (options.snapshot && !save_snapshot(pixels, options.snapshot))
