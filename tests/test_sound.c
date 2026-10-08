@@ -52,7 +52,10 @@ int main(void)
                 peak = magnitude;
             sum += a[i];
         }
-        CHECK(peak > 1000 && peak < 12000);
+        /* Headroom: the ESP32 volume curve (sound_output.c) plus the ES8311 hw_gain term
+         * apply +15.5 dB of DAC gain at JELLI_SOUND_VOLUME_MAX, so a peak above
+         * 32767 * 10^(-15.5/20) ~= 5500 would clip on the device. */
+        CHECK(peak > 1000 && peak < 5500);
         CHECK(llabs(sum / (int64_t)count) < 100);
         CHECK(jelli_sound_name(cue) != NULL);
     }

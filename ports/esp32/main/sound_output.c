@@ -55,9 +55,21 @@ bool jelli_sound_output_init(void)
     codec = bsp_audio_codec_speaker_init();
     if (!codec)
         return false;
+    /* Request volumes (0..JELLI_SOUND_VOLUME_MAX) are amplitude percentages, as on SDL. The
+     * codec's default curve is linear in dB (0 -> -50 dB, 100 -> 0 dB), which left game cues
+     * at about -40 dB and inaudible. This curve follows 20*log10(v/100) + 14 dB; the ES8311
+     * driver then adds 3.6 dB for its hw_gain (PA 5.0 V, DAC 3.3 V). The synth peaks near
+     * -17 dBFS (tests/test_sound.c bounds it), so the output peaks near -1.5 dBFS at the
+     * request maximum of 80 and does not clip. Volume 0 is effectively silent: the library
+     * maps it to -96 dB. The codec copies the points. */
+    esp_codec_dev_vol_map_t points[] = {
+        {0, -95.5f}, {1, -26.0f}, {2, -20.0f}, {3, -16.5f}, {5, -12.0f}, {10, -6.0f}, {18, -0.9f},
+        {25, 2.0f},  {36, 5.1f},  {50, 8.0f},  {65, 10.3f}, {80, 12.1f}, {100, 14.0f}};
+    esp_codec_dev_vol_curve_t curve = {points, (int)(sizeof(points) / sizeof(points[0]))};
     esp_codec_dev_sample_info_t format = {
         .sample_rate = JELLI_SOUND_RATE, .channel = 1, .bits_per_sample = 16};
-    if (esp_codec_dev_set_out_vol(codec, 35) != ESP_CODEC_DEV_OK ||
+    if (esp_codec_dev_set_vol_curve(codec, &curve) != ESP_CODEC_DEV_OK ||
+        esp_codec_dev_set_out_vol(codec, 35) != ESP_CODEC_DEV_OK ||
         esp_codec_dev_open(codec, &format) != ESP_CODEC_DEV_OK)
         return false;
     queue = xQueueCreateStatic(4u, sizeof(Request), queue_storage, &queue_control);

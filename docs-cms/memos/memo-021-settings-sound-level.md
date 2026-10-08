@@ -126,10 +126,14 @@ or new buffers were added.
 
 # Remaining uncertainty
 
-- Loudness on the physical speaker is unverified. The ES8311 output volume is
-  not necessarily linear in perceived loudness, so equal steps may not sound
-  equal, and level 10 (codec volume 50 for the tap) may be louder than desired.
-  Measure or listen on hardware before changing the mapping.
+- On the 1.75C with a speaker attached, game cues were barely audible. The
+  esp_codec_dev default curve is linear in dB (volume 0 = -50 dB, 100 = 0 dB), so
+  request volumes 18 and 25 played at about -41 and -37.5 dB; even the debug
+  maximum, 80 (-10 dB), was faint, because the synth peaks near -17 dBFS. The
+  ESP32 now installs its own curve, 20*log10(v/100) + 14 dB, so requests mean
+  amplitude percentages, as they already do on SDL. On 2026-10-08 the user
+  confirmed level 5 is clearly audible and level 10 noticeably louder. Steps are
+  still not perceptually equal, and the 1.75 (SKU 31261) has not been listened to.
 - Appearance and touch of the SOUND button and the editor on the AMOLED are
   unverified, including legibility of the hollow segments.
 - Desktop audio was not listened to; headless runs have no audio device.

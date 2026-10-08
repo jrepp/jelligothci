@@ -212,7 +212,10 @@ open build/audio/preview.html
 
 See [sound sources and audition exports](../assets/sound/README.md). ESP32 initialization
 uses the pinned BSP's ES8311 codec path. Its codec/driver allocate at startup;
-steady-state synthesis uses fixed buffers and a four-request queue.
+steady-state synthesis uses fixed buffers and a four-request queue. Request volumes
+are amplitude percentages on both hosts. The ESP32 installs a codec volume curve
+of 20*log10(v/100) + 14 dB, which uses the synth's headroom (peaks near -17 dBFS) so
+that game cues are audible; the codec's default curve played them at about -40 dB.
 
 ### Readable event companion and activity routines
 
