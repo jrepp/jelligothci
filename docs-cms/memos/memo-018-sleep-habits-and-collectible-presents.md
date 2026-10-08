@@ -133,6 +133,15 @@ The event viewer was reconnected on port 8766. Logs/screenshots are under ignore
 unverified. A tagged-version rebuild/flash and release publication follow these
 checks; record their final revision separately.
 
+# Release compiler correction
+
+The first release-candidate validation (run 37742276429) passed portable core tests
+on all three operating systems but GCC's SDL sanitizer build rejected an integer
+promotion in the reward interpolation ternary. Local Clang had accepted it. The
+fix assigns the terminal value directly and uses a separate, range-bounded cast
+for the interpolated branch; warning flags remain unchanged. The release is held
+until cross-platform validation passes.
+
 # Remaining polish
 
 - Tune decay and sleep targets through ordinary multi-day use.

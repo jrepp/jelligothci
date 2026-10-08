@@ -235,7 +235,8 @@ bool jelli_pet_rewards_animate(JelliPetRewards *r, JelliParticles *particles, ui
     *selected = item->stat;
     uint64_t counting = (uint64_t)duration * 2u / 3u;
     uint64_t elapsed = r->elapsed_ms < counting ? r->elapsed_ms : counting;
-    *value =
-        counting ? (uint16_t)(item->from + (item->to - item->from) * elapsed / counting) : item->to;
+    *value = item->to;
+    if (counting)
+        *value = (uint16_t)(item->from + (item->to - item->from) * elapsed / counting);
     return true;
 }
