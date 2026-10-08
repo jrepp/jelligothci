@@ -244,6 +244,14 @@ static bool read_game(Reader *reader, JelliGame *game)
     return !reader->failed;
 }
 
+/* Rosters saved before version 5 predate the ninja. Appending one to an invalid
+ * roster is refused, and the decoder's full validation still applies afterwards. */
+static void upgrade_roster(const Reader *reader, JelliGame *game)
+{
+    if (!reader->failed && reader->version < 5u)
+        (void)jelli_game_add_ninja(game);
+}
+
 static uint32_t checksum(const uint8_t *bytes, size_t size)
 {
     uint32_t crc = UINT32_C(0xffffffff);
@@ -321,6 +329,7 @@ bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t s
     if (get_u8(&reader) != SAVE_CONTENT_VERSION || get_u8(&reader) != 0u || get_u8(&reader) != 0u)
         reader.failed = true;
     (void)read_game(&reader, &candidate->game);
+    upgrade_roster(&reader, &candidate->game);
     if (reader.failed || reader.offset != reader.size || candidate->game.resuming ||
         candidate->game.resume_remaining_ms != 0u || candidate->game.backlog_ms >= 100u ||
         !jelli_game_valid(&candidate->game))

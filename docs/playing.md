@@ -95,6 +95,12 @@ freeze the game. See [the protocol and validation record](../docs-cms/memos/memo
 
 Tap MENU for care, moments, gifts, and settings. Pet switching and sleep/wake live
 in Settings.
+There are three pets: two jellies, each shown as MINT until it grows into LILAC,
+and a little NINJA that keeps its form. Settings > SWITCH PET moves to the next
+pet in order (first jelly, second jelly, ninja, then back to the first) and shows
+NOT READY while the current pet is busy or resting under the sleep journal.
+Stored pets pause until selected. Saves from before the ninja keep both jellies
+and gain a fresh ninja the first time they load.
 Only useful actions occupy ring positions. The bottom arrow BACK is the only
 return action; X CLOSE dismisses the home ring. There is no separate confirm or
 save button: successful actions request a save. The home tile shows one stat at a
@@ -147,9 +153,9 @@ Gameplay timing and rewards are unaffected.
 The portable [registry](../include/jelli/tunables.h) supports immutable form profiles
 through `jelli_tunables_register(&engine.ui.tunables, profiles, count)`. Profiles
 must outlive the engine. Resolution is default → form profile → global override
-→ creature override. Both existing forms currently inherit common defaults.
-This establishes a content extension point without inventing different balance
-for the two creatures.
+→ creature override. All three forms (Mint, Lilac, and the ninja) currently inherit
+common defaults. This establishes a content extension point without inventing
+different balance for the creatures.
 
 For a black-box acceptance run against an already-running game:
 

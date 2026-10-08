@@ -41,7 +41,7 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
     if (command->kind == JELLI_CMD_REST)
         command->kind = pet->asleep ? JELLI_CMD_WAKE : JELLI_CMD_REST;
     else if (command->kind == JELLI_CMD_ACTIVATE)
-        command->value = game->pets[game->active == 0u ? 1u : 0u].id;
+        command->value = game->pets[jelli_game_next_slot(game)].id; /* Roster order, wraps. */
     else if (command->kind == JELLI_CMD_TRAVEL)
         command->value = pet->location ? 0u : 1u;
     else if (command->kind == JELLI_CMD_BEDTIME)

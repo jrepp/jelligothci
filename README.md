@@ -3,7 +3,8 @@
 A small virtual pet for the **Waveshare ESP32-S3-Touch-AMOLED-1.75 (SKU 31261)**
 and the 1.75C, with a native SDL desktop version. Both run the same C11 game and renderer.
 
-Care for your pet through food, play, healthy routines, and everyday moments.
+Care for three pets: two jellies (Mint, who grows into Lilac) and a little ninja.
+Feed, play, and share healthy routines and everyday moments.
 Collect nine keepsakes and gift them to another pet. Sleep can track your own
 bedtime and wake-up alongside the pet, with a rolling sleep score and a short
 journal. This is a playable prototype; balance and artwork are still evolving.
@@ -64,7 +65,7 @@ Bounds, centroids, and creature ground anchors update with the image.
 open build/assets/preview.html    # macOS; otherwise open in your browser
 ```
 
-The preview includes all 86 assets, including nine distinct presents and seven battery icons.
+The preview includes all 94 assets, including the eight ninja poses, nine distinct presents, and seven battery icons.
 [Art inventory](assets/slice/README.md) · [live authoring guide](docs/artwork.md)
 
 ## Hardware bring-up

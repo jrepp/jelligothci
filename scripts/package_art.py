@@ -22,7 +22,7 @@ def stage_art(folder):
     shutil.copy2(ROOT / 'toolchain.env', folder / 'toolchain.env')
     shutil.copy2(preview, folder / 'preview.html')
     (folder / 'ARTWORK.txt').write_text(
-        'Editable PNGs: assets/slice/ (86 images, including nine unique prizes).\n'
+        'Editable PNGs: assets/slice/ (94 images, including nine unique prizes).\n'
         'Open preview.html for the standalone art sheet.\n'
         'macOS/Linux live art: ./scripts/jelli-art-live\n'
         'Windows live art: uv run --python 3.12 tools/assets/live_assets.py\n'

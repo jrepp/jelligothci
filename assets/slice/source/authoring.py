@@ -11,6 +11,7 @@ from menu_icons import create_menu_assets, create_meter_assets
 from healthy_art import create_healthy_assets
 from prize_art import create_prize_assets
 from battery_icons import create_battery_assets
+from ninja_art import create_ninja_assets
 source_root = Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--output", type=Path, default=source_root.parents[1] / "build/assets/reimport")
@@ -170,11 +171,19 @@ for form in ['baby','grown']:
 for form in ('baby','grown'):
  for pose in ('curious','content'):
   clips.append(dict(id=len(clips)+5001,key=f'{form}.{pose}',frames=[f'creatures.{form}-{pose}'],durations_ms=[900],loop=False))
+# The ninja (form 2) mirrors the Mint/Lilac clip set with the same timings.
+for pose in ['idle','eating','happy','asleep','unwell']:
+ keys=['creatures.ninja-idle-a','creatures.ninja-idle-b'] if pose=='idle' else [f'creatures.ninja-{pose}']
+ clips.append(dict(id=len(clips)+5001,key=f'ninja.{pose}',frames=keys,durations_ms=[450]*len(keys),loop=pose=='idle'))
+for pose in ('curious','content'):
+ clips.append(dict(id=len(clips)+5001,key=f'ninja.{pose}',frames=[f'creatures.ninja-{pose}'],durations_ms=[900],loop=False))
 assets.extend(create_healthy_assets(root, palette))
 assets.extend(create_menu_assets(root, palette))
 assets.extend(create_meter_assets(root, palette))
 assets.extend(create_prize_assets(root, palette))
 assets.extend(create_battery_assets(root, palette))
+# Generated ninja sheet, cut deterministically; see ninja_art.py and ninja-imagegen-prompt.txt.
+assets.extend(create_ninja_assets(root, palette, source_root/'source/ninja-atlas.jpg'))
 manifest=dict(schema_version=1,name='Jelligotchi vertical slice',status='Ring menu artwork integrated; physical readability review pending',pixel_format='RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks',palette=palette,assets=assets,clips=clips)
 (root/'assets.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print(f'Created {len(assets)} PNG assets from atlas {atlas.size}; {len(clips)} clips')

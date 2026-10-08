@@ -13,6 +13,15 @@
 #define JELLI_STACK_LIMIT 20u
 #define JELLI_DAY_TICKS 864000u
 #define JELLI_OFFLINE_CAP_MS 86400000u
+/* Pet forms. Mint (baby) evolves into Lilac (grown) once; the ninja never evolves. */
+#define JELLI_FORM_MINT 0u
+#define JELLI_FORM_LILAC 1u
+#define JELLI_FORM_NINJA 2u
+#define JELLI_FORM_COUNT 3u
+/* New games start with two Mints and the ninja, stable IDs 1, 2 and 3. Saves from
+ * before the ninja gain one when decoded, so every valid roster has three pets. */
+#define JELLI_ROSTER_MIN 3u
+#define JELLI_NINJA_PET_ID 3u
 
 typedef enum {
     JELLI_SATIETY,
@@ -123,6 +132,12 @@ void jelli_prize_complete(JelliGame *game, unsigned trigger);
 JelliResult jelli_prize_catch(JelliGame *game);
 JelliResult jelli_prize_gift(JelliGame *game, unsigned index);
 bool jelli_game_valid(const JelliGame *game);
+/* Roster slot SWITCH PET activates: the one after the active slot, wrapping. */
+uint8_t jelli_game_next_slot(const JelliGame *game);
+/* Appends a fresh ninja to a structurally valid roster that has none, when capacity
+ * allows; it takes stable ID 3 or the next unused ID. True when a pet was added.
+ * Otherwise the game is unchanged. Used to migrate saves from before the ninja. */
+bool jelli_game_add_ninja(JelliGame *game);
 JelliResult jelli_game_command(JelliGame *game, JelliCommand command);
 /* At most eight 100 ms ticks/call, at most two seconds retained backlog. */
 void jelli_game_advance(JelliGame *game, uint64_t elapsed_ms);

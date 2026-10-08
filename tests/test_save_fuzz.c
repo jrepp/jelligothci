@@ -1,4 +1,4 @@
-/* Property, mutation, and fuzz tests for the version 4 save codec.
+/* Property, mutation, and fuzz tests for the version 5 save codec.
  * Every generated case uses a fixed seed so a failure prints a replayable case. */
 #include "jelli/save.h"
 
@@ -102,16 +102,27 @@ static bool decode_checked(const uint8_t *bytes, size_t size, JelliSave *out)
     return true;
 }
 
-/* Any accepted version 4 record is canonical: re-encoding reproduces it exactly. */
-static bool canonical(const uint8_t *bytes, size_t size)
+/* Re-encoding an accepted record; true when it reproduces the input exactly. */
+static bool reencodes_exactly(const uint8_t *bytes, size_t size, uint8_t *again, size_t *again_size)
 {
     JelliSave decoded;
     if (!decode_checked(bytes, size, &decoded))
         return false;
-    uint8_t again[JELLI_SAVE_CAPACITY];
-    size_t again_size = encode(&decoded, again);
-    return bytes[4] != JELLI_SAVE_VERSION ||
-           (again_size == size && memcmp(again, bytes, size) == 0);
+    *again_size = encode(&decoded, again);
+    return *again_size == size && memcmp(again, bytes, size) == 0;
+}
+
+/* Any accepted current-version record is canonical: re-encoding reproduces it exactly.
+ * An accepted older record migrates in one step: its current re-encoding is canonical. */
+static bool canonical(const uint8_t *bytes, size_t size)
+{
+    uint8_t again[JELLI_SAVE_CAPACITY], twice[JELLI_SAVE_CAPACITY];
+    size_t again_size = 0u, twice_size = 0u;
+    bool exact = reencodes_exactly(bytes, size, again, &again_size);
+    if (bytes[4] == JELLI_SAVE_VERSION || again_size == 0u)
+        return exact;
+    return again[4] == JELLI_SAVE_VERSION &&
+           reencodes_exactly(again, again_size, twice, &twice_size);
 }
 
 static void round_trip_property(void)
@@ -121,9 +132,11 @@ static void round_trip_property(void)
         JelliSave save = fixture((next_random(&seed) & 1u) != 0u), loaded;
         save.sequence = next_random(&seed);
         save.anchor_valid = (next_random(&seed) & 1u) != 0u;
-        save.game.count = (uint8_t)(2u + next_random(&seed) % (JELLI_PET_CAPACITY - 1u));
-        for (unsigned p = 2u; p < save.game.count; ++p) {
-            save.game.pets[p] = save.game.pets[p % 2u];
+        save.game.count =
+            (uint8_t)(JELLI_ROSTER_MIN +
+                      next_random(&seed) % (JELLI_PET_CAPACITY - JELLI_ROSTER_MIN + 1u));
+        for (unsigned p = JELLI_ROSTER_MIN; p < save.game.count; ++p) {
+            save.game.pets[p] = save.game.pets[p % JELLI_ROSTER_MIN];
             save.game.pets[p].id = p + 1u;
         }
         uint8_t bytes[JELLI_SAVE_CAPACITY];
@@ -184,9 +197,12 @@ static void every_setting_and_version_byte(void)
         if (accepted)
             CHECK(loaded.game.battery_display == (value == 1u) && canonical(mutated, size));
         memcpy(mutated, bytes, size);
-        mutated[4] = (uint8_t)value; /* Version 0, 5, 255, ...: only 4 fits this layout. */
+        mutated[4] = (uint8_t)value; /* Version 5 kept the version 4 layout; 0, 3, 6, ... fail. */
         repair(mutated, size);
-        CHECK(decode_checked(mutated, size, NULL) == (value == JELLI_SAVE_VERSION));
+        CHECK(decode_checked(mutated, size, &loaded) ==
+              (value == JELLI_SAVE_VERSION || value == 4u));
+        if (value == 4u) /* The fixture already has its ninja, so relabelling adds none. */
+            CHECK(loaded.game.count == JELLI_ROSTER_MIN && canonical(mutated, size));
         memcpy(mutated, bytes, size);
         mutated[5] = (uint8_t)value; /* High byte of the little-endian version. */
         repair(mutated, size);
@@ -302,7 +318,7 @@ static void invalid_arguments(void)
     CHECK(!jelli_save_decode_workspace(&out, bytes, size, &out));
     CHECK(!out.game.battery_display); /* Unchanged by every rejected call. */
     CHECK(jelli_save_decode_workspace(&out, bytes, size, &scratch) && out.game.battery_display);
-    CHECK(jelli_save_encode(&save, bytes, size - 1u) == 0u); /* One byte short of v4. */
+    CHECK(jelli_save_encode(&save, bytes, size - 1u) == 0u); /* One byte short of v5. */
     CHECK(jelli_save_encode(&save, bytes, size) == size);
 }
 
@@ -315,6 +331,6 @@ int main(void)
     seeded_mutation_fuzz();
     random_records();
     invalid_arguments();
-    puts("PASS: v4 save codec truncation, bit-flip, byte-sweep, and seeded mutation properties");
+    puts("PASS: v5 save codec truncation, bit-flip, byte-sweep, and seeded mutation properties");
     return 0;
 }

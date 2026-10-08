@@ -7,8 +7,8 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
                                     bool paused)
 {
     const JelliPet *pet = &game->pets[game->active];
-    uint8_t other_index = game->active == 0u ? 1u : 0u;
-    const JelliPet *other = &game->pets[other_index];
+    /* The stored pet is the SWITCH PET target, so the Settings ring describes it. */
+    const JelliPet *other = &game->pets[jelli_game_next_slot(game)];
     JelliPetRenderKey key = {.assets = ui->assets};
     uint64_t day_phase =
         (pet->ticks % JELLI_DAY_TICKS + pet->phase_offset % JELLI_DAY_TICKS) % JELLI_DAY_TICKS;

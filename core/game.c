@@ -26,42 +26,43 @@ static bool enum_values_valid(const JelliPet *pet)
     }
 }
 
+/* Every pet, including one added to an older save, starts with the same stats. */
+static JelliPet new_pet(uint32_t id, uint8_t form)
+{
+    return (JelliPet){.id = id,
+                      .form = form,
+                      .phase_offset = 324000u,
+                      .bedtime = 22u,
+                      .sleep_duration = 288000u,
+                      .random_state = id,
+                      .needs = {500u, 700u, 700u, 500u, 500u},
+                      .bond = 100u,
+                      .health = JELLI_WELL,
+                      .activity = JELLI_IDLE};
+}
+
 void jelli_game_init(JelliGame *game)
 {
     if (game == NULL)
         return;
     *game = (JelliGame){0};
-    game->count = 2u;
+    game->count = JELLI_ROSTER_MIN;
     game->food = 5u;
     game->gifts = 3u;
     game->battery_display = true;
-    game->pets[0] = (JelliPet){.id = 1u,
-                               .phase_offset = 324000u,
-                               .bedtime = 22u,
-                               .sleep_duration = 288000u,
-                               .random_state = 1u,
-                               .needs = {500u, 700u, 700u, 500u, 500u},
-                               .bond = 100u,
-                               .health = JELLI_WELL,
-                               .activity = JELLI_IDLE};
-    game->pets[1] = (JelliPet){.id = 2u,
-                               .phase_offset = 324000u,
-                               .bedtime = 22u,
-                               .sleep_duration = 288000u,
-                               .random_state = 2u,
-                               .needs = {500u, 700u, 700u, 500u, 500u},
-                               .bond = 100u,
-                               .health = JELLI_WELL,
-                               .activity = JELLI_IDLE};
+    game->pets[0] = new_pet(1u, JELLI_FORM_MINT);
+    game->pets[1] = new_pet(2u, JELLI_FORM_MINT);
+    game->pets[2] = new_pet(JELLI_NINJA_PET_ID, JELLI_FORM_NINJA);
 }
 
 static bool pet_profile_valid(const JelliPet *pet)
 {
     if (pet->id == 0u || pet->bedtime >= 24u || pet->sleep_duration == 0u ||
         pet->sleep_duration > JELLI_DAY_TICKS - 600u || pet->sleep_duration < 600u ||
-        pet->phase_offset >= JELLI_DAY_TICKS || pet->random_state == 0u || pet->form > 1u ||
-        pet->location > 1u || pet->bond > 1000u || pet->touch_load > 1000u || pet->reaction > 3u ||
-        pet->reaction_ticks > 30u || !enum_values_valid(pet))
+        pet->phase_offset >= JELLI_DAY_TICKS || pet->random_state == 0u ||
+        pet->form >= JELLI_FORM_COUNT || pet->location > 1u || pet->bond > 1000u ||
+        pet->touch_load > 1000u || pet->reaction > 3u || pet->reaction_ticks > 30u ||
+        !enum_values_valid(pet))
         return false;
     return true;
 }
@@ -130,10 +131,10 @@ static bool pet_valid(const JelliPet *pet)
            pet_lifecycle_valid(pet);
 }
 
-static bool game_header_valid(const JelliGame *game)
+static bool game_header_valid(const JelliGame *game, uint8_t min_count)
 {
     return game != NULL && jelli_sleep_log_valid(&game->sleep_log) &&
-           jelli_prizes_valid(&game->prizes) && game->count >= 2u &&
+           jelli_prizes_valid(&game->prizes) && game->count >= min_count &&
            game->count <= JELLI_PET_CAPACITY && game->active < game->count &&
            game->food <= JELLI_STACK_LIMIT && game->gifts <= JELLI_STACK_LIMIT &&
            game->backlog_ms <= 2000u && game->resume_remaining_ms <= JELLI_OFFLINE_CAP_MS &&
@@ -201,9 +202,45 @@ static bool prize_sources_valid(const JelliGame *game)
     return true;
 }
 
-bool jelli_game_valid(const JelliGame *game)
+static bool roster_valid(const JelliGame *game, uint8_t min_count)
 {
-    return game_header_valid(game) && game_pets_valid(game) && prize_sources_valid(game);
+    return game_header_valid(game, min_count) && game_pets_valid(game) && prize_sources_valid(game);
+}
+
+bool jelli_game_valid(const JelliGame *game) { return roster_valid(game, JELLI_ROSTER_MIN); }
+
+uint8_t jelli_game_next_slot(const JelliGame *game)
+{
+    if (game == NULL || game->count == 0u || game->active >= game->count)
+        return 0u;
+    return (uint8_t)((game->active + 1u) % game->count);
+}
+
+static bool pet_id_used(const JelliGame *game, uint32_t id)
+{
+    for (uint8_t i = 0u; i < game->count; ++i) {
+        if (game->pets[i].id == id)
+            return true;
+    }
+    return false;
+}
+
+bool jelli_game_add_ninja(JelliGame *game)
+{
+    /* Legacy rosters held two pets; validate them as stored before appending. */
+    if (!roster_valid(game, 2u) || game->count >= JELLI_PET_CAPACITY)
+        return false;
+    for (uint8_t i = 0u; i < game->count; ++i) {
+        if (game->pets[i].form == JELLI_FORM_NINJA)
+            return false;
+    }
+    /* At most count (< capacity) IDs are taken, so this stops within capacity steps. */
+    uint32_t id = JELLI_NINJA_PET_ID;
+    while (pet_id_used(game, id))
+        ++id;
+    game->pets[game->count] = new_pet(id, JELLI_FORM_NINJA);
+    ++game->count;
+    return true;
 }
 
 const char *jelli_game_result_name(JelliResult result)

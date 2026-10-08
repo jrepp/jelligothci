@@ -4,13 +4,15 @@
 # ///
 """Contact anchors are invariant under padding and ignore upper-body motion."""
 from pathlib import Path
+import copy
 import sys
+import tempfile
 import unittest
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools/assets"))
 from sprite_geometry import ground_anchor_q8, opaque_centroid_q8
-from build_slice import load_assets
+from build_slice import export_pixels, load_assets
 
 
 def shape(points, size=(12, 12)):
@@ -53,12 +55,44 @@ class GroundAnchorTests(unittest.TestCase):
     def test_real_pose_metadata(self):
         manifest, images = load_assets()
         creatures = [a for a in manifest["assets"] if a["kind"] == "creatures"]
-        self.assertEqual(len(creatures), 16)
+        self.assertEqual(len(creatures), 24)  # Mint, Lilac, and ninja: eight poses each.
         for asset in creatures:
             x, y = asset["ground_anchor_q8"]
             self.assertEqual(y, asset["bounds"][3] * 256)
             self.assertTrue(asset["bounds"][0] * 256 < x < asset["bounds"][2] * 256)
             self.assertEqual([x, y], ground_anchor_q8(images[asset["key"]]))
+
+
+class PackBudgetTests(unittest.TestCase):
+    """The exported art fits the 192 KiB plan, and any growth fails the build."""
+
+    def export(self, manifest, images):
+        with tempfile.TemporaryDirectory() as folder:
+            return export_pixels(Path(folder), manifest, images)
+
+    def test_real_inventory_within_ceiling(self):
+        manifest, images = load_assets()
+        report = self.export(manifest, images)
+        self.assertEqual(report["pixel_bytes"], 168704)
+        self.assertEqual(report["planned_pack_bytes"], 180992)
+        self.assertEqual(report["pack_ceiling"], 196608)
+        ninja = [r for r in report["assets"] if 1031 <= r["id"] <= 1038]
+        self.assertEqual(len(ninja), 8)
+        # 32x32 RGB565 plus a 4-byte-per-row mask, like every other creature frame.
+        self.assertTrue(all(r["bytes"] == 32 * 32 * 2 + 4 * 32 for r in ninja))
+
+    def test_growth_is_rejected(self):
+        manifest, images = load_assets()
+        frame = next(a for a in manifest["assets"] if a["id"] == 1031)
+        # Seven more frames would still fit the ceiling; eight would exceed it.
+        for extra in (1, 7, 8):
+            grown = copy.deepcopy(manifest)
+            for n in range(extra):
+                key = f"creatures.test-extra-{n}"
+                grown["assets"].append({**frame, "id": 1900 + n, "key": key})
+                images[key] = images[frame["key"]]
+            with self.subTest(extra=extra), self.assertRaisesRegex(ValueError, "pixel payload"):
+                self.export(grown, images)
 
 
 if __name__ == "__main__":

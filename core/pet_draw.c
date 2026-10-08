@@ -100,6 +100,12 @@ static const char *status(const JelliPetRenderKey *v)
     return "";
 }
 
+static const char *pet_name(uint8_t form)
+{
+    static const char *const names[JELLI_FORM_COUNT] = {"MINT", "LILAC", "NINJA"};
+    return form < JELLI_FORM_COUNT ? names[form] : names[JELLI_FORM_MINT];
+}
+
 static void start_badge(Canvas *c, int x, int y)
 {
     jelli_canvas_disk(c, x + 27, y + 27, 15, BG);
@@ -250,7 +256,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
         menu_button(&c, ui);
         return;
     }
-    jelli_canvas_heading(&c, view->form ? "LILAC" : "MINT", 16, 3u);
+    jelli_canvas_heading(&c, pet_name(view->form), 16, 3u);
     jelli_canvas_heading(&c, view->location ? "@ GARDEN" : "@ HOME", 57, 2u);
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS)
         settings_clock(&c, view);

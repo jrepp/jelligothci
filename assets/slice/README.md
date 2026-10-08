@@ -1,9 +1,10 @@
 # Jelligotchi slice artwork
 
-The review set contains 86 PNG files: 16 creature frames, 12 small icons, 13 ring icons,
+The review set contains 94 PNG files: 24 creature frames, 12 small icons, 13 ring icons,
 five meter pictograms, nine health icons, eight celebration sprites, nine collectible prizes,
-seven battery-status icons, two backgrounds, four props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
-form. The SDL and ESP32 pet builds embed these assets using
+seven battery-status icons, two backgrounds, four props, and one 96-slot bitmap font atlas.
+Mint is the baby form; Lilac is the grown form; the ninja is a third pet (form 2)
+that never evolves. The SDL and ESP32 pet builds embed these assets using
 `tools/assets/embed_slice.py`. Physical board appearance remains unverified.
 
 ## Preview and validate
@@ -34,7 +35,7 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 
 | Directory | Contents |
 | --- | --- |
-| `creatures/` | Two forms, each with idle A/B, eating, happy, asleep, unwell, curious, and content; 32x32 pixels |
+| `creatures/` | Mint, Lilac, and ninja forms, each with idle A/B, eating, happy, asleep, unwell, curious, and content; 32x32 pixels. Ninja IDs 1031–1038 in that order |
 | `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
 | `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
 | `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
@@ -45,7 +46,7 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 | `backgrounds/` | Two 64x64 neutral home/garden scenes with black vignettes |
 | `props/` | Food bowl, closed/open gift, and bed; 24x24 pixels |
 | `font/` | 128x72 atlas: 16 columns by six rows of 8x12 cells, ASCII 32–127 |
-| `source/` | Original generated atlas, exact generation prompt, original pixel authoring recipe (including `battery_icons.py`), and glyph patterns |
+| `source/` | Original generated atlases (`creatures-props-atlas.png`, `ninja-atlas.jpg`), their exact prompts, the pixel authoring recipe (including `battery_icons.py` and `ninja_art.py`), and glyph patterns |
 
 `assets.json` assigns explicit IDs, paths, frame sizes, bounds, pivots, palette,
 and clip timings. PNGs in the asset directories are the editable runtime
@@ -76,10 +77,11 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw pixel payload is 151,296 bytes. The RFC's 8,192-byte definition and
-4,096-byte metadata allowances bring the planned pack to 163,584 bytes, 256 bytes
-under the 160 KiB ceiling; those allowances are not a completed game pack or a
-linked firmware measurement.
+Actual raw pixel payload is 168,704 bytes. The RFC's 8,192-byte definition and
+4,096-byte metadata allowances bring the planned pack to 180,992 bytes, 15,616 bytes
+under the 192 KiB (196,608-byte) ceiling; those allowances are not a completed game
+pack or a linked firmware measurement. The ceiling was raised from 160 KiB, which
+had 256 bytes spare, for the ninja's eight frames (17,408 bytes).
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 
@@ -88,7 +90,8 @@ To reproduce candidate PNGs without overwriting reviewed source art:
 ```
 
 Candidates go to `build/assets/reimport/`. Review and explicitly copy desired
-changes into the source directories, then rebuild. The authoring recipe samples
+changes into the source directories, then rebuild. The ninja frames regenerate
+byte-identically from `source/ninja-atlas.jpg`; see the ninja section below. The authoring recipe samples
 rounded quarter-grid boundaries from the actual source size, resizes using nearest
 neighbor, thresholds alpha at 128, and selects the nearest shared palette color.
 Do not assume the image generator honored the requested dimensions. It returned
@@ -135,8 +138,8 @@ healthy activity uses up to 24. Rejected presses use three quiet square/cross ma
 Celebration particles last at most 1.74 seconds at the default 300 percent UI duration scale.
 Each particle remains eight bytes; the 24-slot pool fits within 224 bytes, with
 no extra framebuffer or runtime allocation. Particle type and scale are packed
-into the style byte. The art budget is now 160 KiB; actual raw pixels plus existing
-allowances use 163,584 bytes. Physical readability and touch feel still need review.
+into the style byte. The art budget was 160 KiB at the time (now 192 KiB; see the
+ninja section). Physical readability and touch feel still need review.
 
 Menu plates use a thin neutral edge and plain gray fill, supporting the icon
 rather than competing with it. The movie screen/clapper is squared off and loose
@@ -178,7 +181,35 @@ is shown by bar count (none with an exclamation mark, then one, two, or three
 bars), so it never depends on color alone; low and empty also say `LOW` in the
 caption. The bolt marks charging, the plug marks external power without a
 battery, and a question mark marks an unknown level. Charge complete reuses the
-three-bar icon. Separate high and full icons would exceed the 160 KiB planned
+three-bar icon. Separate high and full icons would have exceeded the then 160 KiB planned
 pack ceiling by 288 bytes, so the set uses three bars rather than four. The
 reproducible recipe is `source/battery_icons.py`; see
 [memo-019](../../docs-cms/memos/memo-019-battery-status-indicator.md).
+
+## Ninja pet
+
+The ninja's eight 32x32 poses (IDs 1031–1038: idle A, idle B, eating, happy,
+asleep, unwell, curious, content) were generated with Gemini image generation
+(`gemini-3-pro-image-preview`, 1:1). The exact prompt is
+[source/ninja-imagegen-prompt.txt](source/ninja-imagegen-prompt.txt); the returned
+1024x1024 JPEG is kept unchanged as `source/ninja-atlas.jpg`. It is a 4x4 grid of
+256px cells on flat magenta; only the first eight cells are used.
+
+`source/ninja_art.py` cuts the frames deterministically. Pixels with red and blue
+above 190 and green below 170 are background. The sheet was drawn on a logical
+grid of 8.0 source pixels; for each cell the sampling grid's phase is searched
+within ±4 pixels to minimise disagreement inside each block, then every logical
+pixel takes the majority class, mapped to the nearest shared-palette colour. Each
+frame is cropped to its opaque bounds and placed centred at x=16 with its feet on
+y=30, matching the creature pivot. A scripted paintover then removes JPEG spill:
+gold is kept only in the eating pose (the rice ball) and becomes cream elsewhere;
+in the open-eyed poses (idle A/B, eating, curious) each small dark blob fully
+enclosed by cream or pink face pixels becomes a crisp 2x2 deep-plum eye. Pillow is
+pinned to 12.0.0, so JPEG decoding and the output PNGs are reproducible.
+
+Clips 5015–5021 mirror the Mint and Lilac clips. Frame selection uses one table of
+eight pose IDs per form, so the ninja reacts with the same state rules. The frames
+are taller than the jellies' (up to 29 rows), so the 6x sprite reaches about
+y=82–94 on the home screen, below the name and location lines. The generated sheet
+is a review candidate; physical AMOLED readability has not been checked. See
+[memo-020](../../docs-cms/memos/memo-020-ninja-pet-and-three-pet-roster.md).

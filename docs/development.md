@@ -116,9 +116,10 @@ mode injects SDL's monotonic clock. Tests inject their own time and input, so
 they never wait for animation to advance.
 
 Click/tap the labeled buttons to navigate Home, Care, More, Collection, and
-Settings. Space pauses live care on desktop; Escape exits. The baby evolves
-after 60 seconds of active time for this accelerated slice. Stored pets freeze
-until selected. Bedtime is a pet-relative routine, initially 22:00 for eight hours;
+Settings. Space pauses live care on desktop; Escape exits. A Mint baby evolves
+into Lilac after 60 seconds of active time for this accelerated slice; the ninja
+never evolves. New games hold three pets, and SWITCH PET cycles through them in
+roster order. Stored pets freeze until selected. Bedtime is a pet-relative routine, initially 22:00 for eight hours;
 it is independent of your computer's local time zone.
 
 Running the executable directly starts an unsaved session. Add `--save BASE` to

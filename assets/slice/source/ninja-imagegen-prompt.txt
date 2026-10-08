@@ -1,0 +1,12 @@
+Model: gemini-3-pro-image-preview (Gemini image generation), aspect ratio 1:1, style none.
+Output kept verbatim as ninja-atlas.jpg (1024x1024 JPEG). ninja_art.py derives the runtime frames.
+
+Production pixel-art sprite atlas for an original tiny virtual pet game. ONE square image arranged in an EXACT 4-column by 4-row grid of equal square cells. Background of the ENTIRE image is a single flat solid pure magenta color (#FF00FF) everywhere outside the sprites: no gradient, no texture, no shadows, no grid lines, no borders, no labels, no text. Strict crisp pixel art with chunky square pixel blocks, as though each sprite was drawn on a 32 by 32 logical pixel grid and enlarged with nearest neighbor. No anti-aliasing, no smoothing, no soft shading, hard pixel edges only.
+
+Original character: a small round chibi NINJA pet, about as wide as tall, cute and friendly. Body and hood are one rounded blob in very dark plum (#291b35) with a slightly lighter dark plum (#49334f) shading band, thick dark outline. Face shows only through a horizontal mask opening in warm cream (#fff4cf) with two dark round eyes and tiny pink (#fa8c99) cheek pixels. A coral red (#d84f70) headband with two short tails fluttering behind the head. Tiny stubby arms and feet. Keep identical proportions, colors and size in every cell, centered horizontally, standing on the same ground line near the bottom of each cell, leaving generous magenta padding around each sprite.
+
+ROW 1: (1) idle standing, alert; (2) idle B: same pose squashed down by one pixel, headband tails lifted; (3) eating a tiny warm yellow (#f5c764) rice ball held at the mask opening; (4) happy: eyes closed as upward curved arcs, arms raised.
+ROW 2: (5) asleep: eyes closed as flat lines, body flattened and slumped, headband tails drooping, no letters; (6) unwell: droopy half-closed eyes, pale cheeks, slightly slumped, small teal sweat drop; (7) curious: body leaning to the right with head tilted, one eye wider; (8) content: calm closed smiling eyes, sitting low and relaxed.
+ROWS 3 and 4: completely empty flat magenta, no sprites.
+
+Palette across the whole atlas limited to these solid colors: #291b35, #49334f, #72516b, #187b79, #43bca2, #fff4cf, #ffffff, #d84f70, #fa8c99, #f5c764, plus the flat magenta background.

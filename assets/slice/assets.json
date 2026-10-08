@@ -1395,6 +1395,166 @@
       "pose": "content"
     },
     {
+      "id": 1031,
+      "key": "creatures.ninja-idle-a",
+      "path": "creatures/ninja-idle-a.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        3,
+        28,
+        30
+      ],
+      "form": "ninja",
+      "pose": "idle-a"
+    },
+    {
+      "id": 1032,
+      "key": "creatures.ninja-idle-b",
+      "path": "creatures/ninja-idle-b.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        3,
+        28,
+        30
+      ],
+      "form": "ninja",
+      "pose": "idle-b"
+    },
+    {
+      "id": 1033,
+      "key": "creatures.ninja-eating",
+      "path": "creatures/ninja-eating.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        3,
+        28,
+        30
+      ],
+      "form": "ninja",
+      "pose": "eating"
+    },
+    {
+      "id": 1034,
+      "key": "creatures.ninja-happy",
+      "path": "creatures/ninja-happy.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        3,
+        1,
+        30,
+        30
+      ],
+      "form": "ninja",
+      "pose": "happy"
+    },
+    {
+      "id": 1035,
+      "key": "creatures.ninja-asleep",
+      "path": "creatures/ninja-asleep.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        2,
+        14,
+        30,
+        30
+      ],
+      "form": "ninja",
+      "pose": "asleep"
+    },
+    {
+      "id": 1036,
+      "key": "creatures.ninja-unwell",
+      "path": "creatures/ninja-unwell.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        5,
+        3,
+        28,
+        30
+      ],
+      "form": "ninja",
+      "pose": "unwell"
+    },
+    {
+      "id": 1037,
+      "key": "creatures.ninja-curious",
+      "path": "creatures/ninja-curious.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        5,
+        1,
+        28,
+        30
+      ],
+      "form": "ninja",
+      "pose": "curious"
+    },
+    {
+      "id": 1038,
+      "key": "creatures.ninja-content",
+      "path": "creatures/ninja-content.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        6,
+        29,
+        30
+      ],
+      "form": "ninja",
+      "pose": "content"
+    },
+    {
       "id": 11001,
       "key": "prizes.butterfly",
       "path": "prizes/butterfly.png",
@@ -1852,6 +2012,85 @@
       "key": "grown.content",
       "frames": [
         "creatures.grown-content"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5015,
+      "key": "ninja.idle",
+      "frames": [
+        "creatures.ninja-idle-a",
+        "creatures.ninja-idle-b"
+      ],
+      "durations_ms": [
+        450,
+        450
+      ],
+      "loop": true
+    },
+    {
+      "id": 5016,
+      "key": "ninja.eating",
+      "frames": [
+        "creatures.ninja-eating"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5017,
+      "key": "ninja.happy",
+      "frames": [
+        "creatures.ninja-happy"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5018,
+      "key": "ninja.asleep",
+      "frames": [
+        "creatures.ninja-asleep"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5019,
+      "key": "ninja.unwell",
+      "frames": [
+        "creatures.ninja-unwell"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5020,
+      "key": "ninja.curious",
+      "frames": [
+        "creatures.ninja-curious"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5021,
+      "key": "ninja.content",
+      "frames": [
+        "creatures.ninja-content"
       ],
       "durations_ms": [
         900

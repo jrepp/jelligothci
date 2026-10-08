@@ -31,8 +31,8 @@ static void initialization_and_validation(void)
     JelliGame game;
     jelli_game_init(&game);
     CHECK(jelli_game_valid(&game));
-    CHECK(game.count == 2u && game.active == 0u && game.food == 5u && game.gifts == 3u);
-    CHECK(game.pets[0].id == 1u && game.pets[1].id == 2u);
+    CHECK(game.count == 3u && game.active == 0u && game.food == 5u && game.gifts == 3u);
+    CHECK(game.pets[0].id == 1u && game.pets[1].id == 2u && game.pets[2].id == 3u);
     jelli_game_advance(&game, 100u);
     CHECK(!game.pets[0].asleep);
     CHECK(command(&game, JELLI_CMD_FEED, 2u, 0u) == JELLI_INVALID_TARGET);
@@ -252,7 +252,7 @@ static void randomized_valid_commands_and_time(void)
         uint32_t command_value = value;
         JelliCommandKind kind = (JelliCommandKind)(value % 11u);
         if (kind == JELLI_CMD_ACTIVATE)
-            command_value = UINT32_C(1) + next_random(&random_state) % 2u;
+            command_value = UINT32_C(1) + next_random(&random_state) % JELLI_ROSTER_MIN;
         (void)command(&game, kind, game.pets[game.active].id, command_value);
         CHECK(jelli_game_valid(&game));
         if ((next_random(&random_state) % 13u) == 0u) {

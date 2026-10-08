@@ -72,7 +72,7 @@ static void round_trip(void)
     for (unsigned shown = 0u; shown < 2u; ++shown) {
         save.game.battery_display = shown != 0u;
         size_t size = encode(&save, bytes);
-        CHECK(bytes[4] == 4u && JELLI_SAVE_VERSION == 4u);
+        CHECK(bytes[4] == 5u && JELLI_SAVE_VERSION == 5u);
         CHECK(bytes[size - SETTING_FROM_END] == shown);
         CHECK(jelli_save_decode(&loaded, bytes, size));
         CHECK(loaded.game.battery_display == (shown != 0u));
@@ -92,9 +92,9 @@ static void version3_defaults_to_shown(void)
     CHECK(loaded.game.battery_display && loaded.sequence == save.sequence);
     CHECK(loaded.game.timezone_minutes == -330 && loaded.game.clock_adjust == 25);
     CHECK(loaded.game.prizes.owned == 1u && loaded.game.prizes.offered_pet == 2u);
-    /* Re-saving migrates to version 4 with the default made explicit. */
+    /* Re-saving migrates to version 5 with the default made explicit. */
     size_t migrated = encode(&loaded, bytes);
-    CHECK(migrated == size && bytes[4] == 4u && bytes[size - SETTING_FROM_END] == 1u);
+    CHECK(migrated == size && bytes[4] == 5u && bytes[size - SETTING_FROM_END] == 1u);
 }
 
 static void malformed_setting_is_rejected(void)
@@ -130,7 +130,7 @@ static void full_roster_fits(void)
     size_t size = encode(&save, bytes);
     CHECK(size <= JELLI_SAVE_CAPACITY && jelli_save_decode(&loaded, bytes, size));
     CHECK(!loaded.game.battery_display);
-    printf("eight-pet v4 save: %zu of %u bytes\n", size, (unsigned)JELLI_SAVE_CAPACITY);
+    printf("eight-pet v5 save: %zu of %u bytes\n", size, (unsigned)JELLI_SAVE_CAPACITY);
 }
 
 int main(void)

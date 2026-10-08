@@ -1,24 +1,48 @@
 #include "pet_draw.h"
 
-static uint32_t frame_id(const JelliPetRenderKey *v)
+typedef enum {
+    POSE_IDLE_A,
+    POSE_IDLE_B,
+    POSE_EATING,
+    POSE_HAPPY,
+    POSE_ASLEEP,
+    POSE_UNWELL,
+    POSE_CURIOUS,
+    POSE_CONTENT,
+    POSE_COUNT
+} Pose;
+
+/* Stable asset IDs per form, in pose order (assets/slice/assets.json). */
+static const uint32_t pose_ids[JELLI_FORM_COUNT][POSE_COUNT] = {
+    {1001u, 1002u, 1003u, 1004u, 1005u, 1006u, 1021u, 1022u},
+    {1007u, 1008u, 1009u, 1010u, 1011u, 1012u, 1023u, 1024u},
+    {1031u, 1032u, 1033u, 1034u, 1035u, 1036u, 1037u, 1038u}};
+
+static Pose pose(const JelliPetRenderKey *v)
 {
-    uint32_t base = v->form == 0u ? 1000u : 1006u;
     if (v->asleep)
-        return base + 5u;
+        return POSE_ASLEEP;
     if (v->health == JELLI_UNWELL || v->health == JELLI_RECOVERING)
-        return base + 6u;
+        return POSE_UNWELL;
     /* Keep care feedback visible even when a recent touch reaction is active. */
     if (v->activity == JELLI_EATING)
-        return base + 3u;
+        return POSE_EATING;
     if (v->activity == JELLI_PLAYING || v->activity == JELLI_GIVING)
-        return base + 4u;
+        return POSE_HAPPY;
     if (v->reaction >= 2u)
-        return base + 6u;
+        return POSE_UNWELL;
     if (v->reaction == 1u)
-        return base + 4u;
+        return POSE_HAPPY;
     if (v->phase >= 2u)
-        return 1021u + (v->form ? 2u : 0u) + (v->phase == 3u ? 1u : 0u);
-    return base + 1u + v->phase;
+        return v->phase == 3u ? POSE_CONTENT : POSE_CURIOUS;
+    return v->phase ? POSE_IDLE_B : POSE_IDLE_A;
+}
+
+static uint32_t frame_id(const JelliPetRenderKey *v)
+{
+    /* Saves are validated, but never index past the table: unknown forms draw as Mint. */
+    unsigned form = v->form < JELLI_FORM_COUNT ? v->form : JELLI_FORM_MINT;
+    return pose_ids[form][pose(v)];
 }
 
 void jelli_pet_actor_layout(JelliPetUi *ui, const JelliPetRenderKey *view)

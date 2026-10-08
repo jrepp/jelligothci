@@ -55,13 +55,13 @@ source art. Embedded fallback images remain available if no override is loaded.
 open build/assets/preview.html    # macOS; otherwise open in a browser
 ```
 
-The builder validates all 86 PNGs: dimensions, IDs, bounds, palette, binary alpha,
+The builder validates all 94 PNGs: dimensions, IDs, bounds, palette, binary alpha,
 clips, and the nine prizes' distinct pixels. It emits the self-contained HTML
 sheet, contact sheet, and RGB565/mask exports into ignored `build/assets/`.
 Release builds retain the stricter shared-palette and manifest-bounds checks;
 update the authored manifest and palette intentionally when accepting a paintover.
 
-The inventory includes sixteen creature frames, care and ring icons, health
-activities, stat pictograms, celebration sprites, battery-status icons,
-backgrounds, props, font, and nine unique presents. See [the source inventory](../assets/slice/README.md) for
+The inventory includes twenty-four creature frames (Mint, Lilac, and the ninja),
+care and ring icons, health activities, stat pictograms, celebration sprites,
+battery-status icons, backgrounds, props, font, and nine unique presents. See [the source inventory](../assets/slice/README.md) for
 stable IDs, provenance, reproduction, and byte budgets.
