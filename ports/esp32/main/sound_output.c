@@ -1,6 +1,6 @@
 #include "sound_output.h"
 #include "jelli/sound.h"
-#include "bsp/esp32_s3_touch_amoled_1_75.h"
+#include "bsp/esp-bsp.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"

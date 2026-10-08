@@ -7,8 +7,10 @@ description: Implement or review Jelligotchi firmware, ESP32 board integration, 
 
 Keep work within the requested increment. Start with the relevant ADRs in
 [docs-cms](../../../docs-cms/README.md), the [platform contract](../../../include/jelli/engine.h),
-and the existing port. The target is Waveshare ESP32-S3-Touch-AMOLED-1.75,
-SKU 31261. Do not substitute settings for the 1.75C or another board revision.
+and the existing port. The default target is Waveshare ESP32-S3-Touch-AMOLED-1.75,
+SKU 31261; the 1.75C is a separate board selected with `JELLI_ESP_BOARD=1.75c`
+(ADR-011). Do not substitute one board's settings or pins for another's; add a
+board through its own `jelli_board` wrapper and BSP.
 
 ## Allocate a budget before adding work
 

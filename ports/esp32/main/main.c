@@ -3,7 +3,7 @@
 #include "debug_wire.h"
 #include "sound_output.h"
 #include "session.h"
-#include "bsp/esp32_s3_touch_amoled_1_75.h"
+#include "bsp/esp-bsp.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -121,6 +121,7 @@ void app_main(void)
     static JelliPetEngine engine;
     static JelliEspSession session;
     const size_t bytes = JELLI_WIDTH * JELLI_HEIGHT * sizeof(uint16_t);
+    ESP_LOGI(TAG, "Board: Waveshare %s", JELLI_BOARD_LABEL);
     uint16_t *pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     board.canvas_pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     board.input = xQueueCreate(8, sizeof(JelliInput));

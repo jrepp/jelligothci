@@ -1,5 +1,5 @@
 #include "session.h"
-#include "bsp/esp32_s3_touch_amoled_1_75.h"
+#include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"

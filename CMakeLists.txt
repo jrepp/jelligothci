@@ -119,4 +119,11 @@ if(BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_pet_session.py $<TARGET_FILE:jelligotchi>)
     endif()
   endif()
+  # ESP32 board selection runs against a fake SDK; it needs Bash, Git, and CMake.
+  find_package(Python3 COMPONENTS Interpreter QUIET)
+  if(Python3_Interpreter_FOUND AND NOT WIN32)
+    add_test(NAME esp_board COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_esp_board.py)
+    set_tests_properties(esp_board PROPERTIES TIMEOUT 120 ENVIRONMENT "JELLI_CMAKE=${CMAKE_COMMAND}")
+  endif()
 endif()

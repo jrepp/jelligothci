@@ -1,7 +1,7 @@
 # Jelligotchi
 
-A small virtual pet for the **Waveshare ESP32-S3-Touch-AMOLED-1.75 (SKU 31261)**,
-with a native SDL desktop version. Both run the same C11 game and renderer.
+A small virtual pet for the **Waveshare ESP32-S3-Touch-AMOLED-1.75 (SKU 31261)**
+and the 1.75C, with a native SDL desktop version. Both run the same C11 game and renderer.
 
 Care for your pet through food, play, healthy routines, and everyday moments.
 Collect nine keepsakes and gift them to another pet. Sleep can track your own
@@ -75,6 +75,7 @@ make esp-build
 make esp-flash PORT=<discovered-port>
 ```
 
+For the 1.75C, prefix each command with `JELLI_ESP_BOARD=1.75c`.
 Use the repository-local SDK and discover the port each time. A successful build
 or serial startup does not verify physical display, touch, or audio behavior.
 [Hardware guide](docs/hardware.md) covers flashing, monitoring, and current limits.

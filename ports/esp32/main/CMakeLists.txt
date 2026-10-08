@@ -1,6 +1,6 @@
 # ESP-IDF discovers component requirements in script mode before generation.
 if(CMAKE_BUILD_EARLY_EXPANSION)
-    idf_component_register(REQUIRES nvs_flash esp_driver_i2c esp_driver_usb_serial_jtag esp_timer esp_psram esp32_s3_touch_amoled_1_75 lvgl)
+    idf_component_register(REQUIRES nvs_flash esp_driver_i2c esp_driver_usb_serial_jtag esp_timer esp_psram jelli_board lvgl)
     return()
 endif()
 include("${CMAKE_CURRENT_LIST_DIR}/../../../cmake/JelliPetAssets.cmake")
@@ -11,7 +11,7 @@ idf_component_register(
          "../../../core/game_advance.c" "../../../core/save.c" "../../../core/pet_engine.c" "../../../core/pet_rewards.c"
          "../../../core/pet_atmosphere.c" "../../../core/pet_timing.c" "../../../core/pet_actions.c" "../../../core/pet_clock.c" "../../../core/pet_layout.c" "../../../core/pet_actor.c" "../../../core/pet_health.c" "../../../core/pet_ui.c" "../../../core/pet_particles.c" "../../../core/pet_gallery.c" "../../../core/asset_source.c" "../../../core/pet_canvas.c" "../../../core/pet_draw.c" "../../../core/pet_render.c" "${pet_assets}"
     INCLUDE_DIRS "../../../include"
-    REQUIRES nvs_flash esp_driver_i2c esp_driver_usb_serial_jtag esp_timer esp_psram esp32_s3_touch_amoled_1_75 lvgl
+    REQUIRES nvs_flash esp_driver_i2c esp_driver_usb_serial_jtag esp_timer esp_psram jelli_board lvgl
 )
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra -Werror)
 

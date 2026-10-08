@@ -123,8 +123,10 @@ Build success does not deploy anything. When deploying to your intended board,
 use the discovered port and the separate flash/monitor commands in the
 [hardware guide](docs/hardware.md#hardware-bring-up). Flashing overwrites firmware and
 the partition table. Monitor startup, close the monitor with Ctrl+], and record
-physical observations separately from serial logs. This project targets SKU
-31261, not the similarly named 1.75C board.
+physical observations separately from serial logs. The default build targets
+SKU 31261. For the similarly named 1.75C, prefix each command with
+`JELLI_ESP_BOARD=1.75c`; the [hardware guide](docs/hardware.md#board-variants)
+explains how to tell the boards apart.
 
 ## CI without private infrastructure
 

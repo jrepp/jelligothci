@@ -30,14 +30,18 @@ using it. It refuses to sync over edits to tracked SDK files.
 | Tracked configuration | Purpose |
 | --- | --- |
 | `toolchain.env` | Exact ESP-IDF release and commit |
-| `ports/esp32/main/idf_component.yml` | Direct BSP and LVGL version pins |
-| `ports/esp32/dependencies.lock` | Resolved component dependency versions |
-| `ports/esp32/sdkconfig.defaults` | ESP32-S3, 16 MB flash, octal PSRAM, USB serial |
+| `ports/esp32/main/idf_component.yml` | IDF constraint and LVGL version pin |
+| `ports/esp32/boards/<board>/jelli_board/idf_component.yml` | Each board's exact BSP pin |
+| `ports/esp32/dependencies.lock` | Resolved dependency versions for the 1.75 |
+| `ports/esp32/dependencies.1.75c.lock` | Resolved dependency versions for the 1.75C |
+| `ports/esp32/sdkconfig.defaults` | ESP32-S3, 16 MB flash, octal PSRAM, USB serial (both boards) |
 
 SDK sources live in `.tools/esp-idf`; compilers and the Python environment live
 in `.tools/espressif`. Caches also live under `.tools`. Build output is under
-`build/esp32`, downloaded components under `ports/esp32/managed_components`.
-These directories and the generated `sdkconfig` are ignored by Git. They can
+`build/esp32` (1.75) or `build/esp32-1.75c`, downloaded components under
+`ports/esp32/managed_components`. The 1.75 generates `ports/esp32/sdkconfig`;
+the 1.75C keeps its generated `sdkconfig` in its build directory.
+These directories and the generated `sdkconfig` files are ignored by Git. They can
 be recreated from tracked configuration. The first bootstrap downloads a
 substantial SDK/toolchain and requires network access. Normal builds use the
 local installation after dependencies have been fetched.
@@ -51,9 +55,11 @@ release tag and resolved commit, then run `make esp-sync` and `make esp-build`.
 Keep the component manifest's IDF constraint consistent if changing release
 series. Test the firmware before committing updated pins.
 
-To upgrade board components, edit their exact versions in `idf_component.yml`,
-run `./scripts/esp idf update-dependencies`, then build and commit the resulting
-`dependencies.lock`. Never commit `.tools` or `managed_components`.
+To upgrade board components, edit their exact versions in the relevant
+`idf_component.yml`, run `./scripts/esp idf update-dependencies` once per board
+(with `JELLI_ESP_BOARD=1.75c` for the 1.75C), then build and commit each
+resulting lock file. Switching boards removes the other board's BSP from
+`managed_components`; the next build for that board downloads it again. Never commit `.tools` or `managed_components`.
 
 For configuration changes use `./scripts/esp idf menuconfig`; put intentional
 changes in `sdkconfig.defaults`. Defaults seed a fresh configuration and do not
@@ -63,10 +69,34 @@ and CMake caches contain absolute paths: bootstrap and rebuild after moving a
 checkout; the workflow is portable, its downloaded binaries/caches are not.
 
 
+## Board variants
+
+Two Waveshare boards are supported. They share the ESP32-S3R8, the CO5300
+466×466 AMOLED, and the CST9217 touch controller, but some pins differ, so each
+uses its own Waveshare BSP. `JELLI_ESP_BOARD` selects one; the default is 1.75.
+
+| Board | `JELLI_ESP_BOARD` | Flash | BSP | Pins that differ |
+| --- | --- | --- | --- | --- |
+| ESP32-S3-Touch-AMOLED-1.75, SKU 31261 | `1.75` (default) | 16 MB | `waveshare/esp32_s3_touch_amoled_1_75` 3.0.1 | LCD reset 39, touch reset 40, audio MCLK 42; uSD on 1–3 |
+| ESP32-S3-Touch-AMOLED-1.75C | `1.75c` | 32 MB | `waveshare/esp32_s3_touch_amoled_1_75c` 3.0.0 | LCD reset 1, touch reset 2, audio MCLK 16; no uSD |
+
+```sh
+JELLI_ESP_BOARD=1.75c make esp-build
+JELLI_ESP_BOARD=1.75c make esp-flash PORT=<discovered-port>
+JELLI_ESP_BOARD=1.75c make esp-monitor PORT=<discovered-port>
+```
+
+Identify the board from its printed label. The pinned esptool's `flash_id`
+reads the chip without writing; a 32 MB flash report indicates a 1.75C. Both
+builds use the shared 16 MB flash layout, which runs on the 1.75C's larger flash.
+The firmware logs `Board: Waveshare …` at startup so serial output shows which
+image is running. Flashing one board's image onto the other drives the reset
+and audio-clock signals on the wrong pins; do not rely on it working.
+
 ## Hardware bring-up
 
-The ESP32 port uses Waveshare's BSP for this exact board, including its touch
-orientation and panel initialization. It is not the similarly named 1.75C board.
+The ESP32 port uses Waveshare's BSP for the selected board, including its touch
+orientation and panel initialization.
 The app sets 60% display brightness. SDL targets an 8 ms update interval; ESP32
 targets 16 ms for its engine loop and LVGL refresh timer. The ESP32 loop includes
 render/presentation work in that interval and yields on overruns. Actual update
@@ -102,3 +132,6 @@ References:
 - [Waveshare board documentation](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75)
 - [Board hardware reference and SKU mapping](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75/blob/main/HARDWARE_REFERENCE.md)
 - [Waveshare BSP 3.0.1](https://components.espressif.com/components/waveshare/esp32_s3_touch_amoled_1_75/versions/3.0.1/readme)
+- [Waveshare 1.75C BSP 3.0.0](https://components.espressif.com/components/waveshare/esp32_s3_touch_amoled_1_75c/versions/3.0.0/readme)
+- [Waveshare 1.75C documentation](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75C)
+- [Board variant selection](../docs-cms/adr/adr-011-selectable-esp32-board-variants.md)

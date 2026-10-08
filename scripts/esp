@@ -16,6 +16,16 @@ export PIP_CACHE_DIR="$repo_dir/.tools/pip-cache"
 export XDG_CACHE_HOME="$repo_dir/.tools/cache"
 # Do not reuse a Python environment from another SDK activated by the caller.
 unset IDF_PYTHON_ENV_PATH
+# Board variant; each keeps its own build directory so images never mix.
+board="${JELLI_ESP_BOARD:-1.75}"
+case "$board" in
+    1.75) build_dir="$repo_dir/build/esp32" ;;
+    1.75c) build_dir="$repo_dir/build/esp32-1.75c" ;;
+    *)
+        echo "Unknown JELLI_ESP_BOARD '$board'; expected 1.75 or 1.75c." >&2
+        exit 2
+        ;;
+esac
 
 usage() {
     cat <<'HELP'
@@ -28,6 +38,7 @@ Usage: scripts/esp COMMAND [arguments]
   doctor               Show SDK/tool versions and serial ports
   idf [arguments]      Run arbitrary idf.py commands in the local environment
 
+Set JELLI_ESP_BOARD=1.75c for the Waveshare 1.75C; the default is 1.75 (SKU 31261).
 To upgrade, edit both pins in toolchain.env, then run sync and build.
 Requires Git and Python 3.10-3.13; set JELLI_PYTHON to choose Python.
 Tools are stored under .tools/; no shell profile changes are needed.
@@ -92,8 +103,8 @@ activate() {
     set -u
 }
 idf() {
-    idf.py -C "$repo_dir/ports/esp32" -B "$repo_dir/build/esp32" \
-        -DIDF_TARGET=esp32s3 "$@"
+    idf.py -C "$repo_dir/ports/esp32" -B "$build_dir" \
+        -DIDF_TARGET=esp32s3 -DJELLI_ESP_BOARD="$board" "$@"
 }
 command_name="${1:-help}"
 if [[ $# -gt 0 ]]; then shift; fi
@@ -109,6 +120,7 @@ case "$command_name" in
     ports) activate; python -m serial.tools.list_ports -v ;;
     doctor)
         activate
+        echo "Board: $board ($build_dir)"
         git -C "$IDF_PATH" describe --tags --always
         python --version
         xtensa-esp-elf-gcc --version | head -n 1

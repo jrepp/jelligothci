@@ -18,6 +18,7 @@ Debug interface (host-tested; flashed startup verified in memo-010):
 [memo-009](memos/memo-009-wired-debug-interface-and-validation.md), with
 [proposed ADR-010](adr/adr-010-bounded-usb-serial-debug-interface.md).
 Initial bring-up: [memo-003: First USB deployment](memos/memo-003-first-usb-deployment.md).
+Board variants (1.75 and 1.75C): [proposed ADR-011](adr/adr-011-selectable-esp32-board-variants.md).
 
 Process guidance: [memo-004: Learnings and context remediation](memos/memo-004-process-learnings-and-context-remediation.md).
 

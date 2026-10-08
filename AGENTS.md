@@ -3,7 +3,8 @@
 ## Scope
 
 This is a C11 virtual pet MVP on the Waveshare ESP32-S3-Touch-AMOLED-1.75,
-SKU 31261, with an SDL host. See README.md for implemented care, gifts/rewards,
+SKU 31261, with an SDL host. The firmware can also be built for the 1.75C with
+`JELLI_ESP_BOARD=1.75c` (see ADR-011). See README.md for implemented care, gifts/rewards,
 sleep, collection, and desktop persistence, and memo-008 for the remaining work.
 The shapes diagnostic remains available. Keep changes focused on the requested
 increment; the draft RFC does not authorize every proposed system.
@@ -147,8 +148,12 @@ ESP-IDF or change the developer's shell profile. Bootstrap with
 - Track SDK release and commit in `toolchain.env`.
 - Track uv and Docuchango versions there too; use `scripts/uv`, `scripts/uvx`,
   and `scripts/docs` to honor those pins without global installs.
-- Track direct component versions in `ports/esp32/main/idf_component.yml` and
-  resolved dependencies in `ports/esp32/dependencies.lock`.
+- Track direct component versions in `ports/esp32/main/idf_component.yml`
+  (shared) and `ports/esp32/boards/<board>/jelli_board/idf_component.yml`
+  (BSP). Resolved dependencies live in `ports/esp32/dependencies.lock` for the
+  1.75 and `ports/esp32/dependencies.<board>.lock` for other boards.
+- Keep board pins and driver choice in the board's BSP; select a board with
+  `JELLI_ESP_BOARD`, never by editing pins in shared code.
 - Track intentional board configuration in `ports/esp32/sdkconfig.defaults`.
 - Never commit `.tools/`, `build/`, `managed_components/`, or generated
   `sdkconfig` files. Do not ignore source assets or dependency lock files.
