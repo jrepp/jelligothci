@@ -47,7 +47,7 @@ static void draw_tile(Canvas c, const JelliPetRenderKey *view)
 
 void jelli_pet_draw_tile(JelliSurface *surface, const JelliPetRenderKey *view)
 {
-    Canvas c = {surface, 90, 282, 376, 382, 0, false, view->assets};
+    Canvas c = {surface, 90, 282, 376, 382, view->night, false, view->assets};
     draw_tile(c, view);
 }
 
