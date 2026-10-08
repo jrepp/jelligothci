@@ -119,10 +119,39 @@ bool jelli_sdl_session_open(JelliSession *session, JelliPetEngine *engine,
     return false;
 }
 
+static void update_clock(JelliSession *session, JelliPetEngine *engine, const JelliOptions *options,
+                         uint64_t now)
+{
+    if (session->clock_sampled && now >= session->last_clock_ms &&
+        now - session->last_clock_ms < 1000u)
+        return;
+    session->clock_sampled = true;
+    session->last_clock_ms = now;
+    if (options->headless) {
+        engine->ui.clock_known = true;
+        engine->ui.clock_minute = (uint16_t)((options->wall_ms / 60000u + now / 60000u) % 1440u);
+        return;
+    }
+    time_t stamp = time(NULL);
+    /* Host thread only: copy the C library's borrowed local-time result at once. */
+#ifdef _MSC_VER
+    struct tm local_value = {0};
+    const struct tm *local =
+        stamp != (time_t)-1 && localtime_s(&local_value, &stamp) == 0 ? &local_value : NULL;
+#else
+    const struct tm *local = stamp == (time_t)-1 ? NULL : localtime(&stamp);
+#endif
+    engine->ui.clock_known = local && local->tm_hour >= 0 && local->tm_hour < 24 &&
+                             local->tm_min >= 0 && local->tm_min < 60;
+    if (engine->ui.clock_known)
+        engine->ui.clock_minute = (uint16_t)(local->tm_hour * 60 + local->tm_min);
+}
+
 void jelli_sdl_session_update(JelliSession *session, JelliPetEngine *engine,
                               const JelliOptions *options)
 {
     uint64_t now = engine->platform.now_ms(engine->platform.ctx);
+    update_clock(session, engine, options, now);
     bool periodic =
         session->path && now >= session->last_save_ms && now - session->last_save_ms >= 60000u;
     if (engine->ui.save_requested || periodic) {

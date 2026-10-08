@@ -59,7 +59,8 @@ static bool pet_profile_valid(const JelliPet *pet)
     if (pet->id == 0u || pet->bedtime >= 24u || pet->sleep_duration == 0u ||
         pet->sleep_duration > JELLI_DAY_TICKS - 600u || pet->sleep_duration < 600u ||
         pet->phase_offset >= JELLI_DAY_TICKS || pet->random_state == 0u || pet->form > 1u ||
-        pet->location > 1u || pet->bond > 1000u || !enum_values_valid(pet))
+        pet->location > 1u || pet->bond > 1000u || pet->touch_load > 1000u || pet->reaction > 3u ||
+        pet->reaction_ticks > 30u || !enum_values_valid(pet))
         return false;
     return true;
 }
@@ -119,7 +120,9 @@ static bool pet_lifecycle_valid(const JelliPet *pet)
 
 static bool pet_valid(const JelliPet *pet)
 {
-    return pet_profile_valid(pet) && pet_needs_valid(pet) && pet_activity_valid(pet) &&
+    return pet->shot_goal <= 3u && pet->shot_hits <= pet->shot_goal &&
+           (pet->shot_goal == 0u ? pet->shot_until == 0u : pet->shot_until > 0u) &&
+           pet_profile_valid(pet) && pet_needs_valid(pet) && pet_activity_valid(pet) &&
            pet_lifecycle_valid(pet);
 }
 

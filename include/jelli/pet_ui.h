@@ -2,16 +2,29 @@
 #define JELLI_PET_UI_H
 
 #include "jelli/engine.h"
+#include "jelli/assets.h"
 #include "jelli/game.h"
+#include "jelli/particles.h"
+#include "jelli/tunables.h"
 #include <stdbool.h>
 #include <stdint.h>
+
+#define JELLI_ACTIVITY_TAPS 3u
 
 typedef enum {
     JELLI_UI_HOME,
     JELLI_UI_CARE,
     JELLI_UI_MORE,
     JELLI_UI_COLLECTION,
-    JELLI_UI_SETTINGS
+    JELLI_UI_SETTINGS,
+    JELLI_UI_MOMENTS,
+    JELLI_UI_HEALTH,
+    JELLI_UI_BRUSH,
+    JELLI_UI_MEDICINE,
+    JELLI_UI_SHOT,
+    JELLI_UI_WASH,
+    JELLI_UI_STRETCH,
+    JELLI_UI_PAGE_COUNT
 } JelliPetPage;
 
 typedef enum {
@@ -37,7 +50,19 @@ typedef enum {
     JELLI_UI_ACTION_TRAVEL,
     JELLI_UI_ACTION_SWITCH_PET,
     JELLI_UI_ACTION_BEDTIME,
-    JELLI_UI_ACTION_SAVE
+    JELLI_UI_ACTION_SAVE,
+    JELLI_UI_ACTION_MOMENTS,
+    JELLI_UI_ACTION_BREAKFAST,
+    JELLI_UI_ACTION_TEA,
+    JELLI_UI_ACTION_OUTING,
+    JELLI_UI_ACTION_MOVIE,
+    JELLI_UI_ACTION_SUGGEST,
+    JELLI_UI_ACTION_HEALTH,
+    JELLI_UI_ACTION_BRUSH,
+    JELLI_UI_ACTION_MEDICINE,
+    JELLI_UI_ACTION_SHOT,
+    JELLI_UI_ACTION_WASH,
+    JELLI_UI_ACTION_STRETCH
 } JelliPetUiAction;
 
 typedef struct {
@@ -46,7 +71,23 @@ typedef struct {
 } JelliPetUiItem;
 
 typedef struct {
+    JelliRect bounds;
+    const char *label;
+    uint32_t icon;
+    unsigned scale;
+    bool circular;
+} JelliPetUiButton;
+
+typedef struct {
     uint32_t phase;
+    uint8_t night, mood, reaction, care_blocked, ring_page, ring_visible;
+    bool ring_moving;
+    uint16_t tile_phase;
+    uint8_t stat_index;
+    uint8_t clicker_hits, clicker_goal, clicker_stage;
+    bool clicker_done;
+    bool menu_open, clock_known;
+    uint16_t clock_minute;
     uint32_t minute;
     uint32_t active_id;
     uint32_t stored_id;
@@ -76,24 +117,56 @@ typedef struct {
 } JelliPetRenderKey;
 
 typedef struct {
-    JelliPetPage page;
-    JelliResult result;
-    uint32_t result_until_ms;
-    uint32_t last_animation_phase;
+    /* Borrowed immutable metadata; no runtime alpha scans or allocation. */
+    const JelliAsset *actor_frame;
+    uint64_t tile_anchor_ms, idle_anchor_ms, last_animation_phase, last_pet_ticks;
+    uint64_t last_sound_ms, coo_anchor_ms, night_anchor_ms, sleep_emit_ms, ring_anchor_ms;
     JelliPetRenderKey last_view;
-    uint64_t last_pet_ticks;
-    uint32_t last_revision;
-    uint8_t last_page;
-    bool save_requested;
-    bool time_unavailable;
+    JelliTunables tunables;
+    JelliPetPage page;
+    int actor_x, actor_y;
+    uint32_t clicker_pet, routine_random, tuning_revision, tuning_pet;
+    JelliResult result;
+    uint32_t result_until_ms, last_revision, coo_pet;
+    JelliRect actor_bounds;
+    JelliParticles particles;
+    uint16_t clock_minute;
+    uint8_t clicker_hits, clicker_goal, clicker_stage;
+    bool clicker_done;
+    uint8_t tuning_form;
+    bool tile_reset;
+    uint8_t last_page, ring_from_page, ring_from_visible;
+    bool ring_from_open, ring_started;
+    bool save_requested, time_unavailable;
     uint8_t save_status;
-    bool rendered;
+    bool rendered, menu_open, clock_known;
+    uint8_t stat_offset;
+    bool sound_pending, sound_played;
+    uint8_t night_from, night_target;
+    bool atmosphere_ready, sleep_emitted;
+    uint8_t routine_goals[6];
 } JelliPetUi;
 
+bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y);
 void jelli_pet_ui_init(JelliPetUi *ui);
 JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep);
+bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool menu_open,
+                         JelliPetUiButton *button);
+bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
+                          JelliPetUiButton *button);
+bool jelli_pet_health_select(JelliPetUi *ui, const JelliGame *game, JelliPetUiAction action);
+unsigned jelli_pet_health_action(const JelliPetUi *ui);
+void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game);
+void jelli_pet_ui_back(JelliPetUi *ui);
+/* Consume one cosmetic cue; rapid taps coalesce and never delay input. */
+bool jelli_pet_ui_take_sound(JelliPetUi *ui, uint64_t now_ms);
+/* Cue ID + 1, zero for silence. Call once per unfrozen engine frame. */
+unsigned jelli_pet_ui_sound(JelliPetUi *ui, const JelliPet *pet, uint64_t now_ms);
+unsigned jelli_pet_stat_score(uint16_t value);
+unsigned jelli_pet_moment(const JelliPet *pet);
+unsigned jelli_pet_suggested_moment(const JelliPet *pet, const JelliPetUi *ui);
 void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y);
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
-                      uint32_t animation_ms, bool paused);
+                      uint64_t animation_ms, bool paused);
 
 #endif

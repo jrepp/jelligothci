@@ -11,6 +11,7 @@ import struct
 from pathlib import Path
 
 from PIL import Image, ImageDraw
+from sprite_geometry import ground_anchor_q8, opaque_centroid_q8
 
 REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "assets/slice"
@@ -41,8 +42,8 @@ def load_assets():
     palette = {tuple(bytes.fromhex(c[1:])) for c in manifest["palette"]}
     require(len(palette) <= 16, "Palette exceeds 16 opaque colors")
     images, ids, paths = {}, set(), set()
-    counts = {"creatures": 0, "icons": 0, "props": 0, "font": 0}
-    expected = {"creatures": (32, 32), "icons": (16, 16), "props": (24, 24), "font": (128, 72)}
+    counts = {"creatures": 0, "icons": 0, "props": 0, "font": 0, "menus": 0, "meters": 0, "health": 0, "effects": 0, "backgrounds": 0}
+    expected = {"creatures": (32, 32), "icons": (16, 16), "props": (24, 24), "font": (128, 72), "menus": (32, 32), "meters": (32, 32), "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64)}
     for asset in manifest["assets"]:
         key, ident, path = asset["key"], asset["id"], asset["path"]
         require(key not in images and ident not in ids and path not in paths, f"Duplicate asset: {key}")
@@ -53,8 +54,13 @@ def load_assets():
         require(image.size == expected[asset["kind"]], f"Wrong dimensions: {key}")
         require(image.size == (asset["width"], asset["height"]), f"Manifest dimensions: {key}")
         require(set(image.getchannel("A").getdata()) <= {0, 255}, f"Nonbinary alpha: {key}")
-        require(all((r, g, b) in palette for r, g, b, a in image.getdata() if a), f"Off-palette pixel: {key}")
+        asset_palette = {tuple(bytes.fromhex(c[1:])) for c in asset.get("palette", manifest["palette"])}
+        require(len(asset_palette) <= 16, f"Palette exceeds 16 colors: {key}")
+        require(all((r, g, b) in asset_palette for r, g, b, a in image.getdata() if a), f"Off-palette pixel: {key}")
         require(list(image.getchannel("A").getbbox()) == asset["bounds"], f"Bounds mismatch: {key}")
+        asset["centroid_q8"] = opaque_centroid_q8(image)
+        if asset["kind"] == "creatures":
+            asset["ground_anchor_q8"] = ground_anchor_q8(image)
         require(all(0 <= v < image.size[i] for i, v in enumerate(asset["pivot"])), f"Invalid pivot: {key}")
         if asset["kind"] == "font":
             require((asset["glyph_width"], asset["glyph_height"], asset["glyph_count"], asset["first_codepoint"], asset["columns"]) == (8, 12, 96, 32, 16), "Font layout mismatch")
@@ -65,7 +71,7 @@ def load_assets():
         paths.add(path)
         counts[asset["kind"]] += 1
         images[key] = image
-    require(counts == {"creatures": 12, "icons": 12, "props": 4, "font": 1}, "Incomplete slice inventory")
+    require(counts == {"creatures": 16, "icons": 12, "props": 4, "font": 1, "menus": 13, "meters": 5, "health": 9, "effects": 8, "backgrounds": 2}, "Incomplete slice inventory")
     clip_keys = set()
     for clip in manifest["clips"]:
         require(clip["id"] not in ids and clip["key"] not in clip_keys, "Duplicate clip")
@@ -99,11 +105,13 @@ def export_pixels(output, manifest, images):
         for filename, data in payloads.items():
             (folder / filename).write_bytes(data)
         records.append({"id": asset["id"], "key": asset["key"], "bytes": sum(map(len, payloads.values())),
+                        **({"ground_anchor_q8": asset["ground_anchor_q8"]} if asset["kind"] == "creatures" else {}),
                         "files": {k: {"bytes": len(v), "sha256": hashlib.sha256(v).hexdigest()} for k, v in payloads.items()}})
     total = sum(r["bytes"] for r in records)
-    require(total == 38688, f"Unexpected pixel payload: {total}")
+    require(total == 127904, f"Unexpected pixel payload: {total}")
+    require(total + 8192 + 4096 <= 147456, "Art exceeds 144 KiB planned pack budget")
     report = {"pixel_bytes": total, "definition_allowance": 8192, "metadata_allowance": 4096,
-              "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": 65536,
+              "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": 147456,
               "note": "Raw pixels are real exports; definitions, metadata and pack assembly remain allowances, not a compiled game pack.", "assets": records}
     (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     return report
@@ -117,12 +125,12 @@ def preview(output, manifest, images, report):
     template = (Path(__file__).with_name("preview.html")).read_text()
     require(template.count("__SLICE_DATA__") == 1, "Preview template data marker mismatch")
     (output / "preview.html").write_text(template.replace("__SLICE_DATA__", payload))
-    sheet = Image.new("RGB", (960, 780), "#f5efdf")
+    sheet = Image.new("RGB", (960, ((len(manifest["assets"]) + 5) // 6) * 150 + 30), "#f5efdf")
     draw = ImageDraw.Draw(sheet)
     for i, asset in enumerate(manifest["assets"]):
         x, y = (i % 6) * 160, (i // 6) * 150
         image = images[asset["key"]]
-        scale = 1 if asset["kind"] == "font" else 3
+        scale = 1 if asset["kind"] in ("font", "backgrounds") else 3
         sprite = image.resize((image.width * scale, image.height * scale), Image.Resampling.NEAREST)
         if asset["kind"] == "font":
             draw.rectangle((x + 8, y + 4, x + 151, y + 87), fill="#49334f")

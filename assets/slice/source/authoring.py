@@ -7,6 +7,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 import argparse
 import json
+from menu_icons import create_menu_assets, create_meter_assets
+from healthy_art import create_healthy_assets
 source_root = Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--output", type=Path, default=source_root.parents[1] / "build/assets/reimport")
@@ -43,6 +45,18 @@ for i in range(16):
   save(im,f'{form}-{pose}','creatures',1001+i,form=form,pose=pose)
  else:
   save(im,['food-bowl','gift-closed','gift-open','bed'][i-12],'props',3001+i-12)
+# Two paintover-ready posture keys per form. Existing state artwork stays intact.
+for form_index, form in enumerate(('baby','grown')):
+ for pose_index, pose in enumerate(('curious','content')):
+  source=Image.open(root/'creatures'/f"{form}-{'idle-a' if pose=='curious' else 'happy'}.png")
+  im=Image.new('RGBA',(32,32))
+  if pose=='curious':
+   for y in range(32):
+    shift=2 if y<16 else 1 if y<23 else 0
+    im.paste(source.crop((0,y,32-shift,y+1)),(shift,y))
+  else:
+   im.paste(source.resize((32,28),Image.Resampling.NEAREST),(0,4))
+  save(im,f'{form}-{pose}','creatures',1021+form_index*2+pose_index,form=form,pose=pose)
 # Original code-authored 16px UI geometry; shared palette, no external icon set.
 for n,key in enumerate(['basic-care','food','play','clean','rest','wake','medicine','gift','reward','inventory','back','confirm']):
  im=Image.new('RGBA',(16,16)); d=ImageDraw.Draw(im)
@@ -50,9 +64,11 @@ for n,key in enumerate(['basic-care','food','play','clean','rest','wake','medici
  def rect(box,c): d.rectangle(box,fill=c)
  def line(points,c=ink,w=1): d.line(points,fill=c,width=w)
  if key=='basic-care':
-  d.polygon([(3,3),(6,3),(8,5),(10,3),(13,3),(14,6),(8,13),(2,6)],fill=ink)
-  d.polygon([(4,4),(6,4),(8,6),(10,4),(12,4),(13,6),(8,11),(3,6)],fill=coral)
-  rect((7,6,8,9),cream);rect((6,7,9,8),cream)
+  d.ellipse((1,2,8,10),fill=ink);d.ellipse((7,2,14,10),fill=ink)
+  d.polygon([(2,7),(13,7),(12,11),(9,14),(7,14),(3,10)],fill=ink)
+  d.ellipse((2,3,7,9),fill=coral);d.ellipse((8,3,13,9),fill=coral)
+  d.polygon([(3,7),(12,7),(11,10),(8,13),(4,9)],fill=coral)
+  rect((7,6,8,10),cream);rect((5,7,10,8),cream)
  elif key=='food':
   d.polygon([(1,7),(14,7),(12,13),(3,13)],fill=ink)
   d.polygon([(3,8),(12,8),(11,11),(4,11)],fill=mint)
@@ -66,9 +82,13 @@ for n,key in enumerate(['basic-care','food','play','clean','rest','wake','medici
   for x,y in [(4,4),(9,3),(12,5)]:rect((x,y,x+1,y+1),cream)
   line([(7,1),(7,5)],gold);line([(5,3),(9,3)],gold)
  elif key=='rest':
-  d.polygon([(9,1),(5,2),(2,6),(2,10),(5,13),(10,14),(14,10),(9,11),(6,8),(6,5)],fill=ink)
-  d.polygon([(6,3),(4,5),(3,8),(4,11),(7,12),(11,12),(8,10),(5,7)],fill=purple)
-  line([(12,2),(12,6)],gold);line([(10,4),(14,4)],gold)
+  d.ellipse((1,1,14,14),fill=ink)
+  d.ellipse((2,2,13,13),fill=cream)
+  d.ellipse((6,0,16,10),fill=ink)
+  d.ellipse((7,-1,17,9),fill=(0,0,0,0))
+  for y in range(16):
+   for x in range(16):
+    if (x-7.5)**2+(y-7.5)**2>7**2: im.putpixel((x,y),(0,0,0,0))
  elif key=='wake':
   d.ellipse((4,4,11,11),fill=ink);d.ellipse((5,5,10,10),fill=gold)
   for pts in [[(7,0),(7,2)],[(7,13),(7,15)],[(0,7),(2,7)],[(13,7),(15,7)],[(2,2),(3,3)],[(12,12),(13,13)],[(2,13),(3,12)],[(12,3),(13,2)]]:line(pts,gold)
@@ -77,16 +97,16 @@ for n,key in enumerate(['basic-care','food','play','clean','rest','wake','medici
   rect((7,6,8,10),coral);rect((6,7,9,9),coral)
  elif key=='gift':
   rect((2,6,13,13),ink);rect((3,7,12,12),mint);rect((1,4,14,6),ink);rect((2,5,13,5),mint)
-  rect((7,4,8,12),coral);line([(7,4),(4,3),(4,1),(6,1),(8,4),(10,1),(12,1),(12,3),(8,4)],coral)
+  rect((7,4,8,12),coral);d.rounded_rectangle((3,1,6,4),radius=1,outline=coral);d.rounded_rectangle((9,1,12,4),radius=1,outline=coral);rect((7,3,8,5),coral)
  elif key=='reward':
-  d.polygon([(8,1),(10,5),(14,6),(11,9),(12,14),(8,12),(3,14),(4,9),(1,6),(6,5)],fill=ink)
-  d.polygon([(8,3),(9,6),(12,7),(10,9),(10,11),(8,10),(5,12),(6,8),(4,7),(7,6)],fill=gold)
+  d.polygon([(8,0),(10,5),(15,5),(11,9),(13,15),(8,12),(2,15),(4,9),(0,5),(6,5)],fill=ink)
+  d.polygon([(8,3),(9,6),(12,6),(10,9),(11,12),(8,10),(5,12),(6,9),(3,6),(7,6)],fill=gold)
  elif key=='inventory':
   rect((5,2,10,5),ink);rect((6,3,9,5),mint);rect((3,5,12,13),ink);rect((4,6,11,12),purple)
   rect((5,9,10,11),cream);rect((7,7,8,8),gold)
  elif key=='back':
   d.polygon([(7,2),(1,8),(7,14),(7,10),(14,10),(14,6),(7,6)],fill=ink)
-  d.polygon([(6,5),(3,8),(6,11),(6,9),(12,9),(12,7),(6,7)],fill=cream)
+  d.polygon([(6,4),(2,8),(6,12),(6,10),(13,10),(13,6),(6,6)],fill=cream)
  elif key=='confirm':
   line([(2,8),(6,12),(13,4)],ink,4);line([(2,7),(6,11),(13,3)],mint,2)
  save(im,key,'icons',2001+n)
@@ -145,6 +165,12 @@ for form in ['baby','grown']:
  for pose in ['idle','eating','happy','asleep','unwell']:
   keys=[f'creatures.{form}-idle-a',f'creatures.{form}-idle-b'] if pose=='idle' else [f'creatures.{form}-{pose}']
   clips.append(dict(id=len(clips)+5001,key=f'{form}.{pose}',frames=keys,durations_ms=[450]*len(keys),loop=pose=='idle'))
-manifest=dict(schema_version=1,name='Jelligotchi vertical slice',status='MVP renderer integrated; physical display review pending',pixel_format='RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks',palette=palette,assets=assets,clips=clips)
+for form in ('baby','grown'):
+ for pose in ('curious','content'):
+  clips.append(dict(id=len(clips)+5001,key=f'{form}.{pose}',frames=[f'creatures.{form}-{pose}'],durations_ms=[900],loop=False))
+assets.extend(create_healthy_assets(root, palette))
+assets.extend(create_menu_assets(root, palette))
+assets.extend(create_meter_assets(root, palette))
+manifest=dict(schema_version=1,name='Jelligotchi vertical slice',status='Ring menu artwork integrated; physical readability review pending',pixel_format='RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks',palette=palette,assets=assets,clips=clips)
 (root/'assets.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print(f'Created {len(assets)} PNG assets from atlas {atlas.size}; {len(clips)} clips')

@@ -5,13 +5,24 @@ alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md) and
 [memo-002: Build, release, and runner validation](memos/memo-002-build-release-and-runner-validation.md).
 
-Latest hardware status: [memo-006: Input animation and frame performance](memos/memo-006-input-animation-and-frame-performance.md).
+Latest release and expressive slice: [memo-017](memos/memo-017-release-downloads-and-expressive-slice.md).
+
+Latest responsive routines/audio work: [memo-016](memos/memo-016-responsive-pet-routines-and-audio.md).
+Earlier hardware/CLI status: [memo-012: Acceptance and tunables](memos/memo-012-cli-acceptance-and-creature-tunables.md).
+Earlier pet/debug deployment: [memo-010](memos/memo-010-pet-and-debug-firmware-deployment.md).
+Platform research: [memo-013: Garmin feasibility](memos/memo-013-garmin-port-feasibility.md).
+Earlier shapes performance: [memo-006](memos/memo-006-input-animation-and-frame-performance.md).
+Debug interface (host-tested; flashed startup verified in memo-010):
+[memo-009](memos/memo-009-wired-debug-interface-and-validation.md), with
+[proposed ADR-010](adr/adr-010-bounded-usb-serial-debug-interface.md).
 Initial bring-up: [memo-003: First USB deployment](memos/memo-003-first-usb-deployment.md).
 
 Process guidance: [memo-004: Learnings and context remediation](memos/memo-004-process-learnings-and-context-remediation.md).
 
 Contributor entry point: [CONTRIBUTING.md](../CONTRIBUTING.md).
 Maintainer reference: [memo-005: Settings, ownership, and recovery](memos/memo-005-contributor-and-maintainer-handoff.md).
+
+Next increment: [RFC-002: Pet memory and persistent activities](rfcs/rfc-002-pet-memory-and-persistent-activities.md).
 
 ## Proposed game architecture
 
@@ -23,6 +34,12 @@ It remains a draft. [Memo-008](memos/memo-008-playable-pet-mvp-and-polish-backlo
 records the playable subset, validation, and prioritized polish/fix backlog.
 [Memo-007](memos/memo-007-slice-artwork-and-preview.md) records the first slice
 artwork, local HTML preview, export checks, and remaining integration work.
+
+Latest sprite alignment: [memo-014](memos/memo-014-creature-contact-anchors.md).
+Latest healthy activities and action audit: [memo-015](memos/memo-015-healthy-activities-and-action-audit.md).
+
+Latest UI work: [memo-011](memos/memo-011-readable-rings-moments-and-particles.md).
+Requested design concept: [PRD-001: Moments and readable care](prd/prd-001-moments-and-readable-care.md).
 
 ## Architecture decisions
 

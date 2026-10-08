@@ -8,7 +8,7 @@
 static void usage(const char *name)
 {
     printf("Usage: %s [--pet|--shapes] [--save base-path] [--headless] [--frames N]\n"
-           "       [--snapshot file.bmp] [--demo] [--wall-ms N]\n"
+           "       [--debug-socket path] [--snapshot file.bmp] [--demo] [--audio] [--wall-ms N]\n"
            "Pet mode is default. Click menus; Space debug-pauses; Escape exits.\n"
            "--save enables two-slot local persistence. Omit it for an unsaved session.\n"
            "--demo requires --headless and scripts care using 100 ms/frame.\n"
@@ -33,6 +33,8 @@ static bool value_option(const char *key, const char *value, JelliOptions *optio
 {
     if (!strcmp(key, "--snapshot"))
         options->snapshot = value;
+    else if (!strcmp(key, "--debug-socket"))
+        options->debug_socket = value;
     else if (!strcmp(key, "--save"))
         options->save_path = value;
     else {
@@ -58,6 +60,8 @@ int jelli_sdl_options(int argc, char **argv, JelliOptions *options)
         const char *arg = argv[i];
         if (!strcmp(arg, "--headless"))
             options->headless = true;
+        else if (!strcmp(arg, "--audio"))
+            options->audio = true;
         else if (!strcmp(arg, "--pet"))
             options->pet = true;
         else if (!strcmp(arg, "--shapes"))
@@ -74,12 +78,12 @@ int jelli_sdl_options(int argc, char **argv, JelliOptions *options)
             return 2;
         }
     }
-    if ((!options->pet && (options->save_path || options->demo)) ||
+    if ((!options->pet && (options->save_path || options->demo || options->debug_socket)) ||
         (options->demo && !options->headless)) {
         usage(argv[0]);
         return 2;
     }
-    if (options->headless && !options->max_frames)
+    if (options->headless && !options->max_frames && !options->debug_socket)
         options->max_frames = options->demo ? 750u : 1u;
     return -1;
 }

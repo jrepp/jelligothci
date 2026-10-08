@@ -5,9 +5,9 @@
 #include <stdint.h>
 
 typedef struct {
-    bool headless, pet, demo;
+    bool headless, pet, demo, audio;
     unsigned long max_frames;
-    const char *snapshot, *save_path;
+    const char *snapshot, *save_path, *debug_socket;
     uint64_t wall_ms;
 } JelliOptions;
 

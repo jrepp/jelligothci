@@ -13,7 +13,7 @@ class BuildVersionTest(unittest.TestCase):
             source = Path(directory) / "source"
             build = Path(directory) / "build"
             source.mkdir()
-            for name in ("core", "include", "tests"):
+            for name in ("core", "include", "tests", "tools"):
                 shutil.copytree(repository / name, source / name)
             shutil.copy(repository / "CMakeLists.txt", source / "CMakeLists.txt")
             version = source / "VERSION"

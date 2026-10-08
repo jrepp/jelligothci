@@ -83,6 +83,7 @@ void jelli_game_add_clock(JelliGame *game, JelliPet *pet, uint64_t ticks)
     pet->ticks = saturating_add(pet->ticks, ticks);
     pet->stage_ticks = saturating_add(pet->stage_ticks, ticks);
     integrate_needs(pet, pet->ticks - old_ticks);
+    jelli_pet_touch_decay(pet, pet->ticks - old_ticks);
 }
 
 bool jelli_game_window(const JelliPet *pet, uint64_t *remaining_ticks)
@@ -134,6 +135,8 @@ static void reset_hunger_grace(JelliPet *pet)
 
 void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
 {
+    JelliEventSnapshot before = jelli_game_observe(game, pet);
+    unsigned activity = (unsigned)pet->activity;
     switch (pet->activity) {
     case JELLI_EATING:
         if (game->food > 0u) {
@@ -176,6 +179,8 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
     case JELLI_IDLE:
         break;
     }
+    if (activity != JELLI_IDLE)
+        jelli_game_emit(game, JELLI_EVENT_EFFECT, activity, JELLI_OK, 0u, pet, before);
 }
 
 static void evolve_if_due(JelliPet *pet)
@@ -229,8 +234,14 @@ void jelli_game_endpoint(JelliGame *game, JelliPet *pet, uint64_t ticks, bool of
         return;
     if (pet->activity != JELLI_IDLE && pet->interaction_due <= pet->ticks)
         jelli_game_apply_effect(game, pet);
+    JelliEventSnapshot before = jelli_game_observe(game, pet);
+    uint8_t form = pet->form;
     update_health_and_hunger(pet);
     evolve_if_due(pet);
     resolve_sleep(pet);
+    if (before.health != (uint8_t)pet->health || ((before.flags & 1u) != 0u) != pet->asleep ||
+        form != pet->form)
+        jelli_game_emit(game, JELLI_EVENT_STATUS, form != pet->form ? 1u : 0u, JELLI_OK, pet->form,
+                        pet, before);
     (void)offline;
 }

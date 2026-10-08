@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "Jelligotchi vertical slice",
-  "status": "MVP renderer integrated; physical display review pending",
+  "status": "Ring menu artwork integrated; physical readability review pending",
   "pixel_format": "RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks",
   "palette": [
     "#291b35",
@@ -346,10 +346,10 @@
         14
       ],
       "bounds": [
+        1,
         2,
-        3,
         15,
-        14
+        15
       ]
     },
     {
@@ -418,11 +418,12 @@
         14
       ],
       "bounds": [
-        2,
         1,
-        15,
+        1,
+        14,
         15
-      ]
+      ],
+      "purpose": "Clean circular crescent for rest and bedtime"
     },
     {
       "id": 2006,
@@ -490,10 +491,10 @@
         14
       ],
       "bounds": [
-        1,
-        1,
-        15,
-        15
+        0,
+        0,
+        16,
+        16
       ]
     },
     {
@@ -512,24 +513,6 @@
         2,
         13,
         14
-      ]
-    },
-    {
-      "id": 2011,
-      "key": "icons.back",
-      "path": "icons/back.png",
-      "kind": "icons",
-      "width": 16,
-      "height": 16,
-      "pivot": [
-        8,
-        14
-      ],
-      "bounds": [
-        1,
-        2,
-        15,
-        15
       ]
     },
     {
@@ -573,6 +556,843 @@
       "first_codepoint": 32,
       "glyph_count": 96,
       "advance": 8
+    },
+    {
+      "id": 7001,
+      "key": "meters.satiety",
+      "path": "meters/satiety.png",
+      "kind": "meters",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        5,
+        3,
+        28,
+        30
+      ],
+      "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
+    },
+    {
+      "id": 7002,
+      "key": "meters.energy",
+      "path": "meters/energy.png",
+      "kind": "meters",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        5,
+        2,
+        29,
+        31
+      ],
+      "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
+    },
+    {
+      "id": 7003,
+      "key": "meters.hygiene",
+      "path": "meters/hygiene.png",
+      "kind": "meters",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        3,
+        30,
+        28
+      ],
+      "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
+    },
+    {
+      "id": 7004,
+      "key": "meters.amusement",
+      "path": "meters/amusement.png",
+      "kind": "meters",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        3,
+        29,
+        29
+      ],
+      "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
+    },
+    {
+      "id": 7005,
+      "key": "meters.social",
+      "path": "meters/social.png",
+      "kind": "meters",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        4,
+        30,
+        30
+      ],
+      "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
+    },
+    {
+      "id": 6001,
+      "key": "menus.food",
+      "path": "menus/food.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        1,
+        29,
+        30
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6002,
+      "key": "menus.care",
+      "path": "menus/care.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        4,
+        30,
+        30
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6003,
+      "key": "menus.rest",
+      "path": "menus/rest.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        3,
+        28,
+        29
+      ],
+      "purpose": "Clean circular crescent for rest and bedtime"
+    },
+    {
+      "id": 6004,
+      "key": "menus.collection",
+      "path": "menus/collection.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        5,
+        6,
+        31,
+        29
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6005,
+      "key": "menus.more",
+      "path": "menus/more.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        7,
+        30,
+        25
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6006,
+      "key": "menus.settings",
+      "path": "menus/settings.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6007,
+      "key": "menus.moments",
+      "path": "menus/moments.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        4,
+        4,
+        29,
+        30
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6008,
+      "key": "menus.gifts",
+      "path": "menus/gifts.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        29
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6009,
+      "key": "menus.breakfast",
+      "path": "menus/breakfast.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        3,
+        30,
+        30
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6010,
+      "key": "menus.tea",
+      "path": "menus/tea.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        4,
+        4,
+        29,
+        30
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6012,
+      "key": "menus.movie",
+      "path": "menus/movie.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        5,
+        29,
+        28
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 8001,
+      "key": "health.brush",
+      "path": "health/brush.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        5,
+        30,
+        30
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 8002,
+      "key": "health.medicine",
+      "path": "health/medicine.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        5,
+        3,
+        27,
+        30
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 8003,
+      "key": "health.shot",
+      "path": "health/shot.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        1,
+        2,
+        27,
+        30
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 8004,
+      "key": "health.wash",
+      "path": "health/wash.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        1,
+        29,
+        29
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 8005,
+      "key": "health.stretch",
+      "path": "health/stretch.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        1,
+        3,
+        31,
+        31
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 9001,
+      "key": "effects.star",
+      "path": "effects/star.png",
+      "kind": "effects",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        0,
+        16,
+        16
+      ],
+      "purpose": "Magical celebration sprite; native RGB565 fade"
+    },
+    {
+      "id": 9002,
+      "key": "effects.heart",
+      "path": "effects/heart.png",
+      "kind": "effects",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        1,
+        3,
+        15,
+        15
+      ],
+      "purpose": "Magical celebration sprite; native RGB565 fade"
+    },
+    {
+      "id": 9003,
+      "key": "effects.orb",
+      "path": "effects/orb.png",
+      "kind": "effects",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        2,
+        2,
+        14,
+        14
+      ],
+      "purpose": "Magical celebration sprite; native RGB565 fade"
+    },
+    {
+      "id": 9004,
+      "key": "effects.comet",
+      "path": "effects/comet.png",
+      "kind": "effects",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        0,
+        16,
+        16
+      ],
+      "purpose": "Magical celebration sprite; native RGB565 fade"
+    },
+    {
+      "id": 9005,
+      "key": "effects.wings",
+      "path": "effects/wings.png",
+      "kind": "effects",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        2,
+        16,
+        13
+      ],
+      "purpose": "Magical celebration sprite; native RGB565 fade"
+    },
+    {
+      "id": 8006,
+      "key": "health.floss",
+      "path": "health/floss.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        4,
+        3,
+        28,
+        30
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 8007,
+      "key": "health.mouthwash",
+      "path": "health/mouthwash.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        5,
+        2,
+        26,
+        30
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 8008,
+      "key": "health.spit",
+      "path": "health/spit.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        4,
+        30,
+        31
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 8009,
+      "key": "health.cleanup",
+      "path": "health/cleanup.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        1,
+        29,
+        28
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 2011,
+      "key": "icons.back",
+      "path": "icons/back.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        1,
+        2,
+        15,
+        15
+      ]
+    },
+    {
+      "id": 9006,
+      "key": "effects.music",
+      "path": "effects/music.png",
+      "kind": "effects",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        1,
+        0,
+        15,
+        15
+      ],
+      "purpose": "Magical celebration sprite; native RGB565 fade"
+    },
+    {
+      "id": 9007,
+      "key": "effects.idea",
+      "path": "effects/idea.png",
+      "kind": "effects",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        1,
+        16,
+        15
+      ],
+      "purpose": "Magical celebration sprite; native RGB565 fade"
+    },
+    {
+      "id": 9008,
+      "key": "effects.rainbow",
+      "path": "effects/rainbow.png",
+      "kind": "effects",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        1,
+        16,
+        15
+      ],
+      "purpose": "Magical celebration sprite; native RGB565 fade"
+    },
+    {
+      "id": 10001,
+      "key": "backgrounds.home",
+      "path": "backgrounds/home.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "palette": [
+        "#000000",
+        "#0e0e0e",
+        "#1c1c1c",
+        "#2a2a2a",
+        "#383838",
+        "#464646",
+        "#545454",
+        "#626262",
+        "#707070",
+        "#7e7e7e",
+        "#8c8c8c",
+        "#9a9a9a",
+        "#a8a8a8",
+        "#b6b6b6",
+        "#c4c4c4",
+        "#d2d2d2"
+      ],
+      "purpose": "Subtle neutral scene with black vignette; nearest sampling at panel size"
+    },
+    {
+      "id": 10002,
+      "key": "backgrounds.garden",
+      "path": "backgrounds/garden.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "palette": [
+        "#000000",
+        "#0e0e0e",
+        "#1c1c1c",
+        "#2a2a2a",
+        "#383838",
+        "#464646",
+        "#545454",
+        "#626262",
+        "#707070",
+        "#7e7e7e",
+        "#8c8c8c",
+        "#9a9a9a",
+        "#a8a8a8",
+        "#b6b6b6",
+        "#c4c4c4",
+        "#d2d2d2"
+      ],
+      "purpose": "Subtle neutral scene with black vignette; nearest sampling at panel size"
+    },
+    {
+      "id": 6011,
+      "key": "menus.outing",
+      "path": "menus/outing.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        1,
+        29,
+        30
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 6013,
+      "key": "menus.close",
+      "path": "menus/close.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        5,
+        6,
+        27,
+        27
+      ],
+      "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
+    },
+    {
+      "id": 1021,
+      "key": "creatures.baby-curious",
+      "path": "creatures/baby-curious.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        6,
+        12,
+        28,
+        29
+      ],
+      "form": "baby",
+      "pose": "curious"
+    },
+    {
+      "id": 1022,
+      "key": "creatures.baby-content",
+      "path": "creatures/baby-content.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        5,
+        15,
+        26,
+        29
+      ],
+      "form": "baby",
+      "pose": "content"
+    },
+    {
+      "id": 1023,
+      "key": "creatures.grown-curious",
+      "path": "creatures/grown-curious.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        6,
+        27,
+        30
+      ],
+      "form": "grown",
+      "pose": "curious"
+    },
+    {
+      "id": 1024,
+      "key": "creatures.grown-content",
+      "path": "creatures/grown-content.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        7,
+        28,
+        29
+      ],
+      "form": "grown",
+      "pose": "content"
     }
   ],
   "clips": [
@@ -687,6 +1507,50 @@
       ],
       "durations_ms": [
         450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5011,
+      "key": "baby.curious",
+      "frames": [
+        "creatures.baby-curious"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5012,
+      "key": "baby.content",
+      "frames": [
+        "creatures.baby-content"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5013,
+      "key": "grown.curious",
+      "frames": [
+        "creatures.grown-curious"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5014,
+      "key": "grown.content",
+      "frames": [
+        "creatures.grown-content"
+      ],
+      "durations_ms": [
+        900
       ],
       "loop": false
     }

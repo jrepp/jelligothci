@@ -8,8 +8,9 @@ typedef struct {
     JelliSurface surface;
     JelliGame game;
     JelliPetUi ui;
+    JelliEventLog events;
     uint64_t last_ms;
-    uint32_t animation_ms;
+    uint64_t animation_ms;
     bool running, paused;
 } JelliPetEngine;
 

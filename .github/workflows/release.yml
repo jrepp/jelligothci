@@ -8,7 +8,7 @@ on:
         type: string
         required: false
       publish:
-        description: Attach validated source assets to an existing version release
+        description: Attach validated game, artwork, preview, and source to an existing release
         type: boolean
         default: false
   workflow_call:
@@ -42,10 +42,48 @@ jobs:
       - run: ./scripts/release-validate
       - run: make hooks-check
       - run: make sanitize
-  source:
+  windows-package:
     needs: [core, validate]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - name: Read dependency pins
+        id: pins
+        run: |
+          source toolchain.env
+          echo "sdl=$JELLI_SDL2_COMMIT" >> "$GITHUB_OUTPUT"
+          python -m pip install "uv==$JELLI_UV_VERSION"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: libsdl-org/SDL
+          ref: ${{ steps.pins.outputs.sdl }}
+          path: build/sdl-source
+          persist-credentials: false
+      - name: Build pinned SDL and Windows game
+        run: |
+          cmake -S build/sdl-source -B build/sdl-build -A x64 -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TEST=OFF -DSDL_LIBC=ON -DSDL_FORCE_STATIC_VCRT=ON -DCMAKE_INSTALL_PREFIX="$PWD/build/sdl-install"
+          cmake --build build/sdl-build --config Release --parallel 3
+          cmake --install build/sdl-build --config Release
+          cmake -S . -B build/windows -A x64 -DCMAKE_PREFIX_PATH="$PWD/build/sdl-install" -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          cmake --build build/windows --config Release --parallel 3
+          ctest --test-dir build/windows -C Release --output-on-failure --no-tests=error
+          python scripts/package-windows.py --binary build/windows/Release/jelligotchi.exe --dll build/sdl-install/bin/SDL2.dll --license build/sdl-source/LICENSE.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-game
+          path: build/windows-release/*.zip
+          if-no-files-found: error
+  package:
+    needs: [core, validate, windows-package]
+    runs-on: macos-15
+    timeout-minutes: 25
     permissions:
       contents: write
     steps:
@@ -53,7 +91,19 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
-      - name: Package validated source
+      - name: Build native game and art preview
+        run: |
+          brew install sdl2 cmake
+          cmake -S . -B build/package -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/package --parallel 3
+          ctest --test-dir build/package --output-on-failure
+          ./scripts/uv run --python 3.12 tools/assets/build_slice.py
+          python3 scripts/package-release.py --binary build/package/jelligotchi
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: windows-game
+          path: build/release
+      - name: Package source and publish validated downloads
         env:
           RELEASE_REF: ${{ inputs.ref || github.sha }}
           PUBLISH: ${{ inputs.publish || false }}
@@ -62,17 +112,20 @@ jobs:
           ./scripts/release-validate --metadata-only
           version=$(cat VERSION)
           if [ "$PUBLISH" = true ]; then
-            test "$RELEASE_REF" = "v$version"
+            case "$RELEASE_REF" in
+              "v$version"|dev-*) ;;
+              *) echo 'Publication requires vVERSION or a dev- tag'; exit 1 ;;
+            esac
+            test "$(git rev-parse "refs/tags/$RELEASE_REF^{commit}")" = "$(git rev-parse HEAD)"
             gh release view "$RELEASE_REF" > /dev/null
           fi
-          mkdir -p build/release
           git archive --format=tar.gz --prefix="jelligotchi-$version/" HEAD > "build/release/jelligotchi-$version-source.tar.gz"
-          (cd build/release && sha256sum ./*.tar.gz > SHA256SUMS)
+          (cd build/release && shasum -a 256 ./*.zip ./*.html ./*.tar.gz > SHA256SUMS)
           if [ "$PUBLISH" = true ]; then
             gh release upload "$RELEASE_REF" build/release/* --clobber
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: validated-source
+          name: validated-release-downloads
           path: build/release/*
           if-no-files-found: error

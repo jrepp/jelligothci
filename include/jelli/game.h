@@ -1,6 +1,7 @@
 #ifndef JELLI_GAME_H
 #define JELLI_GAME_H
 
+#include "jelli/events.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -37,7 +38,10 @@ typedef enum {
     JELLI_CMD_CLAIM,
     JELLI_CMD_ACTIVATE,
     JELLI_CMD_TRAVEL,
-    JELLI_CMD_BEDTIME
+    JELLI_CMD_BEDTIME,
+    JELLI_CMD_MOMENT,
+    JELLI_CMD_HEALTH,
+    JELLI_CMD_TOUCH
 } JelliCommandKind;
 typedef enum {
     JELLI_OK,
@@ -53,11 +57,15 @@ typedef struct {
     uint32_t id;
     uint64_t ticks, stage_ticks, interaction_due, nap_due, awake_until;
     uint64_t wake_override_until, hunger_due;
+    uint64_t shot_until, medicine_until;
     uint32_t phase_offset, bedtime, sleep_duration, random_state;
     uint16_t needs[JELLI_NEED_COUNT];
     uint16_t need_remainders[JELLI_NEED_COUNT];
     uint16_t bond, feeds, neglect;
-    uint8_t form, location;
+    uint8_t form, location, shot_goal, shot_hits;
+    /* Brief session-only touch memory; care changes still persist. */
+    uint16_t touch_load;
+    uint8_t reaction, reaction_ticks;
     JelliHealth health;
     JelliActivity activity;
     bool asleep, scheduled_sleep, hunger_low, hunger_counted;
@@ -71,17 +79,27 @@ typedef struct {
     uint16_t food, gifts;
     uint8_t count, active;
     bool resuming;
+    /* Optional borrowed sink; owner outlives commands/advance. Not saved. */
+    JelliEventLog *events;
+    bool clock_known;
+    uint16_t clock_minute;
 } JelliGame;
 
 typedef struct {
     JelliCommandKind kind;
     uint32_t actor_id;
-    /* ACTIVATE: target stable ID; TRAVEL: location 0/1; BEDTIME: hour 0..23. */
+    /* ACTIVATE: stable ID; TRAVEL: 0/1; BEDTIME: 0..23.
+     * MOMENT: breakfast/tea/outing/movie 0..3.
+     * HEALTH: brush/medicine/shot/wash/stretch/floss/mouthwash/spit/cleanup 0..8. */
     uint32_t value;
 } JelliCommand;
 
 /* Caller-owned state. No clock, allocation, IO, or SDK dependencies. */
 void jelli_game_init(JelliGame *game);
+unsigned jelli_pet_shot_goal(const JelliPet *pet);
+bool jelli_pet_health_ready(const JelliPet *pet, unsigned activity);
+unsigned jelli_pet_mood(const JelliPet *pet);
+unsigned jelli_pet_favorite(const JelliPet *pet, unsigned minute);
 bool jelli_game_valid(const JelliGame *game);
 JelliResult jelli_game_command(JelliGame *game, JelliCommand command);
 /* At most eight 100 ms ticks/call, at most two seconds retained backlog. */

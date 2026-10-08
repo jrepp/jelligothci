@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Jelli · debug console</title>
+<style>
+:root{color-scheme:dark;font:15px/1.45 system-ui,sans-serif;background:#131920;color:#edf3f7}
+*{box-sizing:border-box}body{max-width:1260px;margin:20px auto;padding:0 20px}h1{font-size:23px;margin:0}h2{font-size:14px;margin:0;color:#b9c8d5;font-weight:600}button,select{font:inherit;color:inherit;border:1px solid #4e6576;border-radius:6px;background:#243340;padding:6px 10px;cursor:pointer}button:hover,select:hover{background:#344957}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #9de0ed;outline-offset:3px}button:disabled{opacity:.5}input{accent-color:#8adac6}label{display:flex;align-items:center;gap:7px}small,.muted{color:#b1c0ce}.top,.toolbar,.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.top{margin-bottom:14px}#status{font-size:13px;color:#a9d6c6}.panel{border:1px solid #354757;border-radius:9px;background:#19232d}.overview{display:grid;grid-template-columns:1fr 2fr;gap:18px;padding:12px 16px;margin-bottom:12px}#pet-line{margin:4px 0 8px;font-weight:600}#pet-context{color:#bdccd7;font-size:13px}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.metric span{display:block;font-size:12px;color:#bdccd7}.metric strong{font-size:21px;font-variant-numeric:tabular-nums}.metric meter{display:block;width:100%;height:5px;margin-top:4px;accent-color:#9bd5c4}.toolbar{padding:10px 12px;border-bottom:1px solid #354757}.filters,.transport{display:flex;align-items:center;gap:12px;flex-wrap:wrap}#pending{color:#f1d093;font-size:13px}#notice{color:#ffe0a7;font-size:13px;padding:0 0 10px}#notice:empty{display:none}#feed{height:55vh;min-height:280px;overflow:auto;scrollbar-gutter:stable}table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:14px}thead{position:sticky;top:0;z-index:1;background:#273542}th{text-align:left;color:#d2dee7;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:9px 10px}td{padding:9px 10px;border-bottom:1px solid #2c3d4b;vertical-align:top}tbody tr:nth-child(even){background:#1d2934}th:nth-child(1){width:100px}th:nth-child(2){width:68px}th:nth-child(3){width:100px}th:nth-child(4){width:240px}.time{font:12px/1.8 ui-monospace,monospace;color:#b9cad6}.pet{color:#c8d7e1;font-size:13px}.category{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:2px 7px;border:1px solid;border-radius:4px;white-space:nowrap}.care{color:#abe2cc;background:#203d34}.moments{color:#c9c1fa;background:#34304e}.touch{color:#f3bfdb;background:#463043}.sleep{color:#b5d6ff;background:#283c56}.gifts{color:#f0d595;background:#443d26}.navigation,.settings{color:#c5d2dc;background:#34414b}.state,.pet-category{color:#b7dfeb;background:#263f48}.event-name{font-weight:650;display:block}.outcome{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#aec5d4}.outcome.blocked{color:#ffc48e}.outcome.finished{color:#9fe1b7}.changes{display:flex;flex-wrap:wrap;gap:4px 12px;font-variant-numeric:tabular-nums}.change{white-space:nowrap}.change b{font-weight:600;color:#d5e5ed}.delta{color:#a0dec2}.delta.negative{color:#ffb4ac}.reason{color:#ffd1a8}#empty{padding:36px 20px;text-align:center;color:#bccbd6}.foot{padding:8px 12px;color:#aabcc9;font-size:12px;border-top:1px solid #354757}.controls-panel{margin-top:12px;padding:10px 14px}summary{cursor:pointer;font-weight:600}#controls{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}#controls:empty{display:none}.legend{font-size:12px;color:#aebfce;margin-top:8px}
+@media(max-width:820px){body{padding:0 10px;margin-top:12px}.overview{grid-template-columns:1fr}.metrics{gap:6px}.metric strong{font-size:19px}th:nth-child(1){width:84px}th:nth-child(2),td:nth-child(2){display:none}th:nth-child(3){width:89px}th:nth-child(4){width:180px}table{min-width:640px}#feed{height:55vh}.toolbar{align-items:flex-start}}
+</style>
+<body>
+<div class="top"><h1>Jelli debug console</h1><span id="status" role="status">Connecting…</span></div>
+<section class="overview panel" aria-label="Live pet state">
+<div><h2>LIVE PET</h2><div id="pet-line">Waiting for the game</div><div id="pet-context">Care and activity state will appear here.</div></div>
+<div class="metrics" id="needs"></div>
+</section>
+<div id="notice" role="status"></div>
+<section class="panel" aria-label="Event history">
+<div class="toolbar">
+<div class="filters"><label>Category <select id="category"><option value="all">All categories</option><option>Care</option><option>Moments</option><option>Touch</option><option>Sleep</option><option>Gifts</option><option>Pet</option><option>Settings</option><option>State</option><option>Navigation</option><option>Debug</option></select></label><label><input type="checkbox" id="navigation">Show menu navigation</label><label><input type="checkbox" id="blocked">Blocked only</label></div>
+<div class="transport"><button id="pause" aria-pressed="false">Pause feed</button><button id="follow">Follow latest</button><span id="pending"></span></div>
+</div>
+<div id="feed" tabindex="0" aria-label="Scrollable game events">
+<table><thead><tr><th>Game time</th><th>Pet</th><th>Category</th><th>Action / outcome</th><th>What changed · before → after</th></tr></thead><tbody id="rows"></tbody></table>
+<div id="empty">Waiting for an action. Routine stat decay and animation stay out of this feed.</div>
+</div>
+<div class="foot" id="counts">Repeated taps are grouped. Menu navigation is hidden by default.</div>
+</section>
+<details class="panel controls-panel"><summary>Game controls <small id="page-label"></small></summary><div id="controls"></div></details>
+<div class="legend">Care values use a 0–100 scale; mood uses 1–100. Game time is elapsed pet time. Up to 100 grouped events are retained.</div>
+<details class="panel" style="padding:12px;margin-top:12px"><summary>Cheats · active pet</summary>
+<form id="cheats" class="filters" style="padding-top:12px">
+<label>Set <select id="cheat-name"><option>fullness</option><option>energy</option><option>clean</option><option>fun</option><option>connection</option><option>bond</option><option>food</option><option>gifts</option></select></label>
+<label>Value <input id="cheat-value" type="number" min="0" max="100" value="100" required style="width:70px"></label>
+<button>Apply</button><button id="heal" type="button">Heal pet</button><span id="cheat-result" role="status"></span>
+</form><small>Needs and bond: 0–100. Food and gifts: 0–20. Changes are logged as Debug events.</small></details>
+<script>
+const $ = id => document.getElementById(id);
+const actions = ['Feed','Care menu','Rest / wake','Pets menu','Gifts menu','Settings menu','Basic care','Play','Clean / wake','Home','Give gift','Claim reward','Travel','Switch pet','Change bedtime','Save','Moments menu','Breakfast','Tea','Going out','Movie','Suggested moment','Health menu','Brush teeth','Medicine','Shot','Wash','Stretch','Open menu','Close menu','Back','View stat'];
+const commands = ['Feed','Play','Clean','Basic care','Rest','Wake','Give gift','Claim reward','Switch pet','Travel','Change bedtime','Moment','Healthy activity','Pet touch'];
+const healthActions = ['Brush teeth','Medicine','Shot','Wash','Stretch','Floss','Mouthwash','Spit','Clean up'];
+const activities = ['Idle','Eating','Playing','Cleaning','Recovering','Giving a gift'];
+const results = ['','Already busy','No items left','Pet is asleep','Target unavailable','Already full','Not ready / round complete'];
+const needNames = ['Fullness','Energy','Cleanliness','Fun','Connection'];
+const categoryClasses = {Care:'care',Moments:'moments',Touch:'touch',Sleep:'sleep',Gifts:'gifts',Pet:'pet-category',Settings:'settings',State:'state',Navigation:'navigation',Debug:'settings'};
+let cursor=0, paused=false, following=true, unread=0, rows=[], lastButtons='';
+const number = n => Number(n.toFixed(1)).toString();
+function title(e) {
+    if(e.kind===4)return 'Cheat · '+(['Fullness','Energy','Cleanliness','Fun','Connection','Bond','Food','Gifts','Heal'][e.code] || 'State');
+    if (e.kind===0 && e.code===12) return healthActions[e.value] || 'Healthy activity';
+    if (e.kind===2) return ['Activity finished','Meal finished','Play finished','Cleaning finished','Recovery finished','Gift delivered'][e.code] || 'Activity finished';
+    if (e.kind===3) return e.code===1 ? 'Evolved to a new form' : 'Pet state changed';
+    if (e.kind===0 && e.code===11) return ['Breakfast','Tea','Going out','Movie'][e.value] || 'Moment';
+    return (e.input ? actions[e.input-1] : e.kind===1 ? actions[e.code] : commands[e.code]) || 'Pet action';
+}
+function category(e) {
+    if(e.kind===4)return 'Debug';
+    if (e.kind===1) return 'Navigation';
+    if (e.kind===3) return 'State';
+    if (e.kind===2) return e.code===5 ? 'Gifts' : e.code===2 ? 'Moments' : 'Care';
+    return ['Care','Moments','Care','Care','Sleep','Sleep','Gifts','Gifts','Pet','Pet','Settings','Moments','Care','Touch'][e.code] || 'State';
+}
+function changes(e) {
+    const out=[];
+    const numeric=(label,a,b,scale=1)=>{if(a!==b)out.push({label,before:number(a/scale),after:number(b/scale),delta:(b-a)/scale});};
+    needNames.forEach((name,i)=>numeric(name,e.before.needs[i],e.after.needs[i],10));
+    numeric('Bond',e.before.bond,e.after.bond,10);
+    numeric('Food',e.before.food,e.after.food); numeric('Gifts',e.before.gifts,e.after.gifts);
+    const state=(label,a,b,names)=>{if(a!==b)out.push({label,before:names[a]??a,after:names[b]??b});};
+    state('Feeling',e.before.flags>>3,e.after.flags>>3,['Settled','Enjoying touch','Needs space','Overwhelmed']);
+    state('Location',e.before.location,e.after.location,['Home','Garden']);
+    state('Sleep',e.before.flags&1,e.after.flags&1,['Awake','Asleep']);
+    state('Health',e.before.health,e.after.health,['Well','Unwell','Recovering']);
+    state('Activity',e.before.activity,e.after.activity,activities);
+    state('Reward',(e.before.flags>>1)&1,(e.after.flags>>1)&1,['Unavailable','Ready to claim']);
+    if(e.kind===3&&e.code===1)out.push({label:'Form',after:String(e.value)});
+    return out;
+}
+function ingest(e) {
+    const name=title(e), last=rows.at(-1);
+    if(last && last.name===name && last.event.pet===e.pet && last.event.kind===e.kind &&
+       last.event.code===e.code && last.event.value===e.value && last.event.result===e.result &&
+       e.tick>=last.event.tick && e.tick-last.event.tick<=15) {
+        last.event={...e,before:last.event.before}; last.count++;
+    } else {
+        rows.push({name,event:e,count:1,firstTick:e.tick});
+        if(rows.length>100)rows.shift();
+    }
+    if(visible(rows.at(-1)))unread++;
+}
+function visible(r) {
+    const c=category(r.event), filter=$('category').value;
+    if(filter!=='all'&&filter!==c)return false;
+    if(c==='Navigation'&&!$('navigation').checked&&filter!=='Navigation')return false;
+    return !$('blocked').checked||r.event.result!==0;
+}
+function el(tag,text,className='') {
+    const node=document.createElement(tag);node.textContent=text;node.className=className;return node;
+}
+function time(tick) {
+    const seconds=Math.floor(tick/10);
+    return [Math.floor(seconds/3600),Math.floor(seconds/60)%60,seconds%60].map(n=>String(n).padStart(2,'0')).join(':');
+}
+function rowNode(r) {
+    const e=r.event, tr=document.createElement('tr'), c=category(e);
+    tr.append(el('td',time(r.firstTick),'time'),el('td','#'+e.pet,'pet'));
+    const categoryCell=el('td','');categoryCell.append(el('span',c,'category '+categoryClasses[c]));tr.append(categoryCell);
+    const action=el('td','');action.append(el('span',r.name+(r.count>1?' ×'+r.count:''),'event-name'));
+    const outcome=e.result?'Blocked':e.kind===2?'Finished':e.kind===3?'Changed':e.kind===1?'Navigation':'Accepted';
+    action.append(el('span',outcome,'outcome '+outcome.toLowerCase()));tr.append(action);
+    const detail=el('td','');
+    if(e.result)detail.append(el('span',results[e.result]||'Unavailable','reason'));
+    else {
+        const list=changes(e), wrap=el('div','','changes');
+        for(const change of list) {
+            const item=el('span','','change');item.append(el('b',change.label+' '));
+            item.append(document.createTextNode((change.before===undefined?'':change.before+' → ')+change.after));
+            if(change.delta!==undefined)item.append(el('span',' ('+(change.delta>0?'+':'')+number(change.delta)+')','delta'+(change.delta<0?' negative':'')));
+            wrap.append(item);
+        }
+        if(!list.length)wrap.append(el('span',e.kind===1?'Opened '+['home','care','gifts','pets','settings','moments','health','brushing','medicine','shot','wash','stretch'][e.value]:'Action accepted; no immediate numeric change.','muted'));
+        detail.append(wrap);
+    }
+    tr.append(detail);return tr;
+}
+function render() {
+    const f=$('feed'), top=f.scrollTop, shown=rows.filter(visible);
+    $('rows').replaceChildren(...shown.map(rowNode));
+    $('empty').hidden=shown.length>0;
+    $('empty').textContent=rows.length?'No events match these filters. Menu navigation is hidden by default.':'Waiting for an action. Routine stat decay and animation stay out of this feed.';
+    $('counts').textContent=`${shown.length} shown · ${rows.length-shown.length} filtered · ${rows.length}/100 grouped events retained`;
+    if(following)f.scrollTop=f.scrollHeight;else f.scrollTop=top;
+    unread=0;$('pending').textContent='';
+}
+function updateState(v,buttons) {
+    $('pet-line').textContent=`Pet #${v.pet_id} · Mood ${v.mood}/100 · ${v.location?'Garden':'Home'}`;
+    let activity=v.asleep?'Asleep':activities[v.activity]||'Idle';
+    if(v.page==='brush')activity+=` · Dental step ${v.clicker_stage+1}/6`;
+    if(v.clicker_goal&&['brush','medicine','shot','wash','stretch'].includes(v.page))activity+=v.clicker_done?' · Complete':` · ${v.clicker_hits}/${v.clicker_goal} taps`;
+    $('pet-context').textContent=`${activity} · ${['Well','Unwell','Recovering'][v.health]} · Food ${v.food} · Gifts ${v.gifts}`;
+    $('needs').replaceChildren(...[...needNames,'Bond'].map((name,i)=>{
+        const value=(i===5?v.bond:v.needs[i])/10, item=el('div','','metric');
+        item.append(el('span',name),el('strong',number(value)));
+        const meter=document.createElement('meter');meter.min=0;meter.max=100;meter.value=value;meter.setAttribute('aria-label',name);item.append(meter);return item;
+    }));
+    $('page-label').textContent='· '+v.page;
+    const signature=JSON.stringify(buttons);
+    if(signature===lastButtons)return;
+    lastButtons=signature;$('controls').replaceChildren();
+    for(const b of buttons){const button=el('button',b.label);button.onclick=async()=>{
+        button.disabled=true;
+        try{const r=await fetch('/api/press',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({button:b.label})});const data=await r.json();if(!r.ok)throw Error(data.error);}
+        catch(e){$('status').textContent=e.message;}finally{button.disabled=false;}
+    };$('controls').append(button);}
+}
+$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume feed':'Pause feed';$('pause').setAttribute('aria-pressed',String(paused));if(!paused)render();};
+$('follow').onclick=()=>{following=true;paused=false;$('pause').textContent='Pause feed';$('pause').setAttribute('aria-pressed','false');render();};
+$('feed').onscroll=()=>{const f=$('feed');following=f.scrollHeight-f.scrollTop-f.clientHeight<30;};
+for(const id of ['category','navigation','blocked'])$(id).onchange=render;
+async function poll() {
+    try{
+        const r=await fetch('/api/poll?after='+cursor), data=await r.json();if(!r.ok)throw Error(data.error);
+        if(data.reset||data.dropped){rows=[];$('notice').textContent=data.reset?'Game restarted. Event history reset.':'Some older device events expired. History resumes below.';}
+        cursor=data.next;data.events.forEach(ingest);
+        $('status').textContent='● Connected · Live state';updateState(data.state.visual,data.state.buttons);
+        if(!paused&&following&&(data.events.length||data.reset||data.dropped))render();
+        else $('pending').textContent=unread?`${unread} new · Follow latest to view`:paused?'Feed paused':'';
+    }catch(e){$('status').textContent='Disconnected · '+e.message;}
+    finally{setTimeout(poll,800);}
+}
+async function cheat(name,value) {
+    try {
+        const body={name};if(value!==undefined)body.value=value;
+        const response=await fetch('/api/cheat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        const result=await response.json();
+        if(!response.ok||result.ok===false)throw Error(result.error||'Cheat rejected');
+        $('cheat-result').textContent='Applied';
+    }catch(error){$('cheat-result').textContent=error.message;}
+}
+$('cheats').onsubmit=event=>{event.preventDefault();cheat($('cheat-name').value,Number($('cheat-value').value));};
+$('heal').onclick=()=>cheat('heal');
+$('cheat-name').onchange=()=>{
+    const max=['food','gifts'].includes($('cheat-name').value)?20:100;
+    $('cheat-value').max=max;$('cheat-value').value=Math.min(max,Number($('cheat-value').value));
+};
+poll();
+</script>
+</body></html>

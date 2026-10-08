@@ -15,13 +15,19 @@ bool jelli_pet_init(JelliPetEngine *engine, JelliPlatform platform, JelliSurface
     engine->last_ms = platform.now_ms(platform.ctx);
     engine->running = true;
     jelli_game_init(&engine->game);
+    engine->game.events = &engine->events;
     jelli_pet_ui_init(&engine->ui);
     return true;
 }
 
 static void advance(JelliPetEngine *engine, uint64_t elapsed)
 {
-    engine->animation_ms = (engine->animation_ms + (uint32_t)(elapsed % 900u)) % 900u;
+    const JelliPet *pet = &engine->game.pets[engine->game.active];
+    uint32_t scale =
+        jelli_tunable_get(&engine->ui.tunables, pet->id, pet->form, JELLI_TUNE_ANIMATION_SCALE);
+    jelli_particles_advance_scaled(&engine->ui.particles, elapsed, 20u * scale / 100u);
+    if (!engine->paused)
+        engine->animation_ms += elapsed; /* Unsigned wrap is handled by renderer re-anchoring. */
     if (engine->game.resuming)
         (void)jelli_game_resume_step(&engine->game);
     else if (!engine->paused)
@@ -50,6 +56,7 @@ bool jelli_pet_frame(JelliPetEngine *engine)
 {
     if (!engine || !engine->running)
         return false;
+    engine->game.events = &engine->events; /* Reattach after loading a snapshot. */
     uint64_t now = engine->platform.now_ms(engine->platform.ctx);
     uint64_t elapsed = now >= engine->last_ms ? now - engine->last_ms : 0;
     engine->last_ms = now;

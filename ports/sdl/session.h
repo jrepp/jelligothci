@@ -9,8 +9,8 @@ typedef struct {
     const char *path;
     JelliSave snapshot;
     uint8_t bytes[JELLI_SAVE_CAPACITY];
-    uint64_t sequence, last_save_ms;
-    bool needs_reconcile;
+    uint64_t sequence, last_save_ms, last_clock_ms;
+    bool needs_reconcile, clock_sampled;
 } JelliSession;
 
 bool jelli_sdl_session_open(JelliSession *session, JelliPetEngine *engine,

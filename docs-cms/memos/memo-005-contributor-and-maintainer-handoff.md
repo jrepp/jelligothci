@@ -122,8 +122,8 @@ gh workflow run release.yml --repo jrepp/jelligothci -f ref=v0.1.1 -F publish=tr
 The publish input requires a matching vVERSION ref and an existing release.
 The upload uses --clobber: a rerun replaces named assets. Verify the source ref
 and expected release before using it. Download the archive and SHA256SUMS,
-verify checksums, extract, and build/test outside the Git checkout. Release assets
-are source only. Preserve published tags; fixes land in a new version.
+verify checksums, extract, and build/test outside the Git checkout. Release assets now also include macOS game, editable-art, and preview downloads;
+see [memo-017](memo-017-release-downloads-and-expressive-slice.md). Preserve published tags; fixes land in a new version.
 
 # Runner recovery
 

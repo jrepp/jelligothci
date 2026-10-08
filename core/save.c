@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#define SAVE_VERSION 1u
+#define SAVE_VERSION 2u
 #define SAVE_CONTENT_VERSION 1u
 #define SAVE_HEADER_SIZE 32u
 #define SAVE_TRAILER_SIZE 8u
@@ -19,6 +19,7 @@ typedef struct {
     size_t size;
     size_t offset;
     bool failed;
+    uint8_t version;
 } Reader;
 
 static void put_u8(Writer *writer, uint8_t value)
@@ -109,6 +110,10 @@ static void write_pet(Writer *writer, const JelliPet *pet)
     put_u8(writer, pet->hunger_counted ? 1u : 0u);
     put_u8(writer, pet->reward_pending ? 1u : 0u);
     put_u8(writer, pet->reward_claimed ? 1u : 0u);
+    put_u64(writer, pet->shot_until);
+    put_u64(writer, pet->medicine_until);
+    put_u8(writer, pet->shot_goal);
+    put_u8(writer, pet->shot_hits);
 }
 
 static bool read_bool(Reader *reader, bool *value)
@@ -153,6 +158,12 @@ static void read_pet(Reader *reader, JelliPet *pet)
     (void)read_bool(reader, &pet->hunger_counted);
     (void)read_bool(reader, &pet->reward_pending);
     (void)read_bool(reader, &pet->reward_claimed);
+    if (reader->version >= 2u) {
+        pet->shot_until = get_u64(reader);
+        pet->medicine_until = get_u64(reader);
+        pet->shot_goal = get_u8(reader);
+        pet->shot_hits = get_u8(reader);
+    }
 }
 
 static void write_game(Writer *writer, const JelliGame *game)
@@ -240,8 +251,8 @@ static bool header_valid(const uint8_t *bytes, size_t size)
 {
     return size >= SAVE_HEADER_SIZE + SAVE_TRAILER_SIZE && bytes[0] == (uint8_t)'J' &&
            bytes[1] == (uint8_t)'L' && bytes[2] == (uint8_t)'S' && bytes[3] == (uint8_t)'V' &&
-           bytes[4] == SAVE_VERSION && bytes[5] == 0u && bytes[6] == SAVE_HEADER_SIZE &&
-           bytes[7] == 0u;
+           (bytes[4] == 1u || bytes[4] == SAVE_VERSION) && bytes[5] == 0u &&
+           bytes[6] == SAVE_HEADER_SIZE && bytes[7] == 0u;
 }
 
 bool jelli_save_decode(JelliSave *save, const uint8_t *bytes, size_t size)
@@ -258,6 +269,7 @@ bool jelli_save_decode(JelliSave *save, const uint8_t *bytes, size_t size)
     if (marker != UINT32_C(0xc04d17ed) || stored_crc != checksum(bytes, size - SAVE_TRAILER_SIZE))
         return false;
     Reader reader = {.bytes = bytes, .size = size - SAVE_TRAILER_SIZE, .offset = SAVE_HEADER_SIZE};
+    reader.version = bytes[4];
     JelliSave candidate;
     memset(&candidate, 0, sizeof(candidate));
     reader.offset = 12u;

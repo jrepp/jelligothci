@@ -57,7 +57,7 @@ def generate(output):
                 glyph, _ = mask_rows(image.crop((gx, gy, gx + 8, gy + 12)))
                 payload.extend(glyph)
             glyph_data = payload
-            records.append((asset["id"], asset["width"], asset["height"], None, 0))
+            records.append((asset["id"], asset["width"], asset["height"], None, 0, 0, 0, *asset["centroid_q8"], *asset["bounds"]))
             chunks.append(emit_array("font_glyphs", "uint8_t", list(payload), 16))
             continue
         rgba = list(image.getdata())
@@ -65,13 +65,13 @@ def generate(output):
         mask, stride = mask_rows(image)
         chunks.append(emit_array(name + "_pixels", "uint16_t", pixels, 10))
         chunks.append(emit_array(name + "_mask", "uint8_t", list(mask), 12))
-        records.append((asset["id"], asset["width"], asset["height"], name, stride))
+        records.append((asset["id"], asset["width"], asset["height"], name, stride, *asset.get("ground_anchor_q8", [0, 0]), *asset["centroid_q8"], *asset["bounds"]))
     chunks.append("static const JelliAsset assets[] = {")
-    for ident, width, height, name, stride in sorted(records):
+    for ident, width, height, name, stride, ground_x, ground_y, center_x, center_y, left, top, right, bottom in sorted(records):
         if name is None:
-            chunks.append(f"    {{{ident}u, {width}u, {height}u, 0, 0, 0u}},")
+            chunks.append(f"    {{{ident}u, {width}u, {height}u, 0, 0, 0u, 0u, 0u, {center_x}u, {center_y}u, {left}u, {top}u, {right}u, {bottom}u}},")
         else:
-            chunks.append(f"    {{{ident}u, {width}u, {height}u, {name}_pixels, {name}_mask, {stride}u}},")
+            chunks.append(f"    {{{ident}u, {width}u, {height}u, {name}_pixels, {name}_mask, {stride}u, {ground_x}u, {ground_y}u, {center_x}u, {center_y}u, {left}u, {top}u, {right}u, {bottom}u}},")
     chunks.extend(["};", "", "const JelliAsset *jelli_asset_find(uint32_t id)", "{", "    for (unsigned i = 0u; i < sizeof(assets) / sizeof(assets[0]); ++i) {", "        if (assets[i].id == id)", "            return &assets[i];", "    }", "    return 0;", "}", "", "const uint8_t *jelli_asset_glyph(uint8_t codepoint)", "{", "    if (codepoint < 32u || codepoint > 127u)", "        codepoint = (uint8_t)'?';", "    return &font_glyphs[(unsigned)(codepoint - 32u) * 12u];", "}", ""])
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n\n".join(chunks))

@@ -11,5 +11,5 @@ release_pr:
     - .github/workflows/release.yml
 release:
   workflow: .github/workflows/release.yml
-  artifacts: [source-archive, sha256-checksums]
+  artifacts: [macos-game-zip, windows-game-zip, source-art-zip, preview-html, preview-zip, source-archive, sha256-checksums]
   hardware_flash: false

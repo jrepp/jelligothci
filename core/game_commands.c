@@ -45,6 +45,8 @@ static JelliResult activate_pet(JelliGame *game, JelliCommand command, const Jel
         return JELLI_INVALID_TARGET;
     if (game->resuming || active->activity != JELLI_IDLE)
         return JELLI_NOT_READY;
+    if (target_index == game->active)
+        return JELLI_NOT_READY;
     game->active = target_index;
     return JELLI_OK;
 }
@@ -162,6 +164,10 @@ static JelliResult travel(JelliPet *pet, uint32_t location)
         return JELLI_BUSY;
     if (location > 1u)
         return JELLI_INVALID_TARGET;
+    if (pet->asleep)
+        return JELLI_ASLEEP;
+    if (pet->location == location)
+        return JELLI_NOT_READY;
     pet->location = (uint8_t)location;
     return JELLI_OK;
 }
@@ -170,7 +176,105 @@ static JelliResult set_bedtime(JelliPet *pet, uint32_t hour)
 {
     if (hour > 23u)
         return JELLI_INVALID_TARGET;
+    if (pet->bedtime == hour)
+        return JELLI_NOT_READY;
     pet->bedtime = hour;
+    return JELLI_OK;
+}
+
+static bool boost_need(JelliPet *pet, JelliNeed need, unsigned amount)
+{
+    if (pet->needs[need] >= 1000u)
+        return false;
+    unsigned value = pet->needs[need] + amount;
+    pet->needs[need] = (uint16_t)(value > 1000u ? 1000u : value);
+    pet->need_remainders[need] = 0u;
+    return true;
+}
+
+unsigned jelli_pet_shot_goal(const JelliPet *pet)
+{
+    if (pet->shot_until > pet->ticks && pet->shot_goal)
+        return pet->shot_goal;
+    uint32_t value = pet->random_state ^ pet->id;
+    value ^= value << 13;
+    value ^= value >> 17;
+    value ^= value << 5;
+    return 1u + value % 3u;
+}
+
+bool jelli_pet_health_ready(const JelliPet *pet, unsigned activity)
+{
+    if (activity == 1u)
+        return pet->ticks >= pet->medicine_until;
+    if (activity == 2u)
+        return pet->ticks >= pet->shot_until || pet->shot_hits < pet->shot_goal;
+    return activity <= 8u;
+}
+
+static void remember_health(JelliPet *pet, unsigned activity)
+{
+    uint64_t due = UINT64_MAX - pet->ticks < 36000u ? UINT64_MAX : pet->ticks + 36000u;
+    if (activity == 1u)
+        pet->medicine_until = due;
+    if (activity != 2u)
+        return;
+    if (pet->ticks >= pet->shot_until) {
+        pet->shot_goal = (uint8_t)jelli_pet_shot_goal(pet);
+        pet->shot_hits = 0u;
+        pet->shot_until = due;
+        pet->random_state = pet->random_state * UINT32_C(1664525) + UINT32_C(1013904223);
+    }
+    ++pet->shot_hits;
+}
+
+static JelliResult healthy_click(JelliPet *pet, uint32_t activity)
+{
+    if (activity > 8u)
+        return JELLI_INVALID_TARGET;
+    if (pet->asleep)
+        return JELLI_ASLEEP;
+    if (!jelli_pet_health_ready(pet, activity))
+        return JELLI_NOT_READY;
+    bool recovery = activity == 1u || activity == 2u;
+    if (pet->activity != JELLI_IDLE && !(recovery && pet->activity == JELLI_CARING))
+        return JELLI_BUSY;
+    JelliNeed need = activity == 4u ? JELLI_ENERGY : recovery ? JELLI_SOCIAL : JELLI_HYGIENE;
+    bool healing = recovery && pet->health == JELLI_UNWELL;
+    if (!healing && pet->needs[need] == 1000u && pet->bond == 1000u)
+        return JELLI_FULL;
+    if (healing) {
+        JelliResult result = start_care(pet);
+        if (result != JELLI_OK)
+            return result;
+    }
+    remember_health(pet, activity);
+    (void)boost_need(pet, need,
+                     activity == 1u   ? 10u
+                     : activity == 3u ? 70u
+                     : activity >= 5u ? 20u
+                                      : 40u);
+    pet->bond = pet->bond > 995u ? 1000u : (uint16_t)(pet->bond + 5u);
+    return JELLI_OK;
+}
+
+static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
+{
+    if (choice > 3u)
+        return JELLI_INVALID_TARGET;
+    if (!choice)
+        return start_feed(game, pet);
+    JelliResult result = start_play(pet);
+    if (result != JELLI_OK)
+        return result;
+    if (choice == 1u) {
+        (void)boost_need(pet, JELLI_SOCIAL, 60u);
+        (void)boost_need(pet, JELLI_ENERGY, 100u);
+    } else if (choice == 2u) {
+        pet->location = 1u;
+    } else {
+        (void)boost_need(pet, JELLI_SOCIAL, 100u);
+    }
     return JELLI_OK;
 }
 
@@ -197,13 +301,19 @@ static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliP
         return travel(pet, command.value);
     case JELLI_CMD_BEDTIME:
         return set_bedtime(pet, command.value);
+    case JELLI_CMD_MOMENT:
+        return moment(game, pet, command.value);
+    case JELLI_CMD_TOUCH:
+        return jelli_game_touch(pet);
+    case JELLI_CMD_HEALTH:
+        return healthy_click(pet, command.value);
     case JELLI_CMD_ACTIVATE:
         return activate_pet(game, command, pet);
     }
     return JELLI_INVALID_TARGET;
 }
 
-JelliResult jelli_game_command(JelliGame *game, JelliCommand command)
+static JelliResult command_impl(JelliGame *game, JelliCommand command)
 {
     if (!jelli_game_valid(game))
         return JELLI_INVALID_TARGET;
@@ -219,4 +329,17 @@ JelliResult jelli_game_command(JelliGame *game, JelliCommand command)
     if (pet->id != command.actor_id)
         return JELLI_INVALID_TARGET;
     return dispatch_action(game, command, pet);
+}
+
+JelliResult jelli_game_command(JelliGame *game, JelliCommand command)
+{
+    if (!jelli_game_valid(game))
+        return JELLI_INVALID_TARGET;
+    JelliEventSnapshot before = jelli_game_observe(game, &game->pets[game->active]);
+    JelliResult result = command_impl(game, command);
+    if (result == JELLI_OK)
+        jelli_game_preference(game, command);
+    jelli_game_emit(game, JELLI_EVENT_COMMAND, (unsigned)command.kind, result, command.value,
+                    &game->pets[game->active], before);
+    return result;
 }

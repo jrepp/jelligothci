@@ -656,7 +656,7 @@ link maps, queue high-water marks, and hardware measurements, not current usage.
 | Mutable world + UI + queues + animation metadata | 32 KiB caller-owned storage, excluding IO buffers |
 | Decoded content tables and indexes | 32 KiB caller-owned storage; immutable after load |
 | Save snapshot and IO scratch | 16 KiB total, explicitly partitioned, not task-local arrays |
-| Initial compiled definitions and simple assets | 64 KiB flash pack; grow only after image/partition review |
+| Initial compiled definitions and simple assets | 144 KiB flash pack; see healthy activities and visual pass in memo-015 |
 | Optional sprite cache | Up to 128 KiB PSRAM, allocated once at host startup when needed |
 | Existing two RGB565 frames | 868624 bytes PSRAM; BSP/DMA allocations are additional |
 | Command queue / presentation notifications | 32 / 64 fixed entries; reject commands or drop/coalesce cosmetic notices |
@@ -680,15 +680,16 @@ baseline, but benchmark menus and multiple creatures before promising 60 FPS.
 # Vertical slice asset plan
 
 A first review set now exists in [assets/slice](../../assets/slice/README.md):
-29 PNGs, a stable manifest, and a local HTML preview/export tool. See
+70 PNGs, a stable manifest, and a local HTML preview/export tool. See
 [memo-007](../memos/memo-007-slice-artwork-and-preview.md) for validation and limits.
-This fulfills initial asset creation, not renderer integration, approved art
-direction, or completion of the gameplay slice.
+The shared renderer now embeds these assets. Physical readability review and
+completion of the broader gameplay slice remain pending; see
+[memo-011](../memos/memo-011-readable-rings-moments-and-particles.md).
 
 The slice must communicate care, illness, recovery, sleep, gifts, rewards, and one
 evolution without waiting for a large art library. Use one original creature with
 two visibly distinct forms in a small pixel-art set. The proposed baseline is
-32 by 32 pixels per creature frame, integer-scaled to 96 by 96 on the 466 by 466
+32 by 32 pixels per creature frame, integer-scaled to 192 by 192 on the 466 by 466
 surface. Use a shared limited palette, binary transparency, and nearest-neighbor
 scaling. Keep status text beside the art so color or a single pose is never the
 only signal. Art direction and exact appearance remain open for user review.
@@ -696,16 +697,23 @@ only signal. Art direction and exact appearance remain open for user review.
 | Asset group | Slice deliverable | How it is used |
 | --- | --- | --- |
 | Creature | Two forms, six frames each: two idle frames, eating, happy, asleep, unwell | Reuse happy for gifts/reward acknowledgement; recovery uses unwell/idle plus a status label; waking returns to idle |
-| Care/navigation icons | Twelve 16 by 16 icons | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; text-only settings and collection are sufficient initially |
+| Care/navigation icons | Twelve 16 by 16 icons | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; enlarged to 6x where used inside a ring |
+| Ring icons | Thirteen 32 by 32 icons | Six category buttons, moment actions, and close affordance; 3x display scale |
+| Stat pictograms | Five 32 by 32 images | One sliding progressive tile and a 1–100 score, 100 best |
 | Props | Four 24 by 24 images | Food bowl, wrapped present, opened present, simple bed; present opening is cosmetic and never grants its contents |
-| Text | One 8 by 12 bitmap font, 96 glyph slots | Initial English labels and digits, rendered at 2x; validate glyph coverage for every shipped label |
-| Scene and feedback | One room drawn with solid fills/shapes; round safe-area layout | Text, focus borders, need bars, sleep marks, gift sparkle, and evolution flash are code-drawn; no background bitmap required |
+| Text | One 8 by 12 bitmap font, 96 glyph slots | Initial English labels and digits, rendered at 2x, with 3x creature names and white/shadow headings; validate glyph coverage for every shipped label |
+| Healthy activities | Five 32x32 icons | Brushing, medicine, shot, wash, stretch; clickable target above the actor |
+| Scene and feedback | Two 64x64 gray vignette backgrounds and five 16x16 magical effect sprites | Packed particles draw masked RGB565 with integer fades; no extra framebuffer |
 | Fallback | Built-in missing-art marker and recovery text | Works when the pack fails to load; unknown asset IDs fail validation before play |
 
 Start with authored PNG sources and a small manifest under `assets/slice/`:
-`creatures/`, `icons/`, `props/`, `font/`, and `assets.json`. Track source images,
+`creatures/`, `icons/`, `menus/`, `meters/`, `health/`, `effects/`, `backgrounds/`, `props/`, `font/`, and `assets.json`. Track source images,
 palette, frame rectangles, clip durations, pivots, logical bounds, intended scale,
-and provenance/license in the repository. Keep an attribution record for each
+and provenance/license in the repository. Creature frames additionally derive a
+bottom contact anchor from their alpha masks: horizontal centroid of the bottom
+three opaque rows, vertical lowest opaque edge. The shared renderer aligns this
+point across poses; see [memo-014](../memos/memo-014-creature-contact-anchors.md). Full opaque-pixel centroids and alpha bounds are also computed at build time and kept in immutable frame descriptors; open rings center creatures/icons by that centroid. Variable dental routines, namespaced tuning, mood, audio, and companion events are recorded in [memo-016](../memos/memo-016-responsive-pet-routines-and-audio.md). The current action effects, healthy clickers, visual pass, and acceleration findings are recorded in [memo-015](../memos/memo-015-healthy-activities-and-action-audit.md).
+Keep an attribution record for each
 external source; original art records its author and any source references. Do
 not treat generated build output as the editable source or use screenshots as
 sprite masters. Preview sheets belong under `build/`, alongside generated output.
@@ -723,14 +731,19 @@ The proposed uncompressed flash accounting is deliberately small:
 
 | Payload | Bytes |
 | --- | ---: |
-| 12 creature frames, 32 x 32, RGB565 plus 1-bit mask | 26,112 |
+| 16 creature frames, 32 x 32, RGB565 plus 1-bit mask | 34,816 |
 | 12 icons, 16 x 16, RGB565 plus 1-bit mask | 6,528 |
 | 4 props, 24 x 24, RGB565 plus 1-bit mask | 4,896 |
+| 13 ring icons, 32 x 32, RGB565 plus 1-bit mask | 28,288 |
+| 5 stat pictograms, 32 x 32, RGB565 plus 1-bit mask | 10,880 |
+| 9 health icons, 32 x 32, RGB565 plus 1-bit mask | 19,584 |
+| 8 effect sprites, 16 x 16, RGB565 plus 1-bit mask | 4,352 |
+| 2 backgrounds, 64 x 64, RGB565 plus 1-bit mask | 17,408 |
 | 96 glyphs, 8 x 12, 1-bit | 1,152 |
 | Definition allowance | 8,192 |
 | Headers, indexes, clip metadata, strings, alignment allowance | 4,096 |
-| Total planned pack | 50,976 |
-| Headroom within the 65,536-byte pack ceiling | 14,560 |
+| Total planned pack | 140,192 |
+| Headroom within the 147,456-byte pack ceiling | 7,264 |
 
 These are payload estimates, not measurements of a linked image. Built-in fallback
 art and renderer code add firmware bytes outside the pack. Report generated and
@@ -813,3 +826,13 @@ so these can be proposed later without making them foundation dependencies.
 - [Current animation contract](../adr/adr-009-bounded-input-color-animation.md)
 - [Measured rendering baseline](../memos/memo-006-input-animation-and-frame-performance.md)
 - [Current engine API](../../include/jelli/engine.h)
+
+# Moments and native feedback follow-up
+
+[PRD-001](../prd/prd-001-moments-and-readable-care.md) records the requested
+breakfast, tea, going-out, and movie rituals, clock suggestions, ring drill-down,
+and readable need tiles. Current moments reuse existing feed/play/travel actions;
+dedicated scenes, distinct effects, rewards, and balance remain future work.
+Button feedback uses a fixed 24-slot particle pool, eight bytes per particle,
+integer motion, clipped RGB565 drawing, and restoration of damaged scene regions.
+It is cosmetic and never grants items or advances the simulation RNG.

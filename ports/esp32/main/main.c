@@ -1,4 +1,6 @@
 #include "jelli/pet_engine.h"
+#include "debug_wire.h"
+#include "sound_output.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -71,20 +73,29 @@ static void run_engine(JelliPetEngine *engine, const Board *board)
     unsigned frames = 0;
     for (;;) {
         uint64_t start = now_ms(NULL);
-        if (!jelli_pet_frame(engine))
+        bool frozen = jelli_debug_wire_poll(engine, start);
+        if (!frozen && !jelli_pet_frame(engine))
             return;
+        unsigned cue =
+            !frozen && !engine->paused
+                ? jelli_pet_ui_sound(&engine->ui, &engine->game.pets[engine->game.active], start)
+                : 0u;
+        if (cue)
+            (void)jelli_sound_output_request(NULL, cue - 1u, cue == 6u ? 25u : 18u);
         if (engine->ui.save_requested) {
             engine->ui.save_requested = false;
             engine->ui.save_status = JELLI_SAVE_UNAVAILABLE;
         }
-        ++frames;
+        if (!frozen)
+            ++frames;
         uint64_t end = now_ms(NULL);
         if (end - report_start >= 5000u) {
             ESP_LOGI(TAG, "Engine update rate: %u Hz (target interval %u ms)",
                      (unsigned)((uint64_t)frames * 1000u / (end - report_start)),
                      (unsigned)FRAME_MS);
             ESP_LOGI(TAG, "Frame sample: render=%" PRIu64 " ms, present=%" PRIu64 " ms",
-                     end - start - board->present_ms, board->present_ms);
+                     end - start - (frozen ? 0u : board->present_ms),
+                     frozen ? 0u : board->present_ms);
             frames = 0;
             report_start = end;
         }
@@ -126,5 +137,8 @@ void app_main(void)
     ESP_ERROR_CHECK(jelli_pet_init(&engine, platform, surface) ? ESP_OK : ESP_FAIL);
     engine.ui.time_unavailable = true;
     ESP_LOGI(TAG, "Pet slice ready: tap menus; volatile session, RTC/save integration pending");
+    if (!jelli_sound_output_init())
+        ESP_LOGW(TAG, "Sound unavailable; game remains playable");
+    jelli_debug_wire_init();
     run_engine(&engine, &board);
 }

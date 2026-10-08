@@ -33,7 +33,11 @@ The GitHub Release record can exist before asset validation finishes; use the
 workflow result and uploaded checksums as the publication health evidence.
 
 The initial manifest baseline is 0.0.0; the first feature release is 0.1.0.
-The release contains source, not prebuilt desktop or firmware binaries.
+The initial releases contained source only. On 2026-10-08 the user requested
+packaged native-game, editable-art, and preview downloads. The release workflow
+now also builds a macOS ZIP with bundled SDL plus artwork and preview archives;
+see [memo-017](../memos/memo-017-release-downloads-and-expressive-slice.md).
+Firmware binaries and hardware flashing are not part of release publication.
 Firmware compilation and physical display/touch verification remain separate.
 
 # Approval basis

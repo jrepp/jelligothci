@@ -7,7 +7,7 @@ build:
 	cmake --build --preset desktop
 
 run: build
-	./build/desktop/jelligotchi --pet --save build/pet-save
+	./build/desktop/jelligotchi --pet --save build/pet-save --debug-socket build/jelli-debug.sock
 
 run-shapes: build
 	./build/desktop/jelligotchi --shapes

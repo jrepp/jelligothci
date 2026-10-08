@@ -100,7 +100,7 @@ static void failed_decodes_preserve_output(void)
     CHECK(!jelli_save_decode(&output, broken, size));
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
-    broken[4] = 2u;
+    broken[4] = 3u;
     CHECK(!jelli_save_decode(&output, broken, size));
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
@@ -240,8 +240,42 @@ static void need_rate_phase_survives_save(void)
     check_same_save(&saved, &loaded);
 }
 
+static void health_history_and_v1_migration(void)
+{
+    JelliSave save = fixture(), loaded;
+    JelliPet *pet = &save.game.pets[0];
+    pet->shot_until = pet->ticks + 36000u;
+    pet->medicine_until = pet->ticks + 18000u;
+    pet->shot_goal = 3u;
+    pet->shot_hits = 1u;
+    uint8_t bytes[JELLI_SAVE_CAPACITY], legacy[JELLI_SAVE_CAPACITY];
+    size_t size = encode(&save, bytes);
+    CHECK(bytes[4] == 2u && jelli_save_decode(&loaded, bytes, size));
+    CHECK(loaded.game.pets[0].shot_until == pet->shot_until);
+    CHECK(loaded.game.pets[0].medicine_until == pet->medicine_until);
+    CHECK(loaded.game.pets[0].shot_goal == 3u && loaded.game.pets[0].shot_hits == 1u);
+    /* V1 has the same header/game prefix and 112-byte pet records, without history. */
+    memcpy(legacy, bytes, 71u);
+    size_t old_size = 71u;
+    for (unsigned i = 0; i < save.game.count; ++i) {
+        memcpy(legacy + old_size, bytes + 71u + (size_t)i * 130u, 112u);
+        old_size += 112u;
+    }
+    memcpy(legacy + old_size, bytes + size - 8u, 8u);
+    old_size += 8u;
+    legacy[4] = 1u;
+    for (unsigned i = 0; i < 4u; ++i)
+        legacy[8u + i] = (uint8_t)(old_size >> (i * 8u));
+    repair_checksum(legacy, old_size);
+    CHECK(jelli_save_decode(&loaded, legacy, old_size));
+    CHECK(loaded.game.pets[0].shot_until == 0u && loaded.game.pets[0].medicine_until == 0u);
+    CHECK(loaded.game.pets[0].shot_goal == 0u && loaded.game.pets[0].shot_hits == 0u);
+    CHECK(loaded.game.pets[0].bond == pet->bond && loaded.sequence == save.sequence);
+}
+
 int main(void)
 {
+    health_history_and_v1_migration();
     round_trip_is_canonical();
     failed_decodes_preserve_output();
     invalid_fields_are_rejected();

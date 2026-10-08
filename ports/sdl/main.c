@@ -2,6 +2,8 @@
 #include <SDL.h>
 #include "jelli/engine.h"
 #include "session.h"
+#include "debug_socket.h"
+#include "sound_output.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -95,21 +97,33 @@ static bool create_display(Desktop *d)
     return d->texture != NULL;
 }
 
+static void play_feedback(JelliPetEngine *pet, uint64_t now, bool enabled)
+{
+    if (!enabled || pet->paused)
+        return;
+    unsigned cue = jelli_pet_ui_sound(&pet->ui, &pet->game.pets[pet->game.active], now);
+    if (cue)
+        (void)jelli_sdl_sound_request(NULL, cue - 1u, cue == 6u ? 25u : 18u);
+}
+
 static void run_frames(JelliEngine *shapes, JelliPetEngine *pet, Desktop *d,
                        const JelliOptions *options, JelliSession *session)
 {
     for (unsigned long frame = 0; !options->max_frames || frame < options->max_frames; ++frame) {
         uint64_t start = SDL_GetTicks64();
-        if (options->demo)
+        bool frozen = d->pet && jelli_sdl_debug_poll(pet);
+        if (options->demo && !frozen)
             jelli_sdl_demo(pet, frame);
-        bool running = d->pet ? jelli_pet_frame(pet) : jelli_frame(shapes);
+        bool running =
+            d->pet ? (frozen ? pet->running : jelli_pet_frame(pet)) : jelli_frame(shapes);
+        play_feedback(pet, start, d->pet && !frozen);
         if (!running || d->failed)
             break;
-        if (d->pet)
+        if (d->pet && !frozen)
             jelli_sdl_session_update(session, pet, options);
         if (d->headless)
             d->virtual_ms += options->demo ? 100u : FRAME_MS;
-        else {
+        if (!d->headless || options->debug_socket) {
             uint64_t elapsed = SDL_GetTicks64() - start;
             if (elapsed < FRAME_MS)
                 SDL_Delay((Uint32)(FRAME_MS - elapsed));
@@ -150,6 +164,10 @@ int main(int argc, char **argv)
     }
     if (!create_display(&d))
         goto sdl_error;
+    if (d.pet && (!d.headless || options.audio) && !jelli_sdl_sound_open())
+        fprintf(stderr, "Sound unavailable: %s\n", SDL_GetError());
+    if (!jelli_sdl_debug_open(options.debug_socket))
+        goto cleanup;
     JelliSurface surface = {
         .pixels = pixels, .width = JELLI_WIDTH, .height = JELLI_HEIGHT, .stride = JELLI_WIDTH};
     JelliPlatform platform = {&d, now_ms, poll_input, present, paused};
@@ -174,6 +192,8 @@ int main(int argc, char **argv)
 sdl_error:
     fprintf(stderr, "SDL error: %s\n", SDL_GetError());
 cleanup:
+    jelli_sdl_debug_close();
+    jelli_sdl_sound_close();
     SDL_DestroyTexture(d.texture);
     SDL_DestroyRenderer(d.renderer);
     SDL_DestroyWindow(d.window);
