@@ -25,6 +25,10 @@ Generated previews, contact sheets, raw pixels, and reports stay under `build/`.
 The HTML template is tracked in `tools/assets/preview.html` and embeds the current
 manifest and PNGs when built; editing a source image requires rebuilding it.
 
+For opt-in desktop PNG hot reload, use `make run-live`; see the
+[live authoring guide](../../docs/artwork.md). It recomputes frame measurements
+without resetting game state. Ordinary launches and firmware use embedded art.
+
 ## Source inventory
 
 | Directory | Contents |
@@ -33,7 +37,7 @@ manifest and PNGs when built; editing a source image requires rebuilding it.
 | `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
 | `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
 | `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
-| `health/` | Five 32x32 brushing, medicine, shot, washing, and stretching clicker icons |
+| `health/` | Nine 32x32 clicker icons, including the dental sequence |
 | `effects/` | Eight 16x16 star, heart, orb, comet, fairy-wing, music, idea, and rainbow celebration sprites |
 | `prizes/` | Nine unique 32x32 keepsakes: butterfly, pearl tooth, breakfast sun, tea sprite, movie star, bubble gem, moon charm, rainbow seed, friendship bow |
 | `backgrounds/` | Two 64x64 neutral home/garden scenes with black vignettes |
@@ -107,14 +111,15 @@ captions use Pillow's built-in font and are not part of the shipped game assets.
 ## Readability and celebration pass
 
 Creature frames now occupy 192x192 physical pixels (6x); ring icons occupy
-96x96. The bottom control shows MENU, X CLOSE, or arrow BACK according to depth.
+96x96. The bottom control shows MENU when closed, an X for closing, or an arrow for going back.
 Care and social hearts use rounded lobes and a soft tip; cups, toast, and the
 social heart include small expressions. These changes retain the shared palette,
 binary transparency, stable IDs, and exact native dimensions.
 
-The main tile now uses the rounded social heart for an overall mood score,
-1–100 with 100 best. Other need pictograms remain in the inventory. The tile no
-longer cycles or responds to taps; the companion shows detailed care values.
+The main tile can show Mood, Food, Energy, Hygiene, Play, Social, Bond, or Sleep.
+Swipe sideways to choose; activity completion briefly celebrates each improved
+stat. It does not cycle automatically or respond to taps. Mood and Bond reuse
+heart art, and Sleep reuses the crescent.
 The clean circular crescent replaces both rest icons. Night scenery uses a
 procedural crescent and a slow gray fade; sleeping Zs reuse the bitmap font in
 medium blue rather than adding another PNG. Dental overlays add floss, mouthwash,

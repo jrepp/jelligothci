@@ -145,9 +145,45 @@ narrowing class in the new renderer test; its already-checked subtraction now
 uses an explicit cast. Strict GCC 14 syntax checks were then extended across all
 core and test sources, also correcting one pre-existing test format to PRIu32.
 
+# Tagged firmware deployment
+
+Release-candidate validation run 37743614227 passed every job, including Linux
+sanitizers/static checks, core tests on Linux/macOS/Windows, and both native
+package builds. Release PR 3 was merged as `9adde27` and tagged `v0.2.0`.
+The tagged firmware rebuilt incrementally with the new VERSION and was flashed
+on the same rediscovered board. The image is 884,912 bytes, leaving 163,664 bytes
+in the 1 MiB application partition; its SHA-256 is
+`63428bdf52ca568ba4d29e3a4eb088a993f52f580f8a8352d4be7d7978ae89ac`.
+
+Transfer hashes matched and serial startup reported app version 0.2.0, PSRAM
+success, display/touch initialization, NVS available, RTC known, audio ready,
+and debug ready. The active pet remained ID 1; simulation ticks advanced from
+15,476 before flashing to 16,036 after reset/resume. The clock retained its
+explicit sync and -240-minute offset. This verifies warm-reset RTC continuity
+and checkpoint loading, not battery-only RTC retention. The viewer was restarted
+at port 8766. Exact evidence is under ignored `build/v020-*`.
+
+[Tagged publication run 37744313825](https://github.com/jrepp/jelligothci/actions/runs/37744313825)
+passed on its second attempt. The first macOS package job hit the existing
+40-second `debug_local` timeout; it reported no failed assertion, and the same
+candidate had passed earlier. Retrying only that package job succeeded. Keep
+stage timing and local socket read/reply pacing as a follow-up rather than
+assuming the timeout's exact cause was established.
+
+[Release v0.2.0](https://github.com/jrepp/jelligothci/releases/tag/v0.2.0)
+contains macOS arm64 and Windows x64 native ZIPs, separate source-art and preview
+ZIPs, standalone preview HTML, source tarball, and SHA256SUMS. All six payload
+checksums verified after download. Both native ZIPs contain all 79 source PNGs
+byte-for-byte, including the nine unique presents, plus the manifest, preview,
+and live-art tooling. The source-art and source-code archives also contain all
+nine prize PNGs. The downloaded macOS ZIP was extracted outside the checkout
+and ran 64 headless frames successfully. Windows runtime smoke testing was
+performed by the Windows CI job, not on the local Mac.
+
 # Remaining polish
 
 - Tune decay and sleep targets through ordinary multi-day use.
+- Give catch/held-item events dedicated console labels instead of the generic input fallback.
 - Distinct flight patterns and opening frames can build on the shared catch path.
 - Portable pet memory import/export and minigames remain proposals.
 - Device power saving and physical RTC retention need separate hardware work.
