@@ -112,3 +112,23 @@ Final readability follow-up: sleep Zs now consistently render at 2× with a dark
 two-pixel shadow and brighter medium-blue fill. Their bounds remain within the
 existing 16-pixel particle radius. The wake/sun icon now has four short symmetrical
 rays instead of eight long strokes. No particle-pool or art-payload growth.
+
+# Device deployment
+
+Flashed source commit `8f44634` to the rediscovered native USB device at
+`/dev/cu.usbmodem1101` (VID:PID 303A:1001). Transfer hashes verified. Application
+size is 813760 bytes, leaving 234816 bytes in the 1 MiB app partition. Binary
+SHA-256: `fe0afdb10943d59ffeb9958cb5169dee730ecaa10aef111b588351d70a1d70b4`.
+The monitor-induced USB reset reported app 0.1.1, ESP-IDF 5.5.5, PSRAM memory test
+OK, CO5300 display and CST9217 touch ready, LVGL running, ES8311 mono PCM16
+22050 Hz ready, and debug ready. Audio startup heap delta remained 6788 bytes
+with 254311 bytes free. One changed frame measured render 108 ms / present 100 ms;
+ordinary update samples were 50–57 Hz, not panel FPS. Physical screen/touch and
+speaker audibility remain user-observation checks. The device viewer reconnected
+on loopback port 8766 and successfully polled state.
+
+The first GitHub release validation passed core builds on Linux/macOS/Windows,
+but the Linux SDL build caught an integer-promotion warning in screenshot hex
+encoding. Casting RGB565 to uint32 before shifting resolves the GCC sign warning
+without weakening diagnostics. This follow-up is separate from the flashed
+gameplay/visual changes. Windows packaging awaits a successful release workflow.

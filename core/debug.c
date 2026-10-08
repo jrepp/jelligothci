@@ -61,7 +61,7 @@ static void pixels(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id,
             engine->surface
                 .pixels[(pixel / JELLI_WIDTH) * engine->surface.stride + pixel % JELLI_WIDTH];
         for (unsigned shift = 16; shift > 0; shift -= 4)
-            debug->reply[used++] = hex[(color >> (shift - 4u)) & 15u];
+            debug->reply[used++] = hex[((uint32_t)color >> (shift - 4u)) & 15u];
     }
     memcpy(debug->reply + used, "\"}\n", 4u);
     debug->reply_size = used + 3u;

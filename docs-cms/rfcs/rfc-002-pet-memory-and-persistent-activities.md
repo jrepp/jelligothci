@@ -141,8 +141,30 @@ and test simulated weeks plus rapid tapping. Current ID-based favorites are fixe
 profiles, not learned preferences. Validate save migration and simulation timestep
 invariance before enabling learning by default.
 
+# Idle power management investigation
+
+The exact Waveshare 1.75 board has a PCF85063 RTC powered through the AXP2101;
+Waveshare documents battery-backed operation. The checked-in SDK/BSP dependency
+configures CST9217 touch interrupt on GPIO11, active low. GPIO11 is a candidate
+RTC-capable external wake input on ESP32-S3; verify the touch controller keeps
+asserting it in its selected low-power mode and that its power rail remains on.
+The ESP32 RTC timer also tracks time in sleep, with clock-source-dependent drift.
+Do not confuse that timer with an already-set wall clock or the external RTC.
+
+First proposal: namespaced idle thresholds, dim after inactivity, then light sleep
+with touch wake. Quiesce LVGL/display transfers and sound before sleeping, drain
+stale touch IRQs, and reconcile elapsed time on wake. Suppress sleep while USB
+debug/capture or storage work is active. Test that wake consumes the first touch
+rather than accidentally activating a menu. Preserve the selected brightness.
+Measure total board current, wake latency, repeated wake reliability, and RTC
+progress on battery. Deep sleep comes after verified checkpoints because it
+reboots the application and loses normal RAM. No PMIC rail or charging changes
+are part of this proposal. Auto-sleep is not enabled in the testing firmware.
+
 # References
 
 - [Architecture draft](rfc-001-virtual-pet-systems-architecture.md)
 - [Current slice and release status](../memos/memo-017-release-downloads-and-expressive-slice.md)
 - [ESP-IDF NVS documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/storage/nvs_flash.html)
+- [Board RTC and power hardware](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75)
+- [ESP-IDF sleep modes](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/system/sleep_modes.html)
