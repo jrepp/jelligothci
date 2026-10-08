@@ -34,7 +34,7 @@ analyze() {
         extra=(-isysroot "$(xcrun --show-sdk-path)")
     fi
     "$repo_dir/scripts/uvx" --from "clang-tidy==$JELLI_CLANG_TIDY_VERSION" \
-        clang-tidy core/engine.c core/render.c tests/test_engine.c \
+        clang-tidy core/engine.c core/render.c core/animation.c tests/test_engine.c tests/test_animation.c tests/test_render.c \
         -- -std=c11 -Iinclude "${extra[@]}"
 }
 cppcheck_all() {

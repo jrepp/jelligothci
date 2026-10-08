@@ -2,8 +2,8 @@
 
 A C11 drawing MVP for a future virtual pet on the **Waveshare
 ESP32-S3-Touch-AMOLED-1.75, SKU 31261**. It draws a square, triangle, and moving
-circle. Tap/click the round screen or press Space to pause/resume; Escape quits
-the desktop host. There is no creature simulation or persistence yet.
+circle. Tap/click inside the round screen to change all three colors over
+300 ms. Space pauses/resumes circle motion; Escape quits the desktop host. There is no creature simulation or persistence yet.
 
 New contributors: start with [CONTRIBUTING.md](CONTRIBUTING.md). Maintainers can
 use the [settings and recovery runbook](docs-cms/memos/memo-005-contributor-and-maintainer-handoff.md).
@@ -133,7 +133,7 @@ For repeatable rendering without a window:
 ./build/desktop/jelligotchi --headless --frames 64 --snapshot build/shapes.bmp
 ```
 
-Headless mode injects a simulated clock advancing 16 ms per frame. Interactive
+Headless mode injects a simulated clock advancing 8 ms per frame. Interactive
 mode injects SDL's monotonic clock. Tests inject their own time and input, so
 they never wait for animation to advance.
 
@@ -155,7 +155,9 @@ they never wait for animation to advance.
 
 `JelliPlatform` injects timing, input polling, frame presentation, and optional
 pause-state output. `JelliSurface` injects a host-owned RGB565 drawable buffer,
-including its row stride. The core allocates no memory and includes no SDL,
+including its row stride and a bounded damage rectangle. Preserve its pixels
+between frames: the first render initializes the full surface; subsequent frames
+report only the region that changed (zero width/height means no changes). The core allocates no memory and includes no SDL,
 LVGL, FreeRTOS, or ESP headers. Hosts own their run loops and frame pacing;
 animation speed depends on elapsed injected time, not on frame count. All engine
 calls are single-threaded.
@@ -163,10 +165,27 @@ calls are single-threaded.
 The first renderer deliberately uses the board's 466×466 resolution and clips
 the corners to emulate the round panel. Each framebuffer uses **434,312 bytes**.
 The ESP32 host keeps two buffers in PSRAM: the core renders into one, and
-`present` copies into an LVGL canvas under the BSP display mutex. LVGL never
+`present` copies damaged rows into an LVGL canvas under the BSP display mutex
+and invalidates that region. SDL similarly updates only the damaged texture region. LVGL never
 reads the core's working buffer asynchronously. Touch events cross from the
 LVGL task to the engine through a small FreeRTOS queue. DMA, byte order, and
 display initialization remain the BSP's responsibility.
+
+## Input and animation
+
+A press anywhere inside the round surface cycles three fixed color palettes.
+Touches outside it are ignored. Each shape owns one linear RGB transition;
+repeated presses retarget from its current color without jumping or queuing
+animations. The transition reaches its target at 300 ms of injected elapsed
+time (visible at the next presented frame) and stays there. A delayed frame
+clamps to the endpoint; animation speed does not depend on update frequency.
+Space pauses circle motion on desktop, while color feedback continues.
+
+The reusable `JelliColorTween` in `include/jelli/animation.h` uses caller-owned
+storage, integer channel interpolation, and no heap allocation. The engine uses
+three slots, not a dynamic animation scheduler. Input draining remains bounded;
+the ESP32 eight-event queue drops a new event when full. See
+[ADR-009](docs-cms/adr/adr-009-bounded-input-color-animation.md) for the contract.
 
 ## Repository-local ESP32 toolchain
 
@@ -232,7 +251,14 @@ checkout; the workflow is portable, its downloaded binaries/caches are not.
 
 The ESP32 port uses Waveshare's BSP for this exact board, including its touch
 orientation and panel initialization. It is not the similarly named 1.75C board.
-The app sets 60% display brightness and renders at approximately 30 FPS.
+The app sets 60% display brightness. SDL targets an 8 ms update interval; ESP32
+targets 16 ms for its engine loop and LVGL refresh timer. The ESP32 loop includes
+render/presentation work in that interval and yields on overruns. Actual update
+rates are logged every five seconds and are not panel-refresh guarantees.
+Firmware uses performance compiler optimization with assertions retained.
+Dirty-region rendering measured 61–62 engine updates/second on the attached
+board during motion; this is not a panel FPS or touch-latency measurement. See
+[memo-006](docs-cms/memos/memo-006-input-animation-and-frame-performance.md).
 
 Flashing replaces the existing application and partition table. Preserve any
 factory firmware you want to keep before the first flash. If automatic download
@@ -240,7 +266,7 @@ mode fails, use the board's documented BOOT/reset sequence, check the enumerated
 port again, and retry. USB detection alone does not validate display or touch.
 
 Bring-up checks: confirm the three shapes appear, the circle moves, a single tap
-pauses/resumes it, colors are correct, and the display survives reset. Power,
+starts a 300 ms color transition on all shapes, colors are correct, and the display survives reset. Power,
 battery charging, sleep/wake, audio, RTC, and creature behavior are outside this MVP.
 
 Initial validation: desktop and SDL-free tests pass, including ASan/UBSan;

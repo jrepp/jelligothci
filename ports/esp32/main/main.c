@@ -6,12 +6,16 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include <inttypes.h>
 #include <string.h>
+
+enum { FRAME_MS = 16 };
 
 typedef struct {
     lv_obj_t *canvas;
     uint16_t *canvas_pixels;
     QueueHandle_t input;
+    uint64_t present_ms;
 } Board;
 static const char *TAG = "jelligotchi";
 
@@ -39,18 +43,52 @@ static void touch_event(lv_event_t *event)
 static void present(void *ctx, const JelliSurface *surface)
 {
     Board *b = ctx;
+    b->present_ms = 0;
+    const JelliRect r = surface->damage;
+    if (!r.width || !r.height)
+        return;
+    uint64_t start = now_ms(ctx);
     ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
-    /* LVGL owns this second buffer. Never hand its async task engine memory. */
-    for (unsigned y = 0; y < surface->height; ++y)
-        memcpy(b->canvas_pixels + y * JELLI_WIDTH, surface->pixels + y * surface->stride,
-               JELLI_WIDTH * sizeof(uint16_t));
-    lv_obj_invalidate(b->canvas);
+    /* Copy damage into LVGL-owned memory before releasing the mutex. */
+    for (unsigned y = r.y; y < r.y + r.height; ++y)
+        memcpy(b->canvas_pixels + y * JELLI_WIDTH + r.x,
+               surface->pixels + y * surface->stride + r.x, r.width * sizeof(uint16_t));
+    lv_area_t area = {(int32_t)r.x, (int32_t)r.y, (int32_t)(r.x + r.width - 1u),
+                      (int32_t)(r.y + r.height - 1u)};
+    lv_obj_invalidate_area(b->canvas, &area);
     bsp_display_unlock();
+    b->present_ms = now_ms(ctx) - start;
 }
 static void paused(void *ctx, bool value)
 {
     (void)ctx;
     ESP_LOGI(TAG, "Animation %s", value ? "paused" : "running");
+}
+
+static void run_engine(JelliEngine *engine, const Board *board)
+{
+    uint64_t report_start = now_ms(NULL);
+    unsigned frames = 0;
+    for (;;) {
+        uint64_t start = now_ms(NULL);
+        if (!jelli_frame(engine))
+            return;
+        ++frames;
+        uint64_t end = now_ms(NULL);
+        if (end - report_start >= 5000u) {
+            ESP_LOGI(TAG, "Engine update rate: %u Hz (target interval %u ms)",
+                     (unsigned)((uint64_t)frames * 1000u / (end - report_start)),
+                     (unsigned)FRAME_MS);
+            ESP_LOGI(TAG, "Frame sample: render=%" PRIu64 " ms, present=%" PRIu64 " ms",
+                     end - start - board->present_ms, board->present_ms);
+            frames = 0;
+            report_start = end;
+        }
+        uint64_t elapsed = now_ms(NULL) - start;
+        /* Never catch up in a burst; yield at least one tick on an overrun. */
+        uint32_t delay_ms = elapsed < FRAME_MS ? FRAME_MS - (uint32_t)elapsed : 1u;
+        vTaskDelay(pdMS_TO_TICKS(delay_ms));
+    }
 }
 
 void app_main(void)
@@ -62,8 +100,10 @@ void app_main(void)
     board.canvas_pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     board.input = xQueueCreate(8, sizeof(JelliInput));
     ESP_ERROR_CHECK(pixels && board.canvas_pixels && board.input ? ESP_OK : ESP_ERR_NO_MEM);
-    ESP_ERROR_CHECK(bsp_display_start() ? ESP_OK : ESP_FAIL);
+    lv_display_t *display = bsp_display_start();
+    ESP_ERROR_CHECK(display ? ESP_OK : ESP_FAIL);
     ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
+    lv_timer_set_period(lv_display_get_refr_timer(display), FRAME_MS);
     lv_obj_t *screen = lv_screen_active();
     lv_obj_set_style_bg_color(screen, lv_color_black(), 0);
     lv_obj_remove_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
@@ -77,9 +117,9 @@ void app_main(void)
     ESP_ERROR_CHECK(bsp_display_brightness_set(60));
 
     JelliPlatform platform = {&board, now_ms, poll_input, present, paused};
-    JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH};
+    JelliSurface surface = {
+        .pixels = pixels, .width = JELLI_WIDTH, .height = JELLI_HEIGHT, .stride = JELLI_WIDTH};
     ESP_ERROR_CHECK(jelli_init(&engine, platform, surface) ? ESP_OK : ESP_FAIL);
-    ESP_LOGI(TAG, "Shapes MVP ready: tap to pause/resume");
-    while (jelli_frame(&engine))
-        vTaskDelay(pdMS_TO_TICKS(33));
+    ESP_LOGI(TAG, "Shapes MVP ready: tap for 300 ms color transition");
+    run_engine(&engine, &board);
 }

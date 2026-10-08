@@ -5,7 +5,8 @@ alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md) and
 [memo-002: Build, release, and runner validation](memos/memo-002-build-release-and-runner-validation.md).
 
-Latest hardware status: [memo-003: First USB deployment](memos/memo-003-first-usb-deployment.md).
+Latest hardware status: [memo-006: Input animation and frame performance](memos/memo-006-input-animation-and-frame-performance.md).
+Initial bring-up: [memo-003: First USB deployment](memos/memo-003-first-usb-deployment.md).
 
 Process guidance: [memo-004: Learnings and context remediation](memos/memo-004-process-learnings-and-context-remediation.md).
 
@@ -27,6 +28,7 @@ Their Accepted status records the user's direction, not hardware verification.
 | [ADR-006](adr/adr-006-validate-core-portability-in-ci.md) | Build and test the core across desktop platforms in CI |
 | [ADR-007](adr/adr-007-bounded-c-and-enforced-quality-checks.md) | Bound C resources and enforce quality checks |
 | [ADR-008](adr/adr-008-semantic-versioning-and-release-validation.md) | Use Conventional Commits, Release Please, and release validation |
+| [ADR-009](adr/adr-009-bounded-input-color-animation.md) | Use bounded input-driven color transitions |
 
 ## Layout
 

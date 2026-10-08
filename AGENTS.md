@@ -4,7 +4,7 @@
 
 This is a C11 foundation for a virtual pet on the Waveshare
 ESP32-S3-Touch-AMOLED-1.75, SKU 31261. The current MVP draws three simple shapes;
-one animates, and tap/Space toggles pause. Keep changes focused on the requested
+one moves, tap/click triggers a 300 ms color transition, and Space pauses motion. Keep changes focused on the requested
 increment. Do not introduce creature simulation, persistence, networking, audio,
 or a larger UI unless the task calls for it.
 
@@ -68,11 +68,15 @@ read-only check. `./scripts/docs bootstrap --guide agent` prints the full guide.
 Inject timing, drawable memory, input, and output through the existing
 `JelliPlatform` and `JelliSurface` interfaces. Timing is a dependency: never
 read a system clock or sleep inside the core. Animate from elapsed injected
-time rather than frame count. Hosts own their run loops and pacing.
+time rather than frame count. Color tweens are fixed-size caller-owned state;
+retarget from the current value, clamp at completion, and keep feedback running
+when circle motion is paused. Read ADR-009 for the input-animation contract. Hosts own their run loops and pacing.
 
 The surface uses native-endian RGB565 with stride measured in pixels. The
 current renderer expects 466×466 and masks the round panel's corners. Honor
-stride and buffer bounds. The host owns buffer allocation and lifetime; keep
+stride and buffer bounds. Preserve pixels between frames and honor the damage
+rectangle: first frame initializes the full surface, zero damage means unchanged.
+Keep renderer history and buffer contents together; do not swap in a blank buffer. The host owns buffer allocation and lifetime; keep
 the core free of heap allocation and hidden platform/global state.
 
 Engine calls run on one thread. `present` must finish reading or copying the
@@ -84,7 +88,7 @@ the port/BSP.
 ## Development and validation
 
 ```sh
-make run          # interactive SDL demo; click/Space pauses, Escape exits
+make run          # interactive SDL demo; click changes colors, Space pauses, Escape exits
 make test         # core tests and headless SDL smoke test
 make core-test    # verify the core builds without SDL
 make sanitize     # address and undefined behavior sanitizers

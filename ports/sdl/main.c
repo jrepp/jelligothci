@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+enum { FRAME_MS = 8 };
+
 typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -26,7 +28,7 @@ static bool poll_input(void *ctx, JelliInput *input)
 {
     (void)ctx;
     SDL_Event event;
-    while (SDL_PollEvent(&event)) {
+    for (unsigned n = 0; n < 32 && SDL_PollEvent(&event); ++n) {
         if (event.type == SDL_QUIT) {
             *input = (JelliInput){.kind = JELLI_QUIT};
             return true;
@@ -52,7 +54,11 @@ static bool poll_input(void *ctx, JelliInput *input)
 static void present(void *ctx, const JelliSurface *s)
 {
     Desktop *d = ctx;
-    if (SDL_UpdateTexture(d->texture, NULL, s->pixels, (int)(s->stride * sizeof(uint16_t))) < 0 ||
+    SDL_Rect rect = {(int)s->damage.x, (int)s->damage.y, (int)s->damage.width,
+                     (int)s->damage.height};
+    const uint16_t *pixels = s->pixels + s->damage.y * s->stride + s->damage.x;
+    if ((s->damage.width && s->damage.height &&
+         SDL_UpdateTexture(d->texture, &rect, pixels, (int)(s->stride * sizeof(uint16_t))) < 0) ||
         SDL_RenderClear(d->renderer) < 0 ||
         SDL_RenderCopy(d->renderer, d->texture, NULL, NULL) < 0) {
         fprintf(stderr, "Presentation failed: %s\n", SDL_GetError());
@@ -64,14 +70,15 @@ static void present(void *ctx, const JelliSurface *s)
 static void paused(void *ctx, bool value)
 {
     Desktop *d = ctx;
-    SDL_SetWindowTitle(d->window, value ? "Jelligotchi | paused | Space / tap to resume"
-                                        : "Jelligotchi | shapes MVP | Space / tap to pause");
+    SDL_SetWindowTitle(d->window,
+                       value ? "Jelligotchi | paused | Space resumes | click changes colors"
+                             : "Jelligotchi | shapes MVP | Space pauses | click changes colors");
 }
 static void usage(const char *name)
 {
     printf("Usage: %s [--headless] [--frames N] [--snapshot file.bmp]\n"
-           "Space / left click: pause animation. Escape: quit.\n"
-           "Headless mode uses a deterministic injected clock (16 ms/frame).\n",
+           "Left click: 300 ms color transition. Space: pause motion. Escape: quit.\n"
+           "Headless mode uses a deterministic injected clock (8 ms/frame).\n",
            name);
 }
 typedef struct {
@@ -114,7 +121,7 @@ static int parse_options(int argc, char **argv, Options *options)
 static bool create_display(Desktop *d)
 {
     d->window = SDL_CreateWindow(
-        "Jelligotchi | shapes MVP | Space / tap to pause", SDL_WINDOWPOS_CENTERED,
+        "Jelligotchi | shapes MVP | Space pauses | click changes colors", SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED, JELLI_WIDTH, JELLI_HEIGHT,
         d->headless ? SDL_WINDOW_HIDDEN : SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!d->window)
@@ -137,11 +144,11 @@ static void run_frames(JelliEngine *engine, Desktop *d, unsigned long max_frames
         if (!jelli_frame(engine) || d->failed)
             break;
         if (d->headless)
-            d->virtual_ms += 16;
+            d->virtual_ms += FRAME_MS;
         else {
             uint64_t elapsed = SDL_GetTicks64() - start;
-            if (elapsed < 16)
-                SDL_Delay((Uint32)(16 - elapsed));
+            if (elapsed < FRAME_MS)
+                SDL_Delay((Uint32)(FRAME_MS - elapsed));
         }
     }
 }
@@ -179,7 +186,8 @@ int main(int argc, char **argv)
     }
     if (!create_display(&d))
         goto sdl_error;
-    JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH};
+    JelliSurface surface = {
+        .pixels = pixels, .width = JELLI_WIDTH, .height = JELLI_HEIGHT, .stride = JELLI_WIDTH};
     JelliPlatform platform = {&d, now_ms, poll_input, present, paused};
     JelliEngine engine;
     if (!jelli_init(&engine, platform, surface))

@@ -56,7 +56,7 @@ make hooks-install
 make test          # expect engine and headless SDL tests to pass
 make core-test     # verifies the core without SDL
 make hooks-check   # C formatting, analysis, size limits, docs, version/action pins
-make run           # three shapes; click/Space pauses, Escape quits
+make run           # three shapes; click changes colors, Space pauses, Escape quits
 ```
 
 Hooks are installed per checkout. Stage newly added source files before checking

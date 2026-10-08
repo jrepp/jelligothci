@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "main.c" "../../../core/engine.c" "../../../core/render.c"
+    SRCS "main.c" "../../../core/engine.c" "../../../core/render.c" "../../../core/animation.c"
     INCLUDE_DIRS "../../../include"
     REQUIRES esp_timer esp_psram esp32_s3_touch_amoled_1_75 lvgl
 )
