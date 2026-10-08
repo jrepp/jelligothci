@@ -354,9 +354,35 @@ static void invalid_legacy_roster_is_rejected(void)
     CHECK(!jelli_save_decode(&loaded, bytes, size) && loaded.sequence == 55u);
 }
 
+/* A brand-new player starts with Nirmal the ninja; the roster itself is unchanged. */
+static void new_player_starts_with_nirmal(void)
+{
+    JelliGame game, roster;
+    jelli_game_new(&game);
+    jelli_game_init(&roster);
+    CHECK(jelli_game_valid(&game) && game.active == 2u);
+    CHECK(game.pets[game.active].form == JELLI_FORM_NINJA &&
+          game.pets[game.active].id == JELLI_NINJA_PET_ID);
+    CHECK(roster.active == 0u && roster.count == game.count && roster.food == game.food &&
+          roster.gifts == game.gifts && roster.battery_display == game.battery_display);
+    for (uint8_t i = 0u; i < game.count; ++i)
+        CHECK(roster.pets[i].id == game.pets[i].id && roster.pets[i].form == game.pets[i].form);
+    CHECK(jelli_game_next_slot(&game) == 0u); /* SWITCH PET goes from Nirmal to the first Mint. */
+    jelli_game_new(NULL);
+    game.count = (uint8_t)(JELLI_PET_CAPACITY + 1u);
+    CHECK(jelli_game_next_slot(&game) == 0u); /* An oversized roster never yields slot 8+. */
+    game.active = (uint8_t)(JELLI_PET_CAPACITY - 1u);
+    CHECK(jelli_game_next_slot(&game) == 0u); /* Not slot 8, one past the pets array. */
+    game.count = JELLI_PET_CAPACITY;          /* A full roster is still switchable, and wraps. */
+    CHECK(jelli_game_next_slot(&game) == 0u);
+    game.active = (uint8_t)(JELLI_PET_CAPACITY - 2u);
+    CHECK(jelli_game_next_slot(&game) == JELLI_PET_CAPACITY - 1u);
+}
+
 int main(void)
 {
     new_game_has_three_pets();
+    new_player_starts_with_nirmal();
     form_validity();
     ninja_never_evolves();
     switch_cycles_in_roster_order();

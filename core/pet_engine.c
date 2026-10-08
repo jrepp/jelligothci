@@ -15,7 +15,7 @@ bool jelli_pet_init(JelliPetEngine *engine, JelliPlatform platform, JelliSurface
     engine->surface = surface;
     engine->last_ms = platform.now_ms(platform.ctx);
     engine->running = true;
-    jelli_game_init(&engine->game);
+    jelli_game_new(&engine->game);
     engine->game.events = &engine->events;
     jelli_pet_ui_init(&engine->ui);
     return true;

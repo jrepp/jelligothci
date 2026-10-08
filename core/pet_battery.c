@@ -1,12 +1,14 @@
 #include "pet_battery.h"
 #include <string.h>
 
-/* Upper right of the home scene: inside the round panel, right of the widest
- * creature frame (x <= 306), below the "@ HOME" heading (y < 84) and above the
- * status caption scrim (y >= 246). Captions are at most seven glyphs at 2x; the
- * caption scrim spans rows CAPTION_Y-8..CAPTION_Y+31 and half-width 8*len+8. */
+/* Upper left of the home scene: inside the round panel, clear of every creature
+ * frame including the ninja's headband tails on the right, below the "@ HOME"
+ * heading (y < 84) and above the status caption scrim (y >= 246). Captions are at
+ * most seven glyphs at 2x; the caption scrim spans rows CAPTION_Y-8..CAPTION_Y+31
+ * and half-width 8*len+8. tests/test_pet_battery_layout.c checks the creature clearance;
+ * the curious ninja reaches x = 158, the rectangle's unchanged rightmost column. */
 enum {
-    BATTERY_CENTER_X = 372,
+    BATTERY_CENTER_X = 94,
     BATTERY_ICON_Y = 96,
     BATTERY_CAPTION_Y = 126,
     BATTERY_HALF = 7 * 8 + 8,

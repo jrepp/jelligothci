@@ -5,6 +5,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import zlib
 
 binary = Path(sys.argv[1]).resolve()
 
@@ -23,6 +24,54 @@ def latest(base):
 
 def ticks(data):
     return struct.unpack_from("<Q", data, 32)[0]
+
+
+COUNT, ACTIVE, PETS = 68, 69, 71  # Roster header offsets in the save record.
+
+
+def roster(data):
+    """(count, active slot, pet record size, [(id, form)]) of a saved roster."""
+    count, active = data[COUNT], data[ACTIVE]
+    ids = [1, 2, 3]  # A new game's stable IDs, in slot order.
+    size = next(n for n in range(64, 1024)
+                if all(struct.unpack_from("<I", data, PETS + i * n)[0] == ids[i] for i in range(3)))
+    # form is the first byte after id, eight u64s, four u32s, and three u16 groups.
+    form_at = 4 + 8 * 7 + 4 * 4 + 2 * 5 * 2 + 2 * 3
+    pets = [(struct.unpack_from("<I", data, PETS + i * size)[0], data[PETS + i * size + form_at])
+            for i in range(count)]
+    return count, active, size, pets
+
+
+def store(base, data, version):
+    """Rewrites a record as `version`, with a correct size and checksum, as the only slot."""
+    data = bytearray(data)
+    data[4] = version
+    struct.pack_into("<I", data, 8, len(data))
+    struct.pack_into("<I", data, len(data) - 8, zlib.crc32(bytes(data[:len(data) - 8])))
+    Path(str(base) + ".0").write_bytes(bytes(data))
+    Path(str(base) + ".1").unlink(missing_ok=True)
+
+
+def keeps_saved_pet(folder):
+    """New players start with Nirmal (slot 2); loaded v4/v5 saves keep their own pet."""
+    base = Path(folder) / "fresh"
+    assert run(base, 1000000, 3).returncode == 0
+    fresh = latest(base)
+    count, active, size, pets = roster(fresh)
+    assert (count, active) == (3, 2) and pets == [(1, 0), (2, 0), (3, 2)], (count, active, pets)
+    for slot in (0, 1):  # Current-version save with a jelly active.
+        data = bytearray(fresh)
+        data[ACTIVE] = slot
+        store(base, data, 5)
+        assert run(base, 1000000, 3).returncode == 0
+        assert roster(latest(base))[1] == slot
+    for slot in (0, 1):  # Pre-ninja v4 save: two Mints, the ninja is appended, not activated.
+        data = bytearray(fresh[:PETS + 2 * size] + fresh[PETS + 3 * size:])
+        data[COUNT], data[ACTIVE] = 2, slot
+        store(base, data, 4)
+        assert run(base, 1000000, 3).returncode == 0
+        count, active, _, pets = roster(latest(base))
+        assert (count, active) == (3, slot) and pets[2] == (3, 2), (count, active, pets)
 
 
 with tempfile.TemporaryDirectory(prefix="jelli-session-") as folder:
@@ -53,4 +102,6 @@ with tempfile.TemporaryDirectory(prefix="jelli-session-") as folder:
     demo = Path(folder) / "demo"
     assert run(demo, 1000000, 780, ("--demo",)).returncode == 0
     assert ticks(latest(demo)) == 780
-print("PASS: saved time cuts, restart idempotence, invalid/capped clocks, corrupt-file preservation, demo save")
+    keeps_saved_pet(folder)
+print("PASS: saved time cuts, restart idempotence, invalid/capped clocks, corrupt-file preservation, demo save, "
+      "Nirmal for new players, v4/v5 saves keep their active pet")

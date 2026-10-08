@@ -16,7 +16,7 @@
 enum { STRIDE = JELLI_WIDTH + 3, PIXELS = STRIDE * JELLI_HEIGHT };
 static uint16_t pixels[PIXELS], previous[PIXELS], fresh[PIXELS];
 /* The indicator's fixed damage rectangle (core/pet_battery.c). */
-static const JelliRect indicator = {308u, 96u, 129u, 62u};
+static const JelliRect indicator = {30u, 96u, 129u, 62u};
 
 static JelliRect render(const JelliGame *game, JelliPetUi *ui, uint64_t time)
 {
@@ -204,7 +204,7 @@ static void indicator_stays_in_bounds(void)
         CHECK(differing > 100u); /* Icon and caption are actually drawn. */
         /* Legibility scrim: row 151 is below the glyphs yet darkened, never brightened. */
         unsigned shown_sum = 0u, hidden_sum = 0u;
-        for (unsigned x = 364u; x <= 380u; ++x) {
+        for (unsigned x = 86u; x <= 102u; ++x) {
             uint16_t on = fresh[151u * STRIDE + x], off = previous[151u * STRIDE + x];
             CHECK((on >> 11) <= (off >> 11) && ((on >> 5) & 63u) <= ((off >> 5) & 63u) &&
                   (on & 31u) <= (off & 31u));

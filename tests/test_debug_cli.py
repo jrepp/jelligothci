@@ -40,7 +40,9 @@ class Pipe:
 wire = Pipe(sys.argv[1])
 try:
     debug = client.Client(wire)
-    assert debug.state()["visual"]["page"] == "home"
+    home = debug.state()["visual"]
+    assert home["page"] == "home"
+    assert (home["active_slot"], home["pet_id"], home["form"]) == (2, 3, 2)  # Nirmal
     debug.press("MENU")
     debug.press("CARE")
     assert debug.state()["visual"]["page"] == "care"

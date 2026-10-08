@@ -48,22 +48,24 @@ static void clock_pause_and_input(JelliSurface surface)
     JelliPlatform platform = {&fake, now_ms, poll, present, NULL};
     JelliPetEngine engine;
     CHECK(jelli_pet_init(&engine, platform, surface));
+    /* A new game starts with Nirmal the ninja; care goes to whichever pet is active. */
+    CHECK(engine.game.active == 2u && engine.game.pets[2].form == JELLI_FORM_NINJA);
     CHECK(jelli_pet_frame(&engine));
     engine.ui.menu_open = true;
     engine.ui.page = JELLI_UI_CARE;
     send(&fake, JELLI_TAP, 110, 111);
     CHECK(jelli_pet_frame(&engine));
-    CHECK(engine.game.pets[0].activity == JELLI_EATING);
+    CHECK(engine.game.pets[2].activity == JELLI_EATING);
     fake.now = 100u;
-    CHECK(jelli_pet_frame(&engine) && engine.game.pets[0].ticks == 1u);
+    CHECK(jelli_pet_frame(&engine) && engine.game.pets[2].ticks == 1u);
     send(&fake, JELLI_TOGGLE_PAUSE, 0, 0);
     CHECK(jelli_pet_frame(&engine) && engine.paused);
     fake.now = 1000u;
-    CHECK(jelli_pet_frame(&engine) && engine.game.pets[0].ticks == 1u);
+    CHECK(jelli_pet_frame(&engine) && engine.game.pets[2].ticks == 1u);
     send(&fake, JELLI_TOGGLE_PAUSE, 0, 0);
     CHECK(jelli_pet_frame(&engine) && !engine.paused);
     fake.now = 900u;
-    CHECK(jelli_pet_frame(&engine) && engine.game.pets[0].ticks == 1u);
+    CHECK(jelli_pet_frame(&engine) && engine.game.pets[2].ticks == 1u);
     send(&fake, JELLI_TAP, -1, -1);
     fake.repeat = true;
     fake.polls = 0;
@@ -83,11 +85,11 @@ static void resume_blocks_final_batch(JelliSurface surface)
     jelli_game_resume_begin(&engine.game, 1000u);
     send(&fake, JELLI_TAP, 110, 111);
     CHECK(jelli_pet_frame(&engine));
-    CHECK(!engine.game.resuming && engine.game.pets[0].activity == JELLI_IDLE);
+    CHECK(!engine.game.resuming && engine.game.pets[2].activity == JELLI_IDLE);
     CHECK(engine.game.food == 5u);
     send(&fake, JELLI_TAP, 110, 111);
     CHECK(jelli_pet_frame(&engine));
-    CHECK(engine.game.pets[0].activity == JELLI_EATING);
+    CHECK(engine.game.pets[2].activity == JELLI_EATING);
 }
 
 int main(void)

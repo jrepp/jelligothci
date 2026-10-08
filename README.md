@@ -3,7 +3,7 @@
 A small virtual pet for the **Waveshare ESP32-S3-Touch-AMOLED-1.75 (SKU 31261)**
 and the 1.75C, with a native SDL desktop version. Both run the same C11 game and renderer.
 
-Care for three pets: two jellies (Mint, who grows into Lilac) and a little ninja.
+Care for three pets: Nirmal the ninja, who greets new players, and two jellies (Mint, who grows into Lilac).
 Feed, play, and share healthy routines and everyday moments.
 Collect nine keepsakes and gift them to another pet. Sleep can track your own
 bedtime and wake-up alongside the pet, with a rolling sleep score and a short

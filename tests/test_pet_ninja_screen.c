@@ -1,5 +1,5 @@
-/* The ninja's home screen: every frame drawn, partial redraws that cross its wider
- * frames (the battery indicator rect now overlaps its right edge), touch hit-testing
+/* The ninja's home screen: its NIRMAL heading, every frame drawn, partial redraws
+ * of the battery indicator and stat tile over every ninja state, touch hit-testing
  * on its alpha, and its ring and activity layouts on the round panel. */
 #include "jelli/assets.h"
 #include "../core/pet_battery.h" /* Internal battery rect under test. */
@@ -62,7 +62,7 @@ static bool opaque(const JelliAsset *a, unsigned column, unsigned row)
            (a->mask[row * a->mask_stride + column / 8u] & (0x80u >> (column % 8u))) != 0u;
 }
 
-/* The heading names the active pet: NINJA differs from both jelly forms' headings. */
+/* The heading names the active pet: NIRMAL differs from both jelly forms' headings. */
 static void ninja_heading(void)
 {
     static JelliPetUi ui;
@@ -92,6 +92,49 @@ static void ninja_heading(void)
     for (unsigned y = 16u; y < 52u; ++y)
         CHECK(memcmp(pixels + (size_t)y * STRIDE, comparison + (size_t)y * STRIDE,
                      JELLI_WIDTH * sizeof(uint16_t)) == 0);
+}
+
+/* Pixel-level: the heading spells each form's name (MINT, LILAC, NIRMAL) in white 3x
+ * glyphs centred at x = 233, and every glyph and shadow pixel lies on the round panel.
+ * No other white pixel appears in the heading band. */
+static void heading_spells_each_name(void)
+{
+    static const char *const names[JELLI_FORM_COUNT] = {"MINT", "LILAC", "NIRMAL"};
+    for (uint8_t form = 0u; form < JELLI_FORM_COUNT; ++form) {
+        static JelliPetUi ui;
+        JelliGame game;
+        ninja_in_state(&game, 0u);
+        game.pets[2].form = form;
+        jelli_pet_ui_init(&ui);
+        JelliSurface s = surface_for(pixels);
+        jelli_pet_render(&s, &game, &ui, 0u, false);
+        const char *name = names[form];
+        size_t length = strlen(name);
+        int left = 233 - (int)(length * 24u) / 2;
+        CHECK(left > 0 && left + (int)(length * 24u) + 2 < (int)JELLI_WIDTH);
+        unsigned lit = 0u;
+        for (unsigned i = 0u; i < (unsigned)length; ++i) {
+            const uint8_t *rows = jelli_asset_lookup_glyph(ui.assets, (uint8_t)name[i]);
+            CHECK(rows != NULL);
+            for (unsigned row = 0u; row < 12u; ++row)
+                for (unsigned column = 0u; column < 8u; ++column) {
+                    if (!(rows[row] & (0x80u >> column)))
+                        continue;
+                    for (unsigned d = 0u; d < 9u; ++d) {
+                        int x = left + (int)(i * 24u + column * 3u + d % 3u);
+                        int y = 16 + (int)(row * 3u + d / 3u);
+                        CHECK(jelli_canvas_in_round(x, y) && jelli_canvas_in_round(x + 2, y + 2));
+                        CHECK(pixels[(size_t)y * STRIDE + (size_t)x] == 0xffffu);
+                        ++lit;
+                    }
+                }
+        }
+        unsigned white = 0u;
+        for (unsigned y = 16u; y < 16u + 36u; ++y)
+            for (unsigned x = 0u; x < JELLI_WIDTH; ++x)
+                white += pixels[y * STRIDE + x] == 0xffffu ? 1u : 0u;
+        CHECK(lit > 200u && white == lit); /* Exactly this name, nothing else. */
+    }
 }
 
 /* Every ninja frame is drawn: the opaque blocks clear of captions and particles carry
@@ -161,9 +204,8 @@ static JelliRect redraw_matches_full(const JelliGame *game, JelliPetUi *ui)
     return s.damage;
 }
 
-/* Battery-only and tile-only redraws over every ninja state: the battery rect now
- * overlaps the ninja's right edge in most poses, so its partial repaint must redraw
- * that part of the sprite exactly as a full frame does. */
+/* Battery-only and tile-only redraws over every ninja state: each partial repaint
+ * leaves exactly the pixels a full frame would, whatever the ninja's pose. */
 static void ninja_partial_redraws(void)
 {
     static const JelliPowerReading readings[] = {
@@ -241,7 +283,7 @@ static void ninja_layouts_on_panel(void)
             jelli_pet_actor_layout(&ui, &view);
             JelliRect b = ui.actor_bounds;
             CHECK(b.width > 0u && b.x + b.width <= JELLI_WIDTH && b.y + b.height <= JELLI_HEIGHT);
-            /* Below both heading lines ("NINJA" and "@ HOME" end at y = 81). */
+            /* Below both heading lines ("NIRMAL" and "@ HOME" end at y = 81). */
             CHECK(b.y >= 81u);
         }
     }
@@ -250,10 +292,12 @@ static void ninja_layouts_on_panel(void)
 int main(void)
 {
     ninja_heading();
+    heading_spells_each_name();
     ninja_home_frames_drawn();
     ninja_partial_redraws();
     ninja_touch_uses_alpha();
     ninja_layouts_on_panel();
-    puts("PASS: ninja home frames, partial redraw equality, alpha hit-testing, layouts");
+    puts("PASS: ninja heading names, home frames, partial redraw equality, alpha hit-testing, "
+         "layouts");
     return 0;
 }

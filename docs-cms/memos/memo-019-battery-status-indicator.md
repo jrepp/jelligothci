@@ -60,11 +60,12 @@ the SDL storage layer now uses the shared `JELLI_SAVE_VERSION` constant.
 
 ## Rendering
 
-The indicator draws at 2x in the upper right of the resting home scene: icon
-at (356, 96), caption centered at x = 372 on a soft scrim. It is clear of the
-widest creature frame (x <= 306), the headings, the status caption, the stat
+The indicator draws at 2x in the upper left of the resting home scene: icon
+at (78, 96), caption centered at x = 94 on a soft scrim. (It first sat in the
+mirrored upper-right spot; it moved when the ninja's headband tails reached it,
+see memo-020.) It is clear of every creature frame, the headings, the status caption, the stat
 tile, and the MENU button, and it stays inside the visible circle. It is hidden
-while any ring, the collection, or an activity is open because ring slot 2 and
+while any ring, the collection, or an activity is open because ring buttons and
 the activity controls occupy that corner. A battery-only change redraws a fixed
 129x62 rectangle through the existing region renderer; tests check that the
 partial update matches a full redraw pixel for pixel.

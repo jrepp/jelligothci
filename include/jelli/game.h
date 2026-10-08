@@ -18,8 +18,9 @@
 #define JELLI_FORM_LILAC 1u
 #define JELLI_FORM_NINJA 2u
 #define JELLI_FORM_COUNT 3u
-/* New games start with two Mints and the ninja, stable IDs 1, 2 and 3. Saves from
- * before the ninja gain one when decoded, so every valid roster has three pets. */
+/* New games start with two Mints and Nirmal the ninja (stable IDs 1, 2 and 3), with
+ * Nirmal active. Saves from before the ninja gain one when decoded, so every valid
+ * roster has at least three pets. */
 #define JELLI_ROSTER_MIN 3u
 #define JELLI_NINJA_PET_ID 3u
 
@@ -119,6 +120,9 @@ typedef struct {
 
 /* Caller-owned state. No clock, allocation, IO, or SDK dependencies. */
 void jelli_game_init(JelliGame *game);
+/* A brand-new player's game: the initial roster with Nirmal the ninja active. Hosts
+ * replace it with a decoded save when one exists. */
+void jelli_game_new(JelliGame *game);
 /* Caller-owned scratch must differ from game. Runs the real validation/dispatch
  * on a copy without events, preferences, or changes to the live game. */
 JelliResult jelli_game_check(const JelliGame *game, JelliCommand command, JelliGame *scratch);

@@ -68,7 +68,14 @@ pose order, with clips 5015–5021 that mirror the Mint and Lilac clips.
   journal is active, and commands are BUSY while resuming. Slot IDs are unchanged.
 - Frame selection uses one table of eight pose IDs per form, with the same state
   rules as before. An unknown form falls back to Mint's row.
-- The home heading reads NINJA for form 2.
+- The ninja is named Nirmal; the home heading reads NIRMAL for form 2 (the full
+  "Nirmal the ninja" is too wide for the heading at 3x on the round panel).
+- Nirmal is the default character for new players: `jelli_game_new` builds the
+  same roster as `jelli_game_init` with slot 2 active, and `jelli_pet_init` uses
+  it. Loaded saves keep the pet that was active when they were written.
+- The battery indicator moved from the upper right to the mirrored upper left
+  because 7-glyph captions (`PLUGGED`, `LOW 15%`) covered the ninja's headband
+  tails. A test now checks that no form, pose, or caption overlaps a pet.
 - Tunables: no production form profiles are registered, so all three forms
   inherit the same defaults. The debug tunable scope already resolves any pet ID.
 - Sound cues, gifting, and the collection are not per-form. Gifting already

@@ -96,8 +96,9 @@ freeze the game. See [the protocol and validation record](../docs-cms/memos/memo
 Tap MENU for care, moments, gifts, and settings. Pet switching and sleep/wake live
 in Settings.
 There are three pets: two jellies, each shown as MINT until it grows into LILAC,
-and a little NINJA that keeps its form. Settings > SWITCH PET moves to the next
-pet in order (first jelly, second jelly, ninja, then back to the first) and shows
+and Nirmal the ninja (shown as NIRMAL), who keeps his form. A new player starts
+with Nirmal. Settings > SWITCH PET moves to the next
+pet in order (first jelly, second jelly, Nirmal, then back to the first) and shows
 NOT READY while the current pet is busy or resting under the sleep journal.
 Stored pets pause until selected. Saves from before the ninja keep both jellies
 and gain a fresh ninja the first time they load.
@@ -297,7 +298,7 @@ those buttons. Settings shows the VERSION-derived build number in large text.
 
 ## Battery indicator
 
-The resting home scene shows a small battery icon and caption in the upper right.
+The resting home scene shows a small battery icon and caption in the upper left.
 Bars show the level: none with an exclamation mark below 10 percent, one bar
 from 10, two from 25, and three from 70. Below 25 percent the caption reads
 `LOW 8%` in pink, so low charge never relies on color alone. Charging shows a

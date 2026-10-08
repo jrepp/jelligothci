@@ -106,16 +106,16 @@ static void catch_hold_switch_and_give(void)
     press(6u);
     CHECK(engine.ui.page == JELLI_UI_SETTINGS);
     press(2u);
-    CHECK(engine.game.active == 1u);
+    CHECK(engine.game.active == 0u); /* From default Nirmal (slot 2), SWITCH PET wraps to slot 0. */
     press(0u);
     press(0u);
     CHECK(!engine.ui.menu_open && engine.ui.latched_prize == 6u);
-    uint16_t before_bond = engine.game.pets[1].bond;
+    uint16_t before_bond = engine.game.pets[0].bond; /* The pet switched to receives the gift. */
     press(1u);
     CHECK(engine.ui.result == JELLI_OK && !engine.ui.latched_prize);
     CHECK(!(engine.game.prizes.owned & (1u << 5)));
     CHECK(engine.game.prizes.discovered & (1u << 5));
-    CHECK(engine.game.pets[1].bond == before_bond + 30u);
+    CHECK(engine.game.pets[0].bond == before_bond + 30u);
     CHECK(engine.game.prizes.offered == 9u);
     press(1u);
     CHECK(engine.ui.page == JELLI_UI_COLLECTION && engine.ui.highlighted_prize == 9u);

@@ -102,7 +102,7 @@ static const char *status(const JelliPetRenderKey *v)
 
 static const char *pet_name(uint8_t form)
 {
-    static const char *const names[JELLI_FORM_COUNT] = {"MINT", "LILAC", "NINJA"};
+    static const char *const names[JELLI_FORM_COUNT] = {"MINT", "LILAC", "NIRMAL"};
     return form < JELLI_FORM_COUNT ? names[form] : names[JELLI_FORM_MINT];
 }
 

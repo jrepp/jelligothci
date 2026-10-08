@@ -32,7 +32,12 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
     try:
         wire = connect(path, app)
         debug = module.Client(wire)
-        assert debug.state()["visual"]["page"] == "home"
+        visual = debug.state()["visual"]
+        assert visual["page"] == "home"
+        # An unsaved session is a new player: Nirmal the ninja (slot 2, ID 3, form 2) is
+        # active, and SWITCH PET would go to the first Mint.
+        assert (visual["active_slot"], visual["pet_id"], visual["form"]) == (2, 3, 2), visual
+        assert (visual["stored_id"], visual["stored_form"], visual["pet_count"]) == (1, 0, 3)
         debug.request("swipe 2")
         assert debug.state()["visual"]["stat_index"] == 1
         debug.request("swipe 3")
