@@ -32,7 +32,8 @@ shell profile. [CONTRIBUTING.md](CONTRIBUTING.md) covers other platforms and set
 
 Tap MENU or swipe up to open the ring. Swipe down goes back or closes it;
 swipe sideways on the main scene changes the visible stat. Settings holds pet
-selection, sleep/wake, and the clock. Space pauses; Escape quits.
+selection, sleep/wake, the clock, and the battery indicator toggle. Space pauses;
+Escape quits.
 
 The executable starts an unsaved session unless given `--save BASE`. `make run`
 enables saves. See [playing and persistence](docs/playing.md) for sleep, habits,
@@ -63,7 +64,7 @@ Bounds, centroids, and creature ground anchors update with the image.
 open build/assets/preview.html    # macOS; otherwise open in your browser
 ```
 
-The preview includes all 79 assets, including nine distinct presents.
+The preview includes all 86 assets, including nine distinct presents and seven battery icons.
 [Art inventory](assets/slice/README.md) · [live authoring guide](docs/artwork.md)
 
 ## Hardware bring-up

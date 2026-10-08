@@ -5,6 +5,8 @@
 #include <stddef.h>
 
 #define JELLI_SAVE_CAPACITY 4096u
+/* Newest codec version written; decoders accept 1..JELLI_SAVE_VERSION. */
+#define JELLI_SAVE_VERSION 4u
 
 typedef struct {
     JelliGame game;

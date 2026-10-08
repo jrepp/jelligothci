@@ -7,6 +7,7 @@
 #include "jelli/particles.h"
 #include "jelli/tunables.h"
 #include "jelli/pet_rewards.h"
+#include "jelli/power.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -63,8 +64,13 @@ typedef enum {
     JELLI_UI_ACTION_MEDICINE,
     JELLI_UI_ACTION_SHOT,
     JELLI_UI_ACTION_WASH,
-    JELLI_UI_ACTION_STRETCH
+    JELLI_UI_ACTION_STRETCH,
+    JELLI_UI_ACTION_BATTERY
 } JelliPetUiAction;
+
+/* Event input code for the Settings BATTERY toggle. Codes 28..40 already mean
+ * menu navigation, stat swipes, pet touch, clock controls, and catching a present. */
+#define JELLI_UI_INPUT_BATTERY 41u
 
 typedef struct {
     const char *label;
@@ -123,6 +129,9 @@ typedef struct {
     bool time_unavailable;
     bool paused;
     bool resuming;
+    /* Canonical reading while the home indicator is visible, otherwise zero. */
+    JelliPowerReading battery;
+    bool battery_shown, battery_display;
 } JelliPetRenderKey;
 
 typedef struct {
@@ -163,10 +172,15 @@ typedef struct {
     uint8_t night_from, night_target;
     bool atmosphere_ready, sleep_emitted;
     uint8_t routine_goals[6];
+    /* Host-written supply reading; a debug override takes precedence until cleared. */
+    JelliPowerReading power, power_override;
+    bool power_override_active;
 } JelliPetUi;
 
 bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y);
 void jelli_pet_ui_init(JelliPetUi *ui);
+/* Effective reading: the debug override when active, otherwise the host's. */
+JelliPowerReading jelli_pet_power(const JelliPetUi *ui);
 JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep);
 bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool menu_open,
                          JelliPetUiButton *button);

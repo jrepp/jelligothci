@@ -1,6 +1,7 @@
 #include "debug_internal.h"
 #include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
 
 static const char *truth(bool value) { return value ? "true" : "false"; }
 
@@ -95,6 +96,16 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
     if (size < 0 || (size_t)size >= sizeof(debug->reply))
         return;
     size_t used = (size_t)size;
+    static const char battery[] = ",\"battery\":";
+    if (used + sizeof(battery) >= sizeof(debug->reply))
+        return;
+    memcpy(debug->reply + used, battery, sizeof(battery) - 1u);
+    used += sizeof(battery) - 1u;
+    size_t power =
+        jelli_debug_battery_json(debug->reply + used, sizeof(debug->reply) - used, engine);
+    if (!power)
+        return;
+    used += power;
     size_t summary = collection(debug->reply + used, sizeof(debug->reply) - used, v);
     if (!summary)
         return;

@@ -27,7 +27,7 @@ DIMENSIONS = {
     "creatures": (32, 32), "icons": (16, 16), "props": (24, 24),
     "font": (128, 72), "menus": (32, 32), "meters": (32, 32),
     "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64),
-    "prizes": (32, 32),
+    "prizes": (32, 32), "battery": (16, 16),
 }
 
 

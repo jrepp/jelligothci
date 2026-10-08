@@ -106,6 +106,61 @@ static void set_record_byte(const char *path, long offset, uint8_t value)
     CHECK(fclose(file) == 0);
 }
 
+static void write_file(const char *path, const uint8_t *bytes, size_t size)
+{
+    FILE *file = open_file(path, "wb");
+    CHECK(file != NULL);
+    CHECK(fwrite(bytes, 1u, size, file) == size);
+    CHECK(fclose(file) == 0);
+}
+
+/* Rewrites a version 4 record as version 3 by dropping the settings byte. */
+static size_t as_version3(uint8_t *bytes, size_t size)
+{
+    size_t old_size = size - 1u;
+    memmove(bytes + old_size - 8u, bytes + size - 8u, 8u);
+    bytes[4] = 3u;
+    for (unsigned i = 0; i < 4u; ++i)
+        bytes[8u + i] = (uint8_t)(old_size >> (8u * i));
+    uint32_t crc = UINT32_C(0xffffffff);
+    for (size_t i = 0; i < old_size - 8u; ++i) {
+        crc ^= bytes[i];
+        for (unsigned bit = 0; bit < 8u; ++bit)
+            crc = (crc >> 1u) ^ ((crc & 1u) != 0u ? UINT32_C(0xedb88320) : 0u);
+    }
+    for (unsigned i = 0; i < 4u; ++i)
+        bytes[old_size - 8u + i] = (uint8_t)(~crc >> (8u * i));
+    return old_size;
+}
+
+/* Shared JELLI_SAVE_VERSION: v3 files still load (indicator shown), v4 keeps the
+ * stored setting, and versions outside 1..JELLI_SAVE_VERSION are preserved. */
+static void battery_setting_versions(uint8_t *work)
+{
+    remove_slots();
+    JelliSave hidden = fixture(5u), loaded = fixture(90u);
+    hidden.game.battery_display = false;
+    write_save(&hidden, work);
+    CHECK(load(&loaded, work) == JELLI_STORAGE_OK && !loaded.game.battery_display);
+    remove_slots();
+    uint8_t bytes[JELLI_SAVE_CAPACITY];
+    size_t size = jelli_save_encode(&hidden, bytes, sizeof(bytes));
+    CHECK(size != 0u);
+    size_t old_size = as_version3(bytes, size);
+    write_file(".jelli-storage-test.0", bytes, old_size);
+    CHECK(load(&loaded, work) == JELLI_STORAGE_OK && loaded.sequence == 5u);
+    CHECK(loaded.game.battery_display);
+    static const uint8_t versions[] = {0u, JELLI_SAVE_VERSION + 1u, 255u};
+    for (unsigned i = 0; i < sizeof(versions); ++i) {
+        set_record_byte(".jelli-storage-test.0", 4L, versions[i]);
+        JelliSave before = loaded;
+        CHECK(load(&loaded, work) == JELLI_STORAGE_INCOMPATIBLE && same_save(&loaded, &before));
+        CHECK(jelli_sdl_storage_write(base_path, &hidden, work, JELLI_SAVE_CAPACITY) ==
+              JELLI_STORAGE_INCOMPATIBLE);
+    }
+    remove_slots();
+}
+
 int main(void)
 {
     uint8_t work[JELLI_SAVE_CAPACITY];
@@ -136,12 +191,13 @@ int main(void)
     CHECK(jelli_sdl_storage_write(base_path, &fourth, work, sizeof(work)) ==
           JELLI_STORAGE_INCOMPATIBLE);
     set_record_byte(".jelli-storage-test.0", 29L, 1u);
-    set_record_byte(".jelli-storage-test.0", 4L, 4u);
+    set_record_byte(".jelli-storage-test.0", 4L, JELLI_SAVE_VERSION + 1u);
     CHECK(load(&loaded, work) == JELLI_STORAGE_INCOMPATIBLE);
     CHECK(jelli_sdl_storage_write(base_path, &fourth, work, sizeof(work)) ==
           JELLI_STORAGE_INCOMPATIBLE);
     CHECK(same_save(&loaded, &before_io));
     remove_slots();
+    battery_setting_versions(work);
     puts("PASS: SDL save slots recover newest valid snapshot and preserve incompatible data");
     return 0;
 }

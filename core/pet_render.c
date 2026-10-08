@@ -1,4 +1,5 @@
 #include "pet_draw.h"
+#include "pet_battery.h"
 #include "pet_gallery.h"
 #include <stddef.h>
 
@@ -13,6 +14,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
         (pet->ticks % JELLI_DAY_TICKS + pet->phase_offset % JELLI_DAY_TICKS) % JELLI_DAY_TICKS;
     jelli_pet_timing(ui, pet, animation_ms, &key);
     jelli_pet_gallery_key(ui, game, animation_ms, &key);
+    jelli_pet_battery_key(ui, game, &key);
     if (paused) {
         /* Pausing the pet must not strand navigation behind a frozen transition. */
         key.ring_visible =
@@ -130,7 +132,31 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
     return a->assets == b->assets && same_frame_key(a, b) && same_pet_key(a, b) &&
-           jelli_pet_gallery_same(a, b);
+           jelli_pet_gallery_same(a, b) && jelli_pet_battery_same(a, b);
+}
+
+typedef enum { DRAW_FULL, DRAW_TILE, DRAW_BATTERY } DrawScope;
+
+/* Smallest redraw that covers the change; anything else repaints the full frame. */
+static DrawScope draw_scope(const JelliPetUi *ui, const JelliPetRenderKey *view)
+{
+    if (!ui->rendered || ui->menu_open)
+        return DRAW_FULL;
+    JelliPetRenderKey previous = ui->last_view;
+    previous.mood = view->mood;
+    previous.stat_index = view->stat_index;
+    previous.tile_phase = view->tile_phase;
+    previous.stat_value = view->stat_value;
+    previous.sleep_score = view->sleep_score;
+    previous.reward_index = view->reward_index;
+    previous.reward_active = view->reward_active;
+    for (unsigned i = 0; i < JELLI_NEED_COUNT; ++i)
+        previous.needs[i] = view->needs[i];
+    if (same_render_key(view, &previous))
+        return DRAW_TILE;
+    previous = ui->last_view;
+    jelli_pet_battery_copy(&previous, view);
+    return same_render_key(view, &previous) ? DRAW_BATTERY : DRAW_FULL;
 }
 
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
@@ -149,22 +175,15 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
         jelli_pet_draw_particles(surface, game, ui);
         return;
     }
-    JelliPetRenderKey previous = ui->last_view;
-    previous.mood = view.mood;
-    previous.stat_index = view.stat_index;
-    previous.tile_phase = view.tile_phase;
-    previous.stat_value = view.stat_value;
-    previous.sleep_score = view.sleep_score;
-    previous.reward_index = view.reward_index;
-    previous.reward_active = view.reward_active;
-    for (unsigned i = 0; i < JELLI_NEED_COUNT; ++i)
-        previous.needs[i] = view.needs[i];
-    bool tile_only = ui->rendered && !ui->menu_open && same_render_key(&view, &previous);
+    DrawScope scope = draw_scope(ui, &view);
     ui->last_view = view;
     jelli_pet_actor_layout(ui, &view);
-    if (tile_only) {
+    if (scope == DRAW_TILE) {
         surface->damage = (JelliRect){90u, 282u, 286u, 100u};
         jelli_pet_draw_tile(surface, &view);
+    } else if (scope == DRAW_BATTERY) {
+        surface->damage = jelli_pet_battery_bounds();
+        jelli_pet_draw_region(surface, game, ui, &view, surface->damage);
     } else {
         surface->damage = (JelliRect){0u, 0u, JELLI_WIDTH, JELLI_HEIGHT};
         jelli_pet_draw(surface, game, ui, &view);

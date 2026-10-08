@@ -1,4 +1,5 @@
 """Exercise the CLI against the actual portable C protocol and framebuffer."""
+import contextlib
 import importlib.util
 import io
 import json
@@ -7,6 +8,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import types
 import zlib
 
 source = Path(__file__).resolve().parents[1] / "tools/debug/jelli_debug.py"
@@ -75,6 +77,16 @@ try:
     assert debug.state()["capture"] == 0
     debug.press("WAKE")
     assert not debug.state()["visual"]["asleep"]
+    battery = debug.request("battery charging 42")["battery"]
+    assert battery["override"] and battery["caption"] == "42%" and battery["percent"] == 42
+    assert debug.state()["visual"]["battery"]["state"] == "charging"
+    try:
+        debug.request("battery charging 101")
+        raise AssertionError("out-of-range battery override accepted")
+    except client.DebugError as exc:
+        assert "battery_state_or_percent" in str(exc)
+    battery = debug.request("battery clear")["battery"]
+    assert not battery["override"] and battery["state"] == "unknown" and battery["percent"] is None
 finally:
     wire.close()
 
@@ -111,4 +123,63 @@ try:
     raise AssertionError("missing timeout")
 except client.DebugError:
     assert silent.writes == 1  # Never replay an input after ambiguous loss.
-print("PASS: C protocol, navigation, sleep input, exact PNG capture, release, logs, timeout")
+
+
+def run_cli(*argv):
+    """Runs the CLI in-process with a recording client; never opens a port or socket."""
+    if "serial" not in sys.modules:
+        try:
+            import serial  # noqa: F401  (the real package, when installed)
+        except ImportError:
+            fake = types.ModuleType("serial")
+            fake.SerialException = OSError
+            fake.tools = types.ModuleType("serial.tools")
+            fake.tools.list_ports = types.ModuleType("serial.tools.list_ports")
+            sys.modules.update({"serial": fake, "serial.tools": fake.tools,
+                                "serial.tools.list_ports": fake.tools.list_ports})
+    sent = []
+
+    class Recorder:
+        def __init__(self, wire, timeout=3.0):
+            pass
+
+        def request(self, command):
+            sent.append(command)
+            return {"ok": True}
+
+    class NoWire:
+        def __init__(self, path, timeout):
+            pass
+
+        def close(self):
+            pass
+
+    saved = sys.argv, client.Client, client.SocketWire
+    sys.argv = ["jelli_debug.py", *argv]
+    client.Client, client.SocketWire = Recorder, NoWire
+    errors = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(errors):
+            code = client.main()
+    except SystemExit as exc:  # argparse rejects before any connection
+        code = exc.code
+    finally:
+        sys.argv, client.Client, client.SocketWire = saved
+    return code, sent, errors.getvalue()
+
+
+assert run_cli("battery") == (0, ["battery"], "")
+assert run_cli("battery", "clear")[:2] == (0, ["battery clear"])
+assert run_cli("battery", "charging", "42")[:2] == (0, ["battery charging 42"])
+assert run_cli("battery", "discharging")[:2] == (0, ["battery discharging unknown"])
+assert run_cli("battery", "charged", "0")[:2] == (0, ["battery charged 0"])  # "0" is not falsy
+assert run_cli("battery", "no-battery", "unknown")[:2] == (0, ["battery no-battery unknown"])
+assert run_cli("battery", "discharging", "100")[:2] == (0, ["battery discharging 100"])
+for bad in (("charging", "101"), ("charging", "-1"), ("charging", "abc"), ("charging", ""),
+            ("charging", "999999999999"), ("charging", "1e2"), ("charging", "٣"),
+            ("charging", " 5"), ("clear", "5"), ("sideways",), ("Charging", "5"),
+            ("charging", "5", "extra")):
+    code, sent, errors = run_cli("battery", *bad)
+    assert code == 2 and sent == [], (bad, code, sent)
+    assert "battery" in errors or "invalid choice" in errors or "unrecognized" in errors, errors
+print("PASS: C protocol, navigation, sleep input, exact PNG capture, release, logs, timeout, CLI args")

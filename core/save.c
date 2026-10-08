@@ -3,7 +3,7 @@
 
 #include <string.h>
 
-#define SAVE_VERSION 3u
+#define SAVE_VERSION JELLI_SAVE_VERSION
 #define SAVE_CONTENT_VERSION 1u
 #define SAVE_HEADER_SIZE 32u
 #define SAVE_TRAILER_SIZE 8u
@@ -202,6 +202,7 @@ static void write_game(Writer *writer, const JelliGame *game)
         put_u32(writer, game->prizes.origin_pet[i]);
     put_u8(writer, game->prizes.offered);
     put_u32(writer, game->prizes.offered_pet);
+    put_u8(writer, game->battery_display ? 1u : 0u); /* Version 4 settings. */
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -236,6 +237,10 @@ static bool read_game(Reader *reader, JelliGame *game)
             game->prizes.offered > JELLI_PRIZE_COUNT)
             reader->failed = true;
     }
+    /* Saves before version 4 predate the setting; keep its default (shown). */
+    game->battery_display = true;
+    if (reader->version >= 4u)
+        (void)read_bool(reader, &game->battery_display);
     return !reader->failed;
 }
 

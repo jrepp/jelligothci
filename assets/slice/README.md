@@ -1,7 +1,8 @@
 # Jelligotchi slice artwork
 
-The first review set contains 79 PNG files: 16 creature frames, 12 small icons, 13 ring icons,
-five meter pictograms, nine health icons, eight celebration sprites, nine collectible prizes, two backgrounds, four props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
+The review set contains 86 PNG files: 16 creature frames, 12 small icons, 13 ring icons,
+five meter pictograms, nine health icons, eight celebration sprites, nine collectible prizes,
+seven battery-status icons, two backgrounds, four props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
 form. The SDL and ESP32 pet builds embed these assets using
 `tools/assets/embed_slice.py`. Physical board appearance remains unverified.
 
@@ -40,10 +41,11 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 | `health/` | Nine 32x32 clicker icons, including the dental sequence |
 | `effects/` | Eight 16x16 star, heart, orb, comet, fairy-wing, music, idea, and rainbow celebration sprites |
 | `prizes/` | Nine unique 32x32 keepsakes: butterfly, pearl tooth, breakfast sun, tea sprite, movie star, bubble gem, moon charm, rainbow seed, friendship bow |
+| `battery/` | Seven 16x16 status icons (IDs 12001–12007): empty, low, medium, high, charging, plugged, unknown; drawn at 2x on home, high at 4x in Settings |
 | `backgrounds/` | Two 64x64 neutral home/garden scenes with black vignettes |
 | `props/` | Food bowl, closed/open gift, and bed; 24x24 pixels |
 | `font/` | 128x72 atlas: 16 columns by six rows of 8x12 cells, ASCII 32–127 |
-| `source/` | Original generated atlas, exact generation prompt, original pixel authoring recipe, and glyph patterns |
+| `source/` | Original generated atlas, exact generation prompt, original pixel authoring recipe (including `battery_icons.py`), and glyph patterns |
 
 `assets.json` assigns explicit IDs, paths, frame sizes, bounds, pivots, palette,
 and clip timings. PNGs in the asset directories are the editable runtime
@@ -74,9 +76,10 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw pixel payload is 147,488 bytes. The RFC's 8,192-byte definition and
-4,096-byte metadata allowances bring the planned pack to 159,776 bytes; those
-allowances are not a completed game pack or a linked firmware measurement.
+Actual raw pixel payload is 151,296 bytes. The RFC's 8,192-byte definition and
+4,096-byte metadata allowances bring the planned pack to 163,584 bytes, 256 bytes
+under the 160 KiB ceiling; those allowances are not a completed game pack or a
+linked firmware measurement.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 
@@ -133,7 +136,7 @@ Celebration particles last at most 1.74 seconds at the default 300 percent UI du
 Each particle remains eight bytes; the 24-slot pool fits within 224 bytes, with
 no extra framebuffer or runtime allocation. Particle type and scale are packed
 into the style byte. The art budget is now 160 KiB; actual raw pixels plus existing
-allowances use 159,776 bytes. Physical readability and touch feel still need review.
+allowances use 163,584 bytes. Physical readability and touch feel still need review.
 
 Menu plates use a thin neutral edge and plain gray fill, supporting the icon
 rather than competing with it. The movie screen/clapper is squared off and loose
@@ -167,3 +170,15 @@ centroid in both axes. See [the implementation and action audit](../../docs-cms/
 
 The settings gear uses six broad teeth, a small hub, and one highlight for a
 heavy cartoon silhouette. The clock reuses this asset at 1x; no new art payload.
+
+## Battery status icons
+
+Seven 16x16 icons share the ink outline and cream case of the care icons. Level
+is shown by bar count (none with an exclamation mark, then one, two, or three
+bars), so it never depends on color alone; low and empty also say `LOW` in the
+caption. The bolt marks charging, the plug marks external power without a
+battery, and a question mark marks an unknown level. Charge complete reuses the
+three-bar icon. Separate high and full icons would exceed the 160 KiB planned
+pack ceiling by 288 bytes, so the set uses three bars rather than four. The
+reproducible recipe is `source/battery_icons.py`; see
+[memo-019](../../docs-cms/memos/memo-019-battery-status-indicator.md).

@@ -169,6 +169,8 @@ static bool history_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t 
         jelli_debug_clock(debug, engine, id, words, count);
     else if (!strcmp(words[2], "habits") || !strcmp(words[2], "sleep-log"))
         jelli_debug_habits(debug, engine, id, words[2], count);
+    else if (!strcmp(words[2], "battery"))
+        jelli_debug_battery(debug, engine, id, words, count);
     else
         return false;
     return true;

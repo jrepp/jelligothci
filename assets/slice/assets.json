@@ -1564,6 +1564,139 @@
         30
       ],
       "purpose": "Friendship Bow collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 12001,
+      "key": "battery.empty",
+      "path": "battery/empty.png",
+      "kind": "battery",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        3,
+        16,
+        13
+      ],
+      "purpose": "Battery below 10 percent: empty cell with an exclamation mark"
+    },
+    {
+      "id": 12002,
+      "key": "battery.low",
+      "path": "battery/low.png",
+      "kind": "battery",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        3,
+        16,
+        13
+      ],
+      "purpose": "Battery 10-24 percent: one bar; caption also reads LOW"
+    },
+    {
+      "id": 12003,
+      "key": "battery.medium",
+      "path": "battery/medium.png",
+      "kind": "battery",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        3,
+        16,
+        13
+      ],
+      "purpose": "Battery 25-69 percent: two bars"
+    },
+    {
+      "id": 12004,
+      "key": "battery.high",
+      "path": "battery/high.png",
+      "kind": "battery",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        3,
+        16,
+        13
+      ],
+      "purpose": "Battery 70-100 percent or charge complete: three bars"
+    },
+    {
+      "id": 12005,
+      "key": "battery.charging",
+      "path": "battery/charging.png",
+      "kind": "battery",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        0,
+        16,
+        16
+      ],
+      "purpose": "Battery charging: cell with a lightning bolt"
+    },
+    {
+      "id": 12006,
+      "key": "battery.plugged",
+      "path": "battery/plugged.png",
+      "kind": "battery",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        3,
+        0,
+        13,
+        16
+      ],
+      "purpose": "External power without a battery: plug"
+    },
+    {
+      "id": 12007,
+      "key": "battery.unknown",
+      "path": "battery/unknown.png",
+      "kind": "battery",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        0,
+        3,
+        16,
+        13
+      ],
+      "purpose": "Battery state or level unknown: cell with a question mark"
     }
   ],
   "clips": [

@@ -85,15 +85,13 @@ void jelli_canvas_heading(Canvas *c, const char *value, int y, unsigned scale)
     jelli_canvas_text(c, value, x, y, scale, 0xffffu);
 }
 
-/* A soft, bounded scrim follows the jelli_canvas_caption, with no scratch buffer. */
-void jelli_canvas_caption(Canvas *c, const char *value, int y, uint16_t color)
+/* A soft, bounded scrim darkens rows y-8..y+31 within half pixels of center_x,
+ * with no scratch buffer. Edges fade over eight pixels; the middle is 50 percent. */
+void jelli_canvas_scrim(Canvas *c, int center_x, int y, int half)
 {
-    if (!*value)
-        return;
-    int half = (int)strlen(value) * 8 + 16;
     for (int dy = -8; dy < 32; ++dy) {
         for (int dx = -half; dx <= half; ++dx) {
-            int x = 233 + dx, row = y + dy;
+            int x = center_x + dx, row = y + dy;
             if (x < c->left || row < c->top || x >= c->right || row >= c->bottom ||
                 !jelli_canvas_in_round(x, row))
                 continue;
@@ -108,5 +106,12 @@ void jelli_canvas_caption(Canvas *c, const char *value, int y, uint16_t color)
             jelli_canvas_pixel(c, x, row, (uint16_t)((r << 11) | (g << 5) | b));
         }
     }
+}
+
+void jelli_canvas_caption(Canvas *c, const char *value, int y, uint16_t color)
+{
+    if (!*value)
+        return;
+    jelli_canvas_scrim(c, 233, y, (int)strlen(value) * 8 + 16);
     jelli_canvas_centered(c, value, y, 2u, color);
 }

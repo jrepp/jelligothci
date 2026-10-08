@@ -1,11 +1,14 @@
 #include "jelli/pet_ui.h"
 
+/* The Settings BATTERY toggle shows the three-bar battery art. */
+_Static_assert(JELLI_BATTERY_ASSET_BASE + JELLI_BATTERY_HIGH == 12004u, "Battery ring icon ID");
+
 static uint32_t action_icon(JelliPetUiAction action, bool asleep)
 {
-    static const uint32_t icons[] = {6001u, 6002u, 6003u, 6004u, 6008u, 6006u, 2001u,
-                                     2003u, 2004u, 2011u, 2008u, 2009u, 6011u, 6004u,
-                                     2005u, 2012u, 6007u, 6009u, 6010u, 6011u, 6012u,
-                                     6007u, 8002u, 8001u, 8002u, 8003u, 8004u, 8005u};
+    static const uint32_t icons[] = {6001u, 6002u, 6003u, 6004u, 6008u, 6006u, 2001u, 2003u,
+                                     2004u, 2011u, 2008u, 2009u, 6011u, 6004u, 2005u, 2012u,
+                                     6007u, 6009u, 6010u, 6011u, 6012u, 6007u, 8002u, 8001u,
+                                     8002u, 8003u, 8004u, 8005u, 12004u};
     if (asleep && action == JELLI_UI_ACTION_REST_WAKE)
         return 2006u;
     return (unsigned)action < sizeof(icons) / sizeof(icons[0]) ? icons[action] : 6005u;
@@ -36,7 +39,10 @@ bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool men
         .bounds = {centers[slot - 1u][0] - 48u, centers[slot - 1u][1] - 48u, 96u, 96u},
         .label = item.label,
         .icon = icon,
-        .scale = icon >= 6000u ? 3u : 6u,
+        /* 32px art at 3x; 16px care icons at 6x; the wide battery body at 4x. */
+        .scale = icon >= JELLI_BATTERY_ASSET_BASE ? 4u
+                 : icon >= 6000u                  ? 3u
+                                                  : 6u,
         .circular = true};
     return true;
 }

@@ -13,6 +13,10 @@ void jelli_debug_cheat(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, c
                        unsigned count);
 void jelli_debug_clock(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
                        unsigned count);
+void jelli_debug_battery(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
+                         unsigned count);
+/* Battery JSON object for battery replies and state; returns 0 when it does not fit. */
+size_t jelli_debug_battery_json(char *out, size_t capacity, const JelliPetEngine *engine);
 void jelli_debug_habits(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id,
                         const char *command, unsigned count);
 #endif

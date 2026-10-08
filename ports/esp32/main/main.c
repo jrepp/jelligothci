@@ -3,6 +3,7 @@
 #include "debug_wire.h"
 #include "sound_output.h"
 #include "session.h"
+#include "power.h"
 #include "bsp/esp-bsp.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -78,7 +79,8 @@ static void paused(void *ctx, bool value)
     ESP_LOGI(TAG, "Animation %s", value ? "paused" : "running");
 }
 
-static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSession *session)
+static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSession *session,
+                       JelliEspPower *power)
 {
     uint64_t report_start = now_ms(NULL);
     unsigned frames = 0;
@@ -86,6 +88,8 @@ static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSessi
         uint64_t start = now_ms(NULL);
         bool frozen = jelli_debug_wire_poll(engine, start);
         jelli_esp_session_update(session, engine, frozen);
+        if (!frozen)
+            jelli_esp_power_poll(power, engine, start); /* Bounded I2C; no display lock held. */
         if (!frozen && !jelli_pet_frame(engine))
             return;
         unsigned cue =
@@ -120,6 +124,7 @@ void app_main(void)
     static Board board;
     static JelliPetEngine engine;
     static JelliEspSession session;
+    static JelliEspPower power;
     const size_t bytes = JELLI_WIDTH * JELLI_HEIGHT * sizeof(uint16_t);
     ESP_LOGI(TAG, "Board: Waveshare %s", JELLI_BOARD_LABEL);
     uint16_t *pixels = heap_caps_calloc(1, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
@@ -150,9 +155,10 @@ void app_main(void)
         .pixels = pixels, .width = JELLI_WIDTH, .height = JELLI_HEIGHT, .stride = JELLI_WIDTH};
     ESP_ERROR_CHECK(jelli_pet_init(&engine, platform, surface) ? ESP_OK : ESP_FAIL);
     jelli_esp_session_open(&session, &engine);
+    jelli_esp_power_open(&power);
     ESP_LOGI(TAG, "Pet slice ready: tap menus; NVS checkpoint and RTC session initialized");
     if (!jelli_sound_output_init())
         ESP_LOGW(TAG, "Sound unavailable; game remains playable");
     jelli_debug_wire_init();
-    run_engine(&engine, &board, &session);
+    run_engine(&engine, &board, &session, &power);
 }

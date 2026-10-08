@@ -133,7 +133,7 @@ static void failed_decodes_preserve_output(void)
     CHECK(!jelli_save_decode(&output, broken, size));
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
-    broken[4] = 4u;
+    broken[4] = JELLI_SAVE_VERSION + 1u;
     CHECK(!jelli_save_decode(&output, broken, size));
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
@@ -284,9 +284,10 @@ static void health_history_and_v1_migration(void)
     pet->medicine_until = pet->ticks + 18000u;
     pet->shot_goal = 3u;
     pet->shot_hits = 1u;
+    save.game.battery_display = false; /* Legacy loads must not inherit the v4 value. */
     uint8_t bytes[JELLI_SAVE_CAPACITY], legacy[JELLI_SAVE_CAPACITY];
     size_t size = encode(&save, bytes);
-    CHECK(bytes[4] == 3u && jelli_save_decode(&loaded, bytes, size));
+    CHECK(bytes[4] == JELLI_SAVE_VERSION && jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.pets[0].shot_until == pet->shot_until);
     CHECK(loaded.game.pets[0].medicine_until == pet->medicine_until);
     CHECK(loaded.game.pets[0].shot_goal == 3u && loaded.game.pets[0].shot_hits == 1u);
@@ -320,6 +321,7 @@ static void health_history_and_v1_migration(void)
         CHECK(loaded.game.pets[0].habits.lifetime_play_ticks == 0u);
         CHECK(loaded.game.pets[0].habits.lifetime_meals == 0u);
         CHECK(loaded.game.pets[0].bond == pet->bond && loaded.sequence == save.sequence);
+        CHECK(loaded.game.battery_display); /* Versions 1 and 2 predate the setting: shown. */
     }
 }
 
@@ -363,12 +365,12 @@ static void rolling_history_round_trip(void)
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 52u] = 2u; /* Owned bit nine is outside the nine prize slots. */
+    bytes[size - 53u] = 2u; /* Owned bit nine is outside the nine prize slots. */
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 13u] = JELLI_PRIZE_COUNT + 1u;
+    bytes[size - 14u] = JELLI_PRIZE_COUNT + 1u;
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));

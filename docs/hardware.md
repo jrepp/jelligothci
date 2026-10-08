@@ -116,8 +116,8 @@ buttons match touch coordinates, care completes, Rest/Wake changes the pose,
 and the display survives reset. The pet simulation's sleep state does not put
 the board into hardware sleep. Firmware checkpoints to NVS and reads the board RTC
 after an explicit debug clock sync. Unknown or backward time grants no offline
-progress. Hardware sleep, battery charging, RTC battery retention, and physical
-interaction remain unverified.
+progress. Hardware sleep, battery charging, RTC battery retention, the
+[battery status reading](#battery-status), and physical interaction remain unverified.
 
 The current pet/debug firmware has been flashed successfully; serial startup
 verified PSRAM, display/touch driver initialization, and both ready messages.
@@ -126,6 +126,32 @@ Physical appearance and touch response remain unverified. See the
 reached its ready message; that evidence does not validate the new pet UI. See
 the [USB deployment record](../docs-cms/memos/memo-003-first-usb-deployment.md) and
 [current MVP validation](../docs-cms/memos/memo-008-playable-pet-mvp-and-polish-backlog.md).
+
+## Battery status
+
+Both boards have an X-Powers AXP2101 PMU on the BSP I2C bus (7-bit address
+0x34, shared with touch and the RTC). The firmware adds it as an I2C device and
+reads it every ten seconds from the engine task, outside the display lock, with a
+10 ms timeout. It is strictly read-only: it never writes charger, ADC, fuel-gauge,
+or power-path registers, which would need separate authorization.
+
+| Register | Use |
+| --- | --- |
+| 0x00 PMU status 1 | Bit 5 VBUS good, bit 3 battery present |
+| 0x01 PMU status 2 | Bits 6:5 current direction (01 charging), bits 2:0 charger state (100 done) |
+| 0x18 control | Bit 3 fuel gauge enabled (power-on default 1); if clear, percent is unknown |
+| 0xA4 | Battery percentage 0–100 |
+
+Addresses and bits follow the AXP2101 datasheet V1.0 (section 6.13.2) and
+Waveshare's XPowersLib, as used by their ESP-IDF `01_AXP2101` example. No battery
+with VBUS present shows the plug; charge done with VBUS present shows `FULL`;
+charging shows the bolt; anything else shows the stored level. An I2C error reports an unknown
+reading and logs once until reads recover. See
+[memo-019](../docs-cms/memos/memo-019-battery-status-indicator.md).
+
+Only the firmware build is verified. The on-device reading, the PMU's presence on
+the 1.75 (SKU 31261), the gauge's default state, and physical legibility are
+unverified until a board runs this firmware.
 
 References:
 

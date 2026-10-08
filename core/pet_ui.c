@@ -27,7 +27,9 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
                                      {{0}},
                                      {{JELLI_UI_ACTION_BEDTIME, "BEDTIME +1H", NULL},
                                       {JELLI_UI_ACTION_SWITCH_PET, "SWITCH PET", NULL},
-                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"}},
+                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"},
+                                      {0},
+                                      {JELLI_UI_ACTION_BATTERY, "BATTERY", NULL}},
                                      {{JELLI_UI_ACTION_BREAKFAST, "BREAKFAST", NULL},
                                       {JELLI_UI_ACTION_TEA, "TEA", NULL},
                                       {JELLI_UI_ACTION_OUTING, "GOING OUT", NULL},
@@ -43,6 +45,13 @@ void jelli_pet_ui_init(JelliPetUi *ui)
     if (ui == NULL)
         return;
     *ui = (JelliPetUi){.page = JELLI_UI_HOME, .result = JELLI_OK};
+}
+
+JelliPowerReading jelli_pet_power(const JelliPetUi *ui)
+{
+    if (ui == NULL)
+        return (JelliPowerReading){JELLI_POWER_UNKNOWN, JELLI_POWER_PERCENT_UNKNOWN};
+    return ui->power_override_active ? ui->power_override : ui->power;
 }
 
 JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep)
@@ -75,9 +84,10 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 
 static bool action_persists(JelliPetUiAction action)
 {
-    static const bool persists[] = {true,  false, true, false, false, false, true, true,
-                                    true,  false, true, true,  true,  true,  true, true,
-                                    false, true,  true, true,  true,  true};
+    static const bool persists[] = {true,  false, true,  false, false, false, true,  true,
+                                    true,  false, true,  true,  true,  true,  true,  true,
+                                    false, true,  true,  true,  true,  true,  false, false,
+                                    false, false, false, false, true};
     return (unsigned)action < sizeof(persists) / sizeof(persists[0]) && persists[action];
 }
 
@@ -101,11 +111,13 @@ static void execute(JelliPetUi *ui, JelliGame *game, JelliPetUiAction action)
     }
     JelliResult result = JELLI_OK;
     JelliCommand command;
-    if (jelli_pet_ui_command(ui, game, action, &command))
+    if (action == JELLI_UI_ACTION_BATTERY)
+        game->battery_display = !game->battery_display; /* A display setting, not care. */
+    else if (jelli_pet_ui_command(ui, game, action, &command))
         result = jelli_game_command(game, command);
     ui->result = result;
     if (result == JELLI_OK && game->pets[game->active].activity != JELLI_IDLE &&
-        action != JELLI_UI_ACTION_SAVE) {
+        action != JELLI_UI_ACTION_SAVE && action != JELLI_UI_ACTION_BATTERY) {
         ui->menu_open = false;
         ui->page = JELLI_UI_HOME;
     }
@@ -123,7 +135,8 @@ static unsigned input_code(const JelliPetUi *ui, unsigned slot, bool asleep)
         return ui->clock_edit ? 33u + slot : 33u;
     if (ui->page >= JELLI_UI_BRUSH)
         return JELLI_UI_ACTION_BRUSH + (unsigned)ui->page - JELLI_UI_BRUSH;
-    return (unsigned)jelli_pet_ui_item(ui->page, slot - 1u, asleep).action;
+    JelliPetUiAction action = jelli_pet_ui_item(ui->page, slot - 1u, asleep).action;
+    return action == JELLI_UI_ACTION_BATTERY ? JELLI_UI_INPUT_BATTERY : (unsigned)action;
 }
 
 static void finish_event(const JelliPetUi *ui, JelliGame *game, uint32_t sequence, unsigned code,

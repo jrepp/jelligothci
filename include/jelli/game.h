@@ -95,6 +95,8 @@ typedef struct {
     bool wall_known;
     /* Persisted display offsets, independently of host clock availability. */
     int16_t timezone_minutes, clock_adjust;
+    /* Persisted Settings toggle for the home battery indicator; defaults on. */
+    bool battery_display;
 } JelliGame;
 
 typedef struct {

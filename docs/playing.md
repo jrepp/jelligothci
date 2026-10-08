@@ -289,6 +289,39 @@ started. Unavailable actions are dimmed using the same game rules as execution;
 they produce no celebration or state change. The debug console also disables
 those buttons. Settings shows the VERSION-derived build number in large text.
 
+## Battery indicator
+
+The resting home scene shows a small battery icon and caption in the upper right.
+Bars show the level: none with an exclamation mark below 10 percent, one bar
+from 10, two from 25, and three from 70. Below 25 percent the caption reads
+`LOW 8%` in pink, so low charge never relies on color alone. Charging shows a
+bolt with the percentage, a completed charge shows `FULL`, external power with no
+battery shows a plug and `PLUGGED`, and an unknown level shows `--%`. The
+indicator is hidden while a ring, the collection, or an activity is open.
+
+Settings has a BATTERY toggle (bottom left) with an ON/OFF badge; it is on by
+default and saved with the game. When it is off the indicator disappears and
+battery readings cause no redraws. The desktop reads the operating system's power
+state every five seconds (headless runs do not, so snapshots stay deterministic).
+The ESP32 reads the board's AXP2101 PMU every ten seconds without changing any
+PMU setting; see [the hardware guide](hardware.md#battery-status).
+
+To preview the art without a battery, override the reading for this session. The
+override is never saved; `clear` returns to the host reading.
+
+```sh
+./scripts/jelli-debug battery                    # current reading, override, caption
+./scripts/jelli-debug battery discharging 8      # LOW 8%
+./scripts/jelli-debug battery charging 42
+./scripts/jelli-debug battery charging unknown   # percent unknown
+./scripts/jelli-debug battery no-battery         # also: unknown, charged
+./scripts/jelli-debug battery clear
+```
+
+States are `unknown`, `no-battery`, `discharging`, `charging`, and `charged`;
+the percent is 0–100 or `unknown` (the default). `state` includes the same
+`visual.battery` object. Add `--port` for the ESP32.
+
 
 
 ## Linked sleep, habits, and checkpoints
@@ -327,7 +360,8 @@ UTC to the PCF85063 RTC and records an explicit trust marker. A failed or unknow
 RTC cannot silently invent offline time. TZ/hour/minute settings survive saves.
 
 Save codec v3 adds habits, the sleep journal, clock settings, and nine collectible
-prize types; v1/v2 saves migrate with unknown history. Newer unsupported files and
+prize types; v1/v2 saves migrate with unknown history. Codec v4 adds the battery
+display setting; earlier saves load with it on. Newer unsupported files and
 unreadable ESP32 checkpoint blobs are preserved. ESP32 disables writes to a
 protected checkpoint and continues an unsaved session. Checkpoints use a bounded
 4 KiB codec buffer; NVS supplies the device transaction, desktop uses alternating

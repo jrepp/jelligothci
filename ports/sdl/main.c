@@ -6,6 +6,7 @@
 #include "debug_socket.h"
 #include "asset_reload.h"
 #include "sound_output.h"
+#include "power.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -17,6 +18,7 @@ enum { FRAME_MS = 8 };
 typedef struct {
     JelliGesture gesture;
     JelliAssetReload *asset_reload;
+    JelliSdlPower power;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
@@ -122,6 +124,7 @@ static void prepare_frame(Desktop *d, JelliPetEngine *pet, const JelliOptions *o
     if (d->pet && !frozen) {
         jelli_sdl_asset_reload_poll(d->asset_reload, pet, now);
         jelli_sdl_session_clock(session, pet, options);
+        jelli_sdl_power_poll(&d->power, pet, !d->headless);
     }
     if (options->demo && !frozen)
         jelli_sdl_demo(pet, frame);

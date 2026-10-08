@@ -162,6 +162,117 @@ static int cheat_tests(void)
     return 0;
 }
 
+static int battery_tests(void)
+{
+    request("@J1 59 swipe 1\n"); /* Close the ring: the indicator shows on the resting scene. */
+    CHECK(!engine.ui.menu_open);
+    engine.ui.save_requested = false;
+    engine.ui.power = (JelliPowerReading){JELLI_POWER_NO_BATTERY, JELLI_POWER_PERCENT_UNKNOWN};
+    request("@J1 60 battery\n");
+    CHECK(contains("\"state\":\"no-battery\",\"percent\":null,\"override\":false"));
+    CHECK(contains("\"caption\":\"PLUGGED\""));
+    request("@J1 61 battery charging 42\n");
+    CHECK(contains("\"state\":\"charging\",\"percent\":42,\"override\":true"));
+    CHECK(contains("\"icon\":12005,\"caption\":\"42%\""));
+    CHECK(contains("\"host\":{\"state\":\"no-battery\",\"percent\":null}"));
+    CHECK(jelli_pet_frame(&engine) && engine.ui.last_view.battery.state == JELLI_POWER_CHARGING);
+    request("@J1 62 battery charging 101\n");
+    CHECK(contains("battery_state_or_percent"));
+    request("@J1 63 battery sideways 5\n");
+    CHECK(contains("battery_state_or_percent"));
+    request("@J1 64 battery charging\n");
+    CHECK(contains("battery_state_or_percent"));
+    request("@J1 65 battery clear extra\n");
+    CHECK(contains("battery_state_or_percent"));
+    CHECK(engine.ui.power_override.percent == 42u && engine.ui.power_override_active);
+    request("@J1 66 battery discharging unknown\n");
+    CHECK(contains("\"percent\":null") && contains("\"caption\":\"--%\""));
+    request("@J1 67 battery discharging 7\n");
+    CHECK(contains("\"caption\":\"LOW 7%\""));
+    request("@J1 68 state\n");
+    CHECK(contains("\"battery\":{\"display\":true,\"shown\":true,\"state\":\"discharging\""));
+    CHECK(contains("\"buttons\":["));
+    request("@J1 69 capture\n");
+    request("@J1 70 battery clear\n");
+    CHECK(contains("busy") && engine.ui.power_override_active);
+    debug.captured = false;
+    request("@J1 71 battery clear\n");
+    CHECK(contains("\"state\":\"no-battery\"") && !engine.ui.power_override_active);
+    CHECK(jelli_pet_frame(&engine) && engine.ui.last_view.battery.state == JELLI_POWER_NO_BATTERY);
+    CHECK(engine.game.battery_display && !engine.ui.save_requested); /* Override is not saved. */
+    return 0;
+}
+
+/* Malformed overrides are rejected without touching the override, game, or save. */
+static int battery_parse_tests(void)
+{
+    static const char *const rejected[] = {"battery charging -1",
+                                           "battery charging 999999999999",
+                                           "battery charging 4294967296",
+                                           "battery charging 4294967295",
+                                           "battery charging abc",
+                                           "battery charging 4a",
+                                           "battery charging +5",
+                                           "battery charging 0x10",
+                                           "battery CHARGING 5",
+                                           "battery 5 charging",
+                                           "battery charging 42 extra",
+                                           "battery clear now",
+                                           "battery charging",
+                                           "battery unknown",
+                                           "battery charged -0",
+                                           "battery discharging 101"};
+    static uint8_t before[sizeof(JelliGame)], after[sizeof(JelliGame)];
+    char line[96];
+    request("@J1 80 battery discharging 33\n");
+    CHECK(contains("\"caption\":\"33%\""));
+    memcpy(before, &engine.game, sizeof(before)); /* Raw bytes: nothing may write the game. */
+    engine.ui.save_requested = false;
+    for (unsigned i = 0; i < sizeof(rejected) / sizeof(rejected[0]); ++i) {
+        CHECK(snprintf(line, sizeof(line), "@J1 %u %s\n", 81u + i, rejected[i]) > 0);
+        request(line);
+        CHECK(contains("battery_state_or_percent"));
+        CHECK(engine.ui.power_override_active && engine.ui.power_override.percent == 33u);
+    }
+    memcpy(after, &engine.game, sizeof(after));
+    CHECK(memcmp(before, after, sizeof(before)) == 0 && !engine.ui.save_requested);
+    /* Over-long lines are discarded whole, never truncated into a valid command. */
+    request("@J1 99 battery charging 5 "
+            "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+    CHECK(debug.reply_size == 0u && engine.ui.power_override.percent == 33u);
+    request("@J1 100 battery charging 0\n");
+    CHECK(contains("\"percent\":0,") && contains("\"caption\":\"0%\""));
+    request("@J1 101 battery charging 100\n");
+    CHECK(contains("\"caption\":\"100%\"") && contains("\"icon\":12005"));
+    request("@J1 102 battery unknown 50\n"); /* Unknown state ignores its percentage. */
+    CHECK(contains("\"state\":\"unknown\",\"percent\":null,\"override\":true"));
+    request("@J1 103 battery charged 7\n");
+    CHECK(contains("\"icon\":12004,\"caption\":\"FULL\""));
+    request("@J1 104 battery no-battery unknown\n");
+    CHECK(contains("\"icon\":12006,\"caption\":\"PLUGGED\""));
+    request("@J1 105 battery clear\n");
+    request("@J1 106 battery clear\n"); /* Clearing twice is harmless. */
+    CHECK(contains("\"override\":false") && !engine.ui.power_override_active);
+    /* Hidden indicator: the reply still reports the reading, but shown is false. */
+    engine.game.battery_display = false;
+    CHECK(jelli_pet_frame(&engine));
+    request("@J1 107 battery\n");
+    CHECK(contains("{\"display\":false,\"shown\":false,"));
+    engine.game.battery_display = true;
+    /* Longest battery object still fits the full state reply on the busiest page. */
+    request("@J1 108 battery no-battery 100\n");
+    engine.ui.menu_open = true;
+    engine.ui.page = JELLI_UI_COLLECTION;
+    CHECK(jelli_pet_frame(&engine));
+    request("@J1 109 state\n");
+    CHECK(contains("\"override\":true") && contains("]}\n"));
+    printf("state reply with battery: %zu of %u bytes\n", debug.reply_size, JELLI_DEBUG_REPLY);
+    engine.ui.menu_open = false;
+    engine.ui.page = JELLI_UI_HOME;
+    request("@J1 110 battery clear\n");
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     JelliPlatform platform = {.now_ms = now, .present = present};
@@ -190,6 +301,8 @@ int main(int argc, char **argv)
     CHECK(capture_tests() == 0);
     CHECK(tunable_tests() == 0);
     CHECK(cheat_tests() == 0);
+    CHECK(battery_tests() == 0);
+    CHECK(battery_parse_tests() == 0);
     printf("debug state: %zu bytes\n", sizeof(JelliDebug));
     return 0;
 }

@@ -15,6 +15,8 @@ import sys
 import time
 import zlib
 
+POWER_STATES = ("unknown", "no-battery", "discharging", "charging", "charged")
+
 
 class DebugError(Exception):
     pass
@@ -220,6 +222,10 @@ def main():
     sound = commands.add_parser("sound", help="Queue a tiny procedural pet sound")
     sound.add_argument("cue", choices=("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo"))
     sound.add_argument("--volume", type=int, choices=range(81), default=35, metavar="0..80")
+    battery = commands.add_parser("battery", help="Read the battery reading, or override it for previews")
+    battery.add_argument("state", nargs="?", choices=(*POWER_STATES, "clear"),
+                         help="Override the host reading until 'clear'; session-only")
+    battery.add_argument("percent", nargs="?", help="0–100 or unknown (default unknown)")
     screenshot = commands.add_parser("screenshot")
     screenshot.add_argument("output", type=Path, help="PNG path; also writes .png.json state")
     args = parser.parse_args()
@@ -251,6 +257,13 @@ def main():
             parser.error("clock set needs UTC seconds for 2000–2099 and --offset −720..840")
         if args.action != "set" and args.seconds is not None:
             parser.error("Only clock set takes Unix seconds")
+    if args.command == "battery":
+        if args.state in (None, "clear") and args.percent is not None:
+            parser.error("Only a battery state override takes a percent")
+        if args.percent is not None and args.percent != "unknown" and (
+                not args.percent.isascii() or not args.percent.isdecimal()
+                or len(args.percent) > 3 or int(args.percent) > 100):
+            parser.error("battery percent must be 0–100 or unknown")
     wire = None
     try:
         if args.port:
@@ -275,6 +288,13 @@ def main():
                 result = client.set_clock(args.seconds, args.offset)
             else:
                 result = client.request("clock")
+        elif args.command == "battery":
+            if args.state is None:
+                result = client.request("battery")
+            elif args.state == "clear":
+                result = client.request("battery clear")
+            else:
+                result = client.request(f"battery {args.state} {args.percent or 'unknown'}")
         elif args.command in ("habits", "sleep-log"):
             result = client.request(args.command)
         elif args.command == "state":

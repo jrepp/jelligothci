@@ -26,5 +26,6 @@ void jelli_canvas_centered(Canvas *c, const char *value, int y, unsigned scale, 
 void jelli_canvas_sprite(Canvas *c, uint32_t id, int x, int y, unsigned scale);
 void jelli_canvas_centered_sprite(Canvas *c, uint32_t id, int x, int y, unsigned scale);
 void jelli_canvas_heading(Canvas *c, const char *value, int y, unsigned scale);
+void jelli_canvas_scrim(Canvas *c, int center_x, int y, int half);
 void jelli_canvas_caption(Canvas *c, const char *value, int y, uint16_t color);
 #endif

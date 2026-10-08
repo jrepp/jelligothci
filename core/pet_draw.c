@@ -1,4 +1,5 @@
 #include "pet_draw.h"
+#include "pet_battery.h"
 #include "pet_canvas.h"
 #include "pet_gallery.h"
 #include "jelli/assets.h"
@@ -106,6 +107,16 @@ static void start_badge(Canvas *c, int x, int y)
         jelli_canvas_rect(c, x + 22 + column, y + 16 + column, 1, 23 - column * 2, 0xffffu);
 }
 
+/* ON/OFF state for Settings toggles: REST (slot 3) shows sleep, BATTERY (slot 5) display. */
+static void settings_badge(Canvas *c, const JelliPetRenderKey *v, unsigned slot, int x, int y)
+{
+    if (v->ring_page != JELLI_UI_SETTINGS || v->ring_clock_edit || (slot != 3u && slot != 5u))
+        return;
+    bool on = slot == 3u ? v->asleep : v->battery_display;
+    jelli_canvas_rect(c, x - 28, y + 20, 56, 24, on ? TEAL : BG);
+    jelli_canvas_text(c, on ? "ON" : "OFF", x - (on ? 16 : 24), y + 20, 2u, 0xffffu);
+}
+
 static void ring(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
 {
     const JelliPetRenderKey *v = &ui->last_view;
@@ -133,11 +144,7 @@ static void ring(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
             jelli_canvas_text(c, b.label, x - (int)strlen(b.label) * 8, y - 12, 2u, PALE);
         if (jelli_pet_ui_starts(v->ring_page, slot))
             start_badge(c, x, y);
-        if (v->ring_page == JELLI_UI_SETTINGS && !v->ring_clock_edit && slot == 3u) {
-            jelli_canvas_rect(c, x - 28, y + 20, 56, 24, v->asleep ? TEAL : BG);
-            jelli_canvas_text(c, v->asleep ? "ON" : "OFF", x - (v->asleep ? 16 : 24), y + 20, 2u,
-                              0xffffu);
-        }
+        settings_badge(c, v, slot, x, y);
         c->dim = false;
     }
 }
@@ -259,6 +266,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
         jelli_canvas_caption(&c, status(view), 254, MINT);
         draw_tile(c, view);
         jelli_pet_gallery_draw_latched(&c, view);
+        jelli_pet_battery_draw(&c, view);
     }
     ring(&c, game, ui);
     menu_button(&c, ui);

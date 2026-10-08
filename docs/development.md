@@ -156,7 +156,9 @@ between frames: the first render initializes the full surface; subsequent frames
 report only the region that changed (zero width/height means no changes). The core allocates no memory and includes no SDL,
 LVGL, FreeRTOS, or ESP headers. Hosts own their run loops and frame pacing;
 animation speed depends on elapsed injected time, not on frame count. All engine
-calls are single-threaded.
+calls are single-threaded. Hosts report the supply state by writing a
+`JelliPowerReading` ([power.h](../include/jelli/power.h)) to `engine->ui.power`
+between frames, at a low bounded rate; the core never polls hardware.
 
 Both renderers use the board's 466×466 resolution and clip
 the corners to emulate the round panel. Each framebuffer uses **434,312 bytes**.

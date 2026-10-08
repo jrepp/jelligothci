@@ -34,6 +34,7 @@ void jelli_game_init(JelliGame *game)
     game->count = 2u;
     game->food = 5u;
     game->gifts = 3u;
+    game->battery_display = true;
     game->pets[0] = (JelliPet){.id = 1u,
                                .phase_offset = 324000u,
                                .bedtime = 22u,
