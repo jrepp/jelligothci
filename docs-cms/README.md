@@ -38,6 +38,9 @@ Maintainer reference: [memo-005: Settings, ownership, and recovery](memos/memo-0
 
 Next increment: [RFC-002: Pet memory and persistent activities](rfcs/rfc-002-pet-memory-and-persistent-activities.md).
 
+Proposed second board app: [RFC-003: Voice agent companion](rfcs/rfc-003-voice-agent-companion.md),
+a unicorn voice front end for Claude Code through a Mac bridge.
+
 ## Proposed game architecture
 
 [RFC-001: Virtual pet systems](rfcs/rfc-001-virtual-pet-systems-architecture.md)
