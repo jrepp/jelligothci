@@ -16,7 +16,7 @@ board into a voice-first interaction point for Claude Code running on the desk
 Mac. The user holds the unicorn to talk; the board streams 16 kHz audio over an
 authenticated Wi-Fi link to a native macOS menu-bar **bridge**. The bridge
 transcribes on-device, runs the request as a Claude Code task through the Claude
-Agent SDK in an allow-listed project, streams progress back so a large animated
+Agent SDK in the project the user names, streams progress back so a large animated
 unicorn shows listening, thinking, working, needs-approval, success and failure,
 routes permission prompts to the board for a physical tap, and answers with a
 short spoken reply rendered by Chatter in the user's chosen voice. A durable work
@@ -130,15 +130,15 @@ switch from their settings.
 
 Build three pieces, in this order of importance:
 
-1. **Jelli Bridge** — a native Swift menu-bar app on the Mac (Atrium design),
+1. **Loki Bridge** — a native Swift menu-bar app on the Mac (Atrium design),
    which owns the device link, speech recognition, the work queue, Chatter, the
    UI, and supervises a small **TypeScript Agent SDK sidecar** that owns Claude
    Code sessions.
-2. **Unicorn Agent** — a second ESP-IDF app on the board (`ota_0`), sharing the
+2. **Loki Agent** — a second ESP-IDF app on the board (`ota_0`), sharing the
    bootloader, `nvs` and BSP with the pet, with its own sdkconfig, partitions and
    art, and a portable C agent UI core that also runs in the SDL host as a desktop
    simulator.
-3. **A versioned device protocol** (`jelli-agent/1`) with golden vectors shared
+3. **A versioned device protocol** (`loki/1`) with golden vectors shared
    by the C, Swift and TypeScript tests.
 
 Use the bridge's durable queue as the integration point, with bridge-managed SDK
@@ -147,32 +147,36 @@ later, optional executor.
 
 ## Decisions (2026-10-09)
 
-The user settled four questions after reviewing this draft:
+The user settled these questions after reviewing this draft, the first four in the
+morning and the rest before phase 1:
 
 | Question | Decision |
 | --- | --- |
 | Executor | Bridge-run Agent SDK sessions; attaching to the user's open session stays a phase 3 option |
-| Autonomy | Reads, file edits inside the project, and each project's listed commands (for example tests and builds) run without a tap; everything else waits for a tap on the board |
+| Autonomy | Any project the user names, any command they ask for, without a tap ([ADR-014](../adr/adr-014-voice-agent-autonomy-any-project-any-command.md)); this replaced the morning's per-project command lists |
 | Chatter | Extend Chatter's API for faster replies (see Changes to Chatter) |
 | Board | Same board, switchable: pet in `factory`, agent in `ota_0` (layout A) |
+| Reply voice | Chatter's "Scar" by default; the bridge's voice picker changes it |
+| Network | The home Wi-Fi and LAN only for v1 |
+| Names | **Loki Agent** on the board and **Loki Bridge** on the Mac |
 
-Because edits and listed commands both run without a tap, Claude can change code
-and then run it, for example edit a test and run the suite, with nobody looking.
-The autonomy policy (under Security) therefore pairs it with Claude Code's
-OS-enforced Bash sandbox.
+Because any command runs without a tap, Claude can change code and run it with
+nobody looking. ADR-014 therefore keeps every command inside Claude Code's
+OS-enforced Bash sandbox and asks for a tap only when a command must leave it (see
+the autonomy policy under Security).
 
 # Detailed Design
 
 ## System overview
 
 ```text
- ┌──────────── Unicorn Agent (ESP32-S3, ota_0) ────────────┐
+ ┌───────────── Loki Agent (ESP32-S3, ota_0) ──────────────┐
  │ touch-hold → mic (ES7210 TDM, 16 kHz) → PCM frames       │
  │ unicorn state machine ← status/approval/reply events     │
  │ speaker (ES8311, 16 kHz) ← reply PCM, mouth from RMS     │
  └──────────────── mTLS WebSocket over Wi-Fi ───────────────┘
                               │  (mDNS discovery, USB pairing)
- ┌──────────────────────── Jelli Bridge (macOS) ───────────────────────────┐
+ ┌───────────────────────── Loki Bridge (macOS) ───────────────────────────┐
  │ DeviceLink (Network.framework TLS, pinned certs, Bonjour)               │
  │ SpeechIn (SpeechAnalyzer, live captions; whisper.cpp fallback)          │
  │ Router (workspace + conversation selection, local commands)             │
@@ -182,7 +186,7 @@ OS-enforced Bash sandbox.
  │ Menu-bar UI (devices, jobs, history, voice, workspaces, policy, logs)   │
  │        │ JSON lines over stdio                                          │
  │ AgentRunner sidecar (Node, @anthropic-ai/claude-agent-sdk)              │
- │   sessions per conversation (cwd allow-list), canUseTool → approvals,   │
+ │   sessions per conversation (cwd = project), canUseTool → approvals,    │
  │   in-process MCP: speak, progress; AskUserQuestion → device choices     │
  └─────────────────────────────────────────────────────────────────────────┘
         │ Claude Code (bundled CLI)        │ Chatter.app (127.0.0.1:18423)
@@ -199,10 +203,10 @@ OS-enforced Bash sandbox.
    after release (estimate). Contextual strings (workspace names, "Nirmal",
    "codergotchi") improve recognition. The board shows the transcript and nods.
 3. **Route.** The router handles local commands without Claude ("stop", "what's
-   running", "use the Aiden voice", "repeat that") and otherwise picks a workspace
-   (explicit "in codergotchi…" against the allow-list, else the current
-   conversation's) and a conversation (follow-up vs. new task). It records an
-   utterance and a job in the queue.
+   running", "use the Aiden voice", "repeat that") and otherwise picks a project
+   (explicit "in codergotchi…" resolved under the user's project roots, else the
+   current conversation's; see ADR-014) and a conversation (follow-up vs. new
+   task). It records an utterance and a job in the queue.
 4. **Run.** The sidecar sends the text into the conversation's Agent SDK session
    (`streamInput`, `priority: "next"` for follow-ups while busy). Events flow back
    as job events.
@@ -307,7 +311,7 @@ so adopting it amends ADR-012; sizes here are binary megabytes.
   needs Local Network permission.
 - **DeviceLink**: Network.framework TLS listener with a self-signed P-256 identity,
   client certificates required and pinned per paired device; Bonjour service
-  `_jelli-agent._tcp`; WebSocket framing; per-device rate limits.
+  `_loki-bridge._tcp`; WebSocket framing; per-device rate limits.
 - **SpeechIn**: `SpeechAnalyzer`/`SpeechTranscriber` with live results and
   contextual strings; `whisper-cli` fallback; audio kept only for the current job
   unless the user enables history.
@@ -316,26 +320,25 @@ so adopting it amends ADR-012; sizes here are binary megabytes.
   running → needs-approval → succeeded/failed/cancelled), `events`, `approvals`,
   `replies`. Survives restarts; sessions resume by ID.
 - **AgentRunner sidecar** (Node, Agent SDK, JSON lines over stdio, restarted by
-  the bridge): one streaming session per conversation with `cwd` from the
-  allow-list; `systemPrompt: {type: "preset", preset: "claude_code", append: <voice
-  operator rules>}`; `settingSources: ["project", "local"]` by default (the user's
-  global CLAUDE.md, hooks and plugins opt-in per workspace); `permissionMode:
-  "acceptEdits"` always set explicitly (omitting it can start a session in auto
-  mode; never `bypassPermissions`); the workspace's listed commands as
-  `allowedTools` rules; the autonomy policy's sandbox settings through the SDK's
-  `settings` option; `maxTurns` and
-  `maxBudgetUsd` per job; `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS=1`,
-  `includePartialMessages: true`; in-process MCP server `device` with `speak(text,
-  mood)` and `progress(message, fraction?)`, auto-approved and always loaded.
+  the bridge): one streaming session per conversation with `cwd` set to the
+  resolved project; `systemPrompt: {type: "preset", preset: "claude_code", append:
+  <voice operator rules and the project's CLAUDE.md or AGENTS.md>}`;
+  `settingSources: []`, so no user, project or local settings, hooks, skills or
+  plugins load (ADR-014); `permissionMode: "acceptEdits"` always set explicitly
+  (omitting it can start a session in auto mode; never `bypassPermissions`); the
+  autonomy policy's sandbox and permission settings through the SDK's `settings`
+  option; `strictMcpConfig: true`; auto memory off; `maxTurns` and `maxBudgetUsd`
+  per job; `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS=1`, `includePartialMessages:
+  true`; in-process MCP server `device` with `speak(text, mood)` and
+  `progress(message, fraction?)`, auto-approved and always loaded.
 - **SpeechOut**: Chatter REST with a scoped, speak-only client token restricted to
   the selected voice; voice list from `GET /v1/voices`; mood → Chatter tone for
   built-in and designed voices; WAV conversion with AVAudioConverter.
 - **UI**: devices and pairing, current job and queue, history with transcripts and
-  replies, voice picker with preview, workspace allow-list and per-workspace
-  policy (listed commands, allowed hosts, and the effective allow rules including
-  any from the project's own settings), logs, and "Open in Claude Code".
+  replies, voice picker with preview (default Scar), project roots, the network
+  allow-list and the effective session settings, logs, and "Open in Claude Code".
 
-## Device protocol `jelli-agent/1`
+## Device protocol `loki/1`
 
 WebSocket over mutually authenticated TLS. Text frames carry JSON control
 messages `{v, type, id, seq, ...}`; binary frames carry audio with a 12-byte header
@@ -366,9 +369,9 @@ is part of the core design, not a later phase.
   answers an unpaired peer; mDNS is a hint only; replay protection from TLS plus
   application sequence numbers; per-device revocation in the bridge.
 - **Who can talk**: push-to-talk needs a physical touch; anyone at the desk could
-  still speak, so the action policy, not the voice, is the gate.
-- **What Claude may do**: workspaces are allow-listed; the autonomy policy below
-  decides what runs without a tap; budgets and turn limits per job; no
+  still speak, so the sandbox, not the voice, is the gate.
+- **What Claude may do**: any project under the user's roots and any command inside
+  the sandbox (ADR-014); budgets and turn limits per job; no
   `bypassPermissions`; Claude Code's own permission rules remain the final gate.
 - **Approvals**: physical tap only, never voice; bound to the exact summary shown;
   time out to deny; the bridge logs every decision.
@@ -382,36 +385,34 @@ is part of the core design, not a later phase.
 
 ## Autonomy policy
 
-Decided 2026-10-09: reads, edits inside the project and each project's listed
-commands run without a tap; everything else waits for one.
+Decided 2026-10-09 and recorded in
+[ADR-014](../adr/adr-014-voice-agent-autonomy-any-project-any-command.md): any
+project the user names, any command they ask for, without a tap. The containment
+is Claude Code's Bash sandbox (macOS Seatbelt), which applies to each command and
+the processes it starts:
 
 | Action | Without a tap | Mechanism |
 | --- | --- | --- |
 | Read and search inside the project | yes | Claude Code approves these by default |
-| Edit files inside the project | yes | `acceptEdits`, which also covers `mkdir`, `touch`, `mv`, `cp`, `rm`, `sed` there |
-| Listed commands, such as `make test` | yes | per-workspace `allowedTools` rules such as `Bash(make test)` |
-| Other shell commands, `git push`, web fetches | no | falls through to `canUseTool`, then the board |
-| Edits outside the project or to protected paths | no | `acceptEdits` never approves these |
+| Edit files inside the project | yes | `acceptEdits` |
+| Any shell command that works inside the sandbox | yes | `autoAllowBashIfSandboxed` |
+| A command that must leave the sandbox (dev server, `docker`, SSH push) | no | unsandboxed retry, forced to ask, then the board |
+| A sandboxed connection to a host outside the allow-list | no | the sandbox's network prompt, then the board |
+| Edits outside the project or to protected paths, `WebFetch` to other hosts | no | `canUseTool`, then the board |
+| Reading credential stores | never | `denyRead` for commands, `Read(...)` deny rules for the Read tool |
 
-Edits plus listed commands let Claude change code and run it unattended, so every
-voice session also runs inside Claude Code's Bash sandbox (macOS Seatbelt), which
-applies to each command and the processes it starts:
-
-- Writes only inside the project and a per-user temp directory. Claude Code's
-  protected paths (`.claude` settings, skills and hooks, `.mcp.json`, `.git/hooks`
-  and `.git/config`, shell startup files) stay write-denied even there.
-- No network except through Claude Code's proxy to an allow-list that starts
-  empty and is set per workspace.
-- Strict settings: `allowUnsandboxedCommands: false` (no unsandboxed retry),
-  `failIfUnavailable: true`, and `autoAllowBashIfSandboxed: false` so the sandbox
-  never widens what runs without a tap beyond the listed commands.
-- Delivered through the SDK's flag-settings layer, which makes the sandbox
-  admin-required: a repository's own settings cannot loosen it.
-- Reads of credential stores (`~/.ssh`, `~/.aws` and similar) denied with
-  `filesystem.denyRead`, since the sandbox allows most reads by default.
+- Writes only inside the project and a per-user temp directory; Claude Code's
+  protected paths (`.claude` settings and hooks, `.mcp.json`, `.git/hooks` and
+  `.git/config`, shell startup files) stay write-denied even there.
+- Network only through Claude Code's proxy to developer hosts: GitHub, the npm,
+  PyPI, crates.io and Go registries, and Espressif's component hosts.
+- `failIfUnavailable: true`: no sandbox, no session.
+- Delivered through the SDK's `settings` option, with `settingSources: []` so a
+  repository's own settings and hooks never load.
 
 The bridge records the Git state before each job and shows the resulting diff
-afterwards; commits and pushes still need a tap unless a workspace lists them.
+afterwards. Inside the project a command can still delete uncommitted work; phase 2
+adds a snapshot of the project, outside the sandbox's reach, before each job.
 
 ## Latency budget (targets)
 
@@ -421,7 +422,7 @@ afterwards; commits and pushes still need a tap unless a workspace lists them.
 | release → final transcript | 0.2–0.5 s |
 | transcript → thinking shown | < 1 s (pre-warmed session) |
 | task | seconds to minutes, with live status |
-| `speak` → first reply audio | ≈2–2.5 s today (warm built-in voice); ≈0.5–1 s with Chatter render/streaming |
+| `speak` → first reply audio | ≈2–2.5 s today with a warm built-in voice; Scar, a clone, renders at about real time, so a 3 s reply takes ≈3.3 s; ≈0.5–1 s with Chatter render/streaming |
 
 ## Optional executor: attach to my open session
 
@@ -457,11 +458,11 @@ back to today's API when an addition is missing.
    ([memo-025](../memos/memo-025-agent-phase0-audio-spike.md)); the render spike
    measured 143 frames/s for head-sized updates and 17 for whole-body motion
    ([memo-026](../memos/memo-026-agent-phase0-render-spike.md)).
-2. **Phase 1 — MVP.** USB pairing, mTLS link, live captions, one workspace, SDK
-   sidecar with the autonomy policy and sandbox, six core states, tap approvals,
-   Chatter replies in a chosen voice (with the Chatter render mode and synchronous
-   result), SDL simulator, protocol vectors and end-to-end tests with a simulated
-   device.
+2. **Phase 1 — MVP.** USB pairing, mTLS link, live captions, any project under
+   the user's roots, SDK sidecar with the ADR-014 autonomy policy and sandbox, six
+   core states, tap approvals, Chatter replies in Scar (with the Chatter render
+   mode and synchronous result), SDL simulator, protocol vectors and end-to-end
+   tests with a simulated device.
 3. **Phase 2 — daily driver.** Multiple workspaces and conversations, follow-ups
    and interrupt, choice cards, progress arc, full animation set, queue and history
    UI, Chatter streaming and priority lane.
@@ -495,15 +496,10 @@ back to today's API when an addition is missing.
 
 # Open Questions
 
-Executor, autonomy, Chatter changes and the board were settled on 2026-10-09 (see
-Decisions). Still open:
-
-1. Which projects belong on the voice allow-list, and which commands does each
-   list?
-2. Default reply voice: a built-in or designed Chatter voice (fast, follows mood)
-   or a cloned voice (slower, and ignores mood until the render mode lands)?
-3. LAN only for v1, or is away-from-home use needed soon?
-4. Names for the board app and the bridge.
+All questions from the draft were settled on 2026-10-09 (see Decisions): the
+executor, autonomy (any project, any command, ADR-014), the Chatter changes, the
+board, the reply voice (Scar), the network (home Wi-Fi, LAN only for v1), and the
+names (Loki Agent and Loki Bridge). None is open.
 
 # References
 

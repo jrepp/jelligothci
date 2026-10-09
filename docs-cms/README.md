@@ -40,7 +40,9 @@ Maintainer reference: [memo-005: Settings, ownership, and recovery](memos/memo-0
 Next increment: [RFC-002: Pet memory and persistent activities](rfcs/rfc-002-pet-memory-and-persistent-activities.md).
 
 Proposed second board app: [RFC-003: Voice agent companion](rfcs/rfc-003-voice-agent-companion.md),
-a unicorn voice front end for Claude Code through a Mac bridge. Phase 0 so far:
+a unicorn voice front end for Claude Code, Loki Agent on the board and Loki Bridge
+on the Mac. Autonomy: [ADR-014: any project, any command, inside the sandbox](adr/adr-014-voice-agent-autonomy-any-project-any-command.md).
+Phase 0:
 [ADR-013: two apps on one board](adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md)
 and [memo-024: layout, switching, and hardware probes](memos/memo-024-agent-phase0-two-apps-and-hardware-probes.md);
 audio spike: [memo-025](memos/memo-025-agent-phase0-audio-spike.md); render spike:
