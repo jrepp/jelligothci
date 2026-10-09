@@ -451,7 +451,9 @@ back to today's API when an addition is missing.
    layered 384 px unicorn at 240 MHz; partition layout A with app switching.
    Layout A, app switching, and the hardware checks are done
    ([ADR-013](../adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md),
-   [memo-024](../memos/memo-024-agent-phase0-two-apps-and-hardware-probes.md)).
+   [memo-024](../memos/memo-024-agent-phase0-two-apps-and-hardware-probes.md)); the
+   audio spike is built, with the TDM slot map measured and the Wi-Fi stream pending
+   ([memo-025](../memos/memo-025-agent-phase0-audio-spike.md)).
 2. **Phase 1 — MVP.** USB pairing, mTLS link, live captions, one workspace, SDK
    sidecar with the autonomy policy and sandbox, six core states, tap approvals,
    Chatter replies in a chosen voice (with the Chatter render mode and synchronous

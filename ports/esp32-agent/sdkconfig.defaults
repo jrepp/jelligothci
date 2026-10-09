@@ -13,6 +13,15 @@ CONFIG_LV_COLOR_DEPTH_16=y
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
 
+# Wi-Fi keeps its configuration in RAM and calibrates the radio at each start: the
+# default nvs partition holds the pet's save and the agent never opens it. Agent
+# settings, Wi-Fi credentials included, live in agent_nvs (settings.c). wifi.c
+# refuses to build if either option is on.
+CONFIG_ESP_WIFI_NVS_ENABLED=n
+CONFIG_ESP_PHY_CALIBRATION_AND_DATA_STORAGE=n
+# Wi-Fi and lwIP buffers in PSRAM where they may be, saving internal RAM.
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+
 # The pet's flash layout A (ADR-013); this project never flashes its own bootloader
 # or table, but its image must agree with them.
 CONFIG_PARTITION_TABLE_CUSTOM=y

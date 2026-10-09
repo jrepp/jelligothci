@@ -141,17 +141,20 @@ void jelli_agent_probe_pmu(char *out, size_t capacity)
                    pmu.over_temperature_off ? "true" : "false");
 }
 
-void jelli_agent_probe_pwr(char *out, size_t capacity, uint32_t ms)
+void jelli_agent_probe_pwr(char *out, size_t capacity, uint32_t ms, unsigned pull)
 {
 #ifdef JELLI_BOARD_PWR_KEY_GPIO
-    if (ms < PWR_SAMPLE_MS || ms > 10000u) {
+    /* No pull-down: if the BSS138 shifter is bidirectional, pulling GPIO3 low could
+     * read as a press of PWRON, and a 6 s press powers the board off. */
+    if (ms < PWR_SAMPLE_MS || ms > 10000u || pull > 1u) {
         error(out, capacity, "range");
         return;
     }
     const gpio_num_t pin = (gpio_num_t)JELLI_BOARD_PWR_KEY_GPIO;
+    /* Input only: a pull resistor of tens of kilohms never drives the line. */
     gpio_config_t input = {.pin_bit_mask = 1ull << JELLI_BOARD_PWR_KEY_GPIO,
                            .mode = GPIO_MODE_INPUT,
-                           .pull_up_en = GPIO_PULLUP_DISABLE,
+                           .pull_up_en = pull ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE,
                            .pull_down_en = GPIO_PULLDOWN_DISABLE,
                            .intr_type = GPIO_INTR_DISABLE};
     if (gpio_config(&input) != ESP_OK) {
@@ -167,12 +170,15 @@ void jelli_agent_probe_pwr(char *out, size_t capacity, uint32_t ms)
         last = level;
         vTaskDelay(pdMS_TO_TICKS(PWR_SAMPLE_MS));
     }
+    (void)gpio_set_pull_mode(pin, GPIO_FLOATING); /* As it was before the probe. */
+    static const char *const pulls[] = {"none", "up"};
     (void)snprintf(out, capacity,
-                   "{\"ok\":true,\"gpio\":%d,\"first\":%d,\"last\":%d,\"samples\":%u,"
-                   "\"low\":%u,\"changes\":%u}",
-                   JELLI_BOARD_PWR_KEY_GPIO, first, last, samples, low, changes);
+                   "{\"ok\":true,\"gpio\":%d,\"pull\":\"%s\",\"first\":%d,\"last\":%d,"
+                   "\"samples\":%u,\"low\":%u,\"changes\":%u}",
+                   JELLI_BOARD_PWR_KEY_GPIO, pulls[pull], first, last, samples, low, changes);
 #else
     (void)ms;
+    (void)pull;
     error(out, capacity, "unsupported_board");
 #endif
 }

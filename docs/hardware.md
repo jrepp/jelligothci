@@ -159,6 +159,39 @@ bootloader starts the pet again. From the host,
 skips the trial and resets without the pet's final checkpoint (up to a minute of
 progress).
 
+### Agent audio spike (phase 0)
+
+The agent can join Wi-Fi, stream its microphones to the Mac, and play audio the
+Mac sends back, to measure the audio path before the real bridge exists. This
+link is a LAN-only, unencrypted WebSocket for the spike; phase 1 replaces it with
+mutually authenticated TLS. Audio runs full duplex at 24 kHz, Chatter's rate: the
+speaker in standard I2S and the ES7210 in TDM, capturing all four slots in its order
+MIC1, MIC3, MIC2, MIC4. MIC3 is the speaker output, wired back as an echo reference.
+
+```sh
+./scripts/jelli-agent --port <port> wifi set                 # prompts; the password is not echoed
+./scripts/jelli-agent --port <port> wifi status
+./scripts/jelli-agent --port <port> audio test 2000          # tone with mic and reference levels
+./scripts/jelli-agent --port <port> link set <mac-ipv4> 8765
+./scripts/uv run --python 3.12 tools/agent/spike_server.py --board <board-ipv4> --say "Hello" --once
+./scripts/jelli-agent --port <port> mic stream 8             # in another terminal
+```
+
+Credentials go to the board as hex over USB and are stored in `agent_nvs`, in
+plain text like the rest of the flash (flash encryption is a separate decision).
+The board never echoes them; `wifi status` shows only the network name as hex.
+Wi-Fi keeps its driver state in RAM and calibrates at each start
+(`CONFIG_ESP_WIFI_NVS_ENABLED` and `CONFIG_ESP_PHY_CALIBRATION_AND_DATA_STORAGE`
+off; `wifi.c` refuses to build otherwise), so the agent never opens the pet's `nvs`.
+The spike server writes each stream to `build/phase0/audio/` as a four-channel WAV
+with a JSON report: frames, missing frames, arrival jitter, and levels per channel.
+`--board` (required: the address `wifi status` shows) admits only the board; the
+server runs one session at a time, ends a recording at 35 s, and makes at most four
+recordings per run.
+With `--say` it renders the text through Chatter's local API first, reading
+Chatter's token file the way Chatter's own tools do, and plays the result on the
+board while the stream runs.
+
 ## Board variants
 
 Two Waveshare boards are supported. They share the ESP32-S3R8, the CO5300

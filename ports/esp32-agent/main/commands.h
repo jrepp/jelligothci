@@ -8,7 +8,8 @@
  *   hello                      app, protocol, board, and version
  *   probe chip|heap|pmu        read-only snapshots
  *   probe pwr MS | probe te MS sample the PWR key or count panel TE pulses
- *   boot pet                   arm a restart into the pet after this reply */
+ *   boot pet                   arm a restart into the pet after this reply
+ * and the spike commands in commands_spike.h. */
 void jelli_agent_command(const JelliAgentRequest *request, char *out, size_t capacity);
 
 #endif

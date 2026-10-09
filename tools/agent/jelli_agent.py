@@ -9,7 +9,9 @@ own tag: "@A1 <id> <words>\\n" out, "\\n@A1 <id> <json>\\n" back. Logs share the
 port, so only the line that starts with this request's prefix is the reply.
 """
 import argparse
+import getpass
 import json
+import re
 import secrets
 import sys
 import time
@@ -57,16 +59,57 @@ def parse(body):
     return reply
 
 
+# Dotted quad of 0..255 without leading zeros, as jelli_agent_ipv4_parse accepts.
+IPV4 = re.compile(r"(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}"
+                  r"(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])")
+
+
+def wifi_line(ssid, password):
+    """The "wifi set" request. Credentials travel as hex because they may contain spaces;
+    the device stores them in agent_nvs and never echoes them."""
+    name, secret = ssid.encode("utf-8"), password.encode("utf-8")
+    if not 1 <= len(name) <= 32:
+        raise AgentError("The network name must be 1 to 32 bytes")
+    if secret and not 8 <= len(secret) <= 63:
+        raise AgentError("The password must be 8 to 63 bytes, or empty for an open network")
+    return "wifi set " + name.hex() + (" " + secret.hex() if secret else "")
+
+
+def spike_line(args):
+    """Requests for the phase 0 audio spike; returns (request, extra seconds)."""
+    if args.command == "wifi":
+        if args.action != "set":
+            return f"wifi {args.action}", 0.0
+        ssid = args.ssid if args.ssid is not None else input("Wi-Fi network name: ")
+        return wifi_line(ssid, getpass.getpass("Password (empty for an open network): ")), 0.0
+    if args.command == "link":
+        if args.action == "status":
+            return "link status", 0.0
+        # Checked here as the device does, so a stray space or newline cannot add words.
+        if args.tcp_port is None or args.host is None or not IPV4.fullmatch(args.host):
+            raise AgentError("link set needs the Mac's IPv4 address and port")
+        return f"link set {args.host} {args.tcp_port}", 0.0
+    if args.command == "mic":
+        # Streaming, then up to 15 s for a reply to finish playing, plus connection time.
+        return f"mic stream {args.seconds}", args.seconds + 25.0
+    return f"audio {args.action} {args.value}", args.value / 1000 if args.action == "test" else 0.0
+
+
 def command_line(args):
     """Returns the console command and the extra seconds it needs to finish."""
     if args.command == "hello":
         return "hello", 0.0
     if args.command == "boot":
         return f"boot {args.app}", 0.0
+    if args.command in ("wifi", "link", "mic", "audio"):
+        return spike_line(args)
     if args.what in ("pwr", "te"):
         if args.ms is None:
             raise AgentError(f"probe {args.what} needs a duration in milliseconds")
-        return f"probe {args.what} {args.ms}", args.ms / 1000
+        pull = getattr(args, "pull", "none")
+        if pull != "none" and args.what != "pwr":
+            raise AgentError("--pull applies to probe pwr only")
+        return f"probe {args.what} {args.ms}" + ("" if pull == "none" else f" {pull}"), args.ms / 1000
     if args.ms is not None:
         raise AgentError(f"probe {args.what} takes no duration")
     return f"probe {args.what}", 0.0
@@ -81,8 +124,23 @@ def main():
     probe = commands.add_parser("probe", help="Read-only hardware probes")
     probe.add_argument("what", choices=("chip", "heap", "pmu", "pwr", "te"))
     probe.add_argument("ms", type=int, nargs="?", help="Duration for pwr (2..10000) or te (100..5000)")
+    probe.add_argument("--pull", choices=("none", "up"), default="none",
+                       help="pwr only: turn on the key line's internal pull-up while sampling")
     boot = commands.add_parser("boot", help="Restart into another installed app")
     boot.add_argument("app", choices=("pet",))
+    wifi = commands.add_parser("wifi", help="Wi-Fi for the phase 0 spike; set prompts for the password")
+    wifi.add_argument("action", choices=("set", "clear", "status"))
+    wifi.add_argument("--ssid", help="Network name; prompted for when omitted")
+    link = commands.add_parser("link", help="The Mac running tools/agent/spike_server.py")
+    link.add_argument("action", choices=("set", "status"))
+    link.add_argument("host", nargs="?", help="The Mac's IPv4 address")
+    link.add_argument("tcp_port", type=int, nargs="?", choices=range(1, 65536), metavar="PORT")
+    mic = commands.add_parser("mic", help="Stream the microphone to the Mac and play its reply")
+    mic.add_argument("action", choices=("stream",))
+    mic.add_argument("seconds", type=int, choices=range(1, 31), metavar="SECONDS[1..30]")
+    audio = commands.add_parser("audio", help="Speaker tone with capture levels, or speaker level")
+    audio.add_argument("action", choices=("test", "volume"))
+    audio.add_argument("value", type=int, help="test: 200..5000 ms; volume: 0..100")
     args = parser.parse_args()
     if not 0.1 <= args.timeout <= 30:
         parser.error("--timeout must be between 0.1 and 30 seconds")

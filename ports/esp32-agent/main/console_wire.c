@@ -8,6 +8,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <inttypes.h>
+#include <string.h>
 
 enum { BODY_BYTES = 768, REPLY_BYTES = BODY_BYTES + 32, READ_BYTES = 64 };
 
@@ -41,6 +42,8 @@ static void console_task(void *unused)
             if (!jelli_agent_console_feed(&console, bytes[i], &request))
                 continue;
             answer(&request);
+            /* The line can hold Wi-Fi credentials; nothing after this needs it. */
+            memset(console.line, 0, sizeof(console.line));
             jelli_agent_boot_poll(); /* Restarts here when "boot pet" was accepted. */
         }
     }

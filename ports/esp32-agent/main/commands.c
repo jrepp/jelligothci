@@ -1,5 +1,6 @@
 #include "commands.h"
 #include "boot.h"
+#include "commands_spike.h"
 #include "probe.h"
 #include <stdio.h>
 #include <string.h>
@@ -25,6 +26,13 @@ static void probe(const JelliAgentRequest *request, char *out, size_t capacity)
     const char *what = request->words[1];
     uint32_t ms = 0u;
     bool timed = request->count == 3u && jelli_agent_number(request->words[2], &ms);
+    /* "probe pwr MS up" turns on the GPIO's internal pull-up while sampling. */
+    unsigned pull = 0u;
+    if (request->count == 4u && jelli_agent_number(request->words[2], &ms) &&
+        !strcmp(request->words[3], "up")) {
+        timed = !strcmp(what, "pwr");
+        pull = 1u;
+    }
     if (request->count == 2u && !strcmp(what, "chip"))
         jelli_agent_probe_chip(out, capacity);
     else if (request->count == 2u && !strcmp(what, "heap"))
@@ -32,7 +40,7 @@ static void probe(const JelliAgentRequest *request, char *out, size_t capacity)
     else if (request->count == 2u && !strcmp(what, "pmu"))
         jelli_agent_probe_pmu(out, capacity);
     else if (timed && !strcmp(what, "pwr"))
-        jelli_agent_probe_pwr(out, capacity, ms);
+        jelli_agent_probe_pwr(out, capacity, ms, pull);
     else if (timed && !strcmp(what, "te"))
         jelli_agent_probe_te(out, capacity, ms);
     else
@@ -50,6 +58,6 @@ void jelli_agent_command(const JelliAgentRequest *request, char *out, size_t cap
         reply(out, capacity,
               jelli_agent_boot_pet_arm() ? "{\"ok\":true,\"app\":\"pet\",\"restart\":true}"
                                          : "{\"ok\":false,\"error\":\"pet_missing\"}");
-    else
+    else if (!jelli_agent_command_spike(request, out, capacity))
         reply(out, capacity, "{\"ok\":false,\"error\":\"syntax\"}");
 }

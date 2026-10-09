@@ -1,4 +1,5 @@
 #include "boot.h"
+#include "commands_spike.h"
 #include "console_wire.h"
 #include "screen.h"
 #include "esp_log.h"
@@ -18,6 +19,8 @@ void app_main(void)
     }
     if (!jelli_agent_screen_start())
         ESP_LOGW(TAG, "Display unavailable; the console still works");
+    /* Wi-Fi and audio start before the confirmation, so a crash in them rolls back. */
+    jelli_agent_spike_start();
     /* Confirm once start-up has survived and the way back (the console driver) works,
      * but before the console takes commands, so "boot pet" cannot race the
      * confirmation's rewrite of otadata. */

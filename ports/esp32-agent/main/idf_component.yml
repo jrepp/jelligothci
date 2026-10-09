@@ -2,3 +2,5 @@ dependencies:
   idf: ">=5.5,<5.6"
   # The BSP depends on LVGL; pin the pet's version so both apps resolve the same one.
   lvgl/lvgl: "==9.3.0"
+  # Phase 0 audio spike link to the Mac (RFC-003).
+  espressif/esp_websocket_client: "==1.8.0"
