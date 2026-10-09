@@ -84,15 +84,15 @@ Use the repository-local SDK and discover the port each time. A successful build
 or serial startup does not verify physical display, touch, or audio behavior.
 [Hardware guide](docs/hardware.md) covers flashing, monitoring, and current limits.
 
-The board can also hold the voice agent app ([RFC-003](docs-cms/rfcs/rfc-003-voice-agent-companion.md),
-phase 0) beside the pet ([ADR-013](docs-cms/adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md)).
+The board can also hold Loki Agent, the voice agent app ([RFC-003](docs-cms/rfcs/rfc-003-voice-agent-companion.md)),
+beside the pet ([ADR-013](docs-cms/adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md)).
 After flashing the pet once with layout A:
 
 ```sh
 make esp-agent-flash PORT=<discovered-port>          # boot choice back to the pet, then writes ota_0
 ./scripts/jelli-debug --port <discovered-port> app agent   # pet saves, then restarts into the agent
-./scripts/jelli-agent --port <discovered-port> probe chip
-./scripts/jelli-agent --port <discovered-port> boot pet
+./scripts/loki-agent --port <discovered-port> probe chip
+./scripts/loki-agent --port <discovered-port> boot pet
 ```
 
 [Two apps on one board](docs/hardware.md#two-apps-on-one-board) has the details.

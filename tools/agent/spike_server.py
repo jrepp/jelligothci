@@ -10,7 +10,7 @@ and can answer with a WAV or a Chatter rendering played on the board's speaker.
 
 Frames from the board are binary: a 12-byte header ("JA", version 1, channel
 count, sequence u32 LE, capture milliseconds u32 LE) and interleaved int16 LE
-samples. Control messages are JSON text. Phase 1 replaces this with jelli-agent/1
+samples. Control messages are JSON text. Phase 1 replaces this with loki/1
 over mutually authenticated TLS.
 """
 import argparse

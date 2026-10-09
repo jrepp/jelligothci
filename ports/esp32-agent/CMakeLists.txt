@@ -17,4 +17,4 @@ set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 idf_build_set_property(DEPENDENCIES_LOCK "${CMAKE_CURRENT_LIST_DIR}/dependencies.${JELLI_ESP_BOARD}.lock")
 # The pet refuses to boot an ota_0 image under any other project name (app_switch.c).
-project(jelli_agent)
+project(loki_agent)

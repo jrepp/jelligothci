@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-/* Debug hook for "app agent" (ADR-013). Accepts only a jelli_agent image in ota_0
+/* Debug hook for "app agent" (ADR-013). Accepts only a loki_agent image in ota_0
  * and arms the switch; returns false, leaving the pet running, otherwise. */
 bool jelli_esp_app_switch_arm(void *ctx);
 

@@ -9,8 +9,8 @@ import sys
 import unittest
 import unittest.mock
 
-SOURCE = Path(__file__).resolve().parents[1] / "tools/agent/jelli_agent.py"
-spec = importlib.util.spec_from_file_location("jelli_agent", SOURCE)
+SOURCE = Path(__file__).resolve().parents[1] / "tools/agent/loki_agent.py"
+spec = importlib.util.spec_from_file_location("loki_agent", SOURCE)
 agent = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(agent)
 
@@ -207,7 +207,7 @@ class CommandLineTests(unittest.TestCase):
                  ["probe", "flash"], ["probe", "te", "soon"], [])
         for arguments in cases:
             with self.subTest(arguments=arguments):
-                argv = ["jelli-agent", "--port", "/dev/null", *arguments]
+                argv = ["loki-agent", "--port", "/dev/null", *arguments]
                 with unittest.mock.patch.object(sys, "argv", argv), \
                         contextlib.redirect_stderr(io.StringIO()) as errors, \
                         self.assertRaises(SystemExit) as raised:
@@ -240,7 +240,7 @@ class CommandLineTests(unittest.TestCase):
                                 (["probe", "pwr", "500", "--pull", "down"], 2),
                                 (["probe", "pwr", "500", "--pull"], 2)):
             with self.subTest(arguments=arguments):
-                argv = ["jelli-agent", "--port", "/dev/null", *arguments]
+                argv = ["loki-agent", "--port", "/dev/null", *arguments]
                 with unittest.mock.patch.dict(sys.modules, {"serial": fake}), \
                         unittest.mock.patch.object(sys, "argv", argv), \
                         contextlib.redirect_stderr(io.StringIO()) as err:
@@ -280,7 +280,7 @@ class CommandLineTests(unittest.TestCase):
 
         fake = type(sys)("serial")
         fake.Serial, fake.SerialException = FakeSerial, OSError
-        argv = ["jelli-agent", "--port", "/dev/null", "probe", "pwr", "200", "--pull", "up"]
+        argv = ["loki-agent", "--port", "/dev/null", "probe", "pwr", "200", "--pull", "up"]
         with unittest.mock.patch.dict(sys.modules, {"serial": fake}), \
                 unittest.mock.patch.object(sys, "argv", argv), \
                 contextlib.redirect_stdout(io.StringIO()):
@@ -289,7 +289,7 @@ class CommandLineTests(unittest.TestCase):
 
     def test_no_pull_down_for_the_pwr_key(self):
         # Pulling GPIO3 low could read as a press of PWRON; 6 s of that powers off.
-        argv = ["jelli-agent", "--port", "/dev/null", "probe", "pwr", "200", "--pull", "down"]
+        argv = ["loki-agent", "--port", "/dev/null", "probe", "pwr", "200", "--pull", "down"]
         with unittest.mock.patch.object(sys, "argv", argv), \
                 contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
             agent.main()
@@ -303,7 +303,7 @@ class CommandLineTests(unittest.TestCase):
         for arguments in (["render", "bench", "spin", "5"], ["render", "bench", "full", "0"],
                           ["render", "bench", "full", "11"], ["render", "go", "full", "5"]):
             with self.subTest(arguments=arguments):
-                argv = ["jelli-agent", "--port", "/dev/null", *arguments]
+                argv = ["loki-agent", "--port", "/dev/null", *arguments]
                 with unittest.mock.patch.object(sys, "argv", argv), \
                         contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
                     agent.main()
@@ -389,7 +389,7 @@ class SpikeCommandTests(unittest.TestCase):
 
         fake = type(sys)("serial")
         fake.Serial, fake.SerialException = FakeSerial, OSError
-        argv = ["jelli-agent", "--port", "/dev/null", "wifi", "set", "--ssid", "Home"]
+        argv = ["loki-agent", "--port", "/dev/null", "wifi", "set", "--ssid", "Home"]
         with unittest.mock.patch.dict(sys.modules, {"serial": fake}), \
                 unittest.mock.patch.object(sys, "argv", argv), \
                 unittest.mock.patch.object(agent.getpass, "getpass", return_value=secret), \
@@ -407,7 +407,7 @@ class SpikeCommandTests(unittest.TestCase):
                  ["wifi", "forget"], ["audio", "loud", "1"], ["mic", "record", "5"])
         for arguments in cases:
             with self.subTest(arguments=arguments):
-                argv = ["jelli-agent", "--port", "/dev/null", *arguments]
+                argv = ["loki-agent", "--port", "/dev/null", *arguments]
                 with unittest.mock.patch.object(sys, "argv", argv), \
                         contextlib.redirect_stderr(io.StringIO()), \
                         self.assertRaises(SystemExit) as raised:
@@ -458,7 +458,7 @@ class SpikeCommandTests(unittest.TestCase):
 
         fake = type(sys)("serial")
         fake.Serial, fake.SerialException = NoSerial, OSError
-        argv = ["jelli-agent", "--port", "/dev/null", "link", "set", "h\u00e9llo", "8765"]
+        argv = ["loki-agent", "--port", "/dev/null", "link", "set", "h\u00e9llo", "8765"]
         with unittest.mock.patch.dict(sys.modules, {"serial": fake}), \
                 unittest.mock.patch.object(sys, "argv", argv), \
                 contextlib.redirect_stderr(io.StringIO()) as err:

@@ -80,7 +80,7 @@ bool jelli_agent_wifi_start(void)
     started = true;
     jelli_agent_wifi_power_save(true);
     if (!connect_stored())
-        ESP_LOGI(TAG, "No Wi-Fi credentials yet; use scripts/jelli-agent wifi set");
+        ESP_LOGI(TAG, "No Wi-Fi credentials yet; use scripts/loki-agent wifi set");
     return true;
 }
 

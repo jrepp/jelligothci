@@ -41,7 +41,8 @@ selected one resets before confirming that it started.
 | `art` | data/0x40 | 0xC20000 | 3,968 KB | Reserved for agent artwork |
 
 **Two projects.** `ports/esp32` (project `jelligotchi`) and `ports/esp32-agent`
-(project `jelli_agent`) share the board wrappers
+(project `loki_agent`, named `jelli_agent` until the Loki Agent name in phase 1) share
+the board wrappers
 ([ADR-011](adr-011-selectable-esp32-board-variants.md)) and this table. Only the
 pet's flash writes the bootloader, the table, and `otadata`, so a full pet flash
 always returns the board to the pet. `scripts/esp flash-agent` also resets the boot

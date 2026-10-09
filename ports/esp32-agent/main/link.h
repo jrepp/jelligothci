@@ -7,7 +7,7 @@
 
 /* Phase 0 audio spike link (RFC-003): one WebSocket session to
  * tools/agent/spike_server.py on the Mac, LAN only and unencrypted; phase 1 replaces
- * it with jelli-agent/1 over mutual TLS. During a session the board streams 60 ms
+ * it with loki/1 over mutual TLS. During a session the board streams 60 ms
  * microphone frames (see jelli_agent_frame_header) and plays any mono PCM the Mac
  * sends between "play_begin" and "play_end" messages. */
 

@@ -123,8 +123,8 @@ legacy art only was about 0.9 MB.
 
 ### Two apps on one board
 
-The voice agent ([RFC-003](../docs-cms/rfcs/rfc-003-voice-agent-companion.md)) is a
-separate ESP-IDF project, `ports/esp32-agent`, installed in `ota_0` beside the pet.
+Loki Agent, the voice agent ([RFC-003](../docs-cms/rfcs/rfc-003-voice-agent-companion.md)),
+is a separate ESP-IDF project, `ports/esp32-agent`, installed in `ota_0` beside the pet.
 It is at phase 0: an identity screen (a lilac ring), an `@A1` console with
 read-only hardware probes, and the switch back to the pet. Its findings are in
 [memo-024](../docs-cms/memos/memo-024-agent-phase0-two-apps-and-hardware-probes.md).
@@ -133,9 +133,9 @@ read-only hardware probes, and the switch back to the pet. Its findings are in
 JELLI_ESP_BOARD=1.75c make esp-flash PORT=<port>        # the pet, once, with layout A
 JELLI_ESP_BOARD=1.75c make esp-agent-flash PORT=<port>  # builds the agent, writes ota_0
 ./scripts/jelli-debug --port <port> app agent           # pet checkpoints, restarts into the agent
-./scripts/jelli-agent --port <port> hello
-./scripts/jelli-agent --port <port> probe pmu           # also chip, heap, te MS, pwr MS
-./scripts/jelli-agent --port <port> boot pet            # back to the pet
+./scripts/loki-agent --port <port> hello
+./scripts/loki-agent --port <port> probe pmu           # also chip, heap, te MS, pwr MS
+./scripts/loki-agent --port <port> boot pet            # back to the pet
 ```
 
 `JELLI_ESP_APP=agent` selects the agent for any `scripts/esp` command; its build
@@ -149,7 +149,7 @@ board; on a board without layout A it fails rather than overwrite the pet. A ful
 pet flash always makes the pet the app that starts. Both builds refuse a generated
 `sdkconfig` that still has rollback off.
 
-Each app starts only the other's project (`jelligotchi` or `jelli_agent`), since
+Each app starts only the other's project (`jelligotchi` or `loki_agent`), since
 `ota_0` can hold leftovers of the vendor firmware. The pet's `app agent` verifies
 the whole agent image before selecting it. Rollback is enabled: a switch from the
 pet starts the agent on trial, and the agent confirms itself once its start-up has
@@ -169,12 +169,12 @@ speaker in standard I2S and the ES7210 in TDM, capturing all four slots in its o
 MIC1, MIC3, MIC2, MIC4. MIC3 is the speaker output, wired back as an echo reference.
 
 ```sh
-./scripts/jelli-agent --port <port> wifi set                 # prompts; the password is not echoed
-./scripts/jelli-agent --port <port> wifi status
-./scripts/jelli-agent --port <port> audio test 2000          # tone with mic and reference levels
-./scripts/jelli-agent --port <port> link set <mac-ipv4> 8765
+./scripts/loki-agent --port <port> wifi set                 # prompts; the password is not echoed
+./scripts/loki-agent --port <port> wifi status
+./scripts/loki-agent --port <port> audio test 2000          # tone with mic and reference levels
+./scripts/loki-agent --port <port> link set <mac-ipv4> 8765
 ./scripts/uv run --python 3.12 tools/agent/spike_server.py --board <board-ipv4> --say "Hello" --once
-./scripts/jelli-agent --port <port> mic stream 8             # in another terminal
+./scripts/loki-agent --port <port> mic stream 8             # in another terminal
 ```
 
 Credentials go to the board as hex over USB and are stored in `agent_nvs`, in

@@ -164,7 +164,7 @@ def main():
         print(json.dumps(Client(wire, args.timeout).request(command, extra), indent=2))
         return 0
     except (AgentError, serial.SerialException, OSError) as exc:
-        print(f"jelli-agent: {exc}", file=sys.stderr)
+        print(f"loki-agent: {exc}", file=sys.stderr)
         return 1
     finally:
         if wire is not None:

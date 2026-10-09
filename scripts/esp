@@ -141,7 +141,7 @@ flash_agent() {
     idf build
     sdk_tool app_update/otatool.py "$1" erase_otadata
     sdk_tool partition_table/parttool.py "$1" write_partition --partition-name ota_0 \
-        --input "$build_dir/jelli_agent.bin"
+        --input "$build_dir/loki_agent.bin"
     start_app "$1"
     echo 'Agent written to ota_0; the pet starts. Switch with: scripts/jelli-debug --port PORT app agent'
 }

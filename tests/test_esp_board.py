@@ -178,7 +178,7 @@ class EspScriptBoardTests(unittest.TestCase):
         self.assertEqual(calls[1:5] + calls[6:], [
             "--port", "/dev/cu.test", "--esptool-args=after=no_reset", "erase_otadata",
             "--port", "/dev/cu.test", "--esptool-args=after=no_reset", "write_partition",
-            "--partition-name", "ota_0", "--input", str(self.repo / "build/esp32-agent-1.75c/jelli_agent.bin"),
+            "--partition-name", "ota_0", "--input", str(self.repo / "build/esp32-agent-1.75c/loki_agent.bin"),
             *START_APP("/dev/cu.test")])
         self.assertIn("the pet starts", result.stdout)
 
@@ -288,7 +288,7 @@ class EspScriptBoardTests(unittest.TestCase):
         self.assert_sdk_calls(calls()[:2], [
             ("otatool.py", ["erase_otadata"]),
             ("parttool.py", ["write_partition", "--partition-name", "ota_0", "--input",
-                             str(self.repo / "build/esp32-agent/jelli_agent.bin")])])
+                             str(self.repo / "build/esp32-agent/loki_agent.bin")])])
         self.assertEqual(calls()[2], START_APP("/dev/cu.test"))
 
     def test_boot_resets_exactly_once_after_the_otadata_change(self):

@@ -4,7 +4,7 @@
 #include "screen.h"
 #include "esp_log.h"
 
-static const char *TAG = "jelli_agent";
+static const char *TAG = "loki_agent";
 
 /* RFC-003 phase 0: the agent app's skeleton. It shows an identity screen, answers
  * read-only hardware probes on the @A1 console, and switches back to the pet. */

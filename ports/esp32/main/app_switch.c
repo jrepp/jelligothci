@@ -15,7 +15,7 @@
 
 /* Must match project() in ports/esp32-agent/CMakeLists.txt. ota_0 can still hold an
  * older vendor app from the board's factory flash, which must never be booted. */
-#define AGENT_PROJECT "jelli_agent"
+#define AGENT_PROJECT "loki_agent"
 
 static const char *TAG = "app_switch";
 static const esp_partition_t *armed;

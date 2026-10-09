@@ -79,7 +79,7 @@ class ProjectAgreementTests(unittest.TestCase):
             return re.search(r"^project\((\w+)\)", (REPOSITORY / path).read_text(), re.M).group(1)
 
         pet, agent = project("ports/esp32/CMakeLists.txt"), project("ports/esp32-agent/CMakeLists.txt")
-        self.assertEqual((pet, agent), ("jelligotchi", "jelli_agent"))
+        self.assertEqual((pet, agent), ("jelligotchi", "loki_agent"))
         switch = (REPOSITORY / "ports/esp32/main/app_switch.c").read_text()
         self.assertIn(f'#define AGENT_PROJECT "{agent}"', switch)
         boot = (REPOSITORY / "ports/esp32-agent/main/boot.c").read_text()
