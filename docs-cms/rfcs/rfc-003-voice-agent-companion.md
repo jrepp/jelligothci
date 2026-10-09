@@ -399,7 +399,7 @@ the processes it starts:
 | A command that must leave the sandbox (dev server, `docker`, SSH push) | no | unsandboxed retry, forced to ask, then the board |
 | A sandboxed connection to a host outside the allow-list | no | the sandbox's network prompt, then the board |
 | Edits outside the project or to protected paths, `WebFetch` to other hosts | no | `canUseTool`, then the board |
-| Reading credential stores | never | `denyRead` for commands, `Read(...)` deny rules for the Read tool |
+| Reading outside the project (other projects, credential files) | never | `blockReadsOutsideWorkingDirectories`; toolchain folders re-opened |
 
 - Writes only inside the project and a per-user temp directory; Claude Code's
   protected paths (`.claude` settings and hooks, `.mcp.json`, `.git/hooks` and

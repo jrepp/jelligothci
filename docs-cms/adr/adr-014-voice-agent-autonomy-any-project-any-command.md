@@ -80,7 +80,8 @@ settings layer):
 | `sandbox.allowUnsandboxedCommands` | `true` | A command that cannot work inside may ask to leave it |
 | `permissions.ask` | `Bash(dangerouslyDisableSandbox:true)` | Leaving the sandbox always takes a tap |
 | `sandbox.network.allowedDomains` | Developer hosts | Package registries and Git hosting (below) |
-| `sandbox.filesystem.denyRead` and `permissions.deny` `Read(...)` | Credential stores | Neither commands nor the Read tool see them |
+| `permissions.blockReadsOutsideWorkingDirectories` | `true` | Commands and the file tools read only the project, not the rest of the home directory |
+| `sandbox.filesystem.allowRead` | Toolchain folders | Re-opens what builds need under the home directory (below) |
 | `sandbox.credentials.envVars` | Token variables, `deny` | `GITHUB_TOKEN`, `GH_TOKEN`, `NPM_TOKEN` and similar are unset for commands |
 
 The network allow-list starts with GitHub (`github.com`, `*.github.com`,
@@ -89,10 +90,15 @@ The network allow-list starts with GitHub (`github.com`, `*.github.com`,
 component and download hosts. The bridge's settings can extend it. `WebFetch`
 allow rules mirror the list, and `WebSearch` is allowed.
 
-Read is denied for `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/.netrc`,
-`~/.npmrc`, `~/.pypirc`, `~/.docker`, `~/.kube`, `~/Library/Keychains`, Claude
-Code's own credentials, and the support folders of Chatter (its API token) and the
-bridge (its TLS key and pairing data).
+Reads are blocked rather than listed because credentials do not only live in known
+places: a token file can sit at the top of a project root, beside the projects.
+Under the block a sandboxed command reads the project, the session's temp
+directory, the system, and the user's global Git configuration; Claude Code keeps
+`~/.git-credentials` blocked. The bridge re-opens only toolchain folders that hold
+no credentials (package caches, language toolchains such as `~/.cargo` and
+`~/.rustup`, Xcode's `~/Library/Developer`), and `denyRead` still covers any
+re-opened file that holds a secret. The support folders of Chatter (its API token)
+and the bridge (its TLS key and pairing data) are never re-opened.
 
 **Session options.** `permissionMode: "acceptEdits"`, always set explicitly, so
 edits inside the project need no tap and the session never starts in auto mode or
@@ -133,6 +139,9 @@ one, not a setting the voice path can change.
 - Voice sessions ignore the project's Claude Code settings, hooks, skills and
   agents, and the user's global ones, so they behave less like the user's
   interactive sessions.
+- A session reads one project. Work that spans two projects, or a tool that needs a
+  folder under the home directory the bridge has not re-opened, fails inside the
+  sandbox and then asks to run outside it (a tap).
 - The proxy allows by host name and does not inspect TLS, so allowed hosts such as
   GitHub remain a possible exfiltration path (for example through domain fronting).
   Without credentials, a command cannot publish there with the user's account.
