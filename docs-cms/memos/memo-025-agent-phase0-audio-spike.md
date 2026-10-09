@@ -99,6 +99,24 @@ Phase 1 therefore needs a sender decoupled from capture by a PSRAM queue, and
 should send fewer channels (a microphone and the reference, 768 kbit/s) or
 compress; the echo reference also needs gain (it sits 30–40 dB below MIC1).
 
+### Second run: speech to text
+
+The user reported the Chatter reply sounded fine on the board. A second, 20 s
+stream started with the board saying "Okay, I'm listening…" (rendered in 2.74 s)
+while the user spoke to it: 333 frames, none missing, mean arrival 61.4 ms (p95
+96.4, max 282), mean send 28.8 ms (max 161). MIC1 alone, resampled to 16 kHz with
+`afconvert`, went through the local whisper.cpp (`whisper-cli`, small.en model
+already on the Mac) in 0.34 s for 20 s of audio:
+
+> okay I'm listening as tell me something for the next 10 seconds Mary had a little
+> lamb its first whitest snow and everywhere that Mary went its lamb was sure to go
+> one two three
+
+The path from the board's microphone over Wi-Fi to text on the Mac works. The
+transcript also holds the board's own prompt, picked up from its speaker: v1 must
+not listen while it speaks (RFC-003's half-duplex hold-to-talk), and full duplex
+needs echo cancellation against MIC3.
+
 ## Review
 
 Three security review rounds and three test rounds ran on this change; findings of
@@ -124,9 +142,9 @@ medium severity or more went to two skeptic reviews each.
 
 # Remaining uncertainty
 
-- One stream on one link was measured; how often sends stall at better signal, and
-  how the loss sounds to a recognizer, are open. Playback quality was not judged
-  by ear in this run.
+- Two streams on one link were measured; how often sends stall at better signal is
+  open. The recognizer read the second run accurately despite the capture loss, but
+  that is one sample. Playback sounded fine to the user.
 - MIC2 and MIC3 gains are untuned; whether 24 kHz capture suits on-device ASR or
   the Mac's recognizer as is, or needs resampling, is open.
 - The PWR key's pressed level is still unobserved.
