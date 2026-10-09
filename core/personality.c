@@ -47,6 +47,15 @@ void jelli_game_preference(JelliGame *game, JelliCommand command)
     pet->bond = adjusted(pet->bond, 10, 0u);
 }
 
+/* Like decay (game_time.c), a recovering need resting on its 400 floor carries no
+ * remainder; otherwise jelli_game_valid rejects the game and every command fails. */
+static void touch_need(JelliPet *pet, JelliNeed need, int change, unsigned floor)
+{
+    pet->needs[need] = adjusted(pet->needs[need], change, floor);
+    if (floor && pet->needs[need] <= floor)
+        pet->need_remainders[need] = 0u;
+}
+
 JelliResult jelli_game_touch(JelliPet *pet)
 {
     if (pet->asleep)
@@ -56,8 +65,8 @@ JelliResult jelli_game_touch(JelliPet *pet)
     pet->reaction_ticks = 30u;
     unsigned floor = pet->health == JELLI_RECOVERING ? 400u : 0u;
     int change = pet->reaction == 1u ? (int)jelli_habits_social_gain(&pet->habits, 15u) : -20;
-    pet->needs[JELLI_SOCIAL] = adjusted(pet->needs[JELLI_SOCIAL], change, floor);
-    pet->needs[JELLI_AMUSEMENT] = adjusted(pet->needs[JELLI_AMUSEMENT], change, floor);
+    touch_need(pet, JELLI_SOCIAL, change, floor);
+    touch_need(pet, JELLI_AMUSEMENT, change, floor);
     if (pet->reaction == 1u)
         pet->bond = adjusted(pet->bond, 3, 0u);
     return JELLI_OK;

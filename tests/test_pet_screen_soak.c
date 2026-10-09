@@ -34,7 +34,7 @@ typedef struct {
     unsigned count, head;
 } Host;
 
-enum { FRAMES, DARKS, SLEEPS, WAKES, FORCED, GUARDED, CUES, MID_RESUME, INVALID, TALLIES };
+enum { FRAMES, DARKS, SLEEPS, WAKES, FORCED, GUARDED, CUES, MID_RESUME, TALLIES };
 
 static struct {
     uint32_t seed, state;
@@ -363,13 +363,8 @@ static void run_seed(uint32_t seed, bool pinned)
         frame();
         if (w.step % 64u == 0u)
             compare_engines();
-        /* Known game defect, not the screen: touching a recovering, overstimulated pet can
-         * leave a need at its 400 floor with a remainder. Both engines hit it; seed ends. */
-        if (!jelli_game_valid(&engines[DARK].game)) {
-            CHECK_STEP(!jelli_game_valid(&engines[LIT].game));
-            w.n[INVALID] = 1u;
-            break;
-        }
+        /* Both games stay valid (touching a recovering pet once broke this). */
+        CHECK_STEP(jelli_game_valid(&engines[DARK].game) && jelli_game_valid(&engines[LIT].game));
     }
     compare_engines();
     /* QUIT still quits, whichever state the screen is in and whatever precedes it. */
@@ -393,8 +388,8 @@ int main(int argc, char **argv)
     }
     printf("screen soak: %u frames (%u dark) over %.1f simulated hours, %u idle sleeps, %u "
            "double-tap wakes, %u debug wakes, %u guarded taps, %u cues, %u mid-resume "
-           "comparisons, %u seeds ended by the known invalid-touch defect\n",
+           "comparisons\n",
            n[FRAMES], n[DARKS], (double)simulated / 3600000.0, n[SLEEPS], n[WAKES], n[FORCED],
-           n[GUARDED], n[CUES], n[MID_RESUME], n[INVALID]);
+           n[GUARDED], n[CUES], n[MID_RESUME]);
     return 0;
 }
