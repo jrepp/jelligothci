@@ -40,7 +40,8 @@ static bool load(JelliAssetReload *reload, JelliPetEngine *engine)
     if (fclose(file) != 0)
         valid = false;
     if (!valid || size < 16u || memcmp(reload->bytes, "JLAP", 4u) ||
-        u32(reload->bytes + 4u) != 1u || u32(reload->bytes + 8u) > JELLI_ASSET_PACK_COUNT)
+        (u32(reload->bytes + 4u) != 1u && u32(reload->bytes + 4u) != 2u) ||
+        u32(reload->bytes + 8u) > JELLI_ASSET_PACK_COUNT)
         return false;
     uint32_t crc = u32(reload->bytes + 12u), count = u32(reload->bytes + 8u);
     if (crc != checksum(reload->bytes + 16u, size - 16u))

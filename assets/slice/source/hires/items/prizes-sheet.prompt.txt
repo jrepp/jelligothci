@@ -1,0 +1,60 @@
+Model: gemini-3-pro-image-preview (Gemini image generation, "quality"), aspect ratio requested 16:9, style none.
+Returned a 1376x768 JPEG, kept verbatim as prizes-sheet.jpg. extract_items.py derives
+assets/slice/hires/prizes/*.png (64x64) from it, except the butterfly, which comes from
+prizes-sheet-butterfly-edit.jpg (see prizes-sheet-butterfly-edit.prompt.txt). Key: green.
+
+Prompt (verbatim):
+
+A wide sprite sheet of 16 original collectible keepsake icons laid out as exactly 4 columns and 4 rows (16 equal cells, 4 objects per row), on one perfectly flat, uniform, pure green (#00FF00) background that is the identical colour in every cell and fills the whole image edge to edge. Exactly one object centred in each cell, each object filling about 70% of the cell height, with generous empty green space around every object so nothing touches another object or the cell edges. No grid lines, no cell borders, no checkerboard, no labels, no text, no letters, no numbers anywhere.
+
+These are precious collectible prizes: each is a small treasured charm with a jewel-like glossy enamel and gemstone finish, crisp sparkling specular highlights, and bold readable shapes that still read at 64 pixels.
+
+Style for every object: original glossy 3D "toy" renders in the spirit of premium emoji-style art but entirely original. Rendered as real 3D objects like soft glossy vinyl toys and polished gems, NOT flat illustration, NO outlines or line art. Smooth rounded forms, soft studio lighting from the upper left, gentle gradients, subtle specular highlights, and a soft pale rim light along the edges so each shape reads clearly on a dark background. Saturated harmonious candy palette: lavender and violet, aqua teal and pale mint, cream and pearl, coral pink, warm gold, deep plum accents. Objects are fully opaque, lit by neutral white light, and do not reflect the background colour. No glow halos, no drop shadows, no cast shadows, no ground plane. Never use saturated green or lime in any object.
+
+Row 1, left to right:
+1. Butterfly: a glossy butterfly charm with lavender upper wings, pale aqua lower wings, cream dots, a slim gold body and two curled gold antennae.
+2. Pearl tooth: a lustrous pearly-white tooth with an iridescent pearl sheen and a cute tiny face (two small dark dot eyes, rosy cheeks, a little smile).
+3. Breakfast sun: a smiling glossy warm gold sun with a round face, rosy cheeks and short rounded rays.
+4. Tea sprite: a glossy lavender teacup with gold rim and handle, with a tiny cute pale-aqua leaf spirit with a smiling face peeking out of the cup.
+Row 2, left to right:
+5. Movie star: a glossy smiling gold five-pointed star with a cheeky wink and one small sparkle.
+6. Bubble gem: a solid glossy aqua bubble sphere with a faceted violet diamond gem set in its centre.
+7. Moon charm: a glossy lavender crescent moon with a small gold loop at the top like a charm and a tiny gold star dangling inside the curve.
+8. Rainbow seed: a glossy golden teardrop seed with a small pale-aqua sprout leaf, and a small arched rainbow (coral, gold, aqua, lavender) over it.
+Row 3, left to right:
+9. Friendship bow: a plump glossy coral-pink ribbon bow with a gold heart-shaped knot in the centre.
+10. Butterfly: a glossy butterfly charm in coral pink and gold with lavender spots.
+11. Tea sprite: a cream teacup with lavender rim, and a small smiling aqua sprite with tiny leaf ears sitting in it.
+12. Movie star: a glossy smiling gold star wearing tiny violet sunglasses.
+Row 4, left to right:
+13. Bubble gem: a round faceted aqua gemstone set inside a glossy pearl ring.
+14. Rainbow seed: a glossy gold seed with a rainbow-striped shell (coral, gold, aqua, lavender bands) and a tiny sprout.
+15. Pearl tooth: a pearly tooth with a small gold crown on top and a sweet smile.
+16. Friendship bow: a glossy lavender ribbon bow with a coral heart knot.
+
+Cell order as generated (the model laid out 6 columns x 4 rows of equal 229.3x192 cells on
+an alternating two-tone green, added a few objects of its own and let the first butterfly
+span two cells; zero-based column,row -> object -> output):
+  0-1,0 wide lavender/aqua butterfly (two cells)   (unused: too wide for the round disk)
+  2,0 pearly tooth with face                       -> prizes/pearl-tooth.png
+  3,0 smiling gold sun                             -> prizes/breakfast-sun.png
+  4,0 lavender teacup with aqua leaf sprite        -> prizes/tea-sprite.png
+  5,0 lavender heart with sprout, winking          (unused, unrequested)
+  0,1 winking gold star with sparkles              (unused)
+  1,1 aqua bubble with violet gem                  -> prizes/bubble-gem.png
+  2,1 lavender crescent moon charm, dangling star  -> prizes/moon-charm.png
+  3,1 duplicate moon charm                         (unused)
+  4,1 rainbow over a gold seed                     -> prizes/rainbow-seed.png
+  5,1 gold seed with aqua sprout                   (unused)
+  0,2 coral bow with gold heart knot               -> prizes/friendship-bow.png
+  1,2 coral/gold butterfly                         (replaced in the edit; see below)
+  2,2 cream teacup with aqua sprite                (unused)
+  3,2 gold star wearing violet sunglasses          -> prizes/movie-star.png
+  4,2 lavender pendant with aqua gem               (unused)
+  5,2 plum faceted gem in gold                     (unused)
+  0,3 aqua gem in a pearl ring                     (unused)
+  1,3 rainbow-striped seed                         (unused)
+  2,3 tooth with gold crown                        (unused)
+  3,3 lavender bow with coral heart                (unused)
+  4,3 plum enamel heart in gold                    (unused)
+  5,3 lavender pouch with cream bow                (unused)

@@ -1,0 +1,14 @@
+Model: gemini-3-pro-image-preview (Gemini image editing, "quality"), edit_image with
+ninja-sheet.jpg as the source image, aspect ratio 16:9, style none. Returned a 1376x768 JPEG
+with the same layout, kept verbatim as ninja-sheet-curious.jpg
+(sha256 daf6948ec538c70cd54647374fdfb51aa2eba07c5cb6c9cd594d697772768ad1). Key: green.
+extract_pets.py takes only ninja-curious from it: cell 6 (bottom row, third from the left).
+The edit also changed the unused idle-B cell; every other ninja pose comes from
+ninja-sheet.jpg.
+
+Why: ninja-sheet.jpg's curious pose (cell 6) leaned to the left; this edit leans the head
+and body to the right, with the headband tails still on the right.
+
+Edit prompt (verbatim):
+
+This is a character pose sheet on a flat pure green (#00FF00) background with eight poses in a 4x2 grid. Change ONLY the seventh pose (bottom row, third from the left, the "curious" pose): redraw the same ninja, same size, same colours and same 3D render style, so that the whole body and head lean toward the RIGHT edge of the image (the viewer's right), the head tilted so its top points up and to the right, one eye a bit wider than the other, inquisitive. The headband tails stay on the right side of the head. Keep every other pose, the layout and the flat pure green background exactly unchanged. No text.

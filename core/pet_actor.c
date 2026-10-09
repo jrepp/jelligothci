@@ -16,7 +16,8 @@ typedef enum {
 static const uint32_t pose_ids[JELLI_FORM_COUNT][POSE_COUNT] = {
     {1001u, 1002u, 1003u, 1004u, 1005u, 1006u, 1021u, 1022u},
     {1007u, 1008u, 1009u, 1010u, 1011u, 1012u, 1023u, 1024u},
-    {1031u, 1032u, 1033u, 1034u, 1035u, 1036u, 1037u, 1038u}};
+    {1031u, 1032u, 1033u, 1034u, 1035u, 1036u, 1037u, 1038u},
+    {1041u, 1042u, 1043u, 1044u, 1045u, 1046u, 1047u, 1048u}};
 
 static Pose pose(const JelliPetRenderKey *v)
 {
@@ -79,11 +80,9 @@ bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
 {
     if (ui->menu_open || !ui->actor_frame || x < ui->actor_x || y < ui->actor_y)
         return false;
-    const JelliAsset *a = ui->actor_frame;
-    unsigned column = (unsigned)(x - ui->actor_x) / 6u;
-    unsigned row = (unsigned)(y - ui->actor_y) / 6u;
-    if (column >= a->width || row >= a->height ||
-        !(a->mask[row * a->mask_stride + column / 8u] & (1u << (7u - column % 8u))))
+    /* The actor is drawn at 6x; sample the stored coverage beneath the touch. */
+    if (!jelli_asset_hit(ui->actor_frame, (unsigned)(x - ui->actor_x), (unsigned)(y - ui->actor_y),
+                         6u))
         return false;
     const JelliPet *pet = &game->pets[game->active];
     ui->result = jelli_game_command(game, (JelliCommand){JELLI_CMD_TOUCH, pet->id, 0u});

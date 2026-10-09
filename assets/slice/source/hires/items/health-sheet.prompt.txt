@@ -1,0 +1,50 @@
+Model: gemini-3-pro-image-preview (Gemini image generation, "quality"), aspect ratio requested 1:1, style none.
+The generator ignored the aspect ratio and returned a 1408x768 JPEG; it is kept verbatim as health-sheet.jpg.
+extract_items.py derives assets/slice/hires/health/*.png (96x96) from it. Key: magenta.
+
+Prompt (verbatim):
+
+A sprite sheet of 16 original game item icons arranged in a strict 4 by 4 grid of equal square cells, on a perfectly flat, uniform, pure magenta (#FF00FF) background that fills the entire image edge to edge. Exactly one object centred in each cell, each object about 65% of the cell width, with generous empty magenta space around every object so nothing touches another object or the cell edges. No grid lines, no cell borders, no labels, no text, no letters, no numbers anywhere.
+
+Style for every object: original glossy 3D "toy" renders in the spirit of premium emoji-style art but entirely original. Smooth rounded chunky forms, soft studio lighting from the upper left, gentle gradients, subtle specular highlights, and a soft pale rim light along the edges so each shape reads clearly on a dark background. Saturated harmonious candy palette: mint and teal, lavender and violet, cream, coral pink, warm gold, deep plum accents. Objects are lit by neutral white light and do not reflect the background colour. No drop shadows, no cast shadows, no ground plane, no thick outlines. Never use magenta or hot pink in any object.
+
+Cells, reading left to right, top to bottom:
+1. A chunky toothbrush, diagonal, with a mint and white rounded handle and a fluffy white bristle head topped with a swirl of mint toothpaste.
+2. A small rounded lavender medicine bottle with a cream screw cap and a cream label showing a coral cross.
+3. A friendly toy-doctor-kit syringe, diagonal: a rounded mint barrel with soft lavender liquid, a cream plunger with a round thumb pad, and a very short blunt rounded tip with no sharp needle. Cute and gentle, not scary.
+4. A rounded mint bar of soap with a small cluster of three shiny opaque pearly-white soap bubbles beside it.
+5. A lavender yoga mat, half rolled up into a spiral with the flat end lying forward.
+6. A rounded pebble-shaped mint dental floss dispenser with a strand of white floss curling out of the top.
+7. A small rounded teal plastic cup filled with bright mint mouthwash.
+8. A rounded cream bathroom basin bowl seen from slightly above, with a single teal water droplet falling into it.
+9. A neatly folded fluffy mint-and-cream striped towel with a small gold four-pointed sparkle at its top corner.
+10. Another friendly toy syringe: a chubby lavender barrel with a small coral heart on it, a cream plunger, a short blunt rounded tip with no needle.
+11. A coral stretch resistance band looped into a gentle oval, with two chunky mint grip handles.
+12. A round mint sponge with three gold four-pointed sparkles around it.
+13. A round cream sink basin with a small chrome-free gold faucet above it and a teal droplet falling.
+14. A golden medicine spoon holding a lavender droplet of syrup.
+15. A smiling white tooth next to a small mint toothbrush.
+16. A mint pump soap bottle with a cream pump top and two opaque pearly bubbles.
+
+Cell order as generated (the model laid out 6 columns x 3 rows of equal 234.7x256 cells and
+reordered the objects; zero-based column,row -> object -> output):
+  0,0 mint toothbrush with toothpaste swirl          -> health/brush.png
+  1,0 lavender medicine bottle, coral cross          -> health/medicine.png
+  2,0 mint syringe with lavender liquid              (unused)
+  3,0 mint soap bar with pearly bubbles              -> health/wash.png
+  4,0 mint soap bar with bubbles and gold sparkles   (unused)
+  5,0 clear pump bottle with mint liquid             (unused)
+  0,1 lavender yoga mat, half rolled                 -> health/stretch.png
+  1,1 mint floss dispenser with white strand         -> health/floss.png
+  2,1 teal cup of mint mouthwash                     -> health/mouthwash.png
+  3,1 cream basin with a falling teal droplet        -> health/spit.png
+  4,1 folded mint/cream towel with gold sparkle      -> health/cleanup.png
+  5,1 lavender syringe with coral heart, blunt tip   -> health/shot.png
+  0,2 cream sink with gold faucet                    (unused)
+  1,2 gold medicine spoon with lavender drop         (unused)
+  2,2 coral stretch band with mint handles           (unused)
+  3,2 mint sponge with gold sparkles                 (unused)
+  4,2 smiling tooth with mint toothbrush             (unused)
+  5,2 mint pump soap with pearly bubbles             (unused)
+The background alternates two magentas cell by cell (pure and slightly lighter); the key
+thresholds in extract_items.py account for both.

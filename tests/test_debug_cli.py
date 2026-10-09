@@ -42,7 +42,7 @@ try:
     debug = client.Client(wire)
     home = debug.state()["visual"]
     assert home["page"] == "home"
-    assert (home["active_slot"], home["pet_id"], home["form"]) == (2, 3, 2)  # Nirmal
+    assert (home["active_slot"], home["pet_id"], home["form"]) == (3, 4, 3)  # The unicorn
     debug.press("MENU")
     debug.press("CARE")
     assert debug.state()["visual"]["page"] == "care"

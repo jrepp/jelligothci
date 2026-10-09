@@ -54,13 +54,14 @@ void jelli_game_init(JelliGame *game)
     game->pets[0] = new_pet(1u, JELLI_FORM_MINT);
     game->pets[1] = new_pet(2u, JELLI_FORM_MINT);
     game->pets[2] = new_pet(JELLI_NINJA_PET_ID, JELLI_FORM_NINJA);
+    game->pets[3] = new_pet(JELLI_UNICORN_PET_ID, JELLI_FORM_UNICORN);
 }
 
 void jelli_game_new(JelliGame *game)
 {
     jelli_game_init(game);
     if (game != NULL)
-        game->active = 2u; /* Nirmal the ninja is the default character. */
+        game->active = 3u; /* The unicorn is the default character. */
 }
 
 static bool pet_profile_valid(const JelliPet *pet)
@@ -235,20 +236,33 @@ static bool pet_id_used(const JelliGame *game, uint32_t id)
     return false;
 }
 
-bool jelli_game_add_ninja(JelliGame *game)
+/* Stable ID a species prefers when appended; 0 for forms that are not species. */
+static uint32_t species_first_id(uint8_t form)
 {
-    /* Legacy rosters held two pets; validate them as stored before appending. */
-    if (!roster_valid(game, 2u) || game->count >= JELLI_PET_CAPACITY)
+    switch (form) {
+    case JELLI_FORM_NINJA:
+        return JELLI_NINJA_PET_ID;
+    case JELLI_FORM_UNICORN:
+        return JELLI_UNICORN_PET_ID;
+    default:
+        return 0u;
+    }
+}
+
+bool jelli_game_add_species(JelliGame *game, uint8_t form)
+{
+    uint32_t id = species_first_id(form);
+    /* Legacy rosters held two or three pets; validate them as stored before appending. */
+    if (id == 0u || !roster_valid(game, 2u) || game->count >= JELLI_PET_CAPACITY)
         return false;
     for (uint8_t i = 0u; i < game->count; ++i) {
-        if (game->pets[i].form == JELLI_FORM_NINJA)
+        if (game->pets[i].form == form)
             return false;
     }
     /* At most count (< capacity) IDs are taken, so a free ID is found within capacity steps. */
-    uint32_t id = JELLI_NINJA_PET_ID;
     for (unsigned step = 0u; step < JELLI_PET_CAPACITY && pet_id_used(game, id); ++step)
         ++id;
-    game->pets[game->count] = new_pet(id, JELLI_FORM_NINJA);
+    game->pets[game->count] = new_pet(id, form);
     ++game->count;
     return true;
 }

@@ -15,7 +15,9 @@ with an atomic replacement. The SDL host validates it and swaps artwork between
 frames; screenshot captures defer the swap until capture ends.
 
 The live pipeline recalculates opaque bounds, centroids, and the bottom-three-row
-creature ground anchor. Keep the original dimensions, IDs, and binary alpha.
+creature ground anchor. Keep the original dimensions and IDs. Legacy pixel art
+keeps binary alpha; high-resolution entries (`"density"` in the manifest) keep
+their stored size (logical size × density) and may use any 8-bit alpha.
 Live paintovers may use new RGB colors; they are converted to RGB565. Invalid,
 empty, partially written, or missing images retain the previous valid artwork.
 The game continues while the watcher reports the error.
@@ -55,13 +57,41 @@ source art. Embedded fallback images remain available if no override is loaded.
 open build/assets/preview.html    # macOS; otherwise open in a browser
 ```
 
-The builder validates all 94 PNGs: dimensions, IDs, bounds, palette, binary alpha,
-clips, and the nine prizes' distinct pixels. It emits the self-contained HTML
-sheet, contact sheet, and RGB565/mask exports into ignored `build/assets/`.
+The builder validates every PNG: dimensions, IDs, bounds, clips, and the nine
+prizes' distinct pixels; palette and binary alpha for legacy pixel art; density,
+8-bit RGBA format and drawable scales for high-resolution art. It emits the
+self-contained HTML sheet, contact sheet, and RGB565, mask and alpha exports into
+ignored `build/assets/`.
 Release builds retain the stricter shared-palette and manifest-bounds checks;
 update the authored manifest and palette intentionally when accepting a paintover.
 
-The inventory includes twenty-four creature frames (Mint, Lilac, and the ninja),
-care and ring icons, health activities, stat pictograms, celebration sprites,
-battery-status icons, backgrounds, props, font, and nine unique presents. See [the source inventory](../assets/slice/README.md) for
+The inventory includes thirty-two creature frames (Mint, Lilac, the ninja, and the
+unicorn), care and ring icons, health activities, stat pictograms, celebration sprites,
+battery-status icons, backgrounds, props, font, and nine unique presents. All but the
+backgrounds, props and font are high-resolution art. See [the source inventory](../assets/slice/README.md) for
 stable IDs, provenance, reproduction, and byte budgets.
+
+## High-resolution art
+
+Each sprite entry can opt into high resolution with `"density": D`: its PNG,
+under `assets/slice/hires/<kind>/`, stores D pixels per logical pixel (for
+example a 32×32 creature at density 6 is a 192×192 RGBA PNG), with soft 8-bit
+alpha and any colours. Layout, anchors and touch keep using logical pixels, so
+switching an asset to high resolution never moves it on screen. The renderer
+draws 1:1, upscales by whole multiples, or box-filters by whole divisors, then
+alpha blends. The density table, the coverage rule (alpha ≥ 128) and the
+step-by-step manifest switch are in
+[the slice guide](../assets/slice/README.md#high-resolution-art-density).
+
+To add or repaint high-resolution art:
+
+1. Paint at the stored size from the density table, on a transparent
+   background. Keep shadows that must not accept taps below alpha 128.
+2. Switch the manifest entry (path + `density`) as the slice guide describes, then
+   run the builder and open the preview; high-resolution cards show at on-screen size.
+3. Use `make run-live` to see it in the game. Live packs (format v2) carry density
+   and alpha; the desktop host reserves about 20 MiB when a pack is loaded.
+
+Embedded high-resolution art is flash rodata on the ESP32: a full set is about
+5 MB, which needs the 8 MB app partition described in the
+[hardware guide](hardware.md#partition-table-and-regenerating-sdkconfig).

@@ -11,7 +11,7 @@ import unittest
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools/assets"))
-from sprite_geometry import ground_anchor_q8, opaque_centroid_q8
+from sprite_geometry import ground_anchor_q8, logical_bounds, opaque_centroid_q8
 from build_slice import export_pixels, load_assets
 
 
@@ -55,16 +55,40 @@ class GroundAnchorTests(unittest.TestCase):
     def test_real_pose_metadata(self):
         manifest, images = load_assets()
         creatures = [a for a in manifest["assets"] if a["kind"] == "creatures"]
-        self.assertEqual(len(creatures), 24)  # Mint, Lilac, and ninja: eight poses each.
+        self.assertEqual(len(creatures), 32)  # Mint, Lilac, ninja and unicorn: eight poses each.
         for asset in creatures:
             x, y = asset["ground_anchor_q8"]
             self.assertEqual(y, asset["bounds"][3] * 256)
             self.assertTrue(asset["bounds"][0] * 256 < x < asset["bounds"][2] * 256)
-            self.assertEqual([x, y], ground_anchor_q8(images[asset["key"]]))
+            self.assertEqual([x, y], ground_anchor_q8(images[asset["key"]], asset.get("density", 1)))
+
+
+class DensityTests(unittest.TestCase):
+    """Stored measurements divide by density into the same logical Q8 units."""
+
+    def test_nearest_upscale_keeps_logical_metadata(self):
+        foot = shape([(2, 8), (3, 8), (2, 9), (3, 9), (9, 9), (5, 1), (6, 4)])
+        for density in (2, 3, 4, 6, 8):
+            big = foot.resize((12 * density, 12 * density), Image.Resampling.NEAREST)
+            with self.subTest(density=density):
+                self.assertEqual(ground_anchor_q8(big, density), ground_anchor_q8(foot))
+                self.assertEqual(opaque_centroid_q8(big, density), opaque_centroid_q8(foot))
+                self.assertEqual(logical_bounds(big, density), list(foot.getbbox()))
+
+    def test_threshold_and_partial_logical_pixels(self):
+        image = Image.new("RGBA", (12, 12))
+        image.putpixel((7, 5), (9, 9, 9, 127))  # Below the coverage threshold.
+        image.putpixel((7, 6), (9, 9, 9, 128))
+        # Stored (7, 6) at density 6 is inside logical (1, 1): bounds round outwards.
+        self.assertEqual(logical_bounds(image, 6), [1, 1, 2, 2])
+        self.assertEqual(opaque_centroid_q8(image, 6), [320, 277])  # (15/6, 13/6) x 128.
+        self.assertEqual(ground_anchor_q8(image, 6), [320, 299])  # Bottom edge 7/6 = 298.7.
+        with self.assertRaisesRegex(ValueError, "empty"):
+            logical_bounds(Image.new("RGBA", (6, 6), (1, 2, 3, 127)), 6)
 
 
 class PackBudgetTests(unittest.TestCase):
-    """The exported art fits the 192 KiB plan, and any growth fails the build."""
+    """The shipped high-resolution export is pinned against the 6 MiB budget."""
 
     def export(self, manifest, images):
         with tempfile.TemporaryDirectory() as folder:
@@ -73,26 +97,33 @@ class PackBudgetTests(unittest.TestCase):
     def test_real_inventory_within_ceiling(self):
         manifest, images = load_assets()
         report = self.export(manifest, images)
-        self.assertEqual(report["pixel_bytes"], 168704)
-        self.assertEqual(report["planned_pack_bytes"], 180992)
-        self.assertEqual(report["pack_ceiling"], 196608)
-        ninja = [r for r in report["assets"] if 1031 <= r["id"] <= 1038]
-        self.assertEqual(len(ninja), 8)
-        # 32x32 RGB565 plus a 4-byte-per-row mask, like every other creature frame.
-        self.assertTrue(all(r["bytes"] == 32 * 32 * 2 + 4 * 32 for r in ninja))
+        self.assertEqual(report["pixel_bytes"], 4981664)
+        self.assertEqual(report["planned_pack_bytes"], 4993952)
+        self.assertEqual(report["pack_ceiling"], 6 * 1024 * 1024)
+        self.assertEqual(report["hires_assets"], 95)
+        creatures = [r for r in report["assets"] if 1001 <= r["id"] <= 1048]
+        self.assertEqual(len(creatures), 32)
+        # 192x192 stored RGB565 plus an 8-bit alpha plane, for every creature frame.
+        self.assertTrue(all(r["bytes"] == 192 * 192 * 3 for r in creatures))
 
     def test_growth_is_rejected(self):
         manifest, images = load_assets()
         frame = next(a for a in manifest["assets"] if a["id"] == 1031)
-        # Seven more frames would still fit the ceiling; eight would exceed it.
-        for extra in (1, 7, 8):
+        hires = {**frame, "density": 6}  # 110,592 runtime bytes per frame.
+        images["hires"] = images[frame["key"]].resize((192, 192), Image.Resampling.NEAREST)
+        # 11 more high-resolution frames still fit 6 MiB; 12 exceed it.
+        for extra, fits in ((11, True), (12, False)):
             grown = copy.deepcopy(manifest)
             for n in range(extra):
                 key = f"creatures.test-extra-{n}"
-                grown["assets"].append({**frame, "id": 1900 + n, "key": key})
-                images[key] = images[frame["key"]]
-            with self.subTest(extra=extra), self.assertRaisesRegex(ValueError, "pixel payload"):
-                self.export(grown, images)
+                grown["assets"].append({**hires, "id": 1900 + n, "key": key})
+                images[key] = images["hires"]
+            with self.subTest(extra=extra):
+                if fits:
+                    self.export(grown, images)
+                else:
+                    with self.assertRaisesRegex(ValueError, "6 MiB"):
+                        self.export(grown, images)
 
 
 if __name__ == "__main__":

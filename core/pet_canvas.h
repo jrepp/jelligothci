@@ -23,6 +23,8 @@ void jelli_canvas_rect(Canvas *c, int x, int y, int w, int h, uint16_t color);
 void jelli_canvas_disk(Canvas *c, int x, int y, int radius, uint16_t color);
 void jelli_canvas_text(Canvas *c, const char *value, int x, int y, unsigned scale, uint16_t color);
 void jelli_canvas_centered(Canvas *c, const char *value, int y, unsigned scale, uint16_t color);
+/* Straight-alpha RGB565 composite; alpha 0 keeps back and 255 returns front. */
+uint16_t jelli_canvas_blend(uint16_t back, uint16_t front, unsigned alpha);
 void jelli_canvas_sprite(Canvas *c, uint32_t id, int x, int y, unsigned scale);
 void jelli_canvas_centered_sprite(Canvas *c, uint32_t id, int x, int y, unsigned scale);
 void jelli_canvas_heading(Canvas *c, const char *value, int y, unsigned scale);

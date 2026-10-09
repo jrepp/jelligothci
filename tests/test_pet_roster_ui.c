@@ -1,4 +1,4 @@
-/* The three-to-eight pet roster: frame selection for every form and state, the ninja
+/* The four-to-eight pet roster: frame selection for every form and state, the ninja
  * over days of simulated time, and SWITCH PET with its preview for every roster size. */
 #include "jelli/assets.h"
 #include "jelli/debug.h"
@@ -20,10 +20,11 @@ enum { STRIDE = JELLI_WIDTH + 5, PIXELS = STRIDE * JELLI_HEIGHT, POSES = 8 };
 static uint16_t pixels[PIXELS];
 
 /* Asset IDs in pose order, transcribed from assets/slice/assets.json. */
-static const uint32_t pose_ids[3][POSES] = {
+static const uint32_t pose_ids[JELLI_FORM_COUNT][POSES] = {
     {1001u, 1002u, 1003u, 1004u, 1005u, 1006u, 1021u, 1022u},
     {1007u, 1008u, 1009u, 1010u, 1011u, 1012u, 1023u, 1024u},
-    {1031u, 1032u, 1033u, 1034u, 1035u, 1036u, 1037u, 1038u}};
+    {1031u, 1032u, 1033u, 1034u, 1035u, 1036u, 1037u, 1038u},
+    {1041u, 1042u, 1043u, 1044u, 1045u, 1046u, 1047u, 1048u}};
 
 static int pose_of(unsigned form, uint32_t id)
 {
@@ -61,6 +62,7 @@ static void every_form_and_state(void)
             CHECK(pose >= 0);
             CHECK(pose_of(1u, frame_for(1u, &state)) == pose);
             CHECK(pose_of(2u, frame_for(2u, &state)) == pose);
+            CHECK(pose_of(3u, frame_for(3u, &state)) == pose);
             for (unsigned form = JELLI_FORM_COUNT; form < 256u; ++form)
                 CHECK(frame_for((uint8_t)form, &state) == pose_ids[0][pose]);
             ++states;
@@ -69,15 +71,30 @@ static void every_form_and_state(void)
     CHECK(states == 864u);
 }
 
-/* Every ninja frame exists as a grounded 32x32 creature with consistent bounds. */
-static void ninja_assets_resolve(void)
+/* True when stored row `y` of `a` has a covered pixel. */
+static bool stored_row_covered(const JelliAsset *a, unsigned y)
 {
-    for (unsigned pose = 0u; pose < POSES; ++pose) {
-        const JelliAsset *a = jelli_asset_find(pose_ids[2][pose]);
-        CHECK(a && a->width == 32u && a->height == 32u && a->mask_stride == 4u);
-        CHECK(a->left < a->right && a->top < a->bottom && a->bottom <= 32u);
-        CHECK(a->ground_y_q8 == a->bottom * 256u && a->ground_x_q8 > a->left * 256u &&
-              a->ground_x_q8 < a->right * 256u);
+    for (unsigned x = 0u; x < a->width * jelli_asset_density(a); ++x)
+        if (jelli_asset_alpha_at(a, x, y) >= JELLI_ASSET_OPAQUE_ALPHA)
+            return true;
+    return false;
+}
+
+/* Every ninja and unicorn frame exists as a grounded 32x32 creature stored at density 6
+ * (drawn 1:1 at 6x), and its cached bottom bound is the real lowest covered row. */
+static void species_assets_resolve(void)
+{
+    for (unsigned form = JELLI_FORM_NINJA; form < JELLI_FORM_COUNT; ++form) {
+        for (unsigned pose = 0u; pose < POSES; ++pose) {
+            const JelliAsset *a = jelli_asset_find(pose_ids[form][pose]);
+            CHECK(a && a->width == 32u && a->height == 32u && jelli_asset_density(a) == 6u);
+            CHECK(a->alpha != NULL && jelli_asset_scale_supported(a, 6u));
+            CHECK(a->left < a->right && a->top < a->bottom && a->bottom <= 32u);
+            CHECK(a->ground_y_q8 == a->bottom * 256u && a->ground_x_q8 > a->left * 256u &&
+                  a->ground_x_q8 < a->right * 256u);
+            CHECK(stored_row_covered(a, a->bottom * 6u - 1u));
+            CHECK(!stored_row_covered(a, a->bottom * 6u)); /* Zero past the image. */
+        }
     }
 }
 
@@ -114,7 +131,8 @@ static JelliSurface surface_for(uint16_t *buffer)
     return (JelliSurface){buffer, JELLI_WIDTH, JELLI_HEIGHT, STRIDE, {0}};
 }
 
-/* Count pets with distinct IDs and varied forms; the ninja sits at ninja_at. */
+/* Count pets with distinct IDs and varied forms; the ninja sits at ninja_at and the
+ * unicorn in the slot after it. */
 static void build_roster(JelliGame *game, unsigned count, unsigned ninja_at)
 {
     jelli_game_init(game);
@@ -124,7 +142,9 @@ static void build_roster(JelliGame *game, unsigned count, unsigned ninja_at)
         game->pets[p] = mint;
         game->pets[p].id = 10u + p;
         game->pets[p].random_state = 10u + p;
-        game->pets[p].form = p == ninja_at ? (uint8_t)JELLI_FORM_NINJA : (uint8_t)(p % 2u);
+        game->pets[p].form = p == ninja_at                  ? (uint8_t)JELLI_FORM_NINJA
+                             : p == (ninja_at + 1u) % count ? (uint8_t)JELLI_FORM_UNICORN
+                                                            : (uint8_t)(p % 2u);
         game->pets[p].stage_ticks = 0u;
         /* Odd bystanders rest, so the Settings preview's asleep flag varies. */
         game->pets[p].asleep = game->pets[p].scheduled_sleep = (p % 2u) == 1u;
@@ -183,8 +203,8 @@ static void switch_refused(JelliGame *game)
     CHECK(jelli_game_valid(game));
 }
 
-/* SWITCH PET visits every slot in roster order and wraps, for three to eight pets and
- * the ninja in every slot; the Settings preview always describes the next pet. */
+/* SWITCH PET visits every slot in roster order and wraps, for four to eight pets and
+ * the ninja and unicorn in every slot; the Settings preview always describes the next pet. */
 static void switch_every_roster(void)
 {
     JelliGame odd;
@@ -211,7 +231,7 @@ static void switch_every_roster(void)
             switch_refused(&game);
         }
     }
-    CHECK(taps == 3u * 4u + 4u * 5u + 5u * 6u + 6u * 7u + 7u * 8u + 8u * 9u);
+    CHECK(taps == 4u * 5u + 5u * 6u + 6u * 7u + 7u * 8u + 8u * 9u);
 }
 
 static uint64_t engine_now(void *ctx)
@@ -247,10 +267,10 @@ static void debug_state_names_next_pet(void)
 int main(void)
 {
     every_form_and_state();
-    ninja_assets_resolve();
+    species_assets_resolve();
     forms_over_days();
     switch_every_roster();
     debug_state_names_next_pet();
-    puts("PASS: roster of 3-8 pets: every form/state frame, forms over days, SWITCH PET cycle");
+    puts("PASS: roster of 4-8 pets: every form/state frame, forms over days, SWITCH PET cycle");
     return 0;
 }

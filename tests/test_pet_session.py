@@ -27,7 +27,7 @@ def ticks(data):
 
 
 COUNT, ACTIVE, PETS = 68, 69, 71  # Roster header offsets in the save record.
-SOUND_FROM_END = 9  # Version 6 sound level byte, just before the 8-byte trailer.
+SOUND_FROM_END = 9  # Version 6+ sound level byte, just before the 8-byte trailer.
 
 
 def roster(data):
@@ -58,34 +58,46 @@ def without_sound(data):
     return data[:-SOUND_FROM_END] + data[-SOUND_FROM_END + 1:]
 
 
+def first_pets(data, size, keep):
+    """The same record with only its first `keep` pets, as an older build wrote it."""
+    count = data[COUNT]
+    data = bytearray(data[:PETS + keep * size] + data[PETS + count * size:])
+    data[COUNT] = keep
+    return data
+
+
 def keeps_saved_pet(folder):
-    """New players start with Nirmal (slot 2); loaded v4-v6 saves keep their own pet."""
+    """New players start with the unicorn (slot 3); loaded v4-v7 saves keep their own pet
+    and gain whichever of the ninja and the unicorn they predate."""
     base = Path(folder) / "fresh"
     assert run(base, 1000000, 3).returncode == 0
     fresh = latest(base)
     count, active, size, pets = roster(fresh)
-    assert (count, active) == (3, 2) and pets == [(1, 0), (2, 0), (3, 2)], (count, active, pets)
-    assert fresh[4] == 6 and fresh[-SOUND_FROM_END] == 5  # New games save the middle level.
-    for slot in (0, 1):  # Current-version save with a jelly active and a stored level.
+    assert (count, active) == (4, 3) and pets == [(1, 0), (2, 0), (3, 2), (4, 3)], (count, pets)
+    assert fresh[4] == 7 and fresh[-SOUND_FROM_END] == 5  # New games save the middle level.
+    for slot in (0, 1, 2):  # Current-version save with another pet active and a stored level.
         data = bytearray(fresh)
         data[ACTIVE], data[-SOUND_FROM_END] = slot, 9
-        store(base, data, 6)
+        store(base, data, 7)
         assert run(base, 1000000, 3).returncode == 0
         assert roster(latest(base))[1] == slot and latest(base)[-SOUND_FROM_END] == 9
-    for slot in (0, 1):  # Version 5 save: same roster, the sound level takes its default.
-        data = bytearray(without_sound(fresh))
+    for version in (5, 6):  # Pre-unicorn saves: the unicorn is appended, not activated.
+        for slot in (0, 1, 2):
+            data = first_pets(fresh, size, 3)
+            data[ACTIVE], data[-SOUND_FROM_END] = slot, 9
+            store(base, data if version == 6 else without_sound(data), version)
+            assert run(base, 1000000, 3).returncode == 0
+            resaved = latest(base)
+            count, active, _, pets = roster(resaved)
+            assert (count, active) == (4, slot) and pets[3] == (4, 3), (version, count, pets)
+            assert resaved[4] == 7 and resaved[-SOUND_FROM_END] == (9 if version == 6 else 5)
+    for slot in (0, 1):  # Pre-ninja v4 save: two Mints gain the ninja, then the unicorn.
+        data = bytearray(without_sound(first_pets(fresh, size, 2)))
         data[ACTIVE] = slot
-        store(base, data, 5)
-        assert run(base, 1000000, 3).returncode == 0
-        resaved = latest(base)
-        assert resaved[4] == 6 and roster(resaved)[1] == slot and resaved[-SOUND_FROM_END] == 5
-    for slot in (0, 1):  # Pre-ninja v4 save: two Mints, the ninja is appended, not activated.
-        data = bytearray(without_sound(fresh[:PETS + 2 * size] + fresh[PETS + 3 * size:]))
-        data[COUNT], data[ACTIVE] = 2, slot
         store(base, data, 4)
         assert run(base, 1000000, 3).returncode == 0
         count, active, _, pets = roster(latest(base))
-        assert (count, active) == (3, slot) and pets[2] == (3, 2), (count, active, pets)
+        assert (count, active) == (4, slot) and pets[2:] == [(3, 2), (4, 3)], (count, pets)
 
 
 with tempfile.TemporaryDirectory(prefix="jelli-session-") as folder:
@@ -118,4 +130,4 @@ with tempfile.TemporaryDirectory(prefix="jelli-session-") as folder:
     assert ticks(latest(demo)) == 780
     keeps_saved_pet(folder)
 print("PASS: saved time cuts, restart idempotence, invalid/capped clocks, corrupt-file preservation, demo save, "
-      "Nirmal for new players, v4-v6 saves keep their active pet and v6 its sound level")
+      "the unicorn for new players, v4-v7 saves keep their active pet and v6+ its sound level")

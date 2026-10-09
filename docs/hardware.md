@@ -34,7 +34,8 @@ using it. It refuses to sync over edits to tracked SDK files.
 | `ports/esp32/boards/<board>/jelli_board/idf_component.yml` | Each board's exact BSP pin |
 | `ports/esp32/dependencies.lock` | Resolved dependency versions for the 1.75 |
 | `ports/esp32/dependencies.1.75c.lock` | Resolved dependency versions for the 1.75C |
-| `ports/esp32/sdkconfig.defaults` | ESP32-S3, 16 MB flash, octal PSRAM, USB serial (both boards) |
+| `ports/esp32/sdkconfig.defaults` | ESP32-S3, 16 MB flash, octal PSRAM, USB serial, custom partition table (both boards) |
+| `ports/esp32/partitions.csv` | Flash layout: `nvs` and `phy_init` unchanged, 8 MB `factory` app |
 
 SDK sources live in `.tools/esp-idf`; compilers and the Python environment live
 in `.tools/espressif`. Caches also live under `.tools`. Build output is under
@@ -68,6 +69,46 @@ and rebuild when intentionally resetting to defaults. Local virtual environments
 and CMake caches contain absolute paths: bootstrap and rebuild after moving a
 checkout; the workflow is portable, its downloaded binaries/caches are not.
 
+### Partition table and regenerating sdkconfig
+
+`ports/esp32/partitions.csv` replaces ESP-IDF's default single-app table, whose
+1 MB app partition could not hold high-resolution artwork
+([ADR-012](../docs-cms/adr/adr-012-high-resolution-asset-density-and-flash-partition.md)).
+Both boards use it:
+
+| Name | Type | Offset | Size | Notes |
+| --- | --- | --- | --- | --- |
+| `nvs` | data/nvs | 0x9000 | 0x6000 (24 KB) | Saved game; identical to the old table |
+| `phy_init` | data/phy | 0xf000 | 0x1000 (4 KB) | Identical to the old table |
+| `factory` | app | 0x10000 | 0x800000 (8 MB) | Was 1 MB; about 7.9 MB above 0x810000 is unallocated |
+
+Because `nvs` keeps its offset and size, flashing the new table and image keeps
+the saved game; erasing the whole flash still clears it. Generated `sdkconfig`
+files do not pick up `CONFIG_PARTITION_TABLE_CUSTOM` from the defaults. In an
+existing checkout, delete them once and rebuild each board:
+
+```sh
+rm -f ports/esp32/sdkconfig build/esp32-1.75c/sdkconfig
+make esp-build
+JELLI_ESP_BOARD=1.75c make esp-build
+```
+
+The regenerated configuration should differ from the old one only in its
+partition settings. Check the generated table without a board attached:
+
+```sh
+.tools/espressif/python_env/idf5.5_py3.13_env/bin/python \
+  .tools/esp-idf/components/partition_table/gen_esp32part.py \
+  build/esp32/partition_table/partition-table.bin
+```
+
+It should list `nvs` at 0x9000 (24K), `phy_init` at 0xf000 (4K) and `factory`
+at 0x10000 (8M). The build also reports the image size and free app space.
+Embedded art is flash rodata: the ESP32-S3 maps it through a 32 MB data window
+(0x3C000000–0x3E000000) shared with PSRAM, so a 5 MB art set leaves room.
+With the shipped high-resolution art the 1.75 image is 0x576630 bytes (5,727,792;
+32% of the 8 MB partition free) and the 1.75C image 0x573c60 bytes (5,717,088; 32%
+free). A build with legacy art only was about 0.9 MB.
 
 ## Board variants
 

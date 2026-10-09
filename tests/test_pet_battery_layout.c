@@ -17,12 +17,21 @@
 enum { STRIDE = JELLI_WIDTH + 3, PIXELS = STRIDE * JELLI_HEIGHT };
 static uint16_t pixels[PIXELS], fresh[PIXELS];
 
-static bool creature_opaque(const JelliAsset *frame, unsigned column, unsigned row)
+enum { ACTOR_SCALE = 6 };
+
+/* Alpha of output pixel (x, y) of `frame` drawn at the actor's 6x scale; any value
+ * above zero, soft edges included, is visible creature. */
+static uint8_t creature_alpha(const JelliAsset *frame, unsigned x, unsigned y)
 {
-    return (frame->mask[row * frame->mask_stride + column / 8u] >> (7u - column % 8u)) & 1u;
+    JelliAssetSampler sampler;
+    uint16_t color;
+    CHECK(jelli_asset_sampler(&sampler, frame, ACTOR_SCALE));
+    return jelli_asset_sample(&sampler, x, y, &color);
 }
 
-/* The indicator never paints over any pet: every form x pose x widest caption. */
+/* The indicator never paints over any pet: every form x pose x widest caption. Every
+ * visible creature pixel, including soft edges blended over the scene, is identical
+ * with and without the indicator. */
 static void indicator_clears_every_creature(void)
 {
     static const JelliPowerReading readings[] = {
@@ -62,19 +71,14 @@ static void indicator_clears_every_creature(void)
                 JelliSurface without = {fresh, JELLI_WIDTH, JELLI_HEIGHT, STRIDE, {0}};
                 jelli_pet_render(&without, &game, &hidden, 0u, false);
                 CHECK(hidden.actor_frame == frame);
-                for (unsigned row = 0u; row < frame->height; ++row)
-                    for (unsigned column = 0u; column < frame->width; ++column) {
-                        if (!creature_opaque(frame, column, row))
+                for (unsigned row = 0u; row < frame->height * ACTOR_SCALE; ++row)
+                    for (unsigned column = 0u; column < frame->width * ACTOR_SCALE; ++column) {
+                        if (!creature_alpha(frame, column, row))
                             continue;
-                        for (unsigned dy = 0u; dy < 6u; ++dy)
-                            for (unsigned dx = 0u; dx < 6u; ++dx) {
-                                int x = shown.actor_x + (int)(column * 6u + dx);
-                                int y = shown.actor_y + (int)(row * 6u + dy);
-                                CHECK(x >= 0 && y >= 0 && x < (int)JELLI_WIDTH &&
-                                      y < (int)JELLI_HEIGHT);
-                                CHECK(pixels[(size_t)y * STRIDE + (size_t)x] ==
-                                      fresh[(size_t)y * STRIDE + (size_t)x]);
-                            }
+                        int x = shown.actor_x + (int)column, y = shown.actor_y + (int)row;
+                        CHECK(x >= 0 && y >= 0 && x < (int)JELLI_WIDTH && y < (int)JELLI_HEIGHT);
+                        CHECK(pixels[(size_t)y * STRIDE + (size_t)x] ==
+                              fresh[(size_t)y * STRIDE + (size_t)x]);
                     }
             }
 }
@@ -104,7 +108,8 @@ static JelliRect painted_envelope(void)
     for (size_t r = 0u; r < sizeof(readings) / sizeof(readings[0]); ++r) {
         JelliGame game;
         jelli_game_new(&game);
-        game.pets[2].form = JELLI_FORM_MINT; /* Plain scene: nothing else near the corner. */
+        /* Plain scene: nothing else near the corner. */
+        game.pets[game.active].form = JELLI_FORM_MINT;
         JelliPetUi shown, hidden;
         jelli_pet_ui_init(&shown);
         jelli_pet_ui_init(&hidden);
@@ -131,18 +136,27 @@ static JelliRect painted_envelope(void)
     CHECK(envelope.x >= battery.x && envelope.y >= battery.y &&
           envelope.x + envelope.width <= battery.x + battery.width &&
           envelope.y + envelope.height <= battery.y + battery.height);
-    /* The widest caption's scrim reaches within one pixel of the rectangle's sides. */
+    /* The widest caption's scrim reaches within one pixel of the rectangle's sides. The
+     * tallest icon starts at its highest covered logical row (2 px each at 2x); the
+     * rectangle reserves the icon's full 16x16 cell above it. */
+    unsigned icon_top = 16u;
+    for (unsigned icon = 0u; icon < JELLI_BATTERY_ICON_COUNT; ++icon) {
+        const JelliAsset *art = jelli_asset_find(JELLI_BATTERY_ASSET_BASE + icon);
+        CHECK(art != NULL);
+        icon_top = art->top < icon_top ? art->top : icon_top;
+    }
     CHECK(envelope.x == battery.x + 1u &&
           envelope.x + envelope.width == battery.x + battery.width - 1u);
-    CHECK(envelope.y == battery.y &&
+    CHECK(envelope.y == battery.y + 2u * icon_top &&
           envelope.y + envelope.height == battery.y + battery.height - 1u);
     return envelope;
 }
 
 /* Every frame the actor can show (all eight poses: both idle beats, curious and
  * content included, which a time-zero render never reaches), for every form, keeps
- * every opaque block out of the pixels the indicator can change. The curious ninja
- * reaches x = 158, the rectangle's unchanged rightmost column, and no further. */
+ * every visible pixel, soft edges included, out of the pixels the indicator can
+ * change. The closest, happy Lilac, reaches x = 162 at y = 157: four pixels right of
+ * the rectangle's unchanged rightmost column (158). */
 static void every_pose_clears_indicator(void)
 {
     const JelliRect envelope = painted_envelope();
@@ -172,16 +186,17 @@ static void every_pose_clears_indicator(void)
                 fresh_frame = fresh_frame && seen[i] != frame->id;
             if (fresh_frame)
                 seen[distinct++] = frame->id;
-            unsigned blocks = 0u;
-            for (unsigned row = 0u; row < frame->height; ++row)
-                for (unsigned column = 0u; column < frame->width; ++column) {
-                    if (!creature_opaque(frame, column, row))
+            unsigned covered = 0u;
+            for (unsigned row = 0u; row < frame->height * ACTOR_SCALE; ++row)
+                for (unsigned column = 0u; column < frame->width * ACTOR_SCALE; ++column) {
+                    if (!creature_alpha(frame, column, row))
                         continue;
-                    ++blocks;
-                    int x = ui.actor_x + (int)column * 6, y = ui.actor_y + (int)row * 6;
-                    CHECK(!overlaps(envelope, (JelliRect){(unsigned)x, (unsigned)y, 6u, 6u}));
+                    covered += jelli_asset_hit(frame, column, row, ACTOR_SCALE) ? 1u : 0u;
+                    int x = ui.actor_x + (int)column, y = ui.actor_y + (int)row;
+                    CHECK(!inside(envelope, x, y));
                 }
-            CHECK(blocks > 20u); /* A real sprite, not a missing or blank frame. */
+            /* A real sprite, not a missing or blank frame: over 20 logical pixels. */
+            CHECK(covered > 20u * ACTOR_SCALE * ACTOR_SCALE);
         }
         CHECK(distinct == 8u); /* Each state reached a different pose frame. */
     }
@@ -220,7 +235,7 @@ static void render_home(uint16_t *buffer, const JelliGame *game, JelliPetUi *ui,
 static void home_ui_never_paints_indicator_rect(void)
 {
     const JelliRect battery = jelli_pet_battery_bounds();
-    for (unsigned variant = 0u; variant < 14u; ++variant) {
+    for (unsigned variant = 0u; variant < 15u; ++variant) {
         JelliGame base, game;
         jelli_game_init(&base);
         base.battery_display = false;
@@ -245,7 +260,9 @@ static void home_ui_never_paints_indicator_rect(void)
             game.prizes.owned = game.prizes.discovered = 1u << 5;
             game.prizes.origin_pet[5] = 1u;
             after.latched_prize = 6u; /* GIVE badge. */
-        } else
+        } else if (variant == 14u)
+            pet->form = JELLI_FORM_UNICORN; /* The widest heading, UNICORN, and its body. */
+        else
             after.stat_offset = (uint8_t)(variant - 9u); /* Each stat tile page. */
         render_home(fresh, &base, &before, 0u);
         render_home(pixels, &game, &after, 0u);

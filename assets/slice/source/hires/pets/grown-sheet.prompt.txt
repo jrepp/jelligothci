@@ -1,0 +1,25 @@
+Model: gemini-3-pro-image-preview (Gemini image generation, "quality"), aspect ratio 16:9, style none.
+Returned a 1376x768 JPEG, kept verbatim as grown-sheet.jpg
+(sha256 310d15f9f2dc47e49a8cd1ee39dff76bd8d98d085b095c6f935b08f5b1091bfb). Key: green
+(Lilac's lavender would sit too close to a magenta key). extract_pets.py takes Lilac (grown)
+idle-a, eating, happy, asleep, unwell and content from cells 0, 2, 3, 4, 5, 7; idle-b is
+derived from cell 0 and curious comes from grown-sheet-curious.jpg (this sheet's curious,
+cell 6, leans to the left).
+
+Prompt (verbatim):
+
+Character pose sheet for an original virtual pet game. The whole image background is ONE perfectly flat, uniform, pure chroma-key green colour (#00FF00): no gradient, no vignette, no texture, no floor, no shadows. Exactly eight poses of the SAME character arranged in an invisible grid of 4 columns by 2 rows, each pose centred in its own equal-sized cell with wide empty green margins; no pose overlaps or touches another pose or the image edge. Every pose is drawn at the same scale, full body, facing the viewer, standing on the same baseline within its row. No grid lines, borders, labels, numbers, captions, letters or text anywhere.
+
+Rendering style: an original glossy 3D "toy" character render in the spirit of premium emoji-style characters, but an entirely original design. Smooth rounded forms, soft studio lighting from the upper left, gentle gradients, subtle specular highlights, and a soft pale rim light along the shadow side of the silhouette. Saturated but harmonious palette (lavender/violet, cream, coral/pink, warm gold, deep plum). No outlines, no drop shadows, no ground shadows, no scenery.
+
+Character: "Lilac", a taller soft jelly creature: a lavender/light-violet glossy translucent-looking jelly body, rounded on top with two small rounded ear-like lobes on the top of the head, a softly scalloped wavy jelly hem at the bottom instead of legs, two small rounded nub arms; cream-white highlights, rosy pink cheeks, dark glossy round eyes with white sparkle highlights, a tiny cute smile. Simple, cute, very readable silhouette, a little taller than it is wide.
+
+Poses in reading order (top row left to right, then bottom row left to right):
+1. idle A: standing upright alert, eyes open, gentle smile.
+2. idle B: exactly the same as pose 1 but very slightly squashed vertically (a little wider and shorter), as a gentle bob.
+3. eating: holding a small round red berry at its mouth with both nub arms and biting it.
+4. happy: eyes closed as upward arcs, big joyful open smile, nub arms raised up.
+5. asleep: eyes closed as gentle curved lines, body flattened low and wide, slumped and curled, peaceful (no Z letters).
+6. unwell: droopy half-closed eyes, body colour paler with a slightly sickly greenish-grey tinge, a small teal sweat drop beside the head, wobbly little mouth.
+7. curious: body leaning and tilting to the right, one eye a bit wider than the other, inquisitive.
+8. content: calm closed smiling eyes, sitting low and relaxed, slightly settled.

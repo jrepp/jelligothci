@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "name": "Jelligotchi vertical slice",
-  "status": "Ring menu artwork integrated; physical readability review pending",
-  "pixel_format": "RGBA PNG; binary alpha; export RGB565 little-endian plus MSB-first row masks",
+  "status": "High-resolution pets and icons integrated; physical readability review pending",
+  "pixel_format": "RGBA PNG. Legacy entries: binary alpha; export RGB565 little-endian plus MSB-first row masks. Entries with density: 8-bit straight alpha at logical size x density; export RGB565 little-endian plus an 8-bit alpha plane",
   "palette": [
     "#291b35",
     "#49334f",
@@ -25,19 +25,20 @@
     {
       "id": 1001,
       "key": "creatures.baby-idle-a",
-      "path": "creatures/baby-idle-a.png",
+      "path": "hires/creatures/baby-idle-a.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
         6,
-        12,
-        27,
-        29
+        13,
+        26,
+        30
       ],
       "form": "baby",
       "pose": "idle-a"
@@ -45,10 +46,11 @@
     {
       "id": 1002,
       "key": "creatures.baby-idle-b",
-      "path": "creatures/baby-idle-b.png",
+      "path": "hires/creatures/baby-idle-b.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
@@ -57,7 +59,7 @@
         6,
         14,
         26,
-        29
+        30
       ],
       "form": "baby",
       "pose": "idle-b"
@@ -65,19 +67,20 @@
     {
       "id": 1003,
       "key": "creatures.baby-eating",
-      "path": "creatures/baby-eating.png",
+      "path": "hires/creatures/baby-eating.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        6,
-        12,
-        26,
-        29
+        7,
+        13,
+        25,
+        30
       ],
       "form": "baby",
       "pose": "eating"
@@ -85,19 +88,20 @@
     {
       "id": 1004,
       "key": "creatures.baby-happy",
-      "path": "creatures/baby-happy.png",
+      "path": "hires/creatures/baby-happy.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        5,
-        12,
+        6,
+        13,
         26,
-        29
+        30
       ],
       "form": "baby",
       "pose": "happy"
@@ -105,18 +109,19 @@
     {
       "id": 1005,
       "key": "creatures.baby-asleep",
-      "path": "creatures/baby-asleep.png",
+      "path": "hires/creatures/baby-asleep.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        6,
-        18,
-        28,
+        5,
+        17,
+        27,
         30
       ],
       "form": "baby",
@@ -125,17 +130,18 @@
     {
       "id": 1006,
       "key": "creatures.baby-unwell",
-      "path": "creatures/baby-unwell.png",
+      "path": "hires/creatures/baby-unwell.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
         6,
-        14,
+        13,
         26,
         30
       ],
@@ -145,16 +151,17 @@
     {
       "id": 1007,
       "key": "creatures.grown-idle-a",
-      "path": "creatures/grown-idle-a.png",
+      "path": "hires/creatures/grown-idle-a.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        4,
+        5,
         6,
         27,
         30
@@ -165,18 +172,19 @@
     {
       "id": 1008,
       "key": "creatures.grown-idle-b",
-      "path": "creatures/grown-idle-b.png",
+      "path": "hires/creatures/grown-idle-b.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        4,
-        9,
-        27,
+        5,
+        7,
+        28,
         30
       ],
       "form": "grown",
@@ -185,19 +193,20 @@
     {
       "id": 1009,
       "key": "creatures.grown-eating",
-      "path": "creatures/grown-eating.png",
+      "path": "hires/creatures/grown-eating.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
+        7,
         5,
-        4,
-        28,
-        29
+        25,
+        30
       ],
       "form": "grown",
       "pose": "eating"
@@ -205,19 +214,20 @@
     {
       "id": 1010,
       "key": "creatures.grown-happy",
-      "path": "creatures/grown-happy.png",
+      "path": "hires/creatures/grown-happy.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
         4,
-        3,
+        6,
         28,
-        29
+        30
       ],
       "form": "grown",
       "pose": "happy"
@@ -225,19 +235,20 @@
     {
       "id": 1011,
       "key": "creatures.grown-asleep",
-      "path": "creatures/grown-asleep.png",
+      "path": "hires/creatures/grown-asleep.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        3,
-        9,
+        5,
+        13,
         28,
-        29
+        30
       ],
       "form": "grown",
       "pose": "asleep"
@@ -245,19 +256,20 @@
     {
       "id": 1012,
       "key": "creatures.grown-unwell",
-      "path": "creatures/grown-unwell.png",
+      "path": "hires/creatures/grown-unwell.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        4,
-        4,
+        5,
+        7,
         27,
-        29
+        30
       ],
       "form": "grown",
       "pose": "unwell"
@@ -337,10 +349,11 @@
     {
       "id": 2001,
       "key": "icons.basic-care",
-      "path": "icons/basic-care.png",
+      "path": "hires/icons/basic-care.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
@@ -349,70 +362,74 @@
         1,
         2,
         15,
-        15
+        14
       ]
     },
     {
       "id": 2002,
       "key": "icons.food",
-      "path": "icons/food.png",
+      "path": "hires/icons/food.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
       ],
       "bounds": [
         1,
-        2,
+        1,
         15,
-        14
+        15
       ]
     },
     {
       "id": 2003,
       "key": "icons.play",
-      "path": "icons/play.png",
+      "path": "hires/icons/play.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
       ],
       "bounds": [
-        2,
-        2,
-        14,
-        14
+        1,
+        1,
+        15,
+        15
       ]
     },
     {
       "id": 2004,
       "key": "icons.clean",
-      "path": "icons/clean.png",
+      "path": "hires/icons/clean.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
       ],
       "bounds": [
-        3,
         1,
-        14,
-        13
+        1,
+        15,
+        15
       ]
     },
     {
       "id": 2005,
       "key": "icons.rest",
-      "path": "icons/rest.png",
+      "path": "hires/icons/rest.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
@@ -420,7 +437,7 @@
       "bounds": [
         1,
         1,
-        14,
+        15,
         15
       ],
       "purpose": "Clean circular crescent for rest and bedtime"
@@ -428,10 +445,11 @@
     {
       "id": 2006,
       "key": "icons.wake",
-      "path": "icons/wake.png",
+      "path": "hires/icons/wake.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
@@ -446,28 +464,49 @@
     {
       "id": 2007,
       "key": "icons.medicine",
-      "path": "icons/medicine.png",
+      "path": "hires/icons/medicine.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
       ],
       "bounds": [
-        4,
+        3,
         1,
-        12,
-        14
+        13,
+        15
       ]
     },
     {
       "id": 2008,
       "key": "icons.gift",
-      "path": "icons/gift.png",
+      "path": "hires/icons/gift.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
+      "density": 6,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        2,
+        1,
+        14,
+        15
+      ]
+    },
+    {
+      "id": 2009,
+      "key": "icons.reward",
+      "path": "hires/icons/reward.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
@@ -476,59 +515,43 @@
         1,
         1,
         15,
-        14
-      ]
-    },
-    {
-      "id": 2009,
-      "key": "icons.reward",
-      "path": "icons/reward.png",
-      "kind": "icons",
-      "width": 16,
-      "height": 16,
-      "pivot": [
-        8,
-        14
-      ],
-      "bounds": [
-        0,
-        0,
-        16,
-        16
+        15
       ]
     },
     {
       "id": 2010,
       "key": "icons.inventory",
-      "path": "icons/inventory.png",
+      "path": "hires/icons/inventory.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
-      "pivot": [
-        8,
-        14
-      ],
-      "bounds": [
-        3,
-        2,
-        13,
-        14
-      ]
-    },
-    {
-      "id": 2012,
-      "key": "icons.confirm",
-      "path": "icons/confirm.png",
-      "kind": "icons",
-      "width": 16,
-      "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
       ],
       "bounds": [
         1,
-        3,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "id": 2012,
+      "key": "icons.confirm",
+      "path": "hires/icons/confirm.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "density": 6,
+      "pivot": [
+        8,
+        14
+      ],
+      "bounds": [
+        1,
+        2,
         15,
         14
       ]
@@ -560,18 +583,19 @@
     {
       "id": 7001,
       "key": "meters.satiety",
-      "path": "meters/satiety.png",
+      "path": "hires/meters/satiety.png",
       "kind": "meters",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
       ],
       "bounds": [
         5,
-        3,
-        28,
+        2,
+        27,
         30
       ],
       "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
@@ -579,67 +603,71 @@
     {
       "id": 7002,
       "key": "meters.energy",
-      "path": "meters/energy.png",
+      "path": "hires/meters/energy.png",
       "kind": "meters",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        5,
+        7,
         2,
-        29,
-        31
+        25,
+        30
       ],
       "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
     },
     {
       "id": 7003,
       "key": "meters.hygiene",
-      "path": "meters/hygiene.png",
+      "path": "hires/meters/hygiene.png",
       "kind": "meters",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
       ],
       "bounds": [
         3,
-        3,
-        30,
-        28
+        2,
+        29,
+        30
       ],
       "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
     },
     {
       "id": 7004,
       "key": "meters.amusement",
-      "path": "meters/amusement.png",
+      "path": "hires/meters/amusement.png",
       "kind": "meters",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        3,
-        3,
-        29,
-        29
+        2,
+        2,
+        30,
+        30
       ],
       "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
     },
     {
       "id": 7005,
       "key": "meters.social",
-      "path": "meters/social.png",
+      "path": "hires/meters/social.png",
       "kind": "meters",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
@@ -647,25 +675,26 @@
       "bounds": [
         2,
         4,
-        30,
-        30
+        29,
+        28
       ],
       "purpose": "Large stat tile pictogram; vertical fill and 1\u2013100 value rendered in game"
     },
     {
       "id": 6001,
       "key": "menus.food",
-      "path": "menus/food.png",
+      "path": "hires/menus/food.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
         3,
-        1,
+        2,
         29,
         30
       ],
@@ -674,10 +703,11 @@
     {
       "id": 6002,
       "key": "menus.care",
-      "path": "menus/care.png",
+      "path": "hires/menus/care.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
@@ -686,82 +716,86 @@
         2,
         4,
         30,
-        30
+        28
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
     },
     {
       "id": 6003,
       "key": "menus.rest",
-      "path": "menus/rest.png",
+      "path": "hires/menus/rest.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        3,
-        3,
-        28,
-        29
+        2,
+        2,
+        30,
+        30
       ],
       "purpose": "Clean circular crescent for rest and bedtime"
     },
     {
       "id": 6004,
       "key": "menus.collection",
-      "path": "menus/collection.png",
+      "path": "hires/menus/collection.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        5,
-        6,
-        31,
-        29
+        2,
+        4,
+        30,
+        28
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
     },
     {
       "id": 6005,
       "key": "menus.more",
-      "path": "menus/more.png",
+      "path": "hires/menus/more.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
         2,
-        7,
+        10,
         30,
-        25
+        22
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
     },
     {
       "id": 6006,
       "key": "menus.settings",
-      "path": "menus/settings.png",
+      "path": "hires/menus/settings.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
+        3,
         2,
-        2,
-        30,
+        29,
         30
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
@@ -769,18 +803,19 @@
     {
       "id": 6007,
       "key": "menus.moments",
-      "path": "menus/moments.png",
+      "path": "hires/menus/moments.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
         4,
-        4,
-        29,
+        2,
+        28,
         30
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
@@ -788,56 +823,59 @@
     {
       "id": 6008,
       "key": "menus.gifts",
-      "path": "menus/gifts.png",
+      "path": "hires/menus/gifts.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
+        4,
         2,
-        2,
-        30,
-        29
+        28,
+        30
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
     },
     {
       "id": 6009,
       "key": "menus.breakfast",
-      "path": "menus/breakfast.png",
+      "path": "hires/menus/breakfast.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        3,
+        2,
         3,
         30,
-        30
+        29
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
     },
     {
       "id": 6010,
       "key": "menus.tea",
-      "path": "menus/tea.png",
+      "path": "hires/menus/tea.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        4,
-        4,
-        29,
+        2,
+        2,
+        30,
         30
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
@@ -845,37 +883,39 @@
     {
       "id": 6012,
       "key": "menus.movie",
-      "path": "menus/movie.png",
+      "path": "hires/menus/movie.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
         3,
-        5,
+        2,
         29,
-        28
+        30
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
     },
     {
       "id": 8001,
       "key": "health.brush",
-      "path": "health/brush.png",
+      "path": "hires/health/brush.png",
       "kind": "health",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        3,
-        5,
-        30,
+        4,
+        2,
+        28,
         30
       ],
       "purpose": "Healthy clicker activity; ring and actor overlay"
@@ -883,18 +923,19 @@
     {
       "id": 8002,
       "key": "health.medicine",
-      "path": "health/medicine.png",
+      "path": "hires/health/medicine.png",
       "kind": "health",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        5,
-        3,
-        27,
+        8,
+        2,
+        24,
         30
       ],
       "purpose": "Healthy clicker activity; ring and actor overlay"
@@ -902,18 +943,19 @@
     {
       "id": 8003,
       "key": "health.shot",
-      "path": "health/shot.png",
+      "path": "hires/health/shot.png",
       "kind": "health",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        1,
         2,
-        27,
+        2,
+        29,
         30
       ],
       "purpose": "Healthy clicker activity; ring and actor overlay"
@@ -921,124 +963,131 @@
     {
       "id": 8004,
       "key": "health.wash",
-      "path": "health/wash.png",
+      "path": "hires/health/wash.png",
       "kind": "health",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        3,
-        1,
-        29,
-        29
+        2,
+        2,
+        30,
+        30
       ],
       "purpose": "Healthy clicker activity; ring and actor overlay"
     },
     {
       "id": 8005,
       "key": "health.stretch",
-      "path": "health/stretch.png",
+      "path": "hires/health/stretch.png",
       "kind": "health",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        1,
-        3,
-        31,
-        31
+        2,
+        5,
+        30,
+        26
       ],
       "purpose": "Healthy clicker activity; ring and actor overlay"
     },
     {
       "id": 9001,
       "key": "effects.star",
-      "path": "effects/star.png",
+      "path": "hires/effects/star.png",
       "kind": "effects",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         8
       ],
       "bounds": [
         0,
-        0,
+        1,
         16,
-        16
+        15
       ],
       "purpose": "Magical celebration sprite; native RGB565 fade"
     },
     {
       "id": 9002,
       "key": "effects.heart",
-      "path": "effects/heart.png",
+      "path": "hires/effects/heart.png",
       "kind": "effects",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         8
       ],
       "bounds": [
-        1,
-        3,
-        15,
-        15
+        0,
+        2,
+        16,
+        14
       ],
       "purpose": "Magical celebration sprite; native RGB565 fade"
     },
     {
       "id": 9003,
       "key": "effects.orb",
-      "path": "effects/orb.png",
+      "path": "hires/effects/orb.png",
       "kind": "effects",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         8
       ],
       "bounds": [
-        2,
-        2,
-        14,
-        14
+        0,
+        0,
+        16,
+        16
       ],
       "purpose": "Magical celebration sprite; native RGB565 fade"
     },
     {
       "id": 9004,
       "key": "effects.comet",
-      "path": "effects/comet.png",
+      "path": "hires/effects/comet.png",
       "kind": "effects",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         8
       ],
       "bounds": [
         0,
-        0,
+        1,
         16,
-        16
+        15
       ],
       "purpose": "Magical celebration sprite; native RGB565 fade"
     },
     {
       "id": 9005,
       "key": "effects.wings",
-      "path": "effects/wings.png",
+      "path": "hires/effects/wings.png",
       "kind": "effects",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         8
@@ -1047,55 +1096,18 @@
         0,
         2,
         16,
-        13
+        14
       ],
       "purpose": "Magical celebration sprite; native RGB565 fade"
     },
     {
       "id": 8006,
       "key": "health.floss",
-      "path": "health/floss.png",
+      "path": "hires/health/floss.png",
       "kind": "health",
       "width": 32,
       "height": 32,
-      "pivot": [
-        16,
-        16
-      ],
-      "bounds": [
-        4,
-        3,
-        28,
-        30
-      ],
-      "purpose": "Healthy clicker activity; ring and actor overlay"
-    },
-    {
-      "id": 8007,
-      "key": "health.mouthwash",
-      "path": "health/mouthwash.png",
-      "kind": "health",
-      "width": 32,
-      "height": 32,
-      "pivot": [
-        16,
-        16
-      ],
-      "bounds": [
-        5,
-        2,
-        26,
-        30
-      ],
-      "purpose": "Healthy clicker activity; ring and actor overlay"
-    },
-    {
-      "id": 8008,
-      "key": "health.spit",
-      "path": "health/spit.png",
-      "kind": "health",
-      "width": 32,
-      "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
@@ -1104,25 +1116,66 @@
         2,
         4,
         30,
-        31
+        28
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 8007,
+      "key": "health.mouthwash",
+      "path": "hires/health/mouthwash.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "density": 3,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        4,
+        2,
+        28,
+        30
+      ],
+      "purpose": "Healthy clicker activity; ring and actor overlay"
+    },
+    {
+      "id": 8008,
+      "key": "health.spit",
+      "path": "hires/health/spit.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "density": 3,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        5,
+        30,
+        27
       ],
       "purpose": "Healthy clicker activity; ring and actor overlay"
     },
     {
       "id": 8009,
       "key": "health.cleanup",
-      "path": "health/cleanup.png",
+      "path": "hires/health/cleanup.png",
       "kind": "health",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        3,
-        1,
-        29,
+        2,
+        4,
+        30,
         28
       ],
       "purpose": "Healthy clicker activity; ring and actor overlay"
@@ -1130,10 +1183,11 @@
     {
       "id": 2011,
       "key": "icons.back",
-      "path": "icons/back.png",
+      "path": "hires/icons/back.png",
       "kind": "icons",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         14
@@ -1142,63 +1196,66 @@
         1,
         2,
         15,
-        15
+        14
       ]
     },
     {
       "id": 9006,
       "key": "effects.music",
-      "path": "effects/music.png",
+      "path": "hires/effects/music.png",
       "kind": "effects",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         8
       ],
       "bounds": [
-        1,
+        0,
         0,
         15,
-        15
+        16
       ],
       "purpose": "Magical celebration sprite; native RGB565 fade"
     },
     {
       "id": 9007,
       "key": "effects.idea",
-      "path": "effects/idea.png",
+      "path": "hires/effects/idea.png",
       "kind": "effects",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         8
       ],
       "bounds": [
+        2,
         0,
-        1,
-        16,
-        15
+        14,
+        16
       ],
       "purpose": "Magical celebration sprite; native RGB565 fade"
     },
     {
       "id": 9008,
       "key": "effects.rainbow",
-      "path": "effects/rainbow.png",
+      "path": "hires/effects/rainbow.png",
       "kind": "effects",
       "width": 16,
       "height": 16,
+      "density": 6,
       "pivot": [
         8,
         8
       ],
       "bounds": [
         0,
-        1,
+        3,
         16,
-        15
+        13
       ],
       "purpose": "Magical celebration sprite; native RGB565 fade"
     },
@@ -1279,18 +1336,19 @@
     {
       "id": 6011,
       "key": "menus.outing",
-      "path": "menus/outing.png",
+      "path": "hires/menus/outing.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        3,
-        1,
-        29,
+        6,
+        2,
+        26,
         30
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
@@ -1298,38 +1356,40 @@
     {
       "id": 6013,
       "key": "menus.close",
-      "path": "menus/close.png",
+      "path": "hires/menus/close.png",
       "kind": "menus",
       "width": 32,
       "height": 32,
+      "density": 3,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        5,
-        6,
-        27,
-        27
+        2,
+        2,
+        29,
+        30
       ],
       "purpose": "Ring menu category; drawn at 3x (96 physical pixels)"
     },
     {
       "id": 1021,
       "key": "creatures.baby-curious",
-      "path": "creatures/baby-curious.png",
+      "path": "hires/creatures/baby-curious.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
         6,
-        12,
-        28,
-        29
+        13,
+        26,
+        30
       ],
       "form": "baby",
       "pose": "curious"
@@ -1337,19 +1397,20 @@
     {
       "id": 1022,
       "key": "creatures.baby-content",
-      "path": "creatures/baby-content.png",
+      "path": "hires/creatures/baby-content.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        5,
-        15,
+        6,
+        13,
         26,
-        29
+        30
       ],
       "form": "baby",
       "pose": "content"
@@ -1357,18 +1418,19 @@
     {
       "id": 1023,
       "key": "creatures.grown-curious",
-      "path": "creatures/grown-curious.png",
+      "path": "hires/creatures/grown-curious.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
         4,
-        6,
-        27,
+        4,
+        28,
         30
       ],
       "form": "grown",
@@ -1377,19 +1439,20 @@
     {
       "id": 1024,
       "key": "creatures.grown-content",
-      "path": "creatures/grown-content.png",
+      "path": "hires/creatures/grown-content.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        4,
-        7,
-        28,
-        29
+        5,
+        9,
+        27,
+        30
       ],
       "form": "grown",
       "pose": "content"
@@ -1397,18 +1460,19 @@
     {
       "id": 1031,
       "key": "creatures.ninja-idle-a",
-      "path": "creatures/ninja-idle-a.png",
+      "path": "hires/creatures/ninja-idle-a.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        4,
-        3,
-        28,
+        6,
+        8,
+        26,
         30
       ],
       "form": "ninja",
@@ -1417,18 +1481,19 @@
     {
       "id": 1032,
       "key": "creatures.ninja-idle-b",
-      "path": "creatures/ninja-idle-b.png",
+      "path": "hires/creatures/ninja-idle-b.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        4,
-        3,
-        28,
+        6,
+        9,
+        26,
         30
       ],
       "form": "ninja",
@@ -1437,18 +1502,19 @@
     {
       "id": 1033,
       "key": "creatures.ninja-eating",
-      "path": "creatures/ninja-eating.png",
+      "path": "hires/creatures/ninja-eating.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        4,
-        3,
-        28,
+        6,
+        8,
+        26,
         30
       ],
       "form": "ninja",
@@ -1457,18 +1523,19 @@
     {
       "id": 1034,
       "key": "creatures.ninja-happy",
-      "path": "creatures/ninja-happy.png",
+      "path": "hires/creatures/ninja-happy.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        3,
-        1,
-        30,
+        5,
+        8,
+        27,
         30
       ],
       "form": "ninja",
@@ -1477,18 +1544,19 @@
     {
       "id": 1035,
       "key": "creatures.ninja-asleep",
-      "path": "creatures/ninja-asleep.png",
+      "path": "hires/creatures/ninja-asleep.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        2,
-        14,
-        30,
+        5,
+        9,
+        27,
         30
       ],
       "form": "ninja",
@@ -1497,18 +1565,19 @@
     {
       "id": 1036,
       "key": "creatures.ninja-unwell",
-      "path": "creatures/ninja-unwell.png",
+      "path": "hires/creatures/ninja-unwell.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        5,
-        3,
-        28,
+        6,
+        8,
+        26,
         30
       ],
       "form": "ninja",
@@ -1517,17 +1586,18 @@
     {
       "id": 1037,
       "key": "creatures.ninja-curious",
-      "path": "creatures/ninja-curious.png",
+      "path": "hires/creatures/ninja-curious.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        5,
-        1,
+        4,
+        8,
         28,
         30
       ],
@@ -1537,18 +1607,19 @@
     {
       "id": 1038,
       "key": "creatures.ninja-content",
-      "path": "creatures/ninja-content.png",
+      "path": "hires/creatures/ninja-content.png",
       "kind": "creatures",
       "width": 32,
       "height": 32,
+      "density": 6,
       "pivot": [
         16,
         30
       ],
       "bounds": [
-        4,
         6,
-        29,
+        9,
+        26,
         30
       ],
       "form": "ninja",
@@ -1557,67 +1628,31 @@
     {
       "id": 11001,
       "key": "prizes.butterfly",
-      "path": "prizes/butterfly.png",
+      "path": "hires/prizes/butterfly.png",
       "kind": "prizes",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        1,
-        1,
-        31,
-        29
+        2,
+        6,
+        30,
+        26
       ],
       "purpose": "Butterfly collectible; shared catch target, collection slot, and gift latch"
     },
     {
       "id": 11002,
       "key": "prizes.pearl-tooth",
-      "path": "prizes/pearl-tooth.png",
+      "path": "hires/prizes/pearl-tooth.png",
       "kind": "prizes",
       "width": 32,
       "height": 32,
-      "pivot": [
-        16,
-        16
-      ],
-      "bounds": [
-        4,
-        3,
-        28,
-        30
-      ],
-      "purpose": "Pearl Tooth collectible; shared catch target, collection slot, and gift latch"
-    },
-    {
-      "id": 11003,
-      "key": "prizes.breakfast-sun",
-      "path": "prizes/breakfast-sun.png",
-      "kind": "prizes",
-      "width": 32,
-      "height": 32,
-      "pivot": [
-        16,
-        16
-      ],
-      "bounds": [
-        1,
-        1,
-        31,
-        31
-      ],
-      "purpose": "Breakfast Sun collectible; shared catch target, collection slot, and gift latch"
-    },
-    {
-      "id": 11004,
-      "key": "prizes.tea-sprite",
-      "path": "prizes/tea-sprite.png",
-      "kind": "prizes",
-      "width": 32,
-      "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
@@ -1625,37 +1660,79 @@
       "bounds": [
         3,
         2,
-        31,
+        29,
         30
+      ],
+      "purpose": "Pearl Tooth collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11003,
+      "key": "prizes.breakfast-sun",
+      "path": "hires/prizes/breakfast-sun.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "density": 2,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "purpose": "Breakfast Sun collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 11004,
+      "key": "prizes.tea-sprite",
+      "path": "hires/prizes/tea-sprite.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "density": 2,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        3,
+        30,
+        29
       ],
       "purpose": "Tea Sprite collectible; shared catch target, collection slot, and gift latch"
     },
     {
       "id": 11005,
       "key": "prizes.movie-star",
-      "path": "prizes/movie-star.png",
+      "path": "hires/prizes/movie-star.png",
       "kind": "prizes",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        1,
-        1,
-        31,
-        31
+        2,
+        3,
+        30,
+        29
       ],
       "purpose": "Movie Star collectible; shared catch target, collection slot, and gift latch"
     },
     {
       "id": 11006,
       "key": "prizes.bubble-gem",
-      "path": "prizes/bubble-gem.png",
+      "path": "hires/prizes/bubble-gem.png",
       "kind": "prizes",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
@@ -1671,67 +1748,71 @@
     {
       "id": 11007,
       "key": "prizes.moon-charm",
-      "path": "prizes/moon-charm.png",
+      "path": "hires/prizes/moon-charm.png",
       "kind": "prizes",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
       ],
       "bounds": [
-        3,
-        1,
-        30,
-        31
+        4,
+        2,
+        28,
+        30
       ],
       "purpose": "Moon Charm collectible; shared catch target, collection slot, and gift latch"
     },
     {
       "id": 11008,
       "key": "prizes.rainbow-seed",
-      "path": "prizes/rainbow-seed.png",
+      "path": "hires/prizes/rainbow-seed.png",
       "kind": "prizes",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
       ],
       "bounds": [
+        3,
         2,
-        2,
-        30,
-        31
+        29,
+        30
       ],
       "purpose": "Rainbow Seed collectible; shared catch target, collection slot, and gift latch"
     },
     {
       "id": 11009,
       "key": "prizes.friendship-bow",
-      "path": "prizes/friendship-bow.png",
+      "path": "hires/prizes/friendship-bow.png",
       "kind": "prizes",
       "width": 32,
       "height": 32,
+      "density": 2,
       "pivot": [
         16,
         16
       ],
       "bounds": [
         2,
-        4,
+        5,
         30,
-        30
+        27
       ],
       "purpose": "Friendship Bow collectible; shared catch target, collection slot, and gift latch"
     },
     {
       "id": 12001,
       "key": "battery.empty",
-      "path": "battery/empty.png",
+      "path": "hires/battery/empty.png",
       "kind": "battery",
       "width": 16,
       "height": 16,
+      "density": 4,
       "pivot": [
         8,
         8
@@ -1747,10 +1828,11 @@
     {
       "id": 12002,
       "key": "battery.low",
-      "path": "battery/low.png",
+      "path": "hires/battery/low.png",
       "kind": "battery",
       "width": 16,
       "height": 16,
+      "density": 4,
       "pivot": [
         8,
         8
@@ -1766,10 +1848,11 @@
     {
       "id": 12003,
       "key": "battery.medium",
-      "path": "battery/medium.png",
+      "path": "hires/battery/medium.png",
       "kind": "battery",
       "width": 16,
       "height": 16,
+      "density": 4,
       "pivot": [
         8,
         8
@@ -1785,10 +1868,11 @@
     {
       "id": 12004,
       "key": "battery.high",
-      "path": "battery/high.png",
+      "path": "hires/battery/high.png",
       "kind": "battery",
       "width": 16,
       "height": 16,
+      "density": 4,
       "pivot": [
         8,
         8
@@ -1804,48 +1888,51 @@
     {
       "id": 12005,
       "key": "battery.charging",
-      "path": "battery/charging.png",
+      "path": "hires/battery/charging.png",
       "kind": "battery",
       "width": 16,
       "height": 16,
+      "density": 4,
       "pivot": [
         8,
         8
       ],
       "bounds": [
         0,
-        0,
+        2,
         16,
-        16
+        14
       ],
       "purpose": "Battery charging: cell with a lightning bolt"
     },
     {
       "id": 12006,
       "key": "battery.plugged",
-      "path": "battery/plugged.png",
+      "path": "hires/battery/plugged.png",
       "kind": "battery",
       "width": 16,
       "height": 16,
+      "density": 4,
       "pivot": [
         8,
         8
       ],
       "bounds": [
         3,
-        0,
+        1,
         13,
-        16
+        15
       ],
       "purpose": "External power without a battery: plug"
     },
     {
       "id": 12007,
       "key": "battery.unknown",
-      "path": "battery/unknown.png",
+      "path": "hires/battery/unknown.png",
       "kind": "battery",
       "width": 16,
       "height": 16,
+      "density": 4,
       "pivot": [
         8,
         8
@@ -1857,6 +1944,174 @@
         13
       ],
       "purpose": "Battery state or level unknown: cell with a question mark"
+    },
+    {
+      "id": 1041,
+      "key": "creatures.unicorn-idle-a",
+      "path": "hires/creatures/unicorn-idle-a.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        6,
+        6,
+        26,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "idle-a"
+    },
+    {
+      "id": 1042,
+      "key": "creatures.unicorn-idle-b",
+      "path": "hires/creatures/unicorn-idle-b.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        6,
+        7,
+        26,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "idle-b"
+    },
+    {
+      "id": 1043,
+      "key": "creatures.unicorn-eating",
+      "path": "hires/creatures/unicorn-eating.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        8,
+        5,
+        24,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "eating"
+    },
+    {
+      "id": 1044,
+      "key": "creatures.unicorn-happy",
+      "path": "hires/creatures/unicorn-happy.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        8,
+        5,
+        24,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "happy"
+    },
+    {
+      "id": 1045,
+      "key": "creatures.unicorn-asleep",
+      "path": "hires/creatures/unicorn-asleep.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        14,
+        28,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "asleep"
+    },
+    {
+      "id": 1046,
+      "key": "creatures.unicorn-unwell",
+      "path": "hires/creatures/unicorn-unwell.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        9,
+        7,
+        23,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "unwell"
+    },
+    {
+      "id": 1047,
+      "key": "creatures.unicorn-curious",
+      "path": "hires/creatures/unicorn-curious.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        8,
+        28,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "curious"
+    },
+    {
+      "id": 1048,
+      "key": "creatures.unicorn-content",
+      "path": "hires/creatures/unicorn-content.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        7,
+        8,
+        25,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "content"
     }
   ],
   "clips": [
@@ -2091,6 +2346,85 @@
       "key": "ninja.content",
       "frames": [
         "creatures.ninja-content"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5022,
+      "key": "unicorn.idle",
+      "frames": [
+        "creatures.unicorn-idle-a",
+        "creatures.unicorn-idle-b"
+      ],
+      "durations_ms": [
+        450,
+        450
+      ],
+      "loop": true
+    },
+    {
+      "id": 5023,
+      "key": "unicorn.eating",
+      "frames": [
+        "creatures.unicorn-eating"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5024,
+      "key": "unicorn.happy",
+      "frames": [
+        "creatures.unicorn-happy"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5025,
+      "key": "unicorn.asleep",
+      "frames": [
+        "creatures.unicorn-asleep"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5026,
+      "key": "unicorn.unwell",
+      "frames": [
+        "creatures.unicorn-unwell"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5027,
+      "key": "unicorn.curious",
+      "frames": [
+        "creatures.unicorn-curious"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5028,
+      "key": "unicorn.content",
+      "frames": [
+        "creatures.unicorn-content"
       ],
       "durations_ms": [
         900

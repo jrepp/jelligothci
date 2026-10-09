@@ -300,14 +300,10 @@ static void test_grounded_poses(void)
             unsigned count = 0, bottom = 0, center_sum = 0;
             for (unsigned y = 238u; y < 258u; ++y) {
                 for (unsigned x = 90u; x < 376u; ++x) {
-                    const JelliAsset *frame = ui.actor_frame;
-                    int local_x = ((int)x - ui.actor_x) / 6;
-                    int local_y = ((int)y - ui.actor_y) / 6;
-                    if ((int)x < ui.actor_x || (int)y < ui.actor_y || local_x >= frame->width ||
-                        local_y >= frame->height ||
-                        !(frame->mask[(unsigned)local_y * frame->mask_stride +
-                                      (unsigned)local_x / 8u] &
-                          (1u << (7u - (unsigned)local_x % 8u))))
+                    /* Covered (alpha >= 128) output pixels of the 6x creature. */
+                    if ((int)x < ui.actor_x || (int)y < ui.actor_y ||
+                        !jelli_asset_hit(ui.actor_frame, (unsigned)((int)x - ui.actor_x),
+                                         (unsigned)((int)y - ui.actor_y), 6u))
                         continue;
                     CHECK(y < 256u); /* No sprite extends below the ground line. */
                     bottom = y;

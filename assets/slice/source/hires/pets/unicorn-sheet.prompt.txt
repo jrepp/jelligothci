@@ -1,0 +1,28 @@
+Model: gemini-3-pro-image-preview (Gemini image generation, "quality"), aspect ratio 16:9, style none.
+Returned a 1376x768 JPEG, kept verbatim as unicorn-sheet.jpg
+(sha256 558a18cbb4a987285bb1d79390998b0fd3cd00b21052d6ba1ce66d089ae64e6f). Key: green.
+extract_pets.py takes unicorn idle-a, eating, happy, asleep, unwell, curious and content from
+cells 0, 2, 3, 4, 5, 6, 7; idle-b is derived from cell 0.
+
+Why this is the second generation: the first sheet (same prompt without the "VERY DARK" eyes,
+"same gentle front three-quarter view", "identical to pose 1" and explicit RIGHT-lean wording)
+had light violet irises and an idle B that faced the opposite way from idle A, and its
+curious pose tilted to the left. It was discarded.
+
+Prompt (verbatim):
+
+Character pose sheet for an original virtual pet game. The whole image background is ONE perfectly flat, uniform, pure chroma-key green colour (#00FF00): no gradient, no vignette, no texture, no floor, no shadows. Exactly eight poses of the SAME character arranged in an invisible grid of 4 columns by 2 rows, each pose centred in its own equal-sized cell with wide empty green margins; no pose overlaps or touches another pose or the image edge. Every pose is drawn at the same scale, full body, seen from the same gentle front three-quarter view, standing on the same baseline within its row. No grid lines, borders, labels, numbers, captions, letters or text anywhere.
+
+Rendering style: an original high-quality glossy 3D "toy" character render (soft vinyl toy, physically based shading) in the spirit of premium emoji-style characters, but an entirely original design. Smooth rounded forms, soft studio lighting from the upper left, gentle gradients, subtle specular highlights, and a soft pale rim light along the shadow side of the silhouette. Saturated but harmonious palette (lavender/violet, pearly white, cream, coral/pink, warm gold). No outlines, no drop shadows, no ground shadows, no scenery.
+
+Character: an original cute chibi full-body baby unicorn (a whole body with four short stubby legs, not a floating head): pearly white body with a soft pearlescent sheen, a fluffy curly mane and a curly tail that both shade from lavender to rich violet, a short pastel rainbow spiral horn, small ears with pink inner ears, large round VERY DARK glossy eyes (deep plum-black irises with two white sparkle highlights each), rosy pink cheeks, tiny lilac hooves, a friendly little smile. Big round head, small round body, very cute and delightful.
+
+Poses in reading order (top row left to right, then bottom row left to right):
+1. idle A: standing alert, eyes open, gentle smile.
+2. idle B: identical to pose 1 in every way (same view direction, same leg positions), only very slightly squashed vertically, as a gentle bob.
+3. eating: holding and nibbling a small golden star-shaped candy at its mouth.
+4. happy: eyes closed as upward arcs, big joyful open smile, front hooves raised in delight.
+5. asleep: eyes closed as gentle curved lines, lying down curled up low and flat, legs tucked, peaceful (no Z letters).
+6. unwell: droopy half-closed eyes, colours slightly paler with a faint greenish tinge, a small teal sweat drop beside the head, sad little mouth.
+7. curious: the whole body leans toward the RIGHT edge of the image (the viewer's right) and the head tilts so the horn points up and to the right; one eye a bit wider than the other, inquisitive little "o" mouth.
+8. content: both eyes closed in identical calm smiling arcs, sitting down low and relaxed.

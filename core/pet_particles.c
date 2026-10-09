@@ -1,3 +1,4 @@
+#include "pet_canvas.h"
 #include "pet_draw.h"
 
 static JelliRect joined(JelliRect a, JelliRect b)
@@ -40,28 +41,33 @@ static uint16_t blend(uint16_t back, uint16_t front, unsigned alpha)
     return (uint16_t)((r << 11) | (g << 5) | b);
 }
 
+/* Celebration sprites share the canvas sampler. Partial (high-resolution) alpha fades
+ * by multiplying the life-based 0..16 fade into the sample alpha. */
 static void draw_magic(JelliSurface *s, const JelliParticle *p, const JelliAssetSet *assets)
 {
-    const JelliAsset *a = jelli_asset_lookup(assets, 9001u + (p->style & 7u));
-    if (!a)
-        return;
+    JelliAssetSampler sampler;
     unsigned scale = (p->style & 8u) ? 2u : 1u;
-    int left = p->x / 16 - (int)(a->width * scale / 2u);
-    int top = p->y / 16 - (int)(a->height * scale / 2u);
-    unsigned alpha = p->life < 8u ? (unsigned)p->life * 2u : 16u;
-    for (unsigned y = 0; y < a->height * scale; ++y) {
-        for (unsigned x = 0; x < a->width * scale; ++x) {
-            unsigned row = y / scale, col = x / scale;
-            if (!(a->mask[row * a->mask_stride + col / 8u] & (1u << (7u - col % 8u))))
-                continue;
+    if (!jelli_asset_sampler(&sampler, jelli_asset_lookup(assets, 9001u + (p->style & 7u)), scale))
+        return;
+    int left = p->x / 16 - (int)(sampler.width / 2u);
+    int top = p->y / 16 - (int)(sampler.height / 2u);
+    unsigned fade = p->life < 8u ? (unsigned)p->life * 2u : 16u;
+    for (unsigned y = 0; y < sampler.height; ++y) {
+        for (unsigned x = 0; x < sampler.width; ++x) {
             int px = left + (int)x, py = top + (int)y;
             if (px < 0 || py < 0 || px >= JELLI_WIDTH || py >= JELLI_HEIGHT)
                 continue;
             int rx = 2 * px - 465, ry = 2 * py - 465;
             if (rx * rx + ry * ry > 466 * 466)
                 continue;
+            uint16_t color = 0u;
+            unsigned sample = jelli_asset_sample(&sampler, x, y, &color);
             uint16_t *dest = &s->pixels[(unsigned)py * s->stride + (unsigned)px];
-            *dest = blend(*dest, a->pixels[row * a->width + col], alpha);
+            /* Opaque texels keep the original 16-step fade, so legacy art is unchanged. */
+            if (sample == 255u)
+                *dest = blend(*dest, color, fade);
+            else if (sample * fade / 16u)
+                *dest = jelli_canvas_blend(*dest, color, sample * fade / 16u);
         }
     }
 }

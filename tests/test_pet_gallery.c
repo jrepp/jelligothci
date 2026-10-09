@@ -91,22 +91,27 @@ static void catch_hold_switch_and_give(void)
     CHECK(!engine.ui.menu_open && engine.ui.latched_prize == 6u);
     const JelliAsset *asset = jelli_asset_lookup(engine.ui.assets, 11006u);
     CHECK(asset != NULL);
-    bool painted = false;
-    for (unsigned row = 0u; row < asset->height && !painted; ++row)
-        for (unsigned col = 0u; col < asset->width && !painted; ++col)
-            if (asset->mask[row * asset->mask_stride + col / 8u] & (0x80u >> (col % 8u))) {
-                CHECK(pixels[(78u + row * 2u) * JELLI_WIDTH + 201u + col * 2u] ==
-                      asset->pixels[row * asset->width + col]);
-                painted = true;
-            }
-    CHECK(painted);
+    /* The latched prize sits at (201, 78) at 2x: every fully opaque pixel shows the
+     * art's own colour (soft edges blend with the badge and are not compared). */
+    JelliAssetSampler sampler;
+    CHECK(jelli_asset_sampler(&sampler, asset, 2u));
+    unsigned painted = 0u;
+    for (unsigned row = 0u; row < sampler.height; ++row)
+        for (unsigned col = 0u; col < sampler.width; ++col) {
+            uint16_t color = 0u;
+            if (jelli_asset_sample(&sampler, col, row, &color) != 255u)
+                continue;
+            CHECK(pixels[(78u + row) * JELLI_WIDTH + 201u + col] == color);
+            ++painted;
+        }
+    CHECK(painted > 0u);
     press(1u);
     CHECK(engine.ui.result == JELLI_NOT_READY && engine.ui.latched_prize == 6u);
     press(0u);
     press(6u);
     CHECK(engine.ui.page == JELLI_UI_SETTINGS);
     press(2u);
-    CHECK(engine.game.active == 0u); /* From default Nirmal (slot 2), SWITCH PET wraps to slot 0. */
+    CHECK(engine.game.active == 0u); /* From the default unicorn (slot 3), SWITCH wraps to 0. */
     press(0u);
     press(0u);
     CHECK(!engine.ui.menu_open && engine.ui.latched_prize == 6u);

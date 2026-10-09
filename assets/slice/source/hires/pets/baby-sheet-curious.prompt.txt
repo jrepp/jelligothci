@@ -1,0 +1,16 @@
+Model: gemini-3-pro-image-preview (Gemini image editing, "quality"), edit_image with
+baby-sheet.jpg as the source image, aspect ratio 16:9, style none. Returned a 1376x768 JPEG
+with the same layout, kept verbatim as baby-sheet-curious.jpg
+(sha256 73210e0dc0c55ca83a9e8099db4c962c701bf6e0de6868c86640711fe5fa3a6b). Key: magenta.
+extract_pets.py takes only baby-curious from it: cell 1 (top row, second from the left).
+
+Why: baby-sheet.jpg's own curious pose (cell 6) stands upright. Three edits of cell 6
+(asking for a "15 degrees clockwise" lean, a lean toward the right side of the picture, and
+finally the opposite, "left") and one edit of a left-right flipped copy all came back
+upright or, once flipped back, leaning left: the model leans a figure toward the centre of
+the sheet. Re-posing the unused idle-B cell, which sits left of centre, produced the
+rightward lean. The leftward and upright attempts were discarded.
+
+Edit prompt (verbatim):
+
+This is a character pose sheet on a flat pure magenta (#FF00FF) background with eight poses in a 4x2 grid; the light comes from the upper left in every pose. Change ONLY the pose in the top row, second from the left. Turn it into a curious pose: the same mint jelly blob leans toward the RIGHT side of the picture, its dome top shifted toward the right while its base stays in place, the body slanting like a jelly wobbling to the right as if peeking at something off to the right; one eye a bit wider than the other, small "o" mouth. Same blob, same size, same colours, same glossy 3D style and upper-left lighting as the other poses. Keep every other pose, the layout and the flat pure magenta background exactly unchanged. No text.

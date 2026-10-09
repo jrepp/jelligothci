@@ -14,16 +14,19 @@
 #define JELLI_STACK_LIMIT 20u
 #define JELLI_DAY_TICKS 864000u
 #define JELLI_OFFLINE_CAP_MS 86400000u
-/* Pet forms. Mint (baby) evolves into Lilac (grown) once; the ninja never evolves. */
+/* Pet forms. Mint (baby) evolves into Lilac (grown) once; the ninja and the unicorn
+ * never evolve. */
 #define JELLI_FORM_MINT 0u
 #define JELLI_FORM_LILAC 1u
 #define JELLI_FORM_NINJA 2u
-#define JELLI_FORM_COUNT 3u
-/* New games start with two Mints and Nirmal the ninja (stable IDs 1, 2 and 3), with
- * Nirmal active. Saves from before the ninja gain one when decoded, so every valid
- * roster has at least three pets. */
-#define JELLI_ROSTER_MIN 3u
+#define JELLI_FORM_UNICORN 3u
+#define JELLI_FORM_COUNT 4u
+/* New games start with two Mints, Nirmal the ninja, and the unicorn (stable IDs 1-4).
+ * Saves from before a species gain it when decoded, so every valid roster has at
+ * least four pets. */
+#define JELLI_ROSTER_MIN 4u
 #define JELLI_NINJA_PET_ID 3u
+#define JELLI_UNICORN_PET_ID 4u
 
 typedef enum {
     JELLI_SATIETY,
@@ -124,7 +127,7 @@ typedef struct {
 
 /* Caller-owned state. No clock, allocation, IO, or SDK dependencies. */
 void jelli_game_init(JelliGame *game);
-/* A brand-new player's game: the initial roster with Nirmal the ninja active. Hosts
+/* A brand-new player's game: the initial roster with the unicorn active. Hosts
  * replace it with a decoded save when one exists. */
 void jelli_game_new(JelliGame *game);
 /* Caller-owned scratch must differ from game. Runs the real validation/dispatch
@@ -142,10 +145,12 @@ JelliResult jelli_prize_gift(JelliGame *game, unsigned index);
 bool jelli_game_valid(const JelliGame *game);
 /* Roster slot SWITCH PET activates: the one after the active slot, wrapping. */
 uint8_t jelli_game_next_slot(const JelliGame *game);
-/* Appends a fresh ninja to a structurally valid roster that has none, when capacity
- * allows; it takes stable ID 3 or the next unused ID. True when a pet was added.
- * Otherwise the game is unchanged. Used to migrate saves from before the ninja. */
-bool jelli_game_add_ninja(JelliGame *game);
+/* Ensures a roster holds the never-evolving species `form` (JELLI_FORM_NINJA or
+ * JELLI_FORM_UNICORN). Appends a fresh pet of that form to a roster that is valid as
+ * stored (two or more pets) and has none, when capacity allows; it takes the
+ * species' stable ID (3 or 4) or the next unused ID above it. True when a pet was
+ * added; otherwise the game is unchanged. Used to migrate saves from before a species. */
+bool jelli_game_add_species(JelliGame *game, uint8_t form);
 JelliResult jelli_game_command(JelliGame *game, JelliCommand command);
 /* At most eight 100 ms ticks/call, at most two seconds retained backlog. */
 void jelli_game_advance(JelliGame *game, uint64_t elapsed_ms);

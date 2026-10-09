@@ -5,6 +5,8 @@ alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md) and
 [memo-002: Build, release, and runner validation](memos/memo-002-build-release-and-runner-validation.md).
 
+Unicorn pet (new-player default), four-pet roster, and v7 save: [memo-022](memos/memo-022-unicorn-pet-and-version-7-save.md).
+
 Settings sound level (0–10, default 5) and v6 save: [memo-021](memos/memo-021-settings-sound-level.md).
 
 Ninja pet, three-pet roster, and v5 save migration: [memo-020](memos/memo-020-ninja-pet-and-three-pet-roster.md).
@@ -25,6 +27,7 @@ Debug interface (host-tested; flashed startup verified in memo-010):
 [proposed ADR-010](adr/adr-010-bounded-usb-serial-debug-interface.md).
 Initial bring-up: [memo-003: First USB deployment](memos/memo-003-first-usb-deployment.md).
 Board variants (1.75 and 1.75C): [proposed ADR-011](adr/adr-011-selectable-esp32-board-variants.md).
+High-resolution art format and 8 MB app partition: [proposed ADR-012](adr/adr-012-high-resolution-asset-density-and-flash-partition.md).
 
 Process guidance: [memo-004: Learnings and context remediation](memos/memo-004-process-learnings-and-context-remediation.md).
 

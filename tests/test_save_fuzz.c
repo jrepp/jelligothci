@@ -1,4 +1,4 @@
-/* Property, mutation, and fuzz tests for the version 6 save codec.
+/* Property, mutation, and fuzz tests for the version 7 save codec.
  * Every generated case uses a fixed seed so a failure prints a replayable case. */
 #include "jelli/save.h"
 
@@ -225,10 +225,12 @@ static void every_setting_and_version_byte(void)
         if (accepted)
             CHECK(loaded.game.battery_display == (value == 1u) && canonical(mutated, size));
         memcpy(mutated, bytes, size);
-        mutated[4] =
-            (uint8_t)value; /* Only version 6 carries the sound level: 4, 5, 7, ... fail. */
+        /* Versions 6 and 7 share the layout that carries the sound level (a four-pet
+         * roster already has its unicorn); 1..5 and 8+ fail. */
+        mutated[4] = (uint8_t)value;
         repair(mutated, size);
-        CHECK(decode_checked(mutated, size, &loaded) == (value == JELLI_SAVE_VERSION));
+        CHECK(decode_checked(mutated, size, &loaded) ==
+              (value == 6u || value == JELLI_SAVE_VERSION));
         memcpy(mutated, bytes, size);
         mutated[5] = (uint8_t)value; /* High byte of the little-endian version. */
         repair(mutated, size);
@@ -373,7 +375,7 @@ static void invalid_arguments(void)
     CHECK(!out.game.battery_display && !out.game.sound_level); /* Unchanged by rejections. */
     CHECK(jelli_save_decode_workspace(&out, bytes, size, &scratch) && out.game.battery_display);
     CHECK(out.game.sound_level == JELLI_SOUND_LEVEL_MAX);
-    CHECK(jelli_save_encode(&save, bytes, size - 1u) == 0u); /* One byte short of v6. */
+    CHECK(jelli_save_encode(&save, bytes, size - 1u) == 0u); /* One byte short of v7. */
     CHECK(jelli_save_encode(&save, bytes, size) == size);
 }
 
@@ -387,6 +389,6 @@ int main(void)
     seeded_mutation_fuzz();
     random_records();
     invalid_arguments();
-    puts("PASS: v6 save codec truncation, bit-flip, byte-sweep, and seeded mutation properties");
+    puts("PASS: v7 save codec truncation, bit-flip, byte-sweep, and seeded mutation properties");
     return 0;
 }

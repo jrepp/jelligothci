@@ -1,0 +1,31 @@
+Sheet: icons-sheet.jpg (1024 x 1024 JPEG, saved verbatim as returned)
+Generated: 2026-10-08
+Tool: gemini-image MCP server, edit_image
+Source image: green-canvas-1024.png (1024 x 1024, flat RGB #00FF00)
+Model: gemini-3-pro-image-preview ("quality")
+Style: none (the server adds no style prefix, so the prompt below is exactly what was sent)
+Aspect ratio: 1:1 (no prefix, no API aspect setting; the square output follows the
+square source image)
+Background key: pure green #00FF00 (icons use pink and lavender)
+
+Cell order (reading order, zero-based index -> output file):
+  0 icons/basic-care.png   1 icons/food.png        2 icons/play.png        3 icons/clean.png
+  4 icons/rest.png         5 icons/wake.png        6 icons/medicine.png    7 icons/gift.png
+  8 icons/reward.png       9 icons/inventory.png  10 icons/back.png       11 icons/confirm.png
+ 12 (alternate clean, unused)       13 (alternate inventory, unused)
+ 14 (alternate medicine, unused)    15 (alternate back, unused)
+
+---- Prompt (verbatim) ----
+This image is a blank square canvas of flat pure chroma-key green (#00FF00). Keep that exact flat green as the entire background, edge to edge, and keep the image square. On it, draw a game UI icon sprite sheet: exactly 16 separate icons arranged in a strict grid of exactly 4 rows and 4 columns of equal square cells, evenly spaced, each icon centred in its own cell with generous empty green padding (each icon fills about 60 percent of its cell and never touches or crosses the cell edges). No gradient, no vignette, no texture, no grid lines, no cell borders, no labels, no text, no numbers. Style for every icon: original glossy 3D toy renders in the spirit of premium emoji icons; smooth rounded chunky forms; soft studio lighting from the upper left; gentle gradients; subtle specular highlights; a soft pale rim light around each silhouette so it reads on a near-black background; saturated harmonious colours from this palette only: mint (#85E4B6), teal (#43BCA2, #187B79), lavender (#D2B8F3), violet (#A47BDB, #7655A3), cream (#FFF4CF), coral pink (#FA8C99), deep coral (#D84F70), warm gold (#F5C764), deep plum (#49334F). Lit in a neutral white studio: no green reflections, no green spill and no green tint on any icon; any mint or teal must be cool and blue-leaning, never pure or yellow green. No drop shadows, no cast or contact shadows, no ground plane, no thick dark outlines, no background shapes behind icons. All icons share the same scale, the same front-facing camera and the same lighting, and stay bold and readable when shrunk to 32 pixels.
+
+The 16 cells in reading order (row 1 left to right, then row 2, row 3, row 4):
+Row 1: (1) Basic care: a puffy coral-pink heart with a raised cream plus sign in its centre. (2) Food: a round teal bowl heaped with three glossy coral-red apples with tiny mint leaves. (3) Play: a glossy round toy ball with warm gold and lavender curved panels. (4) Clean: a small rounded teal wash tub brimming with fluffy cream soap foam and bubbles, with a little gold sparkle.
+Row 2: (5) Rest: a smooth glossy cream crescent moon, a clean circular crescent whose open side faces the upper right. (6) Wake: a glowing warm gold sun, a round disc with eight short rounded rays. (7) Medicine: a small rounded cream medicine bottle with a deep-plum cap and a coral-pink plus sign on its label. (8) Gift: a mint gift box with a coral-pink ribbon crossing it and a big coral-pink bow on top.
+Row 3: (9) Reward: a plump glossy warm gold five-pointed star with rounded points. (10) Inventory: a rounded lavender backpack with a mint top flap and a cream front pocket with a small gold buckle. (11) Back: a bold chunky cream arrow pointing to the left, with a thick short shaft and a big arrowhead with rounded corners. (12) Confirm: a bold chunky mint check mark with rounded ends.
+Row 4: (13) Alternate clean: a cluster of three glossy soap bubbles of different sizes, pale cream-white with soft lavender and mint iridescent sheen, plus a small gold sparkle. (14) Alternate inventory: a lavender drawstring pouch bag tied with a mint cord, with a small gold star charm. (15) Alternate medicine: a glossy capsule pill, half coral-pink and half cream, tilted diagonally. (16) Alternate back: a bold chunky mint arrow pointing to the left with rounded corners.
+---- end ----
+
+Rejected attempt (not kept): the same 16-icon list sent through edit_image with the
+finished menus sheet as a "style reference" source returned a 1408 x 768 sheet laid out
+8 x 4 with grid lines and invented extra icons (clocks, a light bulb), so the sheet was
+redone on the blank green canvas as above.

@@ -1,0 +1,28 @@
+Model: gemini-3-pro-image-preview (Gemini image generation, "quality"), aspect ratio 16:9, style none.
+Returned a 1376x768 JPEG, kept verbatim as baby-sheet.jpg
+(sha256 0aefd7dad3fcb6d63ad8f50e01975b15c08be5ba4293239d573667f47690a497). Key: magenta
+(Mint's mint/teal body would sit too close to a green key). extract_pets.py takes Mint (baby)
+idle-a, eating, happy, asleep, unwell and content from cells 0, 2, 3, 4, 5, 7; idle-b is
+derived from cell 0 and curious comes from baby-sheet-curious.jpg.
+
+Why this is the second generation: the first sheet rendered Mint as a flatter 2D
+illustration lit from the upper right, with a winking (asymmetric) content face, so it did
+not match the 3D toy style of the other pets. It was discarded.
+
+Prompt (verbatim):
+
+Character pose sheet for an original virtual pet game. The whole image background is ONE perfectly flat, uniform, pure chroma-key magenta colour (#FF00FF): no gradient, no vignette, no texture, no floor, no shadows. Exactly eight poses of the SAME character arranged in an invisible grid of 4 columns by 2 rows, each pose centred in its own equal-sized cell with wide empty magenta margins; no pose overlaps or touches another pose or the image edge. Every pose is drawn at the same scale, full body, facing the viewer, sitting on the same baseline within its row. No grid lines, borders, labels, numbers, captions, letters or text anywhere.
+
+Rendering style: an original high-quality glossy 3D "toy" character render (soft gummy/vinyl toy, physically based shading, real 3D depth, not a flat illustration) in the spirit of premium emoji-style characters, but an entirely original design. Smooth rounded forms, soft studio lighting from the upper LEFT so the brightest specular highlight sits on the upper-left of the body, gentle gradients, and a soft pale rim light along the shadow (right) side of the silhouette. Saturated but harmonious palette (mint/teal, cream, coral/pink, deep plum). No outlines, no drop shadows, no ground shadows, no scenery.
+
+Character: "Mint", a small soft jelly blob: a rounded gumdrop/dome shape with a slightly wider soft base, no legs, two tiny rounded nub arms at the sides; glossy translucent-looking mint/turquoise jelly with a subtle inner glow and cream-white highlights, rosy pink cheeks, dark glossy round plum-black eyes with white sparkle highlights, a tiny cute smile. Simple, cute, very readable silhouette.
+
+Poses in reading order (top row left to right, then bottom row left to right):
+1. idle A: sitting upright alert, eyes open, gentle smile.
+2. idle B: identical to pose 1 in every way, only very slightly squashed vertically (a little wider and shorter), as a gentle bob.
+3. eating: holding a small round red berry at its mouth with both nub arms and biting it.
+4. happy: eyes closed as upward arcs, big joyful open smile, tiny nub arms raised.
+5. asleep: eyes closed as gentle curved lines, body flattened low and wide like a relaxed dome, peaceful (no Z letters).
+6. unwell: droopy half-closed eyes, body colour paler with a slightly sickly greenish tinge, a small teal sweat drop beside the head, wobbly little mouth.
+7. curious: the whole body leans toward the RIGHT edge of the image (the viewer's right), top of the dome tilted to the right; one eye a bit wider than the other, inquisitive little "o" mouth.
+8. content: both eyes closed in identical calm smiling arcs, sitting low and relaxed, slightly settled.

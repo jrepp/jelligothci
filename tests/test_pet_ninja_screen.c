@@ -56,13 +56,15 @@ static void ninja_in_state(JelliGame *game, unsigned state)
     CHECK(jelli_game_valid(game));
 }
 
-static bool opaque(const JelliAsset *a, unsigned column, unsigned row)
+/* Stored coverage beneath output pixel (x, y) of a creature drawn at 6x. Creatures are
+ * stored at density 6, so output and stored pixels correspond 1:1. */
+static bool opaque(const JelliAsset *a, unsigned x, unsigned y)
 {
-    return column < a->width && row < a->height &&
-           (a->mask[row * a->mask_stride + column / 8u] & (0x80u >> (column % 8u))) != 0u;
+    CHECK(jelli_asset_density(a) == 6u);
+    return jelli_asset_alpha_at(a, x, y) >= JELLI_ASSET_OPAQUE_ALPHA;
 }
 
-/* The heading names the active pet: NIRMAL differs from both jelly forms' headings. */
+/* The heading names the active pet: NIRMAL differs from the jellies' and UNICORN. */
 static void ninja_heading(void)
 {
     static JelliPetUi ui;
@@ -71,7 +73,9 @@ static void ninja_heading(void)
     jelli_pet_ui_init(&ui);
     JelliSurface s = surface_for(pixels), other = surface_for(comparison);
     jelli_pet_render(&s, &game, &ui, 0u, false);
-    for (uint8_t form = JELLI_FORM_MINT; form <= JELLI_FORM_LILAC; ++form) {
+    for (uint8_t form = JELLI_FORM_MINT; form < JELLI_FORM_COUNT; ++form) {
+        if (form == JELLI_FORM_NINJA)
+            continue;
         game.pets[2].form = form;
         jelli_pet_ui_init(&ui);
         jelli_pet_render(&other, &game, &ui, 0u, false);
@@ -94,12 +98,13 @@ static void ninja_heading(void)
                      JELLI_WIDTH * sizeof(uint16_t)) == 0);
 }
 
-/* Pixel-level: the heading spells each form's name (MINT, LILAC, NIRMAL) in white 3x
- * glyphs centred at x = 233, and every glyph and shadow pixel lies on the round panel.
- * No other white pixel appears in the heading band. */
+/* Pixel-level: the heading spells each form's name (MINT, LILAC, NIRMAL, and UNICORN,
+ * the widest at 7 glyphs = 168 px) in white 3x glyphs centred at x = 233, and every
+ * glyph and shadow pixel lies on the round panel. No other white pixel appears in the
+ * heading band. */
 static void heading_spells_each_name(void)
 {
-    static const char *const names[JELLI_FORM_COUNT] = {"MINT", "LILAC", "NIRMAL"};
+    static const char *const names[JELLI_FORM_COUNT] = {"MINT", "LILAC", "NIRMAL", "UNICORN"};
     for (uint8_t form = 0u; form < JELLI_FORM_COUNT; ++form) {
         static JelliPetUi ui;
         JelliGame game;
@@ -137,8 +142,9 @@ static void heading_spells_each_name(void)
     }
 }
 
-/* Every ninja frame is drawn: the opaque blocks clear of captions and particles carry
- * the asset's own colours, and the idle cycle reaches all four idle frames. */
+/* Every ninja frame is drawn: its fully opaque pixels clear of captions and particles
+ * carry the asset's own colours (soft edges blend with the scene and are not compared),
+ * and the idle cycle reaches all four idle frames. */
 static void ninja_home_frames_drawn(void)
 {
     static const uint32_t expected[] = {1031u, 1033u, 1034u, 1035u, 1036u, 1034u};
@@ -151,17 +157,23 @@ static void ninja_home_frames_drawn(void)
         jelli_pet_render(&s, &game, &ui, 0u, false);
         const JelliAsset *a = ui.actor_frame;
         CHECK(a && a->id == expected[state] && ui.last_view.form == JELLI_FORM_NINJA);
-        unsigned blocks = 0u, matching = 0u;
-        for (unsigned row = 0u; row < a->height; ++row) {
-            for (unsigned column = 0u; column < a->width; ++column) {
-                int x = ui.actor_x + (int)column * 6 + 3, y = ui.actor_y + (int)row * 6 + 3;
-                if (!opaque(a, column, row) || y >= 240 || x >= 300)
+        JelliAssetSampler sampler;
+        CHECK(jelli_asset_sampler(&sampler, a, 6u));
+        unsigned solid = 0u, matching = 0u;
+        for (unsigned row = 0u; row < sampler.height; ++row) {
+            for (unsigned column = 0u; column < sampler.width; ++column) {
+                int x = ui.actor_x + (int)column, y = ui.actor_y + (int)row;
+                uint16_t color = 0u;
+                if (jelli_asset_sample(&sampler, column, row, &color) != 255u || y >= 240 ||
+                    x >= 300)
                     continue;
-                ++blocks;
-                matching += pixels[y * STRIDE + x] == a->pixels[row * a->width + column];
+                CHECK(x >= 0 && y >= 0);
+                ++solid;
+                matching += pixels[y * STRIDE + x] == color;
             }
         }
-        CHECK(blocks > 0u && matching * 20u >= blocks * 19u);
+        /* At least 20 logical pixels' worth of solid art, 95% of it shown unaltered. */
+        CHECK(solid > 20u * 36u && matching * 20u >= solid * 19u);
     }
     JelliGame game;
     static JelliPetUi ui;
@@ -237,8 +249,8 @@ static void ninja_partial_redraws(void)
     CHECK(battery_only >= 6u * 5u && tile_only > 0u);
 }
 
-/* Touch lands only on the ninja's opaque pixels, including its hood and headband
- * tail, never on transparent corners of its 6x frame. */
+/* Touch lands only on the ninja's covered pixels (stored alpha >= 128), never on
+ * faint soft edges or transparent corners of its 6x frame. */
 static void ninja_touch_uses_alpha(void)
 {
     for (unsigned state = 0u; state < 6u; ++state) {
@@ -253,9 +265,8 @@ static void ninja_touch_uses_alpha(void)
         unsigned hits = 0u, misses = 0u;
         for (int y = ui.actor_y - 6; y < ui.actor_y + 32 * 6 + 6; y += 3) {
             for (int x = ui.actor_x - 6; x < ui.actor_x + 32 * 6 + 6; x += 3) {
-                bool solid =
-                    x >= ui.actor_x && y >= ui.actor_y &&
-                    opaque(a, (unsigned)(x - ui.actor_x) / 6u, (unsigned)(y - ui.actor_y) / 6u);
+                bool solid = x >= ui.actor_x && y >= ui.actor_y &&
+                             opaque(a, (unsigned)(x - ui.actor_x), (unsigned)(y - ui.actor_y));
                 bool hit = jelli_pet_touch_actor(&ui, &game, x, y);
                 CHECK(hit == solid);
                 hits += hit ? 1u : 0u;

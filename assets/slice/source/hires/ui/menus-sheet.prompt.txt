@@ -1,0 +1,44 @@
+Sheet: menus-sheet.jpg (1024 x 1024 JPEG, saved verbatim as returned)
+Intermediate: menus-sheet-pass1.jpg (pass 1 output, kept verbatim; input to pass 2)
+Generated: 2026-10-08
+Tool: gemini-image MCP server, edit_image
+Model: gemini-3-pro-image-preview ("quality")
+Style: none (the server adds no style prefix, so the prompt below is exactly what was sent)
+Aspect ratio: 1:1 (the server adds no prefix for 1:1 and sends no aspect setting to
+the API; the square output follows the square source image)
+Background key: pure green #00FF00 (icons use pink and lavender)
+
+Pass 1 source image: green-canvas-1024.png (1024 x 1024, flat RGB #00FF00, made with
+Pillow: Image.new("RGB", (1024, 1024), (0, 255, 0)).save(...))
+
+Cell order (reading order, zero-based index -> output file):
+  0 menus/food.png         1 menus/care.png        2 menus/rest.png        3 menus/collection.png
+  4 menus/more.png         5 menus/settings.png    6 menus/moments.png     7 menus/gifts.png
+  8 menus/breakfast.png    9 menus/tea.png        10 menus/outing.png     11 menus/movie.png
+ 12 menus/close.png       13 (alternate more, unused)
+ 14 (alternate settings, unused)                  15 (alternate close, unused)
+
+---- Pass 1 prompt (verbatim) ----
+This image is a blank square canvas of flat pure chroma-key green (#00FF00). Keep that exact flat green as the entire background, edge to edge, and keep the image square. On it, draw a game UI icon sprite sheet: exactly 16 separate icons arranged in a strict grid of exactly 4 rows and 4 columns of equal square cells, evenly spaced, each icon centred in its own cell with generous empty green padding (each icon fills about 60 percent of its cell and never touches or crosses the cell edges). No gradient, no vignette, no texture, no grid lines, no cell borders, no labels, no text, no numbers. Style for every icon: original glossy 3D toy renders in the spirit of premium emoji icons; smooth rounded chunky forms; soft studio lighting from the upper left; gentle gradients; subtle specular highlights; a soft pale rim light around each silhouette so it reads on a near-black background; saturated harmonious colours from this palette only: mint (#85E4B6), teal (#43BCA2, #187B79), lavender (#D2B8F3), violet (#A47BDB, #7655A3), cream (#FFF4CF), coral pink (#FA8C99), deep coral (#D84F70), warm gold (#F5C764), deep plum (#49334F). Lit in a neutral white studio: no green reflections, no green spill and no green tint on any icon; any mint or teal must be cool and blue-leaning, never pure or yellow green. No drop shadows, no cast or contact shadows, no ground plane, no thick dark outlines, no background shapes behind icons. All icons share the same scale, the same front-facing camera and the same lighting, and stay bold and readable when shrunk to 32 pixels.
+
+The 16 cells in reading order (row 1 left to right, then row 2, row 3, row 4):
+Row 1: (1) Food: a round teal bowl holding three glossy coral-red cherries with little mint stems. (2) Care: a puffy coral-pink heart with a raised cream plus sign in its centre. (3) Rest: a smooth cream crescent moon, a clean circular crescent opening to the upper right. (4) Collection: two cute jelly-blob pets side by side in one cell, a mint one in front on the left and a lavender one slightly behind on the right, each a gumdrop dome with a softly scalloped bottom edge and two small deep-plum oval eyes.
+Row 2: (5) More: a chunky horizontal deep-plum rounded pill holding three large glossy round dots in a row, mint, gold and lavender. (6) Settings: a chunky lavender cog wheel with six big rounded teeth and a large round deep-plum hole in the centre. (7) Moments: a cosy mint mug with a cute smiling face, a cream handle, and two cream steam curls rising above it, plus one tiny gold sparkle. (8) Gifts: a mint gift box with a coral-pink ribbon crossing it and a big coral-pink bow on top.
+Row 3: (9) Breakfast: a slice of golden toast standing behind a fried egg (cream-white with a round gold yolk) on a small cream plate. (10) Tea: a cream porcelain teacup with a lavender rim on a matching saucer, warm amber tea inside, two soft cream steam curls above. (11) Outing: a coral-pink five-petal flower with a gold centre on a mint stem with two leaves, growing from a small rounded teal grassy mound. (12) Movie: a movie clapperboard: a teal board with a cream play triangle on its face and a hinged top bar striped cream and deep plum.
+Row 4: (13) Close: a bold chunky cream X with rounded ends. (14) Alternate more: three large glossy round dots in a horizontal row, mint, gold and lavender, with no container. (15) Alternate settings: a chunky warm gold cog wheel with eight rounded teeth and a round deep-plum hole in the centre. (16) Alternate close: a bold chunky coral-pink X with rounded ends.
+---- end ----
+
+Pass 2 (re-generation of one cell): pass 1 drew cell 2 (rest) as a cream ring with an
+off-centre hole instead of a crescent, so pass 1's output was edited. Source image:
+menus-sheet-pass1.jpg. Same model, style and aspect settings. All other cells came
+through visually unchanged.
+
+---- Pass 2 prompt (verbatim) ----
+Edit this icon sprite sheet. Change ONLY the third icon in the top row (the cream ring with an off-centre hole): replace it with a smooth glossy cream crescent moon, a clean circular crescent shape whose open side faces the upper right, with both pointed horns clearly visible and the bite area showing the flat green background, same size, same soft studio lighting from the upper left and the same glossy 3D toy style as the other icons. Keep every other icon, the exact layout, the image size and the flat pure chroma-key green (#00FF00) background exactly unchanged. No text, no shadows.
+---- end ----
+
+Rejected attempt (not kept): a text-only variant of the pass 1 prompt (same style
+paragraph and cell list, without the canvas sentences) sent through generate_image
+returned a 1408 x 768 sheet with no 4 x 4 grid and two invented extra icons, because
+the server does not pass an aspect ratio to the API. Every kept sheet was therefore
+made with edit_image on the square green canvas.

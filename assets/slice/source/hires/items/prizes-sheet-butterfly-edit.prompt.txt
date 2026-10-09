@@ -1,0 +1,17 @@
+Model: gemini-3-pro-image-preview (Gemini image editing, "quality"), edit_image with
+prizes-sheet.jpg as the source image, style none. Returned a 1376x768 JPEG with the same
+layout, kept verbatim as prizes-sheet-butterfly-edit.jpg. extract_items.py takes only
+prizes/butterfly.png from it (zero-based column 1, row 2); every other prize comes from
+prizes-sheet.jpg.
+
+Why: the sheet's own lavender/aqua butterfly (cells 0-1,0) is more than twice as wide as it
+is tall, so inside the round 64 px prize disk it read as a thin sliver. The compact butterfly
+at 1,2 was coral and gold. A first edit that only recoloured it kept its thin gold outlines
+and hairline antennae, which blend with the green key into olive fringes, so this second
+edit replaced it with a chunky, outline-free butterfly.
+
+Edit prompt (verbatim):
+
+Edit only one object: replace the coral-pink butterfly in the third row, second column with a new glossy 3D butterfly charm in the same style as the other objects: plump rounded lavender upper wings and plump rounded pale aqua lower wings, made of smooth solid glossy enamel with a few cream dots, NO outlines and NO thin gold edging on the wings, a chunky rounded gold body, and two short thick gold antennae ending in round gold beads. Compact shape, about as tall as it is wide, the same size and position as the butterfly it replaces. Keep every other object, the layout and the flat green background exactly unchanged. No text.
+
+Cell used: 1,2 chunky lavender/aqua butterfly with bead antennae -> prizes/butterfly.png

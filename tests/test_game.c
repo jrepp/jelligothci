@@ -31,8 +31,9 @@ static void initialization_and_validation(void)
     JelliGame game;
     jelli_game_init(&game);
     CHECK(jelli_game_valid(&game));
-    CHECK(game.count == 3u && game.active == 0u && game.food == 5u && game.gifts == 3u);
+    CHECK(game.count == 4u && game.active == 0u && game.food == 5u && game.gifts == 3u);
     CHECK(game.pets[0].id == 1u && game.pets[1].id == 2u && game.pets[2].id == 3u);
+    CHECK(game.pets[3].id == 4u && game.pets[3].form == JELLI_FORM_UNICORN);
     jelli_game_advance(&game, 100u);
     CHECK(!game.pets[0].asleep);
     CHECK(command(&game, JELLI_CMD_FEED, 2u, 0u) == JELLI_INVALID_TARGET);

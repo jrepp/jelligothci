@@ -95,13 +95,14 @@ freeze the game. See [the protocol and validation record](../docs-cms/memos/memo
 
 Tap MENU for care, moments, gifts, and settings. Pet switching and sleep/wake live
 in Settings.
-There are three pets: two jellies, each shown as MINT until it grows into LILAC,
-and Nirmal the ninja (shown as NIRMAL), who keeps his form. A new player starts
-with Nirmal. Settings > SWITCH PET moves to the next
-pet in order (first jelly, second jelly, Nirmal, then back to the first) and shows
-NOT READY while the current pet is busy or resting under the sleep journal.
-Stored pets pause until selected. Saves from before the ninja keep both jellies
-and gain a fresh ninja the first time they load.
+There are four pets: two jellies, each shown as MINT until it grows into LILAC,
+Nirmal the ninja (shown as NIRMAL), and the unicorn (shown as UNICORN). The ninja
+and the unicorn keep their forms. A new player starts with the unicorn. Settings >
+SWITCH PET moves to the next pet in order (first jelly, second jelly, Nirmal, the
+unicorn, then back to the first) and shows NOT READY while the current pet is busy or resting under the
+sleep journal. Stored pets pause until selected. Saves from before the ninja gain
+a fresh ninja, and saves from before the unicorn a fresh unicorn, the first time
+they load; they keep the pet that was active when they were saved.
 Only useful actions occupy ring positions. The bottom arrow BACK is the only
 return action; X CLOSE dismisses the home ring. There is no separate confirm or
 save button: successful actions request a save. The home tile shows one stat at a
@@ -154,7 +155,7 @@ Gameplay timing and rewards are unaffected.
 The portable [registry](../include/jelli/tunables.h) supports immutable form profiles
 through `jelli_tunables_register(&engine.ui.tunables, profiles, count)`. Profiles
 must outlive the engine. Resolution is default → form profile → global override
-→ creature override. All three forms (Mint, Lilac, and the ninja) currently inherit
+→ creature override. All four forms (Mint, Lilac, the ninja, and the unicorn) currently inherit
 common defaults. This establishes a content extension point without inventing
 different balance for the creatures.
 
@@ -403,7 +404,9 @@ Save codec v3 adds habits, the sleep journal, clock settings, and nine collectib
 prize types; v1/v2 saves migrate with unknown history. Codec v4 adds the battery
 display setting; earlier saves load with it on. Codec v5 keeps the v4 layout and
 gives older two-pet saves the ninja. Codec v6 adds the sound level; earlier saves
-load level 5, and values above 10 are rejected as corrupt. Newer unsupported files and
+load level 5, and values above 10 are rejected as corrupt. Codec v7 keeps the v6
+layout and gives older saves the unicorn; a v7 roster needs at least four pets.
+Newer unsupported files and
 unreadable ESP32 checkpoint blobs are preserved. ESP32 disables writes to a
 protected checkpoint and continues an unsaved session. Checkpoints use a bounded
 4 KiB codec buffer; NVS supplies the device transaction, desktop uses alternating

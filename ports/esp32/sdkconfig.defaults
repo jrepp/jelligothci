@@ -11,3 +11,8 @@ CONFIG_LV_USE_CANVAS=y
 
 # Optimize the software renderer and LVGL while preserving assertions.
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
+
+# Custom table: nvs/phy_init unchanged, 8 MB factory app for high-resolution art.
+# Generated sdkconfig files do not re-read these defaults; see docs/hardware.md.
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"

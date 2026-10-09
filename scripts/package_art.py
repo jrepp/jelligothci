@@ -22,14 +22,15 @@ def stage_art(folder):
     shutil.copy2(ROOT / 'toolchain.env', folder / 'toolchain.env')
     shutil.copy2(preview, folder / 'preview.html')
     (folder / 'ARTWORK.txt').write_text(
-        'Editable PNGs: assets/slice/ (94 images, including nine unique prizes).\n'
+        'Editable PNGs: assets/slice/ (listed in assets.json, including nine unique prizes).\n'
         'Open preview.html for the standalone art sheet.\n'
         'macOS/Linux live art: ./scripts/jelli-art-live\n'
         'Windows live art: uv run --python 3.12 tools/assets/live_assets.py\n'
         'Windows requires uv; macOS/Linux uses the bundled pinned uv wrapper.\n'
         'First art-tool run downloads Python and Pillow; playing the game needs neither.\n'
-        'Save PNG edits at their original dimensions. Live reload validates binary alpha,\n'
-        'recalculates bounds/centroids, and retains the last valid pack on errors.\n'
+        'Save PNG edits at their original dimensions. Live reload validates alpha (binary\n'
+        'for pixel art, 8-bit for hires/ art with a manifest density), recalculates\n'
+        'bounds/centroids, and retains the last valid pack on errors.\n'
         'Embedded art is unchanged; start through the live-art tool to see edits.\n', encoding='utf-8')
 
 

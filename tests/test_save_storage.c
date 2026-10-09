@@ -115,10 +115,11 @@ static void write_file(const char *path, const uint8_t *bytes, size_t size)
 }
 
 /* Rewrites a current record as an older version by dropping trailing settings bytes:
- * versions 4 and 5 lack the version 6 sound level; version 3 also the battery setting. */
+ * version 6 shares the current layout, versions 4 and 5 lack the version 6 sound
+ * level, and version 3 also the battery setting. */
 static size_t as_version(uint8_t *bytes, size_t size, uint8_t version)
 {
-    size_t old_size = size - (version < 4u ? 2u : 1u);
+    size_t old_size = size - (version >= 6u ? 0u : version < 4u ? 2u : 1u);
     memmove(bytes + old_size - 8u, bytes + size - 8u, 8u);
     bytes[4] = version;
     for (unsigned i = 0; i < 4u; ++i)
@@ -162,8 +163,8 @@ static void battery_setting_versions(uint8_t *work)
     remove_slots();
 }
 
-/* Version 6 keeps the stored sound level; the same game written as version 5 loads
- * the default, and the next save writes version 6 with that default. */
+/* The current version keeps the stored sound level; the same game written as version 5
+ * loads the default, and the next save writes the current version with that default. */
 static void sound_setting_versions(uint8_t *work)
 {
     remove_slots();
@@ -184,6 +185,40 @@ static void sound_setting_versions(uint8_t *work)
     JelliSave again = fixture(90u);
     CHECK(load(&again, work) == JELLI_STORAGE_OK && again.sequence == 7u);
     CHECK(again.game.sound_level == JELLI_SOUND_LEVEL_DEFAULT);
+    remove_slots();
+}
+
+/* A three-pet record (v5/v6, before the unicorn) through SDL storage: it loads with
+ * the unicorn appended in slot 3 and the stored active pet unchanged, and the next
+ * save and load keep exactly one unicorn. */
+static void unicorn_migration_keeps_active(uint8_t *work)
+{
+    enum { PREFIX = 71u, COUNT_OFFSET = 68u };
+    const size_t pet = 130u + JELLI_HABIT_BIN_COUNT * 6u + 37u + JELLI_PRIZE_COUNT * 2u + 9u;
+    for (uint8_t version = 5u; version <= 6u; ++version)
+        for (uint8_t active = 0u; active < 3u; ++active) {
+            remove_slots();
+            JelliSave stored = fixture(30u + active), loaded = fixture(90u);
+            stored.game.active = active;
+            uint8_t bytes[JELLI_SAVE_CAPACITY];
+            size_t size = jelli_save_encode(&stored, bytes, sizeof(bytes));
+            CHECK(size > PREFIX + 4u * pet && bytes[COUNT_OFFSET] == 4u);
+            size_t cut = PREFIX + 3u * pet; /* Drop the unicorn's record. */
+            memmove(bytes + cut, bytes + cut + pet, size - cut - pet);
+            bytes[COUNT_OFFSET] = 3u;
+            size = as_version(bytes, size - pet, version);
+            write_file(".jelli-storage-test.0", bytes, size);
+            CHECK(load(&loaded, work) == JELLI_STORAGE_OK && loaded.sequence == 30u + active);
+            CHECK(loaded.game.count == 4u && loaded.game.active == active);
+            CHECK(loaded.game.pets[3].form == JELLI_FORM_UNICORN &&
+                  loaded.game.pets[3].id == JELLI_UNICORN_PET_ID);
+            loaded.sequence = 50u;
+            write_save(&loaded, work);
+            JelliSave again = fixture(90u);
+            CHECK(load(&again, work) == JELLI_STORAGE_OK && again.sequence == 50u);
+            CHECK(again.game.count == 4u && again.game.active == active);
+            CHECK(same_save(&again, &loaded));
+        }
     remove_slots();
 }
 
@@ -225,6 +260,7 @@ int main(void)
     remove_slots();
     battery_setting_versions(work);
     sound_setting_versions(work);
+    unicorn_migration_keeps_active(work);
     puts("PASS: SDL save slots recover newest valid snapshot and preserve incompatible data");
     return 0;
 }

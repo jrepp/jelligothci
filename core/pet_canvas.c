@@ -53,20 +53,92 @@ void jelli_canvas_centered(Canvas *c, const char *value, int y, unsigned scale, 
     int width = (int)(strlen(value) * 8u * scale);
     jelli_canvas_text(c, value, 233 - width / 2, y, scale, color);
 }
+uint16_t jelli_canvas_blend(uint16_t back, uint16_t front, unsigned alpha)
+{
+    if (!alpha)
+        return back;
+    if (alpha >= 255u)
+        return front;
+    unsigned inverse = 255u - alpha;
+    unsigned r = (((back >> 11) & 31u) * inverse + ((front >> 11) & 31u) * alpha + 127u) / 255u;
+    unsigned g = (((back >> 5) & 63u) * inverse + ((front >> 5) & 63u) * alpha + 127u) / 255u;
+    unsigned b = ((back & 31u) * inverse + (front & 31u) * alpha + 127u) / 255u;
+    return (uint16_t)((r << 11) | (g << 5) | b);
+}
+
+/* Composites one already clipped sprite pixel; dimming applies to the source colour,
+ * as jelli_canvas_pixel does for opaque drawing. */
+static void sprite_pixel(Canvas *c, int x, int y, uint16_t color, unsigned alpha)
+{
+    if (!jelli_canvas_in_round(x, y))
+        return;
+    if (c->dim)
+        color = (uint16_t)((color >> 1) & 0x7befu);
+    uint16_t *destination = &c->s->pixels[(unsigned)y * c->s->stride + (unsigned)x];
+    *destination = jelli_canvas_blend(*destination, color, alpha);
+}
+
+/* 1:1 and box downscales: one sample per output pixel inside the clip. */
+static void sprite_pixels(Canvas *c, const JelliAssetSampler *sampler, int x, int y,
+                          const int clip[4])
+{
+    for (int row = clip[1]; row < clip[3]; ++row) {
+        for (int column = clip[0]; column < clip[2]; ++column) {
+            uint16_t color = 0u;
+            uint8_t alpha =
+                jelli_asset_sample(sampler, (unsigned)(column - x), (unsigned)(row - y), &color);
+            if (alpha && c->icon_night)
+                color = jelli_pet_night_color(color, c->icon_night);
+            if (alpha)
+                sprite_pixel(c, column, row, color, alpha);
+        }
+    }
+}
+
+/* Nearest upscales: sample each stored pixel once and fill its clipped up x up block,
+ * as the original legacy renderer did with jelli_canvas_rect. */
+static void sprite_blocks(Canvas *c, const JelliAssetSampler *sampler, int x, int y,
+                          const int clip[4])
+{
+    int up = (int)sampler->up;
+    for (int sy = (clip[1] - y) / up; y + sy * up < clip[3]; ++sy) {
+        for (int sx = (clip[0] - x) / up; x + sx * up < clip[2]; ++sx) {
+            uint16_t color = 0u;
+            uint8_t alpha =
+                jelli_asset_sample(sampler, (unsigned)(sx * up), (unsigned)(sy * up), &color);
+            if (!alpha)
+                continue;
+            if (c->icon_night)
+                color = jelli_pet_night_color(color, c->icon_night);
+            int left = x + sx * up, top = y + sy * up;
+            int right = left + up < clip[2] ? left + up : clip[2];
+            int bottom = top + up < clip[3] ? top + up : clip[3];
+            for (int row = top > clip[1] ? top : clip[1]; row < bottom; ++row)
+                for (int column = left > clip[0] ? left : clip[0]; column < right; ++column)
+                    sprite_pixel(c, column, row, color, alpha);
+        }
+    }
+}
+
+/* Draws at logical `scale` (output = logical size x scale). Legacy art upscales by
+ * nearest neighbour exactly as before; high-resolution art is drawn 1:1, upscaled by
+ * whole multiples or box-downscaled by whole divisors, then alpha blended. Only the
+ * clip rectangle is visited, so partial redraws repeat the full frame's pixels. */
 void jelli_canvas_sprite(Canvas *c, uint32_t id, int x, int y, unsigned scale)
 {
-    const JelliAsset *a = jelli_asset_lookup(c->assets, id);
-    if (!a || !a->pixels || !a->mask)
+    JelliAssetSampler sampler;
+    if (!jelli_asset_sampler(&sampler, jelli_asset_lookup(c->assets, id), scale))
         return;
-    if (x >= c->right || y >= c->bottom || x + (int)(a->width * scale) <= c->left ||
-        y + (int)(a->height * scale) <= c->top)
+    int right = x + (int)sampler.width, bottom = y + (int)sampler.height;
+    const int clip[4] = {x > c->left ? x : c->left, y > c->top ? y : c->top,
+                         right < c->right ? right : c->right,
+                         bottom < c->bottom ? bottom : c->bottom};
+    if (clip[0] >= clip[2] || clip[1] >= clip[3])
         return;
-    for (unsigned row = 0; row < a->height; ++row)
-        for (unsigned column = 0; column < a->width; ++column)
-            if (a->mask[row * a->mask_stride + column / 8u] & (uint8_t)(1u << (7u - column % 8u)))
-                jelli_canvas_rect(
-                    c, x + (int)(column * scale), y + (int)(row * scale), (int)scale, (int)scale,
-                    jelli_pet_night_color(a->pixels[row * a->width + column], c->icon_night));
+    if (sampler.up > 1u)
+        sprite_blocks(c, &sampler, x, y, clip);
+    else
+        sprite_pixels(c, &sampler, x, y, clip);
 }
 
 void jelli_canvas_centered_sprite(Canvas *c, uint32_t id, int x, int y, unsigned scale)

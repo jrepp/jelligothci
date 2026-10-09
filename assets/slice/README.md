@@ -1,11 +1,15 @@
 # Jelligotchi slice artwork
 
-The review set contains 94 PNG files: 24 creature frames, 12 small icons, 13 ring icons,
+The manifest lists 102 assets: 32 creature frames, 12 small icons, 13 ring icons,
 five meter pictograms, nine health icons, eight celebration sprites, nine collectible prizes,
 seven battery-status icons, two backgrounds, four props, and one 96-slot bitmap font atlas.
-Mint is the baby form; Lilac is the grown form; the ninja is a third pet (form 2)
-that never evolves. The SDL and ESP32 pet builds embed these assets using
-`tools/assets/embed_slice.py`. Physical board appearance remains unverified.
+Mint is the baby form; Lilac is the grown form; the ninja (form 2) and the unicorn
+(form 3) are further pets that never evolve. The 95 creature, icon, meter, health,
+celebration, prize and battery entries use the high-resolution PNGs under `hires/`
+(see [the shipped high-resolution set](#shipped-high-resolution-set)); props,
+backgrounds and the font are legacy pixel art. The SDL and ESP32 pet builds embed
+these assets using `tools/assets/embed_slice.py`. Physical board appearance remains
+unverified.
 
 ## Preview and validate
 
@@ -35,7 +39,8 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 
 | Directory | Contents |
 | --- | --- |
-| `creatures/` | Mint, Lilac, and ninja forms, each with idle A/B, eating, happy, asleep, unwell, curious, and content; 32x32 pixels. Ninja IDs 1031–1038 in that order |
+| `hires/` | The shipped high-resolution art, one directory per kind (creatures, icons, menus, meters, health, effects, prizes, battery); sizes in the density table below |
+| `creatures/` | Legacy Mint, Lilac, and ninja forms, each with idle A/B, eating, happy, asleep, unwell, curious, and content; 32x32 pixels. Ninja IDs 1031–1038 in that order. The unicorn (IDs 1041–1048) exists only under `hires/creatures/` |
 | `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
 | `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
 | `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
@@ -46,15 +51,17 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 | `backgrounds/` | Two 64x64 neutral home/garden scenes with black vignettes |
 | `props/` | Food bowl, closed/open gift, and bed; 24x24 pixels |
 | `font/` | 128x72 atlas: 16 columns by six rows of 8x12 cells, ASCII 32–127 |
-| `source/` | Original generated atlases (`creatures-props-atlas.png`, `ninja-atlas.jpg`), their exact prompts, the pixel authoring recipe (including `battery_icons.py` and `ninja_art.py`), and glyph patterns |
+| `source/` | Original generated atlases (`creatures-props-atlas.png`, `ninja-atlas.jpg`), their exact prompts, the pixel authoring recipe (including `battery_icons.py` and `ninja_art.py`), and glyph patterns; `source/hires/` holds the high-resolution sheets, prompts and extraction scripts |
 
 `assets.json` assigns explicit IDs, paths, frame sizes, bounds, pivots, palette,
-and clip timings. PNGs in the asset directories are the editable runtime
-art sources. The large generated atlas is retained for provenance and reproduction;
+and clip timings. The PNGs it lists are the editable runtime art sources. The legacy
+pixel art in `creatures/`, `icons/`, `menus/`, `meters/`, `health/`, `effects/`,
+`prizes/` and `battery/` is no longer listed; it is kept for reference and as the input
+of `tests/hires_fixture.py`. The large generated atlas is retained for provenance and reproduction;
 it is not part of the runtime payload. Keep IDs stable when revising art.
 
-Sprites use 16 shared opaque colors plus transparent pixels; backgrounds use a separate 16-gray palette. Alpha is
-binary. The font deliberately uses small-cap forms for lowercase letters; slot
+Legacy sprites use 16 shared opaque colors plus transparent pixels; backgrounds use a separate 16-gray palette. Their alpha is
+binary. High-resolution art may use any colours and 8-bit alpha. The font deliberately uses small-cap forms for lowercase letters; slot
 127 is a fallback glyph, not a printable ASCII character. The font is cream on
 transparent; preview it against a dark surface. Recovery reuses the unwell pose
 with a care mark and text. Gift/reward responses reuse happy; waking returns to
@@ -62,14 +69,16 @@ idle. No additional poses are implied by the preview controls.
 
 ## Exports and validation
 
-The builder checks the exact inventory, unique IDs/paths, dimensions, palette,
-binary alpha, bounds, pivots, glyph occupancy, clip references, and durations.
-It writes:
+The builder checks the exact inventory, unique IDs/paths, dimensions, palette
+and binary alpha (legacy art), density and RGBA format (high-resolution art),
+bounds, pivots, glyph occupancy, clip references, and durations. It writes:
 
 - `build/assets/preview.html`: portable review sheet with embedded images.
 - `build/assets/contact-sheet.png`: static review image.
-- `build/assets/pixels/`: little-endian RGB565 and separate coverage masks.
-- `build/assets/report.json`: byte sizes and SHA-256 hashes of binary exports.
+- `build/assets/pixels/`: little-endian RGB565, separate coverage masks, and
+  `.a8` alpha planes for high-resolution art (their `.mask` is inspection-only).
+- `build/assets/report.json`: byte sizes, densities, stored sizes and SHA-256
+  hashes of binary exports.
 
 RGB565 files contain row-major 16-bit words. Masks are row-major, MSB-first with
 whole-byte row padding. Font `.bits` is glyph-major: 12 one-byte rows per glyph.
@@ -77,11 +86,14 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw pixel payload is 168,704 bytes. The RFC's 8,192-byte definition and
-4,096-byte metadata allowances bring the planned pack to 180,992 bytes, 15,616 bytes
-under the 192 KiB (196,608-byte) ceiling; those allowances are not a completed game
-pack or a linked firmware measurement. The ceiling was raised from 160 KiB, which
-had 256 bytes spare, for the ninja's eight frames (17,408 bytes).
+Actual raw pixel payload of the shipped art is 4,981,664 bytes (95 high-resolution
+assets at RGB565 plus 8-bit alpha, and the legacy props, backgrounds and font). The
+RFC's 8,192-byte definition and 4,096-byte metadata allowances bring the planned pack
+to 4,993,952 bytes, under the 6 MiB (6,291,456-byte) ceiling with room for about one
+more eight-pose pet. The legacy-only set was 168,704 bytes (180,992 planned) against
+a 192 KiB ceiling; see
+[ADR-012](../../docs-cms/adr/adr-012-high-resolution-asset-density-and-flash-partition.md).
+`tests/test_sprite_geometry.py` pins the real total; update it deliberately.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 
@@ -138,8 +150,8 @@ healthy activity uses up to 24. Rejected presses use three quiet square/cross ma
 Celebration particles last at most 1.74 seconds at the default 300 percent UI duration scale.
 Each particle remains eight bytes; the 24-slot pool fits within 224 bytes, with
 no extra framebuffer or runtime allocation. Particle type and scale are packed
-into the style byte. The art budget was 160 KiB at the time (now 192 KiB; see the
-ninja section). Physical readability and touch feel still need review.
+into the style byte. The art budget was 160 KiB at the time (now 6 MiB; see
+ADR-012). Physical readability and touch feel still need review.
 
 Menu plates use a thin neutral edge and plain gray fill, supporting the icon
 rather than competing with it. The movie screen/clapper is squared off and loose
@@ -213,3 +225,93 @@ are taller than the jellies' (up to 29 rows), so the 6x sprite reaches about
 y=82–94 on the home screen, below the name and location lines. The generated sheet
 is a review candidate; physical AMOLED readability has not been checked. See
 [memo-020](../../docs-cms/memos/memo-020-ninja-pet-and-three-pet-roster.md).
+
+## High-resolution art (density)
+
+A manifest entry may store more pixels than it occupies on screen. `width`,
+`height`, `bounds` and `pivot` stay in LOGICAL pixels (the units above, which all
+layout uses); `"density": D` says how many stored pixels make one logical pixel.
+The PNG must be an 8-bit RGBA PNG of exactly logical size × D under
+`hires/<kind>/`, with straight (non-premultiplied) alpha and any colours; the
+16-colour palette and binary-alpha rules apply only to legacy art.
+
+| Kind | IDs | Logical | Density | Stored | Drawn at (logical scale) |
+| --- | --- | --- | --- | --- | --- |
+| creatures | 1001–1012, 1021–1024, 1031–1038, 1041–1048 | 32×32 | 6 | 192×192 | 6 |
+| menus | 6001–6013 | 32×32 | 3 | 96×96 | 3, 1 |
+| icons | 2001–2012 | 16×16 | 6 | 96×96 | 6, 2 |
+| meters | 7001–7005 | 32×32 | 2 | 64×64 | 2 |
+| health | 8001–8009 | 32×32 | 3 | 96×96 | 3 |
+| effects | 9001–9008 | 16×16 | 6 | 96×96 | 1, 2, 3 |
+| prizes | 11001–11009 | 32×32 | 2 | 64×64 | 2 |
+| battery | 12001–12007 | 16×16 | 4 | 64×64 | 2, 4 |
+
+Props, backgrounds and the font stay legacy. The renderer draws a sprite at
+logical scale s 1:1 when s = D, by nearest upscale when s is a multiple of D, and
+by a D/s box filter over premultiplied colour and alpha when s divides D; any
+other pair draws nothing, so the builder rejects a density that cannot serve every
+scale listed for its kind. Each output pixel is alpha blended over the scene in
+RGB565; night tint and dimming apply to the art's colour first.
+
+Coverage for bounds, anchors and touch is alpha ≥ 128 at stored resolution,
+converted to logical units: bounds round outwards, centroids and the contact
+point (the bottom three logical rows, i.e. 3·D stored rows) round half up.
+Nearest-upscaled legacy art therefore keeps exactly its legacy metadata. Keep
+faint shadows below alpha 128 if they must not move the contact point or accept
+taps. Exports are stored RGB565 plus an 8-bit alpha plane (3 bytes per stored
+pixel); RGB under alpha 0 is exported as zero.
+
+### Switching an asset to high resolution
+
+1. Save the new PNG as `assets/slice/hires/<kind>/<name>.png` (same file name as
+   the legacy PNG), sized logical × D from the table.
+2. In `assets.json`, change only that entry's `path` to the new file and add
+   `"density": D`. Keep `id`, `key`, `width`, `height` and `pivot`.
+3. Run the builder. If it reports `Bounds mismatch: … (art has [l, t, r, b])`,
+   review the art, then copy those logical bounds into `bounds`.
+4. Review `build/assets/preview.html`: high-resolution cards appear at their
+   on-screen size, and the round panel uses smooth scaling for them.
+
+For example, the shipped Mint idle frame is (its bounds, [6, 12, 27, 29] in the
+legacy art, were re-measured from the new PNG):
+
+```json
+{"id": 1001, "key": "creatures.baby-idle-a", "path": "hires/creatures/baby-idle-a.png",
+ "kind": "creatures", "width": 32, "height": 32, "density": 6,
+ "pivot": [16, 30], "bounds": [6, 13, 26, 30], "form": "baby", "pose": "idle-a"}
+```
+
+Legacy and high-resolution entries can coexist, so kinds can migrate one at a
+time. To try a whole candidate set without editing the shipped manifest, build
+with `cmake -DJELLI_ASSET_SOURCE=/path/to/candidate`; that directory holds its own
+`assets.json`. `tests/hires_fixture.py` generates such a set by upscaling the
+retained legacy pixel art (or, with `--legacy`, writes the legacy set itself, with
+Lilac's frames standing in for the unicorn); tests use it to check the pipeline
+against known legacy metadata.
+
+## Shipped high-resolution set
+
+Every creature, icon, ring, meter, health, celebration, prize and battery entry
+(95 assets) points at `hires/`. The art was generated with Gemini image generation
+(`gemini-3-pro-image-preview`) as pose and icon sheets on a flat magenta or green
+key. Each returned image is kept byte-for-byte in `source/hires/{pets,ui,items}/`
+beside a `.prompt.txt` that records the model, settings, exact prompt, cell order
+and any edit pass (for example `menus-sheet-pass1.jpg` and
+`prizes-sheet-butterfly-edit.jpg`). Three deterministic scripts are the only step
+between those sheets and the shipped PNGs: they measure the key colour, derive soft
+8-bit alpha, remove key-colour spill from the rim, and place each item on its grid
+(creatures with their feet on logical row 30, so ground anchors stay on the
+192-pixel grid):
+
+```sh
+./scripts/uv run --python 3.12 assets/slice/source/hires/pets/extract_pets.py   # 32 creature frames
+./scripts/uv run --python 3.12 assets/slice/source/hires/ui/extract_ui.py       # 37 menus, icons, meters, battery
+./scripts/uv run --python 3.12 assets/slice/source/hires/items/extract_items.py # 26 health, effects, prizes
+```
+
+Each run rewrites its PNGs byte-identically (Pillow is pinned to 12.0.0);
+`extract_pets.py --check` verifies without writing. The bounds in `assets.json` are
+the builder's measurements of these PNGs. The unicorn (form 3, IDs 1041–1048) has
+only high-resolution art; its clips 5022–5028 mirror the ninja's. No uploaded
+reference images or external character designs were supplied. The sheets are
+generated review candidates; physical AMOLED readability has not been checked.

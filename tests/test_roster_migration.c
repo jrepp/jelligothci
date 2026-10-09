@@ -1,6 +1,7 @@
-/* Seeded property and mutation tests for the version 5 roster migration. Every v1-v4
- * roster of two to eight pets, with the active pet and any ninja in each slot, gains
- * exactly one ninja when it has room and none yet; repeated load/save/load never adds
+/* Seeded property and mutation tests for the roster migrations. Every v1-v7 roster of
+ * two to eight pets, with the active pet, any ninja, and any unicorn in each slot,
+ * gains exactly the species its version predates (the ninja before v5, then the
+ * unicorn before v7) when it has room and none yet; repeated load/save/load never adds
  * a second; a rejected record leaves the output untouched. Failures print the seed. */
 #include "jelli/save.h"
 
@@ -28,9 +29,9 @@
 
 /* Version 4 added the battery setting and version 6 the sound level after it. */
 enum { TRAILER = 8u, PREFIX = 71u, COUNT_OFFSET = 68u, SETTING_FROM_END = TRAILER + 2u };
-/* Versions before 5 predate the ninja; only they are migrated. */
-enum { NINJA_VERSION = 5u };
-enum { NO_NINJA = JELLI_PET_CAPACITY, ID_POOL = 12u, CYCLES = 3u };
+/* Versions before 5 predate the ninja and versions before 7 the unicorn. */
+enum { NINJA_VERSION = 5u, UNICORN_VERSION = 7u };
+enum { NONE = JELLI_PET_CAPACITY, ID_POOL = 12u, CYCLES = 3u };
 static const size_t PET_SIZE =
     130u + JELLI_HABIT_BIN_COUNT * 6u + 37u + JELLI_PRIZE_COUNT * 2u + 9u;
 
@@ -59,41 +60,35 @@ static void repair(uint8_t *bytes, size_t size)
         bytes[size - TRAILER + i] = (uint8_t)(crc >> (8u * i));
 }
 
-static unsigned ninja_count(const JelliGame *game)
+static unsigned form_count(const JelliGame *game, uint8_t form)
 {
     unsigned count = 0u;
     for (unsigned i = 0u; i < game->count && i < JELLI_PET_CAPACITY; ++i)
-        count += game->pets[i].form == JELLI_FORM_NINJA ? 1u : 0u;
+        count += game->pets[i].form == form ? 1u : 0u;
     return count;
 }
 
-/* Encodes any roster in the current layout; a two-pet roster borrows a placeholder
- * third record from the encoder and has it cut back out. */
-static size_t encode_layout(const JelliSave *save, uint8_t *bytes)
-{
-    static JelliSave padded;
-    padded = *save;
-    size_t extra = 0u;
-    if (padded.game.count < JELLI_ROSTER_MIN) {
-        padded.game.pets[padded.game.count] = padded.game.pets[0];
-        padded.game.pets[padded.game.count++].id = 200u;
-        extra = PET_SIZE;
-    }
-    size_t size = jelli_save_encode(&padded, bytes, JELLI_SAVE_CAPACITY);
-    CHECK(size > PREFIX + SETTING_FROM_END + extra && bytes[4] == JELLI_SAVE_VERSION);
-    size_t cut = PREFIX + (size_t)save->game.count * PET_SIZE;
-    memmove(bytes + cut, bytes + cut + extra, size - cut - extra);
-    bytes[COUNT_OFFSET] = save->game.count;
-    return size - extra;
-}
-
-/* Rewrites as an older version: 4 and 5 share a layout without the v6 sound level,
- * 3 also lacks the battery setting, and 1 and 2 lack the newer per-pet fields and
- * everything after the pets. */
+/* Rewrites any roster as an older version. Shorter rosters borrow placeholder records
+ * from the encoder that are cut back out. Versions 6 and 7 share a layout; 4 and 5
+ * lack the v6 sound level, 3 also the battery setting, and 1 and 2 also the newer
+ * per-pet fields and everything after the pets. */
 static size_t encode_as(const JelliSave *save, unsigned version, uint8_t *out)
 {
+    static JelliSave padded;
     static uint8_t current[JELLI_SAVE_CAPACITY];
-    size_t size = encode_layout(save, current), length = size;
+    padded = *save;
+    size_t extra = 0u;
+    for (; padded.game.count < JELLI_ROSTER_MIN; extra += PET_SIZE) {
+        padded.game.pets[padded.game.count] = padded.game.pets[0];
+        padded.game.pets[padded.game.count++].id = 200u + (uint32_t)(extra / PET_SIZE);
+    }
+    size_t size = jelli_save_encode(&padded, current, JELLI_SAVE_CAPACITY);
+    CHECK(size > PREFIX + SETTING_FROM_END + extra && current[4] == JELLI_SAVE_VERSION);
+    size_t cut = PREFIX + (size_t)save->game.count * PET_SIZE;
+    memmove(current + cut, current + cut + extra, size - cut - extra);
+    current[COUNT_OFFSET] = save->game.count;
+    size -= extra;
+    size_t length = size;
     if (version >= 6u) {
         memcpy(out, current, size);
     } else if (version >= 3u) {
@@ -139,11 +134,11 @@ static bool decode_checked(const uint8_t *bytes, size_t size, JelliSave *out)
 }
 
 typedef struct {
-    unsigned version, count, active, ninja_at;
+    unsigned version, count, active, ninja_at, unicorn_at;
 } Shape;
 
-/* A legacy roster: distinct IDs drawn from 1..12 (so ID 3 is often a jelly), varied
- * stats, sleeping bystanders, and on v3+ a prize whose origin is one of the pets. */
+/* A stored roster: distinct IDs drawn from 1..12 (so IDs 3 and 4 are often jellies),
+ * varied stats, sleeping bystanders, and on v3+ a prize whose origin is one of the pets. */
 static JelliSave build_case(const Shape *shape, uint32_t seed)
 {
     JelliSave save = {.sequence = next_random(&seed), .anchor_ms = next_random(&seed)};
@@ -167,6 +162,7 @@ static JelliSave build_case(const Shape *shape, uint32_t seed)
         pet->id = pool[p];
         pet->random_state = next_random(&seed) | 1u;
         pet->form = p == shape->ninja_at              ? (uint8_t)JELLI_FORM_NINJA
+                    : p == shape->unicorn_at          ? (uint8_t)JELLI_FORM_UNICORN
                     : (next_random(&seed) & 1u) != 0u ? (uint8_t)JELLI_FORM_LILAC
                                                       : (uint8_t)JELLI_FORM_MINT;
         pet->bond = (uint16_t)(next_random(&seed) % 1001u);
@@ -191,15 +187,28 @@ static JelliSave build_case(const Shape *shape, uint32_t seed)
     return save;
 }
 
-static uint32_t expected_ninja_id(const JelliGame *game)
+/* The oracle: the stored roster with each predated, absent species appended in order
+ * (while there is room), taking the first unused ID from the species' stable ID. */
+static JelliGame expected_roster(const JelliGame *stored, unsigned version)
 {
-    for (uint32_t id = JELLI_NINJA_PET_ID;; ++id) {
-        bool used = false;
-        for (unsigned p = 0u; p < game->count; ++p)
-            used = used || game->pets[p].id == id;
-        if (!used)
-            return id;
+    JelliGame game = *stored, reference;
+    jelli_game_init(&reference);
+    static const uint8_t forms[] = {JELLI_FORM_NINJA, JELLI_FORM_UNICORN};
+    static const unsigned before[] = {NINJA_VERSION, UNICORN_VERSION};
+    for (unsigned s = 0u; s < 2u; ++s) {
+        if (version >= before[s] || form_count(&game, forms[s]) || game.count >= JELLI_PET_CAPACITY)
+            continue;
+        JelliPet pet = reference.pets[2u + s];
+        for (bool used = true; used;) {
+            used = false;
+            for (unsigned p = 0u; p < game.count; ++p)
+                used = used || game.pets[p].id == pet.id;
+            pet.id += used ? 1u : 0u;
+        }
+        pet.random_state = pet.id;
+        game.pets[game.count++] = pet;
     }
+    return game;
 }
 
 static bool same_pet(const JelliPet *a, const JelliPet *b)
@@ -207,22 +216,13 @@ static bool same_pet(const JelliPet *a, const JelliPet *b)
     return a->id == b->id && a->form == b->form && a->bond == b->bond &&
            a->location == b->location && a->bedtime == b->bedtime && a->ticks == b->ticks &&
            a->stage_ticks == b->stage_ticks && a->asleep == b->asleep &&
+           a->scheduled_sleep == b->scheduled_sleep && a->nap_due == b->nap_due &&
+           a->health == b->health && a->activity == b->activity &&
            a->random_state == b->random_state && memcmp(a->needs, b->needs, sizeof(a->needs)) == 0;
 }
 
-/* The appended ninja is a fresh one, identical to a new game's apart from its ID. */
-static bool fresh_ninja(const JelliPet *pet, uint32_t id)
-{
-    JelliGame reference;
-    jelli_game_init(&reference);
-    JelliPet expected = reference.pets[2];
-    expected.id = expected.random_state = id;
-    return same_pet(pet, &expected) && pet->health == JELLI_WELL && pet->activity == JELLI_IDLE &&
-           !pet->scheduled_sleep && pet->nap_due == 0u;
-}
-
-/* Save, reload, and save again: the count and ninja total never change and the
- * re-encoded bytes are a fixed point from the first save onwards. */
+/* Save, reload, and save again: the roster never changes and the re-encoded bytes are
+ * a fixed point from the first save onwards. */
 static void cycle_is_stable(const JelliSave *loaded, uint32_t seed)
 {
     static uint8_t first[JELLI_SAVE_CAPACITY], again[JELLI_SAVE_CAPACITY];
@@ -233,116 +233,120 @@ static void cycle_is_stable(const JelliSave *loaded, uint32_t seed)
         JelliSave next;
         CHECK_SEED(decode_checked(first, size, &next), seed);
         CHECK_SEED(next.game.count == loaded->game.count, seed);
-        CHECK_SEED(ninja_count(&next.game) == ninja_count(&loaded->game), seed);
+        for (uint8_t form = 0u; form < JELLI_FORM_COUNT; ++form)
+            CHECK_SEED(form_count(&next.game, form) == form_count(&loaded->game, form), seed);
         CHECK_SEED(jelli_save_encode(&next, again, sizeof(again)) == size, seed);
         CHECK_SEED(memcmp(first, again, size) == 0, seed);
         current = next;
     }
 }
 
-static void check_accepted(const Shape *shape, const JelliSave *legacy, const JelliSave *loaded,
-                           uint32_t seed)
+static void check_accepted(const Shape *shape, const JelliSave *stored, const JelliGame *expected,
+                           const JelliSave *loaded, uint32_t seed)
 {
-    bool grows = shape->ninja_at == NO_NINJA && shape->count < JELLI_PET_CAPACITY;
-    CHECK_SEED(loaded->game.count == shape->count + (grows ? 1u : 0u), seed);
+    CHECK_SEED(loaded->game.count == expected->count, seed);
     CHECK_SEED(loaded->game.active == shape->active && jelli_game_valid(&loaded->game), seed);
-    CHECK_SEED(loaded->sequence == legacy->sequence && loaded->anchor_ms == legacy->anchor_ms,
+    CHECK_SEED(loaded->sequence == stored->sequence && loaded->anchor_ms == stored->anchor_ms,
                seed);
-    CHECK_SEED(loaded->game.food == legacy->game.food, seed);
-    CHECK_SEED(loaded->game.battery_display == legacy->game.battery_display, seed);
-    CHECK_SEED(loaded->game.sound_level == JELLI_SOUND_LEVEL_DEFAULT, seed); /* Pre-v6. */
-    for (unsigned p = 0u; p < shape->count; ++p)
-        CHECK_SEED(same_pet(&loaded->game.pets[p], &legacy->game.pets[p]), seed);
+    CHECK_SEED(loaded->game.food == stored->game.food, seed);
+    CHECK_SEED(loaded->game.battery_display == stored->game.battery_display, seed);
+    CHECK_SEED(loaded->game.sound_level ==
+                   (shape->version >= 6u ? stored->game.sound_level : JELLI_SOUND_LEVEL_DEFAULT),
+               seed);
+    for (unsigned p = 0u; p < expected->count; ++p)
+        CHECK_SEED(same_pet(&loaded->game.pets[p], &expected->pets[p]), seed);
     if (shape->version >= 3u)
-        CHECK_SEED(loaded->game.prizes.origin_pet[0] == legacy->game.prizes.origin_pet[0], seed);
-    CHECK_SEED(ninja_count(&loaded->game) == (shape->ninja_at == NO_NINJA ? 0u : 1u) + grows, seed);
-    if (grows)
-        CHECK_SEED(fresh_ninja(&loaded->game.pets[shape->count], expected_ninja_id(&legacy->game)),
-                   seed);
+        CHECK_SEED(loaded->game.prizes.origin_pet[0] == stored->game.prizes.origin_pet[0], seed);
+    for (uint8_t form = JELLI_FORM_NINJA; form < JELLI_FORM_COUNT; ++form)
+        CHECK_SEED(form_count(&loaded->game, form) <= 1u, seed); /* Never a duplicate. */
     for (unsigned p = loaded->game.count; p < JELLI_PET_CAPACITY; ++p)
         CHECK_SEED(loaded->game.pets[p].id == 0u, seed);
     cycle_is_stable(loaded, seed);
 }
 
 typedef struct {
-    unsigned cases, grown, full, rejected, id3_taken;
+    unsigned cases, ninjas, unicorns, moved, full, rejected;
 } Tally;
 
 static void run_case(const Shape *shape, uint32_t seed, Tally *tally)
 {
     static uint8_t bytes[JELLI_SAVE_CAPACITY];
-    JelliSave legacy = build_case(shape, seed), loaded;
-    bool has_ninja = shape->ninja_at != NO_NINJA;
-    bool grows = !has_ninja && shape->count < JELLI_PET_CAPACITY;
-    size_t size = encode_as(&legacy, shape->version, bytes);
+    JelliSave stored = build_case(shape, seed), loaded;
+    JelliGame expected = expected_roster(&stored.game, shape->version);
+    size_t size = encode_as(&stored, shape->version, bytes);
     CHECK_SEED(bytes[4] == shape->version, seed);
     bool accepted = decode_checked(bytes, size, &loaded);
-    /* Only a two-pet roster that already has a ninja stays incomplete. */
-    CHECK_SEED(accepted == (shape->count + (grows ? 1u : 0u) >= JELLI_ROSTER_MIN), seed);
+    /* Only a roster still short of four pets after migration is refused. */
+    CHECK_SEED(accepted == (expected.count >= JELLI_ROSTER_MIN), seed);
     if (accepted)
-        check_accepted(shape, &legacy, &loaded, seed);
+        check_accepted(shape, &stored, &expected, &loaded, seed);
     tally->cases++;
     tally->rejected += accepted ? 0u : 1u;
-    tally->grown += grows ? 1u : 0u;
-    tally->full += !has_ninja && !grows ? 1u : 0u;
-    tally->id3_taken += grows && expected_ninja_id(&legacy.game) != JELLI_NINJA_PET_ID ? 1u : 0u;
-    /* The same roster as version 5 or 6 is never migrated: it is complete or refused.
-     * Version 6 keeps its sound level; version 5 loads the default. */
-    for (unsigned version = NINJA_VERSION; version <= JELLI_SAVE_VERSION; ++version) {
-        size = encode_as(&legacy, version, bytes);
-        accepted = decode_checked(bytes, size, &loaded);
-        CHECK_SEED(accepted == (shape->count >= JELLI_ROSTER_MIN), seed);
-        if (accepted)
-            CHECK_SEED(loaded.game.count == shape->count &&
-                           ninja_count(&loaded.game) == (has_ninja ? 1u : 0u) &&
-                           loaded.game.sound_level == (version >= 6u ? legacy.game.sound_level
-                                                                     : JELLI_SOUND_LEVEL_DEFAULT),
-                       seed);
+    tally->full += shape->count == JELLI_PET_CAPACITY && shape->version < UNICORN_VERSION ? 1u : 0u;
+    for (unsigned p = shape->count; p < expected.count; ++p) {
+        bool ninja = expected.pets[p].form == JELLI_FORM_NINJA;
+        tally->ninjas += ninja ? 1u : 0u;
+        tally->unicorns += ninja ? 0u : 1u;
+        tally->moved +=
+            expected.pets[p].id != (ninja ? JELLI_NINJA_PET_ID : JELLI_UNICORN_PET_ID) ? 1u : 0u;
     }
 }
 
-/* Every version x count x active slot x ninja slot (or none), each with two seeds. */
+/* Every version x count x active slot x ninja slot x unicorn slot (or none). */
 static void every_roster_shape(void)
 {
     Tally tally = {0};
-    for (unsigned version = 1u; version < NINJA_VERSION; ++version) {
-        for (unsigned count = 2u; count <= JELLI_PET_CAPACITY; ++count) {
-            for (unsigned active = 0u; active < count; ++active) {
-                for (unsigned ninja = 0u; ninja <= count; ++ninja) {
-                    Shape shape = {version, count, active, ninja == count ? NO_NINJA : ninja};
-                    uint32_t seed = (version << 24u) ^ (count << 16u) ^ (active << 8u) ^ ninja;
-                    run_case(&shape, seed | 0x80000000u, &tally);
-                    run_case(&shape, (seed * 2654435761u) | 1u, &tally);
-                }
-            }
-        }
-    }
-    CHECK(tally.cases == 4u * 2u * 238u && tally.grown > 0u && tally.full > 0u);
-    CHECK(tally.rejected > 0u && tally.id3_taken > 0u);
-    printf("roster shapes: %u cases, %u gained a ninja (%u not as ID 3), %u full, %u refused\n",
-           tally.cases, tally.grown, tally.id3_taken, tally.full, tally.rejected);
+    for (unsigned version = 1u; version <= JELLI_SAVE_VERSION; ++version)
+        for (unsigned count = 2u; count <= JELLI_PET_CAPACITY; ++count)
+            for (unsigned active = 0u; active < count; ++active)
+                for (unsigned ninja = 0u; ninja <= count; ++ninja)
+                    for (unsigned unicorn = 0u; unicorn <= count; ++unicorn) {
+                        if (ninja == unicorn && ninja < count)
+                            continue; /* One pet, one form. */
+                        Shape shape = {version, count, active, ninja == count ? NONE : ninja,
+                                       unicorn == count ? NONE : unicorn};
+                        uint32_t seed = (version << 24u) ^ (count << 16u) ^ (active << 12u) ^
+                                        (ninja << 4u) ^ unicorn;
+                        run_case(&shape, (seed * 2654435761u) | 1u, &tally);
+                    }
+    CHECK(tally.cases == 7u * 1533u && tally.ninjas > 0u && tally.unicorns > tally.ninjas);
+    CHECK(tally.rejected > 0u && tally.moved > 0u && tally.full > 0u);
+    printf("roster shapes: %u cases, %u gained a ninja, %u a unicorn (%u not at their stable "
+           "ID), %u full, %u refused\n",
+           tally.cases, tally.ninjas, tally.unicorns, tally.moved, tally.full, tally.rejected);
 }
 
-/* IDs 3 upwards already taken by jellies: the ninja takes the first gap. */
-static void ninja_takes_first_free_id(void)
+/* IDs from 3 upwards already taken by jellies: each species takes the first gap above
+ * its stable ID, the ninja first; a seven-pet roster has room only for the ninja. */
+static void species_take_first_free_id(void)
 {
-    static const uint32_t rosters[][7] = {
-        {3u, 4u, 5u, 6u, 7u, 8u, 9u}, {1u, 2u, 3u, 4u, 5u, 6u, 7u}, {9u, 3u, 1u, 5u, 4u, 2u, 6u}};
-    static const uint32_t expected[] = {10u, 8u, 7u};
+    static const struct {
+        uint32_t ids[7];
+        unsigned count;
+        uint32_t ninja, unicorn;
+    } rosters[] = {
+        {{3u, 4u, 5u, 6u, 7u, 8u, 9u}, 7u, 10u, 0u}, {{1u, 2u, 3u, 4u, 5u, 6u, 7u}, 7u, 8u, 0u},
+        {{9u, 3u, 1u, 5u, 4u, 2u, 6u}, 7u, 7u, 0u},  {{3u, 4u, 5u, 6u, 7u, 8u}, 6u, 9u, 10u},
+        {{1u, 2u, 4u, 5u, 9u, 10u}, 6u, 3u, 6u},     {{1u, 2u, 3u, 5u, 6u, 7u}, 6u, 4u, 8u}};
     static uint8_t bytes[JELLI_SAVE_CAPACITY];
-    for (unsigned r = 0u; r < sizeof(expected) / sizeof(expected[0]); ++r) {
-        Shape shape = {4u, 7u, 6u, NO_NINJA};
-        JelliSave legacy = build_case(&shape, 0x1d000000u + r), loaded;
-        for (unsigned p = 0u; p < 7u; ++p)
-            legacy.game.pets[p].id = rosters[r][p];
-        legacy.game.prizes = (JelliPrizes){0};
-        size_t size = encode_as(&legacy, 4u, bytes);
-        CHECK(decode_checked(bytes, size, &loaded) && loaded.game.count == 8u);
-        CHECK(fresh_ninja(&loaded.game.pets[7], expected[r]));
+    for (unsigned r = 0u; r < sizeof(rosters) / sizeof(rosters[0]); ++r) {
+        Shape shape = {4u, rosters[r].count, rosters[r].count - 1u, NONE, NONE};
+        JelliSave stored = build_case(&shape, 0x1d000000u + r), loaded;
+        for (unsigned p = 0u; p < rosters[r].count; ++p)
+            stored.game.pets[p].id = rosters[r].ids[p];
+        stored.game.prizes = (JelliPrizes){0};
+        size_t size = encode_as(&stored, 4u, bytes);
+        CHECK(decode_checked(bytes, size, &loaded) &&
+              loaded.game.count == rosters[r].count + 1u + (rosters[r].unicorn != 0u));
+        CHECK(loaded.game.pets[rosters[r].count].id == rosters[r].ninja);
+        CHECK(loaded.game.pets[rosters[r].count].form == JELLI_FORM_NINJA);
+        if (rosters[r].unicorn)
+            CHECK(loaded.game.pets[rosters[r].count + 1u].id == rosters[r].unicorn &&
+                  loaded.game.pets[rosters[r].count + 1u].form == JELLI_FORM_UNICORN);
     }
 }
 
-/* Mutated legacy records never crash; anything accepted is a valid roster that has
+/* Mutated older records never crash; anything accepted is a valid roster that has
  * already converged, so saving and reloading it never adds another pet. */
 static void legacy_mutation_fuzz(void)
 {
@@ -352,12 +356,12 @@ static void legacy_mutation_fuzz(void)
     for (unsigned i = 0u; i < 3000u; ++i) {
         uint32_t seed = base + i, state = seed;
         unsigned count = 2u + next_random(&state) % (JELLI_PET_CAPACITY - 1u);
-        Shape shape = {1u + next_random(&state) % 4u, count, next_random(&state) % count,
-                       next_random(&state) % (count + 1u)};
+        Shape shape = {1u + next_random(&state) % (UNICORN_VERSION - 1u), count,
+                       next_random(&state) % count, next_random(&state) % (count + 1u), NONE};
         if (shape.ninja_at == count)
-            shape.ninja_at = NO_NINJA;
-        JelliSave legacy = build_case(&shape, seed), loaded;
-        size_t size = encode_as(&legacy, shape.version, bytes);
+            shape.ninja_at = NONE;
+        JelliSave stored = build_case(&shape, seed), loaded;
+        size_t size = encode_as(&stored, shape.version, bytes);
         for (unsigned r = 1u + next_random(&state) % 3u; r > 0u; --r) {
             size_t at = COUNT_OFFSET + next_random(&state) % (size - TRAILER - COUNT_OFFSET);
             bytes[at] = (next_random(&state) & 1u) != 0u
@@ -379,8 +383,8 @@ static void legacy_mutation_fuzz(void)
 int main(void)
 {
     every_roster_shape();
-    ninja_takes_first_free_id();
+    species_take_first_free_id();
     legacy_mutation_fuzz();
-    puts("PASS: v1-v4 roster migration properties and seeded mutation fuzz");
+    puts("PASS: v1-v6 roster migration properties and seeded mutation fuzz");
     return 0;
 }

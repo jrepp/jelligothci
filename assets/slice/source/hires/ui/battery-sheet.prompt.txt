@@ -1,0 +1,28 @@
+Sheet: battery-sheet.jpg (1024 x 1024 JPEG, saved verbatim as returned)
+Generated: 2026-10-08
+Tool: gemini-image MCP server, edit_image
+Source image: green-canvas-1024.png (1024 x 1024, flat RGB #00FF00)
+Model: gemini-3-pro-image-preview ("quality")
+Style: none (the server adds no style prefix, so the prompt below is exactly what was sent)
+Aspect ratio: 1:1 (no prefix, no API aspect setting; the square output follows the
+square source image)
+Background key: pure green #00FF00 (the "?" is lavender and the low bar is coral)
+
+Cell order (reading order, zero-based index -> output file). Only eight cells were
+requested; rows 3 and 4 are deliberately empty.
+  0 battery/empty.png      1 battery/low.png       2 battery/medium.png    3 battery/high.png
+  4 battery/charging.png   5 battery/plugged.png   6 battery/unknown.png   7 (alternate plug, unused)
+  8-15 empty
+extract_ui.py scales cells 0-4 and 6 by one common factor (shell width = 90 % of 64 px)
+and centres them on the shell, so the battery body is pixel-identical in all six.
+
+---- Prompt (verbatim) ----
+This image is a blank square canvas of flat pure chroma-key green (#00FF00). Keep that exact flat green as the entire background, edge to edge, and keep the image square. On it, draw a game UI battery-status icon sprite sheet laid out on a strict grid of exactly 4 rows and 4 columns of equal square cells, evenly spaced, each icon centred in its own cell with generous empty green padding (each icon about 65 percent of the cell width and never touching or crossing the cell edges). No gradient, no vignette, no texture, no grid lines, no cell borders, no labels, no text, no numbers. Style for every icon: original glossy 3D toy renders in the spirit of premium emoji icons, fully three-dimensional like polished vinyl toys; smooth rounded chunky forms; soft studio lighting from the upper left; gentle gradients; crisp subtle specular highlights; a soft pale rim light around each silhouette so it reads on a near-black background; saturated harmonious colours from this palette only: mint (#85E4B6), teal (#43BCA2, #187B79), lavender (#D2B8F3), cream (#FFF4CF), coral pink (#FA8C99), deep coral (#D84F70), warm gold (#F5C764), deep plum (#49334F). Lit in a neutral white studio: no green reflections, no green spill and no green tint on any icon; mint stays cool and blue-leaning, never pure or yellow green. No drop shadows, no cast shadows, no ground plane, no thick dark outlines. Front view, perfectly straight and level, no perspective tilt. Every icon must stay bold and readable when shrunk to 32 pixels and the states must be distinguishable by shape alone.
+
+The same battery body is used in cells 1 to 5 and cell 7, identical in size, shape and position: a wide horizontal rounded-rectangle battery with a thick glossy cream (#FFF4CF) shell, a dark deep-plum (#49334F) recessed interior window, and a small rounded cream terminal nub on the right end.
+
+The cells in reading order (row 1 left to right, then row 2):
+Row 1: (1) Empty: the battery with an empty dark interior and one big bold coral-pink exclamation mark (a thick vertical bar above a round dot) centred inside it. (2) Low: the battery with exactly ONE short deep-coral bar filling only the left third of the interior; the rest of the interior is empty and dark. (3) Medium: the battery with exactly TWO warm gold bars side by side filling the left two thirds of the interior, separated by a small dark gap; the right third empty and dark. (4) High: the battery with exactly THREE mint bars side by side filling the whole interior, separated by small dark gaps.
+Row 2: (5) Charging: the battery with an empty dark interior and a big bold warm gold lightning bolt over its centre, the bolt slightly overlapping the top and bottom of the shell. (6) Plugged: an electrical power plug and no battery: a rounded mint plug body with two short gold prongs pointing straight up and a short thick teal cable curving down from its bottom. (7) Unknown: the battery with an empty dark interior and one big bold lavender question mark centred inside it. (8) Alternate plugged: a rounded cream plug body with two short gold prongs pointing straight up and a short thick mint cable going down.
+Row 3 and row 4: leave all eight cells completely empty, just the flat green background.
+---- end ----

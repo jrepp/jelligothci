@@ -252,12 +252,18 @@ static bool read_game(Reader *reader, JelliGame *game)
     return !reader->failed;
 }
 
-/* Rosters saved before version 5 predate the ninja. Appending one to an invalid
- * roster is refused, and the decoder's full validation still applies afterwards. */
+/* Rosters saved before version 5 predate the ninja, and before version 7 the unicorn.
+ * Each missing species is appended once, in that order, keeping the active pet.
+ * Appending to an invalid roster is refused, and the decoder's full validation still
+ * applies afterwards. */
 static void upgrade_roster(const Reader *reader, JelliGame *game)
 {
-    if (!reader->failed && reader->version < 5u)
-        (void)jelli_game_add_ninja(game);
+    if (reader->failed)
+        return;
+    if (reader->version < 5u)
+        (void)jelli_game_add_species(game, JELLI_FORM_NINJA);
+    if (reader->version < 7u)
+        (void)jelli_game_add_species(game, JELLI_FORM_UNICORN);
 }
 
 static uint32_t checksum(const uint8_t *bytes, size_t size)

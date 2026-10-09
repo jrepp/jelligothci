@@ -1,0 +1,48 @@
+Model: gemini-3-pro-image-preview (Gemini image generation, "quality"), aspect ratio requested 1:1, style none.
+The generator ignored the aspect ratio and returned a 1408x768 JPEG; it is kept verbatim as effects-sheet.jpg.
+extract_items.py derives assets/slice/hires/effects/*.png (96x96, drawn at 16/32/48 px) from it. Key: green.
+
+Prompt (verbatim):
+
+A sprite sheet of 16 original celebration particle icons arranged in a strict 4 by 4 grid of equal square cells, on a perfectly flat, uniform, pure green (#00FF00) background that fills the entire image edge to edge. Exactly one object centred in each cell, each object about 70% of the cell width, with generous empty green space around every object so nothing touches another object or the cell edges. No grid lines, no cell borders, no labels, no text, no letters, no numbers anywhere.
+
+These icons will be shown very small, at 16 to 32 pixels, so every object must be a BOLD, simple, chunky, instantly recognisable silhouette with minimal fine detail, large clear shapes and strong light-versus-dark contrast, like a sticker.
+
+Style for every object: original glossy 3D "toy" renders in the spirit of premium emoji-style art but entirely original. Smooth rounded forms, soft studio lighting from the upper left, gentle gradients, subtle specular highlights, and a soft pale rim light along the edges so each shape reads clearly on a near-black background. Saturated harmonious candy palette: warm gold, coral pink, lavender and violet, aqua teal, cream, deep plum accents. Objects are fully opaque, lit by neutral white light, and do not reflect the background colour. No glow halos, no drop shadows, no cast shadows, no ground plane, no thick outlines. Never use green or lime in any object.
+
+Cells, reading left to right, top to bottom:
+1. A plump five-pointed warm gold star with softly rounded points.
+2. A plump glossy coral-pink heart.
+3. A glossy round aqua-teal magic orb, a solid marble-like sphere with a bright cream highlight and a hint of lavender swirl inside.
+4. A comet: a small gold star head with a short, thick, curved tail sweeping down-left in bands of lavender and coral pink.
+5. A pair of chunky fairy wings, opaque, lavender on top shading to aqua at the tips, with a tiny gold centre.
+6. A bold pair of beamed music eighth notes, violet stems and beam with round coral-pink note heads.
+7. A glossy warm gold light bulb with a lavender screw base and a small cream highlight.
+8. A chunky arched rainbow with four thick bands (coral pink, gold, aqua, lavender) and a fluffy white cloud puff at each end.
+9. A four-pointed gold sparkle star with fat rounded points.
+10. A coral-pink heart with a small cream shine, slightly tilted.
+11. A glossy round lavender magic orb with a bright cream highlight.
+12. A comet: a round gold orb head with a short thick coral-pink and lavender tail sweeping down-left.
+13. A pair of chunky butterfly-style fairy wings in coral pink and lavender, opaque.
+14. A single bold violet music eighth note with a round coral-pink note head and a curled flag.
+15. A warm gold light bulb with three short cream rays above it.
+16. A chunky arched rainbow of three thick bands (coral pink, gold, lavender) without clouds.
+
+Cell order as generated (4 columns x 4 rows of equal 352x192 cells; the model grouped each
+subject and its variant into one column; zero-based column,row -> object -> output):
+  0,0 plump gold star                              -> effects/star.png
+  1,0 coral-pink heart                             -> effects/heart.png
+  2,0 aqua orb with lavender swirl                 -> effects/orb.png
+  3,0 comet, gold star head, lavender/coral tail   -> effects/comet.png
+  0,1 lavender/aqua fairy wings, gold centre       -> effects/wings.png
+  1,1 beamed violet eighth notes, coral heads      -> effects/music.png
+  2,1 gold light bulb, lavender base               -> effects/idea.png
+  3,1 four-band rainbow with cloud puffs           -> effects/rainbow.png
+  0,2 four-pointed gold sparkle                    (unused)
+  1,2 coral heart with shine                       (unused)
+  2,2 lavender orb on a plum stand                 (unused)
+  3,2 comet with a round gold head                 (unused)
+  0,3 coral/lavender butterfly wings               (unused)
+  1,3 single violet eighth note                    (unused)
+  2,3 gold bulb with cream rays                    (unused)
+  3,3 three-band rainbow, no clouds                (unused)

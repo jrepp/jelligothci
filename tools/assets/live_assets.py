@@ -2,7 +2,14 @@
 # requires-python = ">=3.12,<3.13"
 # dependencies = ["Pillow==12.0.0"]
 # ///
-"""Watch authored PNGs and atomically publish a bounded SDL artwork pack."""
+"""Watch authored PNGs and atomically publish a bounded SDL artwork pack.
+
+Pack v2 (little endian): a 16-byte header (b"JLAP", version 2, asset count, CRC-32
+of the body) then, per asset sorted by ID, a 28-byte record (id, logical width and
+height, ground and centroid Q8, logical bounds, payload length, density, three zero
+bytes) and its payload. Density 1 payloads are RGB565 + 1-bit mask; density 2..8
+payloads are stored RGB565 + 8-bit straight alpha (ports/sdl/asset_pack.c).
+"""
 import argparse
 import json
 import os
@@ -15,25 +22,33 @@ import time
 import zlib
 
 from PIL import Image
-from build_slice import pack_mask
-from sprite_geometry import ground_anchor_q8, opaque_centroid_q8
+from build_slice import (DRAW_SCALES, LOGICAL_SIZES as DIMENSIONS, MAX_DENSITY, is_hires,
+                         little_endian, pack_mask, runtime_planes)
+from sprite_geometry import OPAQUE_ALPHA, ground_anchor_q8, logical_bounds, opaque_centroid_q8
 
 ROOT = Path(__file__).resolve().parents[2]
-MAX_PACK_BYTES = 262144
+MAX_PACK_BYTES = 8 * 1024 * 1024
 MAX_ASSETS = 128
+VERSION = 2
 HEADER = struct.Struct("<4sIII")
-RECORD = struct.Struct("<IHHHHHHBBBBI")
-DIMENSIONS = {
-    "creatures": (32, 32), "icons": (16, 16), "props": (24, 24),
-    "font": (128, 72), "menus": (32, 32), "meters": (32, 32),
-    "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64),
-    "prizes": (32, 32), "battery": (16, 16),
-}
+RECORD = struct.Struct("<IHHHHHHBBBBIB3x")
 
 
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def asset_density(asset):
+    """Density of a manifest entry: 1 for legacy art, 2..8 when drawable at every scale."""
+    if not is_hires(asset):
+        return 1
+    density = asset["density"]
+    scales = DRAW_SCALES.get(asset["kind"], ())
+    require(type(density) is int and 2 <= density <= MAX_DENSITY and scales and
+            all(s % density == 0 or density % s == 0 for s in scales),
+            f"Unsupported density: {asset['path']}")
+    return density
 
 
 def asset_image(source, asset):
@@ -43,27 +58,28 @@ def asset_image(source, asset):
     require(dimensions is not None, f"Unknown asset kind: {asset['kind']}")
     require((asset["width"], asset["height"]) == dimensions,
             f"Manifest dimensions changed: {asset['path']}")
+    density = asset_density(asset)
     with Image.open(path) as opened:
         require(opened.format == "PNG", f"Expected PNG: {asset['path']}")
-        require(opened.size == dimensions, f"Wrong dimensions: {asset['path']}")
+        require(opened.size == (dimensions[0] * density, dimensions[1] * density),
+                f"Wrong dimensions: {asset['path']}")
+        require(density == 1 or opened.mode == "RGBA", f"Expected 8-bit RGBA: {asset['path']}")
         image = opened.convert("RGBA")
     alpha = image.getchannel("A")
-    require(set(alpha.getdata()) <= {0, 255}, f"Nonbinary alpha: {asset['path']}")
-    require(alpha.getbbox() is not None, f"Empty artwork: {asset['path']}")
-    return image
+    require(density > 1 or set(alpha.getdata()) <= {0, 255}, f"Nonbinary alpha: {asset['path']}")
+    require(any(a >= OPAQUE_ALPHA for a in alpha.getdata()), f"Empty artwork: {asset['path']}")
+    return image, density
 
 
-def payload(image, font):
+def payload(asset, image, font):
     if font:
         glyphs = bytearray()
         for index in range(96):
             x, y = index % 16 * 8, index // 16 * 12
             glyphs.extend(pack_mask(image.crop((x, y, x + 8, y + 12))))
         return bytes(glyphs)
-    pixels = bytearray()
-    for r, g, b, _ in image.getdata():
-        pixels.extend(struct.pack("<H", ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)))
-    return bytes(pixels) + pack_mask(image)
+    planes = runtime_planes(asset, image)
+    return little_endian(planes["pixels"]) + planes.get("alpha", planes.get("mask"))
 
 
 def build_pack(source):
@@ -81,18 +97,18 @@ def build_pack(source):
         require(ident not in ids and asset["path"] not in paths, "Duplicate asset ID/path")
         ids.add(ident)
         paths.add(asset["path"])
-        image = asset_image(source, asset)
+        image, density = asset_image(source, asset)
         font = asset["kind"] == "font"
         require(not font or ident == 4001, "Font must retain ID 4001")
-        data = payload(image, font)
-        bounds = image.getchannel("A").getbbox()
-        ground = ground_anchor_q8(image) if asset["kind"] == "creatures" else (0, 0)
-        center = opaque_centroid_q8(image)
-        body.extend(RECORD.pack(ident, image.width, image.height, *ground, *center,
-                                *bounds, len(data)))
+        data = payload(asset, image, font)
+        bounds = logical_bounds(image, density)
+        ground = ground_anchor_q8(image, density) if asset["kind"] == "creatures" else (0, 0)
+        center = opaque_centroid_q8(image, density)
+        body.extend(RECORD.pack(ident, asset["width"], asset["height"], *ground, *center,
+                                *bounds, len(data), density))
         body.extend(data)
-        require(HEADER.size + len(body) <= MAX_PACK_BYTES, "Asset pack exceeds 256 KiB")
-    return HEADER.pack(b"JLAP", 1, len(assets), zlib.crc32(body)) + body
+        require(HEADER.size + len(body) <= MAX_PACK_BYTES, "Asset pack exceeds 8 MiB")
+    return HEADER.pack(b"JLAP", VERSION, len(assets), zlib.crc32(body)) + body
 
 
 def publish_pack(source, destination):

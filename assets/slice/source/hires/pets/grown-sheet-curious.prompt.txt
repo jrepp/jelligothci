@@ -1,0 +1,19 @@
+Model: gemini-3-pro-image-preview (Gemini image editing, "quality"), edit_image, aspect ratio
+16:9, style none. Source image: grown-sheet.jpg flipped left-right (Pillow 12.0.0
+Image.transpose(FLIP_LEFT_RIGHT), saved as PNG; not kept, as it is reproducible from
+grown-sheet.jpg). Returned a 1376x768 JPEG, kept verbatim as grown-sheet-curious.jpg
+(sha256 7d2ab82141a0bf948ec2782c24bd9a414d035171cc336a4fa196730fd466adea). Key: green.
+extract_pets.py flips it back left-right before keying and takes only grown-curious from
+it: cell 1 after the flip (top row, second from the left).
+
+Why: grown-sheet.jpg's curious pose (cell 6) leans left. Five edits of the unflipped sheet
+(asking cell 6, then the unused idle-B cell, to lean right, rotate clockwise, or lean
+"left") all came back leaning left, as did one flipped-sheet edit of the flipped curious
+cell. The model leans a figure toward the centre of the sheet, so on the flipped sheet the
+cell right of centre (the unused idle B) was asked to lean left, with the flipped sheet's
+upper-right light. Flipping the result back gives a rightward lean lit from the upper left,
+like every other pose. The other attempts were discarded.
+
+Edit prompt (verbatim):
+
+This is a character pose sheet on a flat pure green (#00FF00) background with eight poses in a 4x2 grid; the light comes from the upper RIGHT in every pose. Change ONLY the pose in the top row, second from the right. Turn it into a curious pose: the same lavender jelly creature leans toward the LEFT side of the picture, its head and both ear lobes shifted toward the left while its bottom hem stays in place, the body tilted to the left as if peeking at something off to the left; one eye a bit wider than the other, small "o" mouth. Same creature, same size, same colours, same glossy 3D style and upper-right lighting as the other poses. Keep every other pose, the layout and the flat pure green background exactly unchanged. No text.

@@ -13,8 +13,8 @@
     } while (0)
 
 /* Version 4 appends one settings byte (battery display) after the offered prize,
- * and version 6 the sound level after it, just before the 8-byte trailer. Version 5
- * kept the version 4 layout; earlier versions end the game record at the offered prize. */
+ * and version 6 the sound level after it, just before the 8-byte trailer. Versions 5
+ * and 7 kept the previous layout; earlier versions end the game record at the offered prize. */
 enum { TRAILER = 8u, SOUND_FROM_END = TRAILER + 1u, SETTING_FROM_END = TRAILER + 2u };
 
 static void repair_checksum(uint8_t *bytes, size_t size)
@@ -74,7 +74,7 @@ static void round_trip(void)
     for (unsigned shown = 0u; shown < 2u; ++shown) {
         save.game.battery_display = shown != 0u;
         size_t size = encode(&save, bytes);
-        CHECK(bytes[4] == 6u && JELLI_SAVE_VERSION == 6u);
+        CHECK(bytes[4] == 7u && JELLI_SAVE_VERSION == 7u);
         CHECK(bytes[size - SETTING_FROM_END] == shown);
         CHECK(bytes[size - SOUND_FROM_END] == JELLI_SOUND_LEVEL_DEFAULT);
         CHECK(jelli_save_decode(&loaded, bytes, size));
@@ -97,9 +97,9 @@ static void version3_defaults_to_shown(void)
     CHECK(loaded.game.sound_level == JELLI_SOUND_LEVEL_DEFAULT);
     CHECK(loaded.game.timezone_minutes == -330 && loaded.game.clock_adjust == 25);
     CHECK(loaded.game.prizes.owned == 1u && loaded.game.prizes.offered_pet == 2u);
-    /* Re-saving migrates to version 6 with both defaults made explicit. */
+    /* Re-saving migrates to version 7 with both defaults made explicit. */
     size_t migrated = encode(&loaded, bytes);
-    CHECK(migrated == size && bytes[4] == 6u && bytes[size - SETTING_FROM_END] == 1u);
+    CHECK(migrated == size && bytes[4] == 7u && bytes[size - SETTING_FROM_END] == 1u);
     CHECK(bytes[size - SOUND_FROM_END] == JELLI_SOUND_LEVEL_DEFAULT);
 }
 
@@ -187,7 +187,7 @@ static void full_roster_fits(void)
     size_t size = encode(&save, bytes);
     CHECK(size <= JELLI_SAVE_CAPACITY && jelli_save_decode(&loaded, bytes, size));
     CHECK(!loaded.game.battery_display);
-    printf("eight-pet v6 save: %zu of %u bytes\n", size, (unsigned)JELLI_SAVE_CAPACITY);
+    printf("eight-pet v7 save: %zu of %u bytes\n", size, (unsigned)JELLI_SAVE_CAPACITY);
 }
 
 int main(void)

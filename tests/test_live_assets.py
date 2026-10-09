@@ -47,21 +47,46 @@ class LiveAssetsTest(unittest.TestCase):
     def test_binary_layout_and_actual_geometry(self):
         data = live_assets.build_pack(self.source)
         magic, version, count, crc = live_assets.HEADER.unpack_from(data)
-        self.assertEqual((magic, version, count), (b"JLAP", 1, 2))
+        self.assertEqual((magic, version, count), (b"JLAP", 2, 2))
         self.assertEqual(crc, zlib.crc32(data[16:]))
         record = live_assets.RECORD.unpack_from(data, 16)
         self.assertEqual(record[:3], (1001, 32, 32))
         self.assertEqual(record[3:7], (3200, 6144, 3200, 6016))
         self.assertEqual(record[7:11], (12, 23, 13, 24))
-        self.assertEqual(record[11], 2176)
-        pixel = struct.unpack_from("<H", data, 40 + (23 * 32 + 12) * 2)[0]
+        self.assertEqual(record[11:], (2176, 1))  # Payload length, legacy density.
+        pixel = struct.unpack_from("<H", data, 44 + (23 * 32 + 12) * 2)[0]
         self.assertEqual(pixel, (200 >> 3) << 11 | (50 >> 2) << 5 | (111 >> 3))
-        self.assertEqual(data[40 + 2048 + 23 * 4 + 1], 8)
-        font_offset = 40 + 2176
+        self.assertEqual(data[44 + 2048 + 23 * 4 + 1], 8)
+        font_offset = 44 + 2176
         font_record = live_assets.RECORD.unpack_from(data, font_offset)
         self.assertEqual(font_record[0], 4001)
-        self.assertEqual(font_record[-1], 1152)
-        self.assertEqual(data[font_offset + 24 + 17 * 12 + 1], 64)
+        self.assertEqual(font_record[11:], (1152, 1))
+        self.assertEqual(data[font_offset + 28 + 17 * 12 + 1], 64)
+
+    def test_high_resolution_record_and_payload(self):
+        hires = Image.new("RGBA", (192, 192))
+        for y in range(138, 144):  # Logical pixel (12, 23) at density 6, soft top row.
+            for x in range(72, 78):
+                hires.putpixel((x, y), (200, 50, 111, 100 if y == 138 else 255))
+        (self.source / "hires/creatures").mkdir(parents=True)
+        hires.save(self.source / "hires/creatures/pet.png")
+        self.manifest["assets"][0].update(path="hires/creatures/pet.png", density=6)
+        self.write_manifest()
+        data = live_assets.build_pack(self.source)
+        record = live_assets.RECORD.unpack_from(data, 16)
+        self.assertEqual(record[:3], (1001, 32, 32))
+        self.assertEqual(record[7:11], (12, 23, 13, 24))  # Logical bounds.
+        self.assertEqual(record[3:7], (3200, 6144, 3200, 6037))  # Logical Q8 anchors.
+        self.assertEqual(record[11:], (192 * 192 * 3, 6))
+        alpha = data[44 + 192 * 192 * 2:44 + 192 * 192 * 3]
+        self.assertEqual((alpha[138 * 192 + 72], alpha[139 * 192 + 77], alpha[0]), (100, 255, 0))
+        self.creature.save(self.source / "hires/creatures/pet.png")  # Legacy size at density 6.
+        with self.assertRaisesRegex(ValueError, "Wrong dimensions"):
+            live_assets.build_pack(self.source)
+        self.manifest["assets"][0]["density"] = 4  # Creatures draw at 6x: 6 % 4 != 0.
+        self.write_manifest()
+        with self.assertRaisesRegex(ValueError, "Unsupported density"):
+            live_assets.build_pack(self.source)
 
     def test_bad_png_preserves_pack_and_error_is_reported_once(self):
         messages = []
@@ -149,15 +174,16 @@ class LiveAssetsTest(unittest.TestCase):
     def test_large_pack_is_rejected_before_replacing_old_pack(self):
         live_assets.publish_pack(self.source, self.destination)
         original = self.destination.read_bytes()
-        background = Image.new("RGBA", (64, 64), (100, 150, 200, 255))
+        # 76 density-6 creatures (110,620 bytes each with the record) exceed 8 MiB.
+        creature = Image.new("RGBA", (192, 192), (100, 150, 200, 255))
         self.manifest["assets"] = []
-        for index in range(31):
-            name = f"background-{index}.png"
-            background.save(self.source / name)
-            self.manifest["assets"].append({"id": 10000 + index, "kind": "backgrounds",
-                                             "width": 64, "height": 64, "path": name})
+        for index in range(76):
+            name = f"pet-{index}.png"
+            creature.save(self.source / name)
+            self.manifest["assets"].append({"id": 1001 + index, "kind": "creatures", "density": 6,
+                                             "width": 32, "height": 32, "path": name})
         self.write_manifest()
-        with self.assertRaisesRegex(ValueError, "256 KiB"):
+        with self.assertRaisesRegex(ValueError, "8 MiB"):
             live_assets.publish_pack(self.source, self.destination)
         self.assertEqual(original, self.destination.read_bytes())
 

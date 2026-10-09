@@ -331,10 +331,12 @@ static void run_seed(uint32_t seed, bool pinned)
     CHECK_STEP(!pinned || (w.catch_only >= 10u && w.catch_partial >= 5u)); /* Reached them. */
 }
 
-/* Fixed seeds in CI; an optional argument adds that many more for a soak run. */
+/* Fixed seeds in CI; an optional argument adds that many more for a soak run. The first
+ * seed replaced 0x9e3779b9 when the unicorn became the starting pet: that walk now
+ * reaches only two catch-rect partials, below the coverage each pinned seed must show. */
 static void random_frames_match_full_redraws(unsigned extra)
 {
-    static const uint32_t seeds[] = {0x9e3779b9u, 0x00c0ffeeu, 0xa66bdc94u, 0x2f49c7b0u};
+    static const uint32_t seeds[] = {0xb7e15162u, 0x00c0ffeeu, 0xa66bdc94u, 0x2f49c7b0u};
     unsigned count = (unsigned)(sizeof(seeds) / sizeof(seeds[0])), catch_only = 0u;
     unsigned partial = 0u, fulls = 0u, frames = 0u;
     for (unsigned i = 0u; i < count + extra; ++i) {

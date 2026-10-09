@@ -34,10 +34,10 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         debug = module.Client(wire)
         visual = debug.state()["visual"]
         assert visual["page"] == "home"
-        # An unsaved session is a new player: Nirmal the ninja (slot 2, ID 3, form 2) is
+        # An unsaved session is a new player: the unicorn (slot 3, ID 4, form 3) is
         # active, and SWITCH PET would go to the first Mint.
-        assert (visual["active_slot"], visual["pet_id"], visual["form"]) == (2, 3, 2), visual
-        assert (visual["stored_id"], visual["stored_form"], visual["pet_count"]) == (1, 0, 3)
+        assert (visual["active_slot"], visual["pet_id"], visual["form"]) == (3, 4, 3), visual
+        assert (visual["stored_id"], visual["stored_form"], visual["pet_count"]) == (1, 0, 4)
         debug.request("swipe 2")
         assert debug.state()["visual"]["stat_index"] == 1
         debug.request("swipe 3")

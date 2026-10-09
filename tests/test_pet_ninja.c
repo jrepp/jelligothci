@@ -1,5 +1,5 @@
 /* The ninja pet on screen: per-form frame selection, its home screen, and SWITCH PET
- * cycling through all three pets with the Settings ring describing the next one. */
+ * cycling through all four pets with the Settings ring describing the next one. */
 #include "jelli/assets.h"
 #include "jelli/pet_ui.h"
 #include "../core/pet_draw.h" /* Internal frame selection under test. */
@@ -26,7 +26,9 @@ static uint32_t expected_id(unsigned form, unsigned pose)
 {
     if (form == 2u)
         return 1031u + pose;
-    if (form > 2u)
+    if (form == 3u)
+        return 1041u + pose;
+    if (form > 3u)
         form = 0u; /* Unknown forms fall back to Mint. */
     return pose >= CURIOUS ? 1021u + form * 2u + (pose - CURIOUS) : 1001u + form * 6u + pose;
 }
@@ -57,7 +59,7 @@ static void frame_table(void)
         {true, JELLI_UNWELL, JELLI_IDLE, 0u, 0u, ASLEEP},
         {true, JELLI_WELL, JELLI_IDLE, 1u, 2u, ASLEEP},
     };
-    static const uint8_t forms[] = {0u, 1u, 2u, 3u, 200u, 255u};
+    static const uint8_t forms[] = {0u, 1u, 2u, 3u, 4u, 200u, 255u};
     for (unsigned f = 0u; f < sizeof(forms); ++f) {
         for (unsigned i = 0u; i < sizeof(cases) / sizeof(cases[0]); ++i) {
             const FrameCase *c = &cases[i];
@@ -145,7 +147,7 @@ static void switch_pet_cycles(void)
     game.pets[2].asleep = true; /* A resting ninja is still a valid switch target. */
     game.pets[2].nap_due = UINT64_MAX;
     JelliSurface s = surface(pixels);
-    static const uint32_t order[] = {1u, 2u, 3u, 1u};
+    static const uint32_t order[] = {1u, 2u, 3u, 4u, 1u};
     for (unsigned i = 0u; i + 1u < sizeof(order) / sizeof(order[0]); ++i) {
         ui.menu_open = true;
         ui.page = JELLI_UI_SETTINGS;
@@ -153,7 +155,7 @@ static void switch_pet_cycles(void)
         const JelliPet *next = &game.pets[(game.active + 1u) % game.count];
         CHECK(ui.last_view.active_id == order[i] && ui.last_view.stored_id == order[i + 1u]);
         CHECK(ui.last_view.stored_form == next->form && ui.last_view.stored_asleep == next->asleep);
-        CHECK(ui.last_view.count == 3u);
+        CHECK(ui.last_view.count == 4u);
         CHECK(jelli_pet_ui_available(&ui, &game, 2u) == JELLI_OK);
         tap_switch(&ui, &game);
         CHECK(ui.result == JELLI_OK && game.pets[game.active].id == order[i + 1u]);
