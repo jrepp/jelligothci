@@ -295,6 +295,20 @@ class CommandLineTests(unittest.TestCase):
             agent.main()
         self.assertEqual(raised.exception.code, 2)
 
+    def test_render_bench_waits_for_its_duration(self):
+        for mode in ("full", "bob", "patch"):
+            with self.subTest(mode=mode):
+                args = self.args(command="render", action="bench", mode=mode, seconds=5)
+                self.assertEqual(agent.command_line(args), (f"render bench {mode} 5", 5.0))
+        for arguments in (["render", "bench", "spin", "5"], ["render", "bench", "full", "0"],
+                          ["render", "bench", "full", "11"], ["render", "go", "full", "5"]):
+            with self.subTest(arguments=arguments):
+                argv = ["jelli-agent", "--port", "/dev/null", *arguments]
+                with unittest.mock.patch.object(sys, "argv", argv), \
+                        contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+                    agent.main()
+                self.assertEqual(raised.exception.code, 2)
+
     def test_hello_and_boot(self):
         self.assertEqual(agent.command_line(self.args(command="hello")), ("hello", 0.0))
         self.assertEqual(agent.command_line(self.args(command="boot", app="pet")), ("boot pet", 0.0))

@@ -2,6 +2,7 @@
 #include "boot.h"
 #include "commands_spike.h"
 #include "probe.h"
+#include "render_bench.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -58,6 +59,8 @@ void jelli_agent_command(const JelliAgentRequest *request, char *out, size_t cap
         reply(out, capacity,
               jelli_agent_boot_pet_arm() ? "{\"ok\":true,\"app\":\"pet\",\"restart\":true}"
                                          : "{\"ok\":false,\"error\":\"pet_missing\"}");
+    else if (jelli_agent_command_render(request, out, capacity))
+        return; /* The render bench wrote its reply. */
     else if (!jelli_agent_command_spike(request, out, capacity))
         reply(out, capacity, "{\"ok\":false,\"error\":\"syntax\"}");
 }

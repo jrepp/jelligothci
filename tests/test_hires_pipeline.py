@@ -162,6 +162,24 @@ class HiresPipelineTest(unittest.TestCase):
         line = next(l for l in text.splitlines() if l.startswith("    {12004u,"))
         self.assertTrue(line.endswith(", 4u, asset_12004_alpha},"), line)
 
+    def test_key_prefixes_embed_a_subset_and_always_the_font(self):
+        # The voice agent embeds only the unicorn's poses (ports/esp32-agent/main).
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "agent_assets.c"
+            embed_slice.generate(output, self.source, ("creatures.unicorn-",))
+            text = output.read_text()
+            ids = sorted(int(line.split("u,")[0].strip(" {")) for line in text.splitlines()
+                         if line.startswith("    {") and "u, " in line)
+            self.assertEqual(ids, [*range(1041, 1049), 4001])  # eight poses and the font
+            self.assertIn("const uint8_t *jelli_asset_glyph(uint8_t codepoint)", text)
+            self.assertNotIn("asset_1001_pixels", text)
+            with self.assertRaisesRegex(ValueError, "No asset key starts with"):
+                embed_slice.generate(Path(folder) / "none.c", self.source, ("no.such.prefix",))
+            # Without prefixes everything is embedded, as for the pet.
+            everything = Path(folder) / "all.c"
+            embed_slice.generate(everything, self.source, ())
+            self.assertIn("asset_1001_pixels", everything.read_text())
+
     def test_live_pack_records_density_and_alpha(self):
         data = live_assets.build_pack(self.source)
         magic, version, count, _ = live_assets.HEADER.unpack_from(data)

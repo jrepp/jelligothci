@@ -183,6 +183,10 @@ The board never echoes them; `wifi status` shows only the network name as hex.
 Wi-Fi keeps its driver state in RAM and calibrates at each start
 (`CONFIG_ESP_WIFI_NVS_ENABLED` and `CONFIG_ESP_PHY_CALIBRATION_AND_DATA_STORAGE`
 off; `wifi.c` refuses to build otherwise), so the agent never opens the pet's `nvs`.
+`render bench full|bob|patch SECONDS` times the agent's 384 px unicorn (the pet's
+unicorn art at scale 12; the agent embeds only those poses) and leaves it on screen
+([memo-026](../docs-cms/memos/memo-026-agent-phase0-render-spike.md)).
+
 The spike server writes each stream to `build/phase0/audio/` as a four-channel WAV
 with a JSON report: frames, missing frames, arrival jitter, and levels per channel.
 `--board` (required: the address `wifi status` shows) admits only the board; the

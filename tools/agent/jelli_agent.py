@@ -103,6 +103,8 @@ def command_line(args):
         return f"boot {args.app}", 0.0
     if args.command in ("wifi", "link", "mic", "audio"):
         return spike_line(args)
+    if args.command == "render":
+        return f"render bench {args.mode} {args.seconds}", float(args.seconds)
     if args.what in ("pwr", "te"):
         if args.ms is None:
             raise AgentError(f"probe {args.what} needs a duration in milliseconds")
@@ -138,6 +140,10 @@ def main():
     mic = commands.add_parser("mic", help="Stream the microphone to the Mac and play its reply")
     mic.add_argument("action", choices=("stream",))
     mic.add_argument("seconds", type=int, choices=range(1, 31), metavar="SECONDS[1..30]")
+    render = commands.add_parser("render", help="Time the 384 px unicorn animation (it stays on screen)")
+    render.add_argument("action", choices=("bench",))
+    render.add_argument("mode", choices=("full", "bob", "patch"))
+    render.add_argument("seconds", type=int, choices=range(1, 11), metavar="SECONDS[1..10]")
     audio = commands.add_parser("audio", help="Speaker tone with capture levels, or speaker level")
     audio.add_argument("action", choices=("test", "volume"))
     audio.add_argument("value", type=int, help="test: 200..5000 ms; volume: 0..100")

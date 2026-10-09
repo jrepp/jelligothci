@@ -1,4 +1,5 @@
 #include "screen.h"
+#include "jelli/agent_present.h"
 #include "bsp/display.h"
 #include "bsp/esp-bsp.h"
 #include "esp_attr.h"
@@ -8,10 +9,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-/* Full-width stripes keep the CO5300's even-start/odd-end window rule (BSP rounder)
- * and need only a small internal DMA buffer instead of a whole frame. */
+/* Windows start on even pixels and end on odd ones (the CO5300's rule, the BSP's
+ * rounder), and go out through a small internal DMA stripe, not a whole frame. */
 enum { WIDTH = BSP_LCD_H_RES, HEIGHT = BSP_LCD_V_RES, STRIPE = 16, BRIGHTNESS = 60 };
-_Static_assert(STRIPE % 2 == 0 && HEIGHT % 2 == 0 && WIDTH % 2 == 0, "CO5300 windows");
+_Static_assert(STRIPE % 2 == 0 && STRIPE >= 2 && HEIGHT % 2 == 0 && WIDTH % 2 == 0,
+               "CO5300 windows; a stripe holds two rows of any window");
 
 static const char *TAG = "agent_screen";
 static SemaphoreHandle_t transferred;
@@ -20,6 +22,10 @@ static StaticSemaphore_t transferred_storage;
  * until its completion callback; static so a timed-out transfer never touches freed
  * memory. */
 static DMA_ATTR uint16_t stripe[WIDTH * STRIPE];
+/* Set once the panel is up. A transfer that timed out may still own the stripe, so
+ * from then on nothing is drawn (stalled). Console task only after start-up. */
+static esp_lcd_panel_handle_t panel;
+static bool stalled;
 
 static bool IRAM_ATTR transfer_done(esp_lcd_panel_io_handle_t io,
                                     esp_lcd_panel_io_event_data_t *event, void *ctx)
@@ -51,16 +57,25 @@ static uint16_t identity_pixel(int x, int y)
     return 0u;
 }
 
-static bool draw_identity(esp_lcd_panel_handle_t panel)
+/* Sends rows of the stripe and waits for the DMA to finish with it. */
+static bool send(int x0, int y0, int x1, int y1)
+{
+    if (esp_lcd_panel_draw_bitmap(panel, x0, y0, x1, y1, stripe) != ESP_OK)
+        return false;
+    if (xSemaphoreTake(transferred, pdMS_TO_TICKS(200)) != pdTRUE)
+        stalled = true; /* The DMA may still read the stripe: never reuse it. */
+    return !stalled;
+}
+
+static bool draw_identity(void)
 {
     for (int y = 0; y < HEIGHT; y += STRIPE) {
         int rows = HEIGHT - y < STRIPE ? HEIGHT - y : STRIPE;
         for (int row = 0; row < rows; ++row)
             for (int x = 0; x < WIDTH; ++x)
                 stripe[row * WIDTH + x] = identity_pixel(x, y + row);
-        if (esp_lcd_panel_draw_bitmap(panel, 0, y, WIDTH, y + rows, stripe) != ESP_OK ||
-            xSemaphoreTake(transferred, pdMS_TO_TICKS(200)) != pdTRUE)
-            return false; /* The DMA may still read the stripe: never reuse it early. */
+        if (!send(0, y, WIDTH, y + rows))
+            return false;
     }
     return true;
 }
@@ -69,12 +84,37 @@ bool jelli_agent_screen_start(void)
 {
     transferred = xSemaphoreCreateBinaryStatic(&transferred_storage);
     const bsp_display_config_t config = {.max_transfer_sz = sizeof(stripe)};
-    esp_lcd_panel_handle_t panel = NULL;
     esp_lcd_panel_io_handle_t io = NULL;
     esp_lcd_panel_io_callbacks_t callbacks = {.on_color_trans_done = transfer_done};
     bool ok = bsp_display_new(&config, &panel, &io) == ESP_OK &&
               esp_lcd_panel_io_register_event_callbacks(io, &callbacks, NULL) == ESP_OK &&
-              draw_identity(panel) && bsp_display_brightness_set(BRIGHTNESS) == ESP_OK;
+              draw_identity() && bsp_display_brightness_set(BRIGHTNESS) == ESP_OK;
+    if (!ok)
+        panel = NULL;
     ESP_LOGI(TAG, "Identity screen %s", ok ? "shown" : "failed");
     return ok;
+}
+
+bool jelli_agent_screen_present(const JelliSurface *surface, JelliRect rect)
+{
+    if (!panel || stalled || surface->width != WIDTH || surface->height != HEIGHT)
+        return false;
+    /* Widened to even starts and even exclusive ends, the panel's window rule. */
+    JelliAgentWindow window;
+    if (!jelli_agent_present_window(rect, WIDTH, HEIGHT, sizeof(stripe) / sizeof(stripe[0]),
+                                    &window))
+        return true; /* Nothing damaged on the surface. */
+    unsigned width = window.x1 - window.x0, rows;
+    for (unsigned y = window.y0; (rows = jelli_agent_window_rows(&window, y)) != 0u; y += rows) {
+        for (unsigned row = 0u; row < rows; ++row) {
+            const uint16_t *source =
+                surface->pixels + (size_t)(y + row) * surface->stride + window.x0;
+            uint16_t *target = stripe + (size_t)row * width;
+            for (unsigned column = 0u; column < width; ++column) /* Big-endian on the wire. */
+                target[column] = (uint16_t)((source[column] >> 8) | (source[column] << 8));
+        }
+        if (!send((int)window.x0, (int)y, (int)window.x1, (int)(y + rows)))
+            return false;
+    }
+    return true;
 }

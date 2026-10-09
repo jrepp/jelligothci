@@ -453,7 +453,9 @@ back to today's API when an addition is missing.
    ([ADR-013](../adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md),
    [memo-024](../memos/memo-024-agent-phase0-two-apps-and-hardware-probes.md)); the
    audio spike is built, with the TDM slot map measured and the Wi-Fi stream pending
-   ([memo-025](../memos/memo-025-agent-phase0-audio-spike.md)).
+   ([memo-025](../memos/memo-025-agent-phase0-audio-spike.md)); the render spike
+   measured 143 frames/s for head-sized updates and 17 for whole-body motion
+   ([memo-026](../memos/memo-026-agent-phase0-render-spike.md)).
 2. **Phase 1 — MVP.** USB pairing, mTLS link, live captions, one workspace, SDK
    sidecar with the autonomy policy and sandbox, six core states, tap approvals,
    Chatter replies in a chosen voice (with the Chatter render mode and synchronous

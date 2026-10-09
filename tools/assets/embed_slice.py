@@ -45,12 +45,20 @@ def descriptor(asset, pixels, mask, stride, alpha):
     return "    {" + ", ".join(fields) + "},"
 
 
-def generate(output, source=SOURCE):
+def selected(asset, keys):
+    """Whether an asset is embedded: all of them without key prefixes, else only
+    matching keys. The font always is, because jelli_asset_glyph reads it."""
+    return not keys or asset["kind"] == "font" or any(asset["key"].startswith(key) for key in keys)
+
+
+def generate(output, source=SOURCE, keys=()):
     manifest, images = load_assets(source)
     chunks = ['#include "jelli/assets.h"', ""]
     records = []
     glyph_data = None
     for asset in manifest["assets"]:
+        if not selected(asset, keys):
+            continue
         image = images[asset["key"]]
         name = "asset_" + str(asset["id"])
         if asset["kind"] == "font":
@@ -74,7 +82,9 @@ def generate(output, source=SOURCE):
     chunks.extend(["};", "", "const JelliAsset *jelli_asset_find(uint32_t id)", "{", "    for (unsigned i = 0u; i < sizeof(assets) / sizeof(assets[0]); ++i) {", "        if (assets[i].id == id)", "            return &assets[i];", "    }", "    return 0;", "}", "", "const uint8_t *jelli_asset_glyph(uint8_t codepoint)", "{", "    if (codepoint < 32u || codepoint > 127u)", "        codepoint = (uint8_t)'?';", "    return &font_glyphs[(unsigned)(codepoint - 32u) * 12u];", "}", ""])
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n\n".join(chunks))
-    hires = sum(1 for asset in manifest["assets"] if is_hires(asset))
+    if keys and len(records) == 1:
+        raise ValueError(f"No asset key starts with any of: {', '.join(keys)}")
+    hires = sum(1 for asset in manifest["assets"] if is_hires(asset) and selected(asset, keys))
     print(f"Embedded {len(records)} assets ({hires} high-resolution): {output}")
 
 
@@ -83,8 +93,10 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--source", type=Path, default=SOURCE,
                         help="Asset directory containing assets.json (default: assets/slice)")
+    parser.add_argument("--keys", nargs="+", default=(), metavar="PREFIX",
+                        help="Embed only assets whose key starts with a prefix (and the font)")
     args = parser.parse_args()
-    generate(args.output.resolve(), args.source.resolve())
+    generate(args.output.resolve(), args.source.resolve(), tuple(args.keys))
 
 
 if __name__ == "__main__":
