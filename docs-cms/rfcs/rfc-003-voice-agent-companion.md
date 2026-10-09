@@ -452,7 +452,8 @@ back to today's API when an addition is missing.
    Layout A, app switching, and the hardware checks are done
    ([ADR-013](../adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md),
    [memo-024](../memos/memo-024-agent-phase0-two-apps-and-hardware-probes.md)); the
-   audio spike is built, with the TDM slot map measured and the Wi-Fi stream pending
+   audio spike streamed over Wi-Fi with a Chatter reply on the speaker and the echo
+   reference confirmed, losing about 2% of capture to send stalls
    ([memo-025](../memos/memo-025-agent-phase0-audio-spike.md)); the render spike
    measured 143 frames/s for head-sized updates and 17 for whole-body motion
    ([memo-026](../memos/memo-026-agent-phase0-render-spike.md)).

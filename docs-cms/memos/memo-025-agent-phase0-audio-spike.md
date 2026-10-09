@@ -14,8 +14,7 @@ The second part of [RFC-003](../rfcs/rfc-003-voice-agent-companion.md) phase 0,
 after [memo-024](memo-024-agent-phase0-two-apps-and-hardware-probes.md): the agent
 app gained Wi-Fi, full-duplex audio, and a spike link to the Mac, so the audio path
 can be measured before the real bridge exists. This memo records the design, what
-the hardware showed so far, and the review outcome. The end-to-end stream
-measurement waits for Wi-Fi credentials; it will be added here.
+the hardware showed, the end-to-end stream measurement, and the review outcome.
 
 # Context
 
@@ -72,6 +71,34 @@ The PWR key test with the line floating saw no change in 10 s; whether a press
 happened is unconfirmed. The probe now offers only the GPIO's internal pull-up
 (a pull-down could read as a held PWRON press, which powers the board off at 6 s).
 
+## End-to-end stream over Wi-Fi (2026-10-09)
+
+The board joined the home network (`loki-tg`, channel 2, RSSI −72 dBm) with
+credentials typed into `scripts/jelli-agent wifi set`. The spike server rendered a
+reply with Chatter (Ryan, 14.12 s of speech in 4.76 s, about 0.34 of real time) and
+played it while the board streamed `mic stream 8`:
+
+| Measure | Result |
+| --- | --- |
+| Frames | 133 (7.98 s of four-slot audio), none missing, duplicated, or reordered |
+| Frame arrival at the Mac | Mean 63.9 ms (60 ms nominal), p95 96.5 ms, max 260 ms |
+| Board send time per 11.5 KB frame | Mean 39.9 ms, max 231 ms |
+| Reply playback | 677,760 bytes received, all played, none dropped; drained after the stream |
+| Echo reference | MIC3 matches the reply at a correlation of 0.97–0.99 in every speech window |
+| Reply on the speaker | About 0.14 s after the first captured sample (network, 300 ms lead, DMA) |
+| Levels during the reply | MIC1 −8 to −27 dBFS, MIC3 −41 to −55 dBFS, MIC2 −38 to −57 dBFS |
+| Internal RAM, session minimum | 104,624 bytes |
+
+The capture lost audio while Wi-Fi sends stalled. Aligning the reference with the
+reply in one-second windows, the offset drifts by about 100 ms over 5 s (−141 ms to
+−39 ms), so roughly 2% of the captured audio was overwritten in the I2S buffers;
+the reply itself played without gaps. Capture and sending share one loop, and a
+send that takes longer than the 60 ms the DMA buffers hold drops samples. On this
+link (1.5 Mbit/s of four 24 kHz slots at −72 dBm) that happens a few times in 8 s.
+Phase 1 therefore needs a sender decoupled from capture by a PSRAM queue, and
+should send fewer channels (a microphone and the reference, 768 kbit/s) or
+compress; the echo reference also needs gain (it sits 30–40 dB below MIC1).
+
 ## Review
 
 Three security review rounds and three test rounds ran on this change; findings of
@@ -97,16 +124,15 @@ medium severity or more went to two skeptic reviews each.
 
 # Remaining uncertainty
 
-- No stream has run yet: Wi-Fi credentials are pending. Throughput, arrival jitter,
-  dropped frames, playback quality, and the latency from Chatter to the speaker are
-  unmeasured.
+- One stream on one link was measured; how often sends stall at better signal, and
+  how the loss sounds to a recognizer, are open. Playback quality was not judged
+  by ear in this run.
 - MIC2 and MIC3 gains are untuned; whether 24 kHz capture suits on-device ASR or
   the Mac's recognizer as is, or needs resampling, is open.
 - The PWR key's pressed level is still unobserved.
 
 # Next
 
-1. Provision Wi-Fi, then `link set` the Mac and run `mic stream` with a Chatter
-   reply; record the server report here.
-2. The render spike: a layered 384 px unicorn with dirty-rectangle presents aligned
-   to the 59 Hz tearing-effect signal.
+1. Phase 1 (on the user's go-ahead): the Mac bridge, mutual TLS, a buffered
+   sender, and the reference gain the echo canceller needs.
+2. The render spike is in [memo-026](memo-026-agent-phase0-render-spike.md).
