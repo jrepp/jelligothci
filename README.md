@@ -95,7 +95,9 @@ make esp-agent-flash PORT=<discovered-port>          # boot choice back to the p
 ./scripts/loki-agent --port <discovered-port> boot pet
 ```
 
-[Two apps on one board](docs/hardware.md#two-apps-on-one-board) has the details.
+[Two apps on one board](docs/hardware.md#two-apps-on-one-board) has the details. The
+board and Loki Bridge on the Mac talk [`loki/1`](docs/loki-protocol.md); the bridge
+is a Swift package in `bridge/`.
 
 ## Development
 
@@ -104,6 +106,7 @@ make test          # shared core + desktop integration
 make core-test     # no SDL dependency
 make sanitize      # address / undefined-behavior checks
 make hooks-check   # formatting, analysis, size limits, docs
+make bridge-test   # Loki Bridge's Swift tests (macOS 26 or later)
 ```
 
 The portable core uses injected time and caller-owned memory. SDL and ESP32 own

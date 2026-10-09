@@ -274,10 +274,14 @@ shows. Run at 240 MHz. Target 30+ fps for overlay animation; measure in phase 0.
 - **Tasks**: core 0 — Wi-Fi/lwIP, the link (WebSocket, mDNS, reconnect with
   backoff), audio in and out; core 1 — UI and animation. Queues and PSRAM ring
   buffers between them.
-- **Audio**: fixed 16 kHz 16-bit. ES7210 in TDM capturing MIC1 and the MIC3 echo
-  reference from day one (reference unused in v1); half-duplex (playback stops when
-  the user holds to talk); reply ring buffer 128 KB with 300 ms pre-buffer; reuse the
-  pet's calibrated volume curve (memo-021) and add a sound-level setting.
+- **Audio**: 24 kHz 16-bit mono in both directions, Chatter's rate, so replies
+  play without resampling and one I2S clock serves both (phase 0, memo-025). v1
+  sends MIC1 only; the protocol's hello names the channel count, so the MIC3 echo
+  reference can join for echo cancellation later. Half-duplex (playback stops when
+  the user holds to talk); a PSRAM queue between capture and the sender so a slow
+  send never overruns the microphone's DMA; reply ring buffer 128 KB with 300 ms
+  pre-buffer; the pet's calibrated volume curve (memo-021) and a sound-level
+  setting.
 - **Power**: `WIFI_PS_NONE` while listening, thinking or speaking, minimum modem
   sleep when idle; screen sleep and double-tap wake as in the pet; read-only
   battery/PMU logic from `power.c`.
@@ -341,14 +345,16 @@ so adopting it amends ADR-012; sizes here are binary megabytes.
 ## Device protocol `loki/1`
 
 WebSocket over mutually authenticated TLS. Text frames carry JSON control
-messages `{v, type, id, seq, ...}`; binary frames carry audio with a 12-byte header
-(stream ID, sequence, flags). Every message has a per-direction sequence number;
-approvals carry the request ID, summary hash and nonce.
+messages `{t, seq, ...}`; binary frames carry audio with a 12-byte header (kind,
+flags, stream, sequence). Every control message has a per-direction sequence
+number; an answer to a question carries its ID, the bridge's nonce, and a digest of
+the card the board showed. The normative specification, with the golden vectors
+both implementations test against, is [the Loki protocol](../../docs/loki-protocol.md).
 
 | Direction | Messages |
 | --- | --- |
-| device → bridge | `hello` (firmware, board, capabilities), `ptt_start`, audio, `ptt_end`, `cancel`, `approval` (allow/deny, id, nonce), `choice`, `ack`, `ping` |
-| bridge → device | `welcome`, `caption` (live/final transcript), `state` (unicorn state, caption, progress, queue size), `approval_request`, `choice_request`, `reply_begin`/audio/`reply_end`, `settings`, `pong` |
+| device → bridge | `hello` (firmware, board, audio format), `ptt_start`, audio, `ptt_end`, `cancel`, `answer`, `played`, `status` |
+| bridge → device | `welcome`, `caption` (live/final transcript), `state` (unicorn state, caption, progress, queue size), `ask`/`ask_cancel` (approvals and choices), `reply_begin`/audio/`reply_end`, `stop_audio`, `settings` |
 
 ## Pairing and provisioning
 
@@ -462,7 +468,23 @@ back to today's API when an addition is missing.
    the user's roots, SDK sidecar with the ADR-014 autonomy policy and sandbox, six
    core states, tap approvals, Chatter replies in Scar (with the Chatter render
    mode and synchronous result), SDL simulator, protocol vectors and end-to-end
-   tests with a simulated device.
+   tests with a simulated device. Built in increments, each reviewed and committed
+   on its own:
+   1. The `loki/1` protocol: specification, golden vectors, the board's codec in
+      portable C and the bridge's in Swift, both tested against the vectors.
+   2. The bridge's link: a Swift package (`bridge/`), TLS identities, the pairing
+      store, the mutually authenticated WebSocket listener, and a simulated device.
+   3. The board's link: its own key and certificate, USB pairing, the mTLS client
+      with reconnects, hold-to-talk capture through a send queue, and playback.
+   4. Speech: live captions with `SpeechAnalyzer` (it transcribed the phase 0
+      recording in 0.23 s from a plain executable, so whisper.cpp stays a fallback
+      for later) and replies from Chatter in Scar.
+   5. The Agent SDK sidecar with ADR-014's settings, approvals on the board, and
+      `speak`/`progress` (needs the user's approval to install the SDK from npm).
+   6. The board's UI: unicorn states, captions, the question card, offline.
+   7. The bridge app (menu bar, Atrium), project roots and history, the end-to-end
+      test with the simulated device, and a run on the board.
+   8. Chatter's render mode and synchronous result.
 3. **Phase 2 — daily driver.** Multiple workspaces and conversations, follow-ups
    and interrupt, choice cards, progress arc, full animation set, queue and history
    UI, Chatter streaming and priority lane.

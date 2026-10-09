@@ -26,7 +26,10 @@ add_library(jelli_core STATIC core/engine.c core/gesture.c core/render.c core/an
   core/prizes.c core/habits.c core/sleep_log.c core/tunables.c core/sound.c core/particles.c core/game.c core/events.c core/personality.c core/game_events.c core/game_commands.c core/game_time.c core/game_advance.c core/save.c core/power.c)
 target_include_directories(jelli_core PUBLIC include)
 # Portable parts of the voice agent app (RFC-003); its firmware is ports/esp32-agent.
-add_library(jelli_agent_core STATIC core/agent/args.c core/agent/console.c core/agent/pcm.c core/agent/pmu.c core/agent/present.c)
+add_library(jelli_agent_core STATIC core/agent/args.c core/agent/console.c core/agent/loki.c
+  core/agent/loki_canonical.c core/agent/loki_json.c core/agent/loki_out.c
+  core/agent/loki_schema.c core/agent/pcm.c core/agent/pmu.c
+  core/agent/present.c core/agent/sha256.c)
 target_include_directories(jelli_agent_core PUBLIC include)
 add_executable(jelli_sound_export tools/audio/export.c)
 target_link_libraries(jelli_sound_export PRIVATE jelli_core)
@@ -89,6 +92,23 @@ if(BUILD_TESTING)
   add_executable(jelli_agent_console_fuzz_tests tests/test_agent_console_fuzz.c)
   target_link_libraries(jelli_agent_console_fuzz_tests PRIVATE jelli_agent_core)
   add_test(NAME agent_console_fuzz COMMAND jelli_agent_console_fuzz_tests)
+  # loki/1 against the golden vectors the bridge's Swift tests share (docs/loki-protocol.md).
+  add_library(jelli_loki_vectors STATIC tests/loki_vectors.c)
+  target_compile_definitions(jelli_loki_vectors PRIVATE
+    LOKI_VECTORS="${CMAKE_CURRENT_SOURCE_DIR}/tests/vectors/loki-1.tsv")
+  add_executable(jelli_agent_loki_tests tests/test_agent_loki.c)
+  target_link_libraries(jelli_agent_loki_tests PRIVATE jelli_agent_core jelli_loki_vectors)
+  add_test(NAME agent_loki COMMAND jelli_agent_loki_tests)
+  add_executable(jelli_agent_loki_fuzz_tests tests/test_agent_loki_fuzz.c)
+  target_link_libraries(jelli_agent_loki_fuzz_tests PRIVATE jelli_agent_core jelli_loki_vectors)
+  add_test(NAME agent_loki_fuzz COMMAND jelli_agent_loki_fuzz_tests)
+  add_executable(jelli_agent_loki_limits_tests tests/test_agent_loki_limits.c)
+  target_link_libraries(jelli_agent_loki_limits_tests PRIVATE jelli_agent_core jelli_loki_vectors)
+  add_test(NAME agent_loki_limits COMMAND jelli_agent_loki_limits_tests)
+  # Drives the codec line by line for tests/test_loki_diff.py and the bridge's
+  # differential tests, which compare it with the Swift codec.
+  add_executable(jelli_loki_diff tests/loki_diff.c)
+  target_link_libraries(jelli_loki_diff PRIVATE jelli_agent_core)
   add_executable(jelli_agent_present_tests tests/test_agent_present.c)
   target_link_libraries(jelli_agent_present_tests PRIVATE jelli_agent_core)
   add_test(NAME agent_present COMMAND jelli_agent_present_tests)
@@ -248,6 +268,8 @@ if(BUILD_TESTING)
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_agent_cli.py)
     add_test(NAME spike_server COMMAND ${Python3_EXECUTABLE}
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_spike_server.py)
+    add_test(NAME loki_diff COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_loki_diff.py $<TARGET_FILE:jelli_loki_diff>)
   endif()
   if(Python3_Interpreter_FOUND AND NOT WIN32)
     add_test(NAME esp_board COMMAND ${Python3_EXECUTABLE}

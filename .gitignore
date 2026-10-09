@@ -16,3 +16,7 @@
 *.swo
 *~
 __pycache__/
+
+# Loki Bridge (Swift package) build products
+/bridge/.build/
+/bridge/.swiftpm/
