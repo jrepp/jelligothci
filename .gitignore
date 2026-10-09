@@ -8,6 +8,7 @@
 /ports/esp32/managed_components/
 /ports/esp32/sdkconfig
 /ports/esp32/sdkconfig.old
+/ports/esp32-agent/managed_components/
 
 # Local editor and OS files
 .DS_Store

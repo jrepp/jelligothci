@@ -16,11 +16,21 @@ export PIP_CACHE_DIR="$repo_dir/.tools/pip-cache"
 export XDG_CACHE_HOME="$repo_dir/.tools/cache"
 # Do not reuse a Python environment from another SDK activated by the caller.
 unset IDF_PYTHON_ENV_PATH
-# Board variant; each keeps its own build directory so images never mix.
+# App: the pet (default) or the voice agent (RFC-003), each its own ESP-IDF project.
+app="${JELLI_ESP_APP:-pet}"
+case "$app" in
+    pet) project_dir="$repo_dir/ports/esp32"; app_suffix="" ;;
+    agent) project_dir="$repo_dir/ports/esp32-agent"; app_suffix="-agent" ;;
+    *)
+        echo "Unknown JELLI_ESP_APP '$app'; expected pet or agent." >&2
+        exit 2
+        ;;
+esac
+# Board variant; each app and board keeps its own build directory so images never mix.
 board="${JELLI_ESP_BOARD:-1.75}"
 case "$board" in
-    1.75) build_dir="$repo_dir/build/esp32" ;;
-    1.75c) build_dir="$repo_dir/build/esp32-1.75c" ;;
+    1.75) build_dir="$repo_dir/build/esp32$app_suffix" ;;
+    1.75c) build_dir="$repo_dir/build/esp32$app_suffix-1.75c" ;;
     *)
         echo "Unknown JELLI_ESP_BOARD '$board'; expected 1.75 or 1.75c." >&2
         exit 2
@@ -32,13 +42,18 @@ usage() {
 Usage: scripts/esp COMMAND [arguments]
   bootstrap | sync     Fetch the tracked SDK pin and install local tools
   build                Build the ESP32-S3 firmware
-  flash PORT           Build and flash (overwrites device firmware)
+  flash PORT           Build and flash the pet: bootloader, partition table,
+                       factory app; resets the boot choice to the pet
+  flash-agent PORT     Build the agent, make the pet the app that starts, and write
+                       the agent to ota_0 (needs the pet's flash layout A)
+  boot PORT pet|agent  Choose which installed app starts at the next reset
   monitor PORT         Open serial monitor; exit with Ctrl+]
   ports                List serial ports without resetting the board
   doctor               Show SDK/tool versions and serial ports
   idf [arguments]      Run arbitrary idf.py commands in the local environment
 
 Set JELLI_ESP_BOARD=1.75c for the Waveshare 1.75C; the default is 1.75 (SKU 31261).
+Set JELLI_ESP_APP=agent to build the voice agent (RFC-003); the default is the pet.
 To upgrade, edit both pins in toolchain.env, then run sync and build.
 Requires Git and Python 3.10-3.13; set JELLI_PYTHON to choose Python.
 Tools are stored under .tools/; no shell profile changes are needed.
@@ -103,8 +118,41 @@ activate() {
     set -u
 }
 idf() {
-    idf.py -C "$repo_dir/ports/esp32" -B "$build_dir" \
+    idf.py -C "$project_dir" -B "$build_dir" \
         -DIDF_TARGET=esp32s3 -DJELLI_ESP_BOARD="$board" "$@"
+}
+# The SDK's otatool and parttool reconnect for every step and read the partition
+# table from the board, so a board without layout A fails instead of losing the pet.
+# Between steps the chip stays in its download mode (after=no_reset): otherwise an
+# app boots, and USB re-enumerates, under the next connection. One reset at the end
+# starts whichever app otadata selects.
+sdk_tool() {
+    local tool="$1" port="$2"
+    shift 2
+    python "$IDF_PATH/components/$tool" --port "$port" --esptool-args=after=no_reset "$@"
+}
+start_app() {
+    python -m esptool --port "$1" --after hard_reset chip_id
+}
+# Returns the boot choice to the pet, then writes the agent to ota_0 by name. A new
+# agent is thus only entered through the pet's "app agent" and its trial boot
+# (ADR-013), and an interrupted write still leaves the pet starting.
+flash_agent() {
+    idf build
+    sdk_tool app_update/otatool.py "$1" erase_otadata
+    sdk_tool partition_table/parttool.py "$1" write_partition --partition-name ota_0 \
+        --input "$build_dir/jelli_agent.bin"
+    start_app "$1"
+    echo 'Agent written to ota_0; the pet starts. Switch with: scripts/jelli-debug --port PORT app agent'
+}
+# A host-side switch for recovery; it skips the agent's trial boot (ADR-013).
+choose_app() {
+    case "$2" in
+        pet) sdk_tool app_update/otatool.py "$1" erase_otadata ;;
+        agent) sdk_tool app_update/otatool.py "$1" switch_ota_partition --slot 0 ;;
+        *) echo 'Usage: scripts/esp boot PORT pet|agent' >&2; exit 2 ;;
+    esac
+    start_app "$1"
 }
 command_name="${1:-help}"
 if [[ $# -gt 0 ]]; then shift; fi
@@ -114,13 +162,30 @@ case "$command_name" in
     build) activate; idf build "$@" ;;
     flash|monitor)
         if [[ $# -ne 1 ]]; then echo "Usage: scripts/esp $command_name PORT" >&2; exit 2; fi
+        if [[ "$command_name" == flash && "$app" == agent ]]; then
+            echo 'The agent installs into ota_0 beside the pet: scripts/esp flash-agent PORT' >&2
+            exit 2
+        fi
         activate
         idf -p "$1" "$command_name"
+        ;;
+    flash-agent)
+        if [[ $# -ne 1 || "$app" != agent ]]; then
+            echo 'Usage: JELLI_ESP_APP=agent scripts/esp flash-agent PORT' >&2
+            exit 2
+        fi
+        activate
+        flash_agent "$1"
+        ;;
+    boot)
+        if [[ $# -ne 2 ]]; then echo 'Usage: scripts/esp boot PORT pet|agent' >&2; exit 2; fi
+        activate
+        choose_app "$1" "$2"
         ;;
     ports) activate; python -m serial.tools.list_ports -v ;;
     doctor)
         activate
-        echo "Board: $board ($build_dir)"
+        echo "App: $app; board: $board ($build_dir)"
         git -C "$IDF_PATH" describe --tags --always
         python --version
         xtensa-esp-elf-gcc --version | head -n 1

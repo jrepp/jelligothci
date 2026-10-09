@@ -449,6 +449,9 @@ back to today's API when an addition is missing.
    0x22, 0x27; PWR on GPIO3; flash JEDEC ID; TE rate); TDM capture to a WAV on the
    Mac over plain WebSocket; Chatter WAV played on the board; render cost of a
    layered 384 px unicorn at 240 MHz; partition layout A with app switching.
+   Layout A, app switching, and the hardware checks are done
+   ([ADR-013](../adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md),
+   [memo-024](../memos/memo-024-agent-phase0-two-apps-and-hardware-probes.md)).
 2. **Phase 1 — MVP.** USB pairing, mTLS link, live captions, one workspace, SDK
    sidecar with the autonomy policy and sandbox, six core states, tap approvals,
    Chatter replies in a chosen voice (with the Chatter render mode and synchronous

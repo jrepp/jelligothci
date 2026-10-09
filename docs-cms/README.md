@@ -29,7 +29,8 @@ Debug interface (host-tested; flashed startup verified in memo-010):
 [proposed ADR-010](adr/adr-010-bounded-usb-serial-debug-interface.md).
 Initial bring-up: [memo-003: First USB deployment](memos/memo-003-first-usb-deployment.md).
 Board variants (1.75 and 1.75C): [proposed ADR-011](adr/adr-011-selectable-esp32-board-variants.md).
-High-resolution art format and 8 MB app partition: [proposed ADR-012](adr/adr-012-high-resolution-asset-density-and-flash-partition.md).
+High-resolution art format and 8 MB app partition: [proposed ADR-012](adr/adr-012-high-resolution-asset-density-and-flash-partition.md),
+since narrowed to 7 MB by [ADR-013](adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md).
 
 Process guidance: [memo-004: Learnings and context remediation](memos/memo-004-process-learnings-and-context-remediation.md).
 
@@ -39,7 +40,9 @@ Maintainer reference: [memo-005: Settings, ownership, and recovery](memos/memo-0
 Next increment: [RFC-002: Pet memory and persistent activities](rfcs/rfc-002-pet-memory-and-persistent-activities.md).
 
 Proposed second board app: [RFC-003: Voice agent companion](rfcs/rfc-003-voice-agent-companion.md),
-a unicorn voice front end for Claude Code through a Mac bridge.
+a unicorn voice front end for Claude Code through a Mac bridge. Phase 0 so far:
+[ADR-013: two apps on one board](adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md)
+and [memo-024: layout, switching, and hardware probes](memos/memo-024-agent-phase0-two-apps-and-hardware-probes.md).
 
 ## Proposed game architecture
 

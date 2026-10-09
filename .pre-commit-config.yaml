@@ -8,7 +8,7 @@ repos:
         language: system
         entry: scripts/c-lint format-check
         files: '^((core|include|ports|tests)/.*\.[ch]$|\.clang-format$|toolchain\.env$|scripts/c-lint$)'
-        exclude: '^ports/esp32/managed_components/'
+        exclude: '^ports/esp32(-agent)?/managed_components/'
         pass_filenames: false
         require_serial: true
       - id: c-analysis
@@ -29,7 +29,7 @@ repos:
         language: system
         entry: scripts/c-lint cppcheck
         files: '^((core|include|ports|tests)/|toolchain\.env$|scripts/c-lint$)'
-        exclude: '^ports/esp32/managed_components/'
+        exclude: '^ports/esp32(-agent)?/managed_components/'
         pass_filenames: false
         require_serial: true
       - id: c-size
@@ -37,7 +37,7 @@ repos:
         language: system
         entry: scripts/c-lint size
         files: '^((core|include|ports|tests)/|\.c-size-limits\.json$|scripts/check-c-size\.py$|scripts/c-lint$|toolchain\.env$)'
-        exclude: '^ports/esp32/managed_components/'
+        exclude: '^ports/esp32(-agent)?/managed_components/'
         pass_filenames: false
       - id: release-metadata
         name: Release version consistency

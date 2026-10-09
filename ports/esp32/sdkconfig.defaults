@@ -12,7 +12,10 @@ CONFIG_LV_USE_CANVAS=y
 # Optimize the software renderer and LVGL while preserving assertions.
 CONFIG_COMPILER_OPTIMIZATION_PERF=y
 
-# Custom table: nvs/phy_init unchanged, 8 MB factory app for high-resolution art.
+# Layout A (ADR-013): nvs/phy_init unchanged, 7 MB pet in factory, 4 MB agent in ota_0.
 # Generated sdkconfig files do not re-read these defaults; see docs/hardware.md.
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+# The bootloader returns to the pet when a newly selected agent resets before it
+# confirms a good start, so a broken agent image cannot strand the board.
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y

@@ -60,6 +60,8 @@ formulas. The planned-pack ceiling becomes 6 MiB; a test pins the real total.
 `phy_init` (0xf000, 4 KB) exactly where the default table put them and gives the
 `factory` app 8 MB at 0x10000, selected through `sdkconfig.defaults`. Both boards
 use the shared 16 MB layout; about 7.9 MB above 0x810000 stays unallocated.
+[ADR-013](adr-013-two-apps-on-one-board-with-flash-layout-a.md) (2026-10-09) later
+shrank `factory` to 7 MB to place the voice agent app beside the pet.
 
 # Consequences
 

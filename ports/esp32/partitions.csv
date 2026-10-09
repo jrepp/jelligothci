@@ -1,9 +1,17 @@
-# Jelligotchi flash layout for the 16 MB ESP32-S3 boards (1.75 and 1.75C).
-# nvs and phy_init keep the exact offsets and sizes of ESP-IDF's default single-app
-# table, so flashing this layout preserves the saved game in nvs. The factory app
-# grows from 1 MB to 8 MB for embedded high-resolution artwork (about 5 MB of
-# RGB565 + alpha rodata); the remaining ~7.9 MB above 0x810000 is left unallocated.
-# Name,   Type, SubType, Offset,  Size,     Flags
-nvs,      data, nvs,     0x9000,  0x6000,
-phy_init, data, phy,     0xf000,  0x1000,
-factory,  app,  factory, 0x10000, 0x800000,
+# Jelligotchi flash layout A for the 16 MB ESP32-S3 boards (1.75 and 1.75C), ADR-013:
+# the pet in `factory` and the voice agent (RFC-003) in `ota_0` share one bootloader
+# and this table. nvs and phy_init keep the exact offsets and sizes of ESP-IDF's
+# default single-app table, so flashing this layout preserves the saved game in nvs.
+# The pet's factory app holds its embedded high-resolution artwork (ADR-012); it was
+# 8 MB until the agent needed room. otadata selects the app to boot; agent_nvs keeps
+# the agent's own settings away from the pet's save. model (ESP-SR) and art (agent
+# artwork, custom subtype 0x40) are reserved for later phases.
+# Name,    Type, SubType, Offset,   Size,     Flags
+nvs,       data, nvs,     0x9000,   0x6000,
+phy_init,  data, phy,     0xf000,   0x1000,
+factory,   app,  factory, 0x10000,  0x700000,
+ota_0,     app,  ota_0,   0x710000, 0x400000,
+otadata,   data, ota,     0xb10000, 0x2000,
+agent_nvs, data, nvs,     0xb12000, 0xe000,
+model,     data, spiffs,  0xb20000, 0x100000,
+art,       data, 0x40,    0xc20000, 0x3e0000,

@@ -7,6 +7,8 @@ void jelli_debug_response(JelliDebug *debug, uint32_t id, const char *body);
 void jelli_debug_tunables(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
                           unsigned count);
 void jelli_debug_sound(JelliDebug *debug, uint32_t id, char **words, unsigned count);
+void jelli_debug_app(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
+                     unsigned count);
 void jelli_debug_events(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id, char **words,
                         unsigned count);
 void jelli_debug_cheat(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,

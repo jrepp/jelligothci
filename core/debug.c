@@ -222,6 +222,8 @@ static void dispatch(JelliDebug *debug, JelliPetEngine *engine, char **words, un
         jelli_debug_events(debug, engine, id, words, count);
     } else if (!strcmp(words[2], "sound")) {
         jelli_debug_sound(debug, id, words, count);
+    } else if (!strcmp(words[2], "app")) {
+        jelli_debug_app(debug, engine, id, words, count);
     } else if (input_command(debug, engine, id, words, count, now)) {
         /* Input handler owns the reply. */
     } else if (!strcmp(words[2], "pixels") || !strcmp(words[2], "release")) {

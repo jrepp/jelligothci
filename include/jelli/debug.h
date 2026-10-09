@@ -18,6 +18,11 @@ typedef struct {
     /* Optional host-owned, nonblocking sound queue; called on engine thread. */
     bool (*sound)(void *ctx, unsigned cue, unsigned volume);
     void *sound_ctx;
+    /* Optional host app switch ("app agent"), called on the engine thread. Returns
+     * true when a bootable agent exists and the host will restart into it after this
+     * reply is sent and the requested checkpoint is written; false leaves the pet. */
+    bool (*switch_app)(void *ctx);
+    void *switch_app_ctx;
 } JelliDebug;
 
 /* Zero-initialize. Call only on the engine thread, between frames. No IO/heap.

@@ -6,6 +6,7 @@ recording idf.py on PATH, so the test sees the exact idf.py arguments.
 from pathlib import Path
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -14,7 +15,15 @@ import unittest
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 ESP_PORT = REPOSITORY / "ports/esp32"
+AGENT_PORT = REPOSITORY / "ports/esp32-agent"
 BOARDS = {"1.75": "build/esp32", "1.75c": "build/esp32-1.75c"}
+AGENT_BOARDS = {"1.75": "build/esp32-agent", "1.75c": "build/esp32-agent-1.75c"}
+INVALID_APPS = ("Agent", "pets", "../agent", "agent;rm", " agent", "agent\n")
+
+
+def START_APP(port):
+    """The single reset that ends flash-agent and boot and starts the selected app."""
+    return ["-m", "esptool", "--port", port, "--after", "hard_reset", "chip_id"]
 INVALID = ("1.76", "../x", "1.75 c", "1.75c;rm", "1.75C", " 1.75", "1.75\n", "-1.75", "1.75;1.75c")
 
 
@@ -48,6 +57,11 @@ class EspScriptBoardTests(unittest.TestCase):
         recorder = fake_bin / "idf.py"
         recorder.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$@\" > '{self.idf_log}'\n")
         recorder.chmod(0o755)
+        # SDK tools (parttool, otatool) run through the activated "python"; record them.
+        self.python_log = self.root / "python-args"
+        tool = fake_bin / "python"
+        tool.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$@\" >> '{self.python_log}'\n")
+        tool.chmod(0o755)
         # scripts/esp accepts only Python 3.10-3.13; the shim passes that probe so
         # the test does not depend on which interpreter runs it.
         self.python = fake_bin / "python-shim"
@@ -62,11 +76,13 @@ class EspScriptBoardTests(unittest.TestCase):
             f"JELLI_IDF_VERSION=v0.0.0\nJELLI_IDF_COMMIT={commit.stdout.strip()}\n"
         )
 
-    def run_esp(self, *arguments, board=None):
-        environment = {k: v for k, v in os.environ.items() if k != "JELLI_ESP_BOARD"}
+    def run_esp(self, *arguments, board=None, app=None):
+        environment = {k: v for k, v in os.environ.items() if k not in ("JELLI_ESP_BOARD", "JELLI_ESP_APP")}
         environment["JELLI_PYTHON"] = str(self.python)
         if board is not None:
             environment["JELLI_ESP_BOARD"] = board
+        if app is not None:
+            environment["JELLI_ESP_APP"] = app
         return subprocess.run(
             [str(self.repo / "scripts/esp"), *arguments],
             env=environment, capture_output=True, text=True, timeout=60,
@@ -75,14 +91,16 @@ class EspScriptBoardTests(unittest.TestCase):
     def idf_arguments(self):
         return self.idf_log.read_text().splitlines()
 
-    def assert_board(self, result, board):
+    def assert_board(self, result, board, app="pet"):
         self.assertEqual(result.returncode, 0, result.stderr)
         arguments = self.idf_arguments()
         build_dir = arguments[arguments.index("-B") + 1]
-        self.assertEqual(Path(build_dir).resolve(), self.repo.resolve() / BOARDS[board])
+        expected = (AGENT_BOARDS if app == "agent" else BOARDS)[board]
+        self.assertEqual(Path(build_dir).resolve(), self.repo.resolve() / expected)
         self.assertIn(f"-DJELLI_ESP_BOARD={board}", arguments)
         self.assertIn("-DIDF_TARGET=esp32s3", arguments)
-        self.assertEqual(Path(arguments[arguments.index("-C") + 1]).resolve(), self.repo.resolve() / "ports/esp32")
+        project = "ports/esp32-agent" if app == "agent" else "ports/esp32"
+        self.assertEqual(Path(arguments[arguments.index("-C") + 1]).resolve(), self.repo.resolve() / project)
 
     def test_unset_board_builds_the_original_board_in_the_original_directory(self):
         result = self.run_esp("build")
@@ -114,6 +132,217 @@ class EspScriptBoardTests(unittest.TestCase):
                     self.assertFalse(self.activated.exists(), "SDK was activated")
                     self.assertFalse(self.idf_log.exists(), "idf.py was invoked")
 
+    def test_each_app_and_board_has_its_own_project_and_build_directory(self):
+        for app in ("pet", "agent"):
+            for board in BOARDS:
+                with self.subTest(app=app, board=board):
+                    self.idf_log.unlink(missing_ok=True)
+                    self.assert_board(self.run_esp("build", board=board, app=app), board, app)
+
+    def test_unset_or_empty_app_builds_the_pet(self):
+        self.assert_board(self.run_esp("build", app=""), "1.75")
+
+    def test_invalid_apps_fail_before_activation_or_idf(self):
+        for app in INVALID_APPS:
+            for command in ("build", "flash-agent", "boot"):
+                with self.subTest(app=app, command=command):
+                    result = self.run_esp(command, "/dev/null", app=app)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertIn(f"Unknown JELLI_ESP_APP '{app}'", result.stderr)
+                    self.assertFalse(self.activated.exists(), "SDK was activated")
+
+    def assert_refused(self, result, message):
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(message, result.stderr)
+        self.assertFalse(self.activated.exists(), "SDK was activated")
+        self.assertFalse(self.idf_log.exists() or self.python_log.exists(), "a flash tool ran")
+
+    def test_full_flash_of_the_agent_is_refused(self):
+        # idf.py flash would write the bootloader, reset otadata, and put the agent in factory.
+        self.assert_refused(self.run_esp("flash", "/dev/null", app="agent"), "scripts/esp flash-agent PORT")
+
+    def test_flash_agent_requires_the_agent_app_and_one_port(self):
+        self.assert_refused(self.run_esp("flash-agent", "/dev/null"), "JELLI_ESP_APP=agent")
+        self.assert_refused(self.run_esp("flash-agent", app="agent"), "JELLI_ESP_APP=agent")
+        self.assert_refused(self.run_esp("flash-agent", "/dev/a", "/dev/b", app="agent"), "JELLI_ESP_APP=agent")
+
+    def test_flash_agent_builds_resets_the_boot_choice_then_writes_only_ota_0(self):
+        # Erasing otadata first makes the pet start, so the new agent is only entered
+        # through the pet's "app agent" and its trial boot (ADR-013).
+        result = self.run_esp("flash-agent", "/dev/cu.test", board="1.75c", app="agent")
+        self.assert_board(result, "1.75c", "agent")
+        self.assertEqual(self.idf_arguments()[-1], "build")
+        calls = self.python_log.read_text().splitlines()
+        self.assertEqual(Path(calls[0]).name, "otatool.py")
+        self.assertEqual(Path(calls[5]).name, "parttool.py")
+        self.assertEqual(calls[1:5] + calls[6:], [
+            "--port", "/dev/cu.test", "--esptool-args=after=no_reset", "erase_otadata",
+            "--port", "/dev/cu.test", "--esptool-args=after=no_reset", "write_partition",
+            "--partition-name", "ota_0", "--input", str(self.repo / "build/esp32-agent-1.75c/jelli_agent.bin"),
+            *START_APP("/dev/cu.test")])
+        self.assertIn("the pet starts", result.stdout)
+
+    def test_boot_selects_an_app_through_otadata(self):
+        for app, expected in (("pet", ["erase_otadata"]), ("agent", ["switch_ota_partition", "--slot", "0"])):
+            with self.subTest(app=app):
+                self.python_log.unlink(missing_ok=True)
+                result = self.run_esp("boot", "/dev/cu.test", app)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                calls = self.python_log.read_text().splitlines()
+                self.assertEqual(Path(calls[0]).name, "otatool.py")
+                self.assertEqual(calls[1:], ["--port", "/dev/cu.test", "--esptool-args=after=no_reset",
+                                             *expected, *START_APP("/dev/cu.test")])
+
+    def test_boot_rejects_unknown_apps_and_missing_arguments(self):
+        for arguments in (("/dev/cu.test", "factory"), ("/dev/cu.test",), ()):
+            with self.subTest(arguments=arguments):
+                self.python_log.unlink(missing_ok=True)
+                result = self.run_esp("boot", *arguments)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("scripts/esp boot PORT pet|agent", result.stderr)
+                self.assertFalse(self.python_log.exists(), "otatool ran")
+
+    def test_port_commands_reject_invalid_boards_before_any_tool(self):
+        for command, arguments, app in (("flash-agent", ("/dev/cu.test",), "agent"),
+                                        ("boot", ("/dev/cu.test", "agent"), None),
+                                        ("flash", ("/dev/cu.test",), None),
+                                        ("monitor", ("/dev/cu.test",), "agent")):
+            for board in ("1.76", "1.75c;rm", "-1.75"):
+                with self.subTest(command=command, board=board):
+                    result = self.run_esp(command, *arguments, board=board, app=app)
+                    self.assertIn(f"Unknown JELLI_ESP_BOARD '{board}'", result.stderr)
+                    self.assert_refused(result, "expected 1.75 or 1.75c")
+
+    def test_unusual_ports_reach_each_tool_as_one_argument(self):
+        # Quoting keeps spaces, globs, and leading dashes inside the --port/-p value.
+        for port in ("/dev/cu.my port", "-rf", "--help", "/dev/cu.*", "$(touch pwned)"):
+            with self.subTest(port=port):
+                for log in (self.idf_log, self.python_log):
+                    log.unlink(missing_ok=True)
+                self.assertEqual(self.run_esp("boot", port, "pet").returncode, 0)
+                self.assertEqual(self.python_log.read_text().splitlines()[1:],
+                                 ["--port", port, "--esptool-args=after=no_reset", "erase_otadata", *START_APP(port)])
+                self.python_log.unlink()
+                self.assertEqual(self.run_esp("flash-agent", port, app="agent").returncode, 0)
+                calls = self.python_log.read_text().splitlines()
+                ports = [calls[index + 1] for index, value in enumerate(calls) if value == "--port"]
+                self.assertEqual(ports, [port, port, port])  # otatool, parttool, then the reset
+                self.assertEqual(self.run_esp("flash", port).returncode, 0)
+                self.assertEqual(self.idf_arguments()[-3:], ["-p", port, "flash"])
+                self.assertFalse((self.repo / "pwned").exists() or Path("pwned").exists())
+
+    def test_monitor_of_the_agent_uses_the_agent_build(self):
+        # The monitor decodes backtraces with the ELF in the build directory.
+        result = self.run_esp("monitor", "/dev/cu.test", app="agent")
+        self.assert_board(result, "1.75", "agent")
+        self.assertEqual(self.idf_arguments()[-3:], ["-p", "/dev/cu.test", "monitor"])
+
+    def fail_tool(self, path, log):
+        path.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$@\" >> '{log}'\nexit 3\n")
+
+    def test_a_failed_agent_build_never_writes_a_stale_image(self):
+        self.fail_tool(self.root / "bin/idf.py", self.idf_log)
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.python_log.exists(), "parttool ran after a failed build")
+        self.assertNotIn("Agent written", result.stdout)
+
+    def test_flash_tool_failures_propagate(self):
+        self.fail_tool(self.root / "bin/python", self.python_log)
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 3)
+        self.assertNotIn("Agent written", result.stdout)
+        # A failed boot-choice reset stops before anything is written to ota_0.
+        self.assertNotIn("write_partition", self.python_log.read_text())
+        for app in ("pet", "agent"):
+            with self.subTest(app=app):
+                self.assertEqual(self.run_esp("boot", "/dev/cu.test", app).returncode, 3)
+
+    def record_calls(self, fail_on=None):
+        """Replace the fake python with one that logs each call's argv on its own line.
+
+        Arguments are separated by US (0x1f) so each argv element stays distinct; the
+        call exits 3 when any argument equals ``fail_on``.
+        """
+        log = self.root / "python-calls"
+        check = f'for a in "$@"; do [ "$a" = {shlex.quote(fail_on)} ] && exit 3; done\n' if fail_on else ""
+        (self.root / "bin/python").write_text(
+            "#!/bin/sh\n"
+            f"for a in \"$@\"; do printf '%s\\037' \"$a\"; done >> '{log}'\n"
+            f"printf '\\n' >> '{log}'\n{check}exit 0\n")
+        return lambda: [line.split("\x1f")[:-1] for line in log.read_text().splitlines()] if log.exists() else []
+
+    def assert_sdk_calls(self, calls, steps):
+        """Each SDK tool call names its tool, keeps the board in download mode, and runs ``steps``."""
+        self.assertEqual([Path(call[0]).name for call in calls], [tool for tool, _ in steps])
+        for call, (_, step) in zip(calls, steps):
+            # One argv element: split, otatool/parttool's nargs='+' would swallow the subcommand.
+            self.assertEqual(call[1:], ["--port", "/dev/cu.test", "--esptool-args=after=no_reset", *step])
+            self.assertNotIn("hard_reset", call)
+
+    def test_flash_agent_resets_exactly_once_and_last(self):
+        calls = self.record_calls()
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(calls()), 3)
+        self.assert_sdk_calls(calls()[:2], [
+            ("otatool.py", ["erase_otadata"]),
+            ("parttool.py", ["write_partition", "--partition-name", "ota_0", "--input",
+                             str(self.repo / "build/esp32-agent/jelli_agent.bin")])])
+        self.assertEqual(calls()[2], START_APP("/dev/cu.test"))
+
+    def test_boot_resets_exactly_once_after_the_otadata_change(self):
+        for app, step in (("pet", ["erase_otadata"]), ("agent", ["switch_ota_partition", "--slot", "0"])):
+            with self.subTest(app=app):
+                (self.root / "python-calls").unlink(missing_ok=True)
+                calls = self.record_calls()
+                self.assertEqual(self.run_esp("boot", "/dev/cu.test", app).returncode, 0)
+                self.assertEqual(len(calls()), 2)
+                self.assert_sdk_calls(calls()[:1], [("otatool.py", step)])
+                self.assertEqual(calls()[1], START_APP("/dev/cu.test"))
+
+    def test_a_failed_boot_choice_reset_stops_before_the_write_and_the_reset(self):
+        calls = self.record_calls(fail_on="erase_otadata")
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 3)
+        self.assert_sdk_calls(calls(), [("otatool.py", ["erase_otadata"])])
+        self.assertNotIn("Agent written", result.stdout)
+
+    def test_a_failed_ota_0_write_leaves_the_board_in_download_mode(self):
+        # otadata is already erased, so the next manual reset starts the pet; no
+        # automatic reset hides the failure or boots a partly written ota_0.
+        calls = self.record_calls(fail_on="write_partition")
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 3)
+        self.assertEqual([Path(call[0]).name for call in calls()], ["otatool.py", "parttool.py"])
+        self.assertNotIn("Agent written", result.stdout)
+
+    def test_a_failed_final_reset_fails_the_command(self):
+        calls = self.record_calls(fail_on="chip_id")
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 3)
+        self.assertEqual(calls()[-1], START_APP("/dev/cu.test"))
+        self.assertEqual(len(calls()), 3)
+        self.assertNotIn("Agent written", result.stdout)
+
+    def test_a_failed_boot_choice_skips_the_reset(self):
+        for app, step in (("pet", ["erase_otadata"]), ("agent", ["switch_ota_partition", "--slot", "0"])):
+            with self.subTest(app=app):
+                (self.root / "python-calls").unlink(missing_ok=True)
+                calls = self.record_calls(fail_on=step[0])
+                self.assertEqual(self.run_esp("boot", "/dev/cu.test", app).returncode, 3)
+                self.assert_sdk_calls(calls(), [("otatool.py", step)])
+
+    def test_boot_with_any_unknown_app_runs_no_tool(self):
+        calls = self.record_calls()
+        for choice in ("", "Pet", "AGENT", "agent ", " pet", "factory", "ota_0", "--slot", "pet;agent", "agent\n"):
+            with self.subTest(choice=choice):
+                result = self.run_esp("boot", "/dev/cu.test", choice)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("scripts/esp boot PORT pet|agent", result.stderr)
+                self.assertEqual(calls(), [], "a flash tool ran")
+                self.assertFalse(self.idf_log.exists(), "idf.py ran")
+
     def test_help_names_the_board_variable(self):
         result = self.run_esp("help")
         self.assertEqual(result.returncode, 0)
@@ -122,30 +351,32 @@ class EspScriptBoardTests(unittest.TestCase):
 
 
 class EspCMakeBoardTests(unittest.TestCase):
-    """Configure the ESP project without an SDK; validation runs before IDF loads."""
+    """Configure each ESP project without an SDK; validation runs before IDF loads."""
 
-    def configure(self, board):
+    def configure(self, board, project=ESP_PORT):
         with tempfile.TemporaryDirectory(prefix="jelli-esp-cmake-") as directory:
             environment = dict(os.environ, IDF_PATH=str(Path(directory) / "missing-sdk"))
             return subprocess.run(
-                [os.environ.get("JELLI_CMAKE", "cmake"), "-S", str(ESP_PORT), "-B", str(Path(directory) / "build"), f"-DJELLI_ESP_BOARD={board}"],
+                [os.environ.get("JELLI_CMAKE", "cmake"), "-S", str(project), "-B", str(Path(directory) / "build"), f"-DJELLI_ESP_BOARD={board}"],
                 env=environment, capture_output=True, text=True, timeout=60,
             )
 
     def test_unknown_board_stops_configuration(self):
-        for board in INVALID + ("",):
-            with self.subTest(board=board):
-                result = self.configure(board)
-                self.assertNotEqual(result.returncode, 0)
-                self.assertIn("Unknown JELLI_ESP_BOARD", result.stderr)
-                self.assertNotIn("project.cmake", result.stderr, "validation must stop before the SDK loads")
+        for project in (ESP_PORT, AGENT_PORT):
+            for board in INVALID + ("",):
+                with self.subTest(project=project.name, board=board):
+                    result = self.configure(board, project)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("Unknown JELLI_ESP_BOARD", result.stderr)
+                    self.assertNotIn("project.cmake", result.stderr, "validation must stop before the SDK loads")
 
     def test_known_boards_pass_validation_and_reach_the_sdk(self):
-        for board in BOARDS:
-            with self.subTest(board=board):
-                result = self.configure(board)
-                self.assertNotIn("Unknown JELLI_ESP_BOARD", result.stderr)
-                self.assertIn("project.cmake", result.stderr)
+        for project in (ESP_PORT, AGENT_PORT):
+            for board in BOARDS:
+                with self.subTest(project=project.name, board=board):
+                    result = self.configure(board, project)
+                    self.assertNotIn("Unknown JELLI_ESP_BOARD", result.stderr)
+                    self.assertIn("project.cmake", result.stderr)
 
 
 class EspBoardLayoutTests(unittest.TestCase):
@@ -157,9 +388,12 @@ class EspBoardLayoutTests(unittest.TestCase):
         self.assertEqual(set(re.findall(r'"([^"]+)"', listed)), set(BOARDS))
         self.assertEqual({path.name for path in (ESP_PORT / "boards").iterdir() if path.is_dir()}, set(BOARDS))
         self.assertIn('set(JELLI_ESP_BOARD "1.75" CACHE', cmake)
+        agent = (AGENT_PORT / "CMakeLists.txt").read_text()
+        self.assertEqual(re.search(r"set\(jelli_esp_boards ([^)]*)\)", agent).group(1), listed)
+        self.assertIn('set(JELLI_ESP_BOARD "1.75" CACHE', agent)
         script = (REPOSITORY / "scripts/esp").read_text()
-        for board, build_dir in BOARDS.items():
-            self.assertIn(f'{board}) build_dir="$repo_dir/{build_dir}"', script)
+        self.assertIn('1.75) build_dir="$repo_dir/build/esp32$app_suffix" ;;', script)
+        self.assertIn('1.75c) build_dir="$repo_dir/build/esp32$app_suffix-1.75c" ;;', script)
 
     def test_each_board_has_a_distinct_label_and_an_exact_bsp_pin_matching_its_lock(self):
         labels = set()
@@ -180,6 +414,18 @@ class EspBoardLayoutTests(unittest.TestCase):
                 self.assertIn(f"- {bsp}\n", direct)
                 self.assertEqual(sum(line.startswith("- waveshare/esp32_s3") for line in direct.splitlines()), 1)
         self.assertEqual(len(labels), len(BOARDS))
+
+    def test_agent_locks_resolve_each_board_pin_and_the_shared_lvgl(self):
+        lvgl_pin = re.search(r'lvgl/lvgl: "==([^"]+)"', (AGENT_PORT / "main/idf_component.yml").read_text()).group(1)
+        pet_lvgl = re.search(r'lvgl/lvgl: "==([^"]+)"', (ESP_PORT / "main/idf_component.yml").read_text()).group(1)
+        self.assertEqual(lvgl_pin, pet_lvgl)
+        for board in BOARDS:
+            with self.subTest(board=board):
+                manifest = (ESP_PORT / "boards" / board / "jelli_board/idf_component.yml").read_text()
+                bsp, version = re.search(r"^  (waveshare/[^:]+):\n    version: \"==([^\"]+)\"", manifest, re.M).groups()
+                lock = (AGENT_PORT / f"dependencies.{board}.lock").read_text()
+                self.assertEqual(lock_version(lock, bsp), version)
+                self.assertEqual(lock_version(lock, "lvgl/lvgl"), lvgl_pin)
 
 
 if __name__ == "__main__":

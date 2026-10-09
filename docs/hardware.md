@@ -34,14 +34,17 @@ using it. It refuses to sync over edits to tracked SDK files.
 | `ports/esp32/boards/<board>/jelli_board/idf_component.yml` | Each board's exact BSP pin |
 | `ports/esp32/dependencies.lock` | Resolved dependency versions for the 1.75 |
 | `ports/esp32/dependencies.1.75c.lock` | Resolved dependency versions for the 1.75C |
-| `ports/esp32/sdkconfig.defaults` | ESP32-S3, 16 MB flash, octal PSRAM, USB serial, custom partition table (both boards) |
-| `ports/esp32/partitions.csv` | Flash layout: `nvs` and `phy_init` unchanged, 8 MB `factory` app |
+| `ports/esp32/sdkconfig.defaults` | ESP32-S3, 16 MB flash, octal PSRAM, USB serial, custom partition table, app rollback (both boards) |
+| `ports/esp32/partitions.csv` | Flash layout A: `nvs` and `phy_init` unchanged, 7 MB pet, 4 MB agent |
+| `ports/esp32-agent/sdkconfig.defaults`, `ports/esp32-agent/dependencies.<board>.lock` | The voice agent app's configuration and resolved versions |
 
 SDK sources live in `.tools/esp-idf`; compilers and the Python environment live
 in `.tools/espressif`. Caches also live under `.tools`. Build output is under
 `build/esp32` (1.75) or `build/esp32-1.75c`, downloaded components under
 `ports/esp32/managed_components`. The 1.75 generates `ports/esp32/sdkconfig`;
-the 1.75C keeps its generated `sdkconfig` in its build directory.
+the 1.75C keeps its generated `sdkconfig` in its build directory. The agent keeps
+its `sdkconfig` in `build/esp32-agent` or `build/esp32-agent-1.75c` and its
+components under `ports/esp32-agent/managed_components`.
 These directories and the generated `sdkconfig` files are ignored by Git. They can
 be recreated from tracked configuration. The first bootstrap downloads a
 substantial SDK/toolchain and requires network access. Normal builds use the
@@ -74,18 +77,25 @@ checkout; the workflow is portable, its downloaded binaries/caches are not.
 `ports/esp32/partitions.csv` replaces ESP-IDF's default single-app table, whose
 1 MB app partition could not hold high-resolution artwork
 ([ADR-012](../docs-cms/adr/adr-012-high-resolution-asset-density-and-flash-partition.md)).
-Both boards use it:
+Both boards and both apps (the pet and the voice agent) use layout A
+([ADR-013](../docs-cms/adr/adr-013-two-apps-on-one-board-with-flash-layout-a.md)):
 
 | Name | Type | Offset | Size | Notes |
 | --- | --- | --- | --- | --- |
 | `nvs` | data/nvs | 0x9000 | 0x6000 (24 KB) | Saved game; identical to the old table |
 | `phy_init` | data/phy | 0xf000 | 0x1000 (4 KB) | Identical to the old table |
-| `factory` | app | 0x10000 | 0x800000 (8 MB) | Was 1 MB; about 7.9 MB above 0x810000 is unallocated |
+| `factory` | app | 0x10000 | 0x700000 (7 MB) | The pet; was 8 MB before the agent |
+| `ota_0` | app | 0x710000 | 0x400000 (4 MB) | The agent ([two apps](#two-apps-on-one-board)) |
+| `otadata` | data/ota | 0xb10000 | 0x2000 (8 KB) | Which app starts |
+| `agent_nvs` | data/nvs | 0xb12000 | 0xe000 (56 KB) | Agent settings, apart from the save |
+| `model` | data/spiffs | 0xb20000 | 0x100000 (1 MB) | Reserved for speech models |
+| `art` | data/0x40 | 0xc20000 | 0x3e0000 (3,968 KB) | Reserved for agent artwork |
 
 Because `nvs` keeps its offset and size, flashing the new table and image keeps
 the saved game; erasing the whole flash still clears it. Generated `sdkconfig`
-files do not pick up `CONFIG_PARTITION_TABLE_CUSTOM` from the defaults. In an
-existing checkout, delete them once and rebuild each board:
+files do not pick up new defaults such as `CONFIG_PARTITION_TABLE_CUSTOM` or the
+bootloader's `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`. In an existing checkout,
+delete them once and rebuild each board:
 
 ```sh
 rm -f ports/esp32/sdkconfig build/esp32-1.75c/sdkconfig
@@ -94,7 +104,7 @@ JELLI_ESP_BOARD=1.75c make esp-build
 ```
 
 The regenerated configuration should differ from the old one only in its
-partition settings. Check the generated table without a board attached:
+partition and rollback settings. Check the generated table without a board attached:
 
 ```sh
 .tools/espressif/python_env/idf5.5_py3.13_env/bin/python \
@@ -102,13 +112,52 @@ partition settings. Check the generated table without a board attached:
   build/esp32/partition_table/partition-table.bin
 ```
 
-It should list `nvs` at 0x9000 (24K), `phy_init` at 0xf000 (4K) and `factory`
-at 0x10000 (8M). The build also reports the image size and free app space.
+It should list the eight partitions above. The build also checks the image against
+each app partition. The pet's build warns that its image is too large for `ota_0`;
+that is expected, because the pet only ever goes into `factory`.
 Embedded art is flash rodata: the ESP32-S3 maps it through a 32 MB data window
 (0x3C000000–0x3E000000) shared with PSRAM, so a 5 MB art set leaves room.
-With the shipped high-resolution art the 1.75 image is 0x576630 bytes (5,727,792;
-32% of the 8 MB partition free) and the 1.75C image 0x573c60 bytes (5,717,088; 32%
-free). A build with legacy art only was about 0.9 MB.
+With the shipped high-resolution art the 1.75 pet image is 5,739,168 bytes and the
+1.75C image 5,728,560 bytes, each about 22% of the 7 MB partition free. A build with
+legacy art only was about 0.9 MB.
+
+### Two apps on one board
+
+The voice agent ([RFC-003](../docs-cms/rfcs/rfc-003-voice-agent-companion.md)) is a
+separate ESP-IDF project, `ports/esp32-agent`, installed in `ota_0` beside the pet.
+It is at phase 0: an identity screen (a lilac ring), an `@A1` console with
+read-only hardware probes, and the switch back to the pet. Its findings are in
+[memo-024](../docs-cms/memos/memo-024-agent-phase0-two-apps-and-hardware-probes.md).
+
+```sh
+JELLI_ESP_BOARD=1.75c make esp-flash PORT=<port>        # the pet, once, with layout A
+JELLI_ESP_BOARD=1.75c make esp-agent-flash PORT=<port>  # builds the agent, writes ota_0
+./scripts/jelli-debug --port <port> app agent           # pet checkpoints, restarts into the agent
+./scripts/jelli-agent --port <port> hello
+./scripts/jelli-agent --port <port> probe pmu           # also chip, heap, te MS, pwr MS
+./scripts/jelli-agent --port <port> boot pet            # back to the pet
+```
+
+`JELLI_ESP_APP=agent` selects the agent for any `scripts/esp` command; its build
+directories are `build/esp32-agent` and `build/esp32-agent-1.75c`, its locks
+`ports/esp32-agent/dependencies.<board>.lock`. `scripts/esp flash` refuses the
+agent, because `idf.py flash` would write it over the pet in `factory` and reset
+the boot choice. `flash-agent` first resets the boot choice to the pet (otatool
+`erase_otadata`), so a new agent image always starts on trial through `app agent`,
+then writes `ota_0` by name with ESP-IDF's parttool, which reads the table from the
+board; on a board without layout A it fails rather than overwrite the pet. A full
+pet flash always makes the pet the app that starts. Both builds refuse a generated
+`sdkconfig` that still has rollback off.
+
+Each app starts only the other's project (`jelligotchi` or `jelli_agent`), since
+`ota_0` can hold leftovers of the vendor firmware. The pet's `app agent` verifies
+the whole agent image before selecting it. Rollback is enabled: a switch from the
+pet starts the agent on trial, and the agent confirms itself once its start-up has
+finished and before its console takes commands; if it resets before then, the
+bootloader starts the pet again. From the host,
+`./scripts/esp boot <port> pet|agent` switches with otatool for recovery. That path
+skips the trial and resets without the pet's final checkpoint (up to a minute of
+progress).
 
 ## Board variants
 

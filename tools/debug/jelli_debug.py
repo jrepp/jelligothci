@@ -228,6 +228,8 @@ def main():
     battery.add_argument("percent", nargs="?", help="0–100 or unknown (default unknown)")
     screen = commands.add_parser("screen", help="Read screen sleep state, or force sleep/wake")
     screen.add_argument("action", nargs="?", choices=("sleep", "wake"))
+    app = commands.add_parser("app", help="Save the game and restart into the agent app (ADR-013)")
+    app.add_argument("name", choices=("agent",))
     screenshot = commands.add_parser("screenshot")
     screenshot.add_argument("output", type=Path, help="PNG path; also writes .png.json state")
     args = parser.parse_args()
@@ -320,6 +322,8 @@ def main():
             result = client.request(f"swipe {('up', 'down', 'left', 'right').index(args.direction)}")
         elif args.command == "tap":
             result = client.request(f"tap {args.x} {args.y}")
+        elif args.command == "app":
+            result = client.request(f"app {args.name}")
         else:
             result = client.screenshot(args.output)
         print(json.dumps(result, indent=2))

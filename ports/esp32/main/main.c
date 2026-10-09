@@ -1,6 +1,7 @@
 #include "jelli/gesture.h"
 #include "jelli/pet_engine.h"
 #include "jelli/sound.h"
+#include "app_switch.h"
 #include "debug_wire.h"
 #include "sound_output.h"
 #include "session.h"
@@ -109,6 +110,8 @@ static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *se
         uint64_t start = now_ms(NULL);
         bool frozen = jelli_debug_wire_poll(engine, start);
         jelli_esp_session_update(session, engine, frozen);
+        /* After the checkpoint that "app agent" requested; restarts when armed. */
+        jelli_esp_app_switch_poll(jelli_debug_wire_reply_pending());
         if (!frozen)
             jelli_esp_power_poll(power, engine, start); /* Bounded I2C; no display lock held. */
         if (!frozen && !jelli_pet_frame(engine))

@@ -1,4 +1,5 @@
 #include "debug_wire.h"
+#include "app_switch.h"
 #include "sound_output.h"
 #include "jelli/debug.h"
 #include "driver/usb_serial_jtag.h"
@@ -19,8 +20,11 @@ void jelli_debug_wire_init(void)
     ESP_ERROR_CHECK(usb_serial_jtag_driver_install(&config));
     usb_serial_jtag_vfs_use_driver();
     debug.sound = jelli_sound_output_request;
+    debug.switch_app = jelli_esp_app_switch_arm;
     ESP_LOGI("debug", "@J1 debug ready; capture timeout 5s idle / 30s total");
 }
+
+bool jelli_debug_wire_reply_pending(void) { return debug.reply_size != 0u; }
 
 bool jelli_debug_wire_poll(JelliPetEngine *engine, uint64_t now)
 {
