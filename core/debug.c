@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
-_Static_assert(sizeof(JelliDebug) <= 4352u, "Debug state exceeds budget");
+/* 512-byte requests accommodate hex-encoded device settings; 128 bytes cover metadata. */
+_Static_assert(sizeof(JelliDebug) <= JELLI_DEBUG_LINE + JELLI_DEBUG_REPLY + 128u,
+               "Debug state exceeds budget");
 
 bool jelli_debug_number(const char *text, uint32_t *out)
 {
@@ -174,12 +176,9 @@ static bool history_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t 
     return true;
 }
 
-static void dispatch(JelliDebug *debug, JelliPetEngine *engine, char **words, unsigned count,
-                     uint64_t now)
+static void dispatch_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
+                             unsigned count, uint64_t now)
 {
-    uint32_t id = 0;
-    if (count < 3u || strcmp(words[0], "@J1") != 0 || !jelli_debug_number(words[1], &id))
-        return;
     if (history_command(debug, engine, id, words, count))
         return;
     if (!strcmp(words[2], "state") && count == 3u) {
@@ -212,6 +211,17 @@ static void dispatch(JelliDebug *debug, JelliPetEngine *engine, char **words, un
     }
 }
 
+static void dispatch(JelliDebug *debug, JelliPetEngine *engine, char **words, unsigned count,
+                     uint64_t now)
+{
+    uint32_t id = 0;
+    if (count < 3u || strcmp(words[0], "@J1") != 0 || !jelli_debug_number(words[1], &id))
+        return;
+    if (debug->command && debug->command(debug->command_ctx, debug, engine, id, words, count))
+        return;
+    dispatch_command(debug, engine, id, words, count, now);
+}
+
 static void line(JelliDebug *debug, JelliPetEngine *engine, uint64_t now)
 {
     char *words[7];
@@ -240,6 +250,7 @@ void jelli_debug_feed(JelliDebug *debug, JelliPetEngine *engine, char byte, uint
         debug->line[debug->used] = '\0';
         if (!debug->discard)
             line(debug, engine, now);
+        memset(debug->line, 0, sizeof(debug->line)); /* Host settings may contain secrets. */
         debug->used = 0;
         debug->discard = false;
     } else if (debug->used + 1u >= sizeof(debug->line) || byte < ' ' || byte > '~') {

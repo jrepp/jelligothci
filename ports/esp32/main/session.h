@@ -15,6 +15,7 @@ typedef struct {
     bool storage_ready, protected_save, rtc_initialized, clock_known, rtc_sampled, restored;
 } JelliEspSession;
 
+bool jelli_esp_session_checkpoint(JelliEspSession *session, JelliPetEngine *engine);
 void jelli_esp_session_open(JelliEspSession *session, JelliPetEngine *engine);
 void jelli_esp_session_update(JelliEspSession *session, JelliPetEngine *engine, bool frozen);
 

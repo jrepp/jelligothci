@@ -78,6 +78,9 @@ make esp-flash PORT=<discovered-port>
 Use the repository-local SDK and discover the port each time. A successful build
 or serial startup does not verify physical display, touch, or audio behavior.
 [Hardware guide](docs/hardware.md) covers flashing, monitoring, and current limits.
+The ESP32 port also supports USB-configured Wi-Fi, automatic time/DST, and staged
+HTTPS OTA updates; see [network setup](docs/hardware.md#wi-fi-time-sync-and-ota).
+This network increment has been compiled but has not been flashed or verified on hardware.
 
 ## Development
 

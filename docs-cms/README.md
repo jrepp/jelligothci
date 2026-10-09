@@ -5,6 +5,9 @@ alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md) and
 [memo-002: Build, release, and runner validation](memos/memo-002-build-release-and-runner-validation.md).
 
+Wi-Fi/time/OTA foundation: [memo-019](memos/memo-019-wifi-time-and-ota-foundation.md).
+Planned AP setup and optional Wi-Fi debug: [RFC-003](rfcs/rfc-003-wifi-provisioning-and-network-debug.md).
+
 Current sleep, habits, and collectibles: [memo-018](memos/memo-018-sleep-habits-and-collectible-presents.md).
 
 Latest release and expressive slice: [memo-017](memos/memo-017-release-downloads-and-expressive-slice.md).

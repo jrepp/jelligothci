@@ -4,6 +4,7 @@
 # ///
 """Small request/response client for Jelligotchi local/USB serial debug protocol v1."""
 import argparse
+import getpass
 from datetime import datetime
 import json
 from pathlib import Path
@@ -207,11 +208,17 @@ def main():
     tap.add_argument("x", type=int, choices=range(466), metavar="X[0..465]")
     tap.add_argument("y", type=int, choices=range(466), metavar="Y[0..465]")
     tunables = commands.add_parser("tunables", help="List tunable values, ranges, and sources")
+    tunables.add_argument("--device", action="store_true", help="ESP32 persistent device settings")
     tunables.add_argument("--creature", type=int, default=0, help="Stable pet ID; default is global")
     tune = commands.add_parser("tune", help="Set a session override; use reset to inherit")
     tune.add_argument("name")
-    tune.add_argument("value", help="Integer value or reset")
+    tune.add_argument("value", nargs="?", help="Integer/reset, or device string; omit password to prompt")
+    tune.add_argument("--device", action="store_true", help="Stage a device setting; network apply persists it")
     tune.add_argument("--creature", type=int, default=0, help="Stable pet ID; default is global")
+    network = commands.add_parser("network", help="ESP32 network status or persist/apply staged settings")
+    network.add_argument("action", nargs="?", choices=("apply",))
+    ota = commands.add_parser("ota", help="ESP32 HTTPS update: inspect, download/stage, then save/reboot")
+    ota.add_argument("action", nargs="?", choices=("start", "reboot"))
     events = commands.add_parser("events", help="Read discrete action/state events")
     events.add_argument("--after", type=int, choices=range(0x100000000), default=0, metavar="SEQUENCE")
     cheat = commands.add_parser("cheat", help="Explicit debug edits; recorded as cheat events")
@@ -233,10 +240,19 @@ def main():
         parser.error("--timeout must be between 0.1 and 30 seconds")
     if args.command in ("tunables", "tune") and not 0 <= args.creature <= 0xFFFFFFFF:
         parser.error("creature must be an unsigned 32-bit ID")
+    if args.command in ("tunables", "tune") and args.device and args.creature:
+        parser.error("device settings cannot have a creature scope")
     if args.command == "tune":
         if not args.name.isascii() or not all(part.replace("_", "").isalnum() for part in args.name.split(".")) or len(args.name) > 32:
             parser.error("invalid tunable name")
-        if args.value != "reset" and (not args.value.isascii() or not args.value.isdecimal()
+        if args.device and args.name == "wifi.password" and args.value is None:
+            args.value = getpass.getpass("Wi-Fi password: ")
+        if args.value is None:
+            parser.error("tune requires a value")
+        if args.device and (not args.value.isascii() or len(args.value) > 191
+                            or any(ord(ch) < 32 or ord(ch) > 126 for ch in args.value)):
+            parser.error("device values must be at most 191 printable ASCII bytes")
+        if not args.device and args.value != "reset" and (not args.value.isascii() or not args.value.isdecimal()
                                       or len(args.value) > 10 or int(args.value) > 0xFFFFFFFF):
             parser.error("tunable value must be an unsigned 32-bit integer or reset")
     if args.command == "cheat":
@@ -283,10 +299,20 @@ def main():
             result = client.state()["buttons"]
         elif args.command == "press":
             result = client.press(args.button)
+        elif args.command in ("network", "ota"):
+            result = client.request(args.command + (f" {args.action}" if args.action else ""))
         elif args.command == "tunables":
-            result = client.request(f"tunables {args.creature}")
+            scope = "device" if args.device else args.creature
+            result = client.request(f"tunables {scope}")
+            if args.device:
+                values = result.get("values", {})
+                for key in ("wifi.ssid", "ota.url"):
+                    encoded = values.pop(key + "_hex", "")
+                    values[key] = bytes.fromhex(encoded).decode("ascii")
         elif args.command == "tune":
-            result = client.request(f"tune {args.creature} {args.name} {args.value}")
+            scope = "device" if args.device else args.creature
+            value = (args.value.encode("ascii").hex() or "-") if args.device else args.value
+            result = client.request(f"tune {scope} {args.name} {value}")
         elif args.command == "events":
             result = client.request(f"events {args.after}")
         elif args.command == "sound":

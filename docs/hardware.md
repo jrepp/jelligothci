@@ -85,7 +85,7 @@ Current firmware bring-up checks: confirm the pet and legible menu appear,
 buttons match touch coordinates, care completes, Rest/Wake changes the pose,
 and the display survives reset. The pet simulation's sleep state does not put
 the board into hardware sleep. Firmware checkpoints to NVS and reads the board RTC
-after an explicit debug clock sync. Unknown or backward time grants no offline
+after a debug clock sync or a successful network time sync. Unknown or backward time grants no offline
 progress. Hardware sleep, battery charging, RTC battery retention, and physical
 interaction remain unverified.
 
@@ -102,3 +102,137 @@ References:
 - [Waveshare board documentation](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75)
 - [Board hardware reference and SKU mapping](https://github.com/waveshareteam/ESP32-S3-Touch-AMOLED-1.75/blob/main/HARDWARE_REFERENCE.md)
 - [Waveshare BSP 3.0.1](https://components.espressif.com/components/waveshare/esp32_s3_touch_amoled_1_75/versions/3.0.1/readme)
+
+
+## Wi-Fi, time sync, and OTA
+
+The new ESP32 network path is compiled but not yet verified on a device. Wi-Fi
+starts disabled. Configure it over USB with device-scope tweakables; creature
+and animation tweakables keep their existing session-only behavior. There is
+no AP setup page or debug listener on Wi-Fi yet. The planned Settings button,
+displayed random AP password, and optional authenticated network debug are in
+[Draft RFC-003](../docs-cms/rfcs/rfc-003-wifi-provisioning-and-network-debug.md).
+
+### First USB installation
+
+OTA needs the new custom partition table and rollback-enabled bootloader. A
+one-time USB flash is required from the older single-slot firmware. The table
+keeps NVS at `0x9000`, size `0x6000`, and PHY data at `0xf000`. Two 4 MiB app
+slots begin at `0x10000` and `0x410000`; OTA selection data is at `0x810000`.
+The normal flash command does not erase NVS. Save preservation and migration
+still need a device test; preserve a backup before deployment. Do not use a
+full-chip erase. The first USB install has no previous OTA image to roll back to.
+
+Existing generated SDK settings will not pick up new defaults. Preserve local
+settings and create an isolated config from the tracked defaults:
+
+```sh
+./scripts/esp idf -D SDKCONFIG="$PWD/build/esp32-network.sdkconfig" reconfigure
+make esp-build
+./scripts/esp ports
+# Deployment is a separate step, after checking the image and intended device:
+# make esp-flash PORT=<discovered-port>
+```
+
+Inspect the generated config for `CONFIG_PARTITION_TABLE_CUSTOM=y` and
+`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y` before flashing. Never send the new
+larger image to the old 1 MiB partition layout.
+
+### Configure through USB
+
+Use the port reported by discovery. Close the viewer or any other serial client
+before using the CLI. `wifi.password` prompts without echo when its value is
+omitted, keeping it out of shell history and command-line process listings.
+
+```sh
+export JELLI_DEBUG_PORT='<discovered-port>'
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" tunables --device
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" tune --device wifi.ssid 'Home network'
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" tune --device wifi.password
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" tune --device time.timezone America/New_York
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" tune --device wifi.enabled 1
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" network apply
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" network
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" clock
+```
+
+Changes remain staged in RAM until `network apply`. Apply validates the complete
+set, saves one versioned NVS blob, then starts or restarts the connection. Its
+reply means queued; inspect `network` until `pending` is false and `result` is
+zero. Association happens after apply, so also check `connected`. A nonzero
+result is an ESP-IDF error. A bad password remains saved; correct it over USB.
+A later browser flow will test credentials before committing them.
+
+`network` reports the current operation, OTA state, last received NTP time, and
+internal heap/worker stack margins. `tunables --device` shows the staged values
+and a password-present flag, never the password. Credentials reside in ordinary
+NVS on this development build; flash encryption is not enabled. The USB protocol
+hex-encodes printable strings to support spaces and quotes; this is framing,
+not encryption. Request buffers are cleared after parsing.
+
+| Device tweakable | Default | Accepted value |
+| --- | --- | --- |
+| `wifi.enabled` | `0` | `0` or `1` |
+| `wifi.ssid` | Empty | 1–32 printable ASCII bytes when enabled |
+| `wifi.password` | Empty | 8–63 printable ASCII bytes when enabled |
+| `time.server` | `pool.ntp.org` | Hostname or IPv4 address, up to 63 bytes |
+| `time.sync_seconds` | `3600` | 60–86400 seconds |
+| `time.timezone` | `manual` | A supported region below |
+| `ota.url` | Empty | Direct HTTPS binary URL, up to 191 bytes |
+
+This first version targets WPA2 personal and WPA2/WPA3 mixed-mode networks. Open and enterprise networks, raw 64-digit PSKs, and non-ASCII settings are
+not supported. To turn the radio off, stage `wifi.enabled 0`, then apply.
+
+Supported regions: `manual`, `UTC`, `America/New_York`, `America/Chicago`,
+`America/Denver`, `America/Phoenix`, `America/Los_Angeles`, `Europe/London`,
+`Europe/Berlin`, `Asia/Tokyo`, `Asia/Kolkata`, and `Australia/Sydney`.
+`manual` preserves the existing numeric offset. Other regions apply DST rules
+automatically, including while offline with a valid RTC. These are built-in
+rules, not a full timezone database; law changes require a firmware update.
+Travel detection is not implemented. NTP supplies UTC, not a timezone.
+
+Clock sync runs after Wi-Fi joins and repeats at the chosen interval. The
+engine thread writes valid samples to the UTC RTC and checkpoints the save.
+The pet continues with the RTC while disconnected, and retries Wi-Fi at
+15-second intervals. Clock corrections do not advance monotonic simulation time.
+`last_ntp_seconds` reports receipt; `clock` separately reports RTC completion.
+
+### Stage an update
+
+Host a compatible `build/esp32/jelligotchi.bin` at a direct HTTPS URL with a
+certificate trusted by ESP-IDF's CA bundle. The device needs a valid UTC clock
+for TLS. Redirects, HTTP URLs, and URL-embedded username/password credentials
+are rejected. Private GitHub release URLs are not directly supported; no GitHub
+access token is stored on the device. This increment does not publish firmware.
+
+```sh
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" tune --device ota.url 'https://example.com/jelligotchi.bin'
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" network apply
+# Inspect network until apply completes successfully, then:
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" ota start
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" ota
+# After ota reports staged:
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" ota reboot
+```
+
+The worker downloads to the inactive slot. It checks image validity, chip
+compatibility, and project name before changing the next boot target. A failed
+or interrupted download leaves the running slot selected. After staging, the
+next reset boots the new image; `ota reboot` first saves the pet and refuses the
+software restart if saving fails (`reboot_blocked: true`). A power loss can
+still boot the staged image with the last periodic save. The first rendered
+frame and readable save storage allow the new app to confirm itself. A crash
+or reset before confirmation permits rollback to a previously valid OTA slot.
+Wi-Fi availability is not required for confirmation. This boot check is not a
+substitute for physical display/touch or long-running firmware tests.
+
+OTA remains an explicit developer action. TLS authenticates the configured
+server and the image digest detects corruption; this build does not enforce
+release signatures, secure boot, or downgrade prevention. Use compatible save
+formats across updates so rollback can still read the pet.
+
+Hardware acceptance still needs: save-preserving USB migration, connection and
+reconnect, RTC sync/offline retention, DST behavior, heap/stack margins during
+TLS, valid update/reboot, corrupt/wrong-project image rejection, interrupted
+transfer, rollback, and physical display/touch responsiveness during downloads.
+See [network implementation evidence](../docs-cms/memos/memo-019-wifi-time-and-ota-foundation.md).

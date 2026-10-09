@@ -250,3 +250,8 @@ void jelli_esp_session_update(JelliEspSession *session, JelliPetEngine *engine, 
     if (!engine->game.resuming && (engine->ui.save_requested || periodic))
         (void)checkpoint(session, engine, now);
 }
+
+bool jelli_esp_session_checkpoint(JelliEspSession *session, JelliPetEngine *engine)
+{
+    return checkpoint(session, engine, engine->platform.now_ms(engine->platform.ctx));
+}

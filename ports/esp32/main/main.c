@@ -3,6 +3,7 @@
 #include "debug_wire.h"
 #include "sound_output.h"
 #include "session.h"
+#include "network.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -85,6 +86,7 @@ static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSessi
     for (;;) {
         uint64_t start = now_ms(NULL);
         bool frozen = jelli_debug_wire_poll(engine, start);
+        jelli_network_poll(engine, session, frozen);
         jelli_esp_session_update(session, engine, frozen);
         if (!frozen && !jelli_pet_frame(engine))
             return;
@@ -152,6 +154,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Pet slice ready: tap menus; NVS checkpoint and RTC session initialized");
     if (!jelli_sound_output_init())
         ESP_LOGW(TAG, "Sound unavailable; game remains playable");
+    jelli_network_init(&engine);
     jelli_debug_wire_init();
     run_engine(&engine, &board, &session);
 }

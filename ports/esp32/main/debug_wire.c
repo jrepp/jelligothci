@@ -1,5 +1,6 @@
 #include "debug_wire.h"
 #include "sound_output.h"
+#include "network.h"
 #include "jelli/debug.h"
 #include "driver/usb_serial_jtag.h"
 #include "driver/usb_serial_jtag_vfs.h"
@@ -12,13 +13,14 @@ static uint64_t pending_since;
 
 void jelli_debug_wire_init(void)
 {
-    /* Startup-only driver allocations: 4 KiB TX, 256 B RX plus SDK metadata.
+    /* Startup-only driver allocations: 4 KiB TX, 1 KiB RX plus SDK metadata.
      * The TX ring accepts each complete response atomically, including its LF
      * prefix, so console logs cannot split a protocol line into multiple writes. */
-    usb_serial_jtag_driver_config_t config = {.tx_buffer_size = 4096, .rx_buffer_size = 256};
+    usb_serial_jtag_driver_config_t config = {.tx_buffer_size = 4096, .rx_buffer_size = 1024};
     ESP_ERROR_CHECK(usb_serial_jtag_driver_install(&config));
     usb_serial_jtag_vfs_use_driver();
     debug.sound = jelli_sound_output_request;
+    debug.command = jelli_network_command;
     ESP_LOGI("debug", "@J1 debug ready; capture timeout 5s idle / 30s total");
 }
 
@@ -33,7 +35,9 @@ bool jelli_debug_wire_poll(JelliPetEngine *engine, uint64_t now)
             received_at = 0;
         }
         for (unsigned n = 0; n < sizeof(received) && received_at < received_size; ++n) {
-            jelli_debug_feed(&debug, engine, received[received_at++], now);
+            char byte = received[received_at];
+            received[received_at++] = 0;
+            jelli_debug_feed(&debug, engine, byte, now);
             if (debug.reply_size) {
                 pending_since = now;
                 break;
