@@ -160,6 +160,12 @@ animation speed depends on elapsed injected time, not on frame count. All engine
 calls are single-threaded. Hosts report the supply state by writing a
 `JelliPowerReading` ([power.h](../include/jelli/power.h)) to `engine->ui.power`
 between frames, at a low bounded rate; the core never polls hardware.
+Screen sleep is part of the pet engine contract ([pet_engine.h](../include/jelli/pet_engine.h)):
+after three idle minutes `jelli_pet_frame` stops rendering and calling `present`.
+Hosts call `jelli_pet_screen_changed` after each frame and switch the display off
+or on only when it returns true, and take sound cues from `jelli_pet_sound_cue`,
+which is silent while the screen sleeps. The policy itself is in
+[pet_screen.h](../include/jelli/pet_screen.h).
 
 Both renderers use the board's 466×466 resolution and clip
 the corners to emulate the round panel. Each framebuffer uses **434,312 bytes**.

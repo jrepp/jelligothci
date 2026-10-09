@@ -34,7 +34,9 @@ shell profile. [CONTRIBUTING.md](CONTRIBUTING.md) covers other platforms and set
 Tap MENU or swipe up to open the ring. Swipe down goes back or closes it;
 swipe sideways on the main scene changes the visible stat. Settings holds pet
 selection, sleep/wake, the clock, the battery indicator toggle, and the sound
-level (0–10, default 5). Space pauses; Escape quits.
+level (0–10, default 5). Space pauses; Escape quits. After three minutes without
+input the screen turns off while the pet keeps living; double tap (double-click on
+the desktop) to wake it.
 
 The executable starts an unsaved session unless given `--save BASE`. `make run`
 enables saves. See [playing and persistence](docs/playing.md) for sleep, habits,

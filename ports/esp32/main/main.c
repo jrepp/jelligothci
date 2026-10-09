@@ -15,7 +15,9 @@
 #include <inttypes.h>
 #include <string.h>
 
-enum { FRAME_MS = 16 };
+/* While the screen sleeps the loop runs slower to save power, yet still drains
+ * touch well inside the 500 ms double-tap window. */
+enum { FRAME_MS = 16, SCREEN_ASLEEP_FRAME_MS = 50, SCREEN_BRIGHTNESS = 60 };
 
 typedef struct {
     JelliGesture gesture;
@@ -74,13 +76,31 @@ static void present(void *ctx, const JelliSurface *surface)
     bsp_display_unlock();
     b->present_ms = now_ms(ctx) - start;
 }
+/* Display off: brightness 0 plus a black canvas, so the AMOLED shows nothing even
+ * if a panel keeps a faint level at DBV 0. Touch is a separate controller and LVGL
+ * keeps reading it. On wake the engine's next frame is a full redraw. Brightness
+ * commands share the panel bus with LVGL flushes, so hold the display lock. */
+static void screen_power(Board *b, bool awake)
+{
+    ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
+    if (!awake) {
+        b->present_ms = 0; /* No presents while dark; keep the frame sample honest. */
+        memset(b->canvas_pixels, 0, JELLI_WIDTH * JELLI_HEIGHT * sizeof(uint16_t));
+        lv_obj_invalidate(b->canvas);
+    }
+    esp_err_t result = bsp_display_brightness_set(awake ? SCREEN_BRIGHTNESS : 0);
+    bsp_display_unlock();
+    if (result != ESP_OK)
+        ESP_LOGW(TAG, "Screen brightness change failed: %s", esp_err_to_name(result));
+    ESP_LOGI(TAG, "Screen %s", awake ? "awake" : "asleep; double tap wakes");
+}
 static void paused(void *ctx, bool value)
 {
     (void)ctx;
     ESP_LOGI(TAG, "Animation %s", value ? "paused" : "running");
 }
 
-static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSession *session,
+static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *session,
                        JelliEspPower *power)
 {
     uint64_t report_start = now_ms(NULL);
@@ -93,10 +113,11 @@ static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSessi
             jelli_esp_power_poll(power, engine, start); /* Bounded I2C; no display lock held. */
         if (!frozen && !jelli_pet_frame(engine))
             return;
-        unsigned cue =
-            !frozen && !engine->paused
-                ? jelli_pet_ui_sound(&engine->ui, &engine->game.pets[engine->game.active], start)
-                : 0u;
+        bool awake = true;
+        if (!frozen && jelli_pet_screen_changed(engine, &awake))
+            screen_power(board, awake);
+        /* Silent while paused or while the screen sleeps. */
+        unsigned cue = !frozen ? jelli_pet_sound_cue(engine, start) : 0u;
         /* After the frame, so a Settings level change is heard at its new level. */
         unsigned volume = cue ? jelli_sound_volume(engine->game.sound_level, cue - 1u) : 0u;
         if (volume) /* Level 0 mutes: no request at all. */
@@ -116,8 +137,9 @@ static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSessi
             report_start = end;
         }
         uint64_t elapsed = now_ms(NULL) - start;
+        uint32_t interval = jelli_pet_screen_awake(engine) ? FRAME_MS : SCREEN_ASLEEP_FRAME_MS;
         /* Never catch up in a burst; yield at least one tick on an overrun. */
-        uint32_t delay_ms = elapsed < FRAME_MS ? FRAME_MS - (uint32_t)elapsed : 1u;
+        uint32_t delay_ms = elapsed < interval ? interval - (uint32_t)elapsed : 1u;
         vTaskDelay(pdMS_TO_TICKS(delay_ms));
     }
 }
@@ -151,7 +173,7 @@ void app_main(void)
     lv_obj_add_event_cb(board.canvas, touch_event, LV_EVENT_RELEASED, &board);
     lv_obj_add_event_cb(board.canvas, touch_event, LV_EVENT_PRESS_LOST, &board);
     bsp_display_unlock();
-    ESP_ERROR_CHECK(bsp_display_brightness_set(60));
+    ESP_ERROR_CHECK(bsp_display_brightness_set(SCREEN_BRIGHTNESS));
 
     JelliPlatform platform = {&board, now_ms, poll_input, present, paused};
     JelliSurface surface = {

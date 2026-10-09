@@ -226,6 +226,8 @@ def main():
     battery.add_argument("state", nargs="?", choices=(*POWER_STATES, "clear"),
                          help="Override the host reading until 'clear'; session-only")
     battery.add_argument("percent", nargs="?", help="0–100 or unknown (default unknown)")
+    screen = commands.add_parser("screen", help="Read screen sleep state, or force sleep/wake")
+    screen.add_argument("action", nargs="?", choices=("sleep", "wake"))
     screenshot = commands.add_parser("screenshot")
     screenshot.add_argument("output", type=Path, help="PNG path; also writes .png.json state")
     args = parser.parse_args()
@@ -295,6 +297,8 @@ def main():
                 result = client.request("battery clear")
             else:
                 result = client.request(f"battery {args.state} {args.percent or 'unknown'}")
+        elif args.command == "screen":
+            result = client.request("screen" + (f" {args.action}" if args.action else ""))
         elif args.command in ("habits", "sleep-log"):
             result = client.request(args.command)
         elif args.command == "state":

@@ -15,6 +15,7 @@ bool jelli_pet_init(JelliPetEngine *engine, JelliPlatform platform, JelliSurface
     engine->surface = surface;
     engine->last_ms = platform.now_ms(platform.ctx);
     engine->running = true;
+    jelli_pet_screen_init(&engine->screen, engine->last_ms);
     jelli_game_new(&engine->game);
     engine->game.events = &engine->events;
     jelli_pet_ui_init(&engine->ui);
@@ -56,6 +57,26 @@ static void input_event(JelliPetEngine *engine, JelliInput input)
     }
 }
 
+/* Screen gate for one polled input; false when the UI must not receive it. Awake,
+ * every input except QUIT is activity. Asleep, only a double tap matters. */
+static bool screen_admits(JelliPetEngine *engine, JelliInput input, uint64_t now)
+{
+    JelliPetScreen *screen = &engine->screen;
+    if (input.kind == JELLI_QUIT)
+        return true;
+    if (!screen->asleep) {
+        jelli_pet_screen_activity(screen, now);
+        return input.kind != JELLI_TAP || !jelli_pet_screen_guarded(screen, now);
+    }
+    if (input.kind == JELLI_TAP) {
+        if (jelli_pet_screen_wake_tap(screen, input.x, input.y, now))
+            engine->ui.rendered = false; /* The panel was dark: repaint everything. */
+    } else if (input.kind == JELLI_SWIPE) {
+        jelli_pet_screen_cancel_tap(screen);
+    }
+    return false;
+}
+
 static void rewards(JelliPetEngine *engine)
 {
     JelliPetUi *ui = &engine->ui;
@@ -93,6 +114,8 @@ bool jelli_pet_frame(JelliPetEngine *engine)
     for (unsigned n = 0;
          engine->platform.poll && n < 32 && engine->platform.poll(engine->platform.ctx, &input);
          ++n) {
+        if (!screen_admits(engine, input, now))
+            continue;
         /* The host commits a resumed snapshot before admitting new actions. */
         if (!was_resuming || input.kind == JELLI_QUIT) {
             input_event(engine, input);
@@ -101,9 +124,50 @@ bool jelli_pet_frame(JelliPetEngine *engine)
     }
     if (!engine->running)
         return false;
+    (void)jelli_pet_screen_idle(&engine->screen, now);
     jelli_pet_gallery_update(&engine->ui, &engine->game, engine->animation_ms);
+    if (engine->screen.asleep)
+        return true; /* Dark panel: no render, damage, or present. */
     jelli_pet_render(&engine->surface, &engine->game, &engine->ui, engine->animation_ms,
                      engine->paused);
     engine->platform.present(engine->platform.ctx, &engine->surface);
     return true;
+}
+
+bool jelli_pet_screen_awake(const JelliPetEngine *engine)
+{
+    return engine && !engine->screen.asleep;
+}
+
+bool jelli_pet_screen_changed(JelliPetEngine *engine, bool *awake)
+{
+    if (!engine || engine->screen.asleep == engine->screen.reported_asleep)
+        return false;
+    engine->screen.reported_asleep = engine->screen.asleep;
+    if (awake)
+        *awake = !engine->screen.asleep;
+    return true;
+}
+
+void jelli_pet_screen_wake(JelliPetEngine *engine, uint64_t now_ms)
+{
+    if (!engine)
+        return;
+    if (engine->screen.asleep)
+        engine->ui.rendered = false;
+    jelli_pet_screen_set(&engine->screen, false, now_ms);
+}
+
+void jelli_pet_screen_sleep(JelliPetEngine *engine, uint64_t now_ms)
+{
+    if (engine && !engine->screen.asleep)
+        jelli_pet_screen_set(&engine->screen, true, now_ms);
+}
+
+unsigned jelli_pet_sound_cue(JelliPetEngine *engine, uint64_t now_ms)
+{
+    if (!engine || engine->paused)
+        return 0u;
+    unsigned cue = jelli_pet_ui_sound(&engine->ui, &engine->game.pets[engine->game.active], now_ms);
+    return engine->screen.asleep ? 0u : cue;
 }

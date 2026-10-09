@@ -5,6 +5,8 @@ alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md) and
 [memo-002: Build, release, and runner validation](memos/memo-002-build-release-and-runner-validation.md).
 
+Screen sleep after three idle minutes and double-tap wake: [memo-023](memos/memo-023-screen-sleep-and-double-tap-wake.md).
+
 Unicorn pet (new-player default), four-pet roster, and v7 save: [memo-022](memos/memo-022-unicorn-pet-and-version-7-save.md).
 
 Settings sound level (0–10, default 5) and v6 save: [memo-021](memos/memo-021-settings-sound-level.md).

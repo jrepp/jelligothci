@@ -110,11 +110,33 @@ static bool create_display(Desktop *d)
     return d->texture != NULL;
 }
 
+/* Screen sleep: one black frame, then nothing until a double-click wakes the engine,
+ * whose next frame repaints the whole window. */
+static void screen_changed(Desktop *d, JelliPetEngine *pet)
+{
+    bool awake = true;
+    if (!jelli_pet_screen_changed(pet, &awake))
+        return;
+    if (awake) {
+        paused(d, pet->paused);
+    } else {
+        SDL_SetWindowTitle(d->window, "Jelligotchi | screen asleep | double-click wakes");
+        if (SDL_SetRenderDrawColor(d->renderer, 0, 0, 0, 255) < 0 ||
+            SDL_RenderClear(d->renderer) < 0) {
+            fprintf(stderr, "Presentation failed: %s\n", SDL_GetError());
+            d->failed = true;
+            return;
+        }
+        SDL_RenderPresent(d->renderer);
+    }
+    fprintf(stderr, "Screen %s\n", awake ? "awake" : "asleep; double-click wakes");
+}
+
 static void play_feedback(JelliPetEngine *pet, uint64_t now, bool enabled)
 {
-    if (!enabled || pet->paused)
+    if (!enabled)
         return;
-    unsigned cue = jelli_pet_ui_sound(&pet->ui, &pet->game.pets[pet->game.active], now);
+    unsigned cue = jelli_pet_sound_cue(pet, now); /* Silent while paused or screen asleep. */
     /* After the frame, so a Settings level change is heard at its new level. */
     unsigned volume = cue ? jelli_sound_volume(pet->game.sound_level, cue - 1u) : 0u;
     if (volume) /* Level 0 mutes: no request at all. */
@@ -142,6 +164,8 @@ static void run_frames(JelliEngine *shapes, JelliPetEngine *pet, Desktop *d,
         prepare_frame(d, pet, options, session, start, frame, frozen);
         bool running =
             d->pet ? (frozen ? pet->running : jelli_pet_frame(pet)) : jelli_frame(shapes);
+        if (d->pet && !frozen)
+            screen_changed(d, pet);
         play_feedback(pet, start, d->pet && !frozen);
         if (!running || d->failed)
             break;

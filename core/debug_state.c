@@ -65,7 +65,29 @@ static size_t sound(char *out, size_t capacity, const JelliPetEngine *engine)
     return size < 0 || (size_t)size >= capacity ? 0u : (size_t)size;
 }
 
-void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id)
+/* Battery, sound, and screen objects; returns 0 when they do not all fit. */
+static size_t host_objects(char *out, size_t capacity, const JelliPetEngine *engine, uint64_t now)
+{
+    static const char battery[] = ",\"battery\":", screen[] = ",\"screen\":";
+    if (capacity <= sizeof(battery))
+        return 0u;
+    memcpy(out, battery, sizeof(battery) - 1u);
+    size_t used = sizeof(battery) - 1u;
+    size_t power = jelli_debug_battery_json(out + used, capacity - used, engine);
+    if (!power)
+        return 0u;
+    used += power;
+    size_t level = sound(out + used, capacity - used, engine);
+    if (!level || used + level + sizeof(screen) >= capacity)
+        return 0u;
+    used += level;
+    memcpy(out + used, screen, sizeof(screen) - 1u);
+    used += sizeof(screen) - 1u;
+    size_t display = jelli_debug_screen_json(out + used, capacity - used, engine, now);
+    return display ? used + display : 0u;
+}
+
+void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id, uint64_t now)
 {
     const JelliPetRenderKey *v = &engine->ui.last_view;
     static const char *const pages[] = {"home",     "care",    "more",   "collection",
@@ -108,20 +130,10 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
     if (size < 0 || (size_t)size >= sizeof(debug->reply))
         return;
     size_t used = (size_t)size;
-    static const char battery[] = ",\"battery\":";
-    if (used + sizeof(battery) >= sizeof(debug->reply))
+    size_t objects = host_objects(debug->reply + used, sizeof(debug->reply) - used, engine, now);
+    if (!objects)
         return;
-    memcpy(debug->reply + used, battery, sizeof(battery) - 1u);
-    used += sizeof(battery) - 1u;
-    size_t power =
-        jelli_debug_battery_json(debug->reply + used, sizeof(debug->reply) - used, engine);
-    if (!power)
-        return;
-    used += power;
-    size_t level = sound(debug->reply + used, sizeof(debug->reply) - used, engine);
-    if (!level)
-        return;
-    used += level;
+    used += objects;
     size_t summary = collection(debug->reply + used, sizeof(debug->reply) - used, v);
     if (!summary)
         return;

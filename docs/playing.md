@@ -365,6 +365,39 @@ device speaker has not been measured. `jelli-debug state` reports the setting as
 `visual.sound` (`level`, `max`, `edit`, `tap_volume`, `voice_volume`). Opening
 the editor logs input code 42; VOL − and VOL + log 43 and 44.
 
+## Screen sleep
+
+After three minutes without input the screen turns off to save power. Any tap,
+swipe, or pause toggle restarts the three minutes. This is unrelated to the pet's
+own sleep: while the screen is dark the pet keeps living exactly as before, with
+needs, saves, and the sleep journal advancing normally. Only drawing stops, and
+pet sounds are silenced.
+
+Double tap to wake the screen: two taps no more than half a second apart and
+within 80 pixels of each other. It returns to the same page or menu it was on.
+Neither waking tap presses anything, and a quick third tap within half a second
+of waking is also ignored, so tapping repeatedly on a dark screen never presses a
+hidden button. While the screen is dark, single taps, swipes, and pause toggles do
+nothing; Escape still quits the desktop app. On the desktop, a double-click wakes
+the window, which shows black with a `screen asleep` title while the screen sleeps.
+The timeout is fixed; there is no setting for it.
+
+The debug interface reports and controls screen sleep:
+
+```sh
+./scripts/jelli-debug screen         # awake, sleep_in_ms, sleep_after_ms
+./scripts/jelli-debug screen sleep   # turn the screen off now
+./scripts/jelli-debug screen wake    # turn it on and restart the timer
+```
+
+`state` includes the same object as `visual.screen`; the rest of `visual` keeps
+describing the last frame drawn before the screen went dark. Debug `press`, `tap`,
+and `swipe` count as activity and wake a dark screen directly (a developer
+convenience; real touch input needs the double tap), then deliver their input as
+usual. Rejected debug input changes nothing. `screenshot` fails with
+`screen_asleep` while the screen is dark; wake it first. Other debug commands do
+not count as activity. Add `--port` for the ESP32.
+
 ## Linked sleep, habits, and checkpoints
 
 Settings REST starts both your bedtime record and the pet's sleep; WAKE ends both.

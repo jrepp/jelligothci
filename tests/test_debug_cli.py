@@ -79,6 +79,22 @@ try:
     assert debug.state()["capture"] == 0
     debug.press("WAKE")
     assert not debug.state()["visual"]["asleep"]
+    screen = debug.request("screen sleep")["screen"]
+    assert not screen["awake"] and screen["sleep_in_ms"] == 0
+    assert not debug.state()["visual"]["screen"]["awake"]
+    with tempfile.TemporaryDirectory() as folder:
+        try:
+            debug.screenshot(Path(folder) / "dark.png")
+            raise AssertionError("capture of a dark screen accepted")
+        except client.DebugError as exc:
+            assert "screen_asleep" in str(exc)
+    try:
+        debug.request("screen nap")
+        raise AssertionError("unknown screen action accepted")
+    except client.DebugError as exc:
+        assert "screen_action" in str(exc)
+    screen = debug.request("screen wake")["screen"]
+    assert screen["awake"] and screen["sleep_in_ms"] == screen["sleep_after_ms"] == 180000
     battery = debug.request("battery charging 42")["battery"]
     assert battery["override"] and battery["caption"] == "42%" and battery["percent"] == 42
     assert debug.state()["visual"]["battery"]["state"] == "charging"
@@ -184,4 +200,11 @@ for bad in (("charging", "101"), ("charging", "-1"), ("charging", "abc"), ("char
     code, sent, errors = run_cli("battery", *bad)
     assert code == 2 and sent == [], (bad, code, sent)
     assert "battery" in errors or "invalid choice" in errors or "unrecognized" in errors, errors
-print("PASS: C protocol, navigation, sleep input, exact PNG capture, release, logs, timeout, CLI args")
+assert run_cli("screen") == (0, ["screen"], "")
+assert run_cli("screen", "sleep")[:2] == (0, ["screen sleep"])
+assert run_cli("screen", "wake")[:2] == (0, ["screen wake"])
+for bad in (("nap",), ("SLEEP",), ("sleep", "now")):
+    code, sent, errors = run_cli("screen", *bad)
+    assert code == 2 and sent == [], (bad, code, sent)
+print("PASS: C protocol, navigation, sleep input, screen sleep, exact PNG capture, release, logs, "
+      "timeout, CLI args")

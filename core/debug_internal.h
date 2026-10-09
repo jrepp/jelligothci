@@ -1,7 +1,7 @@
 #ifndef JELLI_DEBUG_INTERNAL_H
 #define JELLI_DEBUG_INTERNAL_H
 #include "jelli/debug.h"
-void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id);
+void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id, uint64_t now);
 bool jelli_debug_number(const char *text, uint32_t *out);
 void jelli_debug_response(JelliDebug *debug, uint32_t id, const char *body);
 void jelli_debug_tunables(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
@@ -19,4 +19,9 @@ void jelli_debug_battery(JelliDebug *debug, JelliPetEngine *engine, uint32_t id,
 size_t jelli_debug_battery_json(char *out, size_t capacity, const JelliPetEngine *engine);
 void jelli_debug_habits(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id,
                         const char *command, unsigned count);
+/* Screen object for screen replies and state; returns 0 when it does not fit. */
+size_t jelli_debug_screen_json(char *out, size_t capacity, const JelliPetEngine *engine,
+                               uint64_t now);
+void jelli_debug_screen(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
+                        unsigned count, uint64_t now);
 #endif

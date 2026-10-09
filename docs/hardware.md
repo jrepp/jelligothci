@@ -139,7 +139,17 @@ and audio-clock signals on the wrong pins; do not rely on it working.
 The ESP32 port uses Waveshare's BSP for the selected board, including its touch
 orientation and panel initialization.
 The app sets 60% display brightness. SDL targets an 8 ms update interval; ESP32
-targets 16 ms for its engine loop and LVGL refresh timer. The ESP32 loop includes
+targets 16 ms for its engine loop and LVGL refresh timer. After three minutes
+without touch, [screen sleep](playing.md#screen-sleep) clears the LVGL canvas to
+black and sets the AMOLED brightness to 0 through the BSP (under the display lock,
+because brightness commands share the panel bus with LVGL flushes). The panel and
+LVGL stay initialized, and the CST9217 touch controller is separate from the panel,
+so LVGL keeps reading touch and the engine keeps polling it. While the screen is
+dark the engine skips rendering and presentation and its loop waits 50 ms instead
+of 16 ms, which still drains touch well inside the 500 ms double-tap window. Taps
+are timestamped when the engine polls them, so the measured gap can exceed the
+physical one by up to one loop interval. A double tap restores 60% brightness after
+a full redraw. Power/PMU settings, light sleep, and radio settings are unchanged. The ESP32 loop includes
 render/presentation work in that interval and yields on overruns. Actual update
 rates are logged every five seconds and are not panel-refresh guarantees.
 Firmware uses performance compiler optimization with assertions retained.
@@ -157,7 +167,10 @@ buttons match touch coordinates, care completes, Rest/Wake changes the pose,
 and the display survives reset. The pet simulation's sleep state does not put
 the board into hardware sleep. Firmware checkpoints to NVS and reads the board RTC
 after an explicit debug clock sync. Unknown or backward time grants no offline
-progress. Hardware sleep, battery charging, RTC battery retention, the
+progress. Screen sleep only darkens the panel; the chip does not sleep. The
+screen sleep power saving, the panel staying fully dark at brightness 0, and
+double-tap wake on the touch panel are unverified on hardware.
+Hardware sleep, battery charging, RTC battery retention, the
 [battery status reading](#battery-status), and physical interaction remain unverified.
 
 The current pet/debug firmware has been flashed successfully; serial startup

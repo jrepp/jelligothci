@@ -89,8 +89,27 @@ static void capture_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t 
     }
 }
 
+static void capture_start(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id,
+                          uint64_t now)
+{
+    if (debug->captured || !engine->ui.rendered) {
+        jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"busy\"}");
+        return;
+    }
+    if (!jelli_pet_screen_awake(engine)) { /* The framebuffer is stale while dark. */
+        jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"screen_asleep\"}");
+        return;
+    }
+    debug->captured = true;
+    debug->capture_start = now;
+    debug->capture_activity = now;
+    if (++debug->capture_id == 0u)
+        ++debug->capture_id;
+    jelli_debug_state(debug, engine, id, now);
+}
+
 static void tap(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
-                unsigned count)
+                unsigned count, uint64_t now)
 {
     uint32_t x = 0, y = 0;
     if (count != 5u || !jelli_debug_number(words[3], &x) || !jelli_debug_number(words[4], &y) ||
@@ -102,12 +121,13 @@ static void tap(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **w
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"busy\"}");
         return;
     }
+    jelli_pet_screen_wake(engine, now);
     jelli_pet_ui_tap(&engine->ui, &engine->game, (int)x, (int)y);
     jelli_debug_response(debug, id, "{\"ok\":true,\"input\":\"delivered\"}");
 }
 
 static void swipe(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
-                  unsigned count)
+                  unsigned count, uint64_t now)
 {
     uint32_t direction;
     static const int deltas[4][2] = {{0, -80}, {0, 80}, {-80, 0}, {80, 0}};
@@ -119,12 +139,13 @@ static void swipe(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char *
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"busy\"}");
         return;
     }
+    jelli_pet_screen_wake(engine, now);
     jelli_pet_ui_swipe(&engine->ui, &engine->game, deltas[direction][0], deltas[direction][1]);
     jelli_debug_response(debug, id, "{\"ok\":true,\"input\":\"delivered\"}");
 }
 
 static void press(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
-                  unsigned count)
+                  unsigned count, uint64_t now)
 {
     uint32_t page = 0, item = 0;
     if (count != 5u || !jelli_debug_number(words[3], &page) ||
@@ -143,20 +164,25 @@ static void press(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char *
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"menu_closed\"}");
         return;
     }
+    jelli_pet_screen_wake(engine, now);
     jelli_pet_ui_tap(&engine->ui, &engine->game, (int)(button.bounds.x + button.bounds.width / 2u),
                      (int)(button.bounds.y + button.bounds.height / 2u));
     jelli_debug_response(debug, id, "{\"ok\":true,\"input\":\"delivered\"}");
 }
 
+/* Debug input is trusted developer activity: it restarts the screen idle timer and
+ * wakes a sleeping screen directly. Real touch input needs the double tap. */
 static bool input_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
-                          unsigned count)
+                          unsigned count, uint64_t now)
 {
     if (!strcmp(words[2], "press"))
-        press(debug, engine, id, words, count);
+        press(debug, engine, id, words, count, now);
     else if (!strcmp(words[2], "swipe"))
-        swipe(debug, engine, id, words, count);
+        swipe(debug, engine, id, words, count, now);
     else if (!strcmp(words[2], "tap"))
-        tap(debug, engine, id, words, count);
+        tap(debug, engine, id, words, count, now);
+    else if (!strcmp(words[2], "screen"))
+        jelli_debug_screen(debug, engine, id, words, count, now);
     else
         return false;
     return true;
@@ -185,27 +211,18 @@ static void dispatch(JelliDebug *debug, JelliPetEngine *engine, char **words, un
     if (history_command(debug, engine, id, words, count))
         return;
     if (!strcmp(words[2], "state") && count == 3u) {
-        jelli_debug_state(debug, engine, id);
+        jelli_debug_state(debug, engine, id, now);
     } else if (!strcmp(words[2], "tunables") || !strcmp(words[2], "tune")) {
         jelli_debug_tunables(debug, engine, id, words, count);
     } else if (!strcmp(words[2], "capture") && count == 3u) {
-        if (debug->captured || !engine->ui.rendered) {
-            jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"busy\"}");
-            return;
-        }
-        debug->captured = true;
-        debug->capture_start = now;
-        debug->capture_activity = now;
-        if (++debug->capture_id == 0u)
-            ++debug->capture_id;
-        jelli_debug_state(debug, engine, id);
+        capture_start(debug, engine, id, now);
     } else if (!strcmp(words[2], "cheat")) {
         jelli_debug_cheat(debug, engine, id, words, count);
     } else if (!strcmp(words[2], "events")) {
         jelli_debug_events(debug, engine, id, words, count);
     } else if (!strcmp(words[2], "sound")) {
         jelli_debug_sound(debug, id, words, count);
-    } else if (input_command(debug, engine, id, words, count)) {
+    } else if (input_command(debug, engine, id, words, count, now)) {
         /* Input handler owns the reply. */
     } else if (!strcmp(words[2], "pixels") || !strcmp(words[2], "release")) {
         capture_command(debug, engine, id, words, count, now);
