@@ -58,6 +58,11 @@ The viewer is a readable event stream with game controls, cheats, clock sync,
 and sleep history. The same protocol works over the ESP32 USB port. Details:
 [debug commands and tunables](docs/playing.md#debug-cli).
 
+On ESP32, `display benchmark-copy` compares full-frame row and bulk copies in
+PSRAM; `display benchmark-rect` compares the original and current rectangle fills.
+See the [benchmark command and timing limits](docs/playing.md#debug-cli)
+before running this diagnostic, which briefly pauses rendering.
+
 ## Art workflow
 
 Paint in the browser with `make jelli-art`, or edit PNGs under `assets/slice/`

@@ -85,6 +85,8 @@ unequal samples, not frames. These checks do not read panel memory.
 ```sh
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" display
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" display refresh
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" --timeout 30 display benchmark-copy
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" --timeout 30 display benchmark-rect
 ```
 
 `display refresh` queues a full retransmission of the existing LVGL canvas on
@@ -93,6 +95,25 @@ repair a differing canvas. Capture the screenshot and diagnostics before using
 it, then compare the physical panel. The two full PSRAM frames have 32-byte
 boundary guards on each end; invalid copy bounds or damaged guards stop the
 firmware with an error instead of continuing an unsafe copy.
+
+`display benchmark-copy` briefly pauses engine and LVGL work while comparing
+32 pairs of full-frame PSRAM copies. It alternates the old row-copy path and
+the contiguous-copy path, checks frame equality after each copy, and checks
+boundary guards. `row_total_us` and `bulk_total_us` are elapsed microseconds
+summed over 32 copies each; divide by `pairs` for the mean. These timings exclude
+the equality checks and do not measure panel throughput. The command copies the
+engine frame to the canvas and invalidates the canvas when done, so capture any
+display mismatch before using it. Run several times to assess timing variation.
+
+`display benchmark-rect` compares the original per-pixel rectangle fill with
+the current renderer on the ESP32. Each response contains eight pairs per workload:
+`small_us` for 1,024 central 6-by-6 blocks, `full_us` for a full-screen fill,
+and `edge_us` for 1,024 scattered 6-by-6 blocks. Each two-element array holds
+summed microseconds for the original and candidate methods, in that order.
+It alternates method order and compares framebuffer checksums outside timing.
+The canvas is borrowed under the display mutex and restored from the unchanged
+engine buffer before unlocking. Rendering pauses during this bounded diagnostic;
+these are primitive timings, not game or panel FPS.
 
 The CLI runs through repository-local uv, Python 3.12, and pinned pyserial 3.5.
 `state` reports the last rendered view and visible buttons. `press` accepts a
