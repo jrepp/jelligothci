@@ -119,8 +119,8 @@ static void read_pet(Reader *reader, JelliPet *pet)
     pet->neglect = get_u16(reader);
     pet->form = get_u8(reader);
     pet->location = get_u8(reader);
-    pet->health = (JelliHealth)get_u8(reader);
-    pet->activity = (JelliActivity)get_u8(reader);
+    pet->health = get_u8(reader);
+    pet->activity = get_u8(reader);
     (void)read_bool(reader, &pet->asleep);
     (void)read_bool(reader, &pet->scheduled_sleep);
     (void)read_bool(reader, &pet->hunger_low);

@@ -84,8 +84,8 @@ void jelli_pet_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliP
     uint64_t beat = (time - ui->idle_anchor_ms) / idle;
     unsigned pose = jelli_creature_idle_pose(jelli_creature_profile(pet->form), beat, pet->id);
     view->phase = pet->activity == JELLI_IDLE && !pet->asleep ? pose : 0u;
-    if (pet->activity == JELLI_EXERCISING)
-        view->exercise_bob = (uint8_t)(time / EXERCISE_BOB_MS % 2u);
+    if (pet->activity == JELLI_EXERCISING || pet->moment)
+        view->exercise_bob = (uint8_t)(time / EXERCISE_BOB_MS % (pet->moment ? 4u : 2u));
     ring_timing(ui, pet, time, view);
     /* Manual pages only: never slide or wrap a tile automatically. */
     view->stat_index = (uint8_t)(ui->stat_offset % JELLI_PET_STAT_COUNT);

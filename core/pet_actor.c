@@ -1,4 +1,5 @@
 #include "jelli_asset_ids.h"
+#include "jelli/activities.h"
 #include "jelli/wake.h"
 #include "jelli/sound.h"
 #include "jelli/creature.h"
@@ -36,6 +37,15 @@ static bool condition_holds(unsigned when, const JelliPetRenderKey *v)
 
 static unsigned creature_pose(const JelliCreatureProfile *profile, const JelliPetRenderKey *v)
 {
+    if (v->moment && v->moment <= jelli_moment_count && !v->asleep) {
+        unsigned animation = jelli_moments[v->moment - 1u].animation;
+        if (animation == JELLI_ANIM_REST)
+            return JELLI_POSE_ASLEEP;
+        if (animation == JELLI_ANIM_THINK || animation == JELLI_ANIM_WATCH)
+            return JELLI_POSE_CURIOUS;
+        if (animation == JELLI_ANIM_BREATHE || animation == JELLI_ANIM_DREAM)
+            return JELLI_POSE_CONTENT;
+    }
     unsigned count = profile->rule_count < JELLI_POSE_RULE_CAPACITY ? profile->rule_count
                                                                     : JELLI_POSE_RULE_CAPACITY;
     for (unsigned i = 0u; i < count; ++i)

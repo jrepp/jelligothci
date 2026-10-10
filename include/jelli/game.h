@@ -113,15 +113,16 @@ typedef struct {
     /* Brief session-only touch memory; care changes still persist. */
     uint16_t touch_load;
     uint8_t reaction, reaction_ticks, wake_mood;
-    uint8_t behavior; /* RFC-005 behaviour state + 1, or 0; fills alignment padding. */
-    JelliHealth health;
-    JelliActivity activity;
+    uint8_t behavior;         /* RFC-005 behaviour state + 1, or 0; fills alignment padding. */
+    uint8_t health, activity; /* JelliHealth / JelliActivity, bounded serialized values. */
     bool asleep, scheduled_sleep, hunger_low, hunger_counted;
     bool reward_pending, reward_claimed;
     /* RFC-005 behaviour timing in simulated seconds; these fill the struct's tail padding. */
     uint8_t cooldown_state; /* Most recent state + 1 while its cooldown runs, or 0. */
     uint8_t behavior_flags; /* JELLI_PET_FLAG_* plus one low-need bit per JelliNeed. */
     uint16_t behavior_left, cooldown_left;
+    uint16_t activity_day; /* Local day modulo 65535; daily completion epoch. */
+    uint32_t completed_moments;
 } JelliPet;
 
 typedef struct {

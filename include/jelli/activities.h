@@ -3,17 +3,44 @@
 #include "jelli/game.h"
 
 /* Generated from content/activities.json by cmake/JelliActivities.cmake (RFC-005). */
-#define JELLI_MOMENT_CAPACITY 8u
+#define JELLI_MOMENT_CAPACITY 32u
 #define JELLI_MOMENT_NEVER_SUGGESTED 255u
 
 typedef enum { JELLI_MOMENT_FEED, JELLI_MOMENT_PLAY } JelliMomentKind;
 typedef enum { JELLI_MOMENT_STAY, JELLI_MOMENT_HOME, JELLI_MOMENT_GARDEN } JelliMomentLocation;
 
+typedef enum {
+    JELLI_ANIM_HOLD,
+    JELLI_ANIM_SIP,
+    JELLI_ANIM_WATCH,
+    JELLI_ANIM_BREATHE,
+    JELLI_ANIM_JOG,
+    JELLI_ANIM_CAST,
+    JELLI_ANIM_DREAM,
+    JELLI_ANIM_REST,
+    JELLI_ANIM_THINK,
+    JELLI_ANIM_LIFT,
+    JELLI_ANIM_SKETCH,
+    JELLI_ANIM_DIG,
+    JELLI_ANIM_KICK,
+    JELLI_ANIM_VOLLEY,
+    JELLI_ANIM_SWIM,
+    JELLI_ANIM_SWING,
+    JELLI_ANIM_CATCH,
+    JELLI_ANIM_MIX
+} JelliActivityAnimation;
+
 typedef struct {
     const char *name;
+    const char *window_hint, *prerequisite_hint;
     uint8_t kind, location;
     uint8_t suggest_hour; /* First hour of its suggestion window, or NEVER_SUGGESTED. */
     uint16_t gains[JELLI_NEED_COUNT];
+    uint16_t duration_s, start_minute, end_minute;
+    uint32_t forms; /* Zero permits every form; otherwise one bit per stable form ID. */
+    uint8_t random_weight,
+        requires,
+    animation;           /* requires: ID + 1, zero means none. */
     uint32_t icon, prop; /* Asset IDs; prop 0 means none. */
 } JelliMoment;
 
@@ -38,4 +65,8 @@ extern const uint16_t jelli_favorite_bond;
 
 /* The suggested moment whose window holds hour (0..23); windows wrap at midnight. */
 unsigned jelli_moment_suggested(unsigned hour);
+JelliResult jelli_moment_available(const JelliGame *game, const JelliPet *pet, unsigned id);
+uint16_t jelli_activity_day(const JelliGame *game, const JelliPet *pet);
+const char *jelli_moment_hint(const JelliGame *game, const JelliPet *pet, unsigned id);
+void jelli_moment_complete(const JelliGame *game, JelliPet *pet);
 #endif

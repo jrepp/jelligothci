@@ -396,6 +396,37 @@ class BehaviourContentTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
+class ActivityContentTest(unittest.TestCase):
+    tearDown = BehaviourContentTest.tearDown
+    doc = BehaviourContentTest.doc
+    save = BehaviourContentTest.save
+    snapshot = BehaviourContentTest.snapshot
+
+    def setUp(self):
+        BehaviourContentTest.setUp(self)
+        self.files['activities'] = self.content / 'activities.json'
+
+    def test_activity_save_and_stale_rejection(self):
+        doc = self.doc('activities')
+        doc['moments'][4].update(forms=[2], duration_s=25, animation='think')
+        result = self.save(activities=doc)
+        self.assertEqual(result['changed'], ['activities'])
+        self.assertEqual(self.doc('activities')['moments'][4]['forms'], [2])
+        with self.assertRaises(jelli_art.StudioError):
+            jelli_art.save_content({'activities': doc}, {'activities': 'stale'})
+
+    def test_invalid_recipes_leave_content_unchanged(self):
+        before = self.snapshot()
+        for change in ({'start_minute': 1500}, {'end_minute': 0}, {'duration_s': 0},
+                       {'forms': [99]}, {'animation': 'unknown'}, {'requires': 4},
+                       {'icon': 999999}, {'random_weight': 101}, {'name': 'RENAMED'}):
+            doc = self.doc('activities')
+            doc['moments'][4].update(change)
+            with self.assertRaises(jelli_art.StudioError):
+                self.save(activities=doc)
+            self.assertEqual(before, self.snapshot())
+
+
 def creatures_coverage_check(manifest):
     forms = {a["form"] for a in manifest["assets"] if a["kind"] == "creatures"}
     keys = {c["key"] for c in manifest["clips"]}

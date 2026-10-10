@@ -102,6 +102,8 @@ bool jelli_pet_ring_button(const JelliPetUi *ui, unsigned slot, bool asleep,
     const JelliPetRenderKey *v = &ui->last_view;
     if (v->ring_page == JELLI_UI_SETTINGS && v->ring_clock_edit)
         return jelli_pet_clock_button(true, slot, button);
+    if (v->ring_page == JELLI_UI_MOMENTS && slot)
+        return jelli_pet_activity_button(v->activity_page, slot, asleep, button);
     return jelli_pet_ui_button((JelliPetPage)v->ring_page, slot, asleep, true, button);
 }
 
@@ -109,4 +111,30 @@ bool jelli_pet_ui_starts(unsigned page, unsigned slot)
 {
     return page == JELLI_UI_MOMENTS ||
            (page == JELLI_UI_CARE && (slot == 1u || slot == 3u || slot == 4u));
+}
+
+unsigned jelli_pet_activity_choice(const JelliPetUi *ui, unsigned slot)
+{
+    return (unsigned)ui->activity_page * 5u + slot - 1u;
+}
+
+bool jelli_pet_activity_button(unsigned page, unsigned slot, bool asleep, JelliPetUiButton *button)
+{
+    if (!slot || slot > 6u || !jelli_pet_ui_button(JELLI_UI_MOMENTS, slot, asleep, true, button))
+        return false;
+    unsigned choice = page * 5u + slot - 1u;
+    if (slot == 6u) {
+        button->label = "MORE";
+        button->icon = JELLI_ASSET_MENUS_MORE;
+    } else if (choice < jelli_moment_count) {
+        button->label = jelli_moments[choice].name;
+        button->icon = jelli_moments[choice].icon;
+    } else if (choice == jelli_moment_count) {
+        button->label = "EXERCISE";
+        button->icon = JELLI_ASSET_MENUS_EXERCISE;
+    } else {
+        return false;
+    }
+    button->scale = jelli_canvas_fit_scale(button->icon, BUTTON_ICON_PX);
+    return true;
 }
