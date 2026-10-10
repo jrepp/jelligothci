@@ -1,11 +1,7 @@
 name: Jelli Art image
 on:
+  # Every pull request runs, so branch rules can require these checks.
   pull_request:
-    paths:
-      - tools/jelli-art/**
-      - tools/assets/compare.html
-      - tools/assets/compare_slice.py
-      - .github/workflows/jelli-art.yml
   workflow_dispatch:
     inputs:
       ref:
@@ -30,7 +26,29 @@ concurrency:
   group: jelli-art-${{ inputs.ref || github.ref }}
   cancel-in-progress: false
 jobs:
+  studio-tests:
+    name: Studio tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - name: Paint tools
+        run: node tools/jelli-art/test_paint_tools.js
+      - name: Server, creatures, animation and game preview
+        env:
+          GIT_AUTHOR_NAME: Jelli Art CI
+          GIT_AUTHOR_EMAIL: jelli-art-ci@users.noreply.github.com
+          GIT_COMMITTER_NAME: Jelli Art CI
+          GIT_COMMITTER_EMAIL: jelli-art-ci@users.noreply.github.com
+        run: |
+          for test in test_server test_creatures test_animation test_game_preview; do
+            ./scripts/uv run --python 3.12 "tools/jelli-art/$test.py"
+          done
   image:
+    needs: studio-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
