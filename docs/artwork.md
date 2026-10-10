@@ -108,6 +108,33 @@ activities, stat pictograms, celebration sprites, backgrounds, props, font, and
 nine unique presents. See [the source inventory](../assets/slice/README.md) for
 stable IDs, provenance, reproduction, and byte budgets.
 
+## Add a creature
+
+Creatures are data ([ADR-012](../docs-cms/adr/adr-012-data-driven-creature-species-and-presentation.md)).
+The axolotl was added this way, without species-specific C:
+
+1. **Frames.** Write an import spec like `assets/slice/source/axolotl-import.json`:
+   form name, `first_id`, source cell size, a 32x32 or 48x48 canvas, pivot, and a
+   palette name. Then run
+   `./scripts/uv run --python 3.12 tools/assets/import_creature.py SPEC SOURCE_DIR`.
+   Every source cell becomes one pixel, and all frames keep their shared placement.
+   IDs are `first_id` plus list position, so append new frames and never reorder.
+2. **Clips.** Give the form one `<form>.<pose>` clip for each of the eight
+   `creature_poses` in `assets/slice/assets.json`. Edit and preview them in
+   Jelli Art's Creature view.
+3. **Catalog.** In `content/pets.json`, add a form (`art` = the import's form name,
+   `portrait` = one of its frames). Add an evolution set with one or two forms,
+   and point a collection entry at it.
+4. **Behaviour and size.** In `content/creatures.json`, add a profile for the
+   form's `art` with actor, icon and portrait scales, and pick or write a
+   behaviour: ordered `{when, pose}` rules, idle beats and a quiet cycle.
+5. Run `./scripts/uv run --python 3.12 tools/assets/build_slice.py`, then
+   `make test`. The generators reject missing poses, foreign frames, unknown
+   conditions, and actors too large for the panel.
+
+Saves follow the catalog. Moving an entry to another evolution set converts that
+pet on its next load.
+
 ## Style rules and before/after review
 
 New or revised art follows the [pixel art authoring guide](pixel-art-guide.md):
