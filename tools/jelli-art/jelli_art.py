@@ -36,6 +36,7 @@ sys.path.insert(0, str(HERE.parent / "assets"))
 from compare_slice import REPO, SOURCE, collect  # noqa: E402
 import behaviors  # noqa: E402
 import creatures  # noqa: E402
+import game_preview  # noqa: E402
 import profiles  # noqa: E402
 from git_sync import GitSync  # noqa: E402
 
@@ -57,7 +58,8 @@ STUDIO_JS = HERE / "studio.js"
 CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
-PAGE_SCRIPTS = (SHELL_JS, STUDIO_JS, CREATURE_JS, BEHAVIOUR_JS, HERE / "simulator.js", HERE / "reactions.js")
+PAGE_SCRIPTS = (SHELL_JS, STUDIO_JS, CREATURE_JS, BEHAVIOUR_JS, HERE / "simulator.js", HERE / "reactions.js",
+                HERE / "game_preview.js")
 EDITABLE_CONTENT = ("behaviors", "creatures")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
@@ -324,6 +326,8 @@ class Handler(BaseHTTPRequestHandler):
             page = TEMPLATE.read_text().replace("__COMPARE_DATA__", json.dumps({"live": True}))
             page = page.replace("/*__STUDIO_JS__*/", "\n".join(p.read_text() for p in PAGE_SCRIPTS))
             return self.send(HTTPStatus.OK, page.encode(), "text/html; charset=utf-8")
+        if game_preview.route(self, method, url.path):
+            return None
         if method == "GET" and url.path == "/api/data":
             return self.send(HTTPStatus.OK, payload(query.get("before", ["HEAD"])[0]))
         if method == "GET" and url.path == "/healthz":
@@ -401,6 +405,7 @@ def main():
         PETS, CREATURE_DATA = CONTENT / "pets.json", CONTENT / "creatures.json"
     elif args.assets:
         CONTENT_WRITABLE = False  # a trial on copied art must not write the checkout's content/
+    game_preview.configure(REPO, SOURCE, CONTENT)
     if args.git_branch:
         global GIT
         GIT = GitSync(REPO, args.git_branch, push=args.git_push)
