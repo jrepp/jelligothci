@@ -650,7 +650,7 @@
       render(); S.creatureDoc.refresh();
       const files = res.changed.map(n => `${n}.json`).join(' and ') || 'nothing (no changes)';
       if (res.git_error) S.status(`Saved ${files}, but the commit failed: ${res.git_error}`, 'bad', true);
-      else S.status(res.commit ? `Saved ${files} (commit ${res.commit}).` : `Saved ${files}.`);
+      else S.status(res.commit ? `Saved ${files} (commit ${res.commit}).` : `Saved ${files}.`, '', false, {keep: true});
     } catch (err) { S.status(`Save failed: ${err.message}`, 'bad', true); }
   };
 

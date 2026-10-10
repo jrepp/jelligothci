@@ -45,7 +45,8 @@
     [/cmake/i, 'Install CMake and restart Jelli Art: behaviour saves are checked with cmake -P.'],
     [/request too large/i, 'Requests are limited to 1 MiB; save fewer edits at once.']];
   const TONES = {'': 'info', info: 'info', ok: 'ok', good: 'ok', warn: 'warn', bad: 'bad', error: 'bad'};
-  /* notify(text, {tone: 'info'|'ok'|'warn'|'bad', sticky, hint, id, timeout}). Errors stay until dismissed.
+  /* notify(text, {tone: 'info'|'ok'|'warn'|'bad', sticky, hint, id, timeout, keep}). Errors stay until dismissed;
+   * keep survives a mode switch.
    * The same id (or the same text) replaces the toast rather than stacking. Returns the id. */
   function notify(text, opts = {}) {
     text = String(text || ''); if (!text) return null;
@@ -61,7 +62,7 @@
       el.addEventListener('mouseenter', () => clearTimeout(el.timer));
       el.addEventListener('focusin', () => clearTimeout(el.timer));
     }
-    el.className = `shell-toast ${tone}`; el.dataset.text = text; el.dataset.mode = currentMode; el.dataset.sticky = String(sticky);
+    el.className = `shell-toast ${tone}`; el.dataset.text = text; el.dataset.mode = currentMode; el.dataset.tone = tone; el.dataset.keep = String(sticky || !!opts.keep);
     const label = {info: 'Note', ok: 'Done', warn: 'Warning', bad: 'Problem'}[tone];
     el.innerHTML = `<p><span class="shell-tone">${label}:</span> ${esc(text)}</p>${hint ? `<p class="shell-hint">${esc(hint)}</p>` : ''}` +
       '<button type="button" class="shell-dismiss" aria-label="Dismiss notification">×</button>';
@@ -72,9 +73,9 @@
     announce(`${label}: ${text}${hint ? ` ${hint}` : ''}`);
     return id;
   }
-  /* Switching mode clears passing info and done toasts from the mode left behind; warnings, problems and sticky ones stay. */
+  /* Switching mode clears passing info and done toasts from the mode left behind; warnings, problems, sticky toasts and {keep: true} ones (save results) stay. */
   function leaveMode(next) {
-    if (currentMode) for (const [id, el] of [...toasts]) if (el.dataset.mode !== next && el.dataset.sticky !== 'true' && /\b(info|ok)\b/.test(el.className)) dismiss(id);
+    if (currentMode) for (const [id, el] of [...toasts]) if (el.dataset.mode !== next && el.dataset.keep !== 'true' && ['info', 'ok'].includes(el.dataset.tone)) dismiss(id);
     currentMode = next;
   }
   function dismiss(id) {

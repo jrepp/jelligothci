@@ -74,8 +74,8 @@
     if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), {status: res.status, body: data});
     return data;
   }
-  function status(text, cls = '', sticky = false) {
-    if (window.JelliShell) return window.JelliShell.notify(text, {tone: cls, sticky});  // shell.js: live region and toasts
+  function status(text, cls = '', sticky = false, opts = {}) {
+    if (window.JelliShell) return window.JelliShell.notify(text, {tone: cls, sticky, ...opts});  // shell.js: live region and toasts
     const el = document.getElementById('studio-status'); el.textContent = text; el.className = 'studio-status ' + cls;
     clearTimeout(statusTimer); if (!sticky) statusTimer = setTimeout(() => { el.textContent = ''; }, 4000);
   }
@@ -395,7 +395,7 @@
       const [x, y] = state.hover;
       if (state.tool === 'pencil' && !stroke && state.color) {
         ctx.globalAlpha = 0.55; ctx.fillStyle = state.color; ctx.fillRect(x * z, y * z, z, z); ctx.globalAlpha = 1;
-        if (lowContrast(state.color, a)) { ctx.strokeStyle = lumaOf(backdropHex(a)) > 128 ? '#000' : '#fff'; ctx.lineWidth = Math.max(1, z / 8); ctx.setLineDash([Math.max(2, z / 4), Math.max(2, z / 4)]); ctx.strokeRect(x * z + z / 4, y * z + z / 4, z / 2, z / 2); ctx.setLineDash([]); }
+        if (z >= 4 && lowContrast(state.color, a)) { ctx.strokeStyle = backdropLuma(backdropFor(a)) > 128 ? '#000' : '#fff'; ctx.lineWidth = Math.max(1, z / 8); ctx.setLineDash([Math.max(2, z / 4), Math.max(2, z / 4)]); ctx.strokeRect(x * z + z / 4, y * z + z / 4, z / 2, z / 2); ctx.setLineDash([]); }
       }
       drawHover(ctx, z);
       if (state.kbd) { ctx.strokeStyle = '#85e4b6'; ctx.lineWidth = 2; ctx.strokeRect(x * z - 3, y * z - 3, z + 6, z + 6); }
@@ -403,7 +403,7 @@
     S.afterDraw?.();  // flipbook.js: the paused preview and this frame's thumbnail
   }
   /* A paint colour that would barely show on the asset's backdrop (ink on black, say) gets a contrast ring. */
-  const lowContrast = (hex, a) => !!hex && Math.abs(lumaOf(hex) - lumaOf(backdropHex(a))) < 48;
+  const lowContrast = (hex, a) => !!hex && Math.abs(lumaOf(hex) - backdropLuma(backdropFor(a))) < 48;
   /* Centre guides: the sprite's middle row and column, and the centre of each 8 px tile. */
   function drawGuides(ctx, a, z) {
     ctx.fillStyle = 'rgba(245,199,100,.8)';
@@ -715,7 +715,7 @@
       window.JelliDrafts?.drop('paint', a.key);
       renderHeader(a); renderToolbarState(); renderList();
       if (res.git_error) status(`Saved ${a.key}, but the commit failed: ${res.git_error}`, 'bad', true);
-      else status(res.commit ? `Saved ${a.key} (commit ${res.commit}).` : `Saved ${a.key}. With make run-live, the game shows it now.`);
+      else status(res.commit ? `Saved ${a.key} (commit ${res.commit}).` : `Saved ${a.key}. With make run-live, the game shows it now.`, '', false, {keep: true});
     } catch (err) { status(`Save failed: ${err.message}`, 'bad', true); }
   }
   async function askOverwrite(key) {

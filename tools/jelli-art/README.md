@@ -29,7 +29,8 @@ static page that `tools/assets/compare_slice.py` writes. It provides:
   `#view=sheet&key=icons.feed&mode=diff&zoom=8`.
 - One polite live region and toasts for save results, errors, stale files,
   git push problems and a lost server connection. Switching mode closes the
-  info and done toasts of the mode left behind; warnings and problems stay.
+  info and done toasts of the mode left behind; warnings, problems and save
+  results (`notify(text, {keep: true})`) stay.
 - An unsaved changes button that lists edits and opens their mode. The page
   warns before closing with unsaved edits.
 - System, dark, light and high-contrast themes. The page follows
@@ -42,7 +43,7 @@ Panels use `window.JelliShell`, which exists when their script loads:
 | Call | Effect |
 | --- | --- |
 | `registerShortcuts(section, [{keys: ['Mod+S'], description}])` | Lists shortcuts in the ? overlay. Registering a section again replaces it. `keys` lists alternatives, `+` joins a chord and `Mod` is ⌘ or Ctrl. Key handling stays in the panel. |
-| `notify(text, {tone, sticky, hint, id})` | Shows a toast and announces it. Tones are `info`, `ok`, `warn` and `bad`; `bad` stays until dismissed. Reusing an `id` replaces that toast. `Studio.status()` calls this. |
+| `notify(text, {tone, sticky, hint, id, keep})` | Shows a toast and announces it. Tones are `info`, `ok`, `warn` and `bad`; `bad` stays until dismissed. `keep` keeps an `info` or `ok` toast across a mode switch. Reusing an `id` replaces that toast. `Studio.status()` calls this. |
 | `announce(text)` | Speaks text through the live region without a toast. |
 | `dialog({title, body, actions: [{label, value, primary, danger}], onOpen})` | Opens a modal `<dialog>`. Resolves with the chosen `value`, or `null` for Escape. Focus returns to the opener. |
 | `confirm(message, {title, confirmLabel, danger})` | Resolves `true` or `false`. |
