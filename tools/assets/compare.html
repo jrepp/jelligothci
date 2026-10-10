@@ -124,9 +124,9 @@ section.block{border-top-width:2px}.title h2{letter-spacing:.01em}
     <div class="filters">
       <input type="search" id="query" placeholder="Filter assets…" aria-label="Filter assets">
       <div class="chips" id="kinds" role="group" aria-label="Asset kind"></div>
-      <div class="chips"><button id="changed-only" aria-pressed="true">Changed only</button><button id="copy-notes">Copy review notes</button></div>
+      <div class="chips"><button id="changed-only" aria-pressed="false">Changed only</button><button id="copy-notes">Copy review notes</button></div>
     </div>
-    <p id="list-empty" class="hidden" style="padding:12px;margin:0;color:var(--muted)">No assets match. Try turning off “Changed only”.</p>
+    <p id="list-empty" class="hidden" style="padding:12px;margin:0;color:var(--muted)">No assets match. <button id="list-show-all" hidden>Show all</button></p>
     <div id="list" role="listbox" aria-label="Assets" tabindex="0"></div>
   </aside>
   <main id="main" tabindex="-1">
@@ -173,16 +173,25 @@ section.block{border-top-width:2px}.title h2{letter-spacing:.01em}
 const BOOT = JSON.parse(document.getElementById('compare-data').textContent);
 let D = BOOT, byKey = {}, decoded = {};
 const NAMES = ['ink', 'plum', 'mauve', 'teal', 'sea', 'mint', 'foam', 'violet', 'lilac', 'haze', 'cream', 'white', 'rose', 'coral', 'gold', 'tan'];
-const BACKDROPS = {black: '#000000', ring: '#4a494a', panel: '#181c18', checker: null, paper: '#f5f1e7'};
-const KIND_BACKDROP = {creatures: 'black', icons: 'ring', menus: 'ring', meters: 'panel', health: 'ring', effects: 'black', prizes: 'panel', props: 'black', font: 'panel', backgrounds: 'black'};
+/* scene is the wall grey behind the pet (sceneGrey() reads it from backgrounds.home at load); ring is the ring button; panel is the stat tile. */
+const BACKDROPS = {scene: '#b6b6b6', black: '#000000', ring: '#4a494a', panel: '#181c18', checker: null, paper: '#f5f1e7'};
+const CHECKER = ['#36363d', '#2b2b31'];
+/* Perceived brightness 0-255 of '#rrggbb'. */
+const lumaOf = hex => [1, 3, 5].reduce((n, i, k) => n + parseInt(hex.slice(i, i + 2), 16) * [0.299, 0.587, 0.114][k], 0);
+const CHECKER_LUMA = (lumaOf(CHECKER[0]) + lumaOf(CHECKER[1])) / 2;
+const backdropLuma = name => BACKDROPS[name] ? lumaOf(BACKDROPS[name]) : CHECKER_LUMA;
+const KIND_BACKDROP = {creatures: 'scene', icons: 'ring', menus: 'ring', meters: 'panel', health: 'ring', effects: 'black', prizes: 'panel', props: 'scene', font: 'panel', backgrounds: 'black'};
 const MODES = ['side', 'swipe', 'flip', 'onion', 'diff'];
 const PANEL_PPI = 466 / 1.75;
 const DPR = Math.max(1, window.devicePixelRatio || 1);
 const store = {get(k, d) { try { const v = localStorage.getItem('jelli-review:' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem('jelli-review:' + k, JSON.stringify(v)); } catch { /* storage unavailable */ } }};
-const state = Object.assign({key: null, mode: 'side', zoom: null, grid: true, issues: false, backdrop: null, changedOnly: true, kind: 'all', query: '',
+/* Bump PREFS_VERSION to drop saved prefs whose old default should not stick: version 2 resets changedOnly, which used to default on. */
+const PREFS_VERSION = 2, savedPrefs = store.get('prefs', {});
+if (savedPrefs.prefsVersion !== PREFS_VERSION) delete savedPrefs.changedOnly;
+const state = Object.assign({key: null, mode: 'side', zoom: null, grid: true, issues: false, backdrops: {}, changedOnly: false, kind: 'all', query: '',
   view: 'detail', peek: false, isolate: null, swipe: 0.5, onion: 0.5, flipBefore: false, blink: false, hover: null, physical: false,
-  ppi: DPR >= 2 ? 127 : 96, sheetShow: 'both', sheetScale: 'device', sheetBackdrop: 'auto'}, store.get('prefs', {}));
+  ppi: DPR >= 2 ? 127 : 96, sheetShow: 'both', sheetScale: 'device', sheetBackdrop: 'auto'}, savedPrefs);
 state.peek = false; state.hover = null; state.isolate = null; state.flipBefore = false; state.blink = false;
 const reviews = store.get('reviews', {});
 const hexOf = (d, i) => '#' + [d[i], d[i + 1], d[i + 2]].map(v => v.toString(16).padStart(2, '0')).join('');
@@ -194,8 +203,8 @@ const label = (hex, a) => {
   return pal === D.palette || !a.palette_name || a.palette_name === 'shared' ? NAMES[i] : `${a.palette_name} ${i + 1}`;
 };
 const signature = a => { let h = 0; const s = a.after || ''; for (let i = 0; i < s.length; i += 7) h = (h * 31 + s.charCodeAt(i)) | 0; return String(h); };
-const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrop, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;
-  store.set('prefs', {mode, grid, issues, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop});
+const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrops, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;
+  store.set('prefs', {prefsVersion: PREFS_VERSION, mode, grid, issues, backdrops, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop});
   lastHash = '#' + new URLSearchParams({view, key, mode, zoom: zoom || 'fit'}); location.replace(lastHash); };
 let lastHash = '';
 /* Deep links: #view=sheet&key=…&mode=diff&zoom=8, or a bare mode name: #review, #paint, #creature, #behaviour. */
@@ -229,7 +238,7 @@ function makeCanvas(cssW, cssH) { const c = document.createElement('canvas'); c.
 function fillBackdrop(ctx, w, h, z, name) {
   const color = BACKDROPS[name];
   if (color) { ctx.fillStyle = color; ctx.fillRect(0, 0, w * z, h * z); return; }
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { ctx.fillStyle = (x + y) % 2 ? '#2b2b31' : '#36363d'; ctx.fillRect(x * z, y * z, z, z); }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { ctx.fillStyle = CHECKER[(x + y) % 2]; ctx.fillRect(x * z, y * z, z, z); }
 }
 function drawPixels(ctx, p, z, opts = {}) {
   if (!p) return;
@@ -247,8 +256,9 @@ function drawPixels(ctx, p, z, opts = {}) {
 }
 function drawGrid(ctx, w, h, z) {
   if (!state.grid || z < 5) return;
-  for (let x = 0; x <= w; x++) { ctx.fillStyle = x % 8 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.2)'; ctx.fillRect(x * z, 0, 1, h * z); }
-  for (let y = 0; y <= h; y++) { ctx.fillStyle = y % 8 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.2)'; ctx.fillRect(0, y * z, w * z, 1); }
+  const a = asset(), ink = a && backdropLuma(backdropFor(a)) > 128 ? '0,0,0' : '255,255,255';  // dark lines on light backdrops
+  for (let x = 0; x <= w; x++) { ctx.fillStyle = x % 8 ? `rgba(${ink},.07)` : `rgba(${ink},.2)`; ctx.fillRect(x * z, 0, 1, h * z); }
+  for (let y = 0; y <= h; y++) { ctx.fillStyle = y % 8 ? `rgba(${ink},.07)` : `rgba(${ink},.2)`; ctx.fillRect(0, y * z, w * z, 1); }
 }
 function drawIssues(ctx, metrics, z) {
   if (!state.issues || !metrics) return;
@@ -264,7 +274,12 @@ function drawHover(ctx, z) {
 function tag(ctx, text, x, y, color) { ctx.font = '600 11px system-ui'; const w = ctx.measureText(text).width + 10; ctx.fillStyle = color; ctx.fillRect(x, y, w, 18); ctx.fillStyle = '#1b1b1f'; ctx.fillText(text, x + 5, y + 13); }
 
 const asset = () => byKey[state.key];
-const backdropFor = a => state.backdrop || KIND_BACKDROP[a.kind];
+/* Each kind remembers its own backdrop; picking the kind's default forgets the choice. */
+const backdropFor = a => state.backdrops?.[a.kind] || KIND_BACKDROP[a.kind];
+function setBackdrop(a, name) {
+  state.backdrops = {...state.backdrops}; if (name === KIND_BACKDROP[a.kind]) delete state.backdrops[a.kind]; else state.backdrops[a.kind] = name;
+  savePrefs(); renderDetail();
+}
 function fitZoom(a) {
   const stage = document.getElementById('stage'); const panes = state.mode === 'side' ? 2 : 1;
   // Paint keeps a side column (flip-book, colours, history) beside the canvas and fits the canvas below the toolbar.
@@ -426,10 +441,14 @@ function filtered() {
   const q = state.query.toLowerCase();
   return D.assets.filter(a => (state.kind === 'all' || a.kind === state.kind) && (!state.changedOnly || a.changed !== 0) && (!q || a.key.includes(q)));
 }
+function setChangedOnly(on) {
+  state.changedOnly = on; document.getElementById('changed-only').setAttribute('aria-pressed', on);
+  renderList(); if (state.view === 'sheet') renderSheet(); savePrefs();
+}
 function renderList() {
   const el = document.getElementById('list'); el.textContent = '';
   const items = filtered();
-  document.getElementById('list-empty').classList.toggle('hidden', items.length > 0); el.hidden = !items.length; el.removeAttribute('aria-activedescendant');
+  document.getElementById('list-empty').classList.toggle('hidden', items.length > 0); document.getElementById('list-show-all').hidden = !state.changedOnly; el.hidden = !items.length; el.removeAttribute('aria-activedescendant');
   for (const [i, a] of items.entries()) {
     const row = document.createElement('div'); row.className = 'item'; row.id = `asset-option-${i}`; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', String(a.key === state.key));
     if (a.key === state.key) el.setAttribute('aria-activedescendant', row.id);
@@ -443,8 +462,8 @@ function renderList() {
 }
 function renderKinds() {
   const kinds = ['all', ...new Set(D.assets.map(a => a.kind))], el = document.getElementById('kinds'); el.textContent = '';
-  for (const k of kinds) { const n = D.assets.filter(a => (k === 'all' || a.kind === k) && a.changed !== 0).length; const b = document.createElement('button');
-    b.textContent = `${k} ${n}`; b.setAttribute('aria-pressed', String(state.kind === k)); b.onclick = () => { state.kind = k; renderKinds(); renderList(); savePrefs(); }; el.append(b); }
+  for (const k of kinds) { const of = D.assets.filter(a => k === 'all' || a.kind === k), n = of.filter(a => a.changed !== 0).length; const b = document.createElement('button');
+    b.textContent = `${k} ${of.length}${n ? ` · ${n} changed` : ''}`; b.setAttribute('aria-pressed', String(state.kind === k)); b.onclick = () => { state.kind = k; renderKinds(); renderList(); savePrefs(); }; el.append(b); }
 }
 function renderTotals() {
   const sum = (side, f) => D.assets.reduce((n, a) => n + (a[side] ? f(a[side]) : 0), 0);
@@ -455,7 +474,7 @@ function renderTotals() {
 function renderDetail() {
   const a = asset(); if (!a) return;
   document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)));
-  renderBackdrops('backdrops', backdropFor(a), name => { state.backdrop = name === KIND_BACKDROP[a.kind] ? null : name; renderDetail(); });
+  renderBackdrops('backdrops', backdropFor(a), name => setBackdrop(a, name));
   document.getElementById('grid').setAttribute('aria-pressed', state.grid); document.getElementById('issues').setAttribute('aria-pressed', state.issues);
   document.getElementById('detail').classList.toggle('painting', state.mode === 'paint');
   renderHeader(a); renderLegend(); renderStage(); renderPalette(a); renderContext(a); renderReview(a);
@@ -529,7 +548,8 @@ function wire() {
   document.getElementById('zoom-fit').onclick = () => setZoom(null); document.getElementById('zoom-device').onclick = () => setZoom(Math.max(1, Math.round(asset().device_scale)));
   document.getElementById('grid').onclick = () => { state.grid = !state.grid; renderDetail(); savePrefs(); };
   document.getElementById('issues').onclick = () => { state.issues = !state.issues; renderDetail(); savePrefs(); };
-  document.getElementById('changed-only').onclick = e => { state.changedOnly = !state.changedOnly; e.target.setAttribute('aria-pressed', state.changedOnly); renderList(); if (state.view === 'sheet') renderSheet(); savePrefs(); };
+  document.getElementById('changed-only').onclick = () => setChangedOnly(!state.changedOnly);
+  document.getElementById('list-show-all').onclick = () => setChangedOnly(false);
   document.getElementById('query').oninput = e => { state.query = e.target.value; renderList(); if (state.view === 'sheet') renderSheet(); };
   document.getElementById('copy-notes').onclick = exportNotes;
   document.getElementById('verdict').onclick = e => { const b = e.target.closest('button'); if (b) setVerdict(b.dataset.verdict); };
@@ -560,7 +580,7 @@ function wire() {
     else if (k === 'd') setZoom(Math.max(1, Math.round(asset().device_scale)));
     else if (k === 'g') { state.grid = !state.grid; renderDetail(); savePrefs(); }
     else if (k === 'i') { state.issues = !state.issues; renderDetail(); savePrefs(); }
-    else if (k === 'b') { const names = Object.keys(BACKDROPS), a = asset(); state.backdrop = names[(names.indexOf(backdropFor(a)) + 1) % names.length]; renderDetail(); }
+    else if (k === 'b') { const names = Object.keys(BACKDROPS), a = asset(); setBackdrop(a, names[(names.indexOf(backdropFor(a)) + 1) % names.length]); }
     else if (k === 'a') setVerdict('ok');
     else if (k === 'x') setVerdict('fix');
     else if (k === 's') { state.view = state.view === 'sheet' ? 'detail' : 'sheet'; renderView(); savePrefs(); }
@@ -573,6 +593,14 @@ async function loadPayload(data) {
   const next = {};
   await Promise.all(data.assets.map(async a => { next[a.key] = {before: await decode(a.before), after: await decode(a.after)}; }));
   D = data; byKey = Object.fromEntries(D.assets.map(a => [a.key, a])); decoded = next;
+  BACKDROPS.scene = sceneGrey(decoded['backgrounds.home']?.after || decoded['backgrounds.home']?.before) || BACKDROPS.scene;
+}
+/* The most common non-black colour of the home background: the wall behind the pet. */
+function sceneGrey(p) {
+  if (!p) return null;
+  const n = new Map();
+  for (let i = 0; i < p.data.length; i += 4) { if (!p.data[i + 3]) continue; const hex = hexOf(p.data, i); if (hex !== '#000000') n.set(hex, (n.get(hex) || 0) + 1); }
+  return [...n].sort((x, y) => y[1] - x[1])[0]?.[0] || null;
 }
 async function boot() {
   if (BOOT.live && window.Studio) await window.Studio.boot(); else await loadPayload(BOOT);
