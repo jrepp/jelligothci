@@ -126,9 +126,7 @@
     {
       "name": "bubble",
       "forms": [
-        "AXOLOTL",
-        "LILAC",
-        "MINT"
+        "AXOLOTL"
       ],
       "affinities": [
         {
