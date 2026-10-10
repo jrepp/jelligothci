@@ -164,7 +164,8 @@ class EndpointTest(unittest.TestCase):
         gp.SERVICE = self.saved
 
     def post(self, body):
-        request = urllib.request.Request(self.url, data=json.dumps(body).encode(), method="POST")
+        request = urllib.request.Request(self.url, data=json.dumps(body).encode(), method="POST",
+                                         headers={"Content-Type": "application/json"})  # Like the panel.
         try:
             with urllib.request.urlopen(request, timeout=10) as response:
                 return response.status, json.loads(response.read())

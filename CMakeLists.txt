@@ -137,6 +137,11 @@ if(BUILD_TESTING)
       "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_creature_content.py")
     add_test(NAME jelli_art_creatures COMMAND "${JELLI_ASSET_UV}" run --python 3.12
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_creatures.py")
+    add_test(NAME jelli_art_animation COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+      "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_animation.py")
+    add_test(NAME jelli_art_server COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+      "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_server.py")
+    set_tests_properties(jelli_art_server PROPERTIES TIMEOUT 300) # Real servers and scratch git repos.
     # Builds the engine again in a scratch tree for the real-render cases.
     add_test(NAME jelli_art_game_preview COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_game_preview.py")
