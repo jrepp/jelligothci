@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.0](https://github.com/jrepp/jelligothci/compare/v0.7.0...v0.8.0) (2026-10-10)
+
+
+### Features
+
+* **jelli-art:** clean-ratio lines, magic wand, movable mirror and tiled preview ([#30](https://github.com/jrepp/jelligothci/issues/30)) ([34d196a](https://github.com/jrepp/jelligothci/commit/34d196a809422bd99efb84e6d3da4c28b1a44a4d))
+* **jelli-art:** colour ramps, shading and secondary colour ([#29](https://github.com/jrepp/jelligothci/issues/29)) ([d65a45e](https://github.com/jrepp/jelligothci/commit/d65a45e69f24cd77cebf0d2f817b7056f3c1d754))
+* **jelli-art:** lint that matches the style guide ([#25](https://github.com/jrepp/jelligothci/issues/25)) ([8f750dd](https://github.com/jrepp/jelligothci/commit/8f750dd8206c31459d9c8fc669f3052d7fefac6b))
+
 ## [0.7.0](https://github.com/jrepp/jelligothci/compare/v0.6.0...v0.7.0) (2026-10-10)
 
 
