@@ -1,0 +1,9 @@
+# Jelli Art UI tests. playwright must match the pinned Playwright image in
+# .github/workflows/jelli-art.yml and run.sh (its browsers live in /ms-playwright).
+# Regenerate requirements.txt after changing a pin:
+#   ./scripts/uv pip compile --python-version 3.12 --universal --generate-hashes \
+#     tools/jelli-art/ui_tests/requirements.in -o tools/jelli-art/ui_tests/requirements.txt
+playwright==1.63.0
+pytest==9.1.1
+pytest-playwright==0.10.0
+Pillow==12.0.0

@@ -1,0 +1,103 @@
+- main:
+  - tabpanel "Test in game":
+    - status
+    - heading "Test in game" [level=2]
+    - text: the real C engine, from the working copy
+    - alert:
+      - heading "Test in game is unavailable here" [level=3]
+      - paragraph: cmake is not installed here, so Test in game cannot build the engine.
+      - paragraph: Install cmake and a C compiler (cc, gcc or clang) on the studio host to enable it.
+    - group "Pet":
+      - text: Pet Pet
+      - combobox "Pet":
+        - option "JELLI" [selected]
+        - option "FRIEND"
+        - option "BUBBLE"
+        - option "GARDEN"
+        - option "PEARL"
+        - option "SUNNY"
+        - option "TEA"
+        - option "MOVIE"
+        - option "MOON"
+      - text: Form
+      - combobox "Form":
+        - option "MINT" [selected]
+        - option "LILAC"
+      - text: Behaviour
+      - combobox "Behaviour":
+        - option "none (idle)" [selected]
+        - option "curious"
+        - option "delighted"
+        - option "studying"
+        - option "contemplating"
+        - option "asking_food"
+        - option "asking_potty"
+        - option "asking_company"
+      - text: Moment
+      - combobox "Moment":
+        - option "none" [selected]
+        - option "BREAKFAST"
+        - option "TEA"
+        - option "GOING OUT"
+        - option "MOVIE"
+        - option "READING"
+      - checkbox "Asleep (REST command)"
+      - text: Asleep (REST command)
+      - checkbox "Potty mess on the floor"
+      - text: Potty mess on the floor Potty urge
+      - spinbutton "Potty urge": "0"
+    - group "Needs (0–1000)":
+      - text: Needs (0–1000) satiety
+      - spinbutton "satiety": "700"
+      - text: energy
+      - spinbutton "energy": "700"
+      - text: hygiene
+      - spinbutton "hygiene": "700"
+      - text: amusement
+      - spinbutton "amusement": "700"
+      - text: social
+      - spinbutton "social": "700"
+    - group "Screen":
+      - text: Screen Page
+      - combobox "Page":
+        - option "home · ring" [selected]
+        - option "care · ring"
+        - option "more · ring"
+        - option "collection"
+        - option "settings · ring"
+        - option "moments · ring"
+        - option "health · ring"
+        - option "brush"
+        - option "medicine"
+        - option "shot"
+        - option "wash"
+        - option "stretch"
+        - option "potty"
+        - option "pets"
+        - option "pet detail"
+        - option "evolutions"
+        - option "present action"
+        - option "food"
+      - checkbox "Ring menu open"
+      - text: Ring menu open
+      - checkbox "Set the clock"
+      - text: Set the clock Clock time
+      - textbox "Clock time" [disabled]: 09:00
+      - text: Night falls from 20:00 to 06:00. Unset, the pet clock runs from content/pets.json.
+    - group "Time":
+      - text: Time Start at (ms)
+      - spinbutton "Start at (ms)": "0"
+      - text: Animation time offset of the first frame. Frames
+      - spinbutton "Frames": "12"
+      - text: Every (ms)
+      - spinbutton "Every (ms)": "200"
+      - text: Simulate first (s)
+      - spinbutton "Simulate first (s)": "0"
+      - text: Runs the game this many seconds before the first frame (needs decay, behaviour may change).
+      - checkbox "Advance the game between frames"
+      - text: Advance the game between frames
+    - button "Render in engine" [disabled]
+    - button "Reset scenario"
+    - checkbox "Render after every save" [checked]
+    - text: Render after every save
+    - paragraph

@@ -1,0 +1,7 @@
+- navigation "Modes":
+  - tablist "Modes":
+    - tab "Review"
+    - tab "Paint"
+    - tab "Creature"
+    - tab "Behaviour"
+    - tab "Test in game" [selected]

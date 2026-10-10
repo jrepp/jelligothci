@@ -1,0 +1,117 @@
+- main:
+  - tabpanel "Behaviour":
+    - heading "Behaviour" [level=2]
+    - button "States & looks" [pressed]
+    - button "Repertoires"
+    - button "Stimulus simulator"
+    - text: content/behaviors.json · creatures.json looks
+    - paragraph: "Read-only: saving behaviour needs cmake and the checkout's cmake/JelliBehaviors.cmake (and --content for trials)."
+    - text: States · 7/16
+    - button "curious OOH?" [pressed]
+    - button "delighted YAY!"
+    - button "studying STUDYING"
+    - button "contemplating HMM..."
+    - button "asking_food HUNGRY?"
+    - button "asking_potty NEED TO GO!"
+    - button "asking_company PLAY WITH ME?"
+    - button "Add state" [disabled]
+    - text: Rules Night from
+    - spinbutton "Night from" [disabled]: "1200"
+    - text: 20:00 to
+    - spinbutton "to" [disabled]: "360"
+    - text: 06:00 · minutes of the pet's day Need low below
+    - spinbutton "Need low below" [disabled]: "250"
+    - text: of 1000 · raises need_low Name
+    - textbox "State name" [disabled]: curious
+    - button "Delete state" [disabled]
+    - text: Lasts
+    - spinbutton "Shortest duration, seconds" [disabled]: "8"
+    - text: –
+    - spinbutton "Longest duration, seconds" [disabled]: "15"
+    - text: s Cooldown
+    - spinbutton "Cooldown" [disabled]: "40"
+    - text: s before it can start again Effects on entry · ±100, then clamped to 0–1000 satiety
+    - spinbutton "satiety" [disabled]: "0"
+    - text: energy
+    - spinbutton "energy" [disabled]: "0"
+    - text: hygiene
+    - spinbutton "hygiene" [disabled]: "0"
+    - text: amusement
+    - spinbutton "amusement" [disabled]: "10"
+    - text: social
+    - spinbutton "social" [disabled]: "0"
+    - text: bond
+    - spinbutton "bond" [disabled]: "0"
+    - text: Ends early on
+    - button "idle" [disabled]
+    - button "present_caught" [disabled]
+    - button "present_given" [disabled]
+    - button "present_offered" [disabled]
+    - button "location" [disabled]
+    - button "night" [disabled]
+    - button "morning" [disabled]
+    - button "activity_started" [disabled] [pressed]
+    - button "activity_finished" [disabled]
+    - button "need_low" [disabled]
+    - button "potty_urge" [disabled]
+    - button "touched" [disabled] [pressed]
+    - button "woke" [disabled]
+    - text: Request
+    - combobox "Command that answers the state" [disabled]:
+      - option "none" [selected]
+      - option "feed"
+      - option "play"
+      - option "clean"
+      - option "care"
+      - option "rest"
+      - option "wake"
+      - option "gift"
+      - option "claim"
+      - option "activate"
+      - option "travel"
+      - option "bedtime"
+      - option "moment"
+      - option "health"
+      - option "touch"
+      - option "water"
+      - option "exercise"
+    - text: On timeout
+    - combobox "On timeout" [disabled]:
+      - option "nothing" [selected]
+      - option "accident"
+    - paragraph: "No request: the state just plays out."
+    - text: Look · content/creatures.json Pose
+    - combobox "Pose" [disabled]:
+      - option "idle"
+      - option "idle-alt"
+      - option "curious" [selected]
+      - option "content"
+      - option "eating"
+      - option "happy"
+      - option "asleep"
+      - option "unwell"
+      - option "study (state pose; falls back to content)"
+      - option "ponder (state pose; falls back to content)"
+      - option "ask (state pose; falls back to curious)"
+      - option "potty (state pose; falls back to unwell)"
+    - text: Caption
+    - textbox "Caption, upper case, at most 16" [disabled]: OOH?
+    - text: Effect
+    - button "effects.idea" [disabled]
+    - text: Prop
+    - button "none" [disabled]
+    - text: Entered by
+    - paragraph: "bubble #4 on present_caught · bubble #6 on present_offered · bubble #8 on location · bubble #13 on woke · bubble #16 on idle"
+    - text: Preview on
+    - combobox "Preview on":
+      - option "MINT"
+      - option "LILAC"
+      - option "AXOLOTL" [selected]
+    - img "Preview of the behaviour look on the round panel"
+    - paragraph: At axolotl's profile scale, as the game places pose, prop, effect and caption.
+    - list:
+      - listitem: No unsaved behaviour edits.
+    - button "Revert" [disabled]
+    - button "Saved" [disabled]
+    - button "Play previews"
+    - button "Potty mess"

@@ -363,8 +363,8 @@ tools/jelli-art/browser_smoke.sh [port]                        # optional, needs
 The **Studio tests** job in `.github/workflows/jelli-art.yml` runs
 `test_paint_tools.js`, `test_server.py`, `test_creatures.py`,
 `test_animation.py`, `test_game_preview.py` and `test_tidy.py` (Tidy gives the
-same pixels in every process) on every pull request, and a
-release image is built only after they pass.
+same pixels in every process) and the JSDoc type check on every pull request,
+and a release image is built only after they pass.
 
 `test_server.py` starts real servers on scratch copies and a scratch git
 checkout with a bare origin. It covers:
@@ -383,6 +383,44 @@ checkout with a bare origin. It covers:
 `browser_smoke.sh` drives the real page. It paints a stroke, checks the draft
 survives a reload, saves, and checks that saving over a file changed on disk
 asks first (Cancel keeps the newer file; OK overwrites it).
+
+### UI tests
+
+```sh
+tools/jelli-art/ui_tests/run.sh                    # in the pinned Playwright image (podman or docker)
+JELLI_UI_UPDATE=1 tools/jelli-art/ui_tests/run.sh  # rewrite the aria and axe baselines
+tools/jelli-art/typecheck/check.sh                 # JSDoc type check (needs node)
+```
+
+`ui_tests/` drives the page with Playwright (Python). The studio serves the
+art and content of the revision pinned in `ui_tests/fixture.json`, so art
+changes do not move the baselines. Each view (Review detail and sheet, Paint
+on a creature and an icon, Creature, Behaviour, Test in game) is checked at
+1440×900, 820×1180 and 390×844:
+
+- its accessibility tree (`baselines/aria/`),
+- axe-core 4.14.0 (`vendor/axe-core/`, MPL-2.0): new serious or critical
+  violations beyond `baselines/axe.json` fail, also in the light theme,
+- and, for the cases listed in `fixture.json`, a screenshot.
+
+Keyboard tests check that Tab reaches the mode tabs and the paint canvas with a
+visible focus ring, and that `?` opens the shortcuts dialog and Escape closes
+it. The share of the viewport each view gives its main surface is printed and
+written to `build/ui-tests/chrome-budget.json`; it is not checked.
+
+The **Studio UI tests** job runs these in the same image on every pull request.
+Screenshots are compared only there (`JELLI_UI_SCREENSHOTS=1`), because
+Chromium cannot run under amd64 emulation on other machines. When a page change
+moves a screenshot, the failing run uploads a `ui-tests` artifact; its
+`screenshots/*.png` are the new baselines for `ui_tests/baselines/screenshots/`.
+`JELLI_UI_LOCAL=1 tools/jelli-art/ui_tests/run.sh` runs without a container
+(Chromium goes in `.tools/`), but fonts differ, so a few aria and axe results
+can differ from the baselines too.
+
+`typecheck/check.sh` runs `tsc --checkJs` with the TypeScript pinned in
+`toolchain.env`. `typecheck/globals.d.ts` describes the page globals the
+scripts share. The check fails when the error count rises above
+`typecheck/baseline.txt`; `JELLI_TS_UPDATE=1` records a lower count.
 
 ## Container
 

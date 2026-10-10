@@ -96,6 +96,7 @@ and output from hosts; it must not gain SDK dependencies or heap allocation.
 | C size gate | `./scripts/c-lint self-test` |
 | Release/build version behavior | `./scripts/release-validate` (includes incremental-version regression) |
 | Workflows | `python3 scripts/check-workflow-pins.py` and actionlint when available |
+| Jelli Art studio page | The studio suites and `tools/jelli-art/ui_tests/run.sh` ([Tests](tools/jelli-art/README.md#tests)) |
 | Documentation | `make docs-check`, `make docs-fix`, review repairs |
 
 Run the relevant hooks and provide the exact revision, commands, outcomes, and

@@ -1,0 +1,114 @@
+- main:
+  - tabpanel "Paint":
+    - heading "icons.food" [level=2]
+    - text: 16×16 · ID 2002 · device 6× 0 px changed specks 0 → 0 colours 3 → 3 / max 6 lint pass Zoom · 12×
+    - group "Zoom · 12×":
+      - button "Zoom out": −
+      - button "Fit"
+      - button "Device"
+      - button "Zoom in": +
+    - text: Backdrop
+    - group "Backdrop":
+      - button "scene"
+      - button "black"
+      - button "ring" [pressed]
+      - button "panel"
+      - button "checker"
+      - button "paper"
+    - text: Overlays
+    - group "Overlays":
+      - button "Grid" [pressed]
+      - button "Issues"
+    - toolbar "Paint tools":
+      - text: Tool
+      - group "Tool":
+        - button "Pencil" [pressed]
+        - button "Eraser"
+        - button "Fill"
+        - button "Pick colour"
+        - button "Shade"
+        - button "Line"
+        - button "Rectangle"
+        - button "Ellipse"
+        - button "Select"
+        - button "Magic wand"
+      - text: Options
+      - group "Options":
+        - button "Filled"
+        - button "Pixel-perfect"
+        - button "Mirror"
+      - text: History
+      - group "History":
+        - button "Undo" [disabled]
+        - button "Redo" [disabled]
+      - text: File
+      - group "File":
+        - button "Revert"
+        - button "Use before"
+        - button "Saved" [disabled]
+    - group: More tools selection · transform · nudge · replace colour · mirror · guides · tiles · tidy
+    - text: paint Hover or focus the canvas
+    - application "icons.food, 16 by 16 pixels"
+    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."
+    - heading "Paint colours · click to paint · ✎ edits the shared palette" [level=3]
+    - group "Main and secondary colours":
+      - text: "main ink #291b35 · secondary (right-click) transparent"
+      - button "⇄ Swap"
+    - group "mint jelly":
+      - text: mint jelly
+      - 'button "foam · #cff5cf · used by 10 assets"': foam —
+      - button "Change foam in every sprite": ✎
+      - 'button "mint · #85e4b6 · used by 36 assets"': mint —
+      - button "Change mint in every sprite": ✎
+      - 'button "sea · #43bca2 · used by 34 assets"': sea 36 px
+      - button "Change sea in every sprite": ✎
+      - 'button "teal · #187b79 · used by 23 assets"': teal —
+      - button "Change teal in every sprite": ✎
+    - group "lilac jelly":
+      - text: lilac jelly
+      - 'button "white · #ffffff · used by 41 assets"': white —
+      - button "Change white in every sprite": ✎
+      - 'button "haze · #d2b8f3 · used by 14 assets"': haze —
+      - button "Change haze in every sprite": ✎
+      - 'button "lilac · #a47bdb · used by 33 assets"': lilac —
+      - button "Change lilac in every sprite": ✎
+      - 'button "violet · #7655a3 · used by 19 assets"': violet —
+      - button "Change violet in every sprite": ✎
+    - group "coral":
+      - text: coral
+      - 'button "cream · #fff4cf · used by 62 assets"': cream —
+      - button "Change cream in every sprite": ✎
+      - 'button "coral · #fa8c99 · used by 37 assets"': coral 30 px
+      - button "Change coral in every sprite": ✎
+      - 'button "rose · #d84f70 · used by 17 assets"': rose —
+      - button "Change rose in every sprite": ✎
+    - group "gold":
+      - text: gold
+      - 'button "cream · #fff4cf · used by 62 assets"': cream —
+      - button "Change cream in every sprite": ✎
+      - 'button "gold · #f5c764 · used by 30 assets"': gold —
+      - button "Change gold in every sprite": ✎
+      - 'button "tan · #ae7855 · used by 15 assets"': tan —
+      - button "Change tan in every sprite": ✎
+    - group "recess":
+      - text: recess
+      - 'button "mauve · #72516b · used by 2 assets"': mauve —
+      - button "Change mauve in every sprite": ✎
+      - 'button "plum · #49334f · used by 6 assets"': plum —
+      - button "Change plum in every sprite": ✎
+    - group "other":
+      - text: other
+      - 'button "ink · #291b35 · used by 83 assets · hard to see on the ring backdrop" [pressed]': ink 47 px
+      - button "Change ink in every sprite": ✎
+    - group "more":
+      - text: more
+      - button "eraser · transparent · secondary colour": eraser right-click
+      - button "Choose a custom colour": custom pick…
+    - paragraph: Click a colour to paint with it; right-click it, press Shift+F10 on it, or choose it and press X to make it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.
+    - text: before /tmp/jelli-ui-tests/before
+    - img "icons.food before (/tmp/jelli-ui-tests/before)"
+    - text: history click a step to go back
+    - list "history click a step to go back":
+      - listitem:
+        - button "1. Opened"
+    - text: Hover a pixel to inspect it. Both panes share one cursor.

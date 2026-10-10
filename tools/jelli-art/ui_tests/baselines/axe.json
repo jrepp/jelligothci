@@ -1,0 +1,52 @@
+{
+  "behaviour@desktop": {},
+  "behaviour@desktop-light": {},
+  "behaviour@phone": {},
+  "behaviour@tablet": {},
+  "creature@desktop": {},
+  "creature@desktop-light": {},
+  "creature@phone": {},
+  "creature@tablet": {},
+  "game@desktop": {},
+  "game@desktop-light": {},
+  "game@phone": {},
+  "game@tablet": {},
+  "paint-creature@desktop": {
+    "label-content-name-mismatch": 9
+  },
+  "paint-creature@desktop-light": {
+    "label-content-name-mismatch": 9
+  },
+  "paint-creature@phone": {
+    "label-content-name-mismatch": 13
+  },
+  "paint-creature@tablet": {
+    "label-content-name-mismatch": 7
+  },
+  "paint-icon@desktop": {
+    "label-content-name-mismatch": 3
+  },
+  "paint-icon@desktop-light": {
+    "label-content-name-mismatch": 3
+  },
+  "paint-icon@phone": {
+    "label-content-name-mismatch": 5
+  },
+  "paint-icon@tablet": {
+    "label-content-name-mismatch": 2
+  },
+  "review-detail@desktop": {},
+  "review-detail@desktop-light": {},
+  "review-detail@phone": {},
+  "review-detail@tablet": {},
+  "review-sheet@desktop": {
+    "color-contrast": 4
+  },
+  "review-sheet@desktop-light": {
+    "color-contrast": 4
+  },
+  "review-sheet@phone": {},
+  "review-sheet@tablet": {
+    "color-contrast": 3
+  }
+}

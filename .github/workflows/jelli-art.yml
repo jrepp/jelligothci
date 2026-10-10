@@ -47,6 +47,36 @@ jobs:
           for test in test_server test_creatures test_animation test_game_preview test_tidy; do
             ./scripts/uv run --python 3.12 "tools/jelli-art/$test.py"
           done
+      - name: JSDoc type check (error count must not grow)
+        run: tools/jelli-art/typecheck/check.sh
+  ui-tests:
+    name: Studio UI tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # The reference renderer for the screenshot baselines; tools/jelli-art/ui_tests/run.sh pins the same image.
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.63.0-noble@sha256:72bd171a9ffc2b4b59532aaa6210e21014d07093120dc25528870c0b840da1f0
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          # The tests read art and content from the revision pinned in ui_tests/fixture.json.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Views, accessibility and keyboard
+        env:
+          JELLI_UI_CONTAINER: "1"
+          JELLI_UI_SCREENSHOTS: "1"
+        run: tools/jelli-art/ui_tests/run.sh
+      - name: Upload screenshots, axe reports and chrome budget
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ui-tests
+          path: build/ui-tests
+          if-no-files-found: ignore
+          retention-days: 14
   image:
     needs: studio-tests
     runs-on: ubuntu-24.04
