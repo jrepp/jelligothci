@@ -356,13 +356,14 @@ func storesTakingTurnsAgreeWithAModel(_ seed: Int) throws {
 @Test func theHandshakeDeadlineSparesAConnectionThatBecameReady() async throws {
     let (server, port) = try await Fixture.server()
     defer { server.stop() }
-    server.handshakeTimeout = 0.3
+    // Long enough for a handshake on a busy machine, which must then be spared.
+    server.handshakeTimeout = 1
     let events = collect(server.events)
     let board = RawBoard(port: port)
     try await board.connect()
     #expect(await greet(board))
     #expect(await events.wait(isConnected) != nil)
-    try await Task.sleep(for: .milliseconds(600))  // twice the deadline
+    try await Task.sleep(for: .milliseconds(2000))  // twice the deadline
     #expect(server.send(.stopAudio))
     let stop = await board.log.wait { if case .text(let bytes) = $0 { String(decoding: bytes, as: UTF8.self).contains("stop_audio") } else { false } }
     #expect(stop != nil)

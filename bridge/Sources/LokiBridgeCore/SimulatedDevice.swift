@@ -160,10 +160,12 @@ public final class SimulatedDevice: @unchecked Sendable {
     }
 
     private func receive() {
-        connection.receiveMessage { [weak self] content, context, _, error in
+        connection.receiveMessage { [weak self] content, context, complete, error in
             guard let self, !self.closed else { return }
+            // The bridge's close frame can arrive with the error that ends the
+            // connection (the reply to it found the socket shut): it is still a close.
             if let error {
-                self.finish("\(error)")
+                self.finish(complete && LinkTLS.opcode(context) == .close ? "closed by the bridge" : "\(error)")
                 return
             }
             let bytes = content.map { [UInt8]($0) } ?? []

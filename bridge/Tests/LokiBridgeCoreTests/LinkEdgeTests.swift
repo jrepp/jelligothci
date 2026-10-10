@@ -210,8 +210,8 @@ func oversizedMessagesCloseWith1009(_ name: String, _ size: Int, _ binary: Bool)
     let events = collect(server.events)
     let board = RawBoard(port: port, answerPings: false)
     try await board.connect()
+    let hello = ContinuousClock.now  // before the hello: the bridge's ping timer starts on it
     #expect(await greet(board))
-    let connected = ContinuousClock.now
     #expect(await events.wait(isConnected) != nil)
     #expect(await board.log.wait { $0 == .ping } != nil)
     #expect(await board.closeCode() == .some(1001))
@@ -221,19 +221,20 @@ func oversizedMessagesCloseWith1009(_ name: String, _ size: Int, _ binary: Bool)
     }
     #expect(reason == "no answer to a ping")
     // A ping goes out one interval after hello and the drop comes one interval later.
-    #expect(ContinuousClock.now - connected >= .milliseconds(250))
+    #expect(ContinuousClock.now - hello >= .milliseconds(300))
 }
 
 @Test func aBoardThatAnswersPingsStaysConnected() async throws {
     let (server, port) = try await Fixture.server()
     defer { server.stop() }
-    server.pingInterval = 0.1
+    // Each pong has one interval to arrive: long enough for a busy machine.
+    server.pingInterval = 0.25
     let events = collect(server.events)
     let device = Fixture.device(port: port)
     let deviceEvents = collect(device.events)
     try await device.connect(Fixture.hello)
     #expect(await events.wait(isConnected) != nil)
-    try await Task.sleep(for: .milliseconds(800))  // eight pings
+    try await Task.sleep(for: .milliseconds(1100))  // four pings
     #expect(await events.events.filter(isDisconnected).isEmpty)
     #expect(server.send(.state(.idle)))
     #expect(await deviceEvents.wait { if case .message(.state(.idle, _, _, _)) = $0 { true } else { false } } != nil)

@@ -21,6 +21,8 @@ final class RawBoard: @unchecked Sendable {
     let log = EventLog<Received>()
     private let queue = DispatchQueue(label: "loki.test.raw-board")
     private let connection: NWConnection
+    /// What the connection reports, appended to `log` in the order it happened.
+    private let arrivals: AsyncStream<Received>.Continuation
 
     /// `subprotocols` are what the board offers; loki/1 boards offer "loki.1".
     init(_ identity: TLSIdentity = Fixture.board, pin: String = Fixture.bridge.fingerprint, port: UInt16,
@@ -32,7 +34,12 @@ final class RawBoard: @unchecked Sendable {
         if !subprotocols.isEmpty { websocket.setSubprotocols(subprotocols) }
         parameters.defaultProtocolStack.applicationProtocols[0] = websocket  // [WebSocket, TLS]
         connection = NWConnection(to: .url(URL(string: "wss://127.0.0.1:\(port)\(Loki.path)")!), using: parameters)
+        let (stream, arrivals) = AsyncStream.makeStream(of: Received.self)
+        self.arrivals = arrivals
+        Task { [log] in for await event in stream { await log.append(event) } }
     }
+
+    deinit { arrivals.finish() }
 
     /// Resolves once the WebSocket is open, or throws when the handshake fails.
     func connect() async throws {
@@ -81,35 +88,40 @@ final class RawBoard: @unchecked Sendable {
         }
     }
 
-    private func record(_ event: Received) { Task { await log.append(event) } }
+    /// Appends to `log` in call order; internal so a test can check that order holds.
+    func record(_ event: Received) { arrivals.yield(event) }
 
     private func receive() {
-        connection.receiveMessage { [self] content, context, _, error in
-            if let error {
-                record(.ended("\(error)"))
-                connection.cancel()
-                return
+        connection.receiveMessage { [self] content, context, complete, error in
+            let (events, more) = Self.interpret(content, context, complete: complete, error: error)
+            events.forEach(record)
+            if more { receive() } else { connection.cancel() }
+        }
+    }
+
+    /// What one receive reports, in order, and whether the connection goes on. A whole
+    /// message can arrive with the error that ends the connection: the bridge's close
+    /// frame often does, when this side's automatic reply to it finds the socket
+    /// already shut (EPIPE). The message is recorded, then the end; a partial one is not.
+    static func interpret(_ content: Data?, _ context: NWConnection.ContentContext?, complete: Bool,
+                          error: NWError?) -> (events: [Received], more: Bool) {
+        let bytes = content.map { [UInt8]($0) } ?? []
+        let metadata = context?.protocolMetadata(definition: NWProtocolWebSocket.definition)
+            as? NWProtocolWebSocket.Metadata
+        let ended: [Received] = error.map { [.ended("\($0)")] } ?? []
+        switch error == nil || complete ? metadata?.opcode : nil {
+        case .text: return ([.text(bytes)] + ended, error == nil)
+        case .binary: return ([.binary(bytes)] + ended, error == nil)
+        case .ping: return ([.ping] + ended, error == nil)
+        case .close:
+            let code: UInt16? = switch metadata?.closeCode {
+            case .protocolCode(let defined): defined.rawValue
+            case .applicationCode(let value), .privateCode(let value): value
+            case nil: nil
+            @unknown default: nil
             }
-            let bytes = content.map { [UInt8]($0) } ?? []
-            let metadata = context?.protocolMetadata(definition: NWProtocolWebSocket.definition)
-                as? NWProtocolWebSocket.Metadata
-            switch metadata?.opcode {
-            case .text: record(.text(bytes))
-            case .binary: record(.binary(bytes))
-            case .ping: record(.ping)
-            case .close:
-                let code: UInt16? = switch metadata?.closeCode {
-                case .protocolCode(let defined): defined.rawValue
-                case .applicationCode(let value), .privateCode(let value): value
-                case nil: nil
-                @unknown default: nil
-                }
-                record(.close(code))
-                connection.cancel()
-                return
-            default: break
-            }
-            receive()
+            return ([.close(code)] + ended, false)
+        default: return (ended, error == nil)
         }
     }
 }
