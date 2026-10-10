@@ -118,7 +118,9 @@ if(BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_network_timezones.py $<TARGET_FILE:jelli_network_config_tests>)
       add_test(NAME debug_local COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_debug_local.py $<TARGET_FILE:jelligotchi>)
-      set_tests_properties(debug_local PROPERTIES TIMEOUT 40)
+      # The screenshot step fetches 466 rows, one debug request per paced frame
+      # (~10 s locally); slower hosted macOS runners need more headroom.
+      set_tests_properties(debug_local PROPERTIES TIMEOUT 120)
       add_test(NAME debug_clock COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_debug_clock.py $<TARGET_FILE:jelligotchi>)
       set_tests_properties(debug_clock PROPERTIES TIMEOUT 30)
