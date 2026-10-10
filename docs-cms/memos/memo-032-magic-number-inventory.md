@@ -34,12 +34,17 @@ Check off a line only when a test shows the behaviour is unchanged.
 - [x] The asset builder checks manifest/disk parity. It no longer needs
   hand-edited per-kind counts or an exact pixel total.
 - [x] Tests strip legacy save tails through named sizes (`tests/save_layout.h`).
+- [x] `JelliReaction` names the touch levels and wake moods. `JELLI_WAKE_HAPPY` and
+  `JELLI_POSE_CURIOUS` replace `2u` in the render key's wake phase.
+- [x] Health activities in health-ready checks and the render key use enum names.
+- [x] The art builder checks the real live-reload pack, pixel and mask capacities. It
+  no longer uses a hand-raised ceiling. Tests derive creature counts from disk.
+- [x] `behavior_flags` names its bits (`JELLI_PET_FLAG_MESS`, `JELLI_PET_FLAG_WAS_ASLEEP`).
 
 # Remaining, in priority order
 
-1. **Reaction codes.** Add `JelliReaction`: touch 1/2/3 and wake 4/5, built as
-   `3 + wake_mood` in `pet_render.c`. Use `JELLI_WAKE_HAPPY` instead of `2u`. Split
-   the overloaded `phase == 2` "surprised" flag into its own render-key field.
+1. **Overloaded phase.** The render key's `phase` still carries the idle pose, the
+   wake-surprise flag and the exercise bob. Split it into separate fields.
 2. **Species tuning into behaviour data.** Touch load 220/600/900, decay
    100/×10, gains 15/−20/3, `reaction_ticks` 30 (`personality.c`, `wake.c`,
    `game.c:68`), and the favourite moments currently chosen by **instance-ID
