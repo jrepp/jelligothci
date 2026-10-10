@@ -1,0 +1,33 @@
+# Jelli Art. Build from the repository root:
+#   podman build -f tools/jelli-art/Containerfile -t jelli-art .
+# The image holds the studio code; the art lives in a git checkout on the
+# /work volume (cloned on first start). See tools/jelli-art/README.md.
+# python:3.12-slim-bookworm, multi-arch index digest
+FROM docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+
+ARG STUDIO_VERSION=0.0.0
+ARG SOURCE_REVISION=unknown
+LABEL org.opencontainers.image.title="Jelli Art" \
+      org.opencontainers.image.description="Browser pixel editor and before/after review for Jelligotchi artwork" \
+      org.opencontainers.image.source="https://github.com/jrepp/jelligothci" \
+      org.opencontainers.image.version="${STUDIO_VERSION}" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git openssh-client \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir Pillow==12.0.0 \
+    && useradd --uid 10001 --create-home --home-dir /home/studio studio \
+    && mkdir -p /work && chown studio:studio /work
+
+COPY tools/assets/compare.html tools/assets/compare_slice.py /app/tools/assets/
+COPY tools/jelli-art/ /app/tools/jelli-art/
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 JELLI_REPO=/work/jelligotchi JELLI_PORT=8765
+USER studio
+WORKDIR /work
+VOLUME ["/work"]
+EXPOSE 8765
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s \
+    CMD ["python", "/app/tools/jelli-art/healthcheck.py"]
+ENTRYPOINT ["/app/tools/jelli-art/entrypoint.sh"]

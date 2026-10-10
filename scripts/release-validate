@@ -13,13 +13,24 @@ if not re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", versio
 manifest = json.loads(Path(".release-please-manifest.json").read_text())
 if manifest.get(".") != version:
     raise SystemExit("VERSION and Release Please manifest differ")
-package = json.loads(Path("release-please-config.json").read_text())["packages"]["."]
+packages = json.loads(Path("release-please-config.json").read_text())["packages"]
+package = packages["."]
 if package.get("version-file") != "VERSION" or package.get("release-type") != "simple":
     raise SystemExit("expected simple release strategy with VERSION")
-for name in ("CHANGELOG.md", ".github/workflows/release.yml", ".github/workflows/release-please.yml"):
+# Jelli Art is its own component (jelli-art-vX.Y.Z) and must not bump the game.
+studio = packages.get("tools/jelli-art", {})
+studio_version = Path("tools/jelli-art/VERSION").read_text().strip()
+if studio.get("component") != "jelli-art" or not studio.get("include-component-in-tag"):
+    raise SystemExit("expected tools/jelli-art as the jelli-art component with component tags")
+if "tools/jelli-art" not in package.get("exclude-paths", []):
+    raise SystemExit("root package must exclude tools/jelli-art")
+if manifest.get("tools/jelli-art") != studio_version:
+    raise SystemExit("tools/jelli-art/VERSION and Release Please manifest differ")
+for name in ("CHANGELOG.md", ".github/workflows/release.yml", ".github/workflows/release-please.yml",
+             ".github/workflows/jelli-art.yml", "tools/jelli-art/Containerfile"):
     if not Path(name).is_file():
         raise SystemExit(f"missing release file: {name}")
-print(f"release metadata valid: {version}")
+print(f"release metadata valid: {version}; Jelli Art {studio_version}")
 CHECK
 if [[ "${1:-}" == "--metadata-only" ]]; then
   exit 0

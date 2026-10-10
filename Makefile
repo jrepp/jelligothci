@@ -1,5 +1,5 @@
 .PHONY: build run test sanitize core-test esp-bootstrap esp-sync esp-build esp-flash esp-monitor docs-check docs-fix docs-guide
-.PHONY: run-shapes run-live
+.PHONY: run-shapes run-live jelli-art
 .PHONY: hooks-install hooks-check lint-c format-c
 
 build:
@@ -11,6 +11,9 @@ run: build
 
 run-live: build
 	./scripts/jelli-art-live -- --save build/pet-save --debug-socket build/jelli-debug.sock
+
+jelli-art:
+	./scripts/uv run --python 3.12 tools/jelli-art/jelli_art.py
 
 run-shapes: build
 	./build/desktop/jelligotchi --shapes

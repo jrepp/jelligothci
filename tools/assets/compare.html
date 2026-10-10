@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jelligotchi pixel review</title>
+<style>
+:root{--bg:#1b1b1f;--panel:#232328;--raised:#2c2c33;--line:#3a3a42;--ink:#ecebf2;--muted:#9a99a8;--accent:#85e4b6;--warn:#f5c764;--bad:#fa8c99;--add:#43bca2;--del:#d84f70;--mod:#a47bdb;color-scheme:dark}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 system-ui,-apple-system,BlinkMacSystemFont,sans-serif;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+header{display:flex;align-items:center;gap:18px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:15px;margin:0;font-weight:650;letter-spacing:-.01em}header h1 span{color:var(--muted);font-weight:400}
+.refs{font:12px ui-monospace,monospace;color:var(--muted)}.refs b{color:var(--ink);font-weight:500}
+.totals{display:flex;gap:14px;margin-left:auto;font:12px ui-monospace,monospace;color:var(--muted)}.totals b{color:var(--ink)}
+.layout{display:grid;grid-template-columns:290px 1fr;min-height:0}
+aside{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
+.filters{padding:10px;display:grid;gap:8px;border-bottom:1px solid var(--line)}
+input[type=search],input[type=number],textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:6px 8px;font:inherit}
+.chips,.seg{display:flex;flex-wrap:wrap;gap:4px}
+button{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:4px 9px;cursor:pointer}
+button:hover{border-color:#5a5a66}button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg button{border-radius:0;margin-left:-1px}.seg button:first-child{border-radius:6px 0 0 6px;margin:0}.seg button:last-child{border-radius:0 6px 6px 0}
+.seg{flex-wrap:nowrap}
+#list{overflow:auto;flex:1;padding:4px 0}
+.item{display:grid;grid-template-columns:36px 36px 1fr;gap:6px;align-items:center;padding:5px 10px;cursor:pointer;border-left:3px solid transparent}
+.item:hover{background:var(--raised)}.item[aria-current=true]{background:var(--raised);border-left-color:var(--accent)}
+.thumb{width:36px;height:36px;background:#4a494a;border-radius:4px;display:grid;place-items:center;overflow:hidden}
+.thumb img{image-rendering:pixelated;max-width:32px;max-height:32px;width:32px;height:32px;object-fit:contain}
+.thumb.none{background:repeating-linear-gradient(45deg,#2a2a30 0 4px,#33333a 4px 8px)}
+.item .name{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .sub{font:10px ui-monospace,monospace;color:var(--muted)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:1px}
+.dot.ok{background:var(--accent)}.dot.fix{background:var(--bad)}.dot.stale{background:var(--warn)}
+main{overflow:auto;min-height:0;padding:14px 18px 40px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:10px}
+.bar label,.lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:2px 0 10px}.title h2{margin:0;font-size:20px;letter-spacing:-.02em}
+.stats{display:flex;gap:6px;flex-wrap:wrap}
+.stat{font:11px ui-monospace,monospace;background:var(--raised);border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--muted)}
+.stat b{color:var(--ink);font-weight:500}.stat.good b{color:var(--accent)}.stat.worse b{color:var(--bad)}
+.stage{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.pane{display:grid;gap:6px;justify-items:start}.pane .lbl{display:flex;justify-content:space-between;gap:12px}
+.scroller{overflow:auto;max-width:100%;width:fit-content;border:1px solid var(--line);border-radius:8px;background:#111}
+canvas{display:block;image-rendering:pixelated}
+#inspector{font:12px ui-monospace,monospace;display:flex;gap:18px;flex-wrap:wrap;min-height:22px;margin:10px 0;color:var(--muted)}
+#inspector .sw{display:inline-block;width:12px;height:12px;border:1px solid #fff4;vertical-align:-2px;margin-right:4px;border-radius:2px}
+.palette{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
+.chip{display:grid;grid-template-columns:18px auto;gap:2px 6px;align-items:center;background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:4px 7px;cursor:pointer;font:10px ui-monospace,monospace;color:var(--muted)}
+.chip .sw{grid-row:span 2;width:18px;height:18px;border-radius:3px;border:1px solid #fff3}.chip[aria-pressed=true]{border-color:var(--ink);background:#3a3a44}
+.chip .delta.up{color:var(--warn)}.chip .delta.down{color:var(--accent)}.chip.off .sw{outline:2px solid var(--bad)}
+.legend{font-size:11px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}.legend i{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:-1px;border-radius:2px}
+section.block{margin-top:22px;border-top:1px solid var(--line);padding-top:14px}section.block h3{margin:0 0 10px;font-size:13px}
+.context{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
+.review{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:start;max-width:720px}.review textarea{min-height:52px;resize:vertical}
+.sheet h3{margin:20px 0 8px;font-size:13px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.cards{display:flex;flex-wrap:wrap;gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer;display:grid;gap:6px}
+.card:hover{border-color:#5a5a66}.card.same{opacity:.45}.card .pair{display:flex;gap:6px;align-items:center}
+.card .name{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.card canvas{border-radius:4px}
+.kbd{font:11px ui-monospace,monospace;color:var(--muted);margin-top:26px;line-height:1.9}.kbd kbd{background:var(--raised);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--ink)}
+.peek{position:fixed;top:60px;right:20px;background:var(--warn);color:#291b35;font-weight:700;padding:4px 10px;border-radius:6px;display:none}body.peeking .peek{display:block}
+.hidden{display:none!important}
+input[type=range]{accent-color:var(--accent);width:140px}
+@media(max-width:760px){body{overflow:auto}.layout{grid-template-columns:1fr}aside{max-height:40vh;border-right:0;border-bottom:1px solid var(--line)}.totals{margin-left:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Jelligotchi <span>pixel review</span></h1>
+  <div class="refs">before <b id="before-label"></b> → after <b id="after-label"></b></div>
+  <div class="seg" id="views"><button data-view="detail" aria-pressed="true">Detail</button><button data-view="sheet" aria-pressed="false">Sheet</button></div>
+  <div class="totals" id="totals"></div>
+</header>
+<div class="layout">
+  <aside>
+    <div class="filters">
+      <input type="search" id="query" placeholder="Filter assets…" aria-label="Filter assets">
+      <div class="chips" id="kinds"></div>
+      <div class="chips"><button id="changed-only" aria-pressed="true">Changed only</button><button id="copy-notes">Copy review notes</button></div>
+    </div>
+    <div id="list" role="listbox" aria-label="Assets"></div>
+  </aside>
+  <main>
+    <div id="detail">
+      <div class="title"><h2 id="asset-name"></h2><div class="stats" id="asset-stats"></div></div>
+      <div class="bar">
+        <div><div class="lbl">Mode</div><div class="seg" id="modes">
+          <button data-mode="side">Side by side</button><button data-mode="swipe">Swipe</button><button data-mode="flip">Flip</button><button data-mode="onion">Onion</button><button data-mode="diff">Diff</button></div></div>
+        <div><div class="lbl">Zoom <span id="zoom-label"></span></div><div class="seg"><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-fit">Fit</button><button id="zoom-device">Device</button><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
+        <div><div class="lbl">Backdrop</div><div class="seg" id="backdrops"></div></div>
+        <div><div class="lbl">Overlays</div><div class="seg"><button id="grid" aria-pressed="true">Grid</button><button id="issues" aria-pressed="false">Issues</button></div></div>
+        <div id="mode-extra"></div>
+      </div>
+      <div class="stage" id="stage"></div>
+      <div id="inspector"></div>
+      <div class="legend" id="legend"></div>
+      <section class="block"><h3 id="palette-title">Palette usage <span class="lbl">· click a colour to isolate it</span></h3><div class="palette" id="palette"></div></section>
+      <section class="block"><h3>On the panel</h3>
+        <div class="bar"><button id="physical" aria-pressed="false">Physical size</button><label for="ppi">Your screen CSS px / inch</label><input type="number" id="ppi" min="60" max="300" step="1" style="width:80px"><span class="lbl" id="calib-hint"></span></div>
+        <div id="calibrator" class="hidden" style="margin-bottom:12px"><div class="lbl">Calibrate: adjust until this bar is exactly as wide as a bank card (85.6 mm)</div><div id="card-bar" style="height:14px;background:var(--accent);border-radius:3px;margin-top:6px"></div></div>
+        <div class="context" id="context"></div>
+        <p class="lbl" style="text-transform:none;letter-spacing:0">Drawn at the core's draw scale on a 466 px panel (≈266 ppi: 466 px across 1.75 in). Physical size approximates the real board.</p>
+      </section>
+      <section class="block"><h3>Review</h3>
+        <div class="review"><div class="seg" id="verdict"><button data-verdict="ok">Looks good</button><button data-verdict="fix">Needs work</button><button data-verdict="">Clear</button></div><textarea id="note" placeholder="Notes for this asset (stored in this browser; Copy review notes exports all)"></textarea></div>
+      </section>
+      <div class="kbd"><kbd>J</kbd>/<kbd>K</kbd> next/previous · <kbd>1</kbd>–<kbd>5</kbd> mode · <kbd>[</kbd>/<kbd>]</kbd> zoom · <kbd>0</kbd> fit · <kbd>D</kbd> device scale · <kbd>G</kbd> grid · <kbd>I</kbd> issues · <kbd>B</kbd> backdrop · hold <kbd>Space</kbd> to peek at before · <kbd>A</kbd>/<kbd>X</kbd> mark good/needs work · <kbd>S</kbd> sheet</div>
+    </div>
+    <div id="sheet" class="sheet hidden">
+      <div class="bar">
+        <div><div class="lbl">Show</div><div class="seg" id="sheet-show"><button data-show="both">Before + after</button><button data-show="before">Before</button><button data-show="after">After</button></div></div>
+        <div><div class="lbl">Scale</div><div class="seg" id="sheet-scale"><button data-scale="device">Device</button><button data-scale="2">2×</button><button data-scale="4">4×</button><button data-scale="8">8×</button></div></div>
+        <div><div class="lbl">Backdrop</div><div class="seg" id="sheet-backdrops"></div></div>
+        <span class="lbl" style="text-transform:none">Hold Space to flip every card to before. Click a card to inspect it.</span>
+      </div>
+      <div id="sheet-body"></div>
+    </div>
+  </main>
+</div>
+<div class="peek">BEFORE</div>
+<script id="compare-data" type="application/json">__COMPARE_DATA__</script>
+<script>
+'use strict';
+const BOOT = JSON.parse(document.getElementById('compare-data').textContent);
+let D = BOOT, byKey = {}, decoded = {};
+const NAMES = ['ink', 'plum', 'mauve', 'teal', 'sea', 'mint', 'foam', 'violet', 'lilac', 'haze', 'cream', 'white', 'rose', 'coral', 'gold', 'tan'];
+const BACKDROPS = {black: '#000000', ring: '#4a494a', panel: '#181c18', checker: null, paper: '#f5f1e7'};
+const KIND_BACKDROP = {creatures: 'black', icons: 'ring', menus: 'ring', meters: 'panel', health: 'ring', effects: 'black', prizes: 'panel', props: 'black', font: 'panel', backgrounds: 'black'};
+const MODES = ['side', 'swipe', 'flip', 'onion', 'diff'];
+const PANEL_PPI = 466 / 1.75;
+const DPR = Math.max(1, window.devicePixelRatio || 1);
+const store = {get(k, d) { try { const v = localStorage.getItem('jelli-review:' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('jelli-review:' + k, JSON.stringify(v)); } catch { /* storage unavailable */ } }};
+const state = Object.assign({key: null, mode: 'side', zoom: null, grid: true, issues: false, backdrop: null, changedOnly: true, kind: 'all', query: '',
+  view: 'detail', peek: false, isolate: null, swipe: 0.5, onion: 0.5, flipBefore: false, blink: false, hover: null, physical: false,
+  ppi: DPR >= 2 ? 127 : 96, sheetShow: 'both', sheetScale: 'device', sheetBackdrop: 'auto'}, store.get('prefs', {}));
+state.peek = false; state.hover = null; state.isolate = null; state.flipBefore = false; state.blink = false;
+const reviews = store.get('reviews', {});
+const hexOf = (d, i) => '#' + [d[i], d[i + 1], d[i + 2]].map(v => v.toString(16).padStart(2, '0')).join('');
+const label = hex => { const i = D.palette.indexOf(hex); return i >= 0 ? NAMES[i] : 'off-palette'; };
+const signature = a => { let h = 0; const s = a.after || ''; for (let i = 0; i < s.length; i += 7) h = (h * 31 + s.charCodeAt(i)) | 0; return String(h); };
+const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrop, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;
+  store.set('prefs', {mode, grid, issues, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop}); location.replace('#' + new URLSearchParams({key, mode, zoom: zoom || 'fit'})); };
+
+function decode(uri) {
+  return new Promise(resolve => {
+    if (!uri) return resolve(null);
+    const im = new Image();
+    im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+      resolve({img: c, w: im.width, h: im.height, data: x.getImageData(0, 0, im.width, im.height).data}); };
+    im.onerror = () => resolve(null);
+    im.src = uri;
+  });
+}
+function pixel(p, x, y) { if (!p || x < 0 || y < 0 || x >= p.w || y >= p.h) return null; const i = (y * p.w + x) * 4; return p.data[i + 3] ? hexOf(p.data, i) : null; }
+
+/* Canvas helpers: every view is drawn with explicit per-pixel rects so the grid, isolation, and diff stay exact at any zoom. */
+function makeCanvas(cssW, cssH) { const c = document.createElement('canvas'); c.width = Math.round(cssW * DPR); c.height = Math.round(cssH * DPR); c.style.width = cssW + 'px'; c.style.height = cssH + 'px'; const ctx = c.getContext('2d'); ctx.scale(DPR, DPR); ctx.imageSmoothingEnabled = false; return [c, ctx]; }
+function fillBackdrop(ctx, w, h, z, name) {
+  const color = BACKDROPS[name];
+  if (color) { ctx.fillStyle = color; ctx.fillRect(0, 0, w * z, h * z); return; }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { ctx.fillStyle = (x + y) % 2 ? '#2b2b31' : '#36363d'; ctx.fillRect(x * z, y * z, z, z); }
+}
+function drawPixels(ctx, p, z, opts = {}) {
+  if (!p) return;
+  for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
+    const i = (y * p.w + x) * 4; if (!p.data[i + 3]) continue;
+    const hex = hexOf(p.data, i);
+    ctx.globalAlpha = (opts.alpha ?? 1) * (state.isolate && hex !== state.isolate ? 0.12 : 1);
+    if (opts.clipX !== undefined && (opts.side === 'left' ? x * z >= opts.clipX : (x + 1) * z <= opts.clipX)) continue;
+    ctx.fillStyle = hex;
+    if (opts.clipX !== undefined && (x * z < opts.clipX && (x + 1) * z > opts.clipX)) {
+      const left = opts.side === 'left'; ctx.fillRect(left ? x * z : opts.clipX, y * z, left ? opts.clipX - x * z : (x + 1) * z - opts.clipX, z);
+    } else ctx.fillRect(x * z, y * z, z, z);
+  }
+  ctx.globalAlpha = 1;
+}
+function drawGrid(ctx, w, h, z) {
+  if (!state.grid || z < 5) return;
+  for (let x = 0; x <= w; x++) { ctx.fillStyle = x % 8 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.2)'; ctx.fillRect(x * z, 0, 1, h * z); }
+  for (let y = 0; y <= h; y++) { ctx.fillStyle = y % 8 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.2)'; ctx.fillRect(0, y * z, w * z, 1); }
+}
+function drawIssues(ctx, metrics, z) {
+  if (!state.issues || !metrics) return;
+  ctx.lineWidth = Math.max(1, z / 8);
+  ctx.strokeStyle = '#ff4d6d'; for (const [x, y] of metrics.specks) ctx.strokeRect(x * z + ctx.lineWidth / 2, y * z + ctx.lineWidth / 2, z - ctx.lineWidth, z - ctx.lineWidth);
+  ctx.fillStyle = '#ffd23f'; const r = Math.max(1.5, z / 6); for (const [x, y] of metrics.open_edges) { ctx.beginPath(); ctx.arc(x * z + z / 2, y * z + z / 2, r, 0, 7); ctx.fill(); }
+}
+function drawHover(ctx, z) {
+  if (!state.hover) return;
+  const [x, y] = state.hover; ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1, z / 10); ctx.strokeRect(x * z, y * z, z, z);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(x * z - 1, y * z - 1, z + 2, z + 2);
+}
+function tag(ctx, text, x, y, color) { ctx.font = '600 11px system-ui'; const w = ctx.measureText(text).width + 10; ctx.fillStyle = color; ctx.fillRect(x, y, w, 18); ctx.fillStyle = '#1b1b1f'; ctx.fillText(text, x + 5, y + 13); }
+
+const asset = () => byKey[state.key];
+const backdropFor = a => state.backdrop || KIND_BACKDROP[a.kind];
+function fitZoom(a) {
+  const stage = document.getElementById('stage'); const panes = state.mode === 'side' ? 2 : 1;
+  const avail = Math.max(200, (stage.clientWidth - 16 * panes) / panes - (state.mode === 'paint' ? 220 : 0)); const tall = Math.max(240, window.innerHeight - 330);
+  return Math.max(1, Math.min(32, Math.floor(Math.min(avail / a.width, tall / a.height))));
+}
+const zoom = a => state.zoom || fitZoom(a);
+
+function paneCanvas(a, z, kind) {
+  const [c, ctx] = makeCanvas(a.width * z, a.height * z); const before = decoded[a.key].before, after = decoded[a.key].after;
+  const showBefore = kind === 'before' || (kind === 'after' && state.peek) || (kind === 'flip' && (state.flipBefore !== state.peek));
+  fillBackdrop(ctx, a.width, a.height, z, backdropFor(a));
+  if (kind === 'swipe') {
+    const split = Math.round(state.swipe * a.width * z);
+    drawPixels(ctx, before, z, {clipX: split, side: 'left'}); drawPixels(ctx, state.peek ? before : after, z, {clipX: split, side: 'right'});
+    drawGrid(ctx, a.width, a.height, z);
+    ctx.fillStyle = '#fff'; ctx.fillRect(split - 1, 0, 2, a.height * z); ctx.fillStyle = '#000'; ctx.fillRect(split + 1, 0, 1, a.height * z);
+    tag(ctx, 'before', 6, 6, '#f5c764'); tag(ctx, 'after', a.width * z - 46, 6, '#85e4b6');
+  } else if (kind === 'onion') {
+    drawPixels(ctx, before, z, {alpha: state.peek ? 1 : 1 - state.onion}); if (!state.peek) drawPixels(ctx, after, z, {alpha: state.onion}); drawGrid(ctx, a.width, a.height, z);
+  } else if (kind === 'diff') {
+    drawDiff(ctx, a, before, after, z); drawGrid(ctx, a.width, a.height, z);
+  } else {
+    drawPixels(ctx, showBefore ? before : after, z); drawGrid(ctx, a.width, a.height, z);
+    drawIssues(ctx, showBefore ? a.before_metrics : a.after_metrics, z);
+    if (kind === 'flip') tag(ctx, showBefore ? 'before' : 'after', 6, 6, showBefore ? '#f5c764' : '#85e4b6');
+  }
+  drawHover(ctx, z);
+  wireHover(c, a, z);
+  return c;
+}
+function drawDiff(ctx, a, before, after, z) {
+  for (let y = 0; y < a.height; y++) for (let x = 0; x < a.width; x++) {
+    const b = pixel(before, x, y), f = pixel(after, x, y);
+    if (b === f) { if (f) { const i = (y * a.width + x) * 4, d = after.data, g = Math.round((d[i] + d[i + 1] + d[i + 2]) / 3); ctx.fillStyle = `rgba(${g},${g},${g},.28)`; ctx.fillRect(x * z, y * z, z, z); } continue; }
+    ctx.fillStyle = !b ? '#43bca2' : !f ? '#d84f70' : '#a47bdb'; ctx.fillRect(x * z, y * z, z, z);
+    if (f && b && z >= 8) { ctx.fillStyle = f; ctx.fillRect(x * z + z / 4, y * z + z / 4, z / 2, z / 2); }
+  }
+}
+function wireHover(c, a, z) {
+  c.onmousemove = e => { const x = Math.floor(e.offsetX / z), y = Math.floor(e.offsetY / z);
+    if (state.mode === 'swipe' && e.buttons) { state.swipe = Math.min(1, Math.max(0, e.offsetX / (a.width * z))); }
+    if (!state.hover || state.hover[0] !== x || state.hover[1] !== y || (state.mode === 'swipe' && e.buttons)) { state.hover = [x, y]; renderStage(); } };
+  c.onmousedown = e => { if (state.mode === 'swipe') { state.swipe = Math.min(1, Math.max(0, e.offsetX / (a.width * z))); renderStage(); } };
+  c.onmouseleave = () => { state.hover = null; renderStage(); };
+  c.onclick = () => { if (state.mode === 'flip') { state.flipBefore = !state.flipBefore; renderStage(); } };
+}
+
+function renderStage() {
+  const a = asset(); if (!a || !decoded[a.key]) return;
+  if (state.mode === 'paint' && window.Studio) { window.Studio.renderStage(a, zoom(a)); renderInspector(a); return; }
+  const stage = document.getElementById('stage'); const scrolls = [...stage.querySelectorAll('.scroller')].map(s => [s.scrollLeft, s.scrollTop]);
+  stage.textContent = ''; const z = zoom(a);
+  document.getElementById('zoom-label').textContent = `· ${z}×${z === Math.round(a.device_scale) ? ' (device)' : ''}`;
+  const panes = state.mode === 'side' ? [['before', D.before_label], ['after', D.after_label]] : [[state.mode, {swipe: 'drag to wipe', flip: 'click, Space, or blink', onion: 'blend', diff: 'changes'}[state.mode]]];
+  for (const [kind, sub] of panes) {
+    const pane = document.createElement('div'); pane.className = 'pane';
+    pane.innerHTML = `<div class="lbl"><span>${kind === 'side' ? '' : kind}</span><span>${sub}</span></div>`;
+    const scroller = document.createElement('div'); scroller.className = 'scroller'; scroller.style.maxHeight = `${window.innerHeight - 260}px`;
+    if (kind === 'before' && !decoded[a.key].before) { scroller.innerHTML = '<div style="padding:30px;color:var(--muted)">No before image (new asset)</div>'; }
+    else scroller.append(paneCanvas(a, z, kind));
+    scroller.onscroll = () => stage.querySelectorAll('.scroller').forEach(s => { if (s !== scroller) { s.scrollLeft = scroller.scrollLeft; s.scrollTop = scroller.scrollTop; } });
+    pane.append(scroller); stage.append(pane);
+  }
+  stage.querySelectorAll('.scroller').forEach((s, i) => { if (scrolls[i]) [s.scrollLeft, s.scrollTop] = scrolls[i]; });
+  renderInspector(a);
+}
+function renderInspector(a) {
+  const el = document.getElementById('inspector');
+  if (!state.hover) { el.innerHTML = '<span>Hover a pixel to inspect it. Both panes share one cursor.</span>'; return; }
+  const [x, y] = state.hover, b = pixel(decoded[a.key].before, x, y), f = pixel(decoded[a.key].after, x, y);
+  const show = hex => hex ? `<span class="sw" style="background:${hex}"></span>${hex} ${label(hex)}` : '<span class="sw" style="background:repeating-linear-gradient(45deg,#555 0 2px,#222 2px 4px)"></span>transparent';
+  el.innerHTML = `<span>x ${x}, y ${y}</span><span>before ${show(b)}</span><span>after ${show(f)}</span>${b !== f ? '<span style="color:var(--warn)">changed</span>' : ''}`;
+}
+function renderLegend() {
+  const el = document.getElementById('legend');
+  el.innerHTML = state.mode === 'diff' ? '<span><i style="background:#43bca2"></i>added</span><span><i style="background:#d84f70"></i>removed</span><span><i style="background:#a47bdb"></i>recoloured (centre shows new colour)</span><span>grey: unchanged</span>'
+    : state.issues ? '<span><i style="background:#ff4d6d"></i>speck: lone pixel with no same-colour neighbour (ink and white exempt)</span><span><i style="background:#ffd23f;border-radius:50%"></i>open edge: silhouette pixel without ink outline</span>' : '';
+  const extra = document.getElementById('mode-extra'); extra.textContent = '';
+  if (state.mode === 'onion') extra.innerHTML = `<div class="lbl">After opacity</div><input type="range" id="onion" min="0" max="1" step=".05" value="${state.onion}">`;
+  if (state.mode === 'flip') extra.innerHTML = `<div class="lbl">Flip</div><button id="blink" aria-pressed="${state.blink}">Auto blink</button>`;
+  if (state.mode === 'paint') window.Studio?.renderToolbar(extra);
+  extra.querySelector('#onion')?.addEventListener('input', e => { state.onion = Number(e.target.value); renderStage(); savePrefs(); });
+  extra.querySelector('#blink')?.addEventListener('click', e => { state.blink = !state.blink; e.target.setAttribute('aria-pressed', state.blink); });
+}
+
+function delta(b, f, lowerIsBetter = true) { if (b === undefined || b === null) return ['', `${f}`]; const cls = f === b ? '' : (f < b) === lowerIsBetter ? 'good' : 'worse'; return [cls, `${b} → ${f}`]; }
+function renderHeader(a) {
+  document.getElementById('asset-name').textContent = a.key;
+  const bm = a.before_metrics, am = a.after_metrics, items = [['', `${a.width}×${a.height} · ID ${a.id} · device ${+a.device_scale.toFixed(2)}×`]];
+  items.push(['', a.changed < 0 ? 'new asset' : `${a.changed} px changed`]);
+  const s = delta(bm?.specks.length, am.specks.length), o = delta(bm?.open_edges.length, am.open_edges.length), c = delta(bm ? Object.keys(bm.colors).length : undefined, Object.keys(am.colors).length);
+  if (a.kind !== 'font' && a.kind !== 'backgrounds') items.push([s[0], `specks ${s[1]}`]);
+  if (am.open_edges.length || bm?.open_edges.length) items.push([o[0], `open edges ${o[1]}`]);
+  items.push(['', `colours ${c[1]}`]);
+  window.Studio?.decorateHeader(a, items);
+  document.getElementById('asset-stats').innerHTML = items.map(([cls, t]) => `<span class="stat ${cls}"><b>${t}</b></span>`).join('');
+}
+function renderPalette(a) {
+  if (state.mode === 'paint' && window.Studio) return window.Studio.renderPalette(document.getElementById('palette'), a);
+  document.getElementById('palette-title').innerHTML = 'Palette usage <span class="lbl">· click a colour to isolate it</span>';
+  const bm = a.before_metrics?.colors || {}, am = a.after_metrics.colors, keys = [...new Set([...D.palette, ...Object.keys(bm), ...Object.keys(am)])].filter(k => bm[k] || am[k]);
+  const el = document.getElementById('palette'); el.textContent = '';
+  for (const hex of keys) {
+    const b = bm[hex] || 0, f = am[hex] || 0, chip = document.createElement('button'); chip.className = 'chip' + (D.palette.includes(hex) ? '' : ' off');
+    chip.setAttribute('aria-pressed', String(state.isolate === hex));
+    chip.innerHTML = `<span class="sw" style="background:${hex}"></span><span>${label(hex)} ${hex}</span><span>${b} → ${f} <span class="delta ${f > b ? 'up' : f < b ? 'down' : ''}">${f === b ? '' : (f > b ? '+' : '') + (f - b)}</span></span>`;
+    chip.onclick = () => { state.isolate = state.isolate === hex ? null : hex; renderPalette(a); renderStage(); };
+    el.append(chip);
+  }
+}
+
+/* On-panel context: the sprite at its real draw scale inside a lens of the 466 px round display. */
+function contextCanvas(a, p, bg) {
+  const s = a.device_scale, sw = Math.round(a.width * s), sh = Math.round(a.height * s);
+  const L = a.kind === 'backgrounds' ? 466 : Math.max(140, Math.max(sw, sh) + 64);
+  const css = state.physical ? L * state.ppi / PANEL_PPI : L;
+  const [c, ctx] = makeCanvas(css, css); ctx.scale(css / L, css / L);
+  ctx.save(); ctx.beginPath(); ctx.arc(L / 2, L / 2, L / 2, 0, 7); ctx.clip();
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, L, L);
+  if (a.kind === 'creatures' && bg) { ctx.drawImage(bg.img, (L - 466) / 2, (L - 466) / 2 - 23, 466, 466); }
+  else if (['icons', 'menus', 'health'].includes(a.kind)) { ctx.fillStyle = '#737173'; ctx.beginPath(); ctx.arc(L / 2, L / 2, 48 * Math.max(1, sw / 96), 0, 7); ctx.fill(); ctx.fillStyle = '#4a494a'; ctx.beginPath(); ctx.arc(L / 2, L / 2, 46 * Math.max(1, sw / 96), 0, 7); ctx.fill(); }
+  else if (a.kind !== 'effects' && a.kind !== 'props' && a.kind !== 'backgrounds') { ctx.fillStyle = a.kind === 'font' ? '#49334f' : '#181c18'; ctx.fillRect(0, 0, L, L); }
+  if (p) ctx.drawImage(p.img, Math.round((L - sw) / 2), Math.round((L - sh) / 2), sw, sh);
+  ctx.restore(); ctx.strokeStyle = '#3a3a42'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(L / 2, L / 2, L / 2 - 1, 0, 7); ctx.stroke();
+  return c;
+}
+function renderContext(a) {
+  const el = document.getElementById('context'); el.textContent = '';
+  const bgKey = 'backgrounds.home';
+  for (const side of ['before', 'after']) {
+    const p = decoded[a.key][side]; if (!p) continue;
+    const box = document.createElement('div'); box.className = 'pane'; box.innerHTML = `<div class="lbl"><span>${side}</span><span>${state.physical ? 'approx. real size' : '1 css px = 1 panel px'}</span></div>`;
+    box.append(contextCanvas(a, side === 'after' && state.peek ? decoded[a.key].before : p, decoded[bgKey]?.[side])); el.append(box);
+  }
+  document.getElementById('ppi').value = state.ppi; document.getElementById('physical').setAttribute('aria-pressed', state.physical);
+  document.getElementById('calibrator').classList.toggle('hidden', !state.physical);
+  document.getElementById('card-bar').style.width = (85.6 / 25.4 * state.ppi) + 'px';
+}
+
+function renderReview(a) {
+  const r = reviews[a.key], stale = r && r.sig !== signature(a);
+  document.querySelectorAll('#verdict button').forEach(b => b.setAttribute('aria-pressed', String(!!r && !stale && r.status === b.dataset.verdict && !!r.status)));
+  document.getElementById('note').value = r?.note || '';
+}
+function setVerdict(status) {
+  const a = asset(); reviews[a.key] = {status, note: document.getElementById('note').value, sig: signature(a)};
+  if (!status && !reviews[a.key].note) delete reviews[a.key];
+  store.set('reviews', reviews); renderReview(a); renderList();
+}
+function reviewDot(a) { const r = reviews[a.key]; if (!r || !r.status) return ''; return r.sig !== signature(a) ? '<span class="dot stale" title="Changed since review"></span>' : `<span class="dot ${r.status}"></span>`; }
+
+function filtered() {
+  const q = state.query.toLowerCase();
+  return D.assets.filter(a => (state.kind === 'all' || a.kind === state.kind) && (!state.changedOnly || a.changed !== 0) && (!q || a.key.includes(q)));
+}
+function renderList() {
+  const el = document.getElementById('list'); el.textContent = '';
+  const items = filtered();
+  if (!items.length) el.innerHTML = '<p style="padding:12px;color:var(--muted)">No assets match. Try turning off “Changed only”.</p>';
+  for (const a of items) {
+    const row = document.createElement('div'); row.className = 'item'; row.setAttribute('role', 'option'); row.setAttribute('aria-current', String(a.key === state.key));
+    const thumb = uri => uri ? `<div class="thumb"><img alt="" src="${uri}"></div>` : '<div class="thumb none"></div>';
+    const sp = a.before_metrics ? `${a.before_metrics.specks.length}→${a.after_metrics.specks.length} specks` : 'new';
+    row.innerHTML = `${thumb(a.before)}${thumb(a.after)}<div><div class="name">${reviewDot(a)}${a.key.split('.')[1]}</div><div class="sub">${a.kind} · ${a.changed < 0 ? 'new' : a.changed + ' px'} · ${sp}</div></div>`;
+    row.onclick = () => select(a.key);
+    el.append(row);
+  }
+  el.querySelector('[aria-current=true]')?.scrollIntoView({block: 'nearest'});
+}
+function renderKinds() {
+  const kinds = ['all', ...new Set(D.assets.map(a => a.kind))], el = document.getElementById('kinds'); el.textContent = '';
+  for (const k of kinds) { const n = D.assets.filter(a => (k === 'all' || a.kind === k) && a.changed !== 0).length; const b = document.createElement('button');
+    b.textContent = `${k} ${n}`; b.setAttribute('aria-pressed', String(state.kind === k)); b.onclick = () => { state.kind = k; renderKinds(); renderList(); savePrefs(); }; el.append(b); }
+}
+function renderTotals() {
+  const sum = (side, f) => D.assets.reduce((n, a) => n + (a[side] ? f(a[side]) : 0), 0);
+  const changed = D.assets.filter(a => a.changed !== 0).length;
+  document.getElementById('totals').innerHTML = `<span><b>${changed}</b>/${D.assets.length} changed</span><span>specks <b>${sum('before_metrics', m => m.specks.length)} → ${sum('after_metrics', m => m.specks.length)}</b></span><span>open edges <b>${sum('before_metrics', m => m.open_edges.length)} → ${sum('after_metrics', m => m.open_edges.length)}</b></span>`;
+  document.getElementById('before-label').textContent = D.before_label; document.getElementById('after-label').textContent = D.after_label;
+}
+function renderDetail() {
+  const a = asset(); if (!a) return;
+  document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)));
+  renderBackdrops('backdrops', backdropFor(a), name => { state.backdrop = name === KIND_BACKDROP[a.kind] ? null : name; renderDetail(); });
+  document.getElementById('grid').setAttribute('aria-pressed', state.grid); document.getElementById('issues').setAttribute('aria-pressed', state.issues);
+  renderHeader(a); renderLegend(); renderStage(); renderPalette(a); renderContext(a); renderReview(a);
+}
+function renderBackdrops(id, current, onPick, extra = []) {
+  const el = document.getElementById(id); el.textContent = '';
+  for (const name of [...extra, ...Object.keys(BACKDROPS)]) { const b = document.createElement('button'); b.textContent = name; b.setAttribute('aria-pressed', String(name === current)); b.onclick = () => onPick(name); el.append(b); }
+}
+
+function renderSheet() {
+  const body = document.getElementById('sheet-body'); body.textContent = '';
+  document.querySelectorAll('#sheet-show button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.show === state.sheetShow)));
+  document.querySelectorAll('#sheet-scale button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scale === state.sheetScale)));
+  renderBackdrops('sheet-backdrops', state.sheetBackdrop, name => { state.sheetBackdrop = name; savePrefs(); renderSheet(); }, ['auto']);
+  const groups = {}; for (const a of filtered()) (groups[a.kind] ||= []).push(a);
+  for (const [kind, list] of Object.entries(groups)) {
+    const h = document.createElement('h3'); h.textContent = `${kind} · ${list.length}`; body.append(h);
+    const cards = document.createElement('div'); cards.className = 'cards'; body.append(cards);
+    for (const a of list) {
+      const z = state.sheetScale === 'device' ? Math.min(a.device_scale, a.kind === 'backgrounds' ? 3 : 6) : Number(state.sheetScale);
+      const card = document.createElement('div'); card.className = 'card' + (a.changed === 0 ? ' same' : ''); card.title = a.key;
+      const pair = document.createElement('div'); pair.className = 'pair';
+      const sides = state.sheetShow === 'both' ? ['before', 'after'] : [state.sheetShow];
+      for (const side of sides) {
+        const p = decoded[a.key][state.peek ? 'before' : side] || decoded[a.key][side]; const w = Math.round(a.width * z), hgt = Math.round(a.height * z);
+        const [c, ctx] = makeCanvas(w, hgt); const bd = state.sheetBackdrop === 'auto' ? KIND_BACKDROP[a.kind] : state.sheetBackdrop;
+        if (BACKDROPS[bd]) { ctx.fillStyle = BACKDROPS[bd]; ctx.fillRect(0, 0, w, hgt); } else fillBackdrop(ctx, a.width, a.height, z, 'checker');
+        if (p) ctx.drawImage(p.img, 0, 0, w, hgt); pair.append(c);
+      }
+      const name = document.createElement('div'); name.className = 'name'; name.innerHTML = `<span>${reviewDot(a)}${a.key.split('.')[1]}</span><span>${a.changed < 0 ? 'new' : a.changed ? a.changed + ' px' : '='}</span>`;
+      card.append(pair, name); card.onclick = () => { state.view = 'detail'; select(a.key); };
+      cards.append(card);
+    }
+  }
+}
+
+function renderView() {
+  document.getElementById('detail').classList.toggle('hidden', state.view !== 'detail'); document.getElementById('sheet').classList.toggle('hidden', state.view !== 'sheet');
+  document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+  if (state.view === 'detail') renderDetail(); else renderSheet();
+}
+function select(key) { state.key = key; state.isolate = null; state.hover = null; state.flipBefore = false; renderList(); renderView(); savePrefs(); }
+function step(n) { const items = filtered(); if (!items.length) return; const i = items.findIndex(a => a.key === state.key); select(items[(i + n + items.length) % items.length].key); }
+function setZoom(z) { const a = asset(); state.zoom = z === null ? null : Math.max(1, Math.min(32, z)); renderStage(); savePrefs(); }
+
+function exportNotes() {
+  const lines = [`# Pixel review: ${D.before_label} → ${D.after_label}`, ''];
+  for (const status of ['fix', 'ok']) {
+    const rows = D.assets.filter(a => reviews[a.key]?.status === status);
+    if (!rows.length) continue;
+    lines.push(status === 'fix' ? '## Needs work' : '## Looks good');
+    for (const a of rows) { const r = reviews[a.key]; lines.push(`- \`${a.key}\`${r.sig !== signature(a) ? ' (art changed since review)' : ''}${r.note ? ': ' + r.note.replace(/\s+/g, ' ') : ''}`); }
+    lines.push('');
+  }
+  const notes = D.assets.filter(a => reviews[a.key] && !reviews[a.key].status && reviews[a.key].note);
+  if (notes.length) { lines.push('## Notes'); notes.forEach(a => lines.push(`- \`${a.key}\`: ${reviews[a.key].note}`)); }
+  const text = lines.join('\n');
+  navigator.clipboard?.writeText(text).then(() => flash('Copied review notes'), () => prompt('Copy review notes', text)) ?? prompt('Copy review notes', text);
+}
+function flash(text) { const b = document.getElementById('copy-notes'), old = b.textContent; b.textContent = text; setTimeout(() => { b.textContent = old; }, 1400); }
+
+function wire() {
+  document.getElementById('views').onclick = e => { const v = e.target.closest('button')?.dataset.view; if (v) { state.view = v; renderView(); savePrefs(); } };
+  document.getElementById('modes').onclick = e => { const m = e.target.closest('button')?.dataset.mode; if (m) { state.mode = m; renderDetail(); savePrefs(); } };
+  document.getElementById('zoom-in').onclick = () => setZoom(zoom(asset()) + 1); document.getElementById('zoom-out').onclick = () => setZoom(zoom(asset()) - 1);
+  document.getElementById('zoom-fit').onclick = () => setZoom(null); document.getElementById('zoom-device').onclick = () => setZoom(Math.max(1, Math.round(asset().device_scale)));
+  document.getElementById('grid').onclick = () => { state.grid = !state.grid; renderDetail(); savePrefs(); };
+  document.getElementById('issues').onclick = () => { state.issues = !state.issues; renderDetail(); savePrefs(); };
+  document.getElementById('changed-only').onclick = e => { state.changedOnly = !state.changedOnly; e.target.setAttribute('aria-pressed', state.changedOnly); renderList(); if (state.view === 'sheet') renderSheet(); savePrefs(); };
+  document.getElementById('query').oninput = e => { state.query = e.target.value; renderList(); if (state.view === 'sheet') renderSheet(); };
+  document.getElementById('copy-notes').onclick = exportNotes;
+  document.getElementById('verdict').onclick = e => { const b = e.target.closest('button'); if (b) setVerdict(b.dataset.verdict); };
+  document.getElementById('note').oninput = () => { const a = asset(); const r = reviews[a.key] || {status: '', sig: signature(a)}; r.note = document.getElementById('note').value; reviews[a.key] = r; store.set('reviews', reviews); };
+  document.getElementById('physical').onclick = () => { state.physical = !state.physical; renderContext(asset()); savePrefs(); };
+  document.getElementById('ppi').oninput = e => { const v = Number(e.target.value); if (v >= 60 && v <= 300) { state.ppi = v; renderContext(asset()); savePrefs(); } };
+  document.getElementById('sheet-show').onclick = e => { const s = e.target.closest('button')?.dataset.show; if (s) { state.sheetShow = s; renderSheet(); savePrefs(); } };
+  document.getElementById('sheet-scale').onclick = e => { const s = e.target.closest('button')?.dataset.scale; if (s) { state.sheetScale = s; renderSheet(); savePrefs(); } };
+  document.getElementById('changed-only').setAttribute('aria-pressed', state.changedOnly);
+  window.addEventListener('resize', () => { if (state.view === 'detail' && !state.zoom) renderStage(); });
+  document.addEventListener('keydown', e => {
+    if (e.target.matches?.('input, textarea, select')) return;
+    const k = e.key.toLowerCase();
+    if (e.repeat && !['j', 'k', 'arrowdown', 'arrowup', '[', ']', '=', '-', '+', ' '].includes(k)) return;  // toggles fire once per press
+    if (window.Studio?.keydown(e)) return;
+    if (k === ' ') { e.preventDefault(); if (!state.peek) { state.peek = true; document.body.classList.add('peeking'); state.view === 'detail' ? (renderStage(), renderContext(asset())) : renderSheet(); } return; }
+    if (k === 'j' || e.key === 'ArrowDown') { e.preventDefault(); step(1); }
+    else if (k === 'k' || e.key === 'ArrowUp') { e.preventDefault(); step(-1); }
+    else if (k >= '1' && k <= String(MODES.length)) { state.mode = MODES[Number(k) - 1]; renderDetail(); savePrefs(); }
+    else if (k === ']' || k === '=' || k === '+') setZoom(zoom(asset()) + 1);
+    else if (k === '[' || k === '-') setZoom(zoom(asset()) - 1);
+    else if (k === '0') setZoom(null);
+    else if (k === 'd') setZoom(Math.max(1, Math.round(asset().device_scale)));
+    else if (k === 'g') { state.grid = !state.grid; renderDetail(); savePrefs(); }
+    else if (k === 'i') { state.issues = !state.issues; renderDetail(); savePrefs(); }
+    else if (k === 'b') { const names = Object.keys(BACKDROPS), a = asset(); state.backdrop = names[(names.indexOf(backdropFor(a)) + 1) % names.length]; renderDetail(); }
+    else if (k === 'a') setVerdict('ok');
+    else if (k === 'x') setVerdict('fix');
+    else if (k === 's') { state.view = state.view === 'sheet' ? 'detail' : 'sheet'; renderView(); savePrefs(); }
+  });
+  document.addEventListener('keyup', e => { if (e.key === ' ' && state.peek) { state.peek = false; document.body.classList.remove('peeking'); state.view === 'detail' ? (renderStage(), renderContext(asset())) : renderSheet(); } });
+  setInterval(() => { if (state.blink && state.mode === 'flip' && state.view === 'detail' && !document.hidden) { state.flipBefore = !state.flipBefore; renderStage(); } }, 550);
+}
+
+async function loadPayload(data) {
+  const next = {};
+  await Promise.all(data.assets.map(async a => { next[a.key] = {before: await decode(a.before), after: await decode(a.after)}; }));
+  D = data; byKey = Object.fromEntries(D.assets.map(a => [a.key, a])); decoded = next;
+}
+async function boot() {
+  if (BOOT.live && window.Studio) await window.Studio.boot(); else await loadPayload(BOOT);
+  const hash = new URLSearchParams(location.hash.slice(1));
+  if (MODES.includes(hash.get('mode'))) state.mode = hash.get('mode');
+  if (!MODES.includes(state.mode)) state.mode = 'side';
+  if (Number(hash.get('zoom'))) state.zoom = Number(hash.get('zoom'));
+  const first = filtered()[0] || D.assets[0];
+  state.key = byKey[hash.get('key')] ? hash.get('key') : first.key;
+  wire(); renderTotals(); renderKinds(); renderList(); renderView();
+  document.body.dataset.ready = 'true';
+}
+window.addEventListener('DOMContentLoaded', boot);
+</script>
+<script>/*__STUDIO_JS__*/</script>
+</body>
+</html>

@@ -26,6 +26,7 @@ On macOS, install Xcode command-line tools, then:
 brew install cmake ninja sdl2
 make run           # build, play, and save to build/pet-save.0 / .1
 make run-live      # same game, with authored PNG hot reload
+make jelli-art    # browser pixel editor with before/after review
 ```
 
 First builds download the pinned local Python/asset tools. Nothing changes your
@@ -59,8 +60,10 @@ and sleep history. The same protocol works over the ESP32 USB port. Details:
 
 ## Art workflow
 
-Edit PNGs under `assets/slice/` while `make run-live` runs. Valid edits refresh
+Paint in the browser with `make jelli-art`, or edit PNGs under `assets/slice/`
+in any editor, while `make run-live` runs. Valid edits refresh
 without restarting the pet; bad or incomplete files retain the last valid art.
+Style rules are in the [pixel art guide](docs/pixel-art-guide.md).
 Bounds, centroids, and creature ground anchors update with the image.
 
 ```sh
