@@ -49,6 +49,16 @@ and **deep**.
 | Coral / pink | cream `#fff4cf` | coral `#fa8c99` | rose `#d84f70` | rose |
 | Gold | cream | gold `#f5c764` | tan `#ae7855` | tan |
 | Sea / teal | mint | sea | teal | teal |
+| Recess | | mauve `#72516b` | plum `#49334f` | |
+
+The ramps live in `palette_ramps` in `assets/slice/assets.json`, light to deep,
+for the shared palette and each named palette, and `palette_names` names each
+palette's colours, keyed by colour. Purple object and sea / teal are parts of
+the lilac and mint ramps, not separate ramps. Jelli Art draws its colours as one
+row per ramp, and its **Shade** tool steps a pixel one colour lighter or deeper
+along its ramp. Cream is the light end of both coral and gold; Shade follows the
+row you chose it from. `build_slice.py` checks that every ramp colour is in its
+palette and that each ramp darkens step by step.
 
 - **Ink `#291b35`** is reserved for outlines and facial features. It is never a
   fill.
