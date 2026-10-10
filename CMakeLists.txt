@@ -111,6 +111,8 @@ if(BUILD_TESTING)
     add_test(NAME pet_health COMMAND jelli_pet_health_tests)
     add_test(NAME sprite_geometry COMMAND "${JELLI_ASSET_UV}" run --python 3.12
       "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_sprite_geometry.py")
+    add_test(NAME jelli_art_creatures COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+      "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_creatures.py")
     add_test(NAME sdl_shapes_smoke COMMAND jelligotchi --shapes --headless --frames 5)
     add_test(NAME sdl_pet_smoke COMMAND jelligotchi --pet --headless --frames 5)
     add_test(NAME sdl_pet_demo COMMAND jelligotchi --pet --headless --demo --frames 780)
