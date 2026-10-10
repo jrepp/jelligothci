@@ -31,6 +31,7 @@
   function selectField(label,key,values) {
     return `<label>${label}<select data-field="${key}">${opts(values,work.moments[selected][key])}</select></label>`;
   }
+  const meters = ['satiety','energy','hygiene','amusement','social','hydration','bond'];
   const timeString = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
   function render() {
     sync(); cancelAnimationFrame(frame);
@@ -54,19 +55,47 @@
       <fieldset><legend>Eligible pets (none selected = all)</legend>${forms.map(f=>`<label><input type="checkbox" data-form="${f.id}" ${m.forms.includes(f.id)?'checked':''}>${esc(f.name)}</label>`).join('')}</fieldset>
       ${selectField('Shared animation','animation',(D.activity_animations||[]).map(a=>[a,a]))}
       ${selectField('Menu icon','icon',sprites)}${selectField('Animated prop','prop',[[0,'None'],...sprites])}
-      ${selectField('Location','location',[['stay','Stay here'],['home','Home'],['garden','Garden']])}
-      <fieldset><legend>Additional need gains</legend>${['satiety','energy','hygiene','amusement','social'].map(n=>`<label>${n}<input data-gain="${n}" type="number" min="0" max="1000" value="${m.gains[n]||0}"></label>`).join('')}</fieldset></div>
+      <fieldset><legend>Allowed locations</legend>${(D.activity_locations||[]).map(p=>`<label><input type="checkbox" data-place="${esc(p.key)}" ${m.locations.includes(p.key)?'checked':''}>${esc(p.name)}</label>`).join('')}
+      <label><input id="ac-random-place" type="checkbox" ${m.randomize_location?'checked':''}>Choose a random allowed location at start</label><p>Otherwise stay here if allowed, or travel to the first allowed location in the catalog.</p></fieldset>
+      <p>Meter points use a 0–100 scale. Costs are paid when accepted; rewards arrive on completion. Interrupted activities keep their costs and give no rewards.${m.kind==='feed'?' Meals also consume one food at start.':''}</p>
+      ${['gains','costs'].map(effect=>`<fieldset><legend>${effect==='gains'?'Provides on completion':'Consumes at start'}</legend>${meters.map(n=>`<label>${n}<input data-effect="${effect}" data-meter="${n}" type="number" min="0" max="100" step="0.1" value="${(m[effect][n]||0)/10}"></label>`).join('')}</fieldset>`).join('')}
+      ${field('Reward jitter (±%)','jitter_pct','number','min="0" max="25"')}
+      <fieldset><legend>Pet reward bonuses (%)</legend><p>Overrides the pet’s behavior affinity for this activity. Leave blank to inherit it. Costs stay fixed.</p>${forms.map(f=>`<label>${esc(f.name)}<input data-bonus="${f.id}" type="number" min="0" max="100" placeholder="Inherit" value="${m.bonuses.find(b=>b.form===f.id)?.percent??''}"></label>`).join('')}</fieldset>
+      <fieldset><legend>Pet activity costs (all recipes)</legend><p>100% is the base cost. Younger Mint spends extra energy; Axolotl spends extra hydration.</p>${forms.map(f=>{const c=work.pet_costs.find(c=>c.form===f.id);return `<h4>${esc(f.name)}</h4>${['energy','hydration'].map(n=>`<label>${n} cost %<input data-pet-cost="${f.id}" data-cost-meter="${n}_pct" type="number" min="0" max="300" value="${c?.[n+'_pct']??100}"></label>`).join('')}`;}).join('')}</fieldset>
+      <p>Bond is slow progress: most recipes provide 0.1–0.4 points; other meters change by whole points.</p>
+      <p>Reward ranges include jitter and this pet’s activity bonus. Existing sleep-habit effects on fun/connection and favorite-time extras also apply; meters cap at 100.</p>
+      <div id="ac-effects"></div></div>
       <aside><label>Preview pet<select id="ac-form">${opts(forms.map(f=>[f.id,f.name]),previewForm)}</select></label><canvas id="ac-preview" width="220" height="220" aria-label="Shared prop animation preview"></canvas><p>Shared prop motion. In-game placement follows each pet’s bounds.</p></aside></div>`;
     root.querySelectorAll('[data-activity]').forEach(b => b.onclick=()=>{selected=Number(b.dataset.activity);render();});
-    root.querySelector('#ac-form').onchange=e=>{previewForm=Number(e.target.value);};
+    root.querySelector('#ac-form').onchange=e=>{previewForm=Number(e.target.value);render();};
     root.querySelectorAll('[data-time]').forEach(el=>el.onchange=()=>{const [h,min]=el.value.split(':').map(Number); m[el.dataset.time]=(h*60+min)||(el.dataset.time==='end_minute'?1440:0);render();});
     root.querySelectorAll('[data-field]').forEach(el=>el.onchange=()=>{const k=el.dataset.field; m[k]=['name','kind','location','animation'].includes(k)?el.value:Number(el.value);render();});
-    root.querySelectorAll('[data-gain]').forEach(el=>el.onchange=()=>{m.gains[el.dataset.gain]=Number(el.value);render();});
+    root.querySelectorAll('[data-effect]').forEach(el=>el.onchange=()=>{m[el.dataset.effect][el.dataset.meter]=Math.round(Number(el.value)*10);render();});
+    root.querySelectorAll('[data-bonus]').forEach(el=>el.onchange=()=>{const form=Number(el.dataset.bonus);m.bonuses=m.bonuses.filter(b=>b.form!==form);if(el.value!=='')m.bonuses.push({form,percent:Number(el.value)});render();});
+    root.querySelectorAll('[data-place]').forEach(el=>el.onchange=()=>{m.locations=Array.from(root.querySelectorAll('[data-place]:checked'),x=>x.dataset.place);render();});
+    root.querySelector('#ac-random-place').onchange=e=>{m.randomize_location=e.target.checked;render();};
+    root.querySelectorAll('[data-pet-cost]').forEach(el=>el.onchange=()=>{const c=work.pet_costs.find(c=>c.form===Number(el.dataset.petCost));c[el.dataset.costMeter]=Number(el.value);render();});
     root.querySelectorAll('[data-form]').forEach(el=>el.onchange=()=>{m.forms=Array.from(root.querySelectorAll('[data-form]:checked'),x=>Number(x.dataset.form));render();});
     root.querySelector('#ac-save').onclick=save;
     root.querySelector('#ac-revert').onclick=()=>{work=null;base=null;render();};
     root.querySelector('#ac-add').onclick=()=>{work.moments.push({...clone(m),id:work.moments.length,name:`ACTIVITY ${work.moments.length}`,suggest_hour:-1,requires:-1});selected=work.moments.length-1;render();};
+    effectPreview(m, forms);
     preview();
+  }
+  function effectPreview(m, forms) {
+    const bonus=m.bonuses.find(b=>b.form===previewForm);
+    const form=forms.find(f=>f.id===previewForm);
+    const affinity=(D.behavior_data?.repertoires||[]).find(r=>(r.forms||[]).includes(form?.name))?.affinities?.find(a=>a.moment===m.name);
+    const percent=bonus?.percent??affinity?.bonus_pct??0;
+    const profile=work.pet_costs.find(c=>c.form===previewForm);
+    const cost=n=>Math.ceil((m.costs[n]||0)*(profile?.[n+'_pct']??100)/100)/10;
+    const rows=meters.filter(n=>m.gains[n]||m.costs[n]).map(n=>{
+      const gain=m.gains[n]||0, factor=100+percent;
+      const low=Math.round(gain*factor*(100-m.jitter_pct)/10000)/10;
+      const high=Math.round(gain*factor*(100+m.jitter_pct)/10000)/10;
+      return `<tr><td>${n}</td><td>${gain?`+${low.toFixed(1)}–${high.toFixed(1)}`:'—'}</td><td>${m.costs[n]?`−${cost(n)}`:'—'}</td></tr>`;
+    }).join('');
+    root.querySelector('#ac-effects').innerHTML=`<h4>${esc(form?.name||'Pet')} reward range (+${percent}%)</h4><table><thead><tr><th>Meter</th><th>Provides</th><th>Consumes</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
   function preview() {
     if (state.view !== 'activities') return;

@@ -101,6 +101,8 @@ JelliResult jelli_moment_available(const JelliGame *game, const JelliPet *pet, u
     if (!unlocked(game, pet, id) ||
         (jelli_moments[id].random_weight && random_choice(game, pet) != id))
         return JELLI_NOT_READY;
+    if (jelli_moment_cost_hint(pet, id)[0])
+        return JELLI_NOT_READY;
     return JELLI_OK;
 }
 
@@ -128,5 +130,8 @@ const char *jelli_moment_hint(const JelliGame *game, const JelliPet *pet, unsign
     if (m->requires && (pet->activity_day != jelli_activity_day(game, pet) ||
                         !(pet->completed_moments & (UINT32_C(1) << (m->requires - 1u)))))
         return m->prerequisite_hint;
+    const char *cost = jelli_moment_cost_hint(pet, id);
+    if (cost[0])
+        return cost;
     return m->random_weight ? "CHANGES EACH HOUR" : "TRY AGAIN LATER";
 }

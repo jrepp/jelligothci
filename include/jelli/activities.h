@@ -4,10 +4,13 @@
 
 /* Generated from content/activities.json by cmake/JelliActivities.cmake (RFC-005). */
 #define JELLI_MOMENT_CAPACITY 32u
+#define JELLI_ACTIVITY_METERS 7u
+#define JELLI_ACTIVITY_HYDRATION 5u
+#define JELLI_ACTIVITY_BOND 6u
+#define JELLI_ACTIVITY_BONUSES 8u
 #define JELLI_MOMENT_NEVER_SUGGESTED 255u
 
 typedef enum { JELLI_MOMENT_FEED, JELLI_MOMENT_PLAY } JelliMomentKind;
-typedef enum { JELLI_MOMENT_STAY, JELLI_MOMENT_HOME, JELLI_MOMENT_GARDEN } JelliMomentLocation;
 
 typedef enum {
     JELLI_ANIM_HOLD,
@@ -31,11 +34,18 @@ typedef enum {
 } JelliActivityAnimation;
 
 typedef struct {
+    uint8_t form, percent;
+} JelliActivityBonus;
+
+typedef struct {
     const char *name;
     const char *window_hint, *prerequisite_hint;
-    uint8_t kind, location;
+    uint8_t kind, locations; /* Bitset of catalog location IDs. */
+    bool randomize_location;
     uint8_t suggest_hour; /* First hour of its suggestion window, or NEVER_SUGGESTED. */
-    uint16_t gains[JELLI_NEED_COUNT];
+    uint16_t gains[JELLI_ACTIVITY_METERS], costs[JELLI_ACTIVITY_METERS];
+    uint8_t jitter_pct, bonus_count;
+    JelliActivityBonus bonuses[JELLI_ACTIVITY_BONUSES];
     uint16_t duration_s, start_minute, end_minute;
     uint32_t forms; /* Zero permits every form; otherwise one bit per stable form ID. */
     uint8_t random_weight,
@@ -44,6 +54,12 @@ typedef struct {
     uint32_t icon, prop; /* Asset IDs; prop 0 means none. */
 } JelliMoment;
 
+typedef struct {
+    uint8_t form;
+    uint16_t energy_pct, hydration_pct;
+} JelliActivityPetCosts;
+extern const JelliActivityPetCosts jelli_activity_pet_costs[];
+extern const unsigned jelli_activity_pet_cost_count;
 extern const JelliMoment jelli_moments[];
 extern const unsigned jelli_moment_count;
 
@@ -68,5 +84,14 @@ unsigned jelli_moment_suggested(unsigned hour);
 JelliResult jelli_moment_available(const JelliGame *game, const JelliPet *pet, unsigned id);
 uint16_t jelli_activity_day(const JelliGame *game, const JelliPet *pet);
 const char *jelli_moment_hint(const JelliGame *game, const JelliPet *pet, unsigned id);
+/* Costs are fixed and paid once on acceptance; rewards are paid on completion. */
+unsigned jelli_activity_cost(const JelliPet *pet, unsigned index, unsigned base);
+unsigned jelli_moment_cost(const JelliPet *pet, unsigned id, unsigned index);
+unsigned jelli_moment_location(const JelliPet *pet, unsigned id);
+const char *jelli_moment_cost_hint(const JelliPet *pet, unsigned id);
+void jelli_moment_charge(JelliGame *game, JelliPet *pet, unsigned id);
+void jelli_moment_reward(const JelliGame *game, JelliPet *pet);
+unsigned jelli_moment_bonus_percent(const JelliPet *pet, unsigned id);
+unsigned jelli_moment_jitter_percent(const JelliPet *pet, unsigned id);
 void jelli_moment_complete(const JelliGame *game, JelliPet *pet);
 #endif

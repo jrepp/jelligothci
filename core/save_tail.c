@@ -40,4 +40,14 @@ void jelli_save_read_tail(Reader *reader, JelliGame *game)
             pet->completed_moments = get_u32(reader);
         }
     }
+    /* v13 pays recipe costs at start and rewards at completion. Old in-flight
+     * recipes may already have granted rewards; retire them without replay. */
+    for (unsigned i = 0u; i < game->count && reader->version < 13u; ++i) {
+        JelliPet *pet = &game->pets[i];
+        if (pet->moment && (pet->activity == JELLI_EATING || pet->activity == JELLI_PLAYING)) {
+            pet->moment = 0u;
+            pet->activity = JELLI_IDLE;
+            pet->interaction_due = 0u;
+        }
+    }
 }

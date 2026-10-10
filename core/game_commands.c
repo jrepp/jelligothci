@@ -298,7 +298,7 @@ static JelliResult healthy_click(JelliPet *pet, uint32_t activity)
     return JELLI_OK;
 }
 
-static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
+static JelliResult moment(JelliGame *game, JelliPet *pet, uint32_t choice)
 {
     JelliResult available = jelli_moment_available(game, pet, choice);
     if (available != JELLI_OK)
@@ -311,12 +311,8 @@ static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
     if (result != JELLI_OK)
         return result;
     pet->interaction_due = pet->ticks + duration;
-    unsigned percent = jelli_behavior_moment_percent(pet, choice); /* Species affinity. */
-    for (unsigned need = 0u; need < JELLI_NEED_COUNT; ++need)
-        if (m->gains[need])
-            (void)boost_need(pet, (JelliNeed)need, m->gains[need] * percent / 100u);
-    if (m->location != JELLI_MOMENT_STAY)
-        pet->location = m->location == JELLI_MOMENT_GARDEN ? 1u : 0u;
+    jelli_moment_charge(game, pet, choice);
+    pet->location = (uint8_t)jelli_moment_location(pet, choice);
     pet->moment = (uint8_t)(choice + 1u);
     return JELLI_OK;
 }

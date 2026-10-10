@@ -1,8 +1,8 @@
 """Behaviour content for Jelli Art: content/behaviors.json and its vocabulary (RFC-005).
 
-The engine owns the vocabulary. Stimulus, need, command, health, care and
-location names come from the set() lists at the top of the checkout's
-cmake/JelliBehaviors.cmake, and the numbers the simulator needs (stimulus kinds,
+The engine owns the vocabulary. Stimulus, need, command, health and care names
+come from the set() lists in cmake/JelliBehaviors.cmake; locations come from
+content/locations.json, and the numbers the simulator needs (stimulus kinds,
 activity codes, need and command enums) come from the checkout's C headers, so
 the studio follows the engine instead of copying it. cmake/JelliBehaviors.cmake
 is also the validator: a candidate is checked by running it with `cmake -P` on a
@@ -67,6 +67,8 @@ def vocabulary(repo, content):
         return None
     lists = cmake_lists(cmake)
     short = {k.removeprefix("JELLI_BEHAVIOR_").lower(): v for k, v in lists.items()}
+    locations = read_json(Path(content) / "locations.json") or {}
+    short["locations"] = [p["key"] for p in locations.get("locations", [])]
     enums = c_enums([Path(repo) / h for h in HEADERS if (Path(repo) / h).exists()])
     activities = read_json(Path(content) / "activities.json") or {}
     pets = read_json(Path(content) / "pets.json") or {}
@@ -113,9 +115,10 @@ def validate(doc, repo, content):
     with tempfile.TemporaryDirectory(prefix="jelli-art-behaviors-") as scratch:
         work = Path(scratch)
         (work / "cmake").mkdir()
+        shutil.copy(Path(repo) / "cmake/JelliLocations.cmake", work / "cmake")
         (work / "content").mkdir()
         shutil.copy(source, work / "cmake")
-        for name in ("activities.json", "pets.json"):
+        for name in ("activities.json", "pets.json", "locations.json"):
             shutil.copy(Path(content) / name, work / "content")
         (work / "content/behaviors.json").write_text(json.dumps(doc, indent=2) + "\n")
         driver = work / "check.cmake"

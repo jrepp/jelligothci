@@ -13,7 +13,8 @@ with tempfile.TemporaryDirectory(prefix="jelli-behaviors-") as directory:
     (work / "cmake").mkdir()
     (work / "content").mkdir()
     shutil.copy(root / "cmake/JelliBehaviors.cmake", work / "cmake")
-    for name in ("activities.json", "pets.json"):
+    shutil.copy(root / "cmake/JelliLocations.cmake", work / "cmake")
+    for name in ("activities.json", "pets.json", "locations.json"):
         shutil.copy(root / "content" / name, work / "content")
     driver = work / "check.cmake"
     # Standalone -P scripts do not inherit the project's CMake policy baseline (memo-035).

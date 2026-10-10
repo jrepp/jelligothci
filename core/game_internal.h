@@ -3,7 +3,7 @@
 
 #include "jelli/game.h"
 
-void jelli_game_preference(JelliGame *game, JelliCommand command);
+void jelli_game_preference(const JelliGame *game, JelliPet *pet);
 JelliResult jelli_game_touch(JelliPet *pet);
 void jelli_pet_touch_decay(JelliPet *pet, uint64_t ticks);
 void jelli_game_endpoint(JelliGame *game, JelliPet *pet, uint64_t ticks, bool offline);

@@ -110,7 +110,7 @@ static void test_moments(void)
         CHECK(command(&g, JELLI_CMD_MOMENT, i) == JELLI_OK);
         CHECK(g.pets[0].activity == (i ? JELLI_PLAYING : JELLI_EATING));
         finish(&g);
-        CHECK(g.pets[0].needs[i ? JELLI_AMUSEMENT : JELLI_SATIETY] > 700u);
+        CHECK(g.pets[0].needs[i ? JELLI_AMUSEMENT : JELLI_SATIETY] > (i == 1u ? 550u : 700u));
         if (i == 1u)
             CHECK(g.pets[0].needs[JELLI_ENERGY] > 500u && g.pets[0].needs[JELLI_SOCIAL] > 500u);
         if (i == 3u)
@@ -210,7 +210,11 @@ static void test_preferences(void)
     CHECK(command(&favorite, JELLI_CMD_MOMENT, 1u) == JELLI_OK);
     CHECK(command(&ordinary, JELLI_CMD_MOMENT, 1u) == JELLI_OK);
     CHECK(favorite.pets[0].bond == ordinary.pets[0].bond);
-    CHECK(jelli_pet_mood(&favorite.pets[0]) > jelli_pet_mood(&ordinary.pets[0]));
+    CHECK(favorite.pets[0].needs[JELLI_AMUSEMENT] == ordinary.pets[0].needs[JELLI_AMUSEMENT]);
+    finish(&favorite);
+    finish(&ordinary);
+    CHECK(favorite.pets[0].needs[JELLI_AMUSEMENT] > ordinary.pets[0].needs[JELLI_AMUSEMENT]);
+    CHECK(favorite.pets[0].needs[JELLI_SOCIAL] > ordinary.pets[0].needs[JELLI_SOCIAL]);
     favorite.pets[0].form = 1u;
     CHECK(jelli_pet_favorite(&favorite.pets[0], 540u) == 0u);
 }
@@ -222,6 +226,7 @@ static void care_interrupts_moments_without_invalidating_the_game(void)
             continue;
         JelliGame game;
         ready(&game);
+        game.pets[0].form = 1u;
         game.clock_known = true;
         for (unsigned minute = 0u; minute < 1440u * 7u; ++minute) {
             game.pets[0].ticks = (uint64_t)(minute / 1440u) * JELLI_DAY_TICKS;

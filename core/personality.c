@@ -44,14 +44,13 @@ unsigned jelli_pet_favorite(const JelliPet *pet, unsigned minute)
     return count ? p->windows[count - 1u].moment : 0u;
 }
 
-void jelli_game_preference(JelliGame *game, JelliCommand command)
+void jelli_game_preference(const JelliGame *game, JelliPet *pet)
 {
-    JelliPet *pet = &game->pets[game->active];
     unsigned minute = game->clock_known
                           ? game->clock_minute
                           : (unsigned)((pet->ticks % JELLI_DAY_TICKS + pet->phase_offset) %
                                        JELLI_DAY_TICKS / 600u);
-    if (command.kind != JELLI_CMD_MOMENT || command.value != jelli_pet_favorite(pet, minute))
+    if (!pet->moment || pet->moment - 1u != jelli_pet_favorite(pet, minute))
         return;
     const JelliFavoriteProfile *p = favorite_profile(pet);
     bool strong = minute >= p->strong_from_minute && minute < p->strong_until_minute;

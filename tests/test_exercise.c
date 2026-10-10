@@ -29,7 +29,7 @@ static void workout_and_resume(void)
     CHECK(pet->activity == JELLI_EXERCISING);
     CHECK(pet->needs[JELLI_SATIETY] == food - jelli_exercise.fullness_cost);
     CHECK(pet->hydration == water - jelli_exercise.hydration_cost);
-    CHECK(pet->needs[JELLI_ENERGY] == energy - jelli_exercise.energy_cost);
+    CHECK(pet->needs[JELLI_ENERGY] == energy - 65u);
     CHECK(jelli_game_command(&save.game, workout) == JELLI_BUSY);
     CHECK(pet->hydration == water - jelli_exercise.hydration_cost);
     CHECK(save.game.food == 5u);

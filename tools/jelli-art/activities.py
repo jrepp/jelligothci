@@ -36,7 +36,11 @@ def validate(doc, repo, content, manifest):
         work = Path(scratch)
         (work / 'cmake').mkdir()
         (work / 'content').mkdir()
-        shutil.copy(Path(repo) / 'cmake/JelliActivities.cmake', work / 'cmake')
+        for name in ('JelliActivities.cmake', 'JelliLocations.cmake', 'JelliActivityCosts.cmake'):
+            shutil.copy(Path(repo) / 'cmake' / name, work / 'cmake')
+        shutil.copy(Path(content) / 'locations.json', work / 'content')
+        (work / 'assets/slice').mkdir(parents=True)
+        (work / 'assets/slice/assets.json').write_text(json.dumps(manifest))
         shutil.copy(Path(content) / 'pets.json', work / 'content')
         (work / 'content/activities.json').write_text(json.dumps(doc))
         driver = work / 'check.cmake'

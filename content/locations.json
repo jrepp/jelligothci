@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "locations": [
+    {"id": 0, "key": "home", "name": "HOME"},
+    {"id": 1, "key": "garden", "name": "GARDEN"}
+  ]
+}
