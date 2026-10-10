@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#define SAVE_VERSION 4u
+#define SAVE_VERSION JELLI_SAVE_VERSION
 #define SAVE_CONTENT_VERSION 1u
 #define SAVE_HEADER_SIZE 32u
 #define SAVE_TRAILER_SIZE 8u
@@ -96,6 +96,7 @@ static bool read_bool(Reader *reader, bool *value)
 
 static void read_pet(Reader *reader, JelliPet *pet)
 {
+    pet->hydration = 700u; /* Neutral default for saves predating hydration. */
     pet->id = get_u32(reader);
     pet->ticks = get_u64(reader);
     pet->stage_ticks = get_u64(reader);
@@ -208,6 +209,10 @@ static void write_game(Writer *writer, const JelliGame *game)
         put_u8(writer, game->pets[i].collection_entry);
         put_u8(writer, (uint8_t)(game->pets[i].reached_forms | (1u << game->pets[i].form)));
     }
+    for (unsigned i = 0u; i < game->count; ++i) {
+        put_u16(writer, game->pets[i].hydration);
+        put_u16(writer, game->pets[i].hydration_remainder);
+    }
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -250,6 +255,12 @@ static bool read_game(Reader *reader, JelliGame *game)
         }
     } else {
         jelli_collection_migrate(game);
+    }
+    if (reader->version >= 5u) {
+        for (unsigned i = 0u; i < game->count; ++i) {
+            game->pets[i].hydration = get_u16(reader);
+            game->pets[i].hydration_remainder = get_u16(reader);
+        }
     }
     return !reader->failed;
 }

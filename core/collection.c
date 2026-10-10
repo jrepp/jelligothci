@@ -66,6 +66,7 @@ void jelli_collection_unlock(JelliGame *game)
                                                .random_state = id,
                                                .needs = {500u, 700u, 700u, 500u, 500u},
                                                .bond = 100u,
+                                               .hydration = 700u,
                                                .health = JELLI_WELL,
                                                .activity = JELLI_IDLE};
         game->new_pets |= (uint16_t)(1u << i);

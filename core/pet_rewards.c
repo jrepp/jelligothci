@@ -5,6 +5,8 @@ uint16_t jelli_pet_reward_stat(const JelliPet *pet, unsigned stat)
 {
     if (stat >= 1u && stat <= JELLI_NEED_COUNT)
         return pet->needs[stat - 1u];
+    if (stat == 8u)
+        return pet->hydration;
     if (stat == 6u)
         return pet->bond;
     if (stat == 7u)
@@ -28,9 +30,13 @@ static void clear(JelliPetRewards *r)
 
 static void add_gains(JelliPetRewards *r, const JelliEvent *event)
 {
-    for (unsigned i = 0u; i < 6u; ++i) {
-        int before = i < 5u ? event->before.needs[i] : event->before.bond;
-        int after = i < 5u ? event->after.needs[i] : event->after.bond;
+    for (unsigned i = 0u; i < 7u; ++i) {
+        int before = i < 5u    ? event->before.needs[i]
+                     : i == 5u ? event->before.bond
+                               : event->before.hydration;
+        int after = i < 5u    ? event->after.needs[i]
+                    : i == 5u ? event->after.bond
+                              : event->after.hydration;
         int gain = r->gains[i] + after - before;
         r->gains[i] = (int16_t)(gain > 1000 ? 1000 : gain < -1000 ? -1000 : gain);
     }
@@ -50,11 +56,12 @@ static void finish(JelliPetRewards *r, const JelliPet *pet)
     r->visible = false;
     r->burst = false;
     ++r->completed;
-    for (unsigned i = 0u; i < 6u; ++i) {
-        uint16_t to = jelli_pet_reward_stat(pet, i + 1u);
+    for (unsigned i = 0u; i < 7u; ++i) {
+        unsigned stat = i == 6u ? 8u : i + 1u;
+        uint16_t to = jelli_pet_reward_stat(pet, stat);
         if (r->gains[i] > 0) {
             unsigned gain = (unsigned)r->gains[i];
-            append(r, i + 1u, gain > to ? 0u : (uint16_t)(to - gain), to);
+            append(r, stat, gain > to ? 0u : (uint16_t)(to - gain), to);
         }
     }
     r->pending = r->health = false;
@@ -117,9 +124,9 @@ static void wake_rewards(JelliPetRewards *r, JelliGame *game, const JelliEvent *
 
 static bool activity_command(unsigned code)
 {
-    return code == JELLI_CMD_FEED || code == JELLI_CMD_PLAY || code == JELLI_CMD_CLEAN ||
-           code == JELLI_CMD_CARE || code == JELLI_CMD_GIFT || code == JELLI_CMD_MOMENT ||
-           code == JELLI_CMD_TRAVEL;
+    return code == JELLI_CMD_WATER || code == JELLI_CMD_FEED || code == JELLI_CMD_PLAY ||
+           code == JELLI_CMD_CLEAN || code == JELLI_CMD_CARE || code == JELLI_CMD_GIFT ||
+           code == JELLI_CMD_MOMENT || code == JELLI_CMD_TRAVEL;
 }
 
 static void consume(JelliPetRewards *r, JelliGame *game, const JelliEvent *event,

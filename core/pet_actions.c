@@ -34,7 +34,8 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
                                    JELLI_CMD_HEALTH,
                                    JELLI_CMD_HEALTH,
                                    JELLI_CMD_HEALTH,
-                                   JELLI_CMD_HEALTH};
+                                   JELLI_CMD_HEALTH,
+                                   JELLI_CMD_WATER};
     if ((unsigned)action >= sizeof(kinds) / sizeof(kinds[0]) || kinds[action] < 0)
         return false;
     const JelliPet *pet = &game->pets[game->active];

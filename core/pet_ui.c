@@ -21,7 +21,8 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
                                       {JELLI_UI_ACTION_BASIC_CARE, "BASIC CARE", NULL},
                                       {JELLI_UI_ACTION_CLEAN_WAKE, "CLEAN", NULL},
                                       {JELLI_UI_ACTION_PLAY, "PLAY", NULL},
-                                      {JELLI_UI_ACTION_HEALTH, "HEALTH", NULL}},
+                                      {JELLI_UI_ACTION_HEALTH, "HEALTH", NULL},
+                                      {JELLI_UI_ACTION_WATER, "WATER", NULL}},
                                      {{JELLI_UI_ACTION_GIFT, "GIFT", NULL},
                                       {JELLI_UI_ACTION_CLAIM, "CLAIM", NULL},
                                       {JELLI_UI_ACTION_TRAVEL, "TRAVEL", NULL}},
@@ -78,6 +79,8 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 
 static bool action_persists(JelliPetUiAction action)
 {
+    if (action == JELLI_UI_ACTION_WATER)
+        return true;
     static const bool persists[] = {true,  false, true, false, false, false, true, true,
                                     true,  false, true, true,  true,  true,  true, true,
                                     false, true,  true, true,  true,  true};
@@ -107,7 +110,8 @@ static void execute(JelliPetUi *ui, JelliGame *game, JelliPetUiAction action)
     if (jelli_pet_ui_command(ui, game, action, &command))
         result = jelli_game_command(game, command);
     ui->result = result;
-    if (result == JELLI_OK && game->pets[game->active].activity != JELLI_IDLE &&
+    if (result == JELLI_OK &&
+        (game->pets[game->active].activity != JELLI_IDLE || action == JELLI_UI_ACTION_WATER) &&
         action != JELLI_UI_ACTION_SAVE) {
         ui->menu_open = false;
         ui->page = JELLI_UI_HOME;
@@ -271,7 +275,8 @@ void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)
         jelli_pet_ui_back(ui);
     } else if (dx && !dy && !ui->menu_open && !ui->last_view.ring_moving) {
         jelli_pet_rewards_cancel(&ui->rewards);
-        ui->stat_offset = (uint8_t)((ui->stat_offset + (dx < 0 ? 1u : 7u)) % JELLI_PET_STAT_COUNT);
+        ui->stat_offset = (uint8_t)((ui->stat_offset + (dx < 0 ? 1u : JELLI_PET_STAT_COUNT - 1u)) %
+                                    JELLI_PET_STAT_COUNT);
         ui->tile_reset = true;
         code = 31u;
     } else {

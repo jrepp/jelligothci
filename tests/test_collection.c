@@ -50,7 +50,7 @@ static void unlock_and_persist(void)
     CHECK(game->count == 9u && jelli_game_valid(game));
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
-    CHECK(size > 0u && size <= 4096u && bytes[4] == 4u);
+    CHECK(size > 0u && size <= 4096u && bytes[4] == JELLI_SAVE_VERSION);
     CHECK(jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.count == 9u && loaded.game.new_pets == game->new_pets);
     CHECK(loaded.game.pets[index].id == id && loaded.game.pets[index].reached_forms == 3u);
@@ -93,7 +93,7 @@ static void legacy_and_invalid_records(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&source, bytes, sizeof(bytes));
     CHECK(size != 0u);
-    size_t extension = 2u + source.game.count * 2u;
+    size_t extension = 2u + source.game.count * 6u;
     memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
     size -= extension;
     bytes[4] = 3u;
@@ -107,8 +107,8 @@ static void legacy_and_invalid_records(void)
     size = jelli_save_encode(&loaded, bytes, sizeof(bytes));
     CHECK(size != 0u);
     JelliSave before = loaded;
-    bytes[size - 8u - 16u] = 9u; /* First entry now duplicates an invalid NEW mask below. */
-    bytes[size - 8u - 18u] = 1u;
+    bytes[size - 8u - 48u] = 9u; /* First entry now duplicates an invalid NEW mask below. */
+    bytes[size - 8u - 50u] = 1u;
     repair(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     uint8_t before_bytes[JELLI_SAVE_CAPACITY], after_bytes[JELLI_SAVE_CAPACITY];
@@ -116,7 +116,7 @@ static void legacy_and_invalid_records(void)
     CHECK(jelli_save_encode(&loaded, after_bytes, sizeof(after_bytes)) == before_size);
     CHECK(before_size != 0u && memcmp(before_bytes, after_bytes, before_size) == 0);
     size = jelli_save_encode(&source, bytes, sizeof(bytes));
-    bytes[size - 8u - 16u + 2u] = 1u; /* Duplicate collection binding. */
+    bytes[size - 8u - 48u + 2u] = 1u; /* Duplicate collection binding. */
     repair(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
 }

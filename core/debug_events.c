@@ -4,11 +4,12 @@
 
 static int snapshot(char *out, size_t capacity, const JelliEventSnapshot *v)
 {
-    return snprintf(out, capacity,
-                    "{\"needs\":[%u,%u,%u,%u,%u],\"bond\":%u,\"food\":%u,\"gifts\":%u,"
-                    "\"location\":%u,\"health\":%u,\"activity\":%u,\"flags\":%u}",
-                    v->needs[0], v->needs[1], v->needs[2], v->needs[3], v->needs[4], v->bond,
-                    v->food, v->gifts, v->location, v->health, v->activity, v->flags);
+    return snprintf(
+        out, capacity,
+        "{\"needs\":[%u,%u,%u,%u,%u],\"bond\":%u,\"hydration\":%u,\"food\":%u,\"gifts\":%u,"
+        "\"location\":%u,\"health\":%u,\"activity\":%u,\"flags\":%u}",
+        v->needs[0], v->needs[1], v->needs[2], v->needs[3], v->needs[4], v->bond, v->hydration,
+        v->food, v->gifts, v->location, v->health, v->activity, v->flags);
 }
 
 static size_t event_json(char *out, size_t capacity, const JelliEvent *e, bool comma)

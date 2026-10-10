@@ -7,6 +7,7 @@ JelliEventSnapshot jelli_game_observe(const JelliGame *game, const JelliPet *pet
 {
     JelliEventSnapshot v = {
         .bond = pet->bond,
+        .hydration = pet->hydration,
         .food = game->food,
         .gifts = game->gifts,
         .location = pet->location,

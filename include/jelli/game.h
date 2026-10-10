@@ -44,7 +44,8 @@ typedef enum {
     JELLI_CMD_BEDTIME,
     JELLI_CMD_MOMENT,
     JELLI_CMD_HEALTH,
-    JELLI_CMD_TOUCH
+    JELLI_CMD_TOUCH,
+    JELLI_CMD_WATER
 } JelliCommandKind;
 typedef enum {
     JELLI_OK,
@@ -67,6 +68,7 @@ typedef struct {
     uint16_t needs[JELLI_NEED_COUNT];
     uint16_t need_remainders[JELLI_NEED_COUNT];
     uint16_t bond, feeds, neglect;
+    uint16_t hydration, hydration_remainder;
     uint8_t form, location, shot_goal, shot_hits;
     uint8_t collection_entry, reached_forms;
     /* Brief session-only touch memory; care changes still persist. */

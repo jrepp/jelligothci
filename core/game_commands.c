@@ -1,4 +1,5 @@
 #include "game_internal.h"
+#include "jelli/nutrition.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -296,6 +297,8 @@ static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
 static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliPet *pet)
 {
     switch (command.kind) {
+    case JELLI_CMD_WATER:
+        return jelli_drink_water(pet);
     case JELLI_CMD_FEED:
         return start_feed(game, pet);
     case JELLI_CMD_PLAY:

@@ -67,7 +67,8 @@ typedef enum {
     JELLI_UI_ACTION_MEDICINE,
     JELLI_UI_ACTION_SHOT,
     JELLI_UI_ACTION_WASH,
-    JELLI_UI_ACTION_STRETCH
+    JELLI_UI_ACTION_STRETCH,
+    JELLI_UI_ACTION_WATER
 } JelliPetUiAction;
 
 typedef struct {
@@ -110,7 +111,7 @@ typedef struct {
     uint64_t day;
     JelliResult result;
     uint16_t needs[JELLI_NEED_COUNT];
-    uint16_t bond;
+    uint16_t bond, hydration;
     uint16_t food;
     uint16_t gifts;
     uint8_t active;

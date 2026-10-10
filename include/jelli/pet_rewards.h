@@ -4,8 +4,8 @@
 #include "jelli/game.h"
 #include "jelli/particles.h"
 
-#define JELLI_PET_STAT_COUNT 8u
-#define JELLI_PET_REWARD_CAPACITY 7u
+#define JELLI_PET_STAT_COUNT 9u
+#define JELLI_PET_REWARD_CAPACITY 8u
 
 typedef struct {
     uint16_t from, to;
@@ -14,7 +14,7 @@ typedef struct {
 
 typedef struct {
     JelliPetReward items[JELLI_PET_REWARD_CAPACITY];
-    int16_t gains[6];
+    int16_t gains[7];
     uint64_t last_ms, elapsed_ms;
     uint32_t cursor, pet_id, command_value, completed;
     uint8_t count, index, activity, command, health_kind;

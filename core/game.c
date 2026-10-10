@@ -44,6 +44,7 @@ void jelli_game_init(JelliGame *game)
                                .random_state = 1u,
                                .needs = {500u, 700u, 700u, 500u, 500u},
                                .bond = 100u,
+                               .hydration = 700u,
                                .health = JELLI_WELL,
                                .activity = JELLI_IDLE};
     game->pets[1] = (JelliPet){.id = 2u,
@@ -55,6 +56,7 @@ void jelli_game_init(JelliGame *game)
                                .random_state = 2u,
                                .needs = {500u, 700u, 700u, 500u, 500u},
                                .bond = 100u,
+                               .hydration = 700u,
                                .health = JELLI_WELL,
                                .activity = JELLI_IDLE};
     jelli_collection_unlock(game);
@@ -66,7 +68,8 @@ static bool pet_profile_valid(const JelliPet *pet)
     if (pet->id == 0u || pet->bedtime >= 24u || pet->sleep_duration == 0u ||
         pet->sleep_duration > JELLI_DAY_TICKS - 600u || pet->sleep_duration < 600u ||
         pet->phase_offset >= JELLI_DAY_TICKS || pet->random_state == 0u || pet->form > 1u ||
-        pet->location > 1u || pet->bond > 1000u || pet->touch_load > 1000u || pet->reaction > 3u ||
+        pet->hydration > 1000u || pet->hydration_remainder >= 2400u || pet->location > 1u ||
+        pet->bond > 1000u || pet->touch_load > 1000u || pet->reaction > 3u ||
         pet->reaction_ticks > 30u || !enum_values_valid(pet))
         return false;
     return true;

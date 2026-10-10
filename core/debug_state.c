@@ -30,7 +30,7 @@ static size_t buttons(char *out, size_t capacity, const JelliPetUi *ui)
 
 static unsigned stat_score(const JelliPetRenderKey *view)
 {
-    return jelli_pet_stat_score(view->stat_value);
+    return view->stat_index == 8u ? view->stat_value / 10u : jelli_pet_stat_score(view->stat_value);
 }
 
 static size_t collection(char *out, size_t capacity, const JelliPetRenderKey *v)
@@ -74,7 +74,7 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
         "s,\"time_"
         "unavailable\":%s,\"save_status\":%u,"
         "\"result\":\"%s\",\"day\":%" PRIu64 ",\"minute\":%" PRIu32 ","
-        "\"needs\":[%u,%u,%u,%u,%u],\"bond\":%u,\"food\":%u,\"gifts\":%u,"
+        "\"needs\":[%u,%u,%u,%u,%u],\"bond\":%u,\"hydration\":%u,\"food\":%u,\"gifts\":%u,"
         "\"reward_pending\":%s,\"reward_claimed\":%s,\"bedtime\":%u,"
         "\"active_slot\":%u,\"pet_count\":%u,\"stored_id\":%" PRIu32
         ",\"stored_form\":%u,\"stored_asleep\":%s,\"mood\":%u,\"reaction\":%u,\"night\":%u",
@@ -88,8 +88,8 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
         (unsigned)v->reward_index, (unsigned)v->tile_phase, truth(v->paused), truth(v->resuming),
         truth(v->time_unavailable), (unsigned)v->save_status, jelli_game_result_name(v->result),
         v->day, v->minute, (unsigned)v->needs[0], (unsigned)v->needs[1], (unsigned)v->needs[2],
-        (unsigned)v->needs[3], (unsigned)v->needs[4], (unsigned)v->bond, (unsigned)v->food,
-        (unsigned)v->gifts, truth(v->reward_pending), truth(v->reward_claimed),
+        (unsigned)v->needs[3], (unsigned)v->needs[4], (unsigned)v->bond, (unsigned)v->hydration,
+        (unsigned)v->food, (unsigned)v->gifts, truth(v->reward_pending), truth(v->reward_claimed),
         (unsigned)v->bedtime, (unsigned)v->active, (unsigned)v->count, v->stored_id,
         (unsigned)v->stored_form, truth(v->stored_asleep), (unsigned)v->mood, (unsigned)v->reaction,
         (unsigned)v->night);

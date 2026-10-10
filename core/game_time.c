@@ -1,5 +1,6 @@
 #include "game_internal.h"
 #include "jelli/collection.h"
+#include "jelli/nutrition.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -92,6 +93,7 @@ void jelli_game_add_clock(JelliGame *game, JelliPet *pet, uint64_t ticks)
     pet->ticks = saturating_add(pet->ticks, ticks);
     pet->stage_ticks = saturating_add(pet->stage_ticks, ticks);
     integrate_needs(pet, pet->ticks - old_ticks);
+    jelli_hydration_advance(pet, pet->ticks - old_ticks);
     jelli_habits_advance(&pet->habits, old_ticks, pet->ticks - old_ticks, pet->asleep,
                          pet->activity == JELLI_PLAYING);
     jelli_pet_touch_decay(pet, pet->ticks - old_ticks);

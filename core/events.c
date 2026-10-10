@@ -1,8 +1,8 @@
 #include "jelli/events.h"
 #include <stddef.h>
 
-_Static_assert(sizeof(JelliEvent) == 64u, "Event record exceeds 64 bytes");
-_Static_assert(sizeof(JelliEventLog) <= 2064u, "Event history exceeds budget");
+_Static_assert(sizeof(JelliEvent) == 72u, "Event record exceeds 72 bytes");
+_Static_assert(sizeof(JelliEventLog) <= 2320u, "Event history exceeds budget");
 
 void jelli_events_push(JelliEventLog *log, JelliEvent event)
 {

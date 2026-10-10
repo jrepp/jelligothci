@@ -12,16 +12,20 @@
 
 static void tile(Canvas *c, const JelliPetRenderKey *v, unsigned index, int x)
 {
-    static const char *const labels[] = {"MOOD", "FULLNESS", "ENERGY", "HYGIENE",
-                                         "PLAY", "SOCIAL",   "BOND",   "SLEEP"};
+    static const char *const labels[] = {"MOOD",   "FULLNESS", "ENERGY", "HYGIENE",  "PLAY",
+                                         "SOCIAL", "BOND",     "SLEEP",  "HYDRATION"};
     index %= JELLI_PET_STAT_COUNT;
-    unsigned score = jelli_pet_stat_score(v->stat_value);
+    unsigned score = index == 8u ? v->stat_value / 10u : jelli_pet_stat_score(v->stat_value);
     jelli_canvas_rect(c, x, 284, 286, 96, INK);
     jelli_canvas_rect(c, x + 4, 288, 278, 88, BG);
     jelli_canvas_rect(c, x + 12, 296, 76, 72, INK);
     int filled = (int)(score * 72u / 100u);
     jelli_canvas_rect(c, x + 12, 368 - filled, 76, filled, score < 25u ? PINK : TEAL);
-    uint32_t icon = index == 7u ? 2005u : index == 6u ? 9002u : !index ? 7005u : 7000u + index;
+    uint32_t icon = index == 8u   ? 6015u
+                    : index == 7u ? 2005u
+                    : index == 6u ? 9002u
+                    : !index      ? 7005u
+                                  : 7000u + index;
     jelli_canvas_sprite(c, icon, x + 18, 300, 2u);
     char number[4];
     int size = snprintf(number, sizeof(number), "%u", score);
