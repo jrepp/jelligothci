@@ -422,6 +422,8 @@ adds a snapshot of the project, outside the sandbox's reach, before each job.
 
 ## Latency budget (targets)
 
+Measured on the 1.75C in [memo-030](../memos/memo-030-voice-reply-turnaround.md).
+
 | Step | Target |
 | --- | --- |
 | touch → listening shown | < 100 ms |

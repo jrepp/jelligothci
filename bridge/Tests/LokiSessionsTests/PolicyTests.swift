@@ -46,6 +46,7 @@ private func value(_ object: [String: Any], _ path: String) -> Any? {
     #expect(append.contains("Speak briefly.") && append.contains("Use make test."))
     let env = options["env"] as? [String: String] ?? [:]
     #expect(env["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] == "1" && env["ENABLE_CLAUDEAI_MCP_SERVERS"] == "false")
+    #expect(env["ENABLE_TOOL_SEARCH"] == "false")  // The device's tools load up front: no lookup turn.
     #expect(try JSONSerialization.data(withJSONObject: options).count > 100)  // it is JSON for the sidecar
 }
 

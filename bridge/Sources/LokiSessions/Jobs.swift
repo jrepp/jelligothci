@@ -37,6 +37,9 @@ public struct Job: Equatable, Sendable {
     public var progress = ""
     /// What Claude said for the user (the speak tool), else a sentence of its result.
     public var summary = ""
+    /// Whether Claude's own words were already queued to be spoken, as it said them,
+    /// so the result need not say them again.
+    public var spokeAloud = false
     public var finished: Double?
 
     public var isActive: Bool { status == .running || status == .asking }
@@ -74,6 +77,15 @@ public struct JobBook: Sendable {
         return (job, newSession)
     }
 
+    /// A session for place ahead of its first request, so Claude Code can start before
+    /// the request arrives; nil when the place already has one.
+    public mutating func open(_ place: Place) -> String? {
+        guard sessions[place] == nil else { return nil }
+        sessionCounter += 1
+        sessions[place] = "s\(sessionCounter)"
+        return sessions[place]
+    }
+
     public func session(of place: Place) -> String? { sessions[place] }
 
     public func place(of session: String) -> Place? { sessions.first { $0.value == session }?.key }
@@ -105,8 +117,14 @@ public struct JobBook: Sendable {
         update(session) { $0.status = asking ? .asking : .running }
     }
 
-    public mutating func spoke(_ text: String, in session: String) {
-        update(session) { $0.summary = text }
+    /// Claude's words for the user; returns the job they belong to, nil when the session
+    /// has no job running.
+    @discardableResult
+    public mutating func spoke(_ text: String, in session: String) -> Job? {
+        guard let index = jobs.firstIndex(where: { $0.session == session && $0.isActive }) else { return nil }
+        jobs[index].summary = text
+        jobs[index].spokeAloud = true
+        return jobs[index]
     }
 
     /// Ends the session's current job; returns it as ended.

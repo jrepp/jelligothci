@@ -21,4 +21,19 @@ public enum LokiText {
         }
         return out + ellipsis
     }
+
+    /// Free text fit for a terminal or a log line: every control character (C0, DEL
+    /// and C1, such as CSI U+009B), every invisible format character (bidi controls,
+    /// zero-width characters) and every line or paragraph separator becomes a space,
+    /// so the text can neither drive the terminal nor rearrange or forge a line; then
+    /// it is cut to `maxBytes` like `fitted`. Not for the board, whose captions keep
+    /// format characters such as the joiners in emoji.
+    public static func loggable(_ text: String, maxBytes: Int) -> String {
+        let hidden: Set<Unicode.GeneralCategory> = [.control, .format, .lineSeparator, .paragraphSeparator]
+        var scalars = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars {
+            scalars.append(hidden.contains(scalar.properties.generalCategory) ? " " : scalar)
+        }
+        return fitted(String(scalars), maxBytes: maxBytes)
+    }
 }

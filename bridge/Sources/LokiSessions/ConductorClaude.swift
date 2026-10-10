@@ -29,31 +29,42 @@ extension Conductor {
             }
             detach { await self.decide(question: request, in: id, questions: questions, place: place) }
         case .speak(let id, let text, _):
+            // Spoken as soon as Claude says it, not when its run ends: the run's last turn
+            // and the render then overlap, which saves the user a second or more.
             let said = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !said.isEmpty { book.spoke(said, in: id) }
+            if !said.isEmpty, let job = book.spoke(said, in: id) { announce(Self.spoken(said, in: job.place), of: job.id) }
         case .result(let id, let ok, let text, _, _):
+            let early = book.current(in: id)?.spokeAloud == true
             guard let job = book.finished(ok: ok, result: text, in: id, at: clock()) else { return }
             if job.place == .general { generalActive = clock() }
             state(ok ? .success : .failure, caption: job.place.name)
-            announce(job.place == .general ? job.summary : "\(job.place.name): \(job.summary)")
+            // What Claude already said is not said twice; a failure is always said.
+            if !ok || !early { announce(Self.spoken(job.summary, in: job.place)) }
             // A run that errored may leave its session unusable (a failed first turn, an
             // expired login): the next request to that place starts a fresh one, unless
             // requests are already waiting in it, which then run as they are.
             if !ok, book.current(in: id) == nil { stop(sessions: [id]) }
         case .closed(let id), .error(let id?, _):
             let stopped = book.closed(id, at: clock())
+            silence(stopped)
             if let job = stopped.first {
                 state(.failure, caption: job.place.name)
                 announce("\(job.place.name) stopped before it finished.")
             }
         case .exited:
             let stopped = book.closedAll(at: clock())
+            silence(stopped)
             await approvals.boardGone()
             state(.failure, caption: "Claude Code stopped")
             if !stopped.isEmpty { announce("Claude Code stopped, and with it \(Self.list(stopped.map(\.place.name))).") }
         default:
             break
         }
+    }
+
+    /// A line as spoken: a project's name first, so the user knows which job it was.
+    static func spoken(_ line: String, in place: Place) -> String {
+        place == .general ? line : "\(place.name): \(line)"
     }
 
     private func decide(permission request: String, in id: String, tool: String, input: JSONValue,
@@ -117,15 +128,33 @@ extension Conductor {
 
     // MARK: Speaking, one line at a time
 
-    /// An answer to what the user just asked: ahead of announcements.
-    func reply(_ text: String) {
-        queue.insert(text, at: 0)
+    /// A line waiting to be said. Claude's own words carry their job, so they are
+    /// dropped if that job is stopped before their turn comes.
+    struct Line: Equatable, Sendable {
+        let text: String
+        var job: Int?
     }
 
-    /// A finished job's summary, after whatever is already waiting.
-    func announce(_ text: String) {
-        queue.append(text)
-        Task { await self.speakQueued() }
+    /// An answer to what the user just asked: ahead of announcements.
+    func reply(_ text: String) {
+        queue.insert(Line(text: text), at: 0)
+    }
+
+    /// A finished job's summary, or Claude's words as it says them (`job`), after
+    /// whatever is already waiting. A job's newer words replace its words still
+    /// waiting, as before speaking moved to the speak event only its last were said.
+    func announce(_ text: String, of job: Int? = nil) {
+        if let job { queue.removeAll { $0.job == job } }
+        queue.append(Line(text: text, job: job))
+        // While the user talks the queue waits for the release, which speaks it after
+        // routing what they said: a "stop" then silences the stopped job's words first.
+        if !listening, !routing { Task { await self.speakQueued() } }
+    }
+
+    /// Drops the words of jobs that were stopped and have not been said yet.
+    func silence(_ stopped: [Job]) {
+        let ids = Set(stopped.map(\.id))
+        if !ids.isEmpty { queue.removeAll { $0.job.map(ids.contains) ?? false } }
     }
 
     /// Speaks the queue in order, never while the user holds to talk; it resumes when
@@ -134,10 +163,10 @@ extension Conductor {
         guard !speaking else { return }
         speaking = true
         defer { speaking = false }
-        while !listening, !queue.isEmpty {
+        while !listening, !routing, !queue.isEmpty {
             let line = queue.removeFirst()
             state(.speaking)
-            await speaker.say(line)
+            await speaker.say(line.text)
         }
         state(book.active.isEmpty ? .idle : .working)
     }

@@ -259,3 +259,79 @@ private struct Desk {
     #expect(decision["allow"] as? Bool == true && decision["request"] as? String == "r1")
     #expect(await desk.conductor.jobs.first?.status == .running)
 }
+
+// MARK: Speaking as Claude speaks
+
+@Test func claudesWordsAreSpokenWhenSaidAndNotAgainAtTheEnd() async {
+    let desk = Desk()
+    await desk.say("in chatter, check the build")
+    let session = desk.sidecar.of("prompt")[0]["session"] as! String
+    await desk.conductor.handle(.speak(session: session, text: "  The build is clean. ", mood: "happy"))
+    await desk.conductor.speakQueued()
+    // Said before the run ends: the render overlaps Claude's last turn.
+    #expect(desk.speaker.announced == ["chatter: The build is clean."])
+    #expect(await desk.conductor.jobs.first?.isActive == true)
+    await desk.conductor.handle(.result(session: session, ok: true, text: "A long result.", turns: 1, cost: 0))
+    await desk.conductor.speakQueued()
+    #expect(desk.speaker.announced == ["chatter: The build is clean."])  // Not twice.
+    #expect(desk.board.messages.contains { if case .state(.success, _, _, _) = $0 { true } else { false } })
+    #expect(await desk.conductor.jobs.first?.summary == "The build is clean.")
+}
+
+@Test func wordsFromASessionWithNoJobRunningAreNotSpoken() async {
+    let desk = Desk()
+    await desk.conductor.handle(.speak(session: "s9", text: "Hello?", mood: "neutral"))
+    await desk.conductor.speakQueued()
+    #expect(desk.speaker.announced.isEmpty)
+    // Nor are empty words; the result then speaks the result's own sentence.
+    await desk.say("in chatter, check the build")
+    let session = desk.sidecar.of("prompt")[0]["session"] as! String
+    await desk.conductor.handle(.speak(session: session, text: " \n ", mood: "neutral"))
+    await desk.conductor.handle(.result(session: session, ok: true, text: "It builds. More.", turns: 1, cost: 0))
+    await desk.conductor.speakQueued()
+    #expect(desk.speaker.announced == ["chatter: It builds. More."])
+}
+
+@Test func talkingOrCancellingInterruptsTheLineBeingSaid() async {
+    let desk = Desk()
+    await desk.conductor.handle(.pttStart)
+    #expect(desk.speaker.interrupts == 1)
+    await desk.conductor.handle(.cancel)
+    #expect(desk.speaker.interrupts == 2)
+}
+
+// MARK: The general session, ready before the request
+
+@Test func talkingOpensTheGeneralSessionAndTheRequestUsesIt() async {
+    let desk = Desk(heard: "what is a monad")
+    await desk.conductor.handle(.pttStart)
+    #expect(desk.sidecar.of("start").count == 1 && desk.sidecar.of("prompt").isEmpty)
+    let opened = desk.sidecar.of("start")[0]["session"] as? String
+    await desk.conductor.handle(.pttEnd)
+    await desk.conductor.settled()
+    // No second start: the request goes into the session opened while the user talked.
+    #expect(desk.sidecar.of("start").count == 1)
+    #expect(desk.sidecar.of("prompt").map { $0["session"] as? String } == [opened])
+    // Talking again leaves the open session as it is.
+    await desk.conductor.handle(.pttStart)
+    #expect(desk.sidecar.of("start").count == 1 && desk.sidecar.of("close").isEmpty)
+}
+
+@Test func aGeneralSessionIdleTooLongIsRefreshedAsTheUserTalks() async {
+    let desk = Desk()
+    await desk.conductor.handle(.connected)
+    let first = desk.sidecar.of("start").first?["session"] as? String
+    #expect(first != nil)
+    desk.clock.advance(Conductor.generalIdleSeconds - 1)
+    await desk.conductor.handle(.pttStart)
+    #expect(desk.sidecar.of("close").isEmpty)  // Still fresh enough.
+    await desk.conductor.handle(.cancel)
+    desk.clock.advance(Conductor.generalIdleSeconds + 1)
+    await desk.conductor.handle(.pttStart)
+    #expect(desk.sidecar.of("close").map { $0["session"] as? String } == [first])
+    let starts = desk.sidecar.of("start").compactMap { $0["session"] as? String }
+    #expect(starts.count == 2 && starts[1] != first)
+    // Connecting again opens nothing more.
+    await desk.conductor.handle(.connected)
+    #expect(desk.sidecar.of("start").count == 2)
+}

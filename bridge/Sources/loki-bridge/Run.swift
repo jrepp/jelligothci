@@ -106,17 +106,21 @@ enum Run {
     }
 
     /// One line per event worth seeing in the terminal; never tool inputs in full.
+    /// Claude's text is cleaned of control characters first, so it cannot drive the
+    /// terminal with escape sequences.
     static func log(_ event: SidecarEvent) {
+        func clean(_ text: String) -> String { LokiText.loggable(text, maxBytes: 600) }
         switch event {
         case .ready: print("[claude] ready")
-        case .tool(let session, let tool, let summary): print("[\(session)] \(tool): \(summary)")
-        case .progress(let session, let message, _): print("[\(session)] progress: \(message)")
-        case .permission(let session, _, let tool, _, _, _): print("[\(session)] asks to use \(tool) (card on the board)")
+        case .tool(let session, let tool, let summary): print("[\(session)] \(clean(tool)): \(clean(summary))")
+        case .progress(let session, let message, _): print("[\(session)] progress: \(clean(message))")
+        case .permission(let session, _, let tool, _, _, _):
+            print("[\(session)] asks to use \(clean(tool)) (card on the board)")
         case .question(let session, _, _): print("[\(session)] has a question (card on the board)")
-        case .speak(let session, let text, _): print("[\(session)] says: \(text)")
+        case .speak(let session, let text, _): print("[\(session)] says: \(clean(text))")
         case .result(let session, let ok, _, let turns, let cost):
             print(String(format: "[%@] %@ after %d turns ($%.3f)", session, ok ? "done" : "failed", turns, cost))
-        case .error(let session, let message): print("[\(session ?? "claude")] error: \(message)")
+        case .error(let session, let message): print("[\(session ?? "claude")] error: \(clean(message))")
         case .closed(let session): print("[\(session)] closed")
         case .state, .exited: break
         }

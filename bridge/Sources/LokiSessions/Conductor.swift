@@ -17,6 +17,13 @@ public protocol Transcribing: Sendable {
 /// Speech out: renders text in the chosen voice and plays it on the board.
 public protocol Speaking: Sendable {
     func say(_ text: String) async
+    /// The user started talking or cancelled: what is left of the line being said is
+    /// not sent (the board already stopped playing it).
+    func interrupt() async
+}
+
+public extension Speaking {
+    func interrupt() async {}
 }
 
 /// What arrives from the board, as the conductor needs it.
@@ -57,9 +64,12 @@ public actor Conductor {
     let clock: @Sendable () -> Double
     var book = JobBook()
     var listening = false
+    /// From the release until what was said is routed: the queue waits, so a "stop"
+    /// drops the stopped job's words before any of them starts.
+    var routing = false
     var heard = 0
     /// Spoken lines waiting their turn, and whether one is being spoken.
-    var queue: [String] = []
+    var queue: [Line] = []
     var speaking = false
     /// Work started off the event loops (a request being routed, a card being
     /// answered), so a card's answer can arrive while it waits; each leaves when done.
@@ -93,6 +103,8 @@ public actor Conductor {
         switch input {
         case .connected:
             state(book.active.isEmpty ? .idle : .working)
+            prepareGeneral()
+            Task { await self.speakQueued() }  // What waited while the board was away.
         case .pttStart:
             await listen()
         case .audio(let samples):
@@ -102,6 +114,7 @@ public actor Conductor {
             await transcriber.feed(Array(kept))
         case .pttEnd:
             guard listening else { return }
+            routing = true
             listening = false
             let text = (try? await transcriber.finish()) ?? ""
             board.send(.caption(text: LokiText.fitted(text, maxBytes: 400), final: true))
@@ -111,14 +124,19 @@ public actor Conductor {
                 await self.speakQueued()
             }
         case .cancel:
-            if listening {
+            // Still listening until the speaker is stopped, so no waiting line starts first.
+            let utterance = listening
+            if utterance {
                 await transcriber.cancel()
-                listening = false
-                detach { await self.speakQueued() }  // What waited for the utterance.
             } else if let latest = book.active.last {
                 stop(sessions: [latest.session])
             }
+            await speaker.interrupt()
             board.send(.stopAudio)
+            if utterance {
+                listening = false
+                detach { await self.speakQueued() }  // What waited for the utterance.
+            }
             state(book.active.isEmpty ? .idle : .working)
         case .answer(let id, let nonce, let digest, let choice):
             await approvals.answer(id: id, nonce: nonce, digest: digest, choice: choice)
@@ -130,8 +148,11 @@ public actor Conductor {
     }
 
     private func listen() async {
+        // Listening before the interrupt is awaited, so no queued line starts meanwhile.
         listening = true
         heard = 0
+        await speaker.interrupt()
+        prepareGeneral()
         state(.listening)
         let board = board, gate = CaptionGate()
         do {
@@ -140,6 +161,7 @@ public actor Conductor {
             }
         } catch {
             listening = false
+            Task { await self.speakQueued() }  // What waited for the utterance.
         }
     }
 
@@ -163,6 +185,12 @@ public actor Conductor {
     // MARK: Requests
 
     func route(_ heard: String) async {
+        // Up to the stop below nothing suspends, so the queue may go on once this
+        // turn ends: during a card's wait, or after the reply put first.
+        if routing {
+            routing = false
+            Task { await self.speakQueued() }
+        }
         let text = heard.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !ProjectResolver.key(text).isEmpty else {
             reply("Sorry, I didn't catch that.")
@@ -234,6 +262,21 @@ public actor Conductor {
         return nil
     }
 
+    /// The general session ready before a request needs it: opened, or reopened when it
+    /// has idled too long, as the board connects and as the user starts talking, so
+    /// Claude Code starts while they speak rather than after. A session that waits costs
+    /// no model call.
+    func prepareGeneral() {
+        guard ProjectResolver.plain(generalFolder.path) else { return }
+        if let session = book.session(of: .general), book.current(in: session) == nil,
+           let last = generalActive, clock() - last > Self.generalIdleSeconds {
+            stop(sessions: [session])
+        }
+        guard let session = book.open(.general) else { return }
+        generalActive = clock()
+        sidecar.send(.start(session: session, options: JSONValue.from(options(for: .general)) ?? .object([:])))
+    }
+
     /// A job in place: its session opened first if the place has none. Work in a
     /// project is acknowledged aloud, so a misheard name is caught early.
     func work(_ words: String, in place: Place) async {
@@ -275,7 +318,7 @@ public actor Conductor {
     func stop(sessions: Set<String>) {
         for session in sessions {
             sidecar.send(.close(session: session))
-            _ = book.closed(session, at: clock())
+            silence(book.closed(session, at: clock()))
         }
     }
 

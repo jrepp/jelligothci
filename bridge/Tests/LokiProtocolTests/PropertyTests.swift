@@ -146,6 +146,22 @@ struct Random {
     }
 }
 
+@Test func loggableTextCannotDriveOrRearrangeATerminal() {
+    let hostile = "a\u{1B}]0;title\u{7}b\u{9B}2Jc\u{7F}d\u{85}e\u{202E}f\u{2066}g\u{2028}h\u{2029}i\u{200B}j\nk"
+    #expect(LokiText.loggable(hostile, maxBytes: 200) == "a ]0;title b 2Jc d e f g h i j k")
+    #expect(LokiText.loggable("Tests pass. 🦄 café", maxBytes: 200) == "Tests pass. 🦄 café")
+    // Nothing a terminal treats as a control or invisible survives, on any input.
+    var random = Random(state: 11)
+    for _ in 0..<2000 {
+        let raw = random.text(maxBytes: 900, lineFeeds: true) + "\u{1B}\u{9B}\u{202E}\u{2028}"
+        let line = LokiText.loggable(raw, maxBytes: 300)
+        #expect(line.utf8.count <= 300)
+        #expect(line.unicodeScalars.allSatisfy {
+            ![.control, .format, .lineSeparator, .paragraphSeparator].contains($0.properties.generalCategory)
+        })
+    }
+}
+
 @Test func textIsFittedToItsField() {
     #expect(LokiText.fitted("run\tthe\u{7}tests", maxBytes: 40) == "run the tests")
     #expect(LokiText.fitted("one\ntwo", maxBytes: 40) == "one two")

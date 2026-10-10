@@ -183,8 +183,11 @@ public struct SessionPolicy: Sendable {
             "strictMcpConfig": true,
             "systemPrompt": ["type": "preset", "preset": "claude_code", "append": append],
             "settings": settings(root: project.url, denying: []),
+            // Tool search off: the session's only MCP tools are the device's speak and
+            // progress, so loading them up front costs little, and saves the turn Claude
+            // otherwise spends looking speak up before it can answer.
             "env": ["CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1", "CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS": "1",
-                    "ENABLE_CLAUDEAI_MCP_SERVERS": "false"],
+                    "ENABLE_CLAUDEAI_MCP_SERVERS": "false", "ENABLE_TOOL_SEARCH": "false"],
             "includePartialMessages": true,
             "maxTurns": Self.maxTurns,
             "maxBudgetUsd": Self.maxBudgetUsd,

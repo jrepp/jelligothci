@@ -127,10 +127,12 @@ private struct Office {
     let jobs = await office.conductor.jobs
     #expect(jobs.map(\.status) == [.done(ok: true), .done(ok: false)])
     #expect(jobs.map(\.progress) == ["Testing", "make"])
-    // A failure is said as its error's first plain words, never its JSON, not what Claude spoke.
+    // A failure is said as its error's first plain words, never its JSON. What Claude
+    // spoke before it failed was already said as it spoke, and the failure follows.
     #expect(jobs.map(\.summary) == ["All pass. Yes.", "That didn't work: API Error: 529."])
     #expect(office.speaker.lines.prefix(2) == ["Okay, in codergotchi.", "Okay, in chatter."])
-    #expect(office.speaker.announced == ["codergotchi: All pass. Yes.", "chatter: That didn't work: API Error: 529."])
+    #expect(office.speaker.announced == ["chatter: The build is clean.", "codergotchi: All pass. Yes.",
+                                         "chatter: That didn't work: API Error: 529."])
     // The failed run's session is closed, so chatter's next request starts afresh.
     #expect(office.sidecar.of("close").map { $0["session"] as? String } == [b])
     let working = office.states.filter { $0.state == .working && !$0.caption.isEmpty }

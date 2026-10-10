@@ -223,28 +223,68 @@ actor Speaker {
     private var nextReply: UInt32 = 1
     /// One reply at a time: one asked for while another renders or plays is dropped.
     private var busy = false
+    /// Set when the user talks over the line being said: its remaining pieces are not sent.
+    private var interrupted = false
+    /// The piece being rendered, so an interrupt stops waiting for it.
+    private var rendering: Task<Data, Error>?
 
     init(server: LinkServer, voice: String) {
         self.server = server
         self.voice = voice
     }
 
+    /// Says text a piece at a time (SpokenChunks): the next piece renders while the one
+    /// before plays, so the board starts talking after the first sentence's render, not
+    /// the whole reply's.
     func say(_ text: String) async {
         guard start() else { return }
-        defer { busy = false }
-        let started = ContinuousClock.now
-        do {
-            let wav = try await chatter.render(text, voice: voice)
-            let file = FileManager.default.temporaryDirectory.appendingPathComponent("loki-reply-\(UUID()).wav")
-            defer { try? FileManager.default.removeItem(at: file) }
-            guard FileManager.default.createFile(atPath: file.path, contents: wav, attributes: [.posixPermissions: 0o600])
-            else { throw SpeechError("cannot write \(file.lastPathComponent)") }
-            print("Chatter rendered \"\(text)\" in \(ContinuousClock.now - started)")
-            await stream(file, pcmOnly: true)
-        } catch {
-            print("Cannot say that: \(error)")
-            server.send(.state(.failure, caption: LokiText.fitted("Chatter: \(error)", maxBytes: 200)))
+        defer {
+            rendering?.cancel()
+            rendering = nil
+            busy = false
         }
+        let pieces = SpokenChunks.split(text)
+        rendering = pieces.first.map(render)
+        for index in pieces.indices {
+            guard let current = rendering, !interrupted else { break }
+            let started = ContinuousClock.now
+            let wav: Data
+            do {
+                wav = try await current.value
+            } catch {
+                if interrupted { break }  // The render was given up on, not failed.
+                print("Cannot say that: \(error)")
+                server.send(.state(.failure, caption: LokiText.fitted("Chatter: \(error)", maxBytes: 200)))
+                return
+            }
+            guard !interrupted else { break }
+            rendering = index + 1 < pieces.count ? render(pieces[index + 1]) : nil
+            // Cleaned of control characters, so Claude's words cannot drive the terminal.
+            print("Chatter rendered piece \(index + 1) of \(pieces.count), \"\(LokiText.loggable(pieces[index], maxBytes: 200))\" "
+                  + "(waited \(ContinuousClock.now - started))")
+            await stream(wav)
+        }
+    }
+
+    /// Stops the line being said: the piece playing ends where it is, and the render
+    /// under way is no longer waited for. Chatter still finishes that render (its
+    /// cancel would also stop whatever it is playing on the Mac).
+    func interrupt() {
+        interrupted = true
+        rendering?.cancel()
+    }
+
+    private func render(_ piece: String) -> Task<Data, Error> {
+        let chatter = chatter, voice = voice
+        return Task { try await chatter.render(piece, voice: voice) }
+    }
+
+    private func stream(_ wav: Data) async {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("loki-reply-\(UUID()).wav")
+        defer { try? FileManager.default.removeItem(at: file) }
+        guard FileManager.default.createFile(atPath: file.path, contents: wav, attributes: [.posixPermissions: 0o600])
+        else { return print("Cannot say that: cannot write \(file.lastPathComponent)") }
+        await stream(file, pcmOnly: true)
     }
 
     func play(_ file: URL) async {
@@ -259,6 +299,7 @@ actor Speaker {
             return false
         }
         busy = true
+        interrupted = false
         return true
     }
 
@@ -268,9 +309,9 @@ actor Speaker {
             let reply = nextReply
             nextReply = nextReply == UInt32.max ? 1 : nextReply + 1
             server.send(.state(.speaking))
-            let sent = await ReplyStreamer.stream(samples, reply: reply, through: server)
+            let sent = await ReplyStreamer.stream(samples, reply: reply, through: server) { await self.interrupted }
             print(String(format: "Reply %u (%.2f s) %@", reply, Double(samples.count) / LokiAudio.rate,
-                         sent ? "sent" : "cut off"))
+                         !sent ? "cut off" : interrupted ? "stopped" : "sent"))
         } catch {
             print("Cannot play \(file.path): \(error)")
         }

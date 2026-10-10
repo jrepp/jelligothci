@@ -325,3 +325,26 @@ test("property: tool captions are one line of at most 120 characters for any inp
     assert.equal(summarize(tool, input), caption);
   }
 });
+
+// The bridge opens the general session as the user starts talking, before any request
+// (RFC-003's turnaround): a session started with no prompt sends Claude nothing and
+// reports nothing, its first prompt arrives later, and one closed unused ends quietly.
+test("a session opened ahead waits for its first prompt, and one closed unused ends without a word", async () => {
+  const { sent, queries, sessions } = harness({ HOME: "/h" });
+  sessions.handle({ type: "start", session: "s1", options: { env: { ENABLE_TOOL_SEARCH: "false" } } });
+  sessions.handle({ type: "start", session: "s2", options: {} });
+  await tick();
+  assert.deepEqual(queries.map((query) => query.prompts), [[], []]);
+  assert.deepEqual(sent, []);
+  assert.deepEqual(queries[0].options.env, { HOME: "/h", ENABLE_TOOL_SEARCH: "false" });
+  sessions.handle({ type: "prompt", session: "s1", text: "what is a monad" });
+  await tick();
+  assert.deepEqual(queries[0].prompts, ["what is a monad"]);
+  // Refreshed before use: closed, so its query ends and later commands to it are refused.
+  sessions.handle({ type: "close", session: "s2" });
+  await tick();
+  assert.equal(queries[1].closed, true);
+  assert.deepEqual(queries[1].prompts, []);
+  assert.throws(() => sessions.handle({ type: "prompt", session: "s2", text: "late" }), /no session/);
+  assert.deepEqual(sent, []);
+});

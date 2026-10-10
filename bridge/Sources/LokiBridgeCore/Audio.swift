@@ -85,13 +85,15 @@ public enum LokiAudio {
 public enum ReplyStreamer {
     public static let frameSamples = 2400
 
-    /// Returns false when the board went away part way.
+    /// Returns false when the board went away part way. `stopped` is asked before each
+    /// frame after the first; once it answers yes, the reply ends with the frames sent.
     public static func stream(_ samples: [Int16], reply: UInt32, through server: LinkServer,
-                              lead: Double = 1.0) async -> Bool {
+                              lead: Double = 1.0, stopped: @Sendable () async -> Bool = { false }) async -> Bool {
         guard server.send(.replyBegin(reply: reply)) else { return false }
         let start = ContinuousClock.now
         var frames: UInt32 = 0
         for (index, offset) in stride(from: 0, to: samples.count, by: frameSamples).enumerated() {
+            if index > 0, await stopped() { break }
             let chunk = samples[offset..<min(samples.count, offset + frameSamples)]
             var payload = [UInt8]()
             payload.reserveCapacity(chunk.count * 2)

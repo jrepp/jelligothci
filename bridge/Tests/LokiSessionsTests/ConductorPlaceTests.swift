@@ -308,14 +308,17 @@ func aNearMissDeclinedOrUnansweredSendsNothing(_ how: String) async throws {
 }
 
 /// Released words are routed off the board's loop: the final caption goes first, and
-/// nothing heard means "Sorry, I didn't catch that." with nothing sent to Claude.
+/// nothing heard means "Sorry, I didn't catch that." with no request sent to Claude;
+/// the general session opened as the user started talking only waits, costing nothing.
 @Test(arguments: ["", "   ", "...", "\n\t"])
 func releasingWithNothingHeardSendsNothing(_ heard: String) async {
     let bench = Bench(heard: heard)
     await bench.conductor.handle(.pttStart)
     await bench.conductor.handle(.pttEnd)
     await bench.conductor.settled()
-    #expect(bench.sidecar.commands.isEmpty)
+    #expect(bench.sidecar.of("prompt").isEmpty)
+    #expect(bench.sidecar.commands.count == bench.sidecar.of("start").count)
+    #expect(bench.sidecar.of("start").count == 1)
     #expect(bench.speaker.lines == ["Sorry, I didn't catch that."])
     #expect(bench.board.messages.contains { if case .caption(_, true) = $0 { true } else { false } })
 }

@@ -84,6 +84,18 @@ func theJobBookKeepsItsInvariantsUnderAnyEvents(_ seed: Int) {
             let active = book.active.map(\.id).sorted()
             #expect(book.closedAll(at: now).map(\.id).sorted() == active, "\(context)")
             closedSessions.formUnion(sessionsSeen)
+        case 9 where random.chance(40):
+            // Opened ahead of a request (the general session as the user talks): a new
+            // session only where the place has none, never one seen before.
+            let place = random.pick(places)
+            let wasOpen = book.session(of: place)
+            let opened = book.open(place)
+            #expect((opened == nil) == (wasOpen != nil), "\(context)")
+            #expect(book.session(of: place) == (opened ?? wasOpen) && book.current(in: opened ?? "") == nil, "\(context)")
+            if let opened {
+                #expect(!sessionsSeen.contains(opened) && !closedSessions.contains(opened), "\(context): reused \(opened)")
+                sessionsSeen.append(opened)
+            }
         default:
             break
         }

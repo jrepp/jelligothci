@@ -43,8 +43,11 @@ final class FakeTranscriber: Transcribing, @unchecked Sendable {
 final class FakeSpeaker: Speaking, @unchecked Sendable {
     private let lock = NSLock()
     private var said: [String] = []
+    private var stops = 0
     func say(_ text: String) async { lock.withLock { said.append(text) } }
+    func interrupt() async { lock.withLock { stops += 1 } }
     var lines: [String] { lock.withLock { said } }
+    var interrupts: Int { lock.withLock { stops } }
     /// What was said besides "Okay, in X.", which starts each job in a project.
     var announced: [String] { lines.filter { !isAcknowledgement($0) } }
 }
