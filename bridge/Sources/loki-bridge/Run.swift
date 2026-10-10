@@ -60,13 +60,15 @@ enum Run {
         let bound = try await server.start()
         print("Loki is listening on port \(bound) with Claude Code \(options.claude ?? "(the SDK's own)"), node \(node.path)")
         if !(await LiveTranscriber.isReady()) { print("The on-device speech model is not installed: no transcripts") }
+        let speaker = Speaker(server: server, voice: options.voice)
         let conductor = Conductor(board: server, sidecar: sidecar,
-                                  transcriber: LiveTranscriber(contextualStrings: Listener.projectNames()),
-                                  speaker: Speaker(server: server, voice: options.voice),
-                                  policy: SessionPolicy(protectedFolders: protected))
+                                  transcriber: LoggedTranscriber(LiveTranscriber(contextualStrings: Listener.projectNames())),
+                                  speaker: speaker,
+                                  policy: SessionPolicy(protectedFolders: protected),
+                                  models: OllamaRunner(), choices: FileModelChoiceStore(file: BridgeFiles.models))
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await relayClaude(sidecar.events, to: conductor) }
-            group.addTask { await relayBoard(server.events, to: conductor) }
+            group.addTask { await relayBoard(server.events, to: conductor, speaker: speaker) }
             await group.next()
             group.cancelAll()
         }
@@ -74,7 +76,7 @@ enum Run {
         server.stop()
     }
 
-    static func relayBoard(_ events: AsyncStream<LinkEvent>, to conductor: Conductor) async {
+    static func relayBoard(_ events: AsyncStream<LinkEvent>, to conductor: Conductor, speaker: Speaker) async {
         for await event in events {
             switch event {
             case .connected(let board):
@@ -86,6 +88,11 @@ enum Run {
             case .message(.cancel): await conductor.handle(.cancel)
             case .message(.answer(let id, let nonce, let digest, let choice)):
                 await conductor.handle(.answer(id: id, nonce: nonce, digest: digest, choice: choice))
+            case .message(.played(let reply, _)):
+                await speaker.played(reply)
+            case .message(.setModel(let model)):
+                print("Default model: \(model)")
+                await conductor.handle(.setModel(model))
             case .message: break
             case .disconnected(let reason):
                 print("Disconnected: \(reason)")
@@ -179,4 +186,19 @@ enum Run {
 struct RunError: Error, CustomStringConvertible {
     let description: String
     init(_ description: String) { self.description = description }
+}
+
+/// The transcriber, with each utterance's text printed when recognition ends, cleaned
+/// for the terminal, so a misheard request can be seen.
+struct LoggedTranscriber: Transcribing {
+    let inner: LiveTranscriber
+    init(_ inner: LiveTranscriber) { self.inner = inner }
+    func begin(partial: @escaping @Sendable (String) -> Void) async throws { try await inner.begin(partial: partial) }
+    func feed(_ samples: [Int16]) async { await inner.feed(samples) }
+    func cancel() async { await inner.cancel() }
+    func finish() async throws -> String {
+        let text = try await inner.finish()
+        print("Heard: \"\(LokiText.loggable(text, maxBytes: 300))\"")
+        return text
+    }
 }

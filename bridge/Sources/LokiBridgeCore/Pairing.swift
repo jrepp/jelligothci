@@ -10,6 +10,8 @@ public enum BridgeFiles {
     }
     public static var identity: URL { directory.appendingPathComponent("identity.p12") }
     public static var devices: URL { directory.appendingPathComponent("devices.json") }
+    /// The user's choice of default model (ADR-018).
+    public static var models: URL { directory.appendingPathComponent("models.json") }
 
     /// This Mac's Bonjour name, which the board resolves over mDNS, so a new DHCP
     /// address does not break the link.

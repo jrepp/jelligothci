@@ -64,7 +64,8 @@ extension Conductor {
 
     /// A line as spoken: a project's name first, so the user knows which job it was.
     static func spoken(_ line: String, in place: Place) -> String {
-        place == .general ? line : "\(place.name): \(line)"
+        guard case .project = place else { return line }
+        return "\(place.name): \(line)"
     }
 
     private func decide(permission request: String, in id: String, tool: String, input: JSONValue,
@@ -97,6 +98,7 @@ extension Conductor {
     }
 
     private func report(_ line: String, in session: String, progress: Int32 = -1) {
+        guard book.current(in: session) != nil else { return }  // a stopped job shows nothing more
         book.progress(line, in: session)
         let place = book.place(of: session)?.name ?? ""
         state(.working, caption: place.isEmpty ? line : "\(place): \(line)", progress: progress)
@@ -122,7 +124,7 @@ extension Conductor {
         let project: Project? = switch place {
         case .project(let project): project
         case .general: Project(name: "General", url: resolver.roots.first ?? URL(fileURLWithPath: "/"))
-        case nil: nil
+        case .ollama, nil: nil
         }
         guard let card = PermissionCards.card(tool: tool, input: input, project: project, blockedPath: blockedPath)
         else { return nil }

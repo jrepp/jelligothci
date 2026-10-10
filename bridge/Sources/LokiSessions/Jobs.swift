@@ -5,12 +5,15 @@ import Foundation
 public enum Place: Equatable, Hashable, Sendable {
     case general
     case project(Project)
+    /// A model Ollama runs on the Mac, by name (ADR-018).
+    case ollama(String)
 
     /// How Loki says it.
     public var name: String {
         switch self {
         case .general: "General"
         case .project(let project): project.name
+        case .ollama: "Ollama"
         }
     }
 }
@@ -153,10 +156,13 @@ public struct JobBook: Sendable {
         return stopped
     }
 
-    /// Every session, for when Claude Code itself stopped.
+    /// Every Claude Code session, for when Claude Code itself stopped; Ollama's go on.
     public mutating func closedAll(at now: Double) -> [Job] {
         var stopped: [Job] = []
-        for session in Array(sessions.values) { stopped += closed(session, at: now) }
+        for (place, session) in sessions {
+            if case .ollama = place { continue }
+            stopped += closed(session, at: now)
+        }
         return stopped
     }
 

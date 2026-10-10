@@ -48,6 +48,8 @@ enum Serve {
                 print("Board: cancel")
             case .message(.answer(let id, let nonce, let digest, let choice)):
                 print("Answer to \(id): choice \(choice), \(await asks.check(id: id, nonce: nonce, digest: digest, choice: choice))")
+            case .message(.played(let reply, _)):
+                await speaker.played(reply)
             case .message(let message):
                 print("Board: \(message)")
             case .disconnected(let reason):
@@ -118,7 +120,7 @@ actor Listener {
     static func projectNames() -> [String] {
         let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("dev")
         let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []
-        return Array(names.filter { !$0.hasPrefix(".") && !$0.contains(".") }.prefix(100)) + ["Loki"]
+        return Array(names.filter { !$0.hasPrefix(".") && !$0.contains(".") }.prefix(100)) + ["Loki", "Claude", "Ollama"]
     }
 
     func begin(_ stream: UInt32) async {
@@ -227,6 +229,11 @@ actor Speaker {
     private var interrupted = false
     /// The piece being rendered, so an interrupt stops waiting for it.
     private var rendering: Task<Data, Error>?
+    /// The reply the board is still playing, waited for before the next one begins:
+    /// a reply that begins makes the board drop what it still holds of the last one.
+    private var playing: (reply: UInt32, done: CheckedContinuation<Void, Never>)?
+    /// Replies the board said it played before anything waited for them.
+    private var heardPlayed: Set<UInt32> = []
 
     init(server: LinkServer, voice: String) {
         self.server = server
@@ -272,6 +279,38 @@ actor Speaker {
     func interrupt() {
         interrupted = true
         rendering?.cancel()
+        finish(playing?.reply)
+    }
+
+    /// The board played `reply` to its end, or cut it short. Only one of the last 64
+    /// sent counts, so a board cannot make the bridge keep an ever longer list.
+    func played(_ reply: UInt32) {
+        guard reply != 0, reply < nextReply, nextReply - reply <= 64 else { return }
+        if playing?.reply == reply {
+            finish(reply)
+        } else {
+            heardPlayed.insert(reply)
+            heardPlayed = heardPlayed.filter { $0 < nextReply && nextReply - $0 <= 64 }
+        }
+    }
+
+    private func finish(_ reply: UInt32?) {
+        guard let reply, let waiting = playing, waiting.reply == reply else { return }
+        playing = nil
+        waiting.done.resume()
+    }
+
+    /// Waits until the board has played `reply`, or `limit` passes (a board that went
+    /// away, or one that never says).
+    private func untilPlayed(_ reply: UInt32, limit: Duration) async {
+        if heardPlayed.remove(reply) != nil || interrupted { return }
+        await withCheckedContinuation { done in
+            playing = (reply, done)
+            Task {
+                try? await Task.sleep(for: limit)
+                self.finish(reply)
+            }
+        }
     }
 
     private func render(_ piece: String) -> Task<Data, Error> {
@@ -309,9 +348,14 @@ actor Speaker {
             let reply = nextReply
             nextReply = nextReply == UInt32.max ? 1 : nextReply + 1
             server.send(.state(.speaking))
+            let started = ContinuousClock.now, length = Double(samples.count) / LokiAudio.rate
             let sent = await ReplyStreamer.stream(samples, reply: reply, through: server) { await self.interrupted }
-            print(String(format: "Reply %u (%.2f s) %@", reply, Double(samples.count) / LokiAudio.rate,
-                         !sent ? "cut off" : interrupted ? "stopped" : "sent"))
+            print(String(format: "Reply %u (%.2f s) %@", reply, length, !sent ? "cut off" : interrupted ? "stopped" : "sent"))
+            // The board plays from its own buffer after the last frame is sent: the next
+            // reply waits for it, or the board would drop the end of this one.
+            if sent, !interrupted {
+                await untilPlayed(reply, limit: started + .milliseconds(Int(length * 1000) + 2000) - ContinuousClock.now)
+            }
         } catch {
             print("Cannot play \(file.path): \(error)")
         }

@@ -185,6 +185,7 @@ func anyTextClassifiesDeterministicallyAndKeepsItsWords(_ seed: Int) {
     switch first {
     case .work(let words): #expect(words == text, "seed \(seed)")
     case .status(_, let words): #expect(words == text, "seed \(seed)")
+    case .ask(_, let rest): #expect(text.hasSuffix(rest), "seed \(seed)")
     case .stop, .repeatLast: break
     }
 }
@@ -196,6 +197,7 @@ private func shape(_ request: Request) -> String {
     case .status(let project, _): "status \(project?.name ?? "-")"
     case .repeatLast(let project): "repeat \(project?.name ?? "-")"
     case .work: "work"
+    case .ask(let assistant, _): "ask \(assistant)"
     }
 }
 

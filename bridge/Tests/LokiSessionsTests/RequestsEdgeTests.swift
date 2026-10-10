@@ -96,6 +96,8 @@ func aStopNamesOnlyARealProjectAndOnlyWhenTheWordsAreItsName(_ seed: Int) {
         #expect(matches.count != 1, "seed \(seed): \(text) should have stopped \(matches)")
     case .status, .repeatLast:
         break  // A misspelling can land on a status word; that is not a stop.
+    case .ask:
+        Issue.record("seed \(seed): \(text) is a stop, not a request for an assistant")
     }
 }
 
@@ -141,6 +143,7 @@ private func shape(_ request: Request) -> String {
     case .status(let project, _): "status \(project?.name ?? "-")"
     case .repeatLast(let project): "repeat \(project?.name ?? "-")"
     case .work: "work"
+    case .ask(let assistant, _): "ask \(assistant)"
     }
 }
 

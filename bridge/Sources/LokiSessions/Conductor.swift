@@ -34,6 +34,8 @@ public enum BoardInput: Sendable {
     case pttEnd
     case cancel
     case answer(id: String, nonce: String, digest: String, choice: UInt32)
+    /// The user picked a default model in the board's Settings (ADR-018).
+    case setModel(String)
     case gone
 }
 
@@ -79,9 +81,22 @@ public actor Conductor {
     static let generalIdleSeconds = 600.0
     /// When a general job last started or ended.
     var generalActive: Double?
+    /// Models Ollama runs on the Mac, when the bridge has Ollama (ADR-018).
+    let localModels: LocalModels?
+    let choices: ModelChoiceStore
+    /// The user's default model and Ollama model.
+    var choice: ModelChoice
+    /// The names the board was last offered: a pick must be one of them.
+    var offered: [String] = []
+    /// Each Ollama conversation's runs, in the order asked, and when it was last used.
+    var ollamaRuns: [String: [Task<Void, Never>]] = [:]
+    var ollamaActive: [String: Double] = [:]
+    /// The model last warmed up, and when.
+    var warmed: (model: String, at: Double)?
 
     public init(board: BoardLink, sidecar: Sidecar, transcriber: Transcribing, speaker: Speaking,
                 resolver: ProjectResolver = ProjectResolver(), policy: SessionPolicy = SessionPolicy(),
+                models: LocalModels? = nil, choices: ModelChoiceStore = MemoryModelChoiceStore(),
                 clock: @escaping @Sendable () -> Double = Conductor.uptime) {
         self.board = board
         self.sidecar = sidecar
@@ -90,6 +105,9 @@ public actor Conductor {
         self.resolver = resolver
         self.policy = policy
         self.clock = clock
+        localModels = models
+        self.choices = choices
+        choice = choices.load()
         approvals = ApprovalBroker { board.send($0) }
     }
 
@@ -104,6 +122,7 @@ public actor Conductor {
         case .connected:
             state(book.active.isEmpty ? .idle : .working)
             prepareGeneral()
+            detach { await self.offerModels() }
             Task { await self.speakQueued() }  // What waited while the board was away.
         case .pttStart:
             await listen()
@@ -140,6 +159,8 @@ public actor Conductor {
             state(book.active.isEmpty ? .idle : .working)
         case .answer(let id, let nonce, let digest, let choice):
             await approvals.answer(id: id, nonce: nonce, digest: digest, choice: choice)
+        case .setModel(let model):
+            pick(model)
         case .gone:
             if listening { await transcriber.cancel() }
             listening = false
@@ -153,6 +174,7 @@ public actor Conductor {
         heard = 0
         await speaker.interrupt()
         prepareGeneral()
+        warmDefault()
         state(.listening)
         let board = board, gate = CaptionGate()
         do {
@@ -215,13 +237,21 @@ public actor Conductor {
         case .work(let words):
             guard let place = await place(for: words) else { return reply("Okay, never mind.") }
             await work(words, in: place)
+        case .ask(.claude, let words):
+            guard !words.isEmpty else { return reply("What should I ask Claude?") }
+            guard let place = await place(for: words, claude: true) else { return reply("Okay, never mind.") }
+            await work(words, in: place)
+        case .ask(.ollama, let words):
+            guard !words.isEmpty else { return reply("What should I ask Ollama?") }
+            await work(words, in: .ollama(choice.ollamaModel))
         }
     }
 
     /// The named project (a near miss is confirmed on the board), else, when several
     /// places are busy, the one the user picks, else the last job's place as a
-    /// follow-up, else general. Nil when the user declines.
-    private func place(for words: String) async -> Place? {
+    /// follow-up, else the default: general, or Ollama when the user chose an Ollama
+    /// model. For `claude`, never Ollama. Nil when the user declines.
+    private func place(for words: String, claude: Bool = false) async -> Place? {
         switch resolver.mentioned(in: words) {
         case .found(let project):
             if Self.namesExactly(project, words) { return .project(project) }
@@ -231,8 +261,13 @@ public actor Conductor {
         case .none:
             var busy: [Place] = []
             for job in book.active.reversed() where !busy.contains(job.place) { busy.append(job.place) }
+            if claude { busy.removeAll { if case .ollama = $0 { true } else { false } } }
             if busy.count > 1 { return await choose(busy, title: "For which one?") }
-            return book.followUp(at: clock()) ?? .general
+            if let follow = book.followUp(at: clock()) {
+                if case .ollama = follow, claude { return .general }
+                return follow
+            }
+            return claude || choice.defaultAssistant == .claude ? .general : .ollama(choice.ollamaModel)
         }
     }
 
@@ -280,6 +315,7 @@ public actor Conductor {
     /// A job in place: its session opened first if the place has none. Work in a
     /// project is acknowledged aloud, so a misheard name is caught early.
     func work(_ words: String, in place: Place) async {
+        if case .ollama(let model) = place { return askOllama(words, model: model) }
         if place == .general {
             guard ProjectResolver.plain(generalFolder.path) else {
                 return reply("I can't work from \(generalFolder.lastPathComponent): its name has characters the sandbox can't hold.")
@@ -305,6 +341,8 @@ public actor Conductor {
         case .project(let project):
             return policy.options(project: project, instructions: SessionPolicy.instructions(in: project),
                                   operatorRules: Self.operatorRules)
+        case .ollama:
+            return [:]  // Ollama has no Claude Code session.
         }
     }
 
@@ -317,7 +355,11 @@ public actor Conductor {
     /// request to their places opens new ones.
     func stop(sessions: Set<String>) {
         for session in sessions {
-            sidecar.send(.close(session: session))
+            if case .ollama? = book.place(of: session) {
+                endOllama(session)
+            } else {
+                sidecar.send(.close(session: session))
+            }
             silence(book.closed(session, at: clock()))
         }
     }
