@@ -1,0 +1,125 @@
+{
+  "behaviour@desktop": {},
+  "behaviour@desktop-light": {},
+  "behaviour@phone": {},
+  "behaviour@tablet": {},
+  "creature@desktop": {},
+  "creature@desktop-light": {},
+  "creature@phone": {},
+  "creature@tablet": {},
+  "game@desktop": {},
+  "game@desktop-light": {},
+  "game@phone": {},
+  "game@tablet": {},
+  "paint-creature@desktop": {
+    "label-content-name-mismatch": [
+      ".second",
+      "div[aria-label=\"Choose a custom colour\"]",
+      "div[data-chip=\"#000000\"]",
+      "div[data-chip=\"body:#d9265d\"]",
+      "div[data-chip=\"body:#ff5994\"]",
+      "div[data-chip=\"body:#ffadca\"]",
+      "div[data-chip=\"body:#ffcbdd\"]",
+      "div[data-chip=\"body:#ffe3ed\"]",
+      "div[data-chip=\"body:#ffffff\"]"
+    ]
+  },
+  "paint-creature@desktop-light": {
+    "label-content-name-mismatch": [
+      ".second",
+      "div[aria-label=\"Choose a custom colour\"]",
+      "div[data-chip=\"#000000\"]",
+      "div[data-chip=\"body:#d9265d\"]",
+      "div[data-chip=\"body:#ff5994\"]",
+      "div[data-chip=\"body:#ffadca\"]",
+      "div[data-chip=\"body:#ffcbdd\"]",
+      "div[data-chip=\"body:#ffe3ed\"]",
+      "div[data-chip=\"body:#ffffff\"]"
+    ]
+  },
+  "paint-creature@phone": {
+    "label-content-name-mismatch": [
+      ".second",
+      "button[data-i=\"0\"]",
+      "button[data-i=\"1\"]",
+      "button[data-i=\"2\"]",
+      "button[data-i=\"3\"]",
+      "div[aria-label=\"Choose a custom colour\"]",
+      "div[data-chip=\"#000000\"]",
+      "div[data-chip=\"body:#d9265d\"]",
+      "div[data-chip=\"body:#ff5994\"]",
+      "div[data-chip=\"body:#ffadca\"]",
+      "div[data-chip=\"body:#ffcbdd\"]",
+      "div[data-chip=\"body:#ffe3ed\"]",
+      "div[data-chip=\"body:#ffffff\"]"
+    ]
+  },
+  "paint-creature@tablet": {
+    "label-content-name-mismatch": [
+      "div[data-chip=\"#000000\"]",
+      "div[data-chip=\"body:#d9265d\"]",
+      "div[data-chip=\"body:#ff5994\"]",
+      "div[data-chip=\"body:#ffadca\"]",
+      "div[data-chip=\"body:#ffcbdd\"]",
+      "div[data-chip=\"body:#ffe3ed\"]",
+      "div[data-chip=\"body:#ffffff\"]"
+    ]
+  },
+  "paint-icon@desktop": {
+    "label-content-name-mismatch": [
+      ".faint",
+      "div[data-chip=\"coral:#fa8c99\"]",
+      "div[data-chip=\"mint jelly:#43bca2\"]"
+    ]
+  },
+  "paint-icon@desktop-light": {
+    "label-content-name-mismatch": [
+      ".faint",
+      "div[data-chip=\"coral:#fa8c99\"]",
+      "div[data-chip=\"mint jelly:#43bca2\"]"
+    ]
+  },
+  "paint-icon@phone": {
+    "label-content-name-mismatch": [
+      ".faint",
+      ".second",
+      "div[aria-label=\"Choose a custom colour\"]",
+      "div[data-chip=\"coral:#fa8c99\"]",
+      "div[data-chip=\"mint jelly:#43bca2\"]"
+    ]
+  },
+  "paint-icon@tablet": {
+    "label-content-name-mismatch": [
+      "div[data-chip=\"coral:#fa8c99\"]",
+      "div[data-chip=\"mint jelly:#43bca2\"]"
+    ]
+  },
+  "review-detail@desktop": {},
+  "review-detail@desktop-light": {},
+  "review-detail@phone": {},
+  "review-detail@tablet": {},
+  "review-sheet@desktop": {
+    "color-contrast": [
+      "div[title=\"creatures.baby-eating\"] > .name > span:nth-child(1)",
+      "div[title=\"creatures.baby-happy\"] > .name > span:nth-child(1)",
+      "div[title=\"creatures.baby-idle-a\"] > .name > span:nth-child(1)",
+      "div[title=\"creatures.baby-idle-b\"] > .name > span:nth-child(1)"
+    ]
+  },
+  "review-sheet@desktop-light": {
+    "color-contrast": [
+      "div[title=\"creatures.baby-eating\"] > .name > span:nth-child(1)",
+      "div[title=\"creatures.baby-happy\"] > .name > span:nth-child(1)",
+      "div[title=\"creatures.baby-idle-a\"] > .name > span:nth-child(1)",
+      "div[title=\"creatures.baby-idle-b\"] > .name > span:nth-child(1)"
+    ]
+  },
+  "review-sheet@phone": {},
+  "review-sheet@tablet": {
+    "color-contrast": [
+      "div[title=\"creatures.baby-eating\"] > .name > span:nth-child(1)",
+      "div[title=\"creatures.baby-idle-a\"] > .name > span:nth-child(1)",
+      "div[title=\"creatures.baby-idle-b\"] > .name > span:nth-child(1)"
+    ]
+  }
+}

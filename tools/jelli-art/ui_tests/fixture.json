@@ -1,0 +1,23 @@
+{
+  "note": "Art and content revision the UI tests serve, so art and content changes do not move the baselines. Bump it deliberately (with JELLI_UI_UPDATE=1) when the studio needs newer data.",
+  "data_ref": "4eab889d03138891bec52023c325c72cbefb8bda",
+  "viewports": {
+    "desktop": [1440, 900],
+    "tablet": [820, 1180],
+    "phone": [390, 844]
+  },
+  "views": {
+    "review-detail": {"hash": "view=detail&key=creatures.grown-happy&mode=side&zoom=fit", "primary": "#stage"},
+    "review-sheet": {"hash": "view=sheet&key=creatures.grown-happy", "primary": "#sheet"},
+    "paint-creature": {"hash": "view=detail&key=creatures.axolotl-idle-2&mode=paint&zoom=fit", "primary": "#stage .paint-canvas canvas"},
+    "paint-icon": {"hash": "view=detail&key=icons.food&mode=paint&zoom=fit", "primary": "#stage .paint-canvas canvas"},
+    "creature": {"hash": "view=creature&key=creatures.grown-happy", "primary": "#creature canvas"},
+    "behaviour": {"hash": "view=behaviour&key=creatures.grown-happy", "primary": "#behaviour"},
+    "game": {"hash": "view=game&key=creatures.grown-happy", "primary": "#game"}
+  },
+  "screenshots": [
+    "review-detail@desktop", "review-sheet@desktop", "paint-creature@desktop", "paint-icon@desktop",
+    "creature@desktop", "behaviour@desktop", "game@desktop",
+    "paint-creature@tablet", "paint-creature@phone", "review-detail@phone"
+  ]
+}

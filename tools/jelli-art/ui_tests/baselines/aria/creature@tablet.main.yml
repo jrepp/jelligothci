@@ -1,0 +1,520 @@
+- main:
+  - tabpanel "Creature":
+    - heading "Creature" [level=2]
+    - group "Creature form":
+      - button "MINT · baby" [pressed]
+      - button "LILAC · grown"
+      - button "AXOLOTL · axolotl"
+    - text: On the panel · 6× · ground at (233, 256)
+    - img "Animated preview of the selected clip on the round panel"
+    - text: frame 1/1 · 450 ms · plays once, holds last frame · paused
+    - button "PlaySpace"
+    - button "◀ Step←"
+    - button "Step ▶→"
+    - button "Restart"
+    - button "Replay one-shots" [pressed]
+    - button "Home background" [pressed]
+    - button "Guides"
+    - text: Speed
+    - combobox "Speed":
+      - option "0.25×"
+      - option "0.5×"
+      - option "1×" [selected]
+      - option "2×"
+    - text: Reduced motion is on, so the preview starts paused. Step through frames or press Play. Pose
+    - button "idle" [pressed]
+    - button "idle-alt"
+    - button "curious"
+    - button "content"
+    - button "eating"
+    - button "happy"
+    - button "asleep"
+    - button "unwell"
+    - text: State poses
+    - button "study"
+    - button "ponder"
+    - button "ask"
+    - button "potty"
+    - paragraph: The resting loop and the default pose. Clip baby.idle · ID 5001
+    - text: Timeline · 1 frame (max 6) · 450 ms once
+    - list "Timeline · 1 frame (max 6) · 450 ms once":
+      - 'listitem "Frame 1 of 1: idle-a, 450 ms"':
+        - button "Show frame 1 (idle-a) on the panel"
+        - text: 1. idle-a ms
+        - spinbutton "Frame 1 duration in milliseconds": "450"
+        - button "Paint frame 1 with the flip-book and onion skin": Paint ✎
+        - button "Move frame 1 earlier" [disabled]: ◀ Move
+        - button "Move frame 1 later" [disabled]: Move ▶
+        - button "Duplicate frame 1 as a new frame": Duplicate
+        - button "Remove frame 1 from this clip": Remove
+    - paragraph: Drag a frame, or focus it and press Alt+Left or Alt+Right, to reorder.
+    - text: "Durations · drag a handle, or focus it and use the arrow keys (Shift: 100 ms)"
+    - group "Frame durations":
+      - slider "Frame 1 duration"
+    - group "New frame":
+      - text: New frame name
+      - textbox "New frame name":
+        - /placeholder: automatic
+      - checkbox "insert after the current frame" [checked]
+      - text: insert after the current frame
+      - button "Duplicate current frame"
+      - button "Add blank frame"
+    - paragraph: It gets ID 1025 in the baby range, with the form's size, pivot and palette. Inserting saves this clip too, in the same commit.
+    - button "Loop"
+    - text: Plays once, then holds the last frame.
+    - list:
+      - listitem: No unsaved clip edits.
+    - text: Frame library · baby · 8 frames
+    - list:
+      - listitem:
+        - text: idle-a ID 1001 · 2 uses
+        - button "Append idle-a to this clip": + clip
+        - button "Duplicate idle-a as a new frame": Duplicate
+        - button "Retire idle-a": Retire
+      - listitem:
+        - text: idle-b ID 1002 · 1 use
+        - button "Append idle-b to this clip": + clip
+        - button "Duplicate idle-b as a new frame": Duplicate
+        - button "Retire idle-b": Retire
+      - listitem:
+        - text: eating ID 1003 · 1 use
+        - button "Append eating to this clip": + clip
+        - button "Duplicate eating as a new frame": Duplicate
+        - button "Retire eating": Retire
+      - listitem:
+        - text: happy ID 1004 · 1 use
+        - button "Append happy to this clip": + clip
+        - button "Duplicate happy as a new frame": Duplicate
+        - button "Retire happy": Retire
+      - listitem:
+        - text: asleep ID 1005 · 1 use
+        - button "Append asleep to this clip": + clip
+        - button "Duplicate asleep as a new frame": Duplicate
+        - button "Retire asleep": Retire
+      - listitem:
+        - text: unwell ID 1006 · 1 use
+        - button "Append unwell to this clip": + clip
+        - button "Duplicate unwell as a new frame": Duplicate
+        - button "Retire unwell": Retire
+      - listitem:
+        - text: curious ID 1021 · 1 use
+        - button "Append curious to this clip": + clip
+        - button "Duplicate curious as a new frame": Duplicate
+        - button "Retire curious": Retire
+      - listitem:
+        - text: content ID 1022 · 1 use
+        - button "Append content to this clip": + clip
+        - button "Duplicate content as a new frame": Duplicate
+        - button "Retire content": Retire
+    - button "Revert pose" [disabled]
+    - button "Revert all" [disabled]
+    - button "Saved" [disabled]
+    - heading "All poses · click one to edit it" [level=3]
+    - button "1. idle 1f · once"
+    - button "2. idle-alt 1f · once"
+    - button "3. curious 1f · once"
+    - button "4. content 1f · once"
+    - button "5. eating 1f · once"
+    - button "6. happy 1f · once"
+    - button "7. asleep 1f · once"
+    - button "8. unwell 1f · once"
+    - button "9. study uses content"
+    - button "10. ponder uses content"
+    - button "11. ask uses curious"
+    - button "12. potty uses unwell"
+    - heading "Behaviour & size · content/creatures.json" [level=3]
+    - group:
+      - text: Size · baby Actor scale
+      - combobox "Actor scale":
+        - option "1"
+        - option "2"
+        - option "3"
+        - option "4"
+        - option "5"
+        - option "6" [selected]
+        - option "7"
+        - option "8"
+      - text: 156×114 px on the panel (widest baby-idle-b 26 px, tallest baby-happy 19 px); limit 300×176 Icon scale
+      - combobox "Icon scale":
+        - option "1"
+        - option "2" [selected]
+        - option "3"
+        - option "4"
+        - option "5"
+        - option "6"
+        - option "7"
+        - option "8"
+      - text: 32 px frame → 64 px icon; limit 96 Portrait scale
+      - combobox "Portrait scale":
+        - option "1"
+        - option "2"
+        - option "3"
+        - option "4" [selected]
+        - option "5"
+        - option "6"
+        - option "7"
+        - option "8"
+      - text: 32 px frame → 128 px portrait
+      - paragraph: The panel preview above draws at the actor scale.
+      - text: Behaviour
+      - combobox "Behaviour this form uses":
+        - option "jelly" [selected]
+        - option "axolotl"
+      - button "Copy as new…"
+      - button "Rename…"
+      - button "Delete" [disabled]
+      - paragraph: "Shared with grown: edits here change that form too. Use Copy as new to change only baby."
+      - text: Pose rules · first match wins · 9/12
+      - list:
+        - listitem:
+          - text: "1"
+          - combobox "Rule 1 condition":
+            - option "asleep" [selected]
+            - option "wake_groggy"
+            - option "wake_surprised"
+            - option "wake_happy"
+            - option "unwell"
+            - option "eating"
+            - option "playing"
+            - option "touch_happy"
+            - option "touch_upset"
+          - text: →
+          - combobox "Rule 1 pose":
+            - option "idle"
+            - option "idle-alt"
+            - option "curious"
+            - option "content"
+            - option "eating"
+            - option "happy"
+            - option "asleep" [selected]
+            - option "unwell"
+          - button "↑" [disabled]
+          - button "↓"
+          - button "✕"
+        - listitem:
+          - text: "2"
+          - combobox "Rule 2 condition":
+            - option "asleep"
+            - option "wake_groggy" [selected]
+            - option "wake_surprised"
+            - option "wake_happy"
+            - option "unwell"
+            - option "eating"
+            - option "playing"
+            - option "touch_happy"
+            - option "touch_upset"
+          - text: →
+          - combobox "Rule 2 pose":
+            - option "idle"
+            - option "idle-alt"
+            - option "curious"
+            - option "content"
+            - option "eating"
+            - option "happy"
+            - option "asleep" [selected]
+            - option "unwell"
+          - button "↑"
+          - button "↓"
+          - button "✕"
+        - listitem:
+          - text: "3"
+          - combobox "Rule 3 condition":
+            - option "asleep"
+            - option "wake_groggy"
+            - option "wake_surprised" [selected]
+            - option "wake_happy"
+            - option "unwell"
+            - option "eating"
+            - option "playing"
+            - option "touch_happy"
+            - option "touch_upset"
+          - text: →
+          - combobox "Rule 3 pose":
+            - option "idle"
+            - option "idle-alt"
+            - option "curious" [selected]
+            - option "content"
+            - option "eating"
+            - option "happy"
+            - option "asleep"
+            - option "unwell"
+          - button "↑"
+          - button "↓"
+          - button "✕"
+        - listitem:
+          - text: "4"
+          - combobox "Rule 4 condition":
+            - option "asleep"
+            - option "wake_groggy"
+            - option "wake_surprised"
+            - option "wake_happy" [selected]
+            - option "unwell"
+            - option "eating"
+            - option "playing"
+            - option "touch_happy"
+            - option "touch_upset"
+          - text: →
+          - combobox "Rule 4 pose":
+            - option "idle"
+            - option "idle-alt"
+            - option "curious"
+            - option "content"
+            - option "eating"
+            - option "happy" [selected]
+            - option "asleep"
+            - option "unwell"
+          - button "↑"
+          - button "↓"
+          - button "✕"
+        - listitem:
+          - text: "5"
+          - combobox "Rule 5 condition":
+            - option "asleep"
+            - option "wake_groggy"
+            - option "wake_surprised"
+            - option "wake_happy"
+            - option "unwell" [selected]
+            - option "eating"
+            - option "playing"
+            - option "touch_happy"
+            - option "touch_upset"
+          - text: →
+          - combobox "Rule 5 pose":
+            - option "idle"
+            - option "idle-alt"
+            - option "curious"
+            - option "content"
+            - option "eating"
+            - option "happy"
+            - option "asleep"
+            - option "unwell" [selected]
+          - button "↑"
+          - button "↓"
+          - button "✕"
+        - listitem:
+          - text: "6"
+          - combobox "Rule 6 condition":
+            - option "asleep"
+            - option "wake_groggy"
+            - option "wake_surprised"
+            - option "wake_happy"
+            - option "unwell"
+            - option "eating" [selected]
+            - option "playing"
+            - option "touch_happy"
+            - option "touch_upset"
+          - text: →
+          - combobox "Rule 6 pose":
+            - option "idle"
+            - option "idle-alt"
+            - option "curious"
+            - option "content"
+            - option "eating" [selected]
+            - option "happy"
+            - option "asleep"
+            - option "unwell"
+          - button "↑"
+          - button "↓"
+          - button "✕"
+        - listitem:
+          - text: "7"
+          - combobox "Rule 7 condition":
+            - option "asleep"
+            - option "wake_groggy"
+            - option "wake_surprised"
+            - option "wake_happy"
+            - option "unwell"
+            - option "eating"
+            - option "playing" [selected]
+            - option "touch_happy"
+            - option "touch_upset"
+          - text: →
+          - combobox "Rule 7 pose":
+            - option "idle"
+            - option "idle-alt"
+            - option "curious"
+            - option "content"
+            - option "eating"
+            - option "happy" [selected]
+            - option "asleep"
+            - option "unwell"
+          - button "↑"
+          - button "↓"
+          - button "✕"
+        - listitem:
+          - text: "8"
+          - combobox "Rule 8 condition":
+            - option "asleep"
+            - option "wake_groggy"
+            - option "wake_surprised"
+            - option "wake_happy"
+            - option "unwell"
+            - option "eating"
+            - option "playing"
+            - option "touch_happy" [selected]
+            - option "touch_upset"
+          - text: →
+          - combobox "Rule 8 pose":
+            - option "idle"
+            - option "idle-alt"
+            - option "curious"
+            - option "content"
+            - option "eating"
+            - option "happy" [selected]
+            - option "asleep"
+            - option "unwell"
+          - button "↑"
+          - button "↓"
+          - button "✕"
+        - listitem:
+          - text: "9"
+          - combobox "Rule 9 condition":
+            - option "asleep"
+            - option "wake_groggy"
+            - option "wake_surprised"
+            - option "wake_happy"
+            - option "unwell"
+            - option "eating"
+            - option "playing"
+            - option "touch_happy"
+            - option "touch_upset" [selected]
+          - text: →
+          - combobox "Rule 9 pose":
+            - option "idle"
+            - option "idle-alt"
+            - option "curious"
+            - option "content"
+            - option "eating"
+            - option "happy"
+            - option "asleep"
+            - option "unwell" [selected]
+          - button "↑"
+          - button "↓" [disabled]
+          - button "✕"
+      - button "Add rule"
+      - text: Idle schedule · 16/16 beats · 900 ms each · used when no rule matches
+      - combobox "Idle beat 1":
+        - option "idle" [selected]
+        - option "idle-alt"
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 2":
+        - option "idle"
+        - option "idle-alt" [selected]
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 3":
+        - option "idle" [selected]
+        - option "idle-alt"
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 4":
+        - option "idle" [selected]
+        - option "idle-alt"
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 5":
+        - option "idle"
+        - option "idle-alt"
+        - option "curious" [selected]
+        - option "content"
+      - combobox "Idle beat 6":
+        - option "idle" [selected]
+        - option "idle-alt"
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 7":
+        - option "idle"
+        - option "idle-alt" [selected]
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 8":
+        - option "idle"
+        - option "idle-alt" [selected]
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 9":
+        - option "idle" [selected]
+        - option "idle-alt"
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 10":
+        - option "idle"
+        - option "idle-alt"
+        - option "curious"
+        - option "content" [selected]
+      - combobox "Idle beat 11":
+        - option "idle"
+        - option "idle-alt"
+        - option "curious"
+        - option "content" [selected]
+      - combobox "Idle beat 12":
+        - option "idle" [selected]
+        - option "idle-alt"
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 13":
+        - option "idle" [selected]
+        - option "idle-alt"
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 14":
+        - option "idle"
+        - option "idle-alt" [selected]
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 15":
+        - option "idle" [selected]
+        - option "idle-alt"
+        - option "curious"
+        - option "content"
+      - combobox "Idle beat 16":
+        - option "idle" [selected]
+        - option "idle-alt"
+        - option "curious"
+        - option "content"
+      - button "Add beat" [disabled]
+      - button "Remove last beat"
+      - text: Quiet cycle
+      - combobox "Quiet cycle":
+        - option "0"
+        - option "1"
+        - option "2"
+        - option "3" [selected]
+        - option "4"
+        - option "5"
+        - option "6"
+        - option "7"
+        - option "8"
+        - option "9"
+        - option "10"
+        - option "11"
+        - option "12"
+        - option "13"
+        - option "14"
+        - option "15"
+        - option "16"
+      - paragraph: Every 3rd cycle (offset by pet ID) holds curious and content beats as idle.
+    - text: Simulate
+    - button "Simulate on panel"
+    - group "Conditions that hold":
+      - button "asleep"
+      - button "wake_groggy"
+      - button "wake_surprised"
+      - button "wake_happy"
+      - button "unwell"
+      - button "eating"
+      - button "playing"
+      - button "touch_happy"
+      - button "touch_upset"
+    - button "idle"
+    - text: Pet ID
+    - spinbutton "Pet ID": "1"
+    - paragraph: "No rule matches, so the idle schedule picks the pose: idle beat 1/16 · cycle 1 · idle."
+    - text: Idle timeline · 900 ms per beat · dashed beats are quieted
+    - region "Idle timeline": cycle 1 idle idle-alt idle idle curious idle idle-alt idle-alt idle content content idle idle idle-alt idle idle cycle 2 idle idle-alt idle idle curious idle idle-alt idle-alt idle content content idle idle idle-alt idle idle cycle 3 idle idle-alt idle idle idle idle idle-alt idle-alt idle idle idle idle idle idle-alt idle idle
+    - list:
+      - listitem: No unsaved behaviour or size edits.
+    - button "Revert" [disabled]
+    - button "Saved" [disabled]
+    - text: Space play/pause · ,/. step frames (idle beats while simulating) · J/K next/previous pose · 1–12 pick a pose · ⌘S save clips and behaviour
