@@ -44,6 +44,7 @@
     .paint-slot{position:relative;display:grid}
     .paint-slot .edit{position:absolute;top:2px;right:2px;padding:0 4px;font-size:11px;line-height:16px;border-radius:4px;background:var(--panel)}
     .paint-chip.off .sw{outline:2px solid var(--bad);outline-offset:1px}
+    .paint-chip.faint .sw{outline:2px dashed var(--ink);outline-offset:2px}
     .eraser-sw{background:repeating-conic-gradient(#555 0 25%,#2b2b31 0 50%) 0 0/10px 10px}
     .studio-note{font-size:12px;color:var(--muted);max-width:760px;margin:6px 0}
     .artist{width:170px;padding:4px 8px}
@@ -73,8 +74,8 @@
     if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), {status: res.status, body: data});
     return data;
   }
-  function status(text, cls = '', sticky = false) {
-    if (window.JelliShell) return window.JelliShell.notify(text, {tone: cls, sticky});  // shell.js: live region and toasts
+  function status(text, cls = '', sticky = false, opts = {}) {
+    if (window.JelliShell) return window.JelliShell.notify(text, {tone: cls, sticky, ...opts});  // shell.js: live region and toasts
     const el = document.getElementById('studio-status'); el.textContent = text; el.className = 'studio-status ' + cls;
     clearTimeout(statusTimer); if (!sticky) statusTimer = setTimeout(() => { el.textContent = ''; }, 4000);
   }
@@ -392,12 +393,17 @@
     drawSelection(ctx, z);
     if (state.hover) {
       const [x, y] = state.hover;
-      if (state.tool === 'pencil' && !stroke && state.color) { ctx.globalAlpha = 0.55; ctx.fillStyle = state.color; ctx.fillRect(x * z, y * z, z, z); ctx.globalAlpha = 1; }
+      if (state.tool === 'pencil' && !stroke && state.color) {
+        ctx.globalAlpha = 0.55; ctx.fillStyle = state.color; ctx.fillRect(x * z, y * z, z, z); ctx.globalAlpha = 1;
+        if (z >= 4 && lowContrast(state.color, a)) { ctx.strokeStyle = backdropLuma(backdropFor(a)) > 128 ? '#000' : '#fff'; ctx.lineWidth = Math.max(1, z / 8); ctx.setLineDash([Math.max(2, z / 4), Math.max(2, z / 4)]); ctx.strokeRect(x * z + z / 4, y * z + z / 4, z / 2, z / 2); ctx.setLineDash([]); }
+      }
       drawHover(ctx, z);
       if (state.kbd) { ctx.strokeStyle = '#85e4b6'; ctx.lineWidth = 2; ctx.strokeRect(x * z - 3, y * z - 3, z + 6, z + 6); }
     }
     S.afterDraw?.();  // flipbook.js: the paused preview and this frame's thumbnail
   }
+  /* A paint colour that would barely show on the asset's backdrop (ink on black, say) gets a contrast ring. */
+  const lowContrast = (hex, a) => !!hex && Math.abs(lumaOf(hex) - backdropLuma(backdropFor(a))) < 48;
   /* Centre guides: the sprite's middle row and column, and the centre of each 8 px tile. */
   function drawGuides(ctx, a, z) {
     ctx.fillStyle = 'rgba(245,199,100,.8)';
@@ -632,6 +638,7 @@
     const chip = (hex, title, sub, extra = '', custom = false) => {
       const b = document.createElement('div'); b.className = 'paint-chip' + extra; b.tabIndex = 0; b.title = title; b.dataset.chip = hex || 'eraser';
       const active = hex === null ? state.tool === 'eraser' : state.tool !== 'eraser' && state.color === hex;
+      if (active && hex && lowContrast(hex, a)) { b.classList.add('faint'); title += ` · hard to see on the ${backdropFor(a)} backdrop`; b.title = title; }
       b.setAttribute('aria-pressed', String(active)); b.setAttribute('role', 'button'); b.setAttribute('aria-label', title);
       b.innerHTML = `<span class="sw ${hex ? '' : 'eraser-sw'}" style="${hex ? `background:${hex}` : ''}"></span><span>${title.split(' · ')[0]}</span><span>${sub}</span>`;
       b.onclick = e => {
@@ -708,7 +715,7 @@
       window.JelliDrafts?.drop('paint', a.key);
       renderHeader(a); renderToolbarState(); renderList();
       if (res.git_error) status(`Saved ${a.key}, but the commit failed: ${res.git_error}`, 'bad', true);
-      else status(res.commit ? `Saved ${a.key} (commit ${res.commit}).` : `Saved ${a.key}. With make run-live, the game shows it now.`);
+      else status(res.commit ? `Saved ${a.key} (commit ${res.commit}).` : `Saved ${a.key}. With make run-live, the game shows it now.`, '', false, {keep: true});
     } catch (err) { status(`Save failed: ${err.message}`, 'bad', true); }
   }
   async function askOverwrite(key) {

@@ -18,7 +18,7 @@
   const extraModes = [];        // registerMode() entries
   const dirtyChecks = new Map();  // id -> {label, mode, check}
   const toasts = new Map();     // id -> element
-  let tabsKey = '', lastReviewMode = 'side', wasDirty = false, offline = false, toastSeq = 0;
+  let tabsKey = '', lastReviewMode = 'side', wasDirty = false, offline = false, toastSeq = 0, currentMode = '';
 
   /* ---------- shortcut registry ---------- */
   /* registerShortcuts('Paint', [{keys: ['P'], description: 'Pencil'}, {keys: ['Mod+Z'], description: 'Undo'}]).
@@ -45,7 +45,8 @@
     [/cmake/i, 'Install CMake and restart Jelli Art: behaviour saves are checked with cmake -P.'],
     [/request too large/i, 'Requests are limited to 1 MiB; save fewer edits at once.']];
   const TONES = {'': 'info', info: 'info', ok: 'ok', good: 'ok', warn: 'warn', bad: 'bad', error: 'bad'};
-  /* notify(text, {tone: 'info'|'ok'|'warn'|'bad', sticky, hint, id, timeout}). Errors stay until dismissed.
+  /* notify(text, {tone: 'info'|'ok'|'warn'|'bad', sticky, hint, id, timeout, keep}). Errors stay until dismissed;
+   * keep survives a mode switch.
    * The same id (or the same text) replaces the toast rather than stacking. Returns the id. */
   function notify(text, opts = {}) {
     text = String(text || ''); if (!text) return null;
@@ -61,7 +62,7 @@
       el.addEventListener('mouseenter', () => clearTimeout(el.timer));
       el.addEventListener('focusin', () => clearTimeout(el.timer));
     }
-    el.className = `shell-toast ${tone}`; el.dataset.text = text;
+    el.className = `shell-toast ${tone}`; el.dataset.text = text; el.dataset.mode = currentMode; el.dataset.tone = tone; el.dataset.keep = String(sticky || !!opts.keep);
     const label = {info: 'Note', ok: 'Done', warn: 'Warning', bad: 'Problem'}[tone];
     el.innerHTML = `<p><span class="shell-tone">${label}:</span> ${esc(text)}</p>${hint ? `<p class="shell-hint">${esc(hint)}</p>` : ''}` +
       '<button type="button" class="shell-dismiss" aria-label="Dismiss notification">×</button>';
@@ -71,6 +72,11 @@
     while (toasts.size > 4) dismiss(toasts.keys().next().value);
     announce(`${label}: ${text}${hint ? ` ${hint}` : ''}`);
     return id;
+  }
+  /* Switching mode clears passing info and done toasts from the mode left behind; warnings, problems, sticky toasts and {keep: true} ones (save results) stay. */
+  function leaveMode(next) {
+    if (currentMode) for (const [id, el] of [...toasts]) if (el.dataset.mode !== next && el.dataset.keep !== 'true' && ['info', 'ok'].includes(el.dataset.tone)) dismiss(id);
+    currentMode = next;
   }
   function dismiss(id) {
     const el = toasts.get(id); if (!el) return;
@@ -144,6 +150,7 @@
     if (key !== tabsKey) { tabsKey = key; buildTabs(list); }
     if (s.mode !== 'paint' && s.mode) lastReviewMode = s.mode;
     const current = list.find(m => m.active()) || list[0];
+    if (current.id !== currentMode) leaveMode(current.id);
     for (const m of list) {
       const tab = document.getElementById(`tab-${m.id}`); if (!tab) continue;
       const on = m === current, panel = m.panel();
@@ -216,7 +223,8 @@
     const sections = [...shortcuts].sort(([a], [b]) => (b === current) - (a === current) || (b === 'Everywhere') - (a === 'Everywhere'));
     const body = sections.map(([name, list]) => `<section><h3>${esc(name)}${name === current ? ' <span class="lbl">· this mode</span>' : ''}</h3><dl class="shell-keys">` +
       list.map(s => `<dt>${s.keys.map(combo).join(' <span class="lbl">or</span> ')}</dt><dd>${esc(s.description)}</dd>`).join('') + '</dl></section>').join('');
-    dialog({title: 'Keyboard shortcuts', body, className: 'shell-help'});
+    // Focus the × at the top so the list opens at its start, not scrolled to the Close button.
+    dialog({title: 'Keyboard shortcuts', body, className: 'shell-help', initial: '.shell-x', onOpen: el => { el.scrollTop = 0; el.querySelector('.shell-dialog-body').scrollTop = 0; }});
   }
   function guideHtml() {
     const live = D.live, git = D.git || {};
@@ -224,7 +232,9 @@
     const what = {Review: 'compare each asset with an earlier commit: side by side, swipe, flip, onion skin or a pixel diff, and mark it good or needs work.',
       Paint: 'edit the pixels of the selected asset; a creature frame also gets a flip-book beside the canvas to play its clip, step frames with ← and →, and onion skin its neighbours.',
       Creature: 'set the frames, timing and loop of each pose clip, and each form\'s size and behaviour.',
-      Behaviour: 'edit behaviour states and reactions, and try them in the stimulus simulator.'};
+      Behaviour: 'edit behaviour states and reactions, and try them in the stimulus simulator.',
+      'Test in game': 'render a scenario (pet, form, needs, page, clock) with the real game engine and step through its frames; save first, since unsaved edits are not included.',
+      Activities: 'edit the activity recipes: which forms can do them, opening times, meter costs and rewards, locations, icon, prop and motion.'};
     const saving = !live ? '<p>This is a static review page: notes stay in this browser. Use <b>Copy review notes</b> to share them.</p>'
       : git.enabled ? `<p><b>Saving.</b> Each mode has its own Save (Mod+S). The studio checks the file, writes it, and commits it to <code>${esc(git.branch)}</code>${git.push ? ', then pushes it for review' : ''}. Commit and push results appear here and in the header.</p>`
         : '<p><b>Saving.</b> Each mode has its own Save button (⌘S / Ctrl+S). The studio checks the change, then writes it into this checkout. Nothing is committed: check <code>git diff</code> and commit when you are happy.</p>';

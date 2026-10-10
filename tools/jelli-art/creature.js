@@ -370,7 +370,7 @@
       else if (res.warning) S.status(res.warning, 'warn', true);
       else {
         const what = res.changed.length === 1 ? res.changed[0] : `${res.changed.length} clips`;
-        S.status(res.commit ? `Saved ${what} (commit ${res.commit}).` : `Saved ${what} to assets.json.`);
+        S.status(res.commit ? `Saved ${what} (commit ${res.commit}).` : `Saved ${what} to assets.json.`, '', false, {keep: true});
       }
     } catch (err) { S.status(`Clip save failed: ${err.message}`, 'bad', true); }
   }

@@ -343,7 +343,7 @@
       D.creature_data = sent; loaded = clone(sent); D.creature_data_sha = seen = base = res.sha; D.version = res.version;
       render(); cr.renderForms();
       if (res.git_error) S.status(`Saved creature data, but the commit failed: ${res.git_error}`, 'bad', true);
-      else S.status(res.commit ? `Saved content/creatures.json (commit ${res.commit}).` : 'Saved content/creatures.json.');
+      else S.status(res.commit ? `Saved content/creatures.json (commit ${res.commit}).` : 'Saved content/creatures.json.', '', false, {keep: true});
     } catch (err) { S.status(`Behaviour save failed: ${err.message}`, 'bad', true); }
   }
   cr.save = () => { save(); };
