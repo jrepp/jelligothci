@@ -1,6 +1,6 @@
 # Jelligotchi slice artwork
 
-The first review set contains 79 PNG files: 16 creature frames, 12 small icons, 13 ring icons,
+The first review set contains 81 PNG files: 16 creature frames, 12 small icons, 15 ring icons,
 five meter pictograms, nine health icons, eight celebration sprites, nine collectible prizes, two backgrounds, four props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
 form. The SDL and ESP32 pet builds embed these assets using
 `tools/assets/embed_slice.py`. Physical board appearance remains unverified.
@@ -74,8 +74,8 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw pixel payload is 147,488 bytes. The RFC's 8,192-byte definition and
-4,096-byte metadata allowances bring the planned pack to 159,776 bytes; those
+Actual raw pixel payload is 151,840 bytes. The RFC's 8,192-byte definition and
+4,096-byte metadata allowances bring the planned pack to 164,128 bytes; those
 allowances are not a completed game pack or a linked firmware measurement.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
@@ -167,3 +167,18 @@ centroid in both axes. See [the implementation and action audit](../../docs-cms/
 
 The settings gear uses six broad teeth, a small hub, and one highlight for a
 heavy cartoon silhouette. The clock reuses this asset at 1x; no new art payload.
+
+
+The barbell (`menus/barbell.png`, 6014) and water glass (`menus/water.png`, 6015)
+were generated with the built-in image tool, then exported at 32×32 with nearest
+sampling, binary alpha, and nearest colors from the existing palette. The barbell
+prompt requested a horizontal teal shaft, chunky lilac plates, plum outlines,
+cream highlights, and transparent margins on a 32-pixel logical grid. The water
+prompt requested a teal glass and droplet, no steam/text/face, plum outlines,
+cream highlights, and the same transparent pixel grid. Full generation prompts
+are in the implementation session; neither image uses a fallback API tool.
+
+The two new 32×32 icons add 4352 bytes of RGB565 and masks. Raw pixels plus
+the retained 8192-byte definitions and 4096-byte indexes total 164128 bytes.
+The authored pack allowance is now 161 KiB (164864 bytes), leaving 736 bytes.
+This does not change framebuffer, core heap, or C source-size limits.

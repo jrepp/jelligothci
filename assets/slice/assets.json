@@ -1564,6 +1564,44 @@
         30
       ],
       "purpose": "Friendship Bow collectible; shared catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 6014,
+      "key": "menus.exercise",
+      "path": "menus/barbell.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        10,
+        30,
+        23
+      ],
+      "purpose": "Exercise action barbell; generated artwork normalized to the existing binary-alpha pixel palette"
+    },
+    {
+      "id": 6015,
+      "key": "menus.water",
+      "path": "menus/water.png",
+      "kind": "menus",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        10,
+        6,
+        22,
+        26
+      ],
+      "purpose": "Water action glass; generated artwork normalized to the existing binary-alpha pixel palette"
     }
   ],
   "clips": [

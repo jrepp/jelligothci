@@ -67,7 +67,7 @@ Bounds, centroids, and creature ground anchors update with the image.
 open build/assets/preview.html    # macOS; otherwise open in your browser
 ```
 
-The preview includes all 79 assets, including nine distinct presents.
+The preview includes all 81 assets, including nine distinct presents.
 [Art inventory](assets/slice/README.md) · [live authoring guide](docs/artwork.md)
 
 ## Hardware bring-up

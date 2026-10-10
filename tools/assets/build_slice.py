@@ -71,7 +71,7 @@ def load_assets():
         paths.add(path)
         counts[asset["kind"]] += 1
         images[key] = image
-    require(counts == {"creatures": 16, "icons": 12, "props": 4, "font": 1, "menus": 13, "meters": 5, "health": 9, "effects": 8, "backgrounds": 2, "prizes": 9}, "Incomplete slice inventory")
+    require(counts == {"creatures": 16, "icons": 12, "props": 4, "font": 1, "menus": 15, "meters": 5, "health": 9, "effects": 8, "backgrounds": 2, "prizes": 9}, "Incomplete slice inventory")
     prize_pixels = {image.tobytes() for key, image in images.items() if key.startswith("prizes.")}
     require(len(prize_pixels) == 9, "Collectible prizes must have nine distinct pixel designs")
     clip_keys = set()
@@ -110,10 +110,10 @@ def export_pixels(output, manifest, images):
                         **({"ground_anchor_q8": asset["ground_anchor_q8"]} if asset["kind"] == "creatures" else {}),
                         "files": {k: {"bytes": len(v), "sha256": hashlib.sha256(v).hexdigest()} for k, v in payloads.items()}})
     total = sum(r["bytes"] for r in records)
-    require(total == 147488, f"Unexpected pixel payload: {total}")
-    require(total + 8192 + 4096 <= 163840, "Art exceeds 160 KiB planned pack budget")
+    require(total == 151840, f"Unexpected pixel payload: {total}")
+    require(total + 8192 + 4096 <= 164864, "Art exceeds 161 KiB planned pack budget")
     report = {"pixel_bytes": total, "definition_allowance": 8192, "metadata_allowance": 4096,
-              "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": 163840,
+              "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": 164864,
               "note": "Raw pixels are real exports; definitions, metadata and pack assembly remain allowances, not a compiled game pack.", "assets": records}
     (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     return report
