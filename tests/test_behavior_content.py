@@ -51,6 +51,8 @@ with tempfile.TemporaryDirectory(prefix="jelli-behaviors-") as directory:
         lambda d: d["repertoires"][0].update(touch=dict(d["touch"], load_per_tap=0)),
         lambda d: d.update(need_low=0),
         lambda d: d["night"].update(start_minute=1440),
+        lambda d: d["repertoires"][0].update(forms=[]),
+        lambda d: d["repertoires"][0].update(reactions=[]),
     ]
     for mutate in mutations:
         data = copy.deepcopy(behaviors)
