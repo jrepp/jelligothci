@@ -49,6 +49,33 @@ catch-up, render damage and stride, scene interaction, asset reload rollback,
 and debug reconnect/capture. Compiled firmware does not verify physical
 rendering, touch, power loss, RTC continuity or frame timing.
 
+# Release verification
+
+PRs #16 and #17 are merged. After the audit fixes and release-note deduplication,
+[PR #15](https://github.com/jrepp/jelligothci/pull/15) passed all checks, including
+Windows and macOS packages and the Jelli Art image. Both `v0.5.0` and
+`jelli-art-v0.3.0` resolve to `c370fab31efdb5a8ade82a3cba2d8bd464560dcc`.
+The [publication workflow](https://github.com/jrepp/jelligothci/actions/runs/38044516169)
+completed successfully, including the image smoke test and semver tag pushes.
+
+Downloaded all seven game release assets (six artifacts plus `SHA256SUMS`);
+all six checksums matched. Extracted the published source archive outside the
+checkout, configured a Release core-only build, compiled, and passed 25/25 tests.
+The downloaded macOS application completed the 650-frame headless pet demo;
+its snapshot matched the reviewed local demo output. Windows packaging and
+execution tests passed in CI; no local Windows execution was performed.
+
+Jelli Art `ghcr.io/jrepp/jelli-art:0.3.0` publication and container smoke testing
+are evidenced by the successful CI image job. An independent local registry
+manifest inspection did not complete and was interrupted; a fresh local image
+pull was not verified. Physical ESP32 validation remains outstanding.
+
+The removed worktree's bundles, regression failures, passing local logs,
+release downloads, source-build log and image publication log are archived in
+`/Users/jrepp/d/jelligotchi-cleanup-20261010-013938/`. Concurrent Jelli Art worktrees
+were preserved, including a new studio integration worktree created during
+this pass; they are not part of this release.
+
 # Follow-up priorities
 
 1. **Save/content compatibility before reordering authored states.** Behavior,
