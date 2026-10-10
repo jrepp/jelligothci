@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Station-mode Wi-Fi for the phase 0 spike (RFC-003). Credentials live in agent_nvs
+/* Station-mode Wi-Fi for the voice agent (RFC-003). Credentials live in agent_nvs
  * (settings.h); the driver keeps its own copy in RAM only, so the pet's nvs is never
  * touched. Call from the console task. */
 bool jelli_agent_wifi_start(void);

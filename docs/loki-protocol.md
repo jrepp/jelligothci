@@ -80,7 +80,7 @@ options of which 0 allows and 1 denies, or `choose`.
 | `ptt_end` | `stream`, `frames`, `dropped` (0..2³²−1 each) | The user let go of the open stream; `dropped` counts frames lost to a full send queue |
 | `cancel` | — | The user asked to stop (PWR key or the card's stop) |
 | `answer` | `id`, `nonce`, `digest`, `choice` (0..3) | The user tapped an option of the card `id` |
-| `played` | `reply`, `complete` (bool) | Playback of `reply` finished or was cut short |
+| `played` | `reply`, `complete` (bool) | Playback of `reply` finished or was cut short; a reply that begins while the user holds to talk is not played and is answered at once with `complete` false |
 | `status` | `battery` (−1..100), `charging` (bool), `rssi` (−127..0) | Periodic health; −1 when the battery level is unknown |
 
 An `answer` echoes the question's `id` and `nonce` and carries `digest`: the

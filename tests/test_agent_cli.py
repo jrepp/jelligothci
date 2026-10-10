@@ -4,7 +4,7 @@ import argparse
 import contextlib
 import importlib.util
 import io
-import random
+import json
 import sys
 import unittest
 import unittest.mock
@@ -314,8 +314,8 @@ class CommandLineTests(unittest.TestCase):
         self.assertEqual(agent.command_line(self.args(command="boot", app="pet")), ("boot pet", 0.0))
 
 
-class SpikeCommandTests(unittest.TestCase):
-    """Phase 0 spike requests: Wi-Fi credentials, the Mac's address, streaming, audio."""
+class SetupCommandTests(unittest.TestCase):
+    """Set-up requests: Wi-Fi credentials and audio."""
 
     def args(self, **values):
         return argparse.Namespace(**values)
@@ -343,20 +343,14 @@ class SpikeCommandTests(unittest.TestCase):
         self.assertEqual(request, agent.wifi_line("Home", "hunter2hunter2"))
         self.assertEqual(extra, 0.0)
 
-    def test_other_spike_requests(self):
+    def test_other_setup_requests(self):
         cases = ((dict(command="wifi", action="status", ssid=None), ("wifi status", 0.0)),
                  (dict(command="wifi", action="clear", ssid=None), ("wifi clear", 0.0)),
-                 (dict(command="link", action="set", host="192.168.68.66", tcp_port=8765),
-                  ("link set 192.168.68.66 8765", 0.0)),
-                 (dict(command="link", action="status", host=None, tcp_port=None), ("link status", 0.0)),
-                 (dict(command="mic", action="stream", seconds=8), ("mic stream 8", 33.0)),
                  (dict(command="audio", action="test", value=2000), ("audio test 2000", 2.0)),
                  (dict(command="audio", action="volume", value=20), ("audio volume 20", 0.0)))
         for values, expected in cases:
             with self.subTest(values=values):
                 self.assertEqual(agent.command_line(self.args(**values)), expected)
-        with self.assertRaisesRegex(agent.AgentError, "IPv4 address and port"):
-            agent.command_line(self.args(command="link", action="set", host="192.168.68.66", tcp_port=None))
 
     def test_the_password_reaches_the_wire_but_is_never_printed(self):
         secret = "correct horse battery"
@@ -402,9 +396,9 @@ class SpikeCommandTests(unittest.TestCase):
             self.assertNotIn(secret.encode().hex(), text)
         self.assertIn('"saved"', out.getvalue())
 
-    def test_spike_arguments_are_checked_before_any_port_opens(self):
-        cases = (["link", "set", "192.168.68.66", "70000"], ["mic", "stream", "0"], ["mic", "stream", "31"],
-                 ["wifi", "forget"], ["audio", "loud", "1"], ["mic", "record", "5"])
+    def test_setup_arguments_are_checked_before_any_port_opens(self):
+        cases = (["wifi", "forget"], ["audio", "loud", "1"], ["link", "set", "192.168.68.66", "8765"],
+                 ["mic", "stream", "8"], ["pair", "commit"], ["loki", "dance"])
         for arguments in cases:
             with self.subTest(arguments=arguments):
                 argv = ["loki-agent", "--port", "/dev/null", *arguments]
@@ -413,57 +407,6 @@ class SpikeCommandTests(unittest.TestCase):
                         self.assertRaises(SystemExit) as raised:
                     agent.main()
                 self.assertEqual(raised.exception.code, 2)
-
-    def test_link_hosts_follow_the_device_parser(self):
-        good = ("0.0.0.0", "192.168.68.66", "255.255.255.255", "10.0.0.1")
-        bad = ("", "1.2.3", "1.2.3.4.", "01.2.3.4", "256.1.1.1", "1.2.3.1000", "1.2.3.4 9",
-               "1.2.3.4\n@A1 9 boot pet", "1.2.3.4\n", "h\u00e9llo", "\u0661.\u0662.\u0663.\u0664",
-               "\uff11.2.3.4", "localhost", "-1.2.3.4", "1.2.3.+4")
-        for host in good + bad:
-            with self.subTest(host=host):
-                args = self.args(command="link", action="set", host=host, tcp_port=80)
-                if host in good:
-                    self.assertEqual(agent.command_line(args), (f"link set {host} 80", 0.0))
-                else:
-                    with self.assertRaisesRegex(agent.AgentError, "IPv4 address and port"):
-                        agent.command_line(args)
-
-    def test_link_hosts_match_a_reference_over_random_text(self):
-        def reference(text):
-            parts = text.split(".")
-            return len(parts) == 4 and all(
-                0 < len(part) <= 3 and all("0" <= c <= "9" for c in part)
-                and (part == "0" or part[0] != "0") and int(part) <= 255 for part in parts)
-
-        generator = random.Random(2026)
-        valid = ["0", "7", "10", "199", "255"]
-        pieces = valid + ["00", "07", "256", "1000", "", " ", "\n", "+", "\u0663", "a"]
-        accepted = 0
-        for case in range(4000):
-            count = generator.choice((4, 4, 4, 3, 5))
-            text = ".".join(generator.choice(valid) if generator.random() < 0.8
-                            else generator.choice(pieces) for _ in range(count))
-            if generator.random() < 0.1:
-                text += chr(generator.randrange(1, 256))
-            with self.subTest(case=case, text=text):
-                expected = reference(text)
-                accepted += expected
-                self.assertEqual(agent.IPV4.fullmatch(text) is not None, expected)
-        self.assertGreater(accepted, 400)
-
-    def test_a_bad_host_fails_before_any_port_opens(self):
-        class NoSerial:
-            def __init__(self, **_):
-                raise AssertionError("a port was opened")
-
-        fake = type(sys)("serial")
-        fake.Serial, fake.SerialException = NoSerial, OSError
-        argv = ["loki-agent", "--port", "/dev/null", "link", "set", "h\u00e9llo", "8765"]
-        with unittest.mock.patch.dict(sys.modules, {"serial": fake}), \
-                unittest.mock.patch.object(sys, "argv", argv), \
-                contextlib.redirect_stderr(io.StringIO()) as err:
-            self.assertEqual(agent.main(), 1)
-        self.assertIn("IPv4 address and port", err.getvalue())
 
     def test_a_given_ssid_is_not_asked_for(self):
         args = self.args(command="wifi", action="set", ssid="Home")
@@ -491,14 +434,42 @@ class SpikeCommandTests(unittest.TestCase):
         self.assertEqual(len(line.split()), 6)
 
     def test_waits_cover_the_device_work(self):
-        cases = ((dict(command="mic", action="stream", seconds=1), 26.0),
-                 (dict(command="mic", action="stream", seconds=30), 55.0),
-                 (dict(command="audio", action="test", value=200), 0.2),
+        cases = ((dict(command="audio", action="test", value=200), 0.2),
                  (dict(command="audio", action="test", value=5000), 5.0),
                  (dict(command="audio", action="volume", value=100), 0.0))
         for values, extra in cases:
             with self.subTest(values=values):
                 self.assertAlmostEqual(agent.command_line(self.args(**values))[1], extra)
+
+
+class LinkCommandTests(unittest.TestCase):
+    """Pairing state and the link commands for trying the bridge without the interface."""
+
+    def args(self, **values):
+        return argparse.Namespace(**values)
+
+    def test_requests(self):
+        cases = ((dict(command="pair", action="show"), "pair show"),
+                 (dict(command="pair", action="status"), "pair status"),
+                 (dict(command="pair", action="clear"), "pair clear"),
+                 (dict(command="loki", action="status", value=None), "loki status"),
+                 (dict(command="loki", action="inbox", value=None), "loki inbox"),
+                 (dict(command="loki", action="cancel", value=None), "loki cancel"),
+                 (dict(command="loki", action="answer", value="2"), "loki answer 2"),
+                 (dict(command="loki", action="ptt", value="start"), "loki ptt start"),
+                 (dict(command="loki", action="ptt", value="stop"), "loki ptt stop"))
+        for values, expected in cases:
+            with self.subTest(values=values):
+                self.assertEqual(agent.command_line(self.args(**values)), (expected, 0.0))
+
+    def test_values_are_checked_so_no_words_can_be_added(self):
+        cases = (("answer", None), ("answer", "4"), ("answer", "-1"), ("answer", "1 boot pet"),
+                 ("answer", "1\n@A1 9 boot pet"), ("ptt", None), ("ptt", "hold"), ("ptt", "start "),
+                 ("status", "now"), ("inbox", "0"), ("cancel", "all"))
+        for action, value in cases:
+            with self.subTest(action=action, value=value):
+                with self.assertRaises(agent.AgentError):
+                    agent.command_line(self.args(command="loki", action=action, value=value))
 
 
 if __name__ == "__main__":

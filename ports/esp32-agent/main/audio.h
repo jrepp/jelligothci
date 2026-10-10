@@ -5,11 +5,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Full-duplex audio for the phase 0 spike (RFC-003): the ES8311 speaker in standard
- * I2S and the ES7210 microphones in TDM on one I2S port, so both run at the same
- * rate. 24 kHz matches Chatter's output. Capture delivers all four TDM slots,
- * interleaved in the ES7210's order MIC1, MIC3, MIC2, MIC4, so the spike can
- * measure which one carries the speaker echo reference the board wires to MIC3. */
+/* Audio for the voice agent (RFC-003): the ES8311 speaker in standard I2S and the
+ * ES7210 microphones in TDM on one I2S port, so both run at the same rate. 24 kHz
+ * matches Chatter's output. Capture delivers all four TDM slots, interleaved in the
+ * ES7210's order MIC1, MIC3, MIC2, MIC4; MIC3 carries the speaker's echo reference
+ * (memo-025). */
 #define JELLI_AGENT_AUDIO_RATE 24000u
 #define JELLI_AGENT_AUDIO_CHANNELS 4u
 

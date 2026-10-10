@@ -27,3 +27,12 @@ CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="../esp32/partitions.csv"
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# loki/1 TLS: mbedTLS allocates from PSRAM, keeping internal RAM for Wi-Fi, audio and
+# display DMA (RFC-003).
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
+# The board makes its TLS key and certificate on the main task at first start, before
+# the boot is confirmed, so a failure there rolls back to the pet (identity.h);
+# mbedTLS needs more than the default 3.5 KB stack for it.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192

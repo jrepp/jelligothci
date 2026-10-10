@@ -109,10 +109,53 @@ static void longest_wifi_request_fits_the_console(void)
           ssid_size == 32u);
 }
 
+/* Bridge addresses from pairing: IPv4 or a DNS name with sound labels. */
+static void checks_hosts(void)
+{
+    static const char *const good[] = {"MacBook-Pro-4.local",
+                                       "studio.local",
+                                       "a",
+                                       "a-b.c-d",
+                                       "192.168.68.66",
+                                       "x1.y2.z3",
+                                       "A9",
+                                       "1password.local",
+                                       "0x7f000001.local",
+                                       NULL};
+    /* The second row reads as an address to lwIP (octal, hex, or short forms) but not
+     * to jelli_agent_ipv4_parse, so it must not pass as a name either. */
+    static const char *const bad[] = {"",          ".",
+                                      "a.",        ".a",
+                                      "a..b",      "-a",
+                                      "a-",        "a-.b",
+                                      "a.-b",      "a b",
+                                      "a_b",       "a/b",
+                                      "a:8766",    "caf\xc3\xa9.local",
+                                      "a\n",       "010.0.0.1",
+                                      "1.2.3",     "999.1.1.1",
+                                      "1.2.3.4.5", "0x7f000001",
+                                      "127",       "abc.123",
+                                      "studio.9a", "10.0.0.1x",
+                                      NULL};
+    char longest[65];
+    for (const char *const *host = good; *host; ++host)
+        CHECK(jelli_agent_host_valid(*host));
+    for (const char *const *host = bad; *host; ++host)
+        CHECK(!jelli_agent_host_valid(*host));
+    CHECK(!jelli_agent_host_valid(NULL));
+    memset(longest, 'a', 63u);
+    longest[63] = '\0';
+    CHECK(jelli_agent_host_valid(longest));
+    longest[63] = 'a';
+    longest[64] = '\0';
+    CHECK(!jelli_agent_host_valid(longest));
+}
+
 int main(void)
 {
     decodes_hex();
     parses_ipv4();
+    checks_hosts();
     writes_frame_headers();
     longest_wifi_request_fits_the_console();
     puts("Agent argument and frame checks passed");

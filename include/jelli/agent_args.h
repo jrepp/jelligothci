@@ -17,6 +17,12 @@ bool jelli_agent_hex_decode(const char *text, uint8_t *out, size_t capacity, siz
  * spaces, or leading zeros. */
 bool jelli_agent_ipv4_parse(const char *text, uint8_t address[4]);
 
+/* Where the board finds Loki Bridge: a dotted IPv4 address, or a DNS name of at most
+ * 63 characters made of letters, digits, and dashes in dot-separated labels that are
+ * not empty and neither start nor end with a dash, the last starting with a letter
+ * (such as "studio.local"; RFC 1123), so that no name reads as a numeric address. */
+bool jelli_agent_host_valid(const char *host);
+
 /* Header of each microphone frame sent to the Mac: "JA", version 1, channel count,
  * then the frame sequence and the capture time in milliseconds, both u32 LE.
  * Interleaved int16 LE samples follow (tools/agent/spike_server.py reads them). */

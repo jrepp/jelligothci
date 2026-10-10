@@ -403,7 +403,7 @@ the processes it starts:
 | Edit files inside the project | yes | `acceptEdits` |
 | Any shell command that works inside the sandbox | yes | `autoAllowBashIfSandboxed` |
 | A command that must leave the sandbox (dev server, `docker`, SSH push) | no | unsandboxed retry, forced to ask, then the board |
-| A sandboxed connection to a host outside the allow-list | no | the sandbox's network prompt, then the board |
+| A sandboxed connection to a host outside the allow-list | never | refused (`strictAllowlist`); the command can ask to leave the sandbox, which takes a tap |
 | Edits outside the project or to protected paths, `WebFetch` to other hosts | no | `canUseTool`, then the board |
 | Reading outside the project (other projects, credential files) | never | `blockReadsOutsideWorkingDirectories`; toolchain folders re-opened |
 
@@ -449,6 +449,11 @@ back to today's API when an addition is missing.
   synchronous result (`?wait=true`).
 - Phase 2: streamed results (0.8 s chunks), an interactive priority lane, keeping
   the built-in profile warm, and `sampleRate`/`bitDepth` output options.
+- Proposed, not yet approved: a local transport whose listener a client can
+  trust, such as a Unix socket in a private folder or a challenge in place of the
+  bearer token, so a process that takes 127.0.0.1:18423 while Chatter is down
+  cannot collect the token from the bridge or Chatter's other clients
+  ([memo-027](../memos/memo-027-agent-phase1-link-bring-up.md)).
 
 # Delivery plan
 

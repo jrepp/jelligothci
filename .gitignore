@@ -17,6 +17,7 @@
 *~
 __pycache__/
 
-# Loki Bridge (Swift package) build products
+# Loki Bridge (Swift package) build products and the sidecar's installed packages
 /bridge/.build/
 /bridge/.swiftpm/
+/bridge/sidecar/node_modules/

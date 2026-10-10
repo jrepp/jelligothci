@@ -159,22 +159,20 @@ bootloader starts the pet again. From the host,
 skips the trial and resets without the pet's final checkpoint (up to a minute of
 progress).
 
-### Agent audio spike (phase 0)
+### Agent Wi-Fi and audio
 
-The agent can join Wi-Fi, stream its microphones to the Mac, and play audio the
-Mac sends back, to measure the audio path before the real bridge exists. This
-link is a LAN-only, unencrypted WebSocket for the spike; phase 1 replaces it with
-mutually authenticated TLS. Audio runs full duplex at 24 kHz, Chatter's rate: the
-speaker in standard I2S and the ES7210 in TDM, capturing all four slots in its order
-MIC1, MIC3, MIC2, MIC4. MIC3 is the speaker output, wired back as an echo reference.
+Loki Agent joins Wi-Fi and runs audio at 24 kHz, Chatter's rate, on one I2S port:
+the speaker in standard I2S and the ES7210 in TDM, capturing all four slots in its
+order MIC1, MIC3, MIC2, MIC4. MIC3 is the speaker output, wired back as an echo
+reference; v1 sends MIC1 only. Phase 0 measured this path with an unencrypted
+spike link and server, since replaced by `loki/1`
+([memo-025](../docs-cms/memos/memo-025-agent-phase0-audio-spike.md)).
 
 ```sh
 ./scripts/loki-agent --port <port> wifi set                 # prompts; the password is not echoed
 ./scripts/loki-agent --port <port> wifi status
 ./scripts/loki-agent --port <port> audio test 2000          # tone with mic and reference levels
-./scripts/loki-agent --port <port> link set <mac-ipv4> 8765
-./scripts/uv run --python 3.12 tools/agent/spike_server.py --board <board-ipv4> --say "Hello" --once
-./scripts/loki-agent --port <port> mic stream 8             # in another terminal
+./scripts/loki-agent --port <port> audio volume 20          # speaker level, 0 to 100
 ```
 
 Credentials go to the board as hex over USB and are stored in `agent_nvs`, in
@@ -187,14 +185,52 @@ off; `wifi.c` refuses to build otherwise), so the agent never opens the pet's `n
 unicorn art at scale 12; the agent embeds only those poses) and leaves it on screen
 ([memo-026](../docs-cms/memos/memo-026-agent-phase0-render-spike.md)).
 
-The spike server writes each stream to `build/phase0/audio/` as a four-channel WAV
-with a JSON report: frames, missing frames, arrival jitter, and levels per channel.
-`--board` (required: the address `wifi status` shows) admits only the board; the
-server runs one session at a time, ends a recording at 35 s, and makes at most four
-recordings per run.
-With `--say` it renders the text through Chatter's local API first, reading
-Chatter's token file the way Chatter's own tools do, and plays the result on the
-board while the stream runs.
+### Pairing with Loki Bridge (phase 1)
+
+The agent talks to Loki Bridge on the Mac over [`loki/1`](loki-protocol.md): a
+WebSocket over TLS where each side pins the other's certificate. The board makes
+its own ECDSA key and certificate on its first start (a few hundred milliseconds,
+before the boot is confirmed, so a failure rolls back to the pet), and the private
+key never leaves it. Pairing goes over the USB cable, which already gives full
+access to the flash:
+
+```sh
+swift build --package-path bridge                 # Loki Bridge's command-line tool
+bridge/.build/debug/loki-bridge pair <port>       # the board must be running the agent
+bridge/.build/debug/loki-bridge serve             # listens on 8766, prints what the board sends
+```
+
+`pair` reads the board's certificate fingerprint, sends the bridge's certificate in
+parts with `pair cert`, and commits it with this Mac's Bonjour name (such as
+`studio.local`), the port, and the Mac's current IPv4 address as a fallback. The
+board then connects whenever it is on Wi-Fi, retrying with backoff from one to 30
+seconds; when the name does not resolve over mDNS it dials the last address that
+did, or the fallback. The bridge keeps its identity and the paired boards in
+`~/Library/Application Support/Loki Bridge/`, readable only by the user.
+`loki-bridge devices` lists the paired boards and `loki-bridge unpair FINGERPRINT`
+removes one; a running `serve` notices at once and drops that board if it is
+connected.
+
+On the board's console, `pair status` shows the pairing, `pair clear` removes it,
+and `loki status` shows the link: online, sessions, failures, and the last reason a
+session ended. Until the board has its interface, the console stands in for it:
+
+```sh
+./scripts/loki-agent --port <port> loki ptt start   # hold to talk: MIC1 streams to the bridge
+./scripts/loki-agent --port <port> loki ptt stop    # let go; the bridge transcribes the utterance
+./scripts/loki-agent --port <port> loki inbox       # the next message from the bridge
+./scripts/loki-agent --port <port> loki answer 0    # answer the last question
+```
+
+In `loki-bridge serve`, `play FILE` sends any audio file to the board as a reply,
+a second ahead of real time and then at its pace; the board plays it after a
+300 ms lead from a 10-second queue and reports `played` when it is done. Holding to
+talk stops a reply, since the board never listens while it speaks, and a reply that
+begins while the user holds is not played. `stop` cuts the current reply short. A
+press to talk waits until the last utterance has ended, and the bridge keeps at most
+30 seconds of one. `serve --recordings` also keeps the last 20 utterances as WAVs in
+`$TMPDIR/loki-recordings`, a folder only the user can read; without it nothing the
+board hears is written to disk.
 
 ## Board variants
 

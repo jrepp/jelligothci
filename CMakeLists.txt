@@ -83,6 +83,9 @@ if(BUILD_TESTING)
   add_executable(jelli_agent_args_fuzz_tests tests/test_agent_args_fuzz.c)
   target_link_libraries(jelli_agent_args_fuzz_tests PRIVATE jelli_agent_core)
   add_test(NAME agent_args_fuzz COMMAND jelli_agent_args_fuzz_tests)
+  add_executable(jelli_agent_host_fuzz_tests tests/test_agent_host_fuzz.c)
+  target_link_libraries(jelli_agent_host_fuzz_tests PRIVATE jelli_agent_core)
+  add_test(NAME agent_host_fuzz COMMAND jelli_agent_host_fuzz_tests)
   add_executable(jelli_agent_pcm_tests tests/test_agent_pcm.c)
   target_link_libraries(jelli_agent_pcm_tests PRIVATE jelli_agent_core)
   add_test(NAME agent_pcm COMMAND jelli_agent_pcm_tests)
@@ -266,8 +269,6 @@ if(BUILD_TESTING)
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_partitions.py)
     add_test(NAME agent_cli COMMAND ${Python3_EXECUTABLE}
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_agent_cli.py)
-    add_test(NAME spike_server COMMAND ${Python3_EXECUTABLE}
-      ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_spike_server.py)
     add_test(NAME loki_diff COMMAND ${Python3_EXECUTABLE}
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_loki_diff.py $<TARGET_FILE:jelli_loki_diff>)
   endif()

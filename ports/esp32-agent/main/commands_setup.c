@@ -1,6 +1,5 @@
-#include "commands_spike.h"
+#include "commands_setup.h"
 #include "audio.h"
-#include "link.h"
 #include "settings.h"
 #include "wifi.h"
 #include "jelli/agent_args.h"
@@ -13,8 +12,8 @@
 /* 1 kHz at -12 dBFS: 24 samples per period at 24 kHz. Tested in 20 ms blocks. */
 enum { TONE_PERIOD = 24, TEST_BLOCK = JELLI_AGENT_AUDIO_RATE / 50, TEST_SKIP = 5 };
 
-static const char *TAG = "agent_spike";
-static bool audio_ready, link_ready;
+static const char *TAG = "agent_setup";
+static bool audio_ready, wifi_ready;
 static int16_t tone[TEST_BLOCK];
 static int16_t heard[TEST_BLOCK * JELLI_AGENT_AUDIO_CHANNELS];
 _Static_assert(JELLI_AGENT_AUDIO_CHANNELS == 4u, "the test reports four slots");
@@ -32,17 +31,19 @@ static void wipe(void *data, size_t size)
         *bytes++ = 0u;
 }
 
-void jelli_agent_spike_start(void)
+bool jelli_agent_setup_audio_ready(void) { return audio_ready; }
+
+bool jelli_agent_setup_wifi_ready(void) { return wifi_ready; }
+
+void jelli_agent_setup_start(void)
 {
     for (unsigned i = 0u; i < TEST_BLOCK; ++i)
         tone[i] = (int16_t)lrintf(8231.0f *
                                   sinf(6.2831853f * (float)(i % TONE_PERIOD) / (float)TONE_PERIOD));
     bool settings = jelli_agent_settings_open();
-    bool wifi = settings && jelli_agent_wifi_start();
+    wifi_ready = settings && jelli_agent_wifi_start();
     audio_ready = jelli_agent_audio_start();
-    link_ready = audio_ready && jelli_agent_link_init();
-    ESP_LOGI(TAG, "Spike: settings=%d wifi=%d audio=%d link=%d", settings, wifi, audio_ready,
-             link_ready);
+    ESP_LOGI(TAG, "Setup: settings=%d wifi=%d audio=%d", settings, wifi_ready, audio_ready);
 }
 
 static void wifi_command(const JelliAgentRequest *request, char *out, size_t capacity)
@@ -68,53 +69,6 @@ static void wifi_command(const JelliAgentRequest *request, char *out, size_t cap
     } else {
         reply(out, capacity, "{\"ok\":false,\"error\":\"syntax\"}");
     }
-}
-
-static bool stored_link(uint8_t address[4], uint16_t *port)
-{
-    size_t address_size = 4u, port_size = sizeof(*port);
-    return jelli_agent_settings_get("host", address, &address_size) && address_size == 4u &&
-           jelli_agent_settings_get("port", port, &port_size) && port_size == sizeof(*port) &&
-           *port;
-}
-
-static void link_command(const JelliAgentRequest *request, char *out, size_t capacity)
-{
-    uint8_t address[4];
-    uint16_t port = 0u;
-    uint32_t number = 0u;
-    if (!strcmp(request->words[1], "set") && request->count == 4u) {
-        bool ok = jelli_agent_ipv4_parse(request->words[2], address) &&
-                  jelli_agent_number(request->words[3], &number) && number && number <= 65535u;
-        port = (uint16_t)number;
-        ok = ok && jelli_agent_settings_set("host", address, sizeof(address)) &&
-             jelli_agent_settings_set("port", &port, sizeof(port));
-        reply(out, capacity, ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"link_arguments\"}");
-    } else if (!strcmp(request->words[1], "status") && request->count == 2u) {
-        if (stored_link(address, &port))
-            (void)snprintf(out, capacity, "{\"ok\":true,\"host\":\"%u.%u.%u.%u\",\"port\":%u}",
-                           address[0], address[1], address[2], address[3], port);
-        else
-            reply(out, capacity, "{\"ok\":true,\"host\":null}");
-    } else {
-        reply(out, capacity, "{\"ok\":false,\"error\":\"syntax\"}");
-    }
-}
-
-static void stream_command(uint32_t seconds, char *out, size_t capacity)
-{
-    uint8_t address[4];
-    uint16_t port = 0u;
-    char host[16];
-    if (!link_ready || !stored_link(address, &port)) {
-        reply(out, capacity,
-              link_ready ? "{\"ok\":false,\"error\":\"no_link\"}"
-                         : "{\"ok\":false,\"error\":\"audio_unavailable\"}");
-        return;
-    }
-    (void)snprintf(host, sizeof(host), "%u.%u.%u.%u", address[0], address[1], address[2],
-                   address[3]);
-    jelli_agent_link_stream(host, port, seconds, out, capacity);
 }
 
 typedef struct {
@@ -193,21 +147,15 @@ static void audio_command(const JelliAgentRequest *request, char *out, size_t ca
         reply(out, capacity, "{\"ok\":false,\"error\":\"syntax\"}");
 }
 
-bool jelli_agent_command_spike(const JelliAgentRequest *request, char *out, size_t capacity)
+bool jelli_agent_command_setup(const JelliAgentRequest *request, char *out, size_t capacity)
 {
     const char *verb = request->words[0];
-    uint32_t seconds = 0u;
     if (request->count < 2u)
         return false;
     if (!strcmp(verb, "wifi"))
         wifi_command(request, out, capacity);
-    else if (!strcmp(verb, "link"))
-        link_command(request, out, capacity);
     else if (!strcmp(verb, "audio"))
         audio_command(request, out, capacity);
-    else if (!strcmp(verb, "mic") && request->count == 3u && !strcmp(request->words[1], "stream") &&
-             jelli_agent_number(request->words[2], &seconds))
-        stream_command(seconds, out, capacity);
     else
         return false;
     return true;

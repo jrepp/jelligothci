@@ -79,7 +79,7 @@ settings layer):
 | `sandbox.autoAllowBashIfSandboxed` | `true` | Commands the user asks for run without a tap |
 | `sandbox.allowUnsandboxedCommands` | `true` | A command that cannot work inside may ask to leave it |
 | `permissions.ask` | `Bash(dangerouslyDisableSandbox:true)` | Leaving the sandbox always takes a tap |
-| `sandbox.network.allowedDomains` | Developer hosts | Package registries and Git hosting (below) |
+| `sandbox.network.allowedDomains`, `strictAllowlist` | Developer hosts, `true` | Package registries and Git hosting (below); other hosts are refused rather than prompted, since the SDK documents no way for that prompt to reach the board |
 | `permissions.blockReadsOutsideWorkingDirectories` | `true` | Commands and the file tools read only the project, not the rest of the home directory |
 | `sandbox.filesystem.allowRead` | Toolchain folders | Re-opens what builds need under the home directory (below) |
 | `sandbox.credentials.envVars` | Token variables, `deny` | `GITHUB_TOKEN`, `GH_TOKEN`, `NPM_TOKEN` and similar are unset for commands |
@@ -110,11 +110,11 @@ user's claude.ai connectors and MCP servers stay out. Auto memory is off
 (`CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`). Turn and budget limits apply per job.
 
 **What takes one tap on the board.** A command that leaves the sandbox (for
-example a dev server that must listen, `docker`, or `git push` over SSH, which the
-macOS sandbox cannot tunnel); a sandboxed connection to a host outside the
-allow-list; edits outside the project; `WebFetch` to other hosts; and Claude Code's
-own safety checks (protected paths, removals of critical paths). The card shows
-the literal command or path, and an unanswered card denies.
+example a dev server that must listen, `docker`, `git push` over SSH, which the
+macOS sandbox cannot tunnel, or a command that needs a host outside the allow-list);
+edits outside the project; `WebFetch` to other hosts; and Claude Code's own safety
+checks (protected paths, removals of critical paths). The card shows the literal
+command or path, whole or not at all, and an unanswered card denies.
 
 The user can ask to drop the sandbox. That is a new decision that supersedes this
 one, not a setting the voice path can change.

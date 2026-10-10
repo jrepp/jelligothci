@@ -54,6 +54,34 @@ bool jelli_agent_ipv4_parse(const char *text, uint8_t address[4])
     return true;
 }
 
+static bool is_letter(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
+
+/* A name's last label starts with a letter (RFC 1123, 2.1), so no name reads as an
+ * address: lwIP would take "010.0.0.1" as octal or "0x7f000001" as hex. */
+bool jelli_agent_host_valid(const char *host)
+{
+    uint8_t address[4];
+    size_t length = host ? strlen(host) : 0u, label = 0u, last = 0u;
+    if (!length || length > 63u)
+        return false;
+    if (jelli_agent_ipv4_parse(host, address))
+        return true;
+    for (size_t i = 0u; i < length; ++i) {
+        char c = host[i];
+        if (c == '.') {
+            if (!label || host[i - 1u] == '-')
+                return false;
+            label = 0u;
+            last = i + 1u;
+        } else if (is_letter(c) || (c >= '0' && c <= '9') || (c == '-' && label)) {
+            ++label;
+        } else {
+            return false;
+        }
+    }
+    return label && host[length - 1u] != '-' && is_letter(host[last]);
+}
+
 static void put_u32(uint8_t *out, uint32_t value)
 {
     for (unsigned i = 0u; i < 4u; ++i)

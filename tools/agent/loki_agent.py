@@ -2,7 +2,7 @@
 # requires-python = ">=3.12"
 # dependencies = ["pyserial==3.5"]
 # ///
-"""Client for the voice agent app's @A1 USB serial console (RFC-003 phase 0).
+"""Client for Loki Agent's @A1 USB serial console (RFC-003).
 
 The agent frames requests like the pet's @J1 debug protocol (ADR-010) under its
 own tag: "@A1 <id> <words>\\n" out, "\\n@A1 <id> <json>\\n" back. Logs share the
@@ -11,7 +11,6 @@ port, so only the line that starts with this request's prefix is the reply.
 import argparse
 import getpass
 import json
-import re
 import secrets
 import sys
 import time
@@ -59,11 +58,6 @@ def parse(body):
     return reply
 
 
-# Dotted quad of 0..255 without leading zeros, as jelli_agent_ipv4_parse accepts.
-IPV4 = re.compile(r"(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}"
-                  r"(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])")
-
-
 def wifi_line(ssid, password):
     """The "wifi set" request. Credentials travel as hex because they may contain spaces;
     the device stores them in agent_nvs and never echoes them."""
@@ -75,24 +69,33 @@ def wifi_line(ssid, password):
     return "wifi set " + name.hex() + (" " + secret.hex() if secret else "")
 
 
-def spike_line(args):
-    """Requests for the phase 0 audio spike; returns (request, extra seconds)."""
+def setup_line(args):
+    """Wi-Fi and audio set-up requests; returns (request, extra seconds)."""
     if args.command == "wifi":
         if args.action != "set":
             return f"wifi {args.action}", 0.0
         ssid = args.ssid if args.ssid is not None else input("Wi-Fi network name: ")
         return wifi_line(ssid, getpass.getpass("Password (empty for an open network): ")), 0.0
-    if args.command == "link":
-        if args.action == "status":
-            return "link status", 0.0
-        # Checked here as the device does, so a stray space or newline cannot add words.
-        if args.tcp_port is None or args.host is None or not IPV4.fullmatch(args.host):
-            raise AgentError("link set needs the Mac's IPv4 address and port")
-        return f"link set {args.host} {args.tcp_port}", 0.0
-    if args.command == "mic":
-        # Streaming, then up to 15 s for a reply to finish playing, plus connection time.
-        return f"mic stream {args.seconds}", args.seconds + 25.0
     return f"audio {args.action} {args.value}", args.value / 1000 if args.action == "test" else 0.0
+
+
+def loki_line(args):
+    """The link to Loki Bridge: pairing state and the commands for trying it without
+    the board's interface. Pairing itself is bridge/'s `loki-bridge pair`."""
+    if args.command == "pair":
+        return f"pair {args.action}", 0.0
+    # Checked here as the device does, so a stray space or newline cannot add words.
+    if args.action == "answer":
+        if args.value not in ("0", "1", "2", "3"):
+            raise AgentError("loki answer needs the option number, 0 to 3")
+        return f"loki answer {args.value}", 0.0
+    if args.action == "ptt":
+        if args.value not in ("start", "stop"):
+            raise AgentError("loki ptt needs start or stop")
+        return f"loki ptt {args.value}", 0.0
+    if args.value is not None:
+        raise AgentError(f"loki {args.action} takes no more words")
+    return f"loki {args.action}", 0.0
 
 
 def command_line(args):
@@ -101,8 +104,10 @@ def command_line(args):
         return "hello", 0.0
     if args.command == "boot":
         return f"boot {args.app}", 0.0
-    if args.command in ("wifi", "link", "mic", "audio"):
-        return spike_line(args)
+    if args.command in ("wifi", "audio"):
+        return setup_line(args)
+    if args.command in ("loki", "pair"):
+        return loki_line(args)
     if args.command == "render":
         return f"render bench {args.mode} {args.seconds}", float(args.seconds)
     if args.what in ("pwr", "te"):
@@ -130,16 +135,14 @@ def main():
                        help="pwr only: turn on the key line's internal pull-up while sampling")
     boot = commands.add_parser("boot", help="Restart into another installed app")
     boot.add_argument("app", choices=("pet",))
-    wifi = commands.add_parser("wifi", help="Wi-Fi for the phase 0 spike; set prompts for the password")
+    wifi = commands.add_parser("wifi", help="Wi-Fi; set prompts for the password")
     wifi.add_argument("action", choices=("set", "clear", "status"))
     wifi.add_argument("--ssid", help="Network name; prompted for when omitted")
-    link = commands.add_parser("link", help="The Mac running tools/agent/spike_server.py")
-    link.add_argument("action", choices=("set", "status"))
-    link.add_argument("host", nargs="?", help="The Mac's IPv4 address")
-    link.add_argument("tcp_port", type=int, nargs="?", choices=range(1, 65536), metavar="PORT")
-    mic = commands.add_parser("mic", help="Stream the microphone to the Mac and play its reply")
-    mic.add_argument("action", choices=("stream",))
-    mic.add_argument("seconds", type=int, choices=range(1, 31), metavar="SECONDS[1..30]")
+    pair = commands.add_parser("pair", help="The paired Loki Bridge (pair with bridge/'s loki-bridge)")
+    pair.add_argument("action", choices=("show", "status", "clear"))
+    loki = commands.add_parser("loki", help="The link to Loki Bridge")
+    loki.add_argument("action", choices=("status", "inbox", "answer", "ptt", "cancel"))
+    loki.add_argument("value", nargs="?", help="ptt: start or stop; answer: the option, 0 to 3")
     render = commands.add_parser("render", help="Time the 384 px unicorn animation (it stays on screen)")
     render.add_argument("action", choices=("bench",))
     render.add_argument("mode", choices=("full", "bob", "patch"))
