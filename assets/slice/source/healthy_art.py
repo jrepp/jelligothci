@@ -137,4 +137,6 @@ def create_healthy_assets(root, palette):
                 value=max(0,min(210,int((shade+7)/14)*14));pixels[x,y]=(value,value,value,255)
         folder='backgrounds';(root/folder).mkdir(exist_ok=True);path=f'{folder}/{name}.png';im.save(root/path)
         records.append(dict(id=10001+index,key=f'{folder}.{name}',path=path,kind=folder,width=64,height=64,pivot=[32,32],bounds=[0,0,64,64],palette=grays,purpose='Subtle neutral scene with black vignette; nearest sampling at panel size'))
+    from location_art import create_location_assets
+    records.extend(create_location_assets(root))
     return records
