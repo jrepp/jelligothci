@@ -129,6 +129,16 @@ test('history is bounded, skips no-ops and truncates redo on a new action', () =
   data[0] = 0; assert.strictEqual(P.current(h)[0], 42, 'history keeps copies, not the live buffer');
 });
 
+test('Alt-pick keeps the tool; the Pick colour tool hands over to pencil or eraser', () => {
+  const pal = ['#291b35', '#85e4b6'];
+  assert.deepStrictEqual(P.pickOutcome('#85e4b6', pal, 'fill'), {tool: 'fill', color: '#85e4b6'});
+  assert.deepStrictEqual(P.pickOutcome('#85e4b6', pal, 'eraser'), {tool: 'eraser', color: '#85e4b6'});
+  assert.deepStrictEqual(P.pickOutcome(null, pal, 'line'), {tool: 'line'});
+  assert.deepStrictEqual(P.pickOutcome('#85e4b6', pal, 'picker'), {tool: 'pencil', color: '#85e4b6'});
+  assert.deepStrictEqual(P.pickOutcome(null, pal, 'picker'), {tool: 'eraser'});
+  assert.deepStrictEqual(P.pickOutcome('#123456', pal, 'pencil'), {off: true});
+});
+
 let failed = 0;
 for (const [name, fn] of groups) {
   try { fn(); console.log(`ok   ${name}`); } catch (err) { failed++; console.log(`FAIL ${name}\n     ${err.message}`); }

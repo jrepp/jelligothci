@@ -337,7 +337,11 @@
     if (S?.paintDirty) registerDirty('paint', {label: 'Paint', mode: 'paint',
       check: () => D.assets?.filter(a => S.paintDirty(a.key)).length || 0,
       detail: () => D.assets.filter(a => S.paintDirty(a.key)).map(a => a.key).join(', ')});
-    if (S?.clipsDirty) registerDirty('content', {label: 'Creature or behaviour data', mode: null, check: () => S.clipsDirty()});
+    // One unsaved item per editor, each opening the mode that holds it; S.clipsDirty still covers them all.
+    if (S?.clipEdits) registerDirty('clips', {label: 'Creature clips', mode: 'creature', check: () => S.clipEdits()});
+    if (S?.sizeDirty) registerDirty('size', {label: 'Behaviour & size', mode: 'creature', check: () => S.sizeDirty()});
+    if (S?.statesDirty) registerDirty('states', {label: 'Behaviour states', mode: 'behaviour', check: () => S.statesDirty()});
+    if (S?.clipsDirty && !S.clipEdits) registerDirty('content', {label: 'Creature or behaviour data', mode: null, check: () => S.clipsDirty()});
     wireTabs(); watchGit(); watchServer();
     document.addEventListener('keydown', keyboardButtons, true);
     document.addEventListener('keydown', globalKeys, true);
