@@ -27,7 +27,10 @@ PROP_SIZES = {(16, 16), (24, 24), (32, 32)}  # Imported props such as the 16x16 
 CREATURE_POSES = ("idle", "idle-alt", "curious", "content", "eating", "happy", "asleep", "unwell")
 CLIP_FRAME_CAP = 6
 HEX = re.compile(r"#[0-9a-f]{6}")
-RESERVED_ROWS = {"other", "more", "palette"}  # Jelli Art's own rows beside the ramp rows
+# Jelli Art's own palette rows beside the ramp rows (the studio reads these labels), so no ramp may use them:
+# colours in no ramp, the whole palette when it has no ramps, and the eraser/custom extras.
+PALETTE_ROWS = {"unramped": "other", "unramped_only": "palette", "extras": "more"}
+RESERVED_ROWS = set(PALETTE_ROWS.values())
 # Real limits the art must fit: the SDL live-reload pack buffer and its banks
 # (ports/sdl/asset_reload.h). Firmware embeds the same art with ample flash headroom.
 PACK_CEILING = 262144  # JELLI_ASSET_PACK_CAPACITY

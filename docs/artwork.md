@@ -38,11 +38,13 @@ the repository's pinned tools, and it only listens on your own computer.
    makes nudges come round the other side, for tiling patterns.
 4. Choose a colour under **Paint colours**, beside the canvas. Each row is a
    ramp from `assets.json`, light to deep; colours in no ramp come last.
-   Click a colour for the main colour; right-click it (or press Shift+F10 on
-   it) for the secondary. Cream sits in two ramps, coral and gold; the Shade
-   tool follows the row you clicked it in. Tools paint only the sprite's palette colours until you choose
-   **custom**, which paints any colour. The ✎ on a palette colour changes that
-   colour in every sprite at once, ramps included; it asks before doing so.
+   Click a colour for the main colour. For the secondary, right-click it,
+   press Shift+F10 or the menu key on it, or choose it and press X to swap it
+   in. Cream sits in two ramps, coral and gold; the Shade tool follows the row
+   you clicked it in. Tools paint only the sprite's palette colours until you
+   choose **custom**, which paints any colour. The ✎ on a palette colour
+   changes that colour in every sprite at once, ramps included; it asks before
+   doing so.
 5. **Tidy outline** shows the house outline and stray-pixel fixes side by side,
    with the changed pixels marked. Nothing changes until you choose **Apply**.
    The header says **lint pass** or which rules the sprite fails: specks, open

@@ -153,6 +153,8 @@ def payload(before):
             **creatures.creature_data(manifest, PETS), **creature_profiles(), **behaviour_data(),
             "clip_shas": {c["key"]: clip_digest(manifest, c["key"]) for c in manifest.get("clips", [])},
             **lint_payload(),
+            # Paint's own palette row labels, which build_slice.py also keeps ramp names away from.
+            "palette_rows": getattr(creatures.load_validator(REPO), "PALETTE_ROWS", {}),
             "capabilities": capabilities(), "startup": STARTUP,
             "git": GIT.status() if GIT else {"enabled": False}}
 

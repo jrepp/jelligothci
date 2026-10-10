@@ -218,15 +218,17 @@
   /* X: swap the main and secondary colours. */
   function swapColours() {
     [state.color, state.color2, state.custom, state.custom2] = [state.color2, state.color, state.custom2, state.custom];
+    state.ramp = null;  // the ramp row belonged to the old main colour
     const a = asset(); renderPalette(a); renderToolbarState(); draw();
     announce(`Main colour ${state.color ? label(state.color, a) : 'transparent'}, secondary ${state.color2 ? label(state.color2, a) : 'transparent'}`);
   }
   const selRect = () => state.sel && T.clip(work(state.key), state.sel);
   const inRect = (r, x, y) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
-  /* Paint one pixel (and its mirror twin); a selection keeps painting inside it. */
-  function plot(p, x, y, hex, mask) {
-    if (!mask || inRect(mask, x, y)) T.set(p, x, y, hex);
-    const mx = p.w - 1 - x; if (state.mirror && (!mask || inRect(mask, mx, y))) T.set(p, mx, y, hex);
+  /* Paint one pixel (and its mirror twin); a selection keeps painting inside it. `apply` replaces the plain set,
+   * so the Shade tool shares the mirror and mask rules. */
+  function plot(p, x, y, hex, mask, apply = (px, py) => T.set(p, px, py, hex)) {
+    if (!mask || inRect(mask, x, y)) apply(x, y);
+    const mx = p.w - 1 - x; if (state.mirror && (!mask || inRect(mask, mx, y))) apply(mx, y);
   }
   function constrain(tool, [x0, y0], [x1, y1]) {
     const dx = x1 - x0, dy = y1 - y0, d = Math.max(Math.abs(dx), Math.abs(dy)), sx = Math.sign(dx) || 1, sy = Math.sign(dy) || 1;
@@ -250,11 +252,11 @@
   function shadeStroke(p) {
     const s = stroke, base = {w: p.w, h: p.h, data: s.base}, seen = new Set();
     const step = (x, y) => {
-      if (seen.has(y * p.w + x) || (s.mask && !inRect(s.mask, x, y))) return;
+      if (seen.has(y * p.w + x)) return;
       seen.add(y * p.w + x);
       const hex = T.shade(T.get(base, x, y), s.ramps, s.dir, s.prefer); if (hex) T.set(p, x, y, hex);
     };
-    for (const [x, y] of strokePoints(s)) { step(x, y); if (state.mirror) step(p.w - 1 - x, y); }
+    for (const [x, y] of strokePoints(s)) plot(p, x, y, null, s.mask, step);
   }
   const snapshot = () => ({data: work(state.key).data.slice(), sel: state.sel && {...state.sel}, float: state.float && {...state.float}});
   /* Start the tool at a pixel. pointer: false for the keyboard cursor. secondary: the right button (secondary colour,
@@ -692,6 +694,8 @@
     if (state.color2 && !pal.includes(state.color2) && !state.custom2) state.color2 = null;  // the secondary keeps to this palette too
     /* Right-click on a chip (Shift+F10 or the menu key from the keyboard) sets the secondary colour; null is transparent. */
     const setSecondary = (hex, custom) => { state.color2 = hex; state.custom2 = custom; S.renderPalette(el, a); draw(); announce(`Secondary colour ${hex ? label(hex, a) : 'transparent'}`); };
+    /* Row labels come from build_slice.py PALETTE_ROWS (sent as palette_rows), which keeps ramp names off them. */
+    const ROWS = {unramped: 'other', unramped_only: 'palette', extras: 'more', ...D.palette_rows};
     const ramps = rampsOf(a), inRamp = (name, hex) => !!ramps.find(r => r.name === name)?.colours.includes(hex);
     /* ramp: the ramp row the chip sits in. A colour in two rows (cream) is one chip per row, and the row clicked last is the
      * one the Shade tool follows (state.ramp), so only that row's chip shows as chosen. */
@@ -712,7 +716,11 @@
         S.renderPalette(el, a); renderToolbarState(); draw();
       };
       b.oncontextmenu = e => { e.preventDefault(); setSecondary(hex, custom); };
-      activate(b); parent.append(b); return b;
+      activate(b);
+      // Keyboard right-click: Shift+F10 or the menu key (macOS fires no contextmenu for them, so handle them here).
+      const enter = b.onkeydown;
+      b.onkeydown = e => { if (e.target === b && (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey))) { e.preventDefault(); e.stopPropagation(); return setSecondary(hex, custom); } enter(e); };
+      parent.append(b); return b;
     };
     /* A labelled row of chips: one per ramp (light to deep), then the palette colours in no ramp, then the extras. */
     const row = name => {
@@ -727,9 +735,9 @@
         · secondary (right-click) ${state.color2 ? `${label(state.color2, a)} ${state.color2}` : 'transparent'}</span>${btn('swap-colours', '⇄ Swap', 'Swap the main and secondary colours', 'X', ' data-chip="swap"')}`;
       pair.querySelector('#swap-colours').onclick = swapColours; el.append(pair);
       const ramped = new Set(ramps.flatMap(r => r.colours)), rest = pal.filter(h => !ramped.has(h));
-      const lines = [...ramps.map(r => [r.name, r.colours.filter(h => pal.includes(h))]), ...(rest.length ? [[ramps.length ? 'other' : 'palette', rest]] : [])];
+      const lines = [...ramps.map(r => [r.name, r.colours.filter(h => pal.includes(h))]), ...(rest.length ? [[ramps.length ? ROWS.unramped : ROWS.unramped_only, rest]] : [])];
       lines.forEach(([name, colours], n) => { const r = row(name); colours.forEach(hex => slotChip(hex, pal.indexOf(hex), r, n < ramps.length ? name : null)); });
-      const extras = row('more');
+      const extras = row(ROWS.extras);
       chip(null, 'eraser · transparent', state.color2 === null ? 'right-click' : 'eraser', '', false, extras);
       for (const hex of Object.keys(counts).filter(h => !pal.includes(h)))
         chip(hex, `custom · ${hex} · not in ${where}; release builds reject it until a slot uses this colour`, `${counts[hex]} px`, ' off', true, extras);
@@ -744,8 +752,8 @@
       activate(custom); extras.append(custom);
       const note = document.createElement('p'); note.className = 'studio-note';
       note.textContent = own
-        ? `Click a colour to paint with it; right-click (or Shift+F10) makes it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. This sprite uses ${where}, so the shared palette and its ✎ do not apply. Tools paint only these colours until you choose custom; custom colours work in the live game only. Shift-click isolates a colour.`
-        : 'Click a colour to paint with it; right-click (or Shift+F10) makes it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.';
+        ? `Click a colour to paint with it; right-click it, press Shift+F10 on it, or choose it and press X to make it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. This sprite uses ${where}, so the shared palette and its ✎ do not apply. Tools paint only these colours until you choose custom; custom colours work in the live game only. Shift-click isolates a colour.`
+        : 'Click a colour to paint with it; right-click it, press Shift+F10 on it, or choose it and press X to make it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.';
       el.append(note);
     });
     /* One palette slot's chip; the shared palette also gets its ✎. */
