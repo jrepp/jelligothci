@@ -7,12 +7,13 @@ function(jelli_generate_pet_assets output_variable)
   endif()
   set(JELLI_ASSET_UV "${jelli_uv}" PARENT_SCOPE)
   set(generated "${CMAKE_CURRENT_BINARY_DIR}/generated/jelli_assets.c")
+  set(ids "${CMAKE_CURRENT_BINARY_DIR}/generated/jelli_asset_ids.h")
   file(GLOB_RECURSE art_inputs CONFIGURE_DEPENDS "${jelli_root}/assets/slice/*.png")
   add_custom_command(
-    OUTPUT "${generated}"
+    OUTPUT "${generated}" "${ids}"
     COMMAND "${jelli_uv}" run --python 3.12
             "${jelli_root}/tools/assets/embed_slice.py" --output "${generated}"
-    DEPENDS "${jelli_root}/tools/assets/embed_slice.py"
+    DEPENDS "${jelli_root}/tools/assets/embed_slice.py" "${jelli_root}/tools/assets/asset_ids.py"
             "${jelli_root}/tools/assets/build_slice.py"
             "${jelli_root}/tools/assets/sprite_geometry.py"
             "${jelli_root}/tools/assets/creature_data.py"
@@ -20,5 +21,7 @@ function(jelli_generate_pet_assets output_variable)
     COMMENT "Embedding validated slice artwork"
     VERBATIM
   )
-  set(${output_variable} "${generated}" PARENT_SCOPE)
+  # Sources include the ID header so it is generated before any renderer file compiles.
+  set(${output_variable} "${generated}" "${ids}" PARENT_SCOPE)
+  set(JELLI_ASSET_IDS_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated" PARENT_SCOPE)
 endfunction()

@@ -1,3 +1,4 @@
+#include "jelli_asset_ids.h"
 #include "jelli/sound.h"
 #include "pet_gallery.h"
 #include "game_internal.h"
@@ -22,7 +23,7 @@ bool jelli_pet_gallery_button(const JelliPetUi *ui, unsigned slot, JelliPetUiBut
         *button =
             (JelliPetUiButton){.bounds = {95u + index % 3u * 96u, 88u + index / 3u * 96u, 84u, 84u},
                                .label = names[index],
-                               .icon = 11000u + slot,
+                               .icon = JELLI_ASSET_PRIZE_BASE + slot,
                                .scale = 2u};
         return true;
     }
@@ -30,7 +31,7 @@ bool jelli_pet_gallery_button(const JelliPetUi *ui, unsigned slot, JelliPetUiBut
         unsigned prize = ui->catch_seen ? ui->catch_seen : ui->latched_prize;
         *button = (JelliPetUiButton){.bounds = {193u, 70u, 80u, 80u},
                                      .label = ui->catch_seen ? "CATCH PRESENT" : "PRESENT",
-                                     .icon = 11000u + prize,
+                                     .icon = JELLI_ASSET_PRIZE_BASE + prize,
                                      .scale = 2u};
         return true;
     }
@@ -159,7 +160,7 @@ void jelli_pet_gallery_draw(Canvas *c, const JelliPetRenderKey *v)
         jelli_canvas_rect(c, x, y, 84, 84, selected ? GOLD : INK);
         jelli_canvas_rect(c, x + 3, y + 3, 78, 78, BG);
         c->dim = !owned;
-        jelli_canvas_centered_sprite(c, 11001u + i, x + 42, y + 42, 2u);
+        jelli_canvas_centered_sprite(c, JELLI_ASSET_PRIZE_BASE + 1u + i, x + 42, y + 42, 2u);
         c->dim = false;
         if (owned)
             jelli_canvas_disk(c, x + 71, y + 71, 5, MINT);
@@ -179,7 +180,7 @@ void jelli_pet_gallery_draw_latched(Canvas *c, const JelliPetRenderKey *v)
     int y = 110 + (v->offered_prize ? bob[v->catch_phase % 4u] : 0);
     jelli_canvas_disk(c, 233, y, 39, v->offered_prize ? GOLD : TEAL);
     jelli_canvas_disk(c, 233, y, 35, BG);
-    jelli_canvas_centered_sprite(c, 11000u + prize, 233, y, 2u);
+    jelli_canvas_centered_sprite(c, JELLI_ASSET_PRIZE_BASE + prize, 233, y, 2u);
     jelli_canvas_centered(c, v->offered_prize ? "CATCH" : "PRESENT", 154, 1u, PALE);
 }
 
@@ -209,7 +210,7 @@ void jelli_pet_gallery_draw_action(Canvas *c, const JelliPetUi *ui, const JelliG
     jelli_canvas_heading(c, "PRESENT", 28, 3u);
     if (prize && prize <= JELLI_PRIZE_COUNT) {
         jelli_canvas_centered(c, names[prize - 1u], 75, 2u, MINT);
-        jelli_canvas_centered_sprite(c, 11000u + prize, 233, 148, 3u);
+        jelli_canvas_centered_sprite(c, JELLI_ASSET_PRIZE_BASE + prize, 233, 148, 3u);
     }
     unsigned entry = game->pets[game->active].collection_entry;
     jelli_canvas_centered(c, jelli_collection_entries[entry - 1u].name, 205, 1u, PALE);

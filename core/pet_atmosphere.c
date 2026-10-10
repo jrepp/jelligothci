@@ -1,3 +1,4 @@
+#include "jelli_asset_ids.h"
 #include "pet_draw.h"
 
 uint16_t jelli_pet_night_color(uint16_t color, uint8_t night)
@@ -73,7 +74,9 @@ void jelli_pet_sleep_particles(JelliPetUi *ui, bool asleep, uint64_t time)
 
 void jelli_pet_draw_background(JelliSurface *s, const JelliPetRenderKey *view, JelliRect region)
 {
-    const JelliAsset *a = jelli_asset_lookup(view->assets, view->location ? 10002u : 10001u);
+    const JelliAsset *a =
+        jelli_asset_lookup(view->assets, view->location ? JELLI_ASSET_BACKGROUNDS_GARDEN
+                                                        : JELLI_ASSET_BACKGROUNDS_HOME);
     if (!a)
         return;
     for (unsigned y = region.y; y < region.y + region.height; ++y) {

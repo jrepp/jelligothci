@@ -1,3 +1,4 @@
+#include "jelli_asset_ids.h"
 #include "pet_draw.h"
 
 static JelliRect joined(JelliRect a, JelliRect b)
@@ -42,7 +43,8 @@ static uint16_t blend(uint16_t back, uint16_t front, unsigned alpha)
 
 static void draw_magic(JelliSurface *s, const JelliParticle *p, const JelliAssetSet *assets)
 {
-    const JelliAsset *a = jelli_asset_lookup(assets, 9001u + (p->style & 7u));
+    const JelliAsset *a = jelli_asset_lookup(assets, JELLI_ASSET_EFFECT_BASE + 1u +
+                                                         p->style % JELLI_ASSET_EFFECT_COUNT);
     if (!a)
         return;
     unsigned scale = (p->style & 8u) ? 2u : 1u;

@@ -27,11 +27,19 @@ format() {
             clang-format -i "${files[@]}"
     fi
 }
+# Generated headers the renderer includes (named asset IDs), for header-only analysis.
+generated_includes() {
+    local dir="$repo_dir/build/lint-generated"
+    python3 "$repo_dir/tools/assets/asset_ids.py" "$dir/jelli_asset_ids.h"
+    printf '%s' "$dir"
+}
 analyze() {
-    local extra=()
+    local generated
+    generated="$(generated_includes)"
+    local extra=(-I"$generated")
     # The wheel's Clang needs the macOS SDK location to find libc headers.
     if [[ "$(uname -s)" == Darwin ]]; then
-        extra=(-isysroot "$(xcrun --show-sdk-path)")
+        extra+=(-isysroot "$(xcrun --show-sdk-path)")
     fi
     local files=()
     while IFS= read -r -d '' file; do files+=("$file"); done < <(
@@ -47,7 +55,7 @@ cppcheck_all() {
     )
     "$repo_dir/scripts/uvx" --from "cppcheck==$JELLI_CPPCHECK_VERSION" cppcheck \
         --enable=warning,style,performance,portability --error-exitcode=1 \
-        --std=c11 --inline-suppr -Iinclude "${files[@]}"
+        --std=c11 --inline-suppr -Iinclude -I"$(generated_includes)" "${files[@]}"
 }
 size_check() {
     "$repo_dir/scripts/uv" run --no-project --with "lizard==$JELLI_LIZARD_VERSION" \

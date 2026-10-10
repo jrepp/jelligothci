@@ -1,3 +1,4 @@
+#include "jelli_asset_ids.h"
 #include "pet_behavior_draw.h"
 #include "pet_draw.h"
 #include "jelli/collection.h"
@@ -26,11 +27,11 @@ static void tile(Canvas *c, const JelliPetRenderKey *v, unsigned index, int x)
     jelli_canvas_rect(c, x + 12, 296, 76, 72, INK);
     int filled = (int)(score * 72u / 100u);
     jelli_canvas_rect(c, x + 12, 368 - filled, 76, filled, score < 25u ? PINK : TEAL);
-    uint32_t icon = index == 8u   ? 6015u
-                    : index == 7u ? 2005u
-                    : index == 6u ? 9002u
-                    : !index      ? 7005u
-                                  : 7000u + index;
+    uint32_t icon = index == 8u   ? JELLI_ASSET_MENUS_WATER
+                    : index == 7u ? JELLI_ASSET_ICONS_REST
+                    : index == 6u ? JELLI_ASSET_EFFECTS_HEART
+                    : !index      ? JELLI_ASSET_METERS_SOCIAL
+                                  : JELLI_ASSET_METER_BASE + index;
     jelli_canvas_sprite(c, icon, x + 18, 300, 2u);
     char number[4];
     int size = snprintf(number, sizeof(number), "%u", score);
@@ -284,7 +285,8 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
             page_info(&c, game, ui);
     } else {
         if (view->activity == JELLI_EXERCISING)
-            jelli_canvas_centered_sprite(&c, 6014u, 233, view->exercise_bob ? 205 : 229, 3u);
+            jelli_canvas_centered_sprite(&c, JELLI_ASSET_MENUS_EXERCISE, 233,
+                                         view->exercise_bob ? 205 : 229, 3u);
         moment_prop(&c, ui, view);
         jelli_pet_draw_behavior(&c, ui, view);
         char message[24];
