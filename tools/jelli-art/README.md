@@ -12,7 +12,7 @@ make jelli-art                      # http://127.0.0.1:8765/, edits this checkou
 ```
 
 Local runs only write PNGs, `assets.json` bounds, `clips` and creature frame
-assets, `source/hand-painted.json`, `source/studio-frames.json`, a creature
+assets, `source/hand-painted.json`, `source/lint.json` waivers, `source/studio-frames.json`, a creature
 import spec's frame list, `content/creatures.json` and `content/behaviors.json`.
 Commit the changes yourself. Behaviour saves need `cmake` on the path. For trials, `--assets` and `--content` serve copies of `assets/slice`
 and `content/`. A run with `--assets` but no `--content` cannot edit creature data.
@@ -72,6 +72,31 @@ with the shell's `?` overlay.
 ```sh
 node tools/jelli-art/test_paint_tools.js
 ```
+
+## Style lint
+
+`tools/assets/lint_rules.py` and `lint.js` (`window.JelliLint`) apply the same
+rules to each sprite's metrics. A sprite fails when it has specks, open edges,
+or more colours than its limit. Limits and waivers live in
+`assets/slice/source/lint.json`:
+
+```json
+{"max_colours": 6, "max_colours_by_kind": {"creatures": 8, "backgrounds": null, "font": null},
+ "waivers": {"props.book": {"rules": ["open_edges"], "reason": "page edge is intentionally open"}}}
+```
+
+`null` means no limit. A waived rule is shown as waived, with its reason, and
+the totals count only sprites with failures that are not waived. **Waive…** in
+the header edits one sprite's waiver through `POST /api/lint-waiver`
+(`{"key", "rules", "reason", "base": lint_sha, "artist"}`; empty `rules`
+removes it). That save holds the write lock, checks the base and writes
+atomically, like other saves. `lint_ui.js` also previews **Tidy outline**
+before it is applied, and warns once per session when Flip horizontal moves a
+shaded sprite's light. The static compare page shows the same verdicts.
+Both sides also measure the same way (`measure()`). A sprite with its own
+palette is outlined in that palette's darkest colour, which is exempt from
+specks and open edges, as the shared ink is. `test_server.py` checks that the
+Python and page measures and verdicts agree on every asset.
 
 ## Creature clips
 
@@ -259,6 +284,7 @@ Every save checks that the file has not changed since the page loaded it:
 | Save | Base it sends | Where the page gets it |
 | --- | --- | --- |
 | `POST /api/save` | `"base"`: the PNG hash | `assets[].sha` in `/api/data`; the reply returns the new `sha` |
+| `POST /api/lint-waiver` | `"base"`: the hash of `lint.json` | `lint_sha` in `/api/data`; the reply returns the new one |
 | `POST /api/clips` | `"bases"`: `{clip key: hash}` (`null` for a new clip) | `clip_shas` in `/api/data` |
 | `POST /api/palette` | `"base"`: the slot's current colour | `palette` |
 | `POST /api/creatures`, `/api/content` | `"base"` / `"bases"` (required) | `creature_data_sha`, `behavior_data_sha` |

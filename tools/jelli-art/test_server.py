@@ -12,6 +12,7 @@ repair and the container entrypoint.
 
 Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_server.py
 """
+import base64
 import faulthandler
 import io
 import json
@@ -349,6 +350,103 @@ class ServerTest(unittest.TestCase):
         status, reply = self.server.request("POST", "/api/palette", {"index": 0, "color": "#010203", "base": "#fefefe"})
         self.assertEqual(status, 409, reply)
         self.assertEqual(self.server.get("/api/data")["palette"], palette)
+
+    def test_lint_waiver_round_trip_stale_and_invalid(self):
+        data = self.server.get("/api/data")
+        self.assertIn("max_colours", data["lint"])
+        self.assertIsNone(data["lint_error"])
+        key, path = data["assets"][0]["key"], self.slice / "source/lint.json"
+        reply = self.server.post("/api/lint-waiver", {"key": key, "rules": ["specks"], "reason": " intentional ",
+                                                     "base": data["lint_sha"], "artist": "e2e"})
+        self.assertEqual(reply["lint"]["waivers"][key], {"rules": ["specks"], "reason": "intentional"})
+        self.assertEqual(json.loads(path.read_text())["waivers"][key]["reason"], "intentional")
+        self.assertEqual(self.server.get("/api/data")["lint_sha"], reply["lint_sha"])
+        status, stale = self.server.request("POST", "/api/lint-waiver", {"key": key, "rules": [], "base": data["lint_sha"]})
+        self.assertEqual(status, 409, stale)
+        self.assertEqual(stale["current"], reply["lint_sha"])
+        for body in ({"key": key, "rules": ["nope"], "reason": "x"}, {"key": key, "rules": ["specks"], "reason": " "},
+                     {"key": "icons.missing", "rules": ["specks"], "reason": "x"}, {"key": key, "rules": "specks"},
+                     {"key": key, "rules": ["specks", "specks"], "reason": "x"}):
+            status, error = self.server.request("POST", "/api/lint-waiver", body)
+            self.assertEqual(status, 400, (body, error))
+        removed = self.server.post("/api/lint-waiver", {"key": key, "rules": [], "base": reply["lint_sha"]})
+        self.assertNotIn(key, removed["lint"]["waivers"])
+        self.assertNotIn(key, json.loads(path.read_text())["waivers"])
+
+    @unittest.skipUnless(shutil.which("node"), "node runs lint.js")
+    def test_page_and_server_lint_agree_on_every_asset(self):
+        sys.path.insert(0, str(REPO / "tools/assets"))
+        import lint_rules
+        data = self.server.get("/api/data")
+        configs = [data["lint"], {**data["lint"], "max_colours": 3, "max_colours_by_kind": {"creatures": None},
+                                  "waivers": {a["key"]: {"rules": ["specks", "colours"], "reason": "test"}
+                                              for a in data["assets"][::3]}}]
+        cases = [{"key": a["key"], "kind": a["kind"], "metrics": a["after_metrics"]} for a in data["assets"]]
+        script = ("const L = require(process.argv.at(-1)), {cases, configs} = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
+                  "console.log(JSON.stringify(configs.map(c => cases.map(k => L.verdict(k.key, k.kind, k.metrics, c)))));")
+        result = subprocess.run(["node", "-e", script, "--", str(HERE / "lint.js")],
+                                input=json.dumps({"cases": cases, "configs": configs}), capture_output=True, text=True,
+                                check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        page = json.loads(result.stdout)
+        server = [[lint_rules.verdict(k["key"], k["kind"], k["metrics"], c) for k in cases] for c in configs]
+        self.assertEqual(page, server)
+        self.assertTrue(any(v["waived"] for v in server[1]) and any(v["fails"] for v in server[0]))
+
+    @unittest.skipUnless(shutil.which("node"), "node runs lint.js")
+    def test_page_and_server_measure_agree_on_every_png(self):
+        """compare_slice.measure() and lint.js measure() find the same specks, edges and colours, own palettes included."""
+        sys.path.insert(0, str(REPO / "tools/assets"))
+        import compare_slice
+        manifest = json.loads((self.slice / "assets.json").read_text())
+        details = {a["key"]: a for a in self.server.get("/api/data")["assets"]}
+        cases, server = [], []
+        for asset in manifest["assets"]:
+            image = Image.open(self.slice / asset["path"]).convert("RGBA")
+            detail = details[asset["key"]]
+            own = detail["palette"] if detail["palette_name"] != "shared" else None
+            cases.append({"w": image.width, "h": image.height, "kind": asset["kind"], "palette": own,
+                          "rgba": base64.b64encode(image.tobytes()).decode()})
+            server.append(compare_slice.measure_image(image, asset["kind"], compare_slice.outline_ink(manifest, asset)))
+        self.assertTrue(any(c["palette"] and c["kind"] == "creatures" for c in cases))  # the axolotl's own palette
+        script = ("const L = require(process.argv.at(-1)), cases = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
+                  "console.log(JSON.stringify(cases.map(c => L.measure({w: c.w, h: c.h, data: Buffer.from(c.rgba, 'base64')},"
+                  " c.kind, L.outlineInk(c.palette)))));")
+        result = subprocess.run(["node", "-e", script, "--", str(HERE / "lint.js")], input=json.dumps(cases),
+                                capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for asset, page, ours in zip(manifest["assets"], json.loads(result.stdout), server):
+            self.assertEqual(page, ours, asset["key"])
+
+    def test_waivers_refuse_a_symlinked_or_invalid_lint_file(self):
+        path = self.slice / "source/lint.json"
+        original = path.read_text()
+        elsewhere = Path(self.scratch.name) / "elsewhere.json"
+        try:
+            elsewhere.write_text(original)
+            path.unlink()
+            path.symlink_to(elsewhere)
+            key = self.data["assets"][0]["key"]
+            status, reply = self.server.request("POST", "/api/lint-waiver", {"key": key, "rules": ["specks"], "reason": "x"})
+            self.assertEqual(status, 400, reply)
+            self.assertEqual(elsewhere.read_text(), original)  # the link's target is untouched
+            path.unlink()
+            path.write_text('{"max_colours": 6, "max_colours_by_kind": {"sprites": 4}}')
+            data = self.server.get("/api/data")  # the page still loads, and says why there are no limits
+            self.assertIn("unknown kinds", data["lint_error"])
+            status, reply = self.server.request("POST", "/api/lint-waiver", {"key": key, "rules": ["specks"], "reason": "x"})
+            self.assertEqual(status, 400, reply)
+            self.assertIn("Fix lint.json", reply["error"])
+            path.unlink()
+            path.mkdir()  # unreadable as a file: still a report, not a 500
+            self.assertIn("lint.json", self.server.get("/api/data")["lint_error"])
+            path.rmdir()
+        finally:
+            if path.is_symlink() or path.is_file():
+                path.unlink()
+            elif path.is_dir():
+                path.rmdir()
+            path.write_text(original)
 
     def test_health_reports_capabilities(self):
         health = self.server.get("/healthz")

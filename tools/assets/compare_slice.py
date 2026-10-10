@@ -18,12 +18,13 @@ from pathlib import Path
 
 from PIL import Image
 
+import lint_rules
+
 # JELLI_REPO points the tools at another checkout (the Jelli Art container mounts one).
 REPO = Path(os.environ.get("JELLI_REPO") or Path(__file__).resolve().parents[2]).resolve()
 SOURCE = REPO / "assets/slice"
 INK = (0x29, 0x1B, 0x35)
-# Single pixels of these colours are deliberate: ink features (eyes, mouths) and white catchlights.
-SPECK_EXEMPT = {INK, (0xFF, 0xFF, 0xFF)}
+WHITE = (0xFF, 0xFF, 0xFF)
 # On-device draw scale per asset kind (see core/pet_layout.c, pet_draw.c, pet_gallery.c).
 DEVICE_SCALE = {"creatures": 6, "icons": 6, "menus": 3, "meters": 2, "health": 3, "effects": 2,
                 "prizes": 2, "props": 3, "font": 2, "backgrounds": 466 / 64}
@@ -74,12 +75,28 @@ def neighbours(x, y, w, h, diagonal):
         yield (nx, ny) if 0 <= nx < w and 0 <= ny < h else None
 
 
-def measure(data, kind):
+def outline_ink(manifest, asset):
+    """The outline colour: shared ink, or the darkest colour of the asset's own palette (lint.js outlineInk)."""
+    name = asset.get("palette")
+    if name is None:
+        return INK
+    colours = name if isinstance(name, list) else manifest.get("palettes", {}).get(name, manifest["palette"])
+    rgb = [tuple(bytes.fromhex(c[1:])) for c in colours]
+    return min(rgb, key=lambda c: c[0] * 299 + c[1] * 587 + c[2] * 114)
+
+
+def measure(data, kind, ink=INK):
     """Cleanliness signals: isolated specks, unoutlined edge pixels, colour usage.
 
-    See docs/pixel-art-guide.md for the rules these approximate.
+    ink is the outline colour (outline_ink). Single ink pixels (eyes, mouths) and white
+    catchlights are deliberate, so they are not specks. tools/jelli-art/lint.js measure()
+    applies the same rules in the page. See docs/pixel-art-guide.md.
     """
-    image = Image.open(io.BytesIO(data)).convert("RGBA")
+    return measure_image(Image.open(io.BytesIO(data)), kind, ink)
+
+
+def measure_image(image, kind, ink=INK):
+    image = image.convert("RGBA")
     w, h = image.size
     px = image.load()
     colors, specks, open_edges = {}, [], []
@@ -91,9 +108,9 @@ def measure(data, kind):
             hexa = f"#{r:02x}{g:02x}{b:02x}"
             colors[hexa] = colors.get(hexa, 0) + 1
             near = [px[n] if n else (0, 0, 0, 0) for n in neighbours(x, y, w, h, True)]
-            if (r, g, b) not in SPECK_EXEMPT and not any(n[3] and n[:3] == (r, g, b) for n in near):
+            if (r, g, b) not in (ink, WHITE) and not any(n[3] and n[:3] == (r, g, b) for n in near):
                 specks.append([x, y])
-            if kind in OUTLINED and (r, g, b) != INK and any(not n[3] for n in near[:4]):
+            if kind in OUTLINED and (r, g, b) != ink and any(not n[3] for n in near[:4]):
                 open_edges.append([x, y])
     measured = kind not in ("font", "backgrounds")
     return {"colors": colors, "opaque": sum(colors.values()),
@@ -123,9 +140,10 @@ def collect(before_spec, after_dir):
         prior = old.get(asset["key"])
         before = read_before(before_spec, prior["path"]) if prior else None
         record = {k: asset[k] for k in ("key", "id", "kind", "path", "width", "height") if k in asset}
+        ink = outline_ink(manifest, asset)
         record.update(form=asset.get("form"), pose=asset.get("pose"), device_scale=DEVICE_SCALE[asset["kind"]],
-                      after=uri(after), before=uri(before), after_metrics=measure(after, asset["kind"]),
-                      before_metrics=measure(before, asset["kind"]) if before else None,
+                      after=uri(after), before=uri(before), after_metrics=measure(after, asset["kind"], ink),
+                      before_metrics=measure(before, asset["kind"], ink) if before else None,
                       changed=changed_pixels(before, after) if before else -1)
         records.append(record)
     return manifest, records
@@ -140,19 +158,24 @@ def main():
     after_dir = args.after.resolve()
     manifest, records = collect(args.before, after_dir)
     label = args.before if not Path(args.before).is_dir() else Path(args.before).resolve().name
+    lint, lint_error = lint_rules.load(after_dir, SOURCE, DEVICE_SCALE)
     payload = {"before_label": label, "after_label": after_dir.name if after_dir != SOURCE else "working tree",
-               "palette": manifest["palette"], "assets": records}
+               "palette": manifest["palette"], "assets": records, "lint": lint, "lint_error": lint_error}
     template = Path(__file__).with_name("compare.html").read_text()
     if template.count("__COMPARE_DATA__") != 1:
         raise ValueError("Compare template data marker mismatch")
     # The Jelli Art shell (mode tabs, toasts, themes, shortcut help) works without the studio scripts.
-    shell = Path(__file__).resolve().parent.parent / "jelli-art/shell.js"
-    if shell.exists():
-        template = template.replace("/*__STUDIO_JS__*/", shell.read_text())
+    # lint.js gives the page the same lint verdicts as lint_rules.py.
+    studio = Path(__file__).resolve().parent.parent / "jelli-art"
+    scripts = [studio / name for name in ("shell.js", "lint.js") if (studio / name).exists()]
+    template = template.replace("/*__STUDIO_JS__*/", "\n".join(p.read_text() for p in scripts))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(template.replace("__COMPARE_DATA__", json.dumps(payload).replace("<", "\\u003c")))
     changed = sum(r["changed"] != 0 for r in records)
-    print(f"{changed} of {len(records)} assets differ from {label}. Review: {args.output}")
+    failing = sum(bool(lint_rules.verdict(r["key"], r["kind"], r["after_metrics"], lint)["fails"]) for r in records)
+    print(f"{changed} of {len(records)} assets differ from {label}; {failing} fail the style lint. Review: {args.output}")
+    if lint_error:
+        print(f"warning: {lint_error}; using no limits or waivers")
 
 
 if __name__ == "__main__":

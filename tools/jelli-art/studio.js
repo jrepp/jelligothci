@@ -5,7 +5,6 @@
 'use strict';
 (() => {
   const S = window.Studio = {}, T = window.JelliPaint;
-  const OUTLINED = new Set(['creatures', 'icons', 'menus', 'meters', 'health', 'effects', 'prizes', 'props']);
   const LOCKED = new Set(['font', 'backgrounds']);
   const SHAPES = new Set(['line', 'rect', 'ellipse']);
   /* [id, name, key, what it does] */
@@ -85,11 +84,6 @@
   async function reload() {
     const keep = Object.entries(edits).filter(([key]) => dirty(key)).map(([key]) => [key, decoded[key].after.data.slice()]);
     await loadPayload(await api('GET', `/api/data?before=${encodeURIComponent(state.before)}`));
-    // The server measures with the shared ink; re-measure sprites outlined from their own palette.
-    for (const a of D.assets.filter(x => ownPalette(x) && !LOCKED.has(x.kind))) {
-      if (decoded[a.key].after) a.after_metrics = measure(decoded[a.key].after, a);
-      if (decoded[a.key].before) a.before_metrics = measure(decoded[a.key].before, a);
-    }
     state.float = null; stroke = null;
     const kept = new Set(keep.map(([key]) => key));
     for (const key of Object.keys(edits)) {
@@ -152,7 +146,7 @@
     queued = git.pending_commits || 0;
   }
   async function poll() {
-    if (document.hidden || stroke) return;
+    if (document.hidden || stroke || document.querySelector('dialog[open]')) return;  // no reload under an open dialog
     if (D.git?.enabled) api('GET', '/api/git').then(g => { D.git = g; renderGit(g); }).catch(() => {});
     const {version} = await api('GET', '/api/version').catch(() => ({}));
     if (!version || version === D.version) return;
@@ -169,23 +163,11 @@
   const ownPalette = a => !!a.palette_name && a.palette_name !== 'shared';
   const paletteOf = a => (a.palette || D.palette).map(h => h.toLowerCase());
   const paletteWhere = a => ownPalette(a) ? `the ${a.palette_name} palette` : 'the shared palette';
-  const luma = hex => [1, 3, 5].reduce((n, i, k) => n + parseInt(hex.slice(i, i + 2), 16) * [299, 587, 114][k], 0);
-  /* The outline colour: shared ink, or the darkest colour of the asset's own palette. */
-  const inkOf = a => ownPalette(a) ? paletteOf(a).reduce((d, h) => luma(h) < luma(d) ? h : d) : '#291b35';
+  /* The outline colour: shared ink, or the darkest colour of the asset's own palette (lint.js; the server agrees). */
+  const inkOf = a => window.JelliLint.outlineInk(ownPalette(a) ? paletteOf(a) : null);
   const slotName = (a, i) => ownPalette(a) ? `${a.palette_name} ${i + 1}` : NAMES[i];
   S.ownPalette = ownPalette;
-  function measure(p, a) {
-    const kind = a.kind, ink = inkOf(a), colors = {}, specks = [], open = [], measured = !LOCKED.has(kind);
-    for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
-      const hex = pixel(p, x, y); if (!hex) continue;
-      colors[hex] = (colors[hex] || 0) + 1;
-      const n4 = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => pixel(p, x + dx, y + dy));
-      const n8 = [...n4, ...[[1, 1], [-1, -1], [1, -1], [-1, 1]].map(([dx, dy]) => pixel(p, x + dx, y + dy))];
-      if (measured && hex !== ink && hex !== '#ffffff' && !n8.includes(hex)) specks.push([x, y]);
-      if (OUTLINED.has(kind) && hex !== ink && n4.includes(null)) open.push([x, y]);
-    }
-    return {colors, opaque: Object.values(colors).reduce((n, v) => n + v, 0), specks, open_edges: open};
-  }
+  const measure = (p, a) => window.JelliLint.measure(p, a.kind, inkOf(a));  // lint.js: compare_slice.py's rules
   /* Push the working buffer to its canvas, metrics, thumbnail and change count. */
   function refresh(key) {
     const a = byKey[key], p = work(key), before = decoded[key].before;
@@ -359,6 +341,7 @@
       p.data.set(r.data); state.float = null;
     }
     done(label);
+    if (label === 'Flip horizontal') S.warnFlip?.(asset());  // lint_ui.js: the light now comes from the top right
   }
   /* Alt+arrows: move the selection, or with Wrap on (or no selection) shift the pixels inside it or the sprite. */
   function nudge(dx, dy) {
@@ -584,7 +567,7 @@
     extra.innerHTML = `<div class="paint-tools" role="toolbar" aria-label="Paint tools">
       <div><div class="lbl" id="tools-label">Tool</div><div class="seg" id="tools" role="group" aria-labelledby="tools-label">${TOOLS.map(([id, name, key, what]) =>
         `<button data-tool="${id}" title="${name} (${key}): ${what}" aria-keyshortcuts="${key}">${name}</button>`).join('')}</div></div>
-      <div><div class="lbl">Options</div><div class="seg" role="group" aria-label="Options">${btn('filled', 'Filled', 'Filled rectangles and ellipses', '⇧F')}${btn('perfect', 'Pixel-perfect', 'Pencil strokes drop L-shaped corners', '⇧P')}${btn('mirror', 'Mirror', 'Mirror left/right', 'M')}</div></div>
+      <div><div class="lbl">Options</div><div class="seg" role="group" aria-label="Options">${btn('filled', 'Filled', 'Filled rectangles and ellipses', '⇧F')}${btn('perfect', 'Pixel-perfect', 'Pencil strokes stay 1 px wide: diagonal steps without doubled L corners, as house outlines are drawn', '⇧P')}${btn('mirror', 'Mirror', 'Mirror left/right', 'M')}</div></div>
       <div><div class="lbl">History</div><div class="seg" role="group" aria-label="History">${btn('undo', 'Undo', 'Undo', '⌘Z')}${btn('redo', 'Redo', 'Redo', '⇧⌘Z')}</div></div>
       <div><div class="lbl">File</div><div class="seg" role="group" aria-label="File">${btn('revert', 'Revert', 'Discard unsaved edits', '')}${btn('reset', 'Use before', 'Load the before image into the canvas', '')}${btn('save', 'Save', 'Save', '⌘S', ' class="primary"')}</div></div></div>
       <details class="paint-more" id="paint-more"${store.get('paint-more', false) ? ' open' : ''}><summary>More tools <span class="lbl">selection · transform · nudge · replace colour · guides · tidy</span></summary>
@@ -696,7 +679,7 @@
   /* ---------- shortcut docs: the shell's ? overlay lists them; the handlers are S.keydown and canvasKey ---------- */
   window.JelliShell?.registerShortcuts('Paint', [
     {keys: ['P', 'E', 'F', 'C'], description: 'Pencil, eraser, fill, pick colour'}, {keys: ['L', 'R', 'U'], description: 'Line, rectangle, ellipse'},
-    {keys: ['V'], description: 'Select'}, {keys: ['Shift+F'], description: 'Filled shapes on/off'}, {keys: ['Shift+P'], description: 'Pixel-perfect pencil on/off'},
+    {keys: ['V'], description: 'Select'}, {keys: ['Shift+F'], description: 'Filled shapes on/off'}, {keys: ['Shift+P'], description: 'Pixel-perfect pencil on/off (1 px strokes, no doubled corners)'},
     {keys: ['M'], description: 'Mirror left/right'}, {keys: ['Right-click'], description: 'Erase'}, {keys: ['Alt+Click', 'Alt+Enter'], description: 'Pick a colour and keep the current tool (any tool except Select)'},
     {keys: ['Shift+Drag'], description: 'Snap lines to 45°; square rectangles and circles'},
     {keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], description: 'Canvas focused: move the keyboard cursor'},
@@ -741,8 +724,14 @@
     const a = asset(), p = work(a.key), pixels = [];
     for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) pixels.push(pixel(p, x, y));
     try {
-      const res = await api('POST', '/api/tidy', {key: a.key, pixels}); state.float = null;
-      res.pixels.forEach((hex, i) => T.set(p, i % p.w, Math.floor(i / p.w), hex)); done('Tidy outline');
+      const res = await api('POST', '/api/tidy', {key: a.key, pixels});
+      if (S.previewTidy && !await S.previewTidy(a, pixels, res.pixels)) return;  // lint_ui.js: before/after, Apply or Cancel
+      // A reload may have swapped the buffer, or the sprite changed, while the request or preview was open.
+      const now = work(a.key);
+      if (asset()?.key !== a.key || !now || pixels.some((hex, i) => pixel(now, i % now.w, Math.floor(i / now.w)) !== hex))
+        return status('The sprite changed while Tidy was open; run Tidy again', 'warn');
+      state.float = null;
+      res.pixels.forEach((hex, i) => T.set(now, i % now.w, Math.floor(i / now.w), hex)); done('Tidy outline');
       status('Tidied: closed outline, specks removed. Undo if you prefer the old version.');
     } catch (err) { status(`Tidy failed: ${err.message}`, 'bad', true); }
   }
