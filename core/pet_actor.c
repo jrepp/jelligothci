@@ -10,7 +10,8 @@ static uint32_t frame_id(const JelliPetRenderKey *v)
     /* Keep care feedback visible even when a recent touch reaction is active. */
     if (v->activity == JELLI_EATING)
         return base + 3u;
-    if (v->activity == JELLI_PLAYING || v->activity == JELLI_GIVING)
+    if (v->activity == JELLI_PLAYING || v->activity == JELLI_GIVING ||
+        v->activity == JELLI_EXERCISING)
         return base + 4u;
     if (v->reaction >= 2u)
         return base + 6u;

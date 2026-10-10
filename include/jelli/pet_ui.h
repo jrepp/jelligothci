@@ -69,7 +69,8 @@ typedef enum {
     JELLI_UI_ACTION_SHOT,
     JELLI_UI_ACTION_WASH,
     JELLI_UI_ACTION_STRETCH,
-    JELLI_UI_ACTION_WATER
+    JELLI_UI_ACTION_WATER,
+    JELLI_UI_ACTION_EXERCISE
 } JelliPetUiAction;
 
 typedef struct {

@@ -31,3 +31,22 @@ JelliResult jelli_drink_water(JelliPet *pet)
     jelli_hydration_add(pet, 1000u);
     return JELLI_OK;
 }
+
+JelliResult jelli_start_exercise(JelliPet *pet)
+{
+    if (pet->asleep)
+        return JELLI_ASLEEP;
+    if (pet->activity != JELLI_IDLE)
+        return JELLI_BUSY;
+    if (pet->needs[JELLI_SATIETY] < jelli_exercise.fullness_cost ||
+        pet->needs[JELLI_ENERGY] < jelli_exercise.energy_cost ||
+        pet->hydration < jelli_exercise.hydration_cost ||
+        UINT64_MAX - pet->ticks < jelli_exercise.duration_ticks)
+        return JELLI_NOT_READY;
+    pet->needs[JELLI_SATIETY] -= jelli_exercise.fullness_cost;
+    pet->needs[JELLI_ENERGY] -= jelli_exercise.energy_cost;
+    pet->hydration -= jelli_exercise.hydration_cost;
+    pet->activity = JELLI_EXERCISING;
+    pet->interaction_due = pet->ticks + jelli_exercise.duration_ticks;
+    return JELLI_OK;
+}

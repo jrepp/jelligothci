@@ -347,6 +347,24 @@ static void test_provider_refreshes_actor_cache(void)
     CHECK(ui.actor_frame == original && ui.actor_x == original_x);
 }
 
+static void test_exercise_animation(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_EXERCISE, 1u, 0u}) == JELLI_OK);
+    JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, STRIDE, {0}};
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    memcpy(comparison, pixels, sizeof(comparison));
+    jelli_pet_render(&surface, &game, &ui, 500u, false);
+    CHECK(surface.damage.width == JELLI_WIDTH);
+    CHECK(region_changed(180u, 180u, 106u, 70u));
+    memcpy(comparison, pixels, sizeof(comparison));
+    jelli_pet_render(&surface, &game, &ui, 1000u, true);
+    CHECK(!region_changed(180u, 180u, 106u, 70u));
+}
+
 int main(void)
 {
     JelliGame game;
@@ -354,6 +372,7 @@ int main(void)
     jelli_game_init(&game);
     jelli_pet_ui_init(&ui);
     test_render(&game, &ui);
+    test_exercise_animation();
     test_page_items();
     test_pet_feedback();
     test_navigation_and_actions();

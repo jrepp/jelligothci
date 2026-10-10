@@ -188,6 +188,11 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
         break;
+    case JELLI_EXERCISING:
+        adjust_need(pet, JELLI_AMUSEMENT, jelli_exercise.amusement_gain);
+        pet->activity = JELLI_IDLE;
+        pet->interaction_due = 0u;
+        break;
     case JELLI_CLEANING:
         adjust_need(pet, JELLI_HYGIENE, 350);
         pet->activity = JELLI_IDLE;

@@ -1,0 +1,7 @@
+{
+  "duration_ticks": 100,
+  "fullness_cost": 150,
+  "hydration_cost": 200,
+  "energy_cost": 50,
+  "amusement_gain": 200
+}

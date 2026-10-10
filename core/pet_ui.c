@@ -34,7 +34,8 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
                                      {{JELLI_UI_ACTION_BREAKFAST, "BREAKFAST", NULL},
                                       {JELLI_UI_ACTION_TEA, "TEA", NULL},
                                       {JELLI_UI_ACTION_OUTING, "GOING OUT", NULL},
-                                      {JELLI_UI_ACTION_MOVIE, "MOVIE", NULL}},
+                                      {JELLI_UI_ACTION_MOVIE, "MOVIE", NULL},
+                                      {JELLI_UI_ACTION_EXERCISE, "EXERCISE", NULL}},
                                      {{JELLI_UI_ACTION_BRUSH, "BRUSH TEETH", NULL},
                                       {JELLI_UI_ACTION_MEDICINE, "MEDICINE", NULL},
                                       {JELLI_UI_ACTION_SHOT, "SHOT", NULL},
@@ -82,7 +83,7 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 
 static bool action_persists(JelliPetUiAction action)
 {
-    if (action == JELLI_UI_ACTION_WATER)
+    if (action == JELLI_UI_ACTION_WATER || action == JELLI_UI_ACTION_EXERCISE)
         return true;
     static const bool persists[] = {true,  false, true, false, false, false, true, true,
                                     true,  false, true, true,  true,  true,  true, true,

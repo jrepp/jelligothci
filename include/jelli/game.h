@@ -28,7 +28,8 @@ typedef enum {
     JELLI_PLAYING,
     JELLI_CLEANING,
     JELLI_CARING,
-    JELLI_GIVING
+    JELLI_GIVING,
+    JELLI_EXERCISING
 } JelliActivity;
 typedef enum {
     JELLI_CMD_FEED,
@@ -45,7 +46,8 @@ typedef enum {
     JELLI_CMD_MOMENT,
     JELLI_CMD_HEALTH,
     JELLI_CMD_TOUCH,
-    JELLI_CMD_WATER
+    JELLI_CMD_WATER,
+    JELLI_CMD_EXERCISE
 } JelliCommandKind;
 typedef enum {
     JELLI_OK,

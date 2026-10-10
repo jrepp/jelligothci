@@ -22,6 +22,7 @@ static bool enum_values_valid(const JelliPet *pet)
     case JELLI_CLEANING:
     case JELLI_CARING:
     case JELLI_GIVING:
+    case JELLI_EXERCISING:
         return true;
     default:
         return false;

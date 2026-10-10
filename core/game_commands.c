@@ -302,6 +302,8 @@ static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
 static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliPet *pet)
 {
     switch (command.kind) {
+    case JELLI_CMD_EXERCISE:
+        return bedtime_pending(pet) ? JELLI_BUSY : jelli_start_exercise(pet);
     case JELLI_CMD_WATER:
         return jelli_drink_water(pet);
     case JELLI_CMD_FEED:

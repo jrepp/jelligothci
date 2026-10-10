@@ -5,7 +5,7 @@ static uint32_t action_icon(JelliPetUiAction action, bool asleep)
     static const uint32_t icons[] = {6001u, 6002u, 6003u, 6004u, 6008u, 6006u, 2001u, 2003u,
                                      2004u, 2011u, 2008u, 2009u, 6011u, 6004u, 2005u, 2012u,
                                      6007u, 6009u, 6010u, 6011u, 6012u, 6007u, 8002u, 8001u,
-                                     8002u, 8003u, 8004u, 8005u, 6015u};
+                                     8002u, 8003u, 8004u, 8005u, 6015u, 6014u};
     if (asleep && action == JELLI_UI_ACTION_REST_WAKE)
         return 2006u;
     return (unsigned)action < sizeof(icons) / sizeof(icons[0]) ? icons[action] : 6005u;

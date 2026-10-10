@@ -96,6 +96,8 @@ static const char *status(const JelliPetRenderKey *v)
         return "RECOVERING";
     if (v->health == JELLI_UNWELL)
         return "NEEDS CARE";
+    if (v->activity == JELLI_EXERCISING)
+        return "WORKING OUT";
     if (v->activity == JELLI_EATING)
         return "YUM!";
     if (v->activity == JELLI_PLAYING)
@@ -272,6 +274,8 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
         if (!view->ring_moving)
             page_info(&c, game, ui);
     } else {
+        if (view->activity == JELLI_EXERCISING)
+            jelli_canvas_centered_sprite(&c, 6014u, 233, view->phase ? 205 : 229, 3u);
         jelli_canvas_caption(&c, status(view), 254, MINT);
         draw_tile(c, view);
         jelli_pet_gallery_draw_latched(&c, view);

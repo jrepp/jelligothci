@@ -124,9 +124,9 @@ static void wake_rewards(JelliPetRewards *r, JelliGame *game, const JelliEvent *
 
 static bool activity_command(unsigned code)
 {
-    return code == JELLI_CMD_WATER || code == JELLI_CMD_FEED || code == JELLI_CMD_PLAY ||
-           code == JELLI_CMD_CLEAN || code == JELLI_CMD_CARE || code == JELLI_CMD_GIFT ||
-           code == JELLI_CMD_MOMENT || code == JELLI_CMD_TRAVEL;
+    return code == JELLI_CMD_EXERCISE || code == JELLI_CMD_WATER || code == JELLI_CMD_FEED ||
+           code == JELLI_CMD_PLAY || code == JELLI_CMD_CLEAN || code == JELLI_CMD_CARE ||
+           code == JELLI_CMD_GIFT || code == JELLI_CMD_MOMENT || code == JELLI_CMD_TRAVEL;
 }
 
 static void consume(JelliPetRewards *r, JelliGame *game, const JelliEvent *event,

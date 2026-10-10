@@ -83,6 +83,8 @@ void jelli_pet_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliP
     if (pose >= 2u && ((beat / 16u + pet->id) % 3u) == 0u)
         pose = 0u; /* Some cycles stay quiet instead of repeating every gesture. */
     view->phase = pet->activity == JELLI_IDLE && !pet->asleep ? pose : 0u;
+    if (pet->activity == JELLI_EXERCISING)
+        view->phase = (unsigned)(time / 500u % 2u);
     ring_timing(ui, pet, time, view);
     /* Manual pages only: never slide or wrap a tile automatically. */
     view->stat_index = (uint8_t)(ui->stat_offset % JELLI_PET_STAT_COUNT);
