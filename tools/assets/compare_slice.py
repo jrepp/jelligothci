@@ -18,6 +18,8 @@ from pathlib import Path
 
 from PIL import Image
 
+import lint_rules
+
 # JELLI_REPO points the tools at another checkout (the Jelli Art container mounts one).
 REPO = Path(os.environ.get("JELLI_REPO") or Path(__file__).resolve().parents[2]).resolve()
 SOURCE = REPO / "assets/slice"
@@ -140,19 +142,24 @@ def main():
     after_dir = args.after.resolve()
     manifest, records = collect(args.before, after_dir)
     label = args.before if not Path(args.before).is_dir() else Path(args.before).resolve().name
+    lint, lint_error = lint_rules.load(after_dir, SOURCE)
     payload = {"before_label": label, "after_label": after_dir.name if after_dir != SOURCE else "working tree",
-               "palette": manifest["palette"], "assets": records}
+               "palette": manifest["palette"], "assets": records, "lint": lint, "lint_error": lint_error}
     template = Path(__file__).with_name("compare.html").read_text()
     if template.count("__COMPARE_DATA__") != 1:
         raise ValueError("Compare template data marker mismatch")
     # The Jelli Art shell (mode tabs, toasts, themes, shortcut help) works without the studio scripts.
-    shell = Path(__file__).resolve().parent.parent / "jelli-art/shell.js"
-    if shell.exists():
-        template = template.replace("/*__STUDIO_JS__*/", shell.read_text())
+    # lint.js gives the page the same lint verdicts as lint_rules.py.
+    studio = Path(__file__).resolve().parent.parent / "jelli-art"
+    scripts = [studio / name for name in ("shell.js", "lint.js") if (studio / name).exists()]
+    template = template.replace("/*__STUDIO_JS__*/", "\n".join(p.read_text() for p in scripts))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(template.replace("__COMPARE_DATA__", json.dumps(payload).replace("<", "\\u003c")))
     changed = sum(r["changed"] != 0 for r in records)
-    print(f"{changed} of {len(records)} assets differ from {label}. Review: {args.output}")
+    failing = sum(bool(lint_rules.verdict(r["key"], r["kind"], r["after_metrics"], lint)["fails"]) for r in records)
+    print(f"{changed} of {len(records)} assets differ from {label}; {failing} fail the style lint. Review: {args.output}")
+    if lint_error:
+        print(f"warning: {lint_error}; using no limits or waivers")
 
 
 if __name__ == "__main__":

@@ -47,6 +47,7 @@ main{overflow:auto;min-height:0;padding:14px 18px 40px}
 .stats{display:flex;gap:6px;flex-wrap:wrap}
 .stat{font:11px ui-monospace,monospace;background:var(--raised);border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--muted)}
 .stat b{color:var(--ink);font-weight:500}.stat.good b{color:var(--accent)}.stat.worse b{color:var(--bad)}
+.lint-bad{color:var(--bad)}.lint-ok{color:var(--accent)}
 .stage{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .pane{display:grid;gap:6px;justify-items:start}.pane .lbl{display:flex;justify-content:space-between;gap:12px}
 .scroller{overflow:auto;max-width:100%;width:fit-content;border:1px solid var(--line);border-radius:8px;background:#111}
@@ -360,10 +361,18 @@ function renderInspector(a) {
   const show = hex => hex ? `<span class="sw" style="background:${hex}"></span>${hex} ${label(hex, a)}` : '<span class="sw" style="background:repeating-linear-gradient(45deg,#555 0 2px,#222 2px 4px)"></span>transparent';
   el.innerHTML = `<span>x ${x}, y ${y}</span><span>before ${show(b)}</span><span>after ${show(f)}</span>${b !== f ? '<span style="color:var(--warn)">changed</span>' : ''}`;
 }
+/* The issues overlay's summary: what the current sprite fails, what is waived, and its colour budget. */
+function lintLegend() {
+  const a = asset(); if (!a) return '';
+  const v = lintOf(a), parts = [`colours ${v.colours}${v.max_colours !== null ? ` of ${v.max_colours} allowed` : ''}`];
+  if (v.fails.length) parts.push(`fails: ${lintNames(v.fails)}`);
+  for (const [r, why] of Object.entries(v.waived)) parts.push(`${lintNames([r])} waived (${attr(why)})`);
+  return `<span class="${v.fails.length ? 'lint-bad' : ''}">${parts.join(' · ')}</span>`;
+}
 function renderLegend() {
   const el = document.getElementById('legend');
   el.innerHTML = state.mode === 'diff' ? '<span><i style="background:#43bca2"></i>added</span><span><i style="background:#d84f70"></i>removed</span><span><i style="background:#a47bdb"></i>recoloured (centre shows new colour)</span><span>grey: unchanged</span>'
-    : state.issues ? '<span><i style="background:#ff4d6d"></i>speck: lone pixel with no same-colour neighbour (ink and white exempt)</span><span><i style="background:#ffd23f;border-radius:50%"></i>open edge: silhouette pixel without ink outline</span>' : '';
+    : state.issues ? '<span><i style="background:#ff4d6d"></i>speck: lone pixel with no same-colour neighbour (ink and white exempt)</span><span><i style="background:#ffd23f;border-radius:50%"></i>open edge: fill pixel with no ink between it and transparency (left, right, above or below)</span>' + lintLegend() : '';
   const extra = document.getElementById('mode-extra'); extra.textContent = '';
   if (state.mode === 'onion') extra.innerHTML = `<div class="lbl">After opacity</div><input type="range" id="onion" min="0" max="1" step=".05" value="${state.onion}">`;
   if (state.mode === 'flip') extra.innerHTML = `<div class="lbl">Flip</div><button id="blink" aria-pressed="${state.blink}">Auto blink</button>`;
@@ -372,6 +381,10 @@ function renderLegend() {
   extra.querySelector('#blink')?.addEventListener('click', e => { state.blink = !state.blink; e.target.setAttribute('aria-pressed', state.blink); });
 }
 
+/* Style lint (tools/jelli-art/lint.js): failing rules and waivers from the metrics and the payload's limits. */
+const lintOf = (a, m = a.after_metrics) => window.JelliLint ? JelliLint.verdict(a.key, a.kind, m, D.lint) : {fails: [], waived: {}, colours: Object.keys(m.colors).length, max_colours: null};
+const lintNames = rules => rules.map(r => window.JelliLint?.NAMES[r] || r).join(', ');
+const attr = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 function delta(b, f, lowerIsBetter = true) { if (b === undefined || b === null) return ['', `${f}`]; const cls = f === b ? '' : (f < b) === lowerIsBetter ? 'good' : 'worse'; return [cls, `${b} → ${f}`]; }
 function renderHeader(a) {
   document.getElementById('asset-name').textContent = a.key;
@@ -380,9 +393,15 @@ function renderHeader(a) {
   const s = delta(bm?.specks.length, am.specks.length), o = delta(bm?.open_edges.length, am.open_edges.length), c = delta(bm ? Object.keys(bm.colors).length : undefined, Object.keys(am.colors).length);
   if (a.kind !== 'font' && a.kind !== 'backgrounds') items.push([s[0], `specks ${s[1]}`]);
   if (am.open_edges.length || bm?.open_edges.length) items.push([o[0], `open edges ${o[1]}`]);
-  items.push(['', `colours ${c[1]}`]);
+  const v = lintOf(a), waived = Object.keys(v.waived);
+  items.push([v.fails.includes('colours') ? 'worse' : '', `colours ${c[1]}${v.max_colours !== null ? ` / max ${v.max_colours}` : ''}`]);
+  if (v.fails.length) items.push(['worse', `lint fails: ${lintNames(v.fails)}`, 'docs/pixel-art-guide.md rules this sprite breaks']);
+  else items.push(['good', 'lint pass', 'Specks, open edges and colour count meet docs/pixel-art-guide.md']);
+  if (waived.length) items.push(['', `waived: ${lintNames(waived)}`, `Waived: ${v.waived[waived[0]]}`]);
   window.Studio?.decorateHeader(a, items);
-  document.getElementById('asset-stats').innerHTML = items.map(([cls, t]) => `<span class="stat ${cls}"><b>${t}</b></span>`).join('');
+  const stats = document.getElementById('asset-stats');
+  stats.innerHTML = items.map(([cls, t, title]) => `<span class="stat ${cls}"${title ? ` title="${attr(title)}"` : ''}><b>${t}</b></span>`).join('');
+  window.Studio?.afterHeader?.(a, stats, v);
 }
 function renderPalette(a) {
   if (state.mode === 'paint' && window.Studio) return window.Studio.renderPalette(document.getElementById('palette'), a);
@@ -455,8 +474,9 @@ function renderList() {
     const row = document.createElement('div'); row.className = 'item'; row.id = `asset-option-${i}`; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', String(a.key === state.key));
     if (a.key === state.key) el.setAttribute('aria-activedescendant', row.id);
     const thumb = uri => uri ? `<div class="thumb"><img alt="" src="${uri}"></div>` : '<div class="thumb none"></div>';
-    const sp = a.before_metrics ? `${a.before_metrics.specks.length}→${a.after_metrics.specks.length} specks` : 'new';
-    row.innerHTML = `${thumb(a.before)}${thumb(a.after)}<div><div class="name">${reviewDot(a)}${a.key.split('.')[1]}</div><div class="sub">${a.kind} · ${a.changed < 0 ? 'new' : a.changed + ' px'} · ${sp}</div></div>`;
+    const sp = a.before_metrics ? `${a.before_metrics.specks.length}→${a.after_metrics.specks.length} specks` : 'new', v = lintOf(a);
+    const lint = v.fails.length ? `<span class="lint-bad" title="Fails: ${lintNames(v.fails)}">✗ ${lintNames(v.fails)}</span>` : `<span class="lint-ok" title="Meets the style lint${Object.keys(v.waived).length ? ' with waivers' : ''}">✓${Object.keys(v.waived).length ? ' waived' : ''}</span>`;
+    row.innerHTML = `${thumb(a.before)}${thumb(a.after)}<div><div class="name">${reviewDot(a)}${a.key.split('.')[1]}</div><div class="sub">${a.kind} · ${a.changed < 0 ? 'new' : a.changed + ' px'} · ${sp} · ${lint}</div></div>`;
     row.onclick = () => select(a.key);
     el.append(row);
   }
@@ -470,7 +490,10 @@ function renderKinds() {
 function renderTotals() {
   const sum = (side, f) => D.assets.reduce((n, a) => n + (a[side] ? f(a[side]) : 0), 0);
   const changed = D.assets.filter(a => a.changed !== 0).length;
-  document.getElementById('totals').innerHTML = `<span><b>${changed}</b>/${D.assets.length} changed</span><span>specks <b>${sum('before_metrics', m => m.specks.length)} → ${sum('after_metrics', m => m.specks.length)}</b></span><span>open edges <b>${sum('before_metrics', m => m.open_edges.length)} → ${sum('after_metrics', m => m.open_edges.length)}</b></span>`;
+  /* Sprites failing a rule that is not waived; raw speck and edge counts stay on each asset. */
+  const failing = side => D.assets.filter(a => a[side] && lintOf(a, a[side]).fails.length).length;
+  const waived = D.assets.filter(a => Object.keys(lintOf(a).waived).length).length;
+  document.getElementById('totals').innerHTML = `<span><b>${changed}</b>/${D.assets.length} changed</span><span title="Sprites that fail the style lint (specks, open edges or colour count), not counting waived rules">lint failing <b>${failing('before_metrics')} → ${failing('after_metrics')}</b></span>${waived ? `<span>waived <b>${waived}</b></span>` : ''}${D.lint_error ? `<span class="lint-bad" title="${attr(D.lint_error)}">lint.json unreadable</span>` : ''}`;
   document.getElementById('before-label').textContent = D.before_label; document.getElementById('after-label').textContent = D.after_label;
 }
 function renderDetail() {

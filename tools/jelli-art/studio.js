@@ -359,6 +359,7 @@
       p.data.set(r.data); state.float = null;
     }
     done(label);
+    if (label === 'Flip horizontal') S.warnFlip?.(asset());  // lint_ui.js: the light now comes from the top right
   }
   /* Alt+arrows: move the selection, or with Wrap on (or no selection) shift the pixels inside it or the sprite. */
   function nudge(dx, dy) {
@@ -575,7 +576,7 @@
     extra.innerHTML = `<div class="paint-tools" role="toolbar" aria-label="Paint tools">
       <div><div class="lbl" id="tools-label">Tool</div><div class="seg" id="tools" role="group" aria-labelledby="tools-label">${TOOLS.map(([id, name, key, what]) =>
         `<button data-tool="${id}" title="${name} (${key}): ${what}" aria-keyshortcuts="${key}">${name}</button>`).join('')}</div></div>
-      <div><div class="lbl">Options</div><div class="seg" role="group" aria-label="Options">${btn('filled', 'Filled', 'Filled rectangles and ellipses', '⇧F')}${btn('perfect', 'Pixel-perfect', 'Pencil strokes drop L-shaped corners', '⇧P')}${btn('mirror', 'Mirror', 'Mirror left/right', 'M')}</div></div>
+      <div><div class="lbl">Options</div><div class="seg" role="group" aria-label="Options">${btn('filled', 'Filled', 'Filled rectangles and ellipses', '⇧F')}${btn('perfect', 'Pixel-perfect', 'Pencil strokes stay 1 px wide: diagonal steps without doubled L corners, as house outlines are drawn', '⇧P')}${btn('mirror', 'Mirror', 'Mirror left/right', 'M')}</div></div>
       <div><div class="lbl">History</div><div class="seg" role="group" aria-label="History">${btn('undo', 'Undo', 'Undo', '⌘Z')}${btn('redo', 'Redo', 'Redo', '⇧⌘Z')}</div></div>
       <div><div class="lbl">File</div><div class="seg" role="group" aria-label="File">${btn('revert', 'Revert', 'Discard unsaved edits', '')}${btn('reset', 'Use before', 'Load the before image into the canvas', '')}${btn('save', 'Save', 'Save', '⌘S', ' class="primary"')}</div></div></div>
       <details class="paint-more" id="paint-more"${store.get('paint-more', false) ? ' open' : ''}><summary>More tools <span class="lbl">selection · transform · nudge · replace colour · guides · tidy</span></summary>
@@ -687,7 +688,7 @@
   /* ---------- shortcut docs: the shell's ? overlay lists them; the handlers are S.keydown and canvasKey ---------- */
   window.JelliShell?.registerShortcuts('Paint', [
     {keys: ['P', 'E', 'F', 'C'], description: 'Pencil, eraser, fill, pick colour'}, {keys: ['L', 'R', 'U'], description: 'Line, rectangle, ellipse'},
-    {keys: ['V'], description: 'Select'}, {keys: ['Shift+F'], description: 'Filled shapes on/off'}, {keys: ['Shift+P'], description: 'Pixel-perfect pencil on/off'},
+    {keys: ['V'], description: 'Select'}, {keys: ['Shift+F'], description: 'Filled shapes on/off'}, {keys: ['Shift+P'], description: 'Pixel-perfect pencil on/off (1 px strokes, no doubled corners)'},
     {keys: ['M'], description: 'Mirror left/right'}, {keys: ['Right-click'], description: 'Erase'}, {keys: ['Alt+Click', 'Alt+Enter'], description: 'Pick a colour and keep the current tool (any tool except Select)'},
     {keys: ['Shift+Drag'], description: 'Snap lines to 45°; square rectangles and circles'},
     {keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], description: 'Canvas focused: move the keyboard cursor'},
@@ -731,7 +732,9 @@
     const a = asset(), p = work(a.key), pixels = [];
     for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) pixels.push(pixel(p, x, y));
     try {
-      const res = await api('POST', '/api/tidy', {key: a.key, pixels}); state.float = null;
+      const res = await api('POST', '/api/tidy', {key: a.key, pixels});
+      if (S.previewTidy && !await S.previewTidy(a, pixels, res.pixels)) return;  // lint_ui.js: before/after, Apply or Cancel
+      state.float = null;
       res.pixels.forEach((hex, i) => T.set(p, i % p.w, Math.floor(i / p.w), hex)); done('Tidy outline');
       status('Tidied: closed outline, specks removed. Undo if you prefer the old version.');
     } catch (err) { status(`Tidy failed: ${err.message}`, 'bad', true); }

@@ -350,6 +350,48 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(status, 409, reply)
         self.assertEqual(self.server.get("/api/data")["palette"], palette)
 
+    def test_lint_waiver_round_trip_stale_and_invalid(self):
+        data = self.server.get("/api/data")
+        self.assertIn("max_colours", data["lint"])
+        self.assertIsNone(data["lint_error"])
+        key, path = data["assets"][0]["key"], self.slice / "source/lint.json"
+        reply = self.server.post("/api/lint-waiver", {"key": key, "rules": ["specks"], "reason": " intentional ",
+                                                     "base": data["lint_sha"], "artist": "e2e"})
+        self.assertEqual(reply["lint"]["waivers"][key], {"rules": ["specks"], "reason": "intentional"})
+        self.assertEqual(json.loads(path.read_text())["waivers"][key]["reason"], "intentional")
+        self.assertEqual(self.server.get("/api/data")["lint_sha"], reply["lint_sha"])
+        status, stale = self.server.request("POST", "/api/lint-waiver", {"key": key, "rules": [], "base": data["lint_sha"]})
+        self.assertEqual(status, 409, stale)
+        self.assertEqual(stale["current"], reply["lint_sha"])
+        for body in ({"key": key, "rules": ["nope"], "reason": "x"}, {"key": key, "rules": ["specks"], "reason": " "},
+                     {"key": "icons.missing", "rules": ["specks"], "reason": "x"}, {"key": key, "rules": "specks"},
+                     {"key": key, "rules": ["specks", "specks"], "reason": "x"}):
+            status, error = self.server.request("POST", "/api/lint-waiver", body)
+            self.assertEqual(status, 400, (body, error))
+        removed = self.server.post("/api/lint-waiver", {"key": key, "rules": [], "base": reply["lint_sha"]})
+        self.assertNotIn(key, removed["lint"]["waivers"])
+        self.assertNotIn(key, json.loads(path.read_text())["waivers"])
+
+    @unittest.skipUnless(shutil.which("node"), "node runs lint.js")
+    def test_page_and_server_lint_agree_on_every_asset(self):
+        sys.path.insert(0, str(REPO / "tools/assets"))
+        import lint_rules
+        data = self.server.get("/api/data")
+        configs = [data["lint"], {**data["lint"], "max_colours": 3, "max_colours_by_kind": {"creatures": None},
+                                  "waivers": {a["key"]: {"rules": ["specks", "colours"], "reason": "test"}
+                                              for a in data["assets"][::3]}}]
+        cases = [{"key": a["key"], "kind": a["kind"], "metrics": a["after_metrics"]} for a in data["assets"]]
+        script = ("const L = require(process.argv.at(-1)), {cases, configs} = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
+                  "console.log(JSON.stringify(configs.map(c => cases.map(k => L.verdict(k.key, k.kind, k.metrics, c)))));")
+        result = subprocess.run(["node", "-e", script, "--", str(HERE / "lint.js")],
+                                input=json.dumps({"cases": cases, "configs": configs}), capture_output=True, text=True,
+                                check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        page = json.loads(result.stdout)
+        server = [[lint_rules.verdict(k["key"], k["kind"], k["metrics"], c) for k in cases] for c in configs]
+        self.assertEqual(page, server)
+        self.assertTrue(any(v["waived"] for v in server[1]) and any(v["fails"] for v in server[0]))
+
     def test_health_reports_capabilities(self):
         health = self.server.get("/healthz")
         self.assertTrue(health["ok"])
