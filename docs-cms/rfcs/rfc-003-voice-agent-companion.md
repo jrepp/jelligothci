@@ -448,7 +448,8 @@ Approved 2026-10-09. The work happens in `~/dev/chatter`, and the bridge falls
 back to today's API when an addition is missing.
 
 - Phase 1: a silent `render` mode that respects `quality` and is ephemeral, and a
-  synchronous result (`?wait=true`).
+  synchronous result (`?wait=true`). Done in Chatter 3.2.0, which also stops cancel from
+  silencing the Mac's playback ([memo-031](../memos/memo-031-chatter-render-mode-and-voice-model.md)).
 - Phase 2: streamed results (0.8 s chunks), an interactive priority lane, keeping
   the built-in profile warm, and `sampleRate`/`bitDepth` output options.
 - Proposed, not yet approved: a local transport whose listener a client can
