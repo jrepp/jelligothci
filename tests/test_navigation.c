@@ -1,4 +1,5 @@
 #include "jelli/pet_ui.h"
+#include "jelli/sound.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -201,9 +202,37 @@ static void refill_food(void)
     CHECK(game.food == 4u);
 }
 
+static void feedback(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    jelli_pet_ui_tap(&ui, &game, 233, 420);
+    CHECK(ui.menu_open && jelli_particles_count(&ui.particles) == 0u);
+    CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 0u) == JELLI_SOUND_CONFIRM + 1u);
+    jelli_pet_ui_tap(&ui, &game, 110, 111);
+    CHECK(ui.page == JELLI_UI_CARE && jelli_particles_count(&ui.particles) == 0u);
+    CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 200u) == JELLI_SOUND_CONFIRM + 1u);
+    jelli_pet_ui_tap(&ui, &game, 233, 440);
+    CHECK(ui.page == JELLI_UI_HOME && jelli_particles_count(&ui.particles) == 0u);
+    CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 400u) == JELLI_SOUND_BACK + 1u);
+    jelli_pet_ui_swipe(&ui, &game, 0, 80);
+    CHECK(!ui.menu_open && jelli_particles_count(&ui.particles) == 0u);
+    CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 600u) == JELLI_SOUND_BACK + 1u);
+    ui.menu_open = true;
+    ui.page = JELLI_UI_CARE;
+    game.pets[0].hydration = 200u;
+    jelli_pet_ui_tap(&ui, &game, 61, 233); /* Water. */
+    CHECK(game.pets[0].hydration > 200u && jelli_particles_count(&ui.particles) > 0u);
+    CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 800u) == JELLI_SOUND_PET + 1u);
+    CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 801u) == 0u);
+}
+
 int main(void)
 {
     navigation();
+    feedback();
     refill_food();
     volume_controls();
     clock_controls();

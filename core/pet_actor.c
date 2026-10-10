@@ -1,3 +1,4 @@
+#include "jelli/sound.h"
 #include "pet_draw.h"
 
 static uint32_t frame_id(const JelliPetRenderKey *v)
@@ -67,7 +68,8 @@ bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
     if (ui->result == JELLI_OK) {
         ui->save_requested = true;
         ui->save_status = JELLI_SAVE_PENDING;
-        ui->sound_pending = pet->reaction == 1u;
+        ui->sound_pending = true;
+        ui->sound_cue = JELLI_SOUND_PET + 1u;
         jelli_particles_burst(&ui->particles, x, y, pet->reaction == 1u);
     }
     return true;

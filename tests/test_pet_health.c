@@ -212,7 +212,7 @@ static void test_idle_coos(void)
     CHECK(jelli_pet_ui_sound(&ui, pet, 30000u) == 7u);
     CHECK(jelli_pet_ui_sound(&ui, pet, 30001u) == 0u);
     ui.sound_pending = true;
-    CHECK(jelli_pet_ui_sound(&ui, pet, 60000u) == 6u); /* Menu wins. */
+    CHECK(jelli_pet_ui_sound(&ui, pet, 60000u) == 8u); /* Menu wins. */
     pet->asleep = true;
     CHECK(jelli_pet_ui_sound(&ui, pet, 90000u) == 0u);
     pet->asleep = false;

@@ -206,9 +206,10 @@ it checks every clicker, internal bond changes, completion guards, and screensho
 
 ### Sound audition
 
-Six tiny procedural cues are available through `jelli-debug sound`: `chirp`,
-`happy`, `sparkle`, `hello`, `sleepy`, and `tap`. Hello and sleepy are vowel-like pet voices.
-Accepted menu presses play a quiet 65 ms tap at volume 25, coalesced within 120 ms.
+Nine tiny procedural cues are available through `jelli-debug sound`: `chirp`,
+`happy`, `sparkle`, `hello`, `sleepy`, `tap`, `coo`, `confirm`, and `pet`. Hello and sleepy are vowel-like pet voices.
+Menu confirmation, Back/Close, and pet interaction use distinct cues, coalesced
+within 120 ms and scaled by the saved master volume.
 Pass `--volume 0..80` (default 35). Both native SDL and the ESP32 support this
 command; sound output is asynchronous and does not block the engine thread.
 Interactive SDL initializes audio at startup; headless SDL needs `--audio`.
@@ -418,3 +419,13 @@ The default is 65%: 30% above the previous gain settings, which correspond to
 from the old 25 and 18). New and migrated saves use this louder default; v7 saves
 preserve the chosen level, including mute. The debug CLI's explicit `sound
 --volume` argument remains a raw 0–80 diagnostic override.
+
+
+## Interaction feedback
+
+Opening or confirming a menu plays a short two-note rising cue. Back and Close
+use the original tap sound; accepted pet touches and care actions play a softer
+voiced chirp. Swipe navigation follows the same direction distinction. Menu
+navigation, settings, and collection selection no longer create sprite sprays.
+Pet actions and celebrations retain them. Input audio remains limited to one
+cue per 120 ms, and the master volume controls all automatic sounds.

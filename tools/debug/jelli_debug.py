@@ -227,7 +227,7 @@ def main():
     cheat.add_argument("name", choices=("fullness", "energy", "clean", "fun", "connection", "bond", "food", "gifts", "heal"))
     cheat.add_argument("value", type=int, nargs="?")
     sound = commands.add_parser("sound", help="Queue a tiny procedural pet sound")
-    sound.add_argument("cue", choices=("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo"))
+    sound.add_argument("cue", choices=("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo", "confirm", "pet"))
     sound.add_argument("--volume", type=int, choices=range(81), default=35, metavar="0..80")
     screenshot = commands.add_parser("screenshot")
     screenshot.add_argument("output", type=Path, help="PNG path; also writes .png.json state")
@@ -318,7 +318,7 @@ def main():
         elif args.command == "events":
             result = client.request(f"events {args.after}")
         elif args.command == "sound":
-            cue = ("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo").index(args.cue)
+            cue = ("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo", "confirm", "pet").index(args.cue)
             result = client.request(f"sound {cue} {args.volume}")
         elif args.command == "swipe":
             result = client.request(f"swipe {('up', 'down', 'left', 'right').index(args.direction)}")

@@ -146,6 +146,7 @@ typedef struct {
     uint64_t catch_anchor_ms;
     uint8_t latched_prize, highlighted_prize, catch_seen;
     uint8_t selected_pet, selected_form;
+    uint8_t sound_cue; /* One-based cue; zero defaults to menu confirmation. */
     JelliPetPage present_return;
     JelliGame action_scratch; /* Fixed preflight workspace; never placed on the ESP task stack. */
     uint64_t tile_anchor_ms, idle_anchor_ms, last_animation_phase, last_pet_ticks;

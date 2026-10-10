@@ -6,7 +6,8 @@
 
 #define JELLI_SOUND_RATE 22050u
 #define JELLI_SOUND_BLOCK 512u
-#define JELLI_SOUND_COUNT 7u
+#define JELLI_SOUND_COUNT 9u
+enum { JELLI_SOUND_BACK = 5, JELLI_SOUND_COO = 6, JELLI_SOUND_CONFIRM = 7, JELLI_SOUND_PET = 8 };
 
 typedef struct {
     uint32_t position, length;
@@ -16,8 +17,8 @@ typedef struct {
     bool playing;
 } JelliSynth;
 
-/* Original fixed programs: chirp, happy, sparkle, hello, sleepy, tap, coo. "Hello" and
- * "sleepy" are vowel-like pet voices, not intelligible text-to-speech. */
+/* Original fixed programs: chirp, happy, sparkle, hello, sleepy, tap (Back), coo, confirm, pet.
+ * "Hello" and "sleepy" are vowel-like pet voices, not intelligible text-to-speech. */
 const char *jelli_sound_name(unsigned cue);
 bool jelli_sound_start(JelliSynth *synth, unsigned cue);
 /* Mono signed native-endian PCM16. At most 512 samples/call; no IO, clock,

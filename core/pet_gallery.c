@@ -1,3 +1,4 @@
+#include "jelli/sound.h"
 #include "pet_gallery.h"
 #include "game_internal.h"
 #include "jelli/collection.h"
@@ -75,6 +76,7 @@ void jelli_pet_gallery_select(JelliPetUi *ui, const JelliGame *game, unsigned sl
     ui->menu_open = false;
     ui->page = JELLI_UI_HOME;
     ui->sound_pending = true;
+    ui->sound_cue = JELLI_SOUND_CONFIRM + 1u;
 }
 
 bool jelli_pet_gallery_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
@@ -100,11 +102,13 @@ bool jelli_pet_gallery_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
         ui->menu_open = true;
         ui->result = JELLI_OK;
         ui->sound_pending = true;
+        ui->sound_cue = JELLI_SOUND_CONFIRM + 1u;
         return true;
     }
     if (ui->result == JELLI_OK) {
         saved(ui);
         ui->sound_pending = true;
+        ui->sound_cue = JELLI_SOUND_PET + 1u;
         jelli_particles_burst_tuned(&ui->particles, x, y, true, 6u, 50u);
     }
     return true;
