@@ -103,7 +103,9 @@ def despeck(sprite, keep=("white", "ink", "cream")):
         if c not in near:
             votes = [n for n in near if n and n != "ink"]
             if votes:
-                out[(x, y)] = max(set(votes), key=votes.count)
+                # max() keeps the first of equal counts, so ties go to the earliest N8 neighbour.
+                # A set here would iterate in string-hash order, which changes per process.
+                out[(x, y)] = max(votes, key=votes.count)
     return out
 
 
