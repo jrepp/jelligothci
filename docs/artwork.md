@@ -13,6 +13,8 @@ The studio is the review page with painting turned on. It needs no setup beyond
 the repository's pinned tools, and it only listens on your own computer.
 
 1. Pick a sprite in the left list, or use **Sheet** to browse them all.
+   **Changed only** narrows the list to sprites that differ from the before
+   image; while nothing differs, it lists them all.
    Press **?** for the keyboard shortcuts.
 2. Choose the **Paint** tab at the top. The tools are pencil, eraser, fill,
    colour picker, line, rectangle, ellipse and select. **Filled** fills
@@ -35,6 +37,10 @@ the repository's pinned tools, and it only listens on your own computer.
    any step in the **history** list beside the canvas.
 6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
    pans. **Grid** and **Guides** (centre and 8 px tile centres) are toggles.
+   The backdrop starts as the sprite's real surroundings: scene grey for
+   creatures and props, ring grey for icons, menus and health, and the stat
+   tile for meters; **Backdrop** changes it. A paint colour that would barely
+   show on the backdrop gets a dashed ring on its swatch and under the cursor.
    Without a mouse, Tab to the canvas to show the keyboard cursor: the arrow
    keys move it, Enter or Space applies the tool, Shift with the arrows draws,
    and Escape hides it.

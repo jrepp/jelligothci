@@ -124,7 +124,7 @@ section.block{border-top-width:2px}.title h2{letter-spacing:.01em}
     <div class="filters">
       <input type="search" id="query" placeholder="Filter assets…" aria-label="Filter assets">
       <div class="chips" id="kinds" role="group" aria-label="Asset kind"></div>
-      <div class="chips"><button id="changed-only" aria-pressed="true">Changed only</button><button id="copy-notes">Copy review notes</button></div>
+      <div class="chips"><button id="changed-only" aria-pressed="false">Changed only</button><button id="copy-notes">Copy review notes</button></div>
     </div>
     <p id="list-empty" class="hidden" style="padding:12px;margin:0;color:var(--muted)">No assets match. Try turning off “Changed only”.</p>
     <div id="list" role="listbox" aria-label="Assets" tabindex="0"></div>
@@ -173,14 +173,15 @@ section.block{border-top-width:2px}.title h2{letter-spacing:.01em}
 const BOOT = JSON.parse(document.getElementById('compare-data').textContent);
 let D = BOOT, byKey = {}, decoded = {};
 const NAMES = ['ink', 'plum', 'mauve', 'teal', 'sea', 'mint', 'foam', 'violet', 'lilac', 'haze', 'cream', 'white', 'rose', 'coral', 'gold', 'tan'];
-const BACKDROPS = {black: '#000000', ring: '#4a494a', panel: '#181c18', checker: null, paper: '#f5f1e7'};
-const KIND_BACKDROP = {creatures: 'black', icons: 'ring', menus: 'ring', meters: 'panel', health: 'ring', effects: 'black', prizes: 'panel', props: 'black', font: 'panel', backgrounds: 'black'};
+/* scene is the wall grey behind the pet in the home and garden backgrounds; ring is the ring button; panel is the stat tile. */
+const BACKDROPS = {scene: '#b6b6b6', black: '#000000', ring: '#4a494a', panel: '#181c18', checker: null, paper: '#f5f1e7'};
+const KIND_BACKDROP = {creatures: 'scene', icons: 'ring', menus: 'ring', meters: 'panel', health: 'ring', effects: 'black', prizes: 'panel', props: 'scene', font: 'panel', backgrounds: 'black'};
 const MODES = ['side', 'swipe', 'flip', 'onion', 'diff'];
 const PANEL_PPI = 466 / 1.75;
 const DPR = Math.max(1, window.devicePixelRatio || 1);
 const store = {get(k, d) { try { const v = localStorage.getItem('jelli-review:' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem('jelli-review:' + k, JSON.stringify(v)); } catch { /* storage unavailable */ } }};
-const state = Object.assign({key: null, mode: 'side', zoom: null, grid: true, issues: false, backdrop: null, changedOnly: true, kind: 'all', query: '',
+const state = Object.assign({key: null, mode: 'side', zoom: null, grid: true, issues: false, backdrop: null, changedOnly: false, kind: 'all', query: '',
   view: 'detail', peek: false, isolate: null, swipe: 0.5, onion: 0.5, flipBefore: false, blink: false, hover: null, physical: false,
   ppi: DPR >= 2 ? 127 : 96, sheetShow: 'both', sheetScale: 'device', sheetBackdrop: 'auto'}, store.get('prefs', {}));
 state.peek = false; state.hover = null; state.isolate = null; state.flipBefore = false; state.blink = false;
@@ -245,10 +246,14 @@ function drawPixels(ctx, p, z, opts = {}) {
   }
   ctx.globalAlpha = 1;
 }
+/* Perceived brightness 0-255 of '#rrggbb'; null (the checker) counts as dark. */
+const lumaOf = hex => hex ? [1, 3, 5].reduce((n, i, k) => n + parseInt(hex.slice(i, i + 2), 16) * [0.299, 0.587, 0.114][k], 0) : 50;
+const backdropHex = a => BACKDROPS[backdropFor(a)];
 function drawGrid(ctx, w, h, z) {
   if (!state.grid || z < 5) return;
-  for (let x = 0; x <= w; x++) { ctx.fillStyle = x % 8 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.2)'; ctx.fillRect(x * z, 0, 1, h * z); }
-  for (let y = 0; y <= h; y++) { ctx.fillStyle = y % 8 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.2)'; ctx.fillRect(0, y * z, w * z, 1); }
+  const a = asset(), ink = a && lumaOf(backdropHex(a)) > 128 ? '0,0,0' : '255,255,255';  // dark lines on light backdrops
+  for (let x = 0; x <= w; x++) { ctx.fillStyle = x % 8 ? `rgba(${ink},.07)` : `rgba(${ink},.2)`; ctx.fillRect(x * z, 0, 1, h * z); }
+  for (let y = 0; y <= h; y++) { ctx.fillStyle = y % 8 ? `rgba(${ink},.07)` : `rgba(${ink},.2)`; ctx.fillRect(0, y * z, w * z, 1); }
 }
 function drawIssues(ctx, metrics, z) {
   if (!state.issues || !metrics) return;
@@ -422,13 +427,16 @@ function setVerdict(status) {
 }
 function reviewDot(a) { const r = reviews[a.key]; if (!r || !r.status) return ''; return r.sig !== signature(a) ? '<span class="dot stale" title="Changed since review"></span>' : `<span class="dot ${r.status}"></span>`; }
 
+/* "Changed only" lists everything while nothing has changed, so a clean checkout never opens on an empty list. */
+const changedFilter = () => state.changedOnly && D.assets.some(a => a.changed !== 0);
 function filtered() {
-  const q = state.query.toLowerCase();
-  return D.assets.filter(a => (state.kind === 'all' || a.kind === state.kind) && (!state.changedOnly || a.changed !== 0) && (!q || a.key.includes(q)));
+  const q = state.query.toLowerCase(), only = changedFilter();
+  return D.assets.filter(a => (state.kind === 'all' || a.kind === state.kind) && (!only || a.changed !== 0) && (!q || a.key.includes(q)));
 }
 function renderList() {
   const el = document.getElementById('list'); el.textContent = '';
-  const items = filtered();
+  const items = filtered(), only = document.getElementById('changed-only');
+  only.title = state.changedOnly && !changedFilter() ? 'Nothing has changed yet, so every asset is listed' : 'List only assets that differ from the before image';
   document.getElementById('list-empty').classList.toggle('hidden', items.length > 0); el.hidden = !items.length; el.removeAttribute('aria-activedescendant');
   for (const [i, a] of items.entries()) {
     const row = document.createElement('div'); row.className = 'item'; row.id = `asset-option-${i}`; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', String(a.key === state.key));
@@ -443,8 +451,8 @@ function renderList() {
 }
 function renderKinds() {
   const kinds = ['all', ...new Set(D.assets.map(a => a.kind))], el = document.getElementById('kinds'); el.textContent = '';
-  for (const k of kinds) { const n = D.assets.filter(a => (k === 'all' || a.kind === k) && a.changed !== 0).length; const b = document.createElement('button');
-    b.textContent = `${k} ${n}`; b.setAttribute('aria-pressed', String(state.kind === k)); b.onclick = () => { state.kind = k; renderKinds(); renderList(); savePrefs(); }; el.append(b); }
+  for (const k of kinds) { const of = D.assets.filter(a => k === 'all' || a.kind === k), n = of.filter(a => a.changed !== 0).length; const b = document.createElement('button');
+    b.textContent = `${k} ${of.length}${n ? ` · ${n} changed` : ''}`; b.setAttribute('aria-pressed', String(state.kind === k)); b.onclick = () => { state.kind = k; renderKinds(); renderList(); savePrefs(); }; el.append(b); }
 }
 function renderTotals() {
   const sum = (side, f) => D.assets.reduce((n, a) => n + (a[side] ? f(a[side]) : 0), 0);

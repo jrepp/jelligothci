@@ -28,7 +28,8 @@ static page that `tools/assets/compare_slice.py` writes. It provides:
 - Deep links: `#paint`, `#creature`, `#behaviour`, `#review`, or
   `#view=sheet&key=icons.feed&mode=diff&zoom=8`.
 - One polite live region and toasts for save results, errors, stale files,
-  git push problems and a lost server connection.
+  git push problems and a lost server connection. Switching mode closes the
+  info and done toasts of the mode left behind; warnings and problems stay.
 - An unsaved changes button that lists edits and opens their mode. The page
   warns before closing with unsaved edits.
 - System, dark, light and high-contrast themes. The page follows
