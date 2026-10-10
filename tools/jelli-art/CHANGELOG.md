@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.6.0...jelli-art-v0.6.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **jelli-art:** reset the studio branch after a squash-merge when the base moved on ([#38](https://github.com/jrepp/jelligothci/issues/38)) ([a12ef19](https://github.com/jrepp/jelligothci/commit/a12ef19ae6e584752cb2663e87c6adfd90b59efb))
+
 ## [0.6.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.5.0...jelli-art-v0.6.0) (2026-10-10)
 
 
