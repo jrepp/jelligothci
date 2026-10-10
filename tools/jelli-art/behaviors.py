@@ -119,7 +119,9 @@ def validate(doc, repo, content):
             shutil.copy(Path(content) / name, work / "content")
         (work / "content/behaviors.json").write_text(json.dumps(doc, indent=2) + "\n")
         driver = work / "check.cmake"
-        driver.write_text('include("${CMAKE_CURRENT_LIST_DIR}/cmake/JelliBehaviors.cmake")\njelli_behaviors_data(output)\n')
+        # Standalone -P scripts do not inherit the project's CMake policy baseline (memo-035).
+        driver.write_text('cmake_minimum_required(VERSION 3.21)\n'
+                          'include("${CMAKE_CURRENT_LIST_DIR}/cmake/JelliBehaviors.cmake")\njelli_behaviors_data(output)\n')
         result = subprocess.run([cmake, "-P", str(driver)], cwd=work, capture_output=True, text=True, timeout=20, check=False)
     if result.returncode:
         raise BehaviorError(f"Behaviour data fails validation: {cmake_messages(result.stderr)}")

@@ -16,7 +16,9 @@ with tempfile.TemporaryDirectory(prefix="jelli-behaviors-") as directory:
     for name in ("activities.json", "pets.json"):
         shutil.copy(root / "content" / name, work / "content")
     driver = work / "check.cmake"
-    driver.write_text('include("${CMAKE_CURRENT_LIST_DIR}/cmake/JelliBehaviors.cmake")\n'
+    # Standalone -P scripts do not inherit the project's CMake policy baseline (memo-035).
+    driver.write_text('cmake_minimum_required(VERSION 3.21)\n'
+                      'include("${CMAKE_CURRENT_LIST_DIR}/cmake/JelliBehaviors.cmake")\n'
                       'jelli_behaviors_data(output)\n')
 
     def check(data, valid):
