@@ -131,11 +131,11 @@ read-only hardware probes, and the switch back to the pet. Its findings are in
 
 ```sh
 JELLI_ESP_BOARD=1.75c make esp-flash PORT=<port>        # the pet, once, with layout A
-JELLI_ESP_BOARD=1.75c make esp-agent-flash PORT=<port>  # builds the agent, writes ota_0
-./scripts/jelli-debug --port <port> app agent           # pet checkpoints, restarts into the agent
+JELLI_ESP_BOARD=1.75c make esp-agent-flash PORT=<port>  # builds the agent, writes ota_0, starts it
+./scripts/jelli-debug --port <port> app agent           # from the pet: checkpoint, restart into the agent
 ./scripts/loki-agent --port <port> hello
 ./scripts/loki-agent --port <port> probe pmu           # also chip, heap, te MS, pwr MS
-./scripts/loki-agent --port <port> boot pet            # back to the pet
+./scripts/loki-agent --port <port> boot pet            # visit the pet until the next reset
 ```
 
 `JELLI_ESP_APP=agent` selects the agent for any `scripts/esp` command; its build
@@ -145,9 +145,16 @@ agent, because `idf.py flash` would write it over the pet in `factory` and reset
 the boot choice. `flash-agent` first resets the boot choice to the pet (otatool
 `erase_otadata`), so a new agent image always starts on trial through `app agent`,
 then writes `ota_0` by name with ESP-IDF's parttool, which reads the table from the
-board; on a board without layout A it fails rather than overwrite the pet. A full
-pet flash always makes the pet the app that starts. Both builds refuse a generated
-`sdkconfig` that still has rollback off.
+board; on a board without layout A it fails rather than overwrite the pet. It then
+waits for the pet to start and hands over with `app agent`. Both builds refuse a
+generated `sdkconfig` that still has rollback off.
+
+The agent is the default app
+([ADR-015](../docs-cms/adr/adr-015-the-coding-agent-is-the-default-app.md)): each
+time the pet starts, it selects the agent for the next reset, so a visit to the pet
+(`boot pet`, a full pet flash) lasts until the board resets. The exception is an
+agent whose last start failed: then the pet stays the boot app until a new agent is
+flashed.
 
 Each app starts only the other's project (`jelligotchi` or `loki_agent`), since
 `ota_0` can hold leftovers of the vendor firmware. The pet's `app agent` verifies

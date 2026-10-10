@@ -20,14 +20,44 @@
 static const char *TAG = "app_switch";
 static const esp_partition_t *armed;
 
+/* ota_0 when it holds a loki_agent image, else NULL. */
+static const esp_partition_t *agent_image(esp_app_desc_t *description)
+{
+    const esp_partition_t *agent =
+        esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_OTA_0, NULL);
+    if (!agent || esp_ota_get_partition_description(agent, description) != ESP_OK ||
+        strncmp(description->project_name, AGENT_PROJECT, sizeof(description->project_name)) != 0)
+        return NULL;
+    return agent;
+}
+
+void jelli_esp_app_switch_default(void)
+{
+    esp_app_desc_t description;
+    esp_ota_img_states_t state = ESP_OTA_IMG_UNDEFINED;
+    const esp_partition_t *agent = agent_image(&description);
+    if (!agent)
+        return; /* No agent installed: the pet is the only app. */
+    if (esp_ota_get_state_partition(agent, &state) == ESP_OK &&
+        (state == ESP_OTA_IMG_ABORTED || state == ESP_OTA_IMG_INVALID)) {
+        ESP_LOGW(TAG, "The agent's last start failed; the pet stays the boot app until a new "
+                      "agent is flashed");
+        return;
+    }
+    esp_err_t result = esp_ota_set_boot_partition(agent);
+    if (result == ESP_OK)
+        ESP_LOGI(TAG, "Agent %.32s starts at the next reset", description.version);
+    else
+        ESP_LOGW(TAG, "Agent image rejected (%s); the pet stays the boot app",
+                 esp_err_to_name(result));
+}
+
 bool jelli_esp_app_switch_arm(void *ctx)
 {
     (void)ctx;
-    const esp_partition_t *agent =
-        esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_OTA_0, NULL);
     esp_app_desc_t description;
-    if (!agent || esp_ota_get_partition_description(agent, &description) != ESP_OK ||
-        strncmp(description.project_name, AGENT_PROJECT, sizeof(description.project_name)) != 0) {
+    const esp_partition_t *agent = agent_image(&description);
+    if (!agent) {
         ESP_LOGW(TAG, "No agent app in ota_0; the pet keeps running");
         return false;
     }

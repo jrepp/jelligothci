@@ -1,4 +1,4 @@
-.PHONY: build run test sanitize core-test bridge-test esp-bootstrap esp-sync esp-build esp-flash esp-monitor esp-agent-build esp-agent-flash docs-check docs-fix docs-guide
+.PHONY: build run test sanitize core-test bridge-test esp-bootstrap esp-sync esp-build esp-flash esp-monitor esp-agent-build esp-agent-flash esp-agent-install docs-check docs-fix docs-guide
 .PHONY: run-shapes run-live
 .PHONY: hooks-install hooks-check lint-c format-c
 
@@ -51,6 +51,10 @@ esp-agent-build:
 # Loki Bridge, the voice agent's Mac side (RFC-003); macOS 26 and Swift 6.2 or later.
 bridge-test:
 	cd bridge && swift test
+
+esp-agent-install:
+	@test -n "$(PORT)" || (echo 'Usage: make esp-agent-install PORT=/dev/cu.usbmodem…'; exit 2)
+	JELLI_ESP_APP=agent ./scripts/esp install-agent "$(PORT)"
 
 esp-agent-flash:
 	@test -n "$(PORT)" || (echo 'Usage: make esp-agent-flash PORT=/dev/cu.usbmodem…'; exit 2)

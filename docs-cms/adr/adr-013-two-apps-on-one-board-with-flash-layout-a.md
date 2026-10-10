@@ -9,6 +9,10 @@ project_id: jelligotchi
 doc_uuid: 06a0ff27-45ba-424c-b690-934405bdbc44
 ---
 
+Which app starts by default changed with
+[ADR-015](adr-015-the-coding-agent-is-the-default-app.md): the coding agent, with the
+pet as a visit until the next reset. The layout and trial below are unchanged.
+
 # Context
 
 [RFC-003](../rfcs/rfc-003-voice-agent-companion.md) proposes a voice agent app

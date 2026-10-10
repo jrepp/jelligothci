@@ -44,8 +44,12 @@ Usage: scripts/esp COMMAND [arguments]
   build                Build the ESP32-S3 firmware
   flash PORT           Build and flash the pet: bootloader, partition table,
                        factory app; resets the boot choice to the pet
-  flash-agent PORT     Build the agent, make the pet the app that starts, and write
-                       the agent to ota_0 (needs the pet's flash layout A)
+  flash-agent PORT     Build the agent, write it to ota_0 (needs the pet's flash
+                       layout A), and start it through the pet's trial; the agent is
+                       the default app from then on (ADR-015)
+  install-agent PORT   Install the agent as the board's only app, in factory where
+                       the pet was, and empty ota_0 (ADR-015); every data partition
+                       is kept
   boot PORT pet|agent  Choose which installed app starts at the next reset
   monitor PORT         Open serial monitor; exit with Ctrl+]
   ports                List serial ports without resetting the board
@@ -143,7 +147,22 @@ flash_agent() {
     sdk_tool partition_table/parttool.py "$1" write_partition --partition-name ota_0 \
         --input "$build_dir/loki_agent.bin"
     start_app "$1"
-    echo 'Agent written to ota_0; the pet starts. Switch with: scripts/jelli-debug --port PORT app agent'
+    # The pet starts first and hands over through its trial, so a new agent that fails
+    # to start returns the board to the pet (ADR-013).
+    local debug="$repo_dir/scripts/jelli-debug"
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+        [[ -x "$debug" ]] || break
+        if "$debug" --port "$1" --timeout 2 state >/dev/null 2>&1; then
+            if "$debug" --port "$1" --timeout 5 app agent >/dev/null; then
+                echo 'Agent written to ota_0 and started; it is the default app from now on'
+                return
+            fi
+            break
+        fi
+        if (( attempt < 10 )); then sleep 1; fi
+    done
+    echo 'Agent written to ota_0; the pet is running and starts it at the next reset' \
+        '(now: scripts/jelli-debug --port PORT app agent)'
 }
 # A host-side switch for recovery; it skips the agent's trial boot (ADR-013).
 choose_app() {
@@ -163,7 +182,8 @@ case "$command_name" in
     flash|monitor)
         if [[ $# -ne 1 ]]; then echo "Usage: scripts/esp $command_name PORT" >&2; exit 2; fi
         if [[ "$command_name" == flash && "$app" == agent ]]; then
-            echo 'The agent installs into ota_0 beside the pet: scripts/esp flash-agent PORT' >&2
+            echo 'The agent installs into ota_0 beside the pet (scripts/esp flash-agent PORT)' \
+                'or alone in place of it (scripts/esp install-agent PORT)' >&2
             exit 2
         fi
         activate
@@ -176,6 +196,28 @@ case "$command_name" in
         fi
         activate
         flash_agent "$1"
+        ;;
+    install-agent)
+        if [[ $# -ne 1 || "$app" != agent ]]; then
+            echo 'Usage: JELLI_ESP_APP=agent scripts/esp install-agent PORT' >&2
+            exit 2
+        fi
+        activate
+        idf build
+        # idf.py flash writes the bootloader, layout A's table (the agent builds with the
+        # pet's partitions.csv), the agent at factory's offset, and a blank otadata, so
+        # factory starts; nvs, agent_nvs, model and art are not written.
+        idf -p "$1" flash
+        # Then, with layout A's table on the board whatever was there before, empty
+        # ota_0: an older agent left there would be started by a pet flashed later
+        # (ADR-015). One reset at the end starts the agent.
+        if ! sdk_tool partition_table/parttool.py "$1" erase_partition --partition-name ota_0; then
+            echo 'The agent is installed, but ota_0 could not be emptied and may hold an older' \
+                'agent that a pet flashed later would start; run install-agent again' >&2
+            exit 3
+        fi
+        start_app "$1"
+        echo 'The agent is installed alone in factory; the pet is gone until it is flashed again'
         ;;
     boot)
         if [[ $# -ne 2 ]]; then echo 'Usage: scripts/esp boot PORT pet|agent' >&2; exit 2; fi

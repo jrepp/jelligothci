@@ -180,7 +180,187 @@ class EspScriptBoardTests(unittest.TestCase):
             "--port", "/dev/cu.test", "--esptool-args=after=no_reset", "write_partition",
             "--partition-name", "ota_0", "--input", str(self.repo / "build/esp32-agent-1.75c/loki_agent.bin"),
             *START_APP("/dev/cu.test")])
-        self.assertIn("the pet starts", result.stdout)
+        # No debug client in this checkout, so the pet is left to start the agent.
+        self.assertIn("starts it at the next reset", result.stdout)
+
+    def fake_debug(self, answers=True):
+        """A scripts/jelli-debug that logs its arguments and answers (or not)."""
+        log = self.root / "debug-args"
+        debug = self.repo / "scripts/jelli-debug"
+        debug.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$@\" >> '{log}'\nexit {0 if answers else 1}\n")
+        debug.chmod(0o755)
+        return log
+
+    def test_flash_agent_hands_over_through_the_pets_app_agent(self):
+        # ADR-015: the pet starts, then "app agent" enters the new agent on trial.
+        log = self.fake_debug()
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(log.read_text().splitlines(), [
+            "--port", "/dev/cu.test", "--timeout", "2", "state",
+            "--port", "/dev/cu.test", "--timeout", "5", "app", "agent"])
+        self.assertIn("default app from now on", result.stdout)
+
+    def scripted_debug(self, state_failures=0, app_status=0):
+        """A scripts/jelli-debug whose state fails the first ``state_failures`` times and
+        whose ``app agent`` exits ``app_status``; each call is one line of its arguments.
+        A fake sleep on the activated PATH records the waits instead of taking them."""
+        log, count = self.root / "debug-calls", self.root / "debug-state-count"
+        debug = self.repo / "scripts/jelli-debug"
+        debug.write_text(
+            "#!/bin/sh\n"
+            f"for a in \"$@\"; do printf '%s\\037' \"$a\"; done >> '{log}'; printf '\\n' >> '{log}'\n"
+            f"if [ \"$5\" = state ]; then n=$(cat '{count}' 2>/dev/null || echo 0); n=$((n + 1))\n"
+            f"  echo $n > '{count}'; echo 'pet state on stdout'; [ $n -gt {state_failures} ]; exit $?; fi\n"
+            f"echo 'app on stdout'; exit {app_status}\n")
+        debug.chmod(0o755)
+        sleeps = self.root / "sleeps"
+        sleep = self.root / "bin/sleep"
+        sleep.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$*\" >> '{sleeps}'\n")
+        sleep.chmod(0o755)
+        calls = lambda: [line.split("\x1f")[:-1] for line in log.read_text().splitlines()] if log.exists() else []
+        waits = lambda: sleeps.read_text().splitlines() if sleeps.exists() else []
+        return calls, waits
+
+    STATE = ["--port", "/dev/cu.test", "--timeout", "2", "state"]
+    APP = ["--port", "/dev/cu.test", "--timeout", "5", "app", "agent"]
+    FALLBACK = "the pet is running and starts it at the next reset"
+
+    def test_a_pet_that_never_answers_is_asked_ten_times_then_left_to_start_the_agent(self):
+        calls, waits = self.scripted_debug(state_failures=99)
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(calls(), [self.STATE] * 10)  # never "app agent"
+        self.assertEqual(waits(), ["1"] * 9)  # none after the last try
+        self.assertIn(self.FALLBACK, result.stdout)
+        self.assertNotIn("default app from now on", result.stdout)
+        self.assertNotIn("pet state on stdout", result.stdout)
+
+    def test_a_pet_that_answers_late_is_handed_the_agent_once(self):
+        calls, waits = self.scripted_debug(state_failures=3)
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(calls(), [self.STATE] * 4 + [self.APP])
+        self.assertEqual(waits(), ["1"] * 3)
+        self.assertIn("default app from now on", result.stdout)
+        self.assertNotIn("app on stdout", result.stdout)
+
+    def test_a_refused_app_agent_is_not_retried_and_leaves_the_pet_running(self):
+        calls, waits = self.scripted_debug(app_status=4)
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        # The agent is written and the pet starts it at its next reset (ADR-015), so the
+        # command succeeds and says how to hand over by hand.
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(calls(), [self.STATE, self.APP])
+        self.assertEqual(waits(), [])
+        self.assertIn(self.FALLBACK, result.stdout)
+        self.assertIn("scripts/jelli-debug --port PORT app agent", result.stdout)
+        self.assertNotIn("default app from now on", result.stdout)
+
+    def test_a_debug_client_that_is_not_executable_is_skipped(self):
+        calls, waits = self.scripted_debug()
+        (self.repo / "scripts/jelli-debug").chmod(0o644)
+        result = self.run_esp("flash-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((calls(), waits()), ([], []))
+        self.assertIn(self.FALLBACK, result.stdout)
+
+    def test_no_hand_over_after_a_failed_write_or_reset(self):
+        for step in ("write_partition", "chip_id"):
+            with self.subTest(step=step):
+                calls, waits = self.scripted_debug()
+                self.record_calls(fail_on=step)
+                self.assertEqual(self.run_esp("flash-agent", "/dev/cu.test", app="agent").returncode, 3)
+                self.assertEqual((calls(), waits()), ([], []))
+
+    def test_unusual_ports_reach_the_debug_client_as_one_argument(self):
+        for port in ("/dev/cu.my port", "-rf", "--help", "/dev/cu.*", "$(touch pwned)"):
+            with self.subTest(port=port):
+                (self.root / "debug-calls").unlink(missing_ok=True)
+                calls, _ = self.scripted_debug()
+                self.assertEqual(self.run_esp("flash-agent", port, app="agent").returncode, 0)
+                self.assertEqual(calls(), [["--port", port, *self.STATE[2:]], ["--port", port, *self.APP[2:]]])
+                self.assertFalse((self.repo / "pwned").exists() or Path("pwned").exists())
+
+    def ordered_tools(self, fail_on=None):
+        """Make idf.py and the SDK's python log to one file, in order, one call per line
+        (arguments separated by US); a call exits 3 when an argument equals ``fail_on``."""
+        log = self.root / "tool-calls"
+        check = f'for a in "$@"; do [ "$a" = {shlex.quote(fail_on)} ] && exit 3; done\n' if fail_on else ""
+        for name in ("idf.py", "python"):
+            (self.root / "bin" / name).write_text(
+                "#!/bin/sh\n"
+                f"printf '%s\\037' {name} >> '{log}'\n"
+                f"for a in \"$@\"; do printf '%s\\037' \"$a\"; done >> '{log}'\n"
+                f"printf '\\n' >> '{log}'\n{check}exit 0\n")
+        return lambda: [line.split("\x1f")[:-1] for line in log.read_text().splitlines()] if log.exists() else []
+
+    def install_steps(self, port):
+        """What install-agent runs: build, flash (layout A's table included), erase ota_0
+        (staying in download mode), then one reset."""
+        build = self.repo / "build/esp32-agent"
+        idf = ["idf.py", "-C", str(self.repo / "ports/esp32-agent"), "-B", str(build),
+               "-DIDF_TARGET=esp32s3", "-DJELLI_ESP_BOARD=1.75"]
+        erase = ["python", str(self.repo / ".tools/esp-idf/components/partition_table/parttool.py"),
+                 "--port", port, "--esptool-args=after=no_reset", "erase_partition", "--partition-name", "ota_0"]
+        return [idf + ["build"], idf + ["-p", port, "flash"], erase, ["python", *START_APP(port)]]
+
+    def test_install_agent_builds_flashes_then_empties_ota_0(self):
+        # ADR-015: an older agent left in ota_0 would be started by a pet flashed later.
+        calls = self.ordered_tools()
+        result = self.run_esp("install-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(calls(), self.install_steps("/dev/cu.test"))
+        self.assertIn("installed alone", result.stdout)
+
+    def test_a_failed_install_step_stops_the_rest_and_claims_no_success(self):
+        # A failed build flashes nothing; a failed flash erases nothing; a failed erase
+        # is not hidden by a reset.
+        for step, ran in (("build", 1), ("flash", 2), ("erase_partition", 3), ("chip_id", 4)):
+            with self.subTest(step=step):
+                (self.root / "tool-calls").unlink(missing_ok=True)
+                calls = self.ordered_tools(fail_on=step)
+                result = self.run_esp("install-agent", "/dev/cu.test", app="agent")
+                self.assertEqual(result.returncode, 3)
+                self.assertEqual(calls(), self.install_steps("/dev/cu.test")[:ran])
+                self.assertNotIn("installed alone", result.stdout)
+
+    def test_install_agent_passes_unusual_ports_as_one_argument(self):
+        for port in ("/dev/cu.my port", "-rf", "--help", "/dev/cu.*", "$(touch pwned)", "flash"):
+            with self.subTest(port=port):
+                (self.root / "tool-calls").unlink(missing_ok=True)
+                calls = self.ordered_tools()
+                result = self.run_esp("install-agent", port, app="agent")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(calls(), self.install_steps(port))
+                self.assertFalse((self.repo / "pwned").exists() or Path("pwned").exists())
+
+    def test_install_agent_refuses_invalid_boards_before_any_tool(self):
+        for board in INVALID:
+            with self.subTest(board=board):
+                result = self.run_esp("install-agent", "/dev/cu.test", board=board, app="agent")
+                self.assertIn(f"Unknown JELLI_ESP_BOARD '{board}'", result.stderr)
+                self.assert_refused(result, "expected 1.75 or 1.75c")
+
+    def test_install_agent_never_asks_the_pet_to_hand_over(self):
+        calls, waits = self.scripted_debug()
+        result = self.run_esp("install-agent", "/dev/cu.test", app="agent")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((calls(), waits()), ([], []))
+
+    def test_install_agent_writes_the_agent_alone_with_idf_flash(self):
+        # The agent builds with layout A's table, so idf.py flash puts it in factory
+        # and blanks otadata; no data partition is written.
+        result = self.run_esp("install-agent", "/dev/cu.test", board="1.75c", app="agent")
+        self.assert_board(result, "1.75c", "agent")
+        self.assertEqual(self.idf_arguments()[-3:], ["-p", "/dev/cu.test", "flash"])
+        self.assertIn("installed alone", result.stdout)
+
+    def test_install_agent_requires_the_agent_app_and_one_port(self):
+        self.assert_refused(self.run_esp("install-agent", "/dev/null"), "JELLI_ESP_APP=agent")
+        self.assert_refused(self.run_esp("install-agent", app="agent"), "JELLI_ESP_APP=agent")
+        self.assert_refused(self.run_esp("install-agent", "/dev/a", "/dev/b", app="agent"),
+                            "JELLI_ESP_APP=agent")
 
     def test_boot_selects_an_app_through_otadata(self):
         for app, expected in (("pet", ["erase_otadata"]), ("agent", ["switch_ota_partition", "--slot", "0"])):

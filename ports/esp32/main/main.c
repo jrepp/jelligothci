@@ -188,5 +188,6 @@ void app_main(void)
     if (!jelli_sound_output_init())
         ESP_LOGW(TAG, "Sound unavailable; game remains playable");
     jelli_debug_wire_init();
+    jelli_esp_app_switch_default(); /* The agent comes back at the next reset (ADR-015). */
     run_engine(&engine, &board, &session, &power);
 }
