@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "screen.h"
 #include "ui_art.h"
+#include "ui_controls.h"
 #include "jelli/agent_scene.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -118,7 +119,12 @@ static void ui_task(void *unused)
         if (atomic_load(&held))
             continue;
         now = esp_timer_get_time();
-        bool all = atomic_exchange(&redraw, false);
+        JelliSurface s = surface();
+        bool covered = false;
+        /* Settings or a dark screen: the unicorn waits, and is redrawn whole after. */
+        if (jelli_agent_ui_controls_tick(&s, (uint64_t)now / 1000u, &covered) != JELLI_UI_UNICORN)
+            continue;
+        bool all = atomic_exchange(&redraw, false) || covered;
         int asked = atomic_exchange(&requested, NONE);
         if (asked != NONE || (!shown.prancing && now >= wander_at)) {
             routine = asked != NONE ? (JelliPranceRoutine)asked : JELLI_PRANCE_WANDER;
@@ -143,6 +149,9 @@ bool jelli_agent_ui_prepare(void)
 {
     canvas = heap_caps_calloc((size_t)SIDE * SIDE, sizeof(uint16_t), MALLOC_CAP_SPIRAM);
     prepared = canvas && jelli_agent_ui_art_prepare(&art);
+    /* Touch, the side button, and Settings' errands; the unicorn runs without them. */
+    if (prepared && !jelli_agent_ui_controls_start())
+        ESP_LOGW(TAG, "Touch, the side button, or Settings is unavailable");
     if (!prepared) {
         heap_caps_free(canvas);
         canvas = NULL;
@@ -172,6 +181,7 @@ void jelli_agent_ui_hold(bool hold)
 
 void jelli_agent_ui_state(JelliLokiState state)
 {
+    jelli_agent_ui_controls_state(state);
     if (state == JELLI_LOKI_STATE_SUCCESS)
         atomic_store(&requested, JELLI_PRANCE_CELEBRATE);
 }

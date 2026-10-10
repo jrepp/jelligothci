@@ -151,6 +151,77 @@ static void wake_guard(void)
     CHECK(!jelli_pet_screen_guarded(&screen, 1100u));
 }
 
+/* Another app's idle time (the coding agent's two minutes); zero keeps the pet's. */
+static void chosen_idle_time(void)
+{
+    JelliPetScreen screen;
+    jelli_pet_screen_init_idle(&screen, 500u, 120000u);
+    CHECK(jelli_pet_screen_remaining(&screen, 500u) == 120000u);
+    CHECK(jelli_pet_screen_remaining(&screen, 400u) == 120000u); /* A regressing clock. */
+    CHECK(!jelli_pet_screen_idle(&screen, 500u + 119999u));
+    CHECK(jelli_pet_screen_idle(&screen, 500u + 120000u) && screen.asleep);
+    CHECK(jelli_pet_screen_wake_tap(&screen, 10, 10, 130000u) == false);
+    CHECK(jelli_pet_screen_wake_tap(&screen, 12, 12, 130100u) && !screen.asleep);
+    CHECK(!jelli_pet_screen_idle(&screen, 130100u + 119999u)); /* The wake restarted it. */
+    CHECK(jelli_pet_screen_idle(&screen, 130100u + 120000u));
+    jelli_pet_screen_init_idle(&screen, 0u, 0u);
+    CHECK(jelli_pet_screen_remaining(&screen, 0u) == JELLI_SCREEN_SLEEP_MS);
+    JelliPetScreen zeroed = {0}; /* Never initialised: still the pet's time, not instant. */
+    CHECK(!jelli_pet_screen_idle(&zeroed, JELLI_SCREEN_SLEEP_MS - 1u));
+    jelli_pet_screen_init_idle(NULL, 0u, 1u);
+}
+
+/* The chosen idle time at its extremes, kept through sleep, wake, and activity, and
+ * reset by the pet's own init. */
+static void chosen_idle_edges(void)
+{
+    JelliPetScreen screen;
+    jelli_pet_screen_init_idle(&screen, 0u, 1u); /* The shortest: one millisecond. */
+    CHECK(jelli_pet_screen_remaining(&screen, 0u) == 1u && !jelli_pet_screen_idle(&screen, 0u));
+    CHECK(jelli_pet_screen_idle(&screen, 1u));
+    jelli_pet_screen_init_idle(&screen, 0u, UINT64_MAX); /* The longest never overflows. */
+    CHECK(jelli_pet_screen_remaining(&screen, UINT64_MAX - 1u) == 1u);
+    CHECK(!jelli_pet_screen_idle(&screen, UINT64_MAX - 1u));
+    CHECK(jelli_pet_screen_idle(&screen, UINT64_MAX));
+    jelli_pet_screen_init_idle(&screen, UINT64_MAX - 10u, 120000u); /* Late in the clock. */
+    CHECK(jelli_pet_screen_remaining(&screen, UINT64_MAX) == 120000u - 10u);
+    CHECK(!jelli_pet_screen_idle(&screen, UINT64_MAX));
+    jelli_pet_screen_init_idle(&screen, 0u, 120000u);
+    jelli_pet_screen_set(&screen, true, 10u);
+    CHECK(!jelli_pet_screen_wake_tap(&screen, 0, 0, 20u) &&
+          jelli_pet_screen_wake_tap(&screen, 0, 0, 30u));
+    jelli_pet_screen_cancel_tap(&screen);
+    (void)jelli_pet_screen_guarded(&screen, 5000u);
+    jelli_pet_screen_activity(&screen, 40u);
+    CHECK(screen.idle_ms == 120000u && jelli_pet_screen_remaining(&screen, 40u) == 120000u);
+    jelli_pet_screen_init(&screen, 0u); /* The pet's init: its own time again. */
+    CHECK(screen.idle_ms == 0u && jelli_pet_screen_remaining(&screen, 0u) == JELLI_SCREEN_SLEEP_MS);
+}
+
+/* Seeded: for any idle time and activity, sleep comes exactly when the idle time has
+ * passed since the last activity, and remaining counts down to it. */
+static void chosen_idle_property(void)
+{
+    uint32_t state = 0x9e3779b9u;
+    for (unsigned run = 0u; run < 400u; ++run) {
+        state = state * 1664525u + 1013904223u;
+        uint64_t idle = 1u + state % 300000u, now = state % 1000u, activity = now;
+        JelliPetScreen screen;
+        jelli_pet_screen_init_idle(&screen, now, idle);
+        for (unsigned step = 0u; step < 60u && !screen.asleep; ++step) {
+            state = state * 1664525u + 1013904223u;
+            now += state % (idle / 4u + 2u);
+            if (state & 0x10000u) {
+                jelli_pet_screen_activity(&screen, now);
+                activity = now;
+            }
+            uint64_t left = jelli_pet_screen_remaining(&screen, now);
+            CHECK(left == (now - activity >= idle ? 0u : idle - (now - activity)));
+            CHECK(jelli_pet_screen_idle(&screen, now) == (now - activity >= idle));
+        }
+    }
+}
+
 static void null_safety(void)
 {
     jelli_pet_screen_init(NULL, 0u);
@@ -170,6 +241,9 @@ int main(void)
     double_tap_window();
     double_tap_distance();
     wake_guard();
+    chosen_idle_time();
+    chosen_idle_edges();
+    chosen_idle_property();
     null_safety();
     printf("Screen sleep policy checks passed; state=%zu bytes\n", sizeof(JelliPetScreen));
     return 0;

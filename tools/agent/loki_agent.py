@@ -98,6 +98,28 @@ def loki_line(args):
     return f"loki {args.action}", 0.0
 
 
+def ui_line(args):
+    """The unicorn's routines, and Settings' side button, taps, and drags (ADR-016)."""
+    values = list(args.values)
+    if args.action == "prance":
+        if values not in (["wander"], ["celebrate"]):
+            raise AgentError("ui prance takes wander or celebrate")
+        return f"ui prance {values[0]}"
+    if args.action == "button":
+        if values:
+            raise AgentError("ui button takes no more words")
+        return "ui button"
+    if args.action == "tap":
+        if len(values) != 2 or not all(v.isascii() and v.isdigit() and int(v) < 466 for v in values):
+            raise AgentError("ui tap takes X and Y, each 0..465")
+        return f"ui tap {int(values[0])} {int(values[1])}"
+    if (len(values) != 2 or values[0] not in ("up", "down") or not values[1].isascii()
+            or not values[1].isdigit()
+            or not 1 <= int(values[1]) <= 466):
+        raise AgentError("ui drag takes up or down and 1..466 pixels")
+    return f"ui drag {values[0]} {int(values[1])}"
+
+
 def command_line(args):
     """Returns the console command and the extra seconds it needs to finish."""
     if args.command == "hello":
@@ -111,7 +133,9 @@ def command_line(args):
     if args.command == "render":
         return f"render bench {args.mode} {args.seconds}", float(args.seconds)
     if args.command == "ui":
-        return f"ui prance {args.routine}", 0.0
+        return ui_line(args), 0.0
+    if args.command == "screen":
+        return f"screen {args.action}", 0.0
     if args.what in ("pwr", "te"):
         if args.ms is None:
             raise AgentError(f"probe {args.what} needs a duration in milliseconds")
@@ -145,9 +169,12 @@ def main():
     loki = commands.add_parser("loki", help="The link to Loki Bridge")
     loki.add_argument("action", choices=("status", "inbox", "answer", "ptt", "cancel"))
     loki.add_argument("value", nargs="?", help="ptt: start or stop; answer: the option, 0 to 3")
-    ui = commands.add_parser("ui", help="The unicorn: prance now (it also does now and then)")
-    ui.add_argument("action", choices=("prance",))
-    ui.add_argument("routine", choices=("wander", "celebrate"))
+    ui = commands.add_parser("ui", help="Prance now; or press the side button, tap X Y, or drag "
+                                        "up|down PX on the screen")
+    ui.add_argument("action", choices=("prance", "button", "tap", "drag"))
+    ui.add_argument("values", nargs="*", help="prance: wander|celebrate; tap: X Y; drag: up|down PX")
+    screen = commands.add_parser("screen", help="Screen sleep: status, or sleep or wake it now")
+    screen.add_argument("action", choices=("status", "sleep", "wake"))
     render = commands.add_parser("render", help="Time the 384 px unicorn animation (it stays on screen)")
     render.add_argument("action", choices=("bench",))
     render.add_argument("mode", choices=("full", "bob", "patch"))
@@ -158,10 +185,14 @@ def main():
     args = parser.parse_args()
     if not 0.1 <= args.timeout <= 30:
         parser.error("--timeout must be between 0.1 and 30 seconds")
+    try:
+        command, extra = command_line(args)  # Checked before any port opens.
+    except AgentError as exc:
+        print(f"loki-agent: {exc}", file=sys.stderr)
+        return 1
     import serial
     wire = None
     try:
-        command, extra = command_line(args)
         wire = serial.Serial(port=None, baudrate=115200, timeout=0.05, write_timeout=args.timeout)
         # Native ESP32 USB Serial/JTAG: keep both lines asserted, as jelli-debug does;
         # deasserting them on macOS resets the board on every open.

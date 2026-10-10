@@ -29,7 +29,8 @@ target_include_directories(jelli_core PUBLIC include)
 add_library(jelli_agent_core STATIC core/agent/args.c core/agent/console.c core/agent/loki.c
   core/agent/loki_canonical.c core/agent/loki_json.c core/agent/loki_out.c
   core/agent/loki_schema.c core/agent/pcm.c core/agent/pmu.c
-  core/agent/present.c core/agent/sha256.c)
+  core/agent/present.c core/agent/sha256.c core/agent/touch.c core/agent/prefs.c
+  core/agent/prefs_keys.c)
 target_include_directories(jelli_agent_core PUBLIC include)
 add_executable(jelli_sound_export tools/audio/export.c)
 target_link_libraries(jelli_sound_export PRIVATE jelli_core)
@@ -124,6 +125,16 @@ if(BUILD_TESTING)
   add_executable(jelli_agent_present_tests tests/test_agent_present.c)
   target_link_libraries(jelli_agent_present_tests PRIVATE jelli_agent_core)
   add_test(NAME agent_present COMMAND jelli_agent_present_tests)
+  # Loki Agent's Settings and touches (ADR-016): logic only, no art needed.
+  foreach(suite prefs prefs_fuzz prefs_props prefs_flow prefs_alike touch touch_props)
+    add_executable(jelli_agent_${suite}_tests tests/test_agent_${suite}.c)
+    target_link_libraries(jelli_agent_${suite}_tests PRIVATE jelli_agent_core)
+    add_test(NAME agent_${suite} COMMAND jelli_agent_${suite}_tests)
+  endforeach()
+  # Typing against a model, with the screen's sleep closing Settings as the firmware does.
+  add_executable(jelli_agent_prefs_model_tests tests/test_agent_prefs_model.c core/pet_screen.c)
+  target_link_libraries(jelli_agent_prefs_model_tests PRIVATE jelli_agent_core)
+  add_test(NAME agent_prefs_model COMMAND jelli_agent_prefs_model_tests)
   if(JELLI_BUILD_SDL)
     add_executable(jelli_pet_gallery_tests tests/test_pet_gallery.c)
     target_link_libraries(jelli_pet_gallery_tests PRIVATE jelli_pet)
@@ -254,6 +265,22 @@ if(BUILD_TESTING)
       target_link_libraries(jelli_agent_prance_art_tests PRIVATE m)
     endif()
     add_test(NAME agent_prance_art COMMAND jelli_agent_prance_art_tests)
+    # Settings drawn in the agent's real font (ADR-016); given a folder, it writes
+    # each screen there as a BMP preview.
+    add_executable(jelli_agent_prefs_draw_tests tests/test_agent_prefs_draw.c
+      core/agent/draw.c core/agent/lowercase.c core/agent/prefs_draw.c core/agent/prefs_parts.c
+      core/asset_source.c
+      ${agent_test_assets})
+    target_link_libraries(jelli_agent_prefs_draw_tests PRIVATE jelli_agent_core jelli_core)
+    add_test(NAME agent_prefs_draw COMMAND jelli_agent_prefs_draw_tests)
+    # The drawing primitives and font white-box, and Settings drawn from fuzzed states.
+    foreach(suite draw text prefs_screens)
+      add_executable(jelli_agent_${suite}_tests tests/test_agent_${suite}.c
+        core/agent/draw.c core/agent/lowercase.c core/agent/prefs_draw.c
+        core/agent/prefs_parts.c core/asset_source.c ${agent_test_assets})
+      target_link_libraries(jelli_agent_${suite}_tests PRIVATE jelli_agent_core jelli_core)
+      add_test(NAME agent_${suite} COMMAND jelli_agent_${suite}_tests)
+    endforeach()
     add_executable(jelli_pet_hires_layout_tests tests/test_pet_hires_layout.c)
     target_link_libraries(jelli_pet_hires_layout_tests PRIVATE jelli_pet)
     add_test(NAME pet_hires_layout COMMAND jelli_pet_hires_layout_tests)

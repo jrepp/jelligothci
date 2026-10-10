@@ -6,6 +6,7 @@
 #include "probe.h"
 #include "render_bench.h"
 #include "ui.h"
+#include "ui_controls.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -65,6 +66,7 @@ void jelli_agent_command(const JelliAgentRequest *request, char *out, size_t cap
     else if (jelli_agent_command_render(request, out, capacity) ||
              jelli_agent_command_pair(request, out, capacity) ||
              jelli_agent_command_loki(request, out, capacity) ||
+             jelli_agent_command_controls(request, out, capacity) ||
              jelli_agent_command_ui(request, out, capacity))
         return; /* The command wrote its reply. */
     else if (!jelli_agent_command_setup(request, out, capacity))

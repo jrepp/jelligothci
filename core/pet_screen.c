@@ -3,8 +3,18 @@
 
 void jelli_pet_screen_init(JelliPetScreen *screen, uint64_t now_ms)
 {
+    jelli_pet_screen_init_idle(screen, now_ms, 0u);
+}
+
+void jelli_pet_screen_init_idle(JelliPetScreen *screen, uint64_t now_ms, uint64_t idle_ms)
+{
     if (screen)
-        *screen = (JelliPetScreen){.activity_ms = now_ms};
+        *screen = (JelliPetScreen){.activity_ms = now_ms, .idle_ms = idle_ms};
+}
+
+static uint64_t idle_limit(const JelliPetScreen *screen)
+{
+    return screen->idle_ms ? screen->idle_ms : JELLI_SCREEN_SLEEP_MS;
 }
 
 void jelli_pet_screen_activity(JelliPetScreen *screen, uint64_t now_ms)
@@ -33,7 +43,7 @@ bool jelli_pet_screen_idle(JelliPetScreen *screen, uint64_t now_ms)
         screen->activity_ms = now_ms;
         return false;
     }
-    if (now_ms - screen->activity_ms < JELLI_SCREEN_SLEEP_MS)
+    if (now_ms - screen->activity_ms < idle_limit(screen))
         return false;
     jelli_pet_screen_set(screen, true, now_ms);
     return true;
@@ -43,10 +53,11 @@ uint64_t jelli_pet_screen_remaining(const JelliPetScreen *screen, uint64_t now_m
 {
     if (!screen || screen->asleep)
         return 0u;
+    uint64_t limit = idle_limit(screen);
     if (now_ms < screen->activity_ms)
-        return JELLI_SCREEN_SLEEP_MS; /* jelli_pet_screen_idle will re-anchor here. */
+        return limit; /* jelli_pet_screen_idle will re-anchor here. */
     uint64_t idle = now_ms - screen->activity_ms;
-    return idle >= JELLI_SCREEN_SLEEP_MS ? 0u : JELLI_SCREEN_SLEEP_MS - idle;
+    return idle >= limit ? 0u : limit - idle;
 }
 
 /* Bounds each axis first so the squared distance cannot overflow for any int input. */

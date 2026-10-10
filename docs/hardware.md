@@ -185,6 +185,23 @@ spike link and server, since replaced by `loki/1`
 Credentials go to the board as hex over USB and are stored in `agent_nvs`, in
 plain text like the rest of the flash (flash encryption is a separate decision).
 The board never echoes them; `wifi status` shows only the network name as hex.
+
+The board can also join Wi-Fi by itself
+([ADR-016](../docs-cms/adr/adr-016-on-device-settings-wifi-and-screen-sleep.md)).
+On the 1.75C, the side button that is not power (BOOT) opens Settings, which shows
+the network in use; tap it to list the networks nearby, then tap one and type its
+password on the on-screen keyboard. The board tries the network first and keeps it
+only if it connects; otherwise it stays on the old one and says why. The screen
+goes dark after two idle minutes; a double tap or the side button wakes it. Over the
+console:
+
+```sh
+./scripts/loki-agent --port <port> screen status         # asleep, Settings' screen, networks listed
+./scripts/loki-agent --port <port> screen sleep          # or wake
+./scripts/loki-agent --port <port> ui button             # as if the side button were pressed
+./scripts/loki-agent --port <port> ui tap 233 188        # a tap on the panel (here, Settings' Wi-Fi)
+./scripts/loki-agent --port <port> ui drag up 48         # scroll the network list a row
+```
 Wi-Fi keeps its driver state in RAM and calibrates at each start
 (`CONFIG_ESP_WIFI_NVS_ENABLED` and `CONFIG_ESP_PHY_CALIBRATION_AND_DATA_STORAGE`
 off; `wifi.c` refuses to build otherwise), so the agent never opens the pet's `nvs`.

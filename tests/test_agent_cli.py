@@ -202,6 +202,48 @@ class CommandLineTests(unittest.TestCase):
         with self.assertRaisesRegex(agent.AgentError, "takes no duration"):
             agent.command_line(self.args(what="chip", ms=10))
 
+    def ui(self, action, *values):
+        return argparse.Namespace(command="ui", action=action, values=list(values))
+
+    def test_ui_drives_settings_and_the_unicorn(self):
+        self.assertEqual(agent.command_line(self.ui("prance", "wander")), ("ui prance wander", 0.0))
+        self.assertEqual(agent.command_line(self.ui("button")), ("ui button", 0.0))
+        self.assertEqual(agent.command_line(self.ui("tap", "0", "465")), ("ui tap 0 465", 0.0))
+        self.assertEqual(agent.command_line(self.ui("drag", "up", "48")), ("ui drag up 48", 0.0))
+        self.assertEqual(agent.command_line(argparse.Namespace(command="screen", action="sleep")),
+                         ("screen sleep", 0.0))
+        bad = (("prance",), ("prance", "jump"), ("button", "now"), ("tap", "1"), ("tap", "466", "2"),
+               ("tap", "-1", "2"), ("tap", "a", "b"), ("drag", "left", "5"), ("drag", "up", "0"),
+               ("drag", "down", "467"), ("drag", "up"), ("tap", "\u00b2", "1"), ("drag", "up", "\u0663"))
+        for values in bad:
+            with self.subTest(values=values):
+                with self.assertRaises(agent.AgentError):
+                    agent.command_line(self.ui(*values))
+
+    def test_ui_numbers_at_their_edges(self):
+        self.assertEqual(agent.command_line(self.ui("tap", "465", "0")), ("ui tap 465 0", 0.0))
+        self.assertEqual(agent.command_line(self.ui("tap", "007", "08")), ("ui tap 7 8", 0.0))
+        self.assertEqual(agent.command_line(self.ui("drag", "down", "1")), ("ui drag down 1", 0.0))
+        self.assertEqual(agent.command_line(self.ui("drag", "up", "466")), ("ui drag up 466", 0.0))
+        for values in (("tap", "1", "2", "3"), ("tap", "+1", "2"), ("tap", " 1", "2"),
+                       ("tap", "1.0", "2"), ("drag", "up", "-5"), ("drag", "UP", "5"),
+                       ("drag", "down", "5", "6"), ("button", "")):
+            with self.subTest(values=values):
+                with self.assertRaises(agent.AgentError):
+                    agent.command_line(self.ui(*values))
+        for action in ("status", "sleep", "wake"):
+            with self.subTest(action=action):
+                args = argparse.Namespace(command="screen", action=action)
+                self.assertEqual(agent.command_line(args), (f"screen {action}", 0.0))
+
+    def test_ui_rejects_unicode_digits_as_a_usage_error(self):
+        # Regression: str.isdigit() accepts digits int() cannot parse ("\u00b2"), which
+        # once ended in a ValueError traceback rather than this usage error.
+        for values in (("tap", "\u00b2", "5"), ("tap", "5", "\uff15"), ("drag", "up", "\u00b2")):
+            with self.subTest(values=values):
+                with self.assertRaises(agent.AgentError):
+                    agent.command_line(self.ui(*values))
+
     def test_main_rejects_bad_arguments_before_opening_any_port(self):
         cases = (["--timeout", "0", "hello"], ["--timeout", "31", "hello"], ["boot", "agent"],
                  ["probe", "flash"], ["probe", "te", "soon"], [])
@@ -298,16 +340,25 @@ class CommandLineTests(unittest.TestCase):
     def test_ui_prance_names_a_routine(self):
         for routine in ("wander", "celebrate"):
             with self.subTest(routine=routine):
-                args = self.args(command="ui", action="prance", routine=routine)
+                args = self.args(command="ui", action="prance", values=[routine])
                 self.assertEqual(agent.command_line(args), (f"ui prance {routine}", 0.0))
-        for arguments in (["ui", "prance", "dance"], ["ui", "spin", "wander"], ["ui", "prance"],
-                          ["ui", "prance", "wander;boot"]):
+        for arguments in (["ui", "spin", "wander"], ["screen", "off"]):  # Not a verb at all.
             with self.subTest(arguments=arguments):
                 argv = ["loki-agent", "--port", "/dev/null", *arguments]
                 with unittest.mock.patch.object(sys, "argv", argv), \
                         contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
                     agent.main()
                 self.assertEqual(raised.exception.code, 2)
+        # A known verb with the wrong words fails before any port opens.
+        for arguments in (["ui", "prance", "dance"], ["ui", "prance"], ["ui", "prance", "wander;boot"],
+                          ["ui", "tap", "500", "1"], ["ui", "drag", "sideways", "4"],
+                          ["ui", "button", "twice"]):
+            with self.subTest(arguments=arguments):
+                argv = ["loki-agent", "--port", "/dev/null", *arguments]
+                with unittest.mock.patch.object(sys, "argv", argv), \
+                        contextlib.redirect_stderr(io.StringIO()) as err:
+                    self.assertEqual(agent.main(), 1)
+                self.assertIn("loki-agent: ui ", err.getvalue())
 
     def test_render_bench_waits_for_its_duration(self):
         for mode in ("full", "bob", "patch"):

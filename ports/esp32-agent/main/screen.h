@@ -14,4 +14,8 @@ bool jelli_agent_screen_start(void);
  * at a time. False once a transfer has timed out: the stripe is then never reused. */
 bool jelli_agent_screen_present(const JelliSurface *surface, JelliRect rect);
 
+/* The panel's light on (the usual brightness) or off, for screen sleep (ADR-016):
+ * present a black frame first, so nothing shows even at a faint level. Any task. */
+bool jelli_agent_screen_light(bool on);
+
 #endif

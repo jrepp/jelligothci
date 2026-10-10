@@ -7,7 +7,8 @@
 /* Screen sleep turns the display off; it is unrelated to the pet's own sleep
  * (JelliPet.asleep). The game keeps running while the screen is dark. */
 
-/* Idle time without polled input before the screen goes dark. */
+/* Idle time without polled input before the screen goes dark (the pet's; another
+ * app can choose its own with jelli_pet_screen_init_idle). */
 #define JELLI_SCREEN_SLEEP_MS 180000u
 /* A wake double tap: the second tap within this many ms of the first... */
 #define JELLI_SCREEN_DOUBLE_TAP_MS 500u
@@ -21,6 +22,7 @@ typedef struct {
     uint64_t activity_ms; /* Last counted input while awake; the idle timer anchor. */
     uint64_t tap_ms;      /* Candidate first tap of a wake double tap. */
     uint64_t wake_ms;     /* When a double tap last woke the screen. */
+    uint64_t idle_ms;     /* Idle time before sleep; zero means JELLI_SCREEN_SLEEP_MS. */
     int tap_x, tap_y;
     bool asleep, tap_pending, wake_guard;
     bool reported_asleep; /* Last state handed to the host by the change query. */
@@ -28,6 +30,8 @@ typedef struct {
 
 /* Starts awake with the idle timer anchored at now_ms. */
 void jelli_pet_screen_init(JelliPetScreen *screen, uint64_t now_ms);
+/* The same, sleeping after idle_ms (zero for the default) instead. */
+void jelli_pet_screen_init_idle(JelliPetScreen *screen, uint64_t now_ms, uint64_t idle_ms);
 /* Counts user activity: restarts the idle timer (meaningful while awake). */
 void jelli_pet_screen_activity(JelliPetScreen *screen, uint64_t now_ms);
 /* Applies the idle rule; true exactly when this call puts the screen to sleep. */

@@ -99,6 +99,17 @@ bool jelli_agent_screen_start(void)
 
 static bool present(const JelliSurface *surface, JelliRect rect);
 
+bool jelli_agent_screen_light(bool on)
+{
+    if (!presenting)
+        return false;
+    /* Brightness goes over the panel's bus, which presents use too. */
+    xSemaphoreTake(presenting, portMAX_DELAY);
+    bool ok = panel && !stalled && bsp_display_brightness_set(on ? BRIGHTNESS : 0) == ESP_OK;
+    xSemaphoreGive(presenting);
+    return ok;
+}
+
 /* The UI task and the console's render bench both present; one at a time. */
 bool jelli_agent_screen_present(const JelliSurface *surface, JelliRect rect)
 {
