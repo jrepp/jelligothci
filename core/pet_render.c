@@ -58,6 +58,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.active_id = pet->id;
     key.stored_id = other->id;
     key.result = ui->result;
+    key.attempted_slot = ui->attempted_slot;
     for (unsigned i = 0u; i < JELLI_NEED_COUNT; ++i)
         key.needs[i] = pet->needs[i];
     key.bond = pet->bond;
@@ -120,9 +121,9 @@ static bool same_frame_key(const JelliPetRenderKey *a, const JelliPetRenderKey *
            a->clock_minute == b->clock_minute && a->menu_open == b->menu_open &&
            a->phase == b->phase && a->minute == b->minute && a->day == b->day &&
            a->active == b->active && a->count == b->count && a->page == b->page &&
-           a->result == b->result && a->save_status == b->save_status &&
-           a->time_unavailable == b->time_unavailable && a->paused == b->paused &&
-           a->resuming == b->resuming;
+           a->result == b->result && a->attempted_slot == b->attempted_slot &&
+           a->save_status == b->save_status && a->time_unavailable == b->time_unavailable &&
+           a->paused == b->paused && a->resuming == b->resuming;
 }
 
 static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)

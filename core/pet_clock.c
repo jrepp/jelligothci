@@ -13,7 +13,7 @@ uint16_t jelli_pet_clock_minute(const JelliPetUi *ui, const JelliPet *pet)
 
 bool jelli_pet_clock_button(bool editing, unsigned slot, JelliPetUiButton *button)
 {
-    static const char *const labels[] = {"TZ -", "TZ +", "HR -", "HR +", "MIN -", "MIN +"};
+    static const char *const labels[] = {"ZONE -", "ZONE +", "HOUR -", "HOUR +", "MIN -", "MIN +"};
     static const unsigned centers[6][2] = {{110, 111}, {356, 111}, {61, 233},
                                            {405, 233}, {110, 355}, {356, 355}};
     if (!editing) {

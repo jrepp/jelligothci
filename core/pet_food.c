@@ -10,7 +10,7 @@ bool jelli_pet_food_button(unsigned slot, JelliPetUiButton *button)
         return false;
     unsigned i = slot - 1u;
     *button = (JelliPetUiButton){.bounds = {95u + i % 3u * 96u, 88u + i / 3u * 96u, 84u, 84u},
-                                 .label = slot == 9u ? "MORE" : jelli_foods[i].name,
+                                 .label = slot == 9u ? "GET FOOD" : jelli_foods[i].name,
                                  .icon = slot == 9u ? 6001u : jelli_foods[i].icon,
                                  .scale = 2u};
     return true;
@@ -54,6 +54,11 @@ static void draw_food_button(Canvas *c, const JelliPetUi *ui, unsigned slot)
     c->dim = disabled;
     jelli_canvas_centered_sprite(c, b.icon, x + 42, y + 27, 2u);
     c->dim = false; /* Keep disabled labels readable; only the icon/border dims. */
+    if (slot == 9u) {
+        jelli_canvas_text(c, "GET", x + 18, y + 34, 2u, PALE);
+        jelli_canvas_text(c, "FOOD", x + 10, y + 58, 2u, PALE);
+        return;
+    }
     unsigned scale = strlen(b.label) <= 5u ? 2u : 1u;
     jelli_canvas_text(c, b.label, x + 42 - (int)strlen(b.label) * 4 * (int)scale, y + 56, scale,
                       PALE);
@@ -75,7 +80,7 @@ void jelli_pet_food_draw(Canvas *c, const JelliPetUi *ui)
         jelli_canvas_centered(c, "FRUIT: JUICY", 215, 2u, PALE);
         jelli_canvas_centered(c, "SOUP: HYDRATES", 242, 2u, PALE);
         jelli_canvas_rect(c, 95, 283, 182, 81, BG);
-        const char *first = !ui->last_view.food      ? "TAP MORE"
+        const char *first = !ui->last_view.food      ? "GET FOOD"
                             : ui->last_view.asleep   ? "WAKE PET"
                             : ui->last_view.activity ? "PET BUSY"
                                                      : "ONE FOOD";

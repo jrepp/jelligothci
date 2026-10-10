@@ -114,6 +114,7 @@ typedef struct {
     uint32_t stored_id;
     uint64_t day;
     JelliResult result;
+    uint8_t attempted_slot;
     uint16_t needs[JELLI_NEED_COUNT];
     uint16_t bond, hydration;
     uint8_t volume;
@@ -157,6 +158,7 @@ typedef struct {
     int actor_x, actor_y;
     uint32_t clicker_pet, routine_random, tuning_revision, tuning_pet;
     JelliResult result;
+    uint8_t attempted_slot;
     uint32_t result_until_ms, last_revision, coo_pet;
     JelliRect actor_bounds;
     JelliParticles particles;

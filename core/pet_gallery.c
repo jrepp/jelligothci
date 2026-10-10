@@ -151,7 +151,7 @@ bool jelli_pet_gallery_same(const JelliPetRenderKey *a, const JelliPetRenderKey 
 void jelli_pet_gallery_draw(Canvas *c, const JelliPetRenderKey *v)
 {
     jelli_canvas_heading(c, "PRESENTS", 22, 3u);
-    jelli_canvas_centered(c, "TAP A PRESENT TO HOLD", 61, 1u, MINT);
+    jelli_canvas_centered(c, "TAP OWNED TO HOLD", 58, 2u, PALE);
     for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i) {
         int x = 95 + (int)(i % 3u) * 96, y = 88 + (int)(i / 3u) * 96;
         bool owned = (v->prize_owned & (1u << i)) != 0u;
@@ -164,7 +164,9 @@ void jelli_pet_gallery_draw(Canvas *c, const JelliPetRenderKey *v)
         if (owned)
             jelli_canvas_disk(c, x + 71, y + 71, 5, MINT);
     }
-    if (v->highlighted_prize && v->highlighted_prize <= JELLI_PRIZE_COUNT)
+    if (v->result == JELLI_NO_ITEM)
+        jelli_canvas_caption(c, "PLAY TO FIND GIFTS", 376, PALE);
+    else if (v->highlighted_prize && v->highlighted_prize <= JELLI_PRIZE_COUNT)
         jelli_canvas_centered(c, names[v->highlighted_prize - 1u], 376, 1u, PALE);
 }
 
@@ -217,13 +219,14 @@ void jelli_pet_gallery_draw_action(Canvas *c, const JelliPetUi *ui, const JelliG
                          : available == JELLI_BUSY    ? "PET IS BUSY"
                          : available == JELLI_NO_ITEM ? "PRESENT NO LONGER HELD"
                                                       : "GIVE TO THIS PET";
-    jelli_canvas_centered(c, reason, 226, 1u, MINT);
+    jelli_canvas_caption(c, reason, 226, PALE);
     for (unsigned slot = 1u; slot <= 2u; ++slot) {
         JelliPetUiButton b;
         if (!jelli_pet_gallery_button(ui, slot, &b))
             continue;
-        c->dim = slot == 1u && available != JELLI_OK;
-        jelli_canvas_rect(c, (int)b.bounds.x, (int)b.bounds.y, (int)b.bounds.width, 64, TEAL);
+        bool disabled = slot == 1u && available != JELLI_OK;
+        jelli_canvas_rect(c, (int)b.bounds.x, (int)b.bounds.y, (int)b.bounds.width, 64,
+                          disabled ? INK : TEAL);
         jelli_canvas_centered(c, b.label, (int)b.bounds.y + 20, 2u, PALE);
         c->dim = false;
     }

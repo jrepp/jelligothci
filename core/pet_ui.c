@@ -15,7 +15,7 @@ typedef struct {
 
 /* Empty slots are neither drawn nor hit-tested. Slot IDs remain stable for debug clients. */
 static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
-                                      {JELLI_UI_ACTION_MOMENTS, "MOMENTS", NULL},
+                                      {JELLI_UI_ACTION_MOMENTS, "ACTIVITIES", NULL},
                                       {0},
                                       {0},
                                       {JELLI_UI_ACTION_COLLECTION, "GIFTS", NULL},
@@ -212,6 +212,7 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
             continue;
         if (!hit_button(&button, x, y))
             continue;
+        ui->attempted_slot = (uint8_t)slot;
         unsigned code = input_code(ui, slot, game->pets[game->active].asleep);
         JelliEventSnapshot before = jelli_game_observe(game, &game->pets[game->active]);
         uint32_t sequence = game->events ? game->events->sequence : 0u;

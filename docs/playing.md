@@ -280,7 +280,7 @@ Windows SDL build, install the pinned uv from `toolchain.env`, build/install SDL
 and configure CMake with its install directory in `CMAKE_PREFIX_PATH`.
 
 Settings now owns pet selection, sleep/wake, bedtime, and a large local/pet clock.
-Back and close use icon-only controls partly below the round screen. Ring icons
+Back and Close are labeled controls at the bottom of the round screen. Ring icons
 travel out/in on menu changes; CLI presses wait up to three seconds for the ring
 to settle. Shots take 1–3 taps, medicine one small dose; each has a per-pet hour
 cooldown. Shot progress survives menu changes. The desktop checkpoint codec now
@@ -296,7 +296,7 @@ and a clear dominant axis, and ambiguous drags do nothing.
 navigation over the debug interface; `up`, `down`, and `right` are also supported.
 
 Settings shows a smaller clock face with a gear button. Tap the gear for distinct
-TZ −/+, HR −/+, and MIN −/+ controls; Back returns to Settings. TZ changes a
+ZONE −/+, HOUR −/+, and MIN −/+ controls; Back returns to Settings. TZ changes a
 persisted offset relative to UTC (or the simulated pet clock when time is unknown)
 in 30-minute steps, bounded to −12/+14 hours. Hour and minute adjustments
 wrap at midnight. These affect the display, atmosphere, and moment suggestions;
@@ -396,14 +396,14 @@ cannot read v9; keep a backup before downgrading.
 ## Food, water, and exercise
 
 Care → Feed opens a grid of meals, fruit, and soup. Each costs one shared food
-item when eating finishes. When food runs out, tap MORE in the ninth grid
+item when eating finishes. When food runs out, tap GET FOOD in the ninth grid
 cell to refill five portions. Labels stay readable even when actions are disabled.
 Meals add 30 fullness points; fruit adds 15 fullness
 and 10 hydration; soup adds 22 fullness and 25 hydration. Care → Water fills
 hydration to 100 without spending food. Swipe the home stat tile to Hydration.
 Hydration slowly falls while awake and at one-quarter that rate while asleep.
 
-Moments → Exercise starts a ten-second barbell workout. Starting costs 15
+Activities → Exercise starts a ten-second barbell workout. Starting costs 15
 fullness, 20 hydration, and 5 energy points; completion adds 20 play points.
 The action is disabled while asleep, busy, or short of those resources. It uses
 fullness already eaten, so it does not spend another food inventory item. Costs
@@ -467,3 +467,23 @@ The home status shows CARE > BASIC CARE when the pet needs treatment. Open Menu,
 choose Care, then Basic Care. A RECOVERING countdown shows the remaining seconds
 until the pet is well (30 seconds from starting treatment). Water, food, and rest
 address their respective meters; they do not replace Basic Care treatment.
+
+## Menu labels and unavailable actions
+
+Every ring control now shows its action name alongside the icon, including when
+unavailable. Activities (formerly Moments) contains Breakfast, Tea, Going Out,
+Movie, and Exercise. Page headings identify the open menu. Bottom Back returns
+one level; Close leaves the root menu. Neither removes a held present: use Put
+Away on that present's action panel.
+
+Medicine and Shot remain visible while cooling down. Tapping either during its
+cooldown explains DOSE GIVEN - WAIT. Their existing one-hour cooldowns and shot
+progress are unchanged. An unavailable exercise explains whether to feed, offer
+water, or rest. A sleeping pet in an activity shows TOUCH PET TO WAKE.
+
+Settings shows Bedtime +1H, Pets, Rest/Wake, VOL −/+, and an EDIT clock control.
+The clock editor names Zone, Hour, and Minute adjustments; Zone changes by 30
+minutes. Food's GET FOOD button refills five portions when inventory is empty.
+
+The [complete menu audit](../docs-cms/memos/memo-030-menu-clarity-audit.md) records
+all pages, their actions, and the remaining physical-device verification.

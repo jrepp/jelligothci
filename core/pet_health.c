@@ -3,12 +3,6 @@
 #include "pet_collection.h"
 #include "pet_food.h"
 
-static bool health_hidden(const JelliPetUi *ui, unsigned slot)
-{
-    return ui->page == JELLI_UI_HEALTH && ((slot == 2u && (ui->last_view.care_blocked & 1u)) ||
-                                           (slot == 3u && (ui->last_view.care_blocked & 2u)));
-}
-
 bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
                           JelliPetUiButton *button)
 {
@@ -22,8 +16,6 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
         return true;
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot && (ui->clock_edit || slot == 4u))
         return jelli_pet_clock_button(ui->clock_edit, slot, button);
-    if (health_hidden(ui, slot))
-        return false;
     if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH) && slot == 1u &&
         ui->menu_open) {
         static const char *const labels[] = {"BRUSH TEETH", "MEDICINE", "SHOT",

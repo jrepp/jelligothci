@@ -1,5 +1,6 @@
 #include "jelli/pet_ui.h"
 #include "jelli/sound.h"
+#include "../core/pet_menu.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -249,9 +250,45 @@ static void recovery_progress(void)
     CHECK(ui.last_view.care_seconds == 0u && game.pets[0].health == JELLI_WELL);
 }
 
+static void menu_guidance(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    ui.menu_open = true;
+    ui.page = JELLI_UI_MOMENTS;
+    game.pets[0].needs[JELLI_SATIETY] = 0;
+    game.pets[0].hydration = 0;
+    game.pets[0].needs[JELLI_ENERGY] = 0;
+    jelli_pet_ui_tap(&ui, &game, 110, 355);
+    CHECK(ui.result == JELLI_NOT_READY && ui.attempted_slot == 5u);
+    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "CARE > FEED FIRST") == 0);
+    game.pets[0].needs[JELLI_SATIETY] = 500;
+    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "CARE > WATER FIRST") == 0);
+    game.pets[0].hydration = 500;
+    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "REST FOR ENERGY") == 0);
+    ui.page = JELLI_UI_HEALTH;
+    game.pets[0].medicine_until = 36000u;
+    JelliPetUiButton button;
+    CHECK(jelli_pet_ui_control(&ui, 2u, false, &button));
+    jelli_pet_ui_tap(&ui, &game, 356, 111);
+    CHECK(ui.result == JELLI_NOT_READY && ui.page == JELLI_UI_HEALTH);
+    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "DOSE GIVEN - WAIT") == 0);
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(ui.last_view.unavailable & (1u << 2u));
+    ui.page = JELLI_UI_CARE;
+    game.pets[0].hydration = 1000;
+    ui.last_view.ring_moving = false;
+    jelli_pet_ui_tap(&ui, &game, 61, 233);
+    CHECK(ui.result == JELLI_FULL);
+    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "HYDRATION FULL") == 0);
+}
+
 int main(void)
 {
     navigation();
+    menu_guidance();
     feedback();
     recovery_progress();
     refill_food();

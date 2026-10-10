@@ -59,7 +59,7 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         debug.press("BACK")
         debug.press("CLOCK")
         minute = debug.state()["visual"]["clock_minute"]
-        debug.press("HR +")
+        debug.press("HOUR +")
         assert debug.state()["visual"]["clock_minute"] == (minute + 60) % 1440
         debug.request("swipe 1")
         debug.press("REST")

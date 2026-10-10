@@ -76,9 +76,6 @@ bool jelli_pet_ring_button(const JelliPetUi *ui, unsigned slot, bool asleep,
                            JelliPetUiButton *button)
 {
     const JelliPetRenderKey *v = &ui->last_view;
-    if (v->ring_page == JELLI_UI_HEALTH &&
-        ((slot == 2u && (v->care_blocked & 1u)) || (slot == 3u && (v->care_blocked & 2u))))
-        return false;
     if (v->ring_page == JELLI_UI_SETTINGS && v->ring_clock_edit)
         return jelli_pet_clock_button(true, slot, button);
     return jelli_pet_ui_button((JelliPetPage)v->ring_page, slot, asleep, true, button);
