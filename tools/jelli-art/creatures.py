@@ -110,21 +110,22 @@ def apply_edits(manifest, edits, frame_cap=FRAME_CAP):
     return changed
 
 
-def load_validator(repo):
-    """The checkout's build_slice module, or None when the checkout has none.
+def load_checkout_module(repo, stem):
+    """tools/assets/<stem>.py from the served checkout, or None when the checkout has none.
 
-    Reloaded when the file changes, so a hosted checkout that moves forward
-    validates against its own rules rather than the ones the studio started with.
+    The container image does not carry these tools, and a hosted checkout moves
+    forward, so the module is loaded from the checkout and reloaded when it changes.
+    Its siblings (sprite_geometry, build_slice) import from the same directory.
     """
-    path = Path(repo) / "tools/assets/build_slice.py"
+    path = Path(repo) / f"tools/assets/{stem}.py"
     stamp = path.stat().st_mtime_ns if path.exists() else None
     cached = _VALIDATORS.get(path)
     if cached is None or cached[0] != stamp:
         module = None
         if path.exists():
-            sys.path.insert(0, str(path.parent))  # build_slice imports sprite_geometry beside it
+            sys.path.insert(0, str(path.parent))
             try:
-                spec = importlib.util.spec_from_file_location("jelli_art_build_slice", path)
+                spec = importlib.util.spec_from_file_location(f"jelli_art_{stem}", path)
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
             except (ImportError, OSError, SyntaxError):
@@ -133,6 +134,11 @@ def load_validator(repo):
                 sys.path.remove(str(path.parent))
         _VALIDATORS[path] = (stamp, module)
     return _VALIDATORS[path][1]
+
+
+def load_validator(repo):
+    """The checkout's build_slice module, or None when the checkout has none."""
+    return load_checkout_module(repo, "build_slice")
 
 
 def _run_load_assets(validator, manifest, source):

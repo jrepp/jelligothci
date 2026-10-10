@@ -44,6 +44,21 @@ game's scale and ground position; **All poses** plays every pose together. Space
 plays or pauses; `,` and `.` step frames. **Save clips** (⌘S / Ctrl+S) checks
 the whole manifest and writes only the edited clips to `assets.json`.
 
+### Behaviour and size
+
+**Behaviour & size**, below **All poses**, edits the form's entry in
+`content/creatures.json`. The actor scale sets the preview size; the panel
+shows the result against the 300×176 px actor and 96 px icon limits. Choose the
+form's behaviour, or **Copy as new** to change one form without the others.
+Order the pose rules; the first rule whose condition holds wins. With no match,
+the idle schedule plays one pose per 900 ms beat. The quiet cycle holds curious
+and content beats as idle every Nth cycle, offset by pet ID.
+
+Turn on **Simulate on panel** and pick conditions, or **idle**, to see which
+rule and clip the game would choose. The idle timeline plays the beat schedule
+with its clips. While simulating, `,` and `.` step one beat. **Save behaviour
+& size** validates the file and writes `content/creatures.json`.
+
 ## Edit in the running game
 
 ```sh

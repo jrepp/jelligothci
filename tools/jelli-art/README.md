@@ -11,8 +11,10 @@ make jelli-art                      # http://127.0.0.1:8765/, edits this checkou
 ./scripts/uv run --python 3.12 tools/jelli-art/jelli_art.py --help
 ```
 
-Local runs only write PNGs, `assets.json` bounds and `clips`, and
-`source/hand-painted.json`. Commit the changes yourself.
+Local runs only write PNGs, `assets.json` bounds and `clips`,
+`source/hand-painted.json`, and `content/creatures.json`. Commit the changes
+yourself. For trials, `--assets` and `--content` serve copies of `assets/slice`
+and `content/`. A run with `--assets` but no `--content` cannot edit creature data.
 
 ## Creature clips
 
@@ -20,8 +22,9 @@ The **Creature** view edits the per-pose clips in `assets.json` (`clips`, keyed
 `<form>.<pose>`) for each creature form, named from `content/pets.json` forms
 when they carry `art`. Clip IDs, keys and the pose list (`creature_poses`) are
 fixed; frames, durations and the loop flag are editable. The preview picks the
-frame from elapsed time and draws it as the game does: 6× scale, ground anchor
-at (233, 256) on the round 466 px panel. Reduced motion starts it paused.
+frame from elapsed time and draws it as the game does: the form profile's actor
+scale, ground anchor at (233, 256) on the round 466 px panel. Reduced motion
+starts it paused.
 
 Saves change only the edited `clips` entries. Before writing, the studio runs
 the served checkout's `tools/assets/build_slice.py` `load_assets()` on a scratch
@@ -35,6 +38,23 @@ shared palette only.
 | --- | --- |
 | `GET /api/clips` | Poses, clips, named palettes, forms, frame cap |
 | `POST /api/clips` | `{"clips": [{"key", "frames", "durations_ms", "loop"}], "artist"}` |
+| `GET /api/creatures` | `content/creatures.json`, its hash, validator limits, editability |
+| `POST /api/creatures` | `{"data": <whole document>, "base": <hash>, "artist"}` |
+
+## Behaviour and size
+
+**Behaviour & size**, below the clip editor, edits `content/creatures.json` for
+the selected form. The profile sets actor, icon and portrait scales; the page
+shows each size against the panel and collection-cell limits. The behaviour
+holds first-match-wins pose rules, a 900 ms idle beat schedule, and a quiet
+cycle. **Simulate** applies the chosen conditions or idle to the panel preview.
+The idle timeline plays the beats with their clips. Edits to a behaviour that
+several forms share show a warning.
+
+Saves replace the whole file, normalised to `json.dumps(indent=2)`. The page
+sends the hash it loaded, so a save never overwrites unseen changes. The served
+checkout's `tools/assets/creature_data.py` `load()` validates a scratch copy
+first. Like `build_slice.py`, it comes from the checkout, not the image.
 
 ```sh
 ./scripts/uv run --python 3.12 tools/jelli-art/test_creatures.py

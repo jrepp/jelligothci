@@ -1,7 +1,8 @@
 /* Jelli Art: the Creature view. Edit each form's per-pose clips (frames, durations, loop)
- * and preview them as the game draws them: 6x scale, ground anchor at (233, 256) on the
- * 466 px round panel, frame chosen from elapsed real time. Loaded after studio.js and
- * served only by jelli_art.py; uses the review page's globals and window.Studio. */
+ * and preview them as the game draws them: the form's profile scale (6x without one),
+ * ground anchor at (233, 256) on the 466 px round panel, frame chosen from elapsed real
+ * time. Loaded after studio.js and served only by jelli_art.py; uses the review page's
+ * globals and window.Studio, and exposes S.cr for behaviour.js. */
 'use strict';
 (() => {
   const S = window.Studio;
@@ -19,6 +20,10 @@
   Object.assign(state, {cForm: store.get('creature-form', null), cPose: store.get('creature-pose', 'idle'),
     cRepeat: store.get('creature-repeat', true), cBackground: store.get('creature-background', true), cGuides: false});
   const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  /* Extension points for behaviour.js: profile scale, simulated panel source, per-tick and play hooks. */
+  const cr = S.cr = {tickHooks: [], playHooks: [], scaleFor: null, panelSource: null, step: null,
+    renderBehaviour: null, formDirty: null, save: null};
+  const scaleOf = form => cr.scaleFor?.(form) || SCALE;
 
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="creature" aria-pressed="false">Creature</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="creature" class="hidden"></div>');
@@ -91,9 +96,12 @@
     const c = current(selectedKey());
     if (on && c) play.start = performance.now() - offsetOf(c, Math.max(0, play.frame));
     if (!on && c) play.frame = Math.max(0, frameAt(c, performance.now() - play.start, state.cRepeat));
-    play.on = on; play.drawn = {}; renderTransport(); schedule();
+    play.on = on; play.drawn = {};
+    for (const hook of cr.playHooks) hook(on);
+    renderTransport(); schedule();
   }
   function stepFrame(n) {
+    if (cr.step?.(n)) { play.drawn = {}; return schedule(); }  // the simulation steps by idle beat
     const c = current(selectedKey()); if (!c?.frames.length) return;
     if (play.on) setPlaying(false);
     play.frame = (play.frame + n + c.frames.length) % c.frames.length; play.drawn = {}; schedule();
@@ -120,7 +128,7 @@
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, PANEL, PANEL);
     const bg = decoded['backgrounds.home']?.after;
     if (bg && state.cBackground) ctx.drawImage(bg.img, 0, 0, PANEL, PANEL);
-    if (key) drawSprite(ctx, key, SCALE, CENTER, FLOOR);
+    if (key) drawSprite(ctx, key, scaleOf(state.cForm), CENTER, FLOOR);
     if (state.cGuides) {
       ctx.fillStyle = 'rgba(133,228,182,.85)'; ctx.fillRect(0, FLOOR, PANEL, 1); ctx.fillRect(CENTER, FLOOR - 12, 1, 24);
     }
@@ -139,16 +147,25 @@
   function tick(now) {
     play.raf = null;
     if (state.view !== 'creature' || document.hidden || !panelView) return;
-    const elapsed = now - play.start;
-    const key = selectedKey(), c = current(key);
-    const index = c ? (play.on ? frameAt(c, elapsed, state.cRepeat) : Math.min(play.frame, c.frames.length - 1)) : -1;
-    if (play.drawn.panel !== index) {
-      drawPanel(panelView, index >= 0 ? c.frames[index] : null);
-      document.querySelectorAll('.cr-frame').forEach(el => el.classList.toggle('now', Number(el.dataset.index) === index));
-      const readout = document.getElementById('cr-readout');
-      if (readout) readout.textContent = index < 0 ? 'No frames' : `frame ${index + 1}/${c.frames.length} · ${c.durations_ms[index]} ms · ${c.loop ? 'loops' : 'plays once, holds last frame'}${play.on ? '' : ' · paused'}`;
-      play.drawn.panel = index;
+    const elapsed = now - play.start, scale = scaleOf(state.cForm);
+    const sim = cr.panelSource?.(now);  // {key, text} while simulating behaviour
+    let frameKey = null, text = '', index = -1;
+    if (sim) ({key: frameKey, text} = sim);
+    else {
+      const c = current(selectedKey());
+      index = c ? (play.on ? frameAt(c, elapsed, state.cRepeat) : Math.min(play.frame, c.frames.length - 1)) : -1;
+      frameKey = index >= 0 ? c.frames[index] : null;
+      text = index < 0 ? 'No frames' : `frame ${index + 1}/${c.frames.length} · ${c.durations_ms[index]} ms · ${c.loop ? 'loops' : 'plays once, holds last frame'}${play.on ? '' : ' · paused'}`;
     }
+    const signature = `${frameKey}|${text}|${scale}`;
+    if (play.drawn.panel !== signature) {
+      drawPanel(panelView, frameKey);
+      document.querySelectorAll('.cr-frame').forEach(el => el.classList.toggle('now', Number(el.dataset.index) === index));
+      const readout = document.getElementById('cr-readout'); if (readout) readout.textContent = text;
+      const label = document.getElementById('cr-scale'); if (label) label.textContent = `${scale}×`;
+      play.drawn.panel = signature;
+    }
+    for (const hook of cr.tickHooks) hook(now);
     for (const cell of cells) {
       const cc = current(cell.key), i = cc ? (play.on ? frameAt(cc, elapsed, true) : 0) : -1;
       if (play.drawn[cell.key] !== i) { drawCell(cell, i >= 0 ? cc.frames[i] : null); play.drawn[cell.key] = i; }
@@ -167,17 +184,19 @@
     const css = Math.min(PANEL, Math.max(240, window.innerWidth - 360));
     el.innerHTML = `<div class="title"><h2>Creature</h2><div class="seg" id="cr-forms" role="group" aria-label="Creature form"></div></div>
       <div class="cr-layout">
-        <div class="cr-panel"><div class="lbl"><span>On the panel · ${SCALE}× · ground at (${CENTER}, ${FLOOR})</span></div><div id="cr-canvas"></div>
+        <div class="cr-panel"><div class="lbl"><span>On the panel · <span id="cr-scale">${scaleOf(state.cForm)}×</span> · ground at (${CENTER}, ${FLOOR})</span></div><div id="cr-canvas"></div>
           <div class="cr-readout" id="cr-readout" aria-live="off"></div>
           <div class="bar" id="cr-transport"></div></div>
         <div id="cr-editor"></div>
       </div>
       <section class="block"><h3>All poses <span class="lbl">· click one to edit it</span></h3><div class="cr-strip" id="cr-strip"></div></section>
-      <div class="kbd"><kbd>Space</kbd> play/pause · <kbd>,</kbd>/<kbd>.</kbd> step frames · <kbd>J</kbd>/<kbd>K</kbd> next/previous pose · <kbd>1</kbd>–<kbd>${poses().length}</kbd> pick a pose · <kbd>⌘S</kbd> save clips</div>`;
+      <section class="block" id="cr-behaviour"></section>
+      <div class="kbd"><kbd>Space</kbd> play/pause · <kbd>,</kbd>/<kbd>.</kbd> step frames (idle beats while simulating) · <kbd>J</kbd>/<kbd>K</kbd> next/previous pose · <kbd>1</kbd>–<kbd>${poses().length}</kbd> pick a pose · <kbd>⌘S</kbd> save clips and behaviour</div>`;
     const [c, ctx] = makeCanvas(css, css); document.getElementById('cr-canvas').append(c);
     c.setAttribute('role', 'img'); c.setAttribute('aria-label', 'Animated preview of the selected clip on the round panel');
     panelView = {c, ctx, css};
     renderForms(); renderTransport(); renderEditor(); renderStrip();
+    cr.renderBehaviour?.(document.getElementById('cr-behaviour'));
     play.drawn = {}; schedule();
   }
   function renderForms() {
@@ -186,6 +205,7 @@
       const b = document.createElement('button'), dirty = dirtyKeys().some(k => k.startsWith(f.art + '.'));
       b.innerHTML = `${esc(formLabel(f))}${dirty ? ' <span class="cr-dirty" title="unsaved clip edits">●</span>' : ''}`;
       b.setAttribute('aria-pressed', String(f.art === state.cForm));
+      if (cr.formDirty?.(f.art) && !dirty) b.insertAdjacentHTML('beforeend', ' <span class="cr-dirty" title="unsaved behaviour or size edits">●</span>');
       b.onclick = () => { state.cForm = f.art; store.set('creature-form', f.art); restart(); renderCreature(); };
       el.append(b);
     }
@@ -198,7 +218,7 @@
     el.querySelector('#cr-play').onclick = () => setPlaying(!play.on);
     el.querySelector('#cr-prev').onclick = () => stepFrame(-1);
     el.querySelector('#cr-next').onclick = () => stepFrame(1);
-    el.querySelector('#cr-restart').onclick = () => { restart(); if (!play.on) setPlaying(true); };
+    el.querySelector('#cr-restart').onclick = () => { restart(); cr.restartSimulation?.(); if (!play.on) setPlaying(true); };
     el.querySelector('#cr-repeat').onclick = () => { state.cRepeat = !state.cRepeat; store.set('creature-repeat', state.cRepeat); restart(); renderTransport(); };
     el.querySelector('#cr-bg').onclick = () => { state.cBackground = !state.cBackground; store.set('creature-background', state.cBackground); play.drawn = {}; renderTransport(); schedule(); };
     el.querySelector('#cr-guides').onclick = () => { state.cGuides = !state.cGuides; play.drawn = {}; renderTransport(); schedule(); };
@@ -346,7 +366,7 @@
   S.keydown = e => {
     const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
     if (state.view !== 'creature') return baseKeydown(e);
-    if (mod && k === 's') { e.preventDefault(); saveClips(); return true; }
+    if (mod && k === 's') { e.preventDefault(); saveClips(); cr.save?.(); return true; }
     if (mod || e.altKey) return false;
     if (k === ' ') { e.preventDefault(); if (!e.repeat) setPlaying(!play.on); return true; }
     if (k === ',' || e.key === 'ArrowLeft') { e.preventDefault(); stepFrame(-1); return true; }
@@ -357,6 +377,9 @@
     if (/^[1-9]$/.test(k) && Number(k) <= list.length) { selectPose(list[Number(k) - 1]); return true; }
     return ['a', 'x', 'g', 'i', 'b', 'd', '0', '[', ']', '-', '=', '+'].includes(k);  // detail-view keys do nothing here
   };
+  Object.assign(cr, {esc, poses, forms, formLabel, formFrames, clipOf, current, frameAt, drawSprite, groundAnchor,
+    selectedKey, setPlaying, playing: () => play.on, redraw: () => { play.drawn = {}; schedule(); }, rerender: () => renderCreature(),
+    renderForms: () => renderForms(), PANEL, CENTER, FLOOR, reduced});
   let resizeTimer = null;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (state.view === 'creature') renderCreature(); }, 150); });
 })();

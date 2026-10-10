@@ -2,7 +2,7 @@
 # requires-python = ">=3.12,<3.13"
 # dependencies = ["Pillow==12.0.0"]
 # ///
-"""Clip edits in Jelli Art: only clips change, and build_slice decides what is valid.
+"""Jelli Art creature edits: clips (build_slice decides) and creatures.json (creature_data decides).
 
 Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_creatures.py
 """
@@ -12,6 +12,7 @@ import sys
 import tempfile
 import types
 import unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -19,6 +20,7 @@ REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 import creatures  # noqa: E402
 import jelli_art  # noqa: E402
+import profiles  # noqa: E402
 
 
 class CreatureClipTest(unittest.TestCase):
@@ -113,6 +115,104 @@ class CreatureClipTest(unittest.TestCase):
         named = {f["art"]: f for f in creatures.creature_forms(manifest, pets)}
         self.assertEqual((named["axolotl"]["name"], named["axolotl"]["id"]), ("AXOLOTL", 2))
         self.assertEqual(creatures.creature_forms(manifest, pets.with_name("missing.json"))[0]["art"], "baby")
+
+
+class CreatureProfileTest(unittest.TestCase):
+    """content/creatures.json saves: creature_data.load decides, and nothing else is written."""
+
+    def setUp(self):
+        self.scratch = tempfile.TemporaryDirectory()
+        self.content = Path(self.scratch.name) / "content"
+        self.content.mkdir()
+        for name in ("pets.json", "creatures.json"):
+            shutil.copyfile(REPO / "content" / name, self.content / name)
+        self.path = self.content / "creatures.json"
+        self.saved = (jelli_art.CONTENT, jelli_art.PETS, jelli_art.CREATURE_DATA, jelli_art.CONTENT_WRITABLE, jelli_art.GIT)
+        jelli_art.CONTENT, jelli_art.PETS, jelli_art.CREATURE_DATA = self.content, self.content / "pets.json", self.path
+        jelli_art.CONTENT_WRITABLE, jelli_art.GIT = True, None
+        self.pets = (self.content / "pets.json").read_text()
+
+    def tearDown(self):
+        (jelli_art.CONTENT, jelli_art.PETS, jelli_art.CREATURE_DATA, jelli_art.CONTENT_WRITABLE, jelli_art.GIT) = self.saved
+        self.scratch.cleanup()
+
+    def data(self):
+        return json.loads(self.path.read_text())
+
+    def save(self, data):
+        return jelli_art.save_creature_data(data, profiles.digest(self.path))
+
+    def test_valid_edit_writes_only_creatures_json(self):
+        data = self.data()
+        data["profiles"][2]["scale"] = 4
+        data["behaviors"][1]["pose_rules"].insert(0, data["behaviors"][1]["pose_rules"].pop(5))
+        data["behaviors"][1]["idle_beats"][0] = "idle-alt"
+        data["behaviors"][1]["quiet_cycle"] = 0
+        result = self.save(data)
+        self.assertTrue(result["changed"])
+        self.assertEqual(result["sha"], profiles.digest(self.path))
+        self.assertEqual(self.path.read_text(), json.dumps(data, indent=2) + "\n")
+        self.assertEqual((self.content / "pets.json").read_text(), self.pets)
+
+    def test_rejections_leave_the_file_alone(self):
+        original = self.path.read_text()
+        mutations = [
+            lambda d: d["profiles"][2].update(scale=8),  # the axolotl would overlap the heading
+            lambda d: d["profiles"][2].update(icon_scale=3),  # a 144 px icon in a 96 px cell
+            lambda d: d["behaviors"][0]["pose_rules"].append({"when": "flying", "pose": "happy"}),
+            lambda d: d["behaviors"][0]["pose_rules"].append({"when": "eating", "pose": "happy"}),
+            lambda d: d["behaviors"][0].update(idle_beats=["eating"]),
+            lambda d: d["behaviors"][0].update(quiet_cycle=17),
+            lambda d: d["profiles"][0].update(behavior="missing"),
+            lambda d: d["profiles"].pop(),
+            lambda d: d["behaviors"][0].pop("idle_beats"),
+            lambda d: d.update(extra=True),
+        ]
+        for mutate in mutations:
+            data = self.data()
+            mutate(data)
+            with self.subTest(data=data), self.assertRaises(jelli_art.StudioError):
+                self.save(data)
+        self.assertEqual(self.path.read_text(), original)
+
+    def test_git_sync_commits_only_creatures_json(self):
+        data = self.data()
+        data["profiles"][1]["icon_scale"] = 1
+        git = mock.Mock()
+        git.commit.return_value = "abc1234"
+        module = creatures.load_checkout_module(REPO, "creature_data")
+        saved_repo = jelli_art.REPO
+        jelli_art.REPO, jelli_art.GIT = Path(self.scratch.name), git  # the scratch dir stands in for the checkout
+        try:
+            with mock.patch.object(creatures, "load_checkout_module", return_value=module):
+                result = self.save(data)
+        finally:
+            jelli_art.REPO = saved_repo
+        self.assertEqual(result["commit"], "abc1234")
+        paths, subject, _ = git.commit.call_args.args
+        self.assertEqual(paths, [Path("content/creatures.json")])
+        self.assertIn("Jelli Art", subject)
+
+    def test_stale_base_and_trials_are_refused(self):
+        data = self.data()
+        data["profiles"][0]["portrait_scale"] = 3
+        with self.assertRaises(jelli_art.StudioError):
+            jelli_art.save_creature_data(data, "0000000000000000")
+        jelli_art.CONTENT_WRITABLE = False
+        with self.assertRaises(jelli_art.StudioError):
+            self.save(data)
+        self.assertFalse(jelli_art.creature_profiles()["creature_data_editable"])
+
+    def test_page_limits_come_from_the_checkout_validator(self):
+        module = creatures.load_checkout_module(REPO, "creature_data")
+        data = jelli_art.creature_profiles()
+        limits = data["creature_limits"]
+        self.assertEqual(limits["conditions"], list(module.CREATURE_CONDITIONS))
+        self.assertEqual(limits["idle_poses"], list(module.IDLE_POSES))
+        self.assertEqual(limits["max_actor_height"], module.FLOOR_Y - module.HEADING_BOTTOM)
+        self.assertEqual(limits["max_actor_width"], module.MAX_ACTOR_WIDTH)
+        self.assertEqual(data["creature_data"], self.data())
+        self.assertEqual(module.CREATURES, REPO / "content/creatures.json")  # restored after validation
 
 
 def creatures_coverage_check(manifest):

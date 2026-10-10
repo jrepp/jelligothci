@@ -137,7 +137,13 @@ const state = Object.assign({key: null, mode: 'side', zoom: null, grid: true, is
 state.peek = false; state.hover = null; state.isolate = null; state.flipBefore = false; state.blink = false;
 const reviews = store.get('reviews', {});
 const hexOf = (d, i) => '#' + [d[i], d[i + 1], d[i + 2]].map(v => v.toString(16).padStart(2, '0')).join('');
-const label = hex => { const i = D.palette.indexOf(hex); return i >= 0 ? NAMES[i] : 'off-palette'; };
+/* An asset's palette: its own named or inline one when Jelli Art sends it, else the shared palette. */
+const assetPalette = a => a?.palette || D.palette;
+const label = (hex, a) => {
+  const pal = assetPalette(a), i = pal.indexOf(hex);
+  if (i < 0) return 'off-palette';
+  return pal === D.palette || !a.palette_name || a.palette_name === 'shared' ? NAMES[i] : `${a.palette_name} ${i + 1}`;
+};
 const signature = a => { let h = 0; const s = a.after || ''; for (let i = 0; i < s.length; i += 7) h = (h * 31 + s.charCodeAt(i)) | 0; return String(h); };
 const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrop, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;
   store.set('prefs', {mode, grid, issues, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop}); location.replace('#' + new URLSearchParams({key, mode, zoom: zoom || 'fit'})); };
@@ -265,7 +271,7 @@ function renderInspector(a) {
   const el = document.getElementById('inspector');
   if (!state.hover) { el.innerHTML = '<span>Hover a pixel to inspect it. Both panes share one cursor.</span>'; return; }
   const [x, y] = state.hover, b = pixel(decoded[a.key].before, x, y), f = pixel(decoded[a.key].after, x, y);
-  const show = hex => hex ? `<span class="sw" style="background:${hex}"></span>${hex} ${label(hex)}` : '<span class="sw" style="background:repeating-linear-gradient(45deg,#555 0 2px,#222 2px 4px)"></span>transparent';
+  const show = hex => hex ? `<span class="sw" style="background:${hex}"></span>${hex} ${label(hex, a)}` : '<span class="sw" style="background:repeating-linear-gradient(45deg,#555 0 2px,#222 2px 4px)"></span>transparent';
   el.innerHTML = `<span>x ${x}, y ${y}</span><span>before ${show(b)}</span><span>after ${show(f)}</span>${b !== f ? '<span style="color:var(--warn)">changed</span>' : ''}`;
 }
 function renderLegend() {
@@ -295,12 +301,12 @@ function renderHeader(a) {
 function renderPalette(a) {
   if (state.mode === 'paint' && window.Studio) return window.Studio.renderPalette(document.getElementById('palette'), a);
   document.getElementById('palette-title').innerHTML = 'Palette usage <span class="lbl">· click a colour to isolate it</span>';
-  const bm = a.before_metrics?.colors || {}, am = a.after_metrics.colors, keys = [...new Set([...D.palette, ...Object.keys(bm), ...Object.keys(am)])].filter(k => bm[k] || am[k]);
+  const pal = assetPalette(a), bm = a.before_metrics?.colors || {}, am = a.after_metrics.colors, keys = [...new Set([...pal, ...Object.keys(bm), ...Object.keys(am)])].filter(k => bm[k] || am[k]);
   const el = document.getElementById('palette'); el.textContent = '';
   for (const hex of keys) {
-    const b = bm[hex] || 0, f = am[hex] || 0, chip = document.createElement('button'); chip.className = 'chip' + (D.palette.includes(hex) ? '' : ' off');
+    const b = bm[hex] || 0, f = am[hex] || 0, chip = document.createElement('button'); chip.className = 'chip' + (pal.includes(hex) ? '' : ' off');
     chip.setAttribute('aria-pressed', String(state.isolate === hex));
-    chip.innerHTML = `<span class="sw" style="background:${hex}"></span><span>${label(hex)} ${hex}</span><span>${b} → ${f} <span class="delta ${f > b ? 'up' : f < b ? 'down' : ''}">${f === b ? '' : (f > b ? '+' : '') + (f - b)}</span></span>`;
+    chip.innerHTML = `<span class="sw" style="background:${hex}"></span><span>${label(hex, a)} ${hex}</span><span>${b} → ${f} <span class="delta ${f > b ? 'up' : f < b ? 'down' : ''}">${f === b ? '' : (f > b ? '+' : '') + (f - b)}</span></span>`;
     chip.onclick = () => { state.isolate = state.isolate === hex ? null : hex; renderPalette(a); renderStage(); };
     el.append(chip);
   }
