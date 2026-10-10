@@ -1926,10 +1926,10 @@
         16
       ],
       "bounds": [
-        3,
-        3,
-        30,
-        30
+        7,
+        4,
+        26,
+        29
       ],
       "purpose": "POTTY routine icon; placeholder from source/potty_art.py"
     },

@@ -5,9 +5,8 @@
 # ///
 """Hand-placed detail for the reduced poop mess (props/poop-1.png, props/poop-2.png).
 
-poop-1 was repainted in Jelli Art on 2026-10-10 and these grids mirror it. poop-2 copies
-its body exactly, with the stink wisps curled the other way and one row higher, so the
-two frames read as rising fumes.
+Both frames were repainted in Jelli Art on 2026-10-10 and these grids mirror them, so
+rerunning this script keeps the repaint.
 
 Run after tools/assets/import_creature.py assets/slice/source/poop-import.json, which
 reduces the creature-scale source art. The grids keep the imported silhouette and add three
@@ -41,10 +40,10 @@ FRAMES = {
         "................",
     ],
     "poop-2": [
-        "...s........s...",
-        "....s......s....",
-        "...s....#...s...",
-        "........##......",
+        "...s............",
+        "....s.......s...",
+        "...s....#..s....",
+        "........##..s...",
         ".......#hb#.....",
         "......#..bd#....",
         "......#bddd#....",
