@@ -133,7 +133,7 @@ static void failed_decodes_preserve_output(void)
     CHECK(!jelli_save_decode(&output, broken, size));
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
-    broken[4] = 4u;
+    broken[4] = 5u;
     CHECK(!jelli_save_decode(&output, broken, size));
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
@@ -286,7 +286,7 @@ static void health_history_and_v1_migration(void)
     pet->shot_hits = 1u;
     uint8_t bytes[JELLI_SAVE_CAPACITY], legacy[JELLI_SAVE_CAPACITY];
     size_t size = encode(&save, bytes);
-    CHECK(bytes[4] == 3u && jelli_save_decode(&loaded, bytes, size));
+    CHECK(bytes[4] == 4u && jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.pets[0].shot_until == pet->shot_until);
     CHECK(loaded.game.pets[0].medicine_until == pet->medicine_until);
     CHECK(loaded.game.pets[0].shot_goal == 3u && loaded.game.pets[0].shot_hits == 1u);
@@ -363,12 +363,12 @@ static void rolling_history_round_trip(void)
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 52u] = 2u; /* Owned bit nine is outside the nine prize slots. */
+    bytes[size - 58u] = 2u; /* Owned bit nine is outside the nine prize slots. */
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 13u] = JELLI_PRIZE_COUNT + 1u;
+    bytes[size - 19u] = JELLI_PRIZE_COUNT + 1u;
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
@@ -376,6 +376,7 @@ static void rolling_history_round_trip(void)
     for (unsigned p = 2u; p < save.game.count; ++p) {
         save.game.pets[p] = save.game.pets[0];
         save.game.pets[p].id = p + 1u;
+        save.game.pets[p].collection_entry = (uint8_t)(p + 1u);
     }
     size = encode(&save, bytes);
     CHECK(size <= JELLI_SAVE_CAPACITY && jelli_save_decode(&loaded, bytes, size));

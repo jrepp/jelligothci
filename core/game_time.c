@@ -1,10 +1,10 @@
 #include "game_internal.h"
+#include "jelli/collection.h"
 
 #include <limits.h>
 #include <stddef.h>
 
 #define MINUTE_TICKS UINT64_C(600)
-#define EVOLUTION_TICKS UINT64_C(600)
 
 static uint64_t saturating_add(uint64_t left, uint64_t right)
 {
@@ -210,9 +210,10 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
 
 static void evolve_if_due(JelliPet *pet)
 {
-    if (pet->form == 0u && pet->stage_ticks >= EVOLUTION_TICKS) {
-        pet->stage_ticks -= EVOLUTION_TICKS;
+    if (pet->form == 0u && pet->stage_ticks >= jelli_collection_growth_ticks) {
+        pet->stage_ticks -= jelli_collection_growth_ticks;
         pet->form = 1u;
+        pet->reached_forms |= 3u;
         if (pet->health == JELLI_RECOVERING) {
             for (size_t i = 0u; i < JELLI_NEED_COUNT; ++i) {
                 if (pet->needs[i] <= 400u) {

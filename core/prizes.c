@@ -1,4 +1,5 @@
 #include "game_internal.h"
+#include "jelli/collection.h"
 
 #include <stddef.h>
 
@@ -151,6 +152,7 @@ JelliResult jelli_prize_catch(JelliGame *game)
     game->prizes.origin_pet[index] = game->prizes.offered_pet;
     game->prizes.offered = 0u;
     game->prizes.offered_pet = 0u;
+    jelli_collection_unlock(game);
     return JELLI_OK;
 }
 

@@ -1,4 +1,5 @@
 #include "jelli/game.h"
+#include "jelli/collection.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -35,6 +36,8 @@ void jelli_game_init(JelliGame *game)
     game->food = 5u;
     game->gifts = 3u;
     game->pets[0] = (JelliPet){.id = 1u,
+                               .collection_entry = 1u,
+                               .reached_forms = 1u,
                                .phase_offset = 324000u,
                                .bedtime = 22u,
                                .sleep_duration = 288000u,
@@ -44,6 +47,8 @@ void jelli_game_init(JelliGame *game)
                                .health = JELLI_WELL,
                                .activity = JELLI_IDLE};
     game->pets[1] = (JelliPet){.id = 2u,
+                               .collection_entry = 2u,
+                               .reached_forms = 1u,
                                .phase_offset = 324000u,
                                .bedtime = 22u,
                                .sleep_duration = 288000u,
@@ -52,6 +57,8 @@ void jelli_game_init(JelliGame *game)
                                .bond = 100u,
                                .health = JELLI_WELL,
                                .activity = JELLI_IDLE};
+    jelli_collection_unlock(game);
+    game->new_pets = 0u;
 }
 
 static bool pet_profile_valid(const JelliPet *pet)
@@ -112,7 +119,7 @@ static bool pet_recovery_valid(const JelliPet *pet)
 static bool pet_lifecycle_valid(const JelliPet *pet)
 {
     if ((pet->reward_pending && pet->reward_claimed) ||
-        (pet->form == 0u && pet->stage_ticks >= 600u) ||
+        (pet->form == 0u && pet->stage_ticks >= jelli_collection_growth_ticks) ||
         (pet->hunger_counted && !pet->hunger_low) ||
         (!pet->hunger_low && (pet->hunger_counted || pet->hunger_due != 0u)))
         return false;
@@ -202,7 +209,8 @@ static bool prize_sources_valid(const JelliGame *game)
 
 bool jelli_game_valid(const JelliGame *game)
 {
-    return game_header_valid(game) && game_pets_valid(game) && prize_sources_valid(game);
+    return game_header_valid(game) && game_pets_valid(game) && prize_sources_valid(game) &&
+           jelli_collection_valid(game);
 }
 
 const char *jelli_game_result_name(JelliResult result)

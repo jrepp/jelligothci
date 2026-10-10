@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": 1,
+      "name": "COMPANION 1",
+      "unlock_prize": 0,
+      "hint": "STARTING COMPANION",
+      "evolution_set": 1
+    },
+    {
+      "id": 2,
+      "name": "COMPANION 2",
+      "unlock_prize": 0,
+      "hint": "STARTING COMPANION",
+      "evolution_set": 1
+    },
+    {
+      "id": 3,
+      "name": "BUBBLE",
+      "unlock_prize": 6,
+      "hint": "CATCH BUBBLE GEM",
+      "evolution_set": 1
+    },
+    {
+      "id": 4,
+      "name": "GARDEN",
+      "unlock_prize": 1,
+      "hint": "CATCH BUTTERFLY",
+      "evolution_set": 1
+    },
+    {
+      "id": 5,
+      "name": "PEARL",
+      "unlock_prize": 2,
+      "hint": "CATCH PEARL TOOTH",
+      "evolution_set": 1
+    },
+    {
+      "id": 6,
+      "name": "SUNNY",
+      "unlock_prize": 3,
+      "hint": "CATCH BREAKFAST SUN",
+      "evolution_set": 1
+    },
+    {
+      "id": 7,
+      "name": "TEA",
+      "unlock_prize": 4,
+      "hint": "CATCH TEA SPRITE",
+      "evolution_set": 1
+    },
+    {
+      "id": 8,
+      "name": "MOVIE",
+      "unlock_prize": 5,
+      "hint": "CATCH MOVIE STAR",
+      "evolution_set": 1
+    },
+    {
+      "id": 9,
+      "name": "MOON",
+      "unlock_prize": 7,
+      "hint": "CATCH MOON CHARM",
+      "evolution_set": 1
+    }
+  ],
+  "forms": [
+    {
+      "id": 0,
+      "name": "MINT",
+      "portrait": 1001
+    },
+    {
+      "id": 1,
+      "name": "LILAC",
+      "portrait": 1007
+    }
+  ],
+  "evolution_sets": [
+    {
+      "id": 1,
+      "forms": [
+        0,
+        1
+      ],
+      "growth_ticks": 600
+    }
+  ]
+}

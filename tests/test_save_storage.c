@@ -136,7 +136,7 @@ int main(void)
     CHECK(jelli_sdl_storage_write(base_path, &fourth, work, sizeof(work)) ==
           JELLI_STORAGE_INCOMPATIBLE);
     set_record_byte(".jelli-storage-test.0", 29L, 1u);
-    set_record_byte(".jelli-storage-test.0", 4L, 4u);
+    set_record_byte(".jelli-storage-test.0", 4L, 5u);
     CHECK(load(&loaded, work) == JELLI_STORAGE_INCOMPATIBLE);
     CHECK(jelli_sdl_storage_write(base_path, &fourth, work, sizeof(work)) ==
           JELLI_STORAGE_INCOMPATIBLE);

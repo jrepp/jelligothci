@@ -1,9 +1,10 @@
 #include "jelli/save.h"
 #include "save_codec.h"
+#include "jelli/collection.h"
 
 #include <string.h>
 
-#define SAVE_VERSION 3u
+#define SAVE_VERSION 4u
 #define SAVE_CONTENT_VERSION 1u
 #define SAVE_HEADER_SIZE 32u
 #define SAVE_TRAILER_SIZE 8u
@@ -202,6 +203,11 @@ static void write_game(Writer *writer, const JelliGame *game)
         put_u32(writer, game->prizes.origin_pet[i]);
     put_u8(writer, game->prizes.offered);
     put_u32(writer, game->prizes.offered_pet);
+    put_u16(writer, game->new_pets);
+    for (unsigned i = 0u; i < game->count; ++i) {
+        put_u8(writer, game->pets[i].collection_entry);
+        put_u8(writer, (uint8_t)(game->pets[i].reached_forms | (1u << game->pets[i].form)));
+    }
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -235,6 +241,15 @@ static bool read_game(Reader *reader, JelliGame *game)
         if (game->prizes.owned > JELLI_PRIZE_MASK || game->prizes.discovered > JELLI_PRIZE_MASK ||
             game->prizes.offered > JELLI_PRIZE_COUNT)
             reader->failed = true;
+    }
+    if (reader->version >= 4u) {
+        game->new_pets = get_u16(reader);
+        for (unsigned i = 0u; i < game->count; ++i) {
+            game->pets[i].collection_entry = get_u8(reader);
+            game->pets[i].reached_forms = get_u8(reader);
+        }
+    } else {
+        jelli_collection_migrate(game);
     }
     return !reader->failed;
 }
@@ -320,6 +335,8 @@ bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t s
         candidate->game.resume_remaining_ms != 0u || candidate->game.backlog_ms >= 100u ||
         !jelli_game_valid(&candidate->game))
         return false;
+    if (reader.version < 4u)
+        jelli_collection_unlock(&candidate->game);
     *save = *candidate;
     return true;
 }

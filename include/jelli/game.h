@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define JELLI_PET_CAPACITY 8u
+#define JELLI_PET_CAPACITY 9u
 #define JELLI_NEED_COUNT 5u
 #define JELLI_STACK_LIMIT 20u
 #define JELLI_DAY_TICKS 864000u
@@ -68,6 +68,7 @@ typedef struct {
     uint16_t need_remainders[JELLI_NEED_COUNT];
     uint16_t bond, feeds, neglect;
     uint8_t form, location, shot_goal, shot_hits;
+    uint8_t collection_entry, reached_forms;
     /* Brief session-only touch memory; care changes still persist. */
     uint16_t touch_load;
     uint8_t reaction, reaction_ticks;
@@ -84,6 +85,7 @@ typedef struct {
     uint64_t ticks, discarded_ms, resume_remaining_ms;
     uint32_t backlog_ms, revision;
     uint16_t food, gifts;
+    uint16_t new_pets;
     uint8_t count, active;
     bool resuming;
     /* Optional borrowed sink; owner outlives commands/advance. Not saved. */
