@@ -11,8 +11,9 @@ make jelli-art                      # http://127.0.0.1:8765/, edits this checkou
 ./scripts/uv run --python 3.12 tools/jelli-art/jelli_art.py --help
 ```
 
-Local runs only write PNGs, `assets.json` bounds and `clips`,
-`source/hand-painted.json`, `content/creatures.json` and `content/behaviors.json`.
+Local runs only write PNGs, `assets.json` bounds, `clips` and creature frame
+assets, `source/hand-painted.json`, `source/studio-frames.json`, a creature
+import spec's frame list, `content/creatures.json` and `content/behaviors.json`.
 Commit the changes yourself. Behaviour saves need `cmake` on the path. For trials, `--assets` and `--content` serve copies of `assets/slice`
 and `content/`. A run with `--assets` but no `--content` cannot edit creature data.
 
@@ -38,10 +39,42 @@ failure as a warning. Sprites with their own palette (`"palette": "axolotl"` or
 an inline list) paint from that palette; ✎ and **Tidy outline** apply to the
 shared palette only.
 
+### Animation timeline
+
+The clip editor is a timeline (`animation.js`). Each frame card has a
+thumbnail, its duration and buttons to move, duplicate, remove or paint it.
+Drag a card, or press Alt+←/→ on it, to reorder. The duration track below sizes
+each frame by its time and shows the playhead. Drag a handle, or focus it and
+use the arrow keys (Shift or Page Up/Down for 100 ms), to retime a frame.
+**Speed** (0.25× to 2×) only changes the preview. Playback follows elapsed
+milliseconds, as `core/creature.c` `jelli_clip_frame` does.
+
+**Duplicate current frame** and **Add blank frame** create a new PNG and
+`creatures` asset with the form's size, pivot and palette. A blank frame starts
+with one ink pixel at the pivot, because build_slice needs an opaque pixel.
+New IDs are appended and existing IDs never move. A form with an import spec
+(`source/axolotl-import.json`) takes the next `first_id` + position slot, and
+the spec gets a `"studio": true` entry that `import_creature.py` skips. Other
+forms take the next free ID in their hundred block. By default the frame is
+inserted after the current one. A clean clip is saved in the same commit; a
+clip with unsaved edits gets it in the working copy. **Retire** in the frame
+library removes an unused frame's PNG and asset, and marks it retired in its
+import spec. The studio refuses frames that a saved or unsaved clip, a
+`pets.json` portrait or `content/creatures.json` still uses.
+`source/studio-frames.json` records every added and retired frame, so a retired
+ID or name is never handed out again.
+
+While painting a clip frame, **Onion skin** (O) tints the pixels where the
+previous (rose) and next (mint) frames differ. **◀ Frame** and **Frame ▶**
+(`,` and `.`) step through the clip, and **Timeline** returns to it. Reduced
+motion starts the preview paused.
+
 | Endpoint | Purpose |
 | --- | --- |
 | `GET /api/clips` | Poses, clips, named palettes, forms, frame cap |
 | `POST /api/clips` | `{"clips": [{"key", "frames", "durations_ms", "loop"}], "artist"}` |
+| `GET /api/frames` | Per form: next frame ID, import spec, each frame's users, retired frames |
+| `POST /api/frames` | `{"action": "add", "form", "from"?, "pose"?, "clip"?, "index"?, "duration_ms"?, "artist"}` or `{"action": "retire", "key", "artist"}` |
 | `GET /api/creatures` | `content/creatures.json`, its hash, validator limits, editability |
 | `POST /api/creatures` | `{"data": <whole document>, "base": <hash>, "artist"}` |
 | `GET /api/behaviour` | `content/behaviors.json`, its hash, vocabulary, `potty.json`, creature data |
@@ -94,6 +127,7 @@ Both files are written in one commit. The container image installs `cmake`.
 
 ```sh
 ./scripts/uv run --python 3.12 tools/jelli-art/test_creatures.py
+./scripts/uv run --python 3.12 tools/jelli-art/test_animation.py
 ```
 
 `testdata/behavior_engine_cases.json` holds 300 outcomes recorded from the real
