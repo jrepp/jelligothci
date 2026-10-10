@@ -267,8 +267,8 @@ actor Speaker {
     }
 
     /// Stops the line being said: the piece playing ends where it is, and the render
-    /// under way is no longer waited for. Chatter still finishes that render (its
-    /// cancel would also stop whatever it is playing on the Mac).
+    /// under way is cancelled in Chatter, so the next reply need not wait for it (an
+    /// older Chatter without render mode still finishes it).
     func interrupt() {
         interrupted = true
         rendering?.cancel()

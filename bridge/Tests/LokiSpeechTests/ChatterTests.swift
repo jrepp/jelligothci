@@ -68,7 +68,81 @@ private func json(_ object: Any) -> Data { try! JSONSerialization.data(withJSONO
         let requests = FakeChatter.lock.withLock { FakeChatter.seen }
         #expect(requests.allSatisfy { $0.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token-for-tests" })
         let body = try JSONSerialization.jsonObject(with: requests[0].httpBody ?? Data()) as? [String: String]
-        #expect(body == ["voice": "Scar", "text": "All tests pass.", "mode": "save"])
+        #expect(body == ["voice": "Scar", "text": "All tests pass.", "mode": "render", "quality": "responsive"])
+        // Each lookup asks Chatter to hold the reply until the job finishes, inside the 30 s request timeout.
+        let lookups = requests.filter { $0.url!.path == "/v1/jobs/job-1" }
+        #expect(lookups.count == 3 && lookups.allSatisfy { $0.url!.query == "wait=20" })
+        #expect(!requests.contains { $0.httpMethod == "DELETE" })
+    }
+
+    /// Chatter before 3.2 refuses render: the reply still comes, from `save` (Studio), and is
+    /// never cancelled there, since that Chatter's cancel also stops what plays on the Mac.
+    @Test func anOlderChatterWithoutRenderModeIsAskedToSave() async throws {
+        FakeChatter.handler = { request in
+            switch (request.httpMethod ?? "GET", request.url!.path) {
+            case ("POST", "/v1/speech"):
+                let body = (try? JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as? [String: String]) ?? [:]
+                return body["mode"] == "render" ? (400, json(["error": "Mode must be play or save."])) : (202, json(["id": "old-1"]))
+            case ("GET", "/v1/jobs/old-1"): return (200, json(["state": "completed"]))
+            case ("GET", "/v1/jobs/old-1/audio"): return (200, Data("RIFFold".utf8))
+            default: return (404, json(["error": "no route"]))
+            }
+        }
+        #expect(try await FakeChatter.client().render("Hi.", voice: "Scar") == Data("RIFFold".utf8))
+        let bodies = FakeChatter.lock.withLock { FakeChatter.seen }.filter { $0.httpMethod == "POST" }
+            .map { (try? JSONSerialization.jsonObject(with: $0.httpBody ?? Data()) as? [String: String]) ?? [:] }
+        #expect(bodies.map { $0["mode"] } == ["render", "save"])
+        #expect(bodies[1]["quality"] == nil)
+    }
+
+    @Test func otherRefusalsAreNotMistakenForAnOlderChatter() async {
+        FakeChatter.handler = { _ in (400, json(["error": "Choose a saved voice by its unique ID or unambiguous name."])) }
+        do {
+            _ = try await FakeChatter.client().render("Hi.", voice: "Nobody")
+            Issue.record("rendering did not fail")
+        } catch {
+            #expect("\(error)".contains("unique ID"))
+        }
+        #expect(FakeChatter.lock.withLock { FakeChatter.seen }.count == 1)
+    }
+
+    /// Talking over a reply cancels the piece being rendered, in Chatter too, so the next
+    /// reply does not wait behind it.
+    @Test func cancellingARenderCancelsItInChatter() async throws {
+        FakeChatter.handler = { request in
+            switch (request.httpMethod ?? "GET", request.url!.path) {
+            case ("POST", "/v1/speech"): return (202, json(["id": "abandoned-1", "state": "queued"]))
+            case ("DELETE", "/v1/jobs/abandoned-1"): return (200, json(["id": "abandoned-1", "state": "cancelled"]))
+            default: return (200, json(["state": "generating"]))
+            }
+        }
+        let client = FakeChatter.client()
+        let render = Task { try await client.render("A long answer.", voice: "Scar") }
+        try await waitFor { FakeChatter.lock.withLock { FakeChatter.seen }.contains { $0.url!.path == "/v1/jobs/abandoned-1" } }
+        render.cancel()
+        await #expect(throws: (any Error).self) { try await render.value }
+        try await waitFor { FakeChatter.lock.withLock { FakeChatter.seen }.contains { $0.httpMethod == "DELETE" } }
+        let cancel = FakeChatter.lock.withLock { FakeChatter.seen }.first { $0.httpMethod == "DELETE" }
+        #expect(cancel?.url!.path == "/v1/jobs/abandoned-1")
+        #expect(cancel?.value(forHTTPHeaderField: "Authorization") == "Bearer secret-token-for-tests")
+    }
+
+    @Test func aSaveFromAnOlderChatterIsNeverCancelled() async throws {
+        FakeChatter.handler = { request in
+            switch (request.httpMethod ?? "GET", request.url!.path) {
+            case ("POST", "/v1/speech"):
+                let body = (try? JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as? [String: String]) ?? [:]
+                return body["mode"] == "render" ? (400, json(["error": "Mode must be play or save."])) : (202, json(["id": "old-2"]))
+            default: return (200, json(["state": "running"]))
+            }
+        }
+        let client = FakeChatter.client()
+        let render = Task { try await client.render("Hi.", voice: "Scar") }
+        try await waitFor { FakeChatter.lock.withLock { FakeChatter.seen }.contains { $0.url!.path == "/v1/jobs/old-2" } }
+        render.cancel()
+        _ = try? await render.value
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(!FakeChatter.lock.withLock { FakeChatter.seen }.contains { $0.httpMethod == "DELETE" })
     }
 
     @Test func failuresBecomeReadableErrors() async throws {
@@ -167,6 +241,15 @@ private func json(_ object: Any) -> Data { try! JSONSerialization.data(withJSONO
         let voices = try await FakeChatter.client().voices()
         #expect(voices == [ChatterClient.Voice(id: "6D86", name: "Scar", ready: true),
                            ChatterClient.Voice(id: "R", name: "Ryan", ready: false)])
+    }
+}
+
+/// Polls until `condition` holds, for at most 2 s.
+private func waitFor(_ condition: @Sendable () -> Bool) async throws {
+    let deadline = ContinuousClock.now + .seconds(2)
+    while !condition() {
+        guard ContinuousClock.now < deadline else { Issue.record("timed out waiting"); return }
+        try await Task.sleep(for: .milliseconds(10))
     }
 }
 
