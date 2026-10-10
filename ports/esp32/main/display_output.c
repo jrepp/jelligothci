@@ -1,8 +1,11 @@
 #include "display_output.h"
+#include "display_copy.h"
+#include "render_benchmark.h"
 #include "network.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <inttypes.h>
@@ -90,13 +93,55 @@ void jelli_display_output_present(JelliDisplayOutput *output, const JelliSurface
     bsp_display_unlock();
 }
 
+/* Explicit bounded diagnostic. Alternate order to reduce cache bias; timings
+ * exclude comparisons. The engine task and display mutex own both frames. */
+static void benchmark_copy(JelliDisplayOutput *output, JelliDebug *debug, uint32_t id)
+{
+    enum { PAIRS = 32 };
+    uint64_t elapsed[2] = {0};
+    bool equal = true;
+    ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
+    for (unsigned pair = 0; pair < PAIRS; ++pair) {
+        for (unsigned pass = 0; pass < 2u; ++pass) {
+            unsigned method = (pair + pass) % 2u;
+            int64_t start = esp_timer_get_time();
+            if (method) {
+                jelli_display_copy(output->canvas_pixels, output->engine_pixels,
+                                   (JelliRect){0, 0, JELLI_WIDTH, JELLI_HEIGHT});
+            } else {
+                for (unsigned y = 0; y < JELLI_HEIGHT; ++y)
+                    memcpy(output->canvas_pixels + y * JELLI_WIDTH,
+                           output->engine_pixels + y * JELLI_WIDTH, JELLI_WIDTH * sizeof(uint16_t));
+            }
+            elapsed[method] += (uint64_t)(esp_timer_get_time() - start);
+            equal = equal && !memcmp(output->engine_pixels, output->canvas_pixels,
+                                     FRAME_PIXELS * sizeof(uint16_t));
+        }
+    }
+    bool guards = intact(output->engine_pixels) && intact(output->canvas_pixels);
+    lv_obj_invalidate(output->canvas);
+    bsp_display_unlock();
+    char body[224];
+    int size = snprintf(body, sizeof(body),
+                        "{\"ok\":%s,\"pairs\":%u,\"bytes_per_copy\":%u,"
+                        "\"row_total_us\":%" PRIu64 ",\"bulk_total_us\":%" PRIu64 "}",
+                        equal && guards ? "true" : "false", (unsigned)PAIRS,
+                        (unsigned)(FRAME_PIXELS * sizeof(uint16_t)), elapsed[0], elapsed[1]);
+    if (size > 0 && (size_t)size < sizeof(body))
+        jelli_debug_response(debug, id, body);
+}
+
 bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEngine *engine,
                                   uint32_t id, char **words, unsigned count)
 {
     JelliDisplayOutput *output = ctx;
     if (count < 3u || strcmp(words[2], "display"))
         return jelli_network_command(NULL, debug, engine, id, words, count);
-    if (count == 4u && !strcmp(words[3], "refresh")) {
+    if (count == 4u && !strcmp(words[3], "benchmark-rect")) {
+        jelli_render_benchmark(output, debug, id);
+    } else if (count == 4u && !strcmp(words[3], "benchmark-copy")) {
+        benchmark_copy(output, debug, id);
+    } else if (count == 4u && !strcmp(words[3], "refresh")) {
         output->refresh_requested = true;
         jelli_debug_response(debug, id, "{\"ok\":true,\"pending\":true}");
     } else if (count == 3u) {

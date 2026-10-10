@@ -218,7 +218,7 @@ def main():
     network = commands.add_parser("network", help="ESP32 network status or persist/apply staged settings")
     network.add_argument("action", nargs="?", choices=("apply",))
     display = commands.add_parser("display", help="ESP32 buffer diagnostics or explicit panel refresh")
-    display.add_argument("action", nargs="?", choices=("refresh",))
+    display.add_argument("action", nargs="?", choices=("refresh", "benchmark-copy", "benchmark-rect"))
     ota = commands.add_parser("ota", help="ESP32 HTTPS update: inspect, download/stage, then save/reboot")
     ota.add_argument("action", nargs="?", choices=("start", "reboot"))
     events = commands.add_parser("events", help="Read discrete action/state events")
