@@ -12,6 +12,7 @@
   document.head.insertAdjacentHTML('beforeend', `<style>
     .lint-waive{font-size:11px;padding:2px 9px;border-radius:20px}
     .lint-form{display:grid;gap:10px;min-width:min(420px,80vw)}.lint-form label{display:flex;gap:8px;align-items:center}
+    .lint-form fieldset{border:1px solid var(--line);border-radius:8px;display:grid;gap:6px;margin:0;padding:8px 12px}.lint-form legend{padding:0 4px}.lint-form #lint-problem{margin:0;min-height:1em}
     .lint-form input[type=text]{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
     .tidy-preview{display:flex;gap:14px;flex-wrap:wrap}.tidy-preview figure{margin:0;display:grid;gap:4px;justify-items:center;font-size:12px;color:var(--muted)}
     .tidy-preview canvas{image-rendering:pixelated;border:1px solid var(--line);border-radius:6px}
@@ -32,23 +33,33 @@
     const v = L.verdict(a.key, a.kind, a.after_metrics, {...D.lint, waivers: {}}), waiver = D.lint?.waivers?.[a.key];
     const rules = L.RULES.filter(r => v.fails.includes(r) || waiver?.rules.includes(r));
     let form = null;
-    const body = `<div class="lint-form"><p>Waived rules stop counting as failures for <b>${esc(a.key)}</b>. Say why, so a reviewer can judge it.</p>
-      ${rules.map(r => `<label><input type="checkbox" value="${r}"${waiver ? (waiver.rules.includes(r) ? ' checked' : '') : ' checked'}> ${L.NAMES[r]}${v.fails.includes(r) ? '' : ' (passes now)'}</label>`).join('')}
-      <label for="lint-reason">Reason</label><input type="text" id="lint-reason" maxlength="200" value="${esc(waiver?.reason || '')}" placeholder="e.g. selective outline is intentional on the gills"></div>`;
+    const body = `<div class="lint-form"><p id="lint-intro">Waived rules stop counting as failures for <b>${esc(a.key)}</b>. Say why, so a reviewer can judge it.</p>
+      <fieldset><legend>Rules to waive</legend>${rules.map(r => `<label><input type="checkbox" value="${r}"${waiver ? (waiver.rules.includes(r) ? ' checked' : '') : ' checked'}> ${L.NAMES[r]}${v.fails.includes(r) ? '' : ' (passes now)'}</label>`).join('')}</fieldset>
+      <label for="lint-reason">Reason</label><input type="text" id="lint-reason" maxlength="200" aria-describedby="lint-problem" value="${esc(waiver?.reason || '')}" placeholder="e.g. selective outline is intentional on the gills">
+      <p id="lint-problem" class="lint-bad" role="alert"></p></div>`;
     const actions = [{label: 'Cancel', value: 'cancel'}, ...(waiver ? [{label: 'Remove waiver', value: 'remove', danger: true}] : []), {label: 'Save waiver', value: 'save', primary: true}];
+    const picked = () => [...form.querySelectorAll('input[type=checkbox]:checked')].map(i => i.value);
+    const reason = () => form.querySelector('#lint-reason').value.trim();
     const choice = await shell().dialog({title: 'Lint waiver', body, actions, initial: '#lint-reason', onOpen: el => {
-      form = el;  // Enter in the reason saves (the form's first button is the dialog's close ×)
-      el.querySelector('#lint-reason').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.querySelector('[value=save]').click(); } });
+      form = el; el.setAttribute('aria-describedby', 'lint-intro');
+      const save = el.querySelector('[value=save]'), problem = el.querySelector('#lint-problem');
+      /* Keep the dialog open until the waiver is complete, and say what is missing. */
+      save.addEventListener('click', e => {
+        const missing = !picked().length ? 'Pick at least one rule to waive.' : !reason() ? 'Give a reason for the waiver.' : '';
+        problem.textContent = missing;
+        if (missing) { e.preventDefault(); (picked().length ? el.querySelector('#lint-reason') : el.querySelector('input[type=checkbox]'))?.focus(); }
+      });
+      // Enter in the reason saves (the form's first button is the dialog's close ×).
+      el.querySelector('#lint-reason').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save.click(); } });
     }});
     if (choice !== 'save' && choice !== 'remove') return;
-    const picked = choice === 'remove' ? [] : [...form.querySelectorAll('input[type=checkbox]:checked')].map(i => i.value);
-    const reason = form.querySelector('#lint-reason').value.trim();
-    if (choice === 'save' && (!picked.length || !reason)) return S.status('Pick at least one rule and give a reason to waive it', 'warn');
+    const chosen = choice === 'remove' ? [] : picked();
     try {
-      const res = await S.api('POST', '/api/lint-waiver', {key: a.key, rules: picked, reason, base: D.lint_sha, artist: state.artist});
+      const res = await S.api('POST', '/api/lint-waiver', {key: a.key, rules: chosen, reason: reason(), base: D.lint_sha, artist: state.artist});
       Object.assign(D, {lint: res.lint, lint_sha: res.lint_sha, version: res.version});
       S.rerender();
-      S.status(picked.length ? `Waived ${picked.map(r => L.NAMES[r]).join(', ')} for ${a.key}` : `Removed the waiver for ${a.key}`, 'ok');
+      document.querySelector('.lint-waive')?.focus();  // the header was rebuilt; keep focus on its waiver button
+      S.status(chosen.length ? `Waived ${chosen.map(r => L.NAMES[r]).join(', ')} for ${a.key}` : `Removed the waiver for ${a.key}`, 'ok');
     } catch (err) {
       if (err.status === 409) { await S.reload(); S.rerender(); }
       S.status(`Waiver not saved: ${err.message}`, 'bad', true);

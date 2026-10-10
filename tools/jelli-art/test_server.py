@@ -12,6 +12,7 @@ repair and the container entrypoint.
 
 Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_server.py
 """
+import base64
 import faulthandler
 import io
 import json
@@ -391,6 +392,61 @@ class ServerTest(unittest.TestCase):
         server = [[lint_rules.verdict(k["key"], k["kind"], k["metrics"], c) for k in cases] for c in configs]
         self.assertEqual(page, server)
         self.assertTrue(any(v["waived"] for v in server[1]) and any(v["fails"] for v in server[0]))
+
+    @unittest.skipUnless(shutil.which("node"), "node runs lint.js")
+    def test_page_and_server_measure_agree_on_every_png(self):
+        """compare_slice.measure() and lint.js measure() find the same specks, edges and colours, own palettes included."""
+        sys.path.insert(0, str(REPO / "tools/assets"))
+        import compare_slice
+        manifest = json.loads((self.slice / "assets.json").read_text())
+        details = {a["key"]: a for a in self.server.get("/api/data")["assets"]}
+        cases, server = [], []
+        for asset in manifest["assets"]:
+            image = Image.open(self.slice / asset["path"]).convert("RGBA")
+            detail = details[asset["key"]]
+            own = detail["palette"] if detail["palette_name"] != "shared" else None
+            cases.append({"w": image.width, "h": image.height, "kind": asset["kind"], "palette": own,
+                          "rgba": base64.b64encode(image.tobytes()).decode()})
+            server.append(compare_slice.measure_image(image, asset["kind"], compare_slice.outline_ink(manifest, asset)))
+        self.assertTrue(any(c["palette"] and c["kind"] == "creatures" for c in cases))  # the axolotl's own palette
+        script = ("const L = require(process.argv.at(-1)), cases = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
+                  "console.log(JSON.stringify(cases.map(c => L.measure({w: c.w, h: c.h, data: Buffer.from(c.rgba, 'base64')},"
+                  " c.kind, L.outlineInk(c.palette)))));")
+        result = subprocess.run(["node", "-e", script, "--", str(HERE / "lint.js")], input=json.dumps(cases),
+                                capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for asset, page, ours in zip(manifest["assets"], json.loads(result.stdout), server):
+            self.assertEqual(page, ours, asset["key"])
+
+    def test_waivers_refuse_a_symlinked_or_invalid_lint_file(self):
+        path = self.slice / "source/lint.json"
+        original = path.read_text()
+        elsewhere = Path(self.scratch.name) / "elsewhere.json"
+        try:
+            elsewhere.write_text(original)
+            path.unlink()
+            path.symlink_to(elsewhere)
+            key = self.data["assets"][0]["key"]
+            status, reply = self.server.request("POST", "/api/lint-waiver", {"key": key, "rules": ["specks"], "reason": "x"})
+            self.assertEqual(status, 400, reply)
+            self.assertEqual(elsewhere.read_text(), original)  # the link's target is untouched
+            path.unlink()
+            path.write_text('{"max_colours": 6, "max_colours_by_kind": {"sprites": 4}}')
+            data = self.server.get("/api/data")  # the page still loads, and says why there are no limits
+            self.assertIn("unknown kinds", data["lint_error"])
+            status, reply = self.server.request("POST", "/api/lint-waiver", {"key": key, "rules": ["specks"], "reason": "x"})
+            self.assertEqual(status, 400, reply)
+            self.assertIn("Fix lint.json", reply["error"])
+            path.unlink()
+            path.mkdir()  # unreadable as a file: still a report, not a 500
+            self.assertIn("lint.json", self.server.get("/api/data")["lint_error"])
+            path.rmdir()
+        finally:
+            if path.is_symlink() or path.is_file():
+                path.unlink()
+            elif path.is_dir():
+                path.rmdir()
+            path.write_text(original)
 
     def test_health_reports_capabilities(self):
         health = self.server.get("/healthz")

@@ -22,8 +22,8 @@ class LintError(ValueError):
     """lint.json is malformed or a waiver edit is invalid."""
 
 
-def check(config, keys=None):
-    """Validate a lint document; keys, when given, are the asset keys a waiver may name."""
+def check(config, keys=None, kinds=None):
+    """Validate a lint document; keys and kinds, when given, are the asset keys and kinds it may name."""
     if not isinstance(config, dict):
         raise LintError("lint.json must be an object")
     unknown = set(config) - {"max_colours", "max_colours_by_kind", "waivers"}
@@ -32,10 +32,13 @@ def check(config, keys=None):
     limit = config.get("max_colours")
     if limit is not None and (not isinstance(limit, int) or isinstance(limit, bool) or limit < 1):
         raise LintError("max_colours must be a positive integer or null")
-    kinds = config.get("max_colours_by_kind", {})
-    if not isinstance(kinds, dict) or any(v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1)
-                                          for v in kinds.values()):
+    kinds_map = config.get("max_colours_by_kind", {})
+    if not isinstance(kinds_map, dict) or any(v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1)
+                                              for v in kinds_map.values()):
         raise LintError("max_colours_by_kind maps a kind to a positive integer or null")
+    unknown_kinds = set(kinds_map) - set(kinds) if kinds is not None else set()
+    if unknown_kinds:
+        raise LintError(f"max_colours_by_kind names unknown kinds: {', '.join(sorted(unknown_kinds))}")
     waivers = config.get("waivers", {})
     if not isinstance(waivers, dict):
         raise LintError("waivers must map an asset key to {rules, reason}")
@@ -56,14 +59,14 @@ def check_waiver(key, waiver, keys=None):
         raise LintError(f"Waiver for {key} needs a reason of 1 to {MAX_REASON} characters")
 
 
-def load(assets_dir, fallback_dir=None):
+def load(assets_dir, fallback_dir=None, kinds=None):
     """(config, error): the lint document beside the assets, or the fallback's; an error keeps the page usable."""
     for folder in (assets_dir, fallback_dir):
         path = Path(folder) / RELATIVE if folder else None
         if path and path.exists():
             try:
-                return check(json.loads(path.read_text())), None
-            except (ValueError, LintError) as error:
+                return check(json.loads(path.read_text()), kinds=kinds), None
+            except (OSError, ValueError) as error:  # LintError is a ValueError; a directory or unreadable file is OSError
                 return {"waivers": {}}, f"{path.name}: {error}"
     return {"waivers": {}}, None
 

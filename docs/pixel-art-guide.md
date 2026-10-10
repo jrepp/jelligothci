@@ -57,10 +57,11 @@ and **deep**.
 - Plum and mauve are for recessed or dark interiors (the "more" pill, gear hole).
 - Keep each sprite to **six colours or fewer, including ink**. Fewer reads better.
   Creatures may use **eight**, because the face kit adds a white catchlight, a
-  cream gloss and coral cheeks to the four-tone ramp and ink. The limits are
-  data in `assets/slice/source/lint.json` (`max_colours`,
-  `max_colours_by_kind`), and the compare page and Jelli Art flag sprites over
-  them.
+  cream gloss and coral cheeks to the four-tone ramp and ink. The font and
+  backgrounds have no colour limit. The limits are data in
+  `assets/slice/source/lint.json` (`max_colours`, `max_colours_by_kind`,
+  where `null` means no limit), and the compare page and Jelli Art flag
+  sprites over them.
 
 ## 3. Outline
 

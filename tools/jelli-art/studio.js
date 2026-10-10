@@ -5,7 +5,6 @@
 'use strict';
 (() => {
   const S = window.Studio = {}, T = window.JelliPaint;
-  const OUTLINED = new Set(['creatures', 'icons', 'menus', 'meters', 'health', 'effects', 'prizes', 'props']);
   const LOCKED = new Set(['font', 'backgrounds']);
   const SHAPES = new Set(['line', 'rect', 'ellipse']);
   /* [id, name, key, what it does] */
@@ -85,11 +84,6 @@
   async function reload() {
     const keep = Object.entries(edits).filter(([key]) => dirty(key)).map(([key]) => [key, decoded[key].after.data.slice()]);
     await loadPayload(await api('GET', `/api/data?before=${encodeURIComponent(state.before)}`));
-    // The server measures with the shared ink; re-measure sprites outlined from their own palette.
-    for (const a of D.assets.filter(x => ownPalette(x) && !LOCKED.has(x.kind))) {
-      if (decoded[a.key].after) a.after_metrics = measure(decoded[a.key].after, a);
-      if (decoded[a.key].before) a.before_metrics = measure(decoded[a.key].before, a);
-    }
     state.float = null; stroke = null;
     const kept = new Set(keep.map(([key]) => key));
     for (const key of Object.keys(edits)) {
@@ -152,7 +146,7 @@
     queued = git.pending_commits || 0;
   }
   async function poll() {
-    if (document.hidden || stroke) return;
+    if (document.hidden || stroke || document.querySelector('dialog[open]')) return;  // no reload under an open dialog
     if (D.git?.enabled) api('GET', '/api/git').then(g => { D.git = g; renderGit(g); }).catch(() => {});
     const {version} = await api('GET', '/api/version').catch(() => ({}));
     if (!version || version === D.version) return;
@@ -169,23 +163,11 @@
   const ownPalette = a => !!a.palette_name && a.palette_name !== 'shared';
   const paletteOf = a => (a.palette || D.palette).map(h => h.toLowerCase());
   const paletteWhere = a => ownPalette(a) ? `the ${a.palette_name} palette` : 'the shared palette';
-  const luma = hex => [1, 3, 5].reduce((n, i, k) => n + parseInt(hex.slice(i, i + 2), 16) * [299, 587, 114][k], 0);
-  /* The outline colour: shared ink, or the darkest colour of the asset's own palette. */
-  const inkOf = a => ownPalette(a) ? paletteOf(a).reduce((d, h) => luma(h) < luma(d) ? h : d) : '#291b35';
+  /* The outline colour: shared ink, or the darkest colour of the asset's own palette (lint.js; the server agrees). */
+  const inkOf = a => window.JelliLint.outlineInk(ownPalette(a) ? paletteOf(a) : null);
   const slotName = (a, i) => ownPalette(a) ? `${a.palette_name} ${i + 1}` : NAMES[i];
   S.ownPalette = ownPalette;
-  function measure(p, a) {
-    const kind = a.kind, ink = inkOf(a), colors = {}, specks = [], open = [], measured = !LOCKED.has(kind);
-    for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
-      const hex = pixel(p, x, y); if (!hex) continue;
-      colors[hex] = (colors[hex] || 0) + 1;
-      const n4 = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => pixel(p, x + dx, y + dy));
-      const n8 = [...n4, ...[[1, 1], [-1, -1], [1, -1], [-1, 1]].map(([dx, dy]) => pixel(p, x + dx, y + dy))];
-      if (measured && hex !== ink && hex !== '#ffffff' && !n8.includes(hex)) specks.push([x, y]);
-      if (OUTLINED.has(kind) && hex !== ink && n4.includes(null)) open.push([x, y]);
-    }
-    return {colors, opaque: Object.values(colors).reduce((n, v) => n + v, 0), specks, open_edges: open};
-  }
+  const measure = (p, a) => window.JelliLint.measure(p, a.kind, inkOf(a));  // lint.js: compare_slice.py's rules
   /* Push the working buffer to its canvas, metrics, thumbnail and change count. */
   function refresh(key) {
     const a = byKey[key], p = work(key), before = decoded[key].before;
@@ -734,8 +716,12 @@
     try {
       const res = await api('POST', '/api/tidy', {key: a.key, pixels});
       if (S.previewTidy && !await S.previewTidy(a, pixels, res.pixels)) return;  // lint_ui.js: before/after, Apply or Cancel
+      // A reload may have swapped the buffer, or the sprite changed, while the request or preview was open.
+      const now = work(a.key);
+      if (asset()?.key !== a.key || !now || pixels.some((hex, i) => pixel(now, i % now.w, Math.floor(i / now.w)) !== hex))
+        return status('The sprite changed while Tidy was open; run Tidy again', 'warn');
       state.float = null;
-      res.pixels.forEach((hex, i) => T.set(p, i % p.w, Math.floor(i / p.w), hex)); done('Tidy outline');
+      res.pixels.forEach((hex, i) => T.set(now, i % now.w, Math.floor(i / now.w), hex)); done('Tidy outline');
       status('Tidied: closed outline, specks removed. Undo if you prefer the old version.');
     } catch (err) { status(`Tidy failed: ${err.message}`, 'bad', true); }
   }

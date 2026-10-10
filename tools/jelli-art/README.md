@@ -93,7 +93,10 @@ removes it). That save holds the write lock, checks the base and writes
 atomically, like other saves. `lint_ui.js` also previews **Tidy outline**
 before it is applied, and warns once per session when Flip horizontal moves a
 shaded sprite's light. The static compare page shows the same verdicts.
-`test_server.py` checks that the Python and page rules agree on every asset.
+Both sides also measure the same way (`measure()`). A sprite with its own
+palette is outlined in that palette's darkest colour, which is exempt from
+specks and open edges, as the shared ink is. `test_server.py` checks that the
+Python and page measures and verdicts agree on every asset.
 
 ## Creature clips
 

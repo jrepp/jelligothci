@@ -488,7 +488,6 @@ function renderKinds() {
     b.textContent = `${k} ${of.length}${n ? ` · ${n} changed` : ''}`; b.setAttribute('aria-pressed', String(state.kind === k)); b.onclick = () => { state.kind = k; renderKinds(); renderList(); savePrefs(); }; el.append(b); }
 }
 function renderTotals() {
-  const sum = (side, f) => D.assets.reduce((n, a) => n + (a[side] ? f(a[side]) : 0), 0);
   const changed = D.assets.filter(a => a.changed !== 0).length;
   /* Sprites failing a rule that is not waived; raw speck and edge counts stay on each asset. */
   const failing = side => D.assets.filter(a => a[side] && lintOf(a, a[side]).fails.length).length;

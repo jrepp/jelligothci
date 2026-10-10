@@ -36,12 +36,12 @@ from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "assets"))
-from compare_slice import REPO, SOURCE, collect  # noqa: E402
+from compare_slice import DEVICE_SCALE, REPO, SOURCE, collect  # noqa: E402
 import animation  # noqa: E402
 import behaviors  # noqa: E402
 import creatures  # noqa: E402
-import lint_rules  # noqa: E402
 import game_preview  # noqa: E402
+import lint_rules  # noqa: E402
 import profiles  # noqa: E402
 import request_body  # noqa: E402
 import storage  # noqa: E402
@@ -157,19 +157,29 @@ def payload(before):
             "git": GIT.status() if GIT else {"enabled": False}}
 
 
+def load_lint():
+    """(config, error): the served lint.json, or the checkout's when an --assets copy has none."""
+    return lint_rules.load(SOURCE, REPO / "assets/slice", DEVICE_SCALE)
+
+
 def lint_payload():
     """Lint limits and waivers, the hash a waiver edit sends back, and any problem reading them."""
-    lint, error = lint_rules.load(SOURCE)
-    return {"lint": lint, "lint_sha": storage.digest(LINT), "lint_error": error}
+    lint, error = load_lint()
+    return {"lint": lint, "lint_sha": lint_sha(), "lint_error": error}
+
+
+def lint_sha():
+    """Hash of the served lint.json, or None when it is missing or not a regular file (load_lint reports why)."""
+    return storage.digest(LINT) if LINT.is_file() else None
 
 
 def set_waiver(key, rules, reason, artist="", base=None):
     """Add, replace or (with no rules) remove one sprite's lint waiver in source/lint.json."""
     with LOCK:
-        current = storage.digest(LINT)
+        current = lint_sha()
         if base is not None and base != current:
             raise StaleError("Lint waivers changed on disk since you loaded them; reload first", current)
-        lint, error = lint_rules.load(SOURCE)
+        lint, error = load_lint()
         if error:
             raise StudioError(f"Fix {LINT.name} before changing waivers: {error}")
         keys = {a["key"] for a in read_manifest()["assets"]}

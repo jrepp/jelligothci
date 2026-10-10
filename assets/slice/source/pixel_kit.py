@@ -53,7 +53,11 @@ def paint(sprite, points, color):
 
 
 def outline(sprite, color="ink", size=32):
-    """Closed 1px outline outside the silhouette; 4-connected so corners stay round."""
+    """Closed 1px outline outside the silhouette.
+
+    Ink goes on the 4-neighbours of the fill, so no fill pixel touches transparency, while the
+    outline itself steps diagonally (8-connected) with no doubled corners, as the style guide asks.
+    """
     ring = {(x + dx, y + dy) for (x, y), c in sprite.items() if c != color for dx, dy in N4} - set(sprite)
     for x, y in ring:
         if 0 <= x < size and 0 <= y < size:
