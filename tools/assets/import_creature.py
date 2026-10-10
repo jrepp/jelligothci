@@ -13,7 +13,9 @@ their relative placement, then bottom-centred on the pivot row.
 
 The importer writes PNGs under assets/slice/creatures/ and upserts the frame
 assets and the form's named palette in assets.json. Clips are authored data and
-are left alone; edit them in the manifest or in Jelli Art.
+are left alone; edit them in the manifest or in Jelli Art. Entries marked
+"studio": true are frames added in Jelli Art: they keep their ID slot, have no
+source file, and their PNG and asset are left alone.
 """
 import argparse
 import json
@@ -119,7 +121,11 @@ def upsert(manifest, spec, frames):
     kind = spec.get("kind", "creatures")
     manifest.setdefault("palettes", {})[spec["palette"]] = palette_of(frames)
     by_key = {asset["key"]: asset for asset in manifest["assets"]}
-    for index, (entry, frame) in enumerate(zip(spec["frames"], frames)):
+    imported = iter(frames)
+    for index, entry in enumerate(spec["frames"]):
+        if entry.get("studio"):  # Added in Jelli Art: keeps its ID slot; the studio owns its PNG and asset.
+            continue
+        frame = next(imported)
         name = frame_name(spec, entry)
         if entry.get("retired"):  # Keeps its ID slot; the asset and PNG are removed.
             manifest["assets"] = [a for a in manifest["assets"] if a["key"] != f"{kind}.{name}"]
@@ -145,12 +151,13 @@ def main():
     spec = json.loads(args.spec.read_text())
     cell = spec["source_cell"]
     # Retired frames still join the union bounds so the remaining frames keep their placement.
-    sources = [downsample(Image.open(args.source_dir / f["source"]).convert("RGBA"), cell) for f in spec["frames"]]
+    entries = [f for f in spec["frames"] if not f.get("studio")]  # Jelli Art frames have no source file.
+    sources = [downsample(Image.open(args.source_dir / f["source"]).convert("RGBA"), cell) for f in entries]
     if spec.get("reduce_to_width"):  # Shared crop first, so every frame reduces identically.
         box = union_bounds(sources)
         sources = [reduce_art(source.crop(box), spec["reduce_to_width"]) for source in sources]
     frames = place(sources, spec["canvas"], spec["pivot"])
-    for entry, frame in zip(spec["frames"], frames):
+    for entry, frame in zip(entries, frames):
         if entry.get("retired"):
             continue
         frame.save(SOURCE / spec.get("kind", "creatures") / f"{frame_name(spec, entry)}.png", optimize=True)
@@ -158,7 +165,7 @@ def main():
     manifest = json.loads(manifest_path.read_text())
     upsert(manifest, spec, frames)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
-    kept = sum(not entry.get("retired") for entry in spec["frames"])
+    kept = sum(not entry.get("retired") for entry in entries)
     print(f"Imported {kept} {spec.get('form') or spec['name']} frames ({frames[0].width}x{frames[0].height})")
 
 

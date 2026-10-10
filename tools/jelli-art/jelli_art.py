@@ -34,6 +34,7 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "assets"))
 from compare_slice import REPO, SOURCE, collect  # noqa: E402
+import animation  # noqa: E402
 import behaviors  # noqa: E402
 import creatures  # noqa: E402
 import game_preview  # noqa: E402
@@ -58,8 +59,8 @@ STUDIO_JS = HERE / "studio.js"
 CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
-PAGE_SCRIPTS = (SHELL_JS, STUDIO_JS, CREATURE_JS, BEHAVIOUR_JS, HERE / "simulator.js", HERE / "reactions.js",
-                HERE / "game_preview.js")
+PAGE_SCRIPTS = (SHELL_JS, STUDIO_JS, CREATURE_JS, HERE / "animation.js", BEHAVIOUR_JS, HERE / "simulator.js",
+                HERE / "reactions.js", HERE / "game_preview.js")
 EDITABLE_CONTENT = ("behaviors", "creatures")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
@@ -225,6 +226,27 @@ def save_clips(edits, artist=""):
     return {"ok": True, "changed": changed, "version": version(), **({"warning": warning} if warning else {}), **git}
 
 
+def frames_overview():
+    return {"frames": animation.frame_overview(read_manifest(), SOURCE, PETS, CREATURE_DATA)}
+
+
+def edit_frame(body, artist=""):
+    """Add (blank or duplicated) or retire a creature frame; see animation.py."""
+    action = body.get("action")
+    with LOCK:
+        try:
+            if action == "add":
+                result, paths, subject = animation.add_frame(SOURCE, REPO, body)
+            elif action == "retire":
+                result, paths, subject = animation.retire_frame(SOURCE, REPO, str(body.get("key")), PETS, CREATURE_DATA)
+            else:
+                raise StudioError("Frame action must be add or retire")
+        except animation.FrameError as error:
+            raise StudioError(str(error)) from error
+        git = record(paths, subject, artist)
+    return {"ok": True, **result, "version": version(), **git}
+
+
 def save_content(docs, bases, artist=""):
     """Replace content/behaviors.json and/or content/creatures.json together.
 
@@ -349,6 +371,11 @@ class Handler(BaseHTTPRequestHandler):
         if method == "POST" and url.path == "/api/clips":
             body = self.body()
             return self.send(HTTPStatus.OK, save_clips(body["clips"], str(body.get("artist", ""))))
+        if method == "GET" and url.path == "/api/frames":
+            return self.send(HTTPStatus.OK, frames_overview())
+        if method == "POST" and url.path == "/api/frames":
+            body = self.body()
+            return self.send(HTTPStatus.OK, edit_frame(body, str(body.get("artist", ""))))
         if method == "GET" and url.path == "/api/creatures":
             return self.send(HTTPStatus.OK, creature_profiles())
         if method == "POST" and url.path == "/api/creatures":

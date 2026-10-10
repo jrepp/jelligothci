@@ -169,7 +169,9 @@
     const {ctx, a, z} = view, p = work(a.key);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, a.width * z, a.height * z);
     fillBackdrop(ctx, a.width, a.height, z, backdropFor(a));
-    drawPixels(ctx, state.peek ? decoded[a.key].before : p, z); drawGrid(ctx, a.width, a.height, z);
+    drawPixels(ctx, state.peek ? decoded[a.key].before : p, z);
+    if (!state.peek) S.onion?.(ctx, a, z);  // animation.js ghosts the neighbouring clip frames
+    drawGrid(ctx, a.width, a.height, z);
     drawIssues(ctx, a.after_metrics, z);
     if (state.mirror) { ctx.fillStyle = 'rgba(133,228,182,.8)'; ctx.fillRect(a.width * z / 2 - 1, 0, 2, a.height * z); }
     if (state.hover) {

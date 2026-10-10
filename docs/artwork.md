@@ -157,6 +157,8 @@ The axolotl was added this way, without species-specific C:
    `./scripts/uv run --python 3.12 tools/assets/import_creature.py SPEC SOURCE_DIR`.
    Every source cell becomes one pixel, and all frames keep their shared placement.
    IDs are `first_id` plus list position, so append new frames and never reorder.
+   Jelli Art's timeline can also add frames; it appends a `"studio": true` entry
+   that holds the ID, and the importer leaves that frame alone.
 2. **Clips.** Give the form one `<form>.<pose>` clip for each of the eight
    `creature_poses` in `assets/slice/assets.json`. Edit and preview them in
    Jelli Art's Creature view.
