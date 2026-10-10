@@ -43,7 +43,7 @@ The user's decisions (2026-10-10):
 | Gameplay weight | Light effects plus requests: small capped need and bond changes; answering a request gives a bond bonus, and ignoring it simply times out, with no penalty |
 | Persistence | Save only the current state, its deadline and its cooldown. Offline catch-up expires states and never starts new ones |
 | Art | Reuse existing frames now, with captions and effect sprites; drawn clips slot in later through Jelli Art |
-| Scope | BUBBLE first. Mint and Lilac keep today's behaviour through an empty repertoire |
+| Scope | BUBBLE first. Mint and Lilac keep today's behaviour through an empty repertoire. **Proposed, pending owner approval (PR `feat/jelly-repertoire`):** a separate `jelly` repertoire for Mint and Lilac that reuses existing states and has no potty request |
 
 # Detailed Design
 
@@ -198,6 +198,7 @@ a seed, and see which state is chosen and how it looks.
 | Potty accident and animated mess | The user changed this to "accident if ignored": the `asking_potty` timeout leaves a mess that CLEAN fixes |
 | Magic-number scrub | In progress; see [memo-032](../memos/memo-032-magic-number-inventory.md) |
 | Jelli Art behaviour authoring | In progress |
+| Jelly repertoire for Mint and Lilac | Proposed, pending owner approval |
 
 Not yet verified on hardware: the multi-frame clip and effect redraw cost on ESP32.
 

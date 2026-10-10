@@ -50,17 +50,23 @@ static void bubble_game(JelliGame *game, unsigned skip)
     }
 }
 
-static void mint_has_no_repertoire(void)
+/* Mint's jelly repertoire delights at presents but never asks for the potty or studies. */
+static void mint_jelly_is_gentle(void)
 {
     JelliGame game;
     jelli_game_init(&game);
     game.pets[0].needs[JELLI_SATIETY] = 100u;
     game.pets[0].potty = 999u;
+    unsigned delighted = 0u;
     for (unsigned s = 0u; s < 600u; ++s) {
         jelli_behavior_stimulus(&game, JELLI_STIM_PRESENT_CAUGHT, 0u);
         second(&game);
-        CHECK(game.pets[0].behavior == 0u);
+        unsigned state = game.pets[0].behavior;
+        CHECK(state != state_named("asking_potty") && state != state_named("studying"));
+        delighted += state == state_named("delighted");
+        CHECK(!(game.pets[0].behavior_flags & JELLI_PET_FLAG_MESS));
     }
+    CHECK(delighted > 0u);
 }
 
 static void presents_make_bubble_curious(void)
@@ -327,7 +333,7 @@ int main(void)
     potty_request_respects_sleep_cooldown_and_relief();
     ignored_potty_request_leaves_a_mess();
     answered_potty_request_leaves_no_mess();
-    mint_has_no_repertoire();
+    mint_jelly_is_gentle();
     presents_make_bubble_curious();
     requests_are_answered();
     hunger_asks_for_food_then_times_out();
