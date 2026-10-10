@@ -23,6 +23,7 @@ static bool begin_activity(JelliPet *pet, JelliActivity activity, uint64_t durat
     if (UINT64_MAX - pet->ticks < duration)
         return false;
     pet->activity = activity;
+    pet->moment = 0u; /* A replacement activity must not retain a cancelled moment. */
     pet->interaction_due = pet->ticks + duration;
     return true;
 }

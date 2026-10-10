@@ -223,6 +223,10 @@ void jelli_behavior_step(JelliGame *game, JelliPet *pet, uint64_t old_ticks, boo
                                         (pet->asleep ? JELLI_PET_FLAG_WAS_ASLEEP : 0u));
         return;
     }
+    /* Urgency persists across busy time, sleep, cooldowns and offline catch-up.
+     * Recheck live state instead of losing a one-shot edge in the stimulus queue. */
+    if (pet->potty >= jelli_potty_rules.urge_threshold)
+        deliver(game, pet, JELLI_STIM_POTTY_URGE, 0u);
     observe_edges(game, pet, old_ticks);
     if (!pet->behavior && !pet->asleep && pet->activity == JELLI_IDLE)
         jelli_behavior_stimulus(game, JELLI_STIM_IDLE, 0u);
