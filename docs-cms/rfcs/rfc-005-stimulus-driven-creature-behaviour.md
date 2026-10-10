@@ -198,6 +198,7 @@ a seed, and see which state is chosen and how it looks.
 | Potty accident and animated mess | The user changed this to "accident if ignored": the `asking_potty` timeout leaves a mess that CLEAN fixes |
 | Magic-number scrub | In progress; see [memo-032](../memos/memo-032-magic-number-inventory.md) |
 | Jelli Art behaviour authoring | In progress |
+| A `jelly` repertoire for Mint and Lilac (PR #36) | Proposed, pending owner approval |
 
 Not yet verified on hardware: the multi-frame clip and effect redraw cost on ESP32.
 
