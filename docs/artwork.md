@@ -22,16 +22,12 @@ the repository's pinned tools, and it only listens on your own computer.
    to the clean ratios (flat, 3:1, 2:1, 1:1, 1:2, 1:3 and upright), with every
    run the same length, and makes squares and circles. The left button paints
    the main colour and the right button the secondary colour, which starts
-   transparent, so right-click erases until you choose one. With Fill,
-   right-click fills with the secondary colour, so by default it erases the
-   whole touching area. X swaps the two colours. Alt-click (or Alt+Enter at the
-   keyboard cursor) picks the main colour and keeps your tool, except with
-   Select, where Alt-drag copies; Alt+right-click picks the secondary colour
-   with any tool. **Mirror** (M) paints both halves of a symmetric sprite.
-   **Shade** (T) steps each pixel it touches one colour lighter along its ramp;
-   right-click or Shift steps deeper. Colours outside every ramp, such as ink,
-   are left alone. Shade follows the mirror axes and the selection like the
-   other tools.
+   transparent, so right-click erases (with Fill, the whole touching area) until
+   you choose one. X swaps the two. Alt-click picks a colour and keeps your
+   tool (with Select, Alt-drag copies instead). **Mirror** (M) paints both halves of a symmetric sprite. **Shade** (T)
+   steps each pixel one colour lighter along its
+   [ramp](pixel-art-guide.md#2-palette-and-ramps); right-click or Shift steps
+   deeper. The **?** overlay lists the remaining keys.
 3. Selection, transforms, nudges, colour replacement, mirror axes, guides,
    the tile preview and **Tidy outline** are under **More tools**, which stays
    open once you open it. **Select** a rectangle, or click a colour with the
@@ -49,13 +45,11 @@ the repository's pinned tools, and it only listens on your own computer.
    move the axes half a pixel at a time, so an axis can sit between two
    columns or on one; **Centre** puts them back. Moved axes are remembered per
    sprite (so each clip frame separately) in this browser.
-4. Choose a colour under **Paint colours**, beside the canvas. Each row is a
-   ramp from `assets.json`, light to deep; colours in no ramp come last.
-   Click a colour for the main colour. For the secondary, right-click it,
-   press Shift+F10 or the menu key on it, or choose it and press X to swap it
-   in. Cream sits in two ramps, coral and gold; the Shade tool follows the row
-   you clicked it in. Tools paint only the sprite's palette colours until you
-   choose **custom**, which paints any colour. The ✎ on a palette colour
+4. Choose a colour under **Paint colours**, beside the canvas, one row per
+   ramp. Click a colour for the main colour. For the secondary, right-click it,
+   press Shift+F10 on it, or choose it and press X. Tools paint only the
+   sprite's palette colours until you choose **custom**, which paints any
+   colour. The ✎ on a palette colour
    changes that colour in every sprite at once, ramps included; it asks before
    doing so.
 5. **Tidy outline** shows the house outline and stray-pixel fixes side by side,
@@ -64,8 +58,7 @@ the repository's pinned tools, and it only listens on your own computer.
    edges, or more colours than the
    [style guide](pixel-art-guide.md#2-palette-and-ramps) allows. Turn on
    **Issues** to see where. If a failure is intentional, **Waive…** records the
-   rule and your reason in `assets/slice/source/lint.json`, and the sprite
-   stops counting as failing. Flipping a shaded sprite horizontally moves its
+   rule and your reason, and the sprite stops counting as failing. Flipping a shaded sprite horizontally moves its
    light to the top right, and the studio reminds you once per session. Undo
    with ⌘Z / Ctrl+Z, or click any step in the **history** list beside the
    canvas.
@@ -117,20 +110,12 @@ this one; **Silhouette** ghosts their whole shape, to judge arcs and volume
 (Shift+O switches). **±1** to **±3** sets how many on each side, and **Ghost**
 sets their strength.
 
-The flip-book compares every frame with frame 1 the way the game places it:
-each frame stands on its own **ground anchor** (its bottom edge, and the
-centre of its bottom three rows), as `core/pet_actor.c` does. It warns when a
-frame **slides** sideways by half a source pixel or more on the panel, or when
-its **eye** sits higher or lower above its bottom edge than frame 1's. The
-frame's thumbnail gets ⚠. **Eye & ground** in the flip-book draws, on the
-canvas and the preview, each frame's ground line (mint), its ground anchor
-(white tick, with frame 1's in mint when they differ), and the eye row (coral)
-where frame 1's eye height puts it. The eye is measured at its white
-catchlight, inside a face feature that does not touch the outline; a face with
-no catchlight, such as closed or happy eyes, uses the top of its highest
-feature. Onion ghosts and the flip-book preview still line frames up by their
-manifest pivot (canvas coordinates); only these guides and warnings use the
-ground anchor.
+The flip-book compares every frame with frame 1 the way the game places it,
+on its own ground anchor. It marks a frame ⚠ when it **slides** sideways by
+half a source pixel or more on the panel, or when its **eye** (measured at the
+white catchlight) sits higher or lower than frame 1's. **Eye & ground** draws
+those lines on the canvas and the preview. Onion ghosts still line frames up
+by their pivot.
 
 ### Behaviour and size
 
