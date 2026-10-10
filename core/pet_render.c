@@ -3,6 +3,14 @@
 #include "pet_collection.h"
 #include <stddef.h>
 
+static uint8_t recovery_seconds(const JelliPet *pet)
+{
+    if (pet->health != JELLI_RECOVERING || pet->interaction_due <= pet->ticks)
+        return 0u;
+    uint64_t ticks = pet->interaction_due - pet->ticks;
+    return ticks >= 300u ? 30u : (uint8_t)((ticks + 9u) / 10u);
+}
+
 static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint64_t animation_ms,
                                     bool paused)
 {
@@ -50,12 +58,16 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.active_id = pet->id;
     key.stored_id = other->id;
     key.result = ui->result;
+    key.attempted_slot = ui->attempted_slot;
     for (unsigned i = 0u; i < JELLI_NEED_COUNT; ++i)
         key.needs[i] = pet->needs[i];
     key.bond = pet->bond;
     key.hydration = pet->hydration;
+    key.volume = game->volume;
     key.mood = (uint8_t)jelli_pet_mood(pet);
-    key.reaction = pet->reaction;
+    key.reaction = pet->wake_mood ? (uint8_t)(3u + pet->wake_mood) : pet->reaction;
+    if (pet->wake_mood == 2u)
+        key.phase = pet->reaction_ticks > 20u ? 2u : 0u;
     key.care_blocked = (uint8_t)((jelli_pet_health_ready(pet, 1u) ? 0u : 1u) |
                                  (jelli_pet_health_ready(pet, 2u) ? 0u : 2u));
     key.food = game->food;
@@ -67,6 +79,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.form = pet->form;
     key.location = pet->location;
     key.health = (uint8_t)pet->health;
+    key.care_seconds = recovery_seconds(pet);
     key.activity = (uint8_t)pet->activity;
     key.stored_form = other->form;
     key.bedtime = (uint8_t)pet->bedtime;
@@ -108,9 +121,9 @@ static bool same_frame_key(const JelliPetRenderKey *a, const JelliPetRenderKey *
            a->clock_minute == b->clock_minute && a->menu_open == b->menu_open &&
            a->phase == b->phase && a->minute == b->minute && a->day == b->day &&
            a->active == b->active && a->count == b->count && a->page == b->page &&
-           a->result == b->result && a->save_status == b->save_status &&
-           a->time_unavailable == b->time_unavailable && a->paused == b->paused &&
-           a->resuming == b->resuming;
+           a->result == b->result && a->attempted_slot == b->attempted_slot &&
+           a->save_status == b->save_status && a->time_unavailable == b->time_unavailable &&
+           a->paused == b->paused && a->resuming == b->resuming;
 }
 
 static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
@@ -132,7 +145,8 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->hydration == b->hydration && a->assets == b->assets && same_frame_key(a, b) &&
+    return a->care_seconds == b->care_seconds && a->volume == b->volume &&
+           a->hydration == b->hydration && a->assets == b->assets && same_frame_key(a, b) &&
            same_pet_key(a, b) && jelli_pet_gallery_same(a, b) && jelli_pet_collection_same(a, b);
 }
 
@@ -147,6 +161,7 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
     JelliPetRenderKey view = render_key(game, ui, time, paused);
     jelli_pet_actor_layout(ui, &view);
     jelli_pet_sleep_particles(ui, view.asleep, time);
+    jelli_pet_bubbles(ui, view.asleep, time);
     if (ui->rendered && same_render_key(&view, &ui->last_view)) {
         surface->damage = (JelliRect){0};
         jelli_pet_draw_particles(surface, game, ui);

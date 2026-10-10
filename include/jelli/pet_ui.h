@@ -70,7 +70,9 @@ typedef enum {
     JELLI_UI_ACTION_WASH,
     JELLI_UI_ACTION_STRETCH,
     JELLI_UI_ACTION_WATER,
-    JELLI_UI_ACTION_EXERCISE
+    JELLI_UI_ACTION_EXERCISE,
+    JELLI_UI_ACTION_VOLUME_DOWN,
+    JELLI_UI_ACTION_VOLUME_UP
 } JelliPetUiAction;
 
 typedef struct {
@@ -112,8 +114,10 @@ typedef struct {
     uint32_t stored_id;
     uint64_t day;
     JelliResult result;
+    uint8_t attempted_slot;
     uint16_t needs[JELLI_NEED_COUNT];
     uint16_t bond, hydration;
+    uint8_t volume;
     uint16_t food;
     uint16_t gifts;
     uint8_t active;
@@ -122,7 +126,7 @@ typedef struct {
     uint8_t save_status;
     uint8_t form;
     uint8_t location;
-    uint8_t health;
+    uint8_t health, care_seconds;
     uint8_t activity;
     uint8_t stored_form;
     uint8_t bedtime;
@@ -143,6 +147,7 @@ typedef struct {
     uint64_t catch_anchor_ms;
     uint8_t latched_prize, highlighted_prize, catch_seen;
     uint8_t selected_pet, selected_form;
+    uint8_t sound_cue; /* One-based cue; zero defaults to menu confirmation. */
     JelliPetPage present_return;
     JelliGame action_scratch; /* Fixed preflight workspace; never placed on the ESP task stack. */
     uint64_t tile_anchor_ms, idle_anchor_ms, last_animation_phase, last_pet_ticks;
@@ -153,6 +158,7 @@ typedef struct {
     int actor_x, actor_y;
     uint32_t clicker_pet, routine_random, tuning_revision, tuning_pet;
     JelliResult result;
+    uint8_t attempted_slot;
     uint32_t result_until_ms, last_revision, coo_pet;
     JelliRect actor_bounds;
     JelliParticles particles;
@@ -174,6 +180,9 @@ typedef struct {
     bool sound_pending, sound_played;
     uint8_t night_from, night_target;
     bool atmosphere_ready, sleep_emitted;
+    uint64_t bubble_emit_ms;
+    uint8_t bubble_mode;
+    bool bubble_emitted;
     uint8_t routine_goals[6];
 } JelliPetUi;
 

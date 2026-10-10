@@ -32,13 +32,15 @@ static const Note programs[JELLI_SOUND_COUNT][5] = {
      {0}},
     {{360, 300, 220, 400, 1100}, {0, 0, 60, 0, 0}, {300, 230, 320, 500, 1250}, {0}},
     {{980, 1470, 65, 0, 0}, {0}},
-    {{320, 410, 150, 360, 950}, {410, 280, 210, 400, 1100}, {0}}};
+    {{320, 410, 150, 360, 950}, {410, 280, 210, 400, 1100}, {0}},
+    {{660, 880, 50, 0, 0}, {1320, 1760, 55, 0, 0}, {0}},
+    {{430, 650, 90, 380, 1050}, {650, 480, 80, 460, 1300}, {0}}};
 _Static_assert(sizeof(JelliSynth) <= 24u, "Synth state exceeds budget");
 
 const char *jelli_sound_name(unsigned cue)
 {
-    static const char *const names[] = {"chirp",  "happy", "sparkle", "hello",
-                                        "sleepy", "tap",   "coo"};
+    static const char *const names[] = {"chirp", "happy", "sparkle", "hello", "sleepy",
+                                        "tap",   "coo",   "confirm", "pet"};
     return cue < JELLI_SOUND_COUNT ? names[cue] : NULL;
 }
 
@@ -108,4 +110,13 @@ size_t jelli_sound_render(JelliSynth *s, int16_t *output, size_t capacity)
     while (count < capacity && s->playing)
         output[count++] = sample(s);
     return count;
+}
+
+unsigned jelli_sound_volume(unsigned cue, unsigned master)
+{
+    if (cue >= JELLI_SOUND_COUNT || master > 100u)
+        return 0u;
+    /* Master 50 preserves the old 25 tap / 18 coo levels; default 65 is +30%. */
+    return (master * ((cue == JELLI_SOUND_BACK || cue == JELLI_SOUND_CONFIRM) ? 25u : 18u) + 25u) /
+           50u;
 }

@@ -1,5 +1,7 @@
+#include "game_fixture.h"
 #include "jelli/pet_ui.h"
 #include "jelli/save.h"
+#include "jelli/wake.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,7 +36,7 @@ static void test_clicker(void)
     for (unsigned kind = 0; kind < 5u; ++kind) {
         JelliGame g;
         JelliPetUi ui;
-        jelli_game_init(&g);
+        test_game_pair(&g);
         jelli_pet_ui_init(&ui);
         JelliSurface s = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
         press(&ui, &g, 0u);
@@ -82,7 +84,7 @@ static void test_cached_centroid(void)
 {
     JelliGame g;
     JelliPetUi ui;
-    jelli_game_init(&g);
+    test_game_pair(&g);
     jelli_pet_ui_init(&ui);
     JelliSurface s = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
     ui.menu_open = true;
@@ -112,7 +114,7 @@ static void test_activity_reaction_priority(void)
 {
     JelliGame game;
     JelliPetUi ui;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     jelli_pet_ui_init(&ui);
     JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
     JelliPet *pet = &game.pets[0];
@@ -141,7 +143,7 @@ static void test_atmosphere_and_sound(void)
 {
     JelliGame g;
     JelliPetUi ui;
-    jelli_game_init(&g);
+    test_game_pair(&g);
     jelli_pet_ui_init(&ui);
     JelliSurface s = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
     ui.clock_known = true;
@@ -183,7 +185,7 @@ static void test_routine_tuning(void)
 {
     JelliGame g;
     JelliPetUi ui;
-    jelli_game_init(&g);
+    test_game_pair(&g);
     jelli_pet_ui_init(&ui);
     CHECK(jelli_tunable_set(&ui.tunables, 0u, JELLI_TUNE_BRUSH_MIN, 3u));
     CHECK(jelli_tunable_set(&ui.tunables, 0u, JELLI_TUNE_BRUSH_MAX, 3u));
@@ -204,7 +206,7 @@ static void test_idle_coos(void)
 {
     JelliGame game;
     JelliPetUi ui;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     jelli_pet_ui_init(&ui);
     JelliPet *pet = &game.pets[0];
     CHECK(jelli_pet_ui_sound(&ui, pet, 0u) == 0u);
@@ -212,7 +214,7 @@ static void test_idle_coos(void)
     CHECK(jelli_pet_ui_sound(&ui, pet, 30000u) == 7u);
     CHECK(jelli_pet_ui_sound(&ui, pet, 30001u) == 0u);
     ui.sound_pending = true;
-    CHECK(jelli_pet_ui_sound(&ui, pet, 60000u) == 6u); /* Menu wins. */
+    CHECK(jelli_pet_ui_sound(&ui, pet, 60000u) == 8u); /* Menu wins. */
     pet->asleep = true;
     CHECK(jelli_pet_ui_sound(&ui, pet, 90000u) == 0u);
     pet->asleep = false;
@@ -230,7 +232,7 @@ static void test_idle_coos(void)
 static void test_health_cooldowns(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     JelliPet *pet = &game.pets[0];
     JelliCommand shot = {JELLI_CMD_HEALTH, pet->id, 2u};
     unsigned goal = jelli_pet_shot_goal(pet);
@@ -254,8 +256,98 @@ static void test_health_cooldowns(void)
     CHECK(jelli_pet_health_ready(pet, 2u) && jelli_pet_health_ready(pet, 1u));
 }
 
+static unsigned bubble_count(const JelliPetUi *ui)
+{
+    unsigned count = 0u;
+    for (unsigned i = 0; i < JELLI_PARTICLE_CAPACITY; ++i)
+        if (ui->particles.items[i].life && (ui->particles.items[i].style & JELLI_PARTICLE_BUBBLE))
+            ++count;
+    return count;
+}
+
+static void test_routine_bubbles(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
+    ui.menu_open = true;
+    ui.page = JELLI_UI_BRUSH;
+    ui.clicker_pet = game.pets[0].id;
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(bubble_count(&ui) == 2u);
+    int mouth_y = ui.actor_y + (int)((ui.actor_frame->centroid_y_q8 * 6u + 128u) / 256u) -
+                  (int)ui.actor_bounds.height / 4;
+    CHECK(ui.particles.items[0].y / 16 == mouth_y && ui.particles.items[0].vy < 0);
+    jelli_pet_render(&surface, &game, &ui, 100u, false);
+    CHECK(bubble_count(&ui) == 2u);
+    jelli_pet_render(&surface, &game, &ui, 160u, false);
+    CHECK(bubble_count(&ui) == 4u);
+    ui.page = JELLI_UI_WASH;
+    jelli_pet_render(&surface, &game, &ui, 200u, false);
+    CHECK(bubble_count(&ui) == 4u);
+    for (unsigned i = 0; i < JELLI_PARTICLE_CAPACITY; ++i) {
+        const JelliParticle *particle = &ui.particles.items[i];
+        if (!particle->life)
+            continue;
+        CHECK(particle->y / 16 == (int)ui.actor_bounds.y && particle->vy > 0);
+        CHECK(particle->x / 16 >= (int)ui.actor_bounds.x);
+        CHECK(particle->x / 16 < (int)(ui.actor_bounds.x + ui.actor_bounds.width));
+    }
+    jelli_particles_advance(&ui.particles, 20u);
+    CHECK(ui.particles.items[4].y / 16 > (int)ui.actor_bounds.y);
+    jelli_pet_render(&surface, &game, &ui, 100000u, false);
+    CHECK(bubble_count(&ui) == 8u); /* A stall emits one batch, not a catch-up storm. */
+    CHECK(surface.damage.x + surface.damage.width <= JELLI_WIDTH);
+    CHECK(surface.damage.y + surface.damage.height <= JELLI_HEIGHT);
+    ui.clicker_done = true;
+    jelli_pet_render(&surface, &game, &ui, 100001u, false);
+    CHECK(bubble_count(&ui) == 0u);
+    ui.clicker_done = false;
+    jelli_pet_render(&surface, &game, &ui, 100002u, false);
+    CHECK(bubble_count(&ui) == 4u);
+    ui.menu_open = false;
+    jelli_pet_render(&surface, &game, &ui, 100003u, false);
+    CHECK(bubble_count(&ui) == 0u);
+}
+
+static void test_touch_wakes_in_activity(void)
+{
+    for (unsigned good = 0u; good < 2u; ++good) {
+        JelliGame game;
+        JelliPetUi ui;
+        jelli_game_init(&game);
+        jelli_pet_ui_init(&ui);
+        CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_REST, 1u, 0u}) == JELLI_OK);
+        game.pets[0].rest_ticks = good ? jelli_wake_rules.nap_ticks : 0u;
+        ui.menu_open = true;
+        ui.page = JELLI_UI_BRUSH;
+        ui.clicker_pet = 1u;
+        JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
+        jelli_pet_render(&surface, &game, &ui, 0u, false);
+        int x = ui.actor_x + (int)((ui.actor_frame->centroid_x_q8 * 6u + 128u) / 256u);
+        int y = ui.actor_y + (int)((ui.actor_frame->centroid_y_q8 * 6u + 128u) / 256u);
+        jelli_pet_ui_tap(&ui, &game, x, y);
+        CHECK(ui.result == JELLI_OK && !game.pets[0].asleep && ui.save_requested);
+        CHECK(game.pets[0].bond == 100u + (good ? jelli_wake_rules.bond_gain : 0u));
+        CHECK(ui.page == JELLI_UI_BRUSH && ui.menu_open);
+        jelli_pet_render(&surface, &game, &ui, 100u, false);
+        CHECK(ui.last_view.reaction == (good ? 5u : 4u));
+        if (good) {
+            CHECK(ui.actor_frame->id == 1021u); /* Surprise first. */
+            jelli_game_advance(&game, 800u);
+            jelli_game_advance(&game, 300u);
+            jelli_pet_render(&surface, &game, &ui, 1200u, false);
+            CHECK(ui.actor_frame->id == 1004u); /* Then happy. */
+        }
+    }
+}
+
 int main(void)
 {
+    test_touch_wakes_in_activity();
+    test_routine_bubbles();
     test_activity_reaction_priority();
     test_health_cooldowns();
     test_idle_coos();

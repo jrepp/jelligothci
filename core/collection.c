@@ -14,7 +14,7 @@ void jelli_collection_migrate(JelliGame *game)
     for (unsigned i = 0u; i < game->count; ++i) {
         game->pets[i].collection_entry = (uint8_t)(i + 1u);
         game->pets[i].reached_forms =
-            (uint8_t)(game->pets[i].form <= 1u ? 1u << game->pets[i].form : 0u);
+            (uint8_t)(game->pets[i].form <= 1u ? (1u << (game->pets[i].form + 1u)) - 1u : 0u);
     }
 }
 
@@ -72,4 +72,23 @@ void jelli_collection_unlock(JelliGame *game)
         game->new_pets |= (uint16_t)(1u << i);
         ++game->revision;
     }
+}
+
+JelliResult jelli_collection_set_form(JelliGame *game, uint32_t id, uint32_t form)
+{
+    if (form > 1u)
+        return JELLI_INVALID_TARGET;
+    for (unsigned i = 0; i < game->count; ++i) {
+        JelliPet *pet = &game->pets[i];
+        if (pet->id != id)
+            continue;
+        if (!(pet->reached_forms & (1u << form)))
+            return JELLI_NOT_READY;
+        if (pet->form == form)
+            return JELLI_FULL;
+        pet->form = (uint8_t)form;
+        ++game->revision;
+        return JELLI_OK;
+    }
+    return JELLI_INVALID_TARGET;
 }

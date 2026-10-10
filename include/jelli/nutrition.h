@@ -19,4 +19,5 @@ JelliResult jelli_start_exercise(JelliPet *pet);
 void jelli_hydration_advance(JelliPet *pet, uint64_t ticks);
 void jelli_hydration_add(JelliPet *pet, unsigned amount);
 JelliResult jelli_drink_water(JelliPet *pet);
+JelliResult jelli_refill_food(JelliGame *game);
 #endif

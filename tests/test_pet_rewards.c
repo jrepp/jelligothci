@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/pet_rewards.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,7 +17,7 @@ static JelliPetRewards rewards;
 
 static void reset(void)
 {
-    jelli_game_init(&game);
+    test_game_pair(&game);
     events = (JelliEventLog){0};
     rewards = (JelliPetRewards){0};
     game.events = &events;

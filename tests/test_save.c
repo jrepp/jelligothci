@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/save.h"
 
 #include <stdio.h>
@@ -51,7 +52,7 @@ static JelliSave fixture(void)
     JelliSave save = {.sequence = UINT64_C(0x123456789abcdef0),
                       .anchor_ms = UINT64_C(0x1020304050607080),
                       .anchor_valid = true};
-    jelli_game_init(&save.game);
+    test_game_pair(&save.game);
     save.game.ticks = 12000u;
     save.game.discarded_ms = 1800u;
     save.game.backlog_ms = 50u;
@@ -363,12 +364,13 @@ static void rolling_history_round_trip(void)
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 68u] = 2u; /* Owned bit nine is outside the nine prize slots. */
+    bytes[size - 69u - (size_t)save.game.count * 4u] =
+        2u; /* Owned bit nine is outside the nine prize slots. */
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 29u] = JELLI_PRIZE_COUNT + 1u;
+    bytes[size - 30u - (size_t)save.game.count * 4u] = JELLI_PRIZE_COUNT + 1u;
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));

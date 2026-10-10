@@ -11,7 +11,7 @@ static char received[64];
 static size_t received_size, received_at;
 static uint64_t pending_since;
 
-void jelli_debug_wire_init(void)
+void jelli_debug_wire_init(JelliDisplayOutput *display)
 {
     /* Startup-only driver allocations: 4 KiB TX, 1 KiB RX plus SDK metadata.
      * The TX ring accepts each complete response atomically, including its LF
@@ -20,7 +20,8 @@ void jelli_debug_wire_init(void)
     ESP_ERROR_CHECK(usb_serial_jtag_driver_install(&config));
     usb_serial_jtag_vfs_use_driver();
     debug.sound = jelli_sound_output_request;
-    debug.command = jelli_network_command;
+    debug.command = jelli_display_output_command;
+    debug.command_ctx = display;
     ESP_LOGI("debug", "@J1 debug ready; capture timeout 5s idle / 30s total");
 }
 

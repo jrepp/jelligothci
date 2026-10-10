@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/game.h"
 
 #include <stdio.h>
@@ -25,7 +26,7 @@ static void catch_index(JelliGame *game, unsigned index)
 static void routine_counts_and_pending_guards(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     for (unsigned i = 0u; i < 2u; ++i) {
         jelli_prize_complete(&game, JELLI_PRIZE_BRUSH);
         CHECK(!game.prizes.offered);
@@ -48,7 +49,7 @@ static void routine_counts_and_pending_guards(void)
 static void breakfast_requires_distinct_mornings(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.clock_known = true;
     game.clock_minute = 540u;
     game.wall_known = true;
@@ -67,7 +68,7 @@ static void breakfast_requires_distinct_mornings(void)
     jelli_prize_complete(&game, JELLI_PRIZE_BREAKFAST);
     catch_index(&game, 2u);
     JelliGame relative;
-    jelli_game_init(&relative);
+    test_game_pair(&relative);
     for (unsigned day = 0u; day < 3u; ++day) {
         relative.pets[0].ticks = (uint64_t)day * JELLI_DAY_TICKS;
         jelli_prize_complete(&relative, JELLI_PRIZE_BREAKFAST);
@@ -78,7 +79,7 @@ static void breakfast_requires_distinct_mornings(void)
 static void conditional_prizes(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.pets[0].needs[JELLI_ENERGY] = 399u;
     jelli_prize_complete(&game, JELLI_PRIZE_MOVIE);
     CHECK(!game.prizes.offered);
@@ -103,7 +104,7 @@ static void real_gifting_and_history(void)
 {
     JelliGame game;
     JelliEventLog events = {0};
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.events = &events;
     jelli_prize_complete(&game, JELLI_PRIZE_WASH);
     catch_index(&game, 5u);
@@ -142,15 +143,15 @@ static void real_gifting_and_history(void)
 static void invalid_state_is_rejected(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.prizes.owned = 512u;
     CHECK(!jelli_game_valid(&game));
     CHECK(jelli_prize_catch(&game) == JELLI_INVALID_TARGET);
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.prizes.discovered = 1u;
     game.prizes.origin_pet[0] = 99u;
     CHECK(!jelli_game_valid(&game));
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.pets[0].prize_progress.counts[1] = 4u;
     CHECK(!jelli_game_valid(&game));
     CHECK(!jelli_prizes_valid(NULL) && !jelli_prize_progress_valid(NULL));
@@ -159,7 +160,7 @@ static void invalid_state_is_rejected(void)
 static void all_nine_and_deterministic_outing(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     for (unsigned i = 0u; i < 3u; ++i)
         jelli_prize_complete(&game, JELLI_PRIZE_BRUSH);
     catch_index(&game, 1u);

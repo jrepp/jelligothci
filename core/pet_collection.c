@@ -37,9 +37,15 @@ bool jelli_pet_collection_button(const JelliPetUi *ui, unsigned slot, JelliPetUi
 
 JelliResult jelli_pet_collection_available(JelliPetUi *ui, const JelliGame *game, unsigned slot)
 {
+    int index = jelli_collection_find(game, selected(ui));
+    if (ui->page == JELLI_UI_EVOLUTIONS)
+        return index < 0
+                   ? JELLI_NOT_READY
+                   : jelli_game_check(
+                         game, (JelliCommand){JELLI_CMD_FORM, game->pets[index].id, slot - 1u},
+                         &ui->action_scratch);
     if (ui->page != JELLI_UI_PET_DETAIL || slot != 1u)
         return JELLI_OK;
-    int index = jelli_collection_find(game, selected(ui));
     if (index < 0)
         return JELLI_NOT_READY;
     return jelli_game_check(
@@ -61,9 +67,20 @@ void jelli_pet_collection_select(JelliPetUi *ui, JelliGame *game, unsigned slot)
             ui->save_status = JELLI_SAVE_PENDING;
         }
     } else if (ui->page == JELLI_UI_EVOLUTIONS) {
-        ui->selected_form = (uint8_t)(slot - 1u);
+        int index = jelli_collection_find(game, selected(ui));
+        if (index < 0)
+            return;
+        ui->result = jelli_game_command(
+            game, (JelliCommand){JELLI_CMD_FORM, game->pets[index].id, slot - 1u});
+        if (ui->result == JELLI_OK) {
+            ui->selected_form = (uint8_t)(slot - 1u);
+            ui->save_requested = true;
+            ui->save_status = JELLI_SAVE_PENDING;
+        }
     } else if (slot == 2u) {
         ui->page = JELLI_UI_EVOLUTIONS;
+        int index = jelli_collection_find(game, selected(ui));
+        ui->selected_form = index < 0 ? 0u : game->pets[index].form;
     } else {
         int index = jelli_collection_find(game, selected(ui));
         if (index < 0)
@@ -113,8 +130,7 @@ static void draw_grid(Canvas *c, const JelliPetUi *ui)
     bool forms = ui->page == JELLI_UI_EVOLUTIONS;
     unsigned entry = selected(ui) - 1u;
     jelli_canvas_heading(c, forms ? "EVOLUTIONS" : "PETS", 22, 3u);
-    jelli_canvas_centered(c, forms ? jelli_collection_entries[entry].name : "TAP TO EXPLORE", 61,
-                          1u, MINT);
+    jelli_canvas_centered(c, forms ? "TAP TO SWITCH FORM" : "TAP TO EXPLORE", 61, 1u, MINT);
     for (unsigned slot = 1u; slot <= 9u; ++slot) {
         JelliPetUiButton b;
         if (!jelli_pet_collection_button(ui, slot, &b))
@@ -135,13 +151,16 @@ static void draw_grid(Canvas *c, const JelliPetUi *ui)
                             : active                                ? "ACTIVE"
                             : (!forms && (v->pets_new & (1u << i))) ? "NEW"
                                                                     : "OWNED";
-        jelli_canvas_text(c, badge, x + 42 - (int)strlen(badge) * 4, y + 66, 1u,
+        jelli_canvas_text(c, badge, x + 42 - (int)strlen(badge) * 4, y + 4, 1u,
                           owned ? MINT : PALE);
+        const char *name = b.label;
+        jelli_canvas_text(c, name, x + 42 - (int)strlen(name) * 4, y + 66, 1u, PALE);
     }
     if (forms) {
-        jelli_canvas_centered(c, jelli_collection_forms[ui->selected_form].name, 290, 2u, PALE);
-        jelli_canvas_centered(c, ui->selected_form ? "GROW FROM MINT" : "STARTING FORM", 325, 1u,
-                              MINT);
+        unsigned form =
+            ui->result == JELLI_NOT_READY && ui->attempted_slot == 2u ? 1u : ui->selected_form;
+        jelli_canvas_centered(c, jelli_collection_forms[form].name, 290, 2u, PALE);
+        jelli_canvas_centered(c, form ? "GROW FROM MINT" : "STARTING FORM", 325, 1u, MINT);
         char age[32];
         (void)snprintf(age, sizeof(age), "GROWTH %lu SECONDS",
                        (unsigned long)(jelli_collection_growth_ticks / 10u));
@@ -165,7 +184,7 @@ static void draw_detail(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
                        : game->sleep_log.active ? "WAKE TO SWITCH PETS"
                        : game->pets[game->active].activity != JELLI_IDLE ? "FINISH ACTIVITY FIRST"
                                                                          : "YOUR COMPANION";
-    jelli_canvas_centered(c, hint, 217, 1u, MINT);
+    jelli_canvas_caption(c, hint, 209, PALE);
     unsigned reached = v->pet_reached[entry];
     jelli_canvas_centered(c,
                           !owned          ? "DISCOVERY 0/1"
@@ -176,8 +195,9 @@ static void draw_detail(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
         JelliPetUiButton b;
         if (!jelli_pet_collection_button(ui, slot, &b))
             continue;
-        c->dim = (v->unavailable & (1u << slot)) != 0u;
-        jelli_canvas_rect(c, (int)b.bounds.x, (int)b.bounds.y, (int)b.bounds.width, 64, TEAL);
+        bool disabled = (v->unavailable & (1u << slot)) != 0u;
+        jelli_canvas_rect(c, (int)b.bounds.x, (int)b.bounds.y, (int)b.bounds.width, 64,
+                          disabled ? INK : TEAL);
         jelli_canvas_centered(c, !owned && slot == 1u ? "LOCKED" : b.label, (int)b.bounds.y + 20,
                               2u, PALE);
         c->dim = false;

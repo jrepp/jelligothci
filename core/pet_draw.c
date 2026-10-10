@@ -3,6 +3,7 @@
 #include "pet_gallery.h"
 #include "pet_collection.h"
 #include "pet_food.h"
+#include "pet_menu.h"
 #include "jelli/assets.h"
 #include <stdio.h>
 #include <string.h>
@@ -76,7 +77,7 @@ static const char *result_status(JelliResult result)
     return "TRY AGAIN";
 }
 
-static const char *status(const JelliPetRenderKey *v)
+static const char *status(const JelliPetRenderKey *v, char *buffer, size_t capacity)
 {
     if (v->resuming)
         return "RESUMING";
@@ -86,16 +87,22 @@ static const char *status(const JelliPetRenderKey *v)
         return result_status(v->result);
     if (v->asleep)
         return "ASLEEP";
+    if (v->reaction == 4u)
+        return "GROGGY...";
+    if (v->reaction == 5u)
+        return "HAPPY";
     if (v->reaction == 1u)
         return "THAT IS NICE";
     if (v->reaction == 2u)
         return "A LITTLE SPACE";
     if (v->reaction == 3u)
         return "TOO MUCH";
-    if (v->health == JELLI_RECOVERING)
-        return "RECOVERING";
+    if (v->health == JELLI_RECOVERING) {
+        int size = snprintf(buffer, capacity, "RECOVERING %uS", (unsigned)v->care_seconds);
+        return size > 0 && (size_t)size < capacity ? buffer : "RECOVERING";
+    }
     if (v->health == JELLI_UNWELL)
-        return "NEEDS CARE";
+        return "CARE > BASIC CARE";
     if (v->activity == JELLI_EXERCISING)
         return "WORKING OUT";
     if (v->activity == JELLI_EATING)
@@ -107,55 +114,11 @@ static const char *status(const JelliPetRenderKey *v)
     return "";
 }
 
-static void start_badge(Canvas *c, int x, int y)
-{
-    jelli_canvas_disk(c, x + 27, y + 27, 15, BG);
-    for (int column = 0; column < 12; ++column)
-        jelli_canvas_rect(c, x + 22 + column, y + 16 + column, 1, 23 - column * 2, 0xffffu);
-}
-
-static void ring(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
-{
-    const JelliPetRenderKey *v = &ui->last_view;
-    if (!v->ring_visible)
-        return;
-    for (unsigned slot = 1; slot <= 6u; ++slot) {
-        JelliPetUiButton b;
-        if (!jelli_pet_ring_button(ui, slot, game->pets[game->active].asleep, &b))
-            continue;
-        uint16_t edge =
-            v->ring_page == JELLI_UI_MOMENTS &&
-                    slot == jelli_pet_suggested_moment(&game->pets[game->active], ui) + 1u
-                ? GOLD
-                : 0x738eu;
-        int factor = 510 - v->ring_visible;
-        int x = 233 + ((int)b.bounds.x + 48 - 233) * factor / 255;
-        int y = 233 + ((int)b.bounds.y + 48 - 233) * factor / 255;
-        c->dim = v->ring_page == ui->page && v->ring_clock_edit == ui->clock_edit &&
-                 (v->unavailable & (1u << slot));
-        jelli_canvas_disk(c, x, y, 48, edge);
-        jelli_canvas_disk(c, x, y, 46, 0x4a49u);
-        if (b.icon)
-            jelli_canvas_centered_sprite(c, b.icon, x, y, b.scale);
-        else
-            jelli_canvas_text(c, b.label, x - (int)strlen(b.label) * 8, y - 12, 2u, PALE);
-        if (jelli_pet_ui_starts(v->ring_page, slot))
-            start_badge(c, x, y);
-        if (v->ring_page == JELLI_UI_SETTINGS && !v->ring_clock_edit && slot == 3u) {
-            jelli_canvas_rect(c, x - 28, y + 20, 56, 24, v->asleep ? TEAL : BG);
-            jelli_canvas_text(c, v->asleep ? "ON" : "OFF", x - (v->asleep ? 16 : 24), y + 20, 2u,
-                              0xffffu);
-        }
-        c->dim = false;
-    }
-}
-
 static void menu_button(Canvas *c, const JelliPetUi *ui)
 {
     if (ui->menu_open) {
         jelli_canvas_disk(c, 233, 462, 48, TEAL);
-        jelli_canvas_centered_sprite(c, ui->page == JELLI_UI_HOME ? 6013u : 2011u, 233, 440,
-                                     ui->page == JELLI_UI_HOME ? 1u : 2u);
+        jelli_canvas_centered(c, ui->page == JELLI_UI_HOME ? "CLOSE" : "BACK", 432, 2u, PALE);
         return;
     }
     jelli_canvas_rect(c, 193, 388, 80, 64, TEAL);
@@ -170,31 +133,52 @@ static void menu_button(Canvas *c, const JelliPetUi *ui)
     jelli_canvas_text(c, button.label, left + 40, 407, 2u, PALE);
 }
 
+static void settings_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
+{
+    const JelliPet *pet = &game->pets[game->active];
+    char value[18];
+    int zone = ui->timezone_minutes;
+    int size = ui->clock_edit
+                   ? snprintf(value, sizeof(value), "TZ%c%02d:%02d", zone < 0 ? '-' : '+',
+                              (zone < 0 ? -zone : zone) / 60, (zone < 0 ? -zone : zone) % 60)
+                   : snprintf(value, sizeof(value), "BED %02u:00", (unsigned)pet->bedtime);
+    if (ui->result == JELLI_OK && size > 0 && (size_t)size < sizeof(value))
+        jelli_canvas_caption(c, value, 290, 0xffffu);
+    if (!ui->clock_edit) {
+        int count = snprintf(value, sizeof(value), "VOL %u%%", (unsigned)game->volume);
+        if (count > 0 && (size_t)count < sizeof(value))
+            jelli_canvas_centered(c, game->volume ? value : "MUTED", 340, 2u, PALE);
+    }
+    if (ui->result == JELLI_OK)
+        jelli_canvas_centered(c, JELLI_VERSION_LABEL, 390, 1u, PALE);
+    else
+        jelli_canvas_caption(c, jelli_pet_menu_hint(ui, game), 280, PALE);
+}
+
 static void page_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
 {
     const JelliPet *pet = &game->pets[game->active];
     char value[18];
-    const char *label = status(&ui->last_view);
+    const char *label = status(&ui->last_view, value, sizeof(value));
+    const char *hint = jelli_pet_menu_hint(ui, game);
+    if (hint[0])
+        label = hint;
     if (ui->page == JELLI_UI_SETTINGS) {
-        int zone = ui->timezone_minutes;
-        int size = ui->clock_edit
-                       ? snprintf(value, sizeof(value), "TZ%c%02d:%02d", zone < 0 ? '-' : '+',
-                                  (zone < 0 ? -zone : zone) / 60, (zone < 0 ? -zone : zone) % 60)
-                       : snprintf(value, sizeof(value), "BED %02u:00", (unsigned)pet->bedtime);
-        if (size > 0 && (size_t)size < sizeof(value))
-            jelli_canvas_caption(c, value, 304, 0xffffu);
-        label = JELLI_VERSION_LABEL;
+        settings_info(c, game, ui);
+        return;
     } else if (ui->page == JELLI_UI_MORE) {
         int size = snprintf(value, sizeof(value), "GIFTS %u", (unsigned)game->gifts);
         if (size > 0 && (size_t)size < sizeof(value))
-            jelli_canvas_centered(c, value, 322, 1u, MINT);
+            jelli_canvas_centered(c, value, 324, 2u, PALE);
         label = pet->reward_pending ? "CLAIM!" : "";
     } else if (ui->page == JELLI_UI_MOMENTS) {
         static const char *const names[] = {"BREAKFAST", "TEA", "GOING OUT", "MOVIE"};
         jelli_canvas_centered(c, ui->clock_known ? "FOR NOW" : "PET TIME", 322, 1u, GOLD);
         label = names[jelli_pet_suggested_moment(pet, ui)];
     }
-    jelli_canvas_caption(c, label, 346, PALE);
+    if (ui->result != JELLI_OK && hint[0])
+        label = hint;
+    jelli_canvas_caption(c, label, 280, PALE);
 }
 
 static void settings_clock(Canvas *c, const JelliPetRenderKey *view)
@@ -207,7 +191,7 @@ static void settings_clock(Canvas *c, const JelliPetRenderKey *view)
     jelli_canvas_centered(c, value, 190, 3u, 0xffffu);
     jelli_canvas_centered(c, view->clock_known ? "LOCAL" : "PET", 225, 2u, 0xffffu);
     if (!view->clock_edit)
-        jelli_canvas_centered_sprite(c, 6006u, 233, 267, 1u);
+        jelli_canvas_centered(c, "EDIT", 250, 2u, MINT);
 }
 
 static void activity(Canvas *c, const JelliPetUi *ui)
@@ -225,12 +209,25 @@ static void activity(Canvas *c, const JelliPetUi *ui)
         jelli_canvas_disk(
             c, 233 - (int)(ui->clicker_goal ? ui->clicker_goal - 1u : 0u) * 10 + (int)i * 20, 366,
             5, i < ui->clicker_hits ? GOLD : INK);
-    if (ui->result == JELLI_OK && !ui->clicker_done)
-        jelli_canvas_heading(c, b.label, 82, 1u);
-    if (ui->result != JELLI_OK)
-        jelli_canvas_heading(c, status(&ui->last_view), 82, 1u);
+    char message[24];
+    const char *label = b.label;
+    if (ui->last_view.asleep)
+        label = "TOUCH PET TO WAKE";
+    else if (ui->last_view.reaction >= 4u || ui->result != JELLI_OK)
+        label = status(&ui->last_view, message, sizeof(message));
     else if (ui->clicker_done)
-        jelli_canvas_heading(c, "WELL DONE!", 82, 1u);
+        label = "WELL DONE!";
+    jelli_canvas_caption(c, label, 82, PALE);
+}
+
+static void page_heading(Canvas *c, const JelliPetUi *ui, const JelliPetRenderKey *view)
+{
+    jelli_canvas_heading(c,
+                         ui->menu_open ? jelli_pet_menu_title(ui)
+                         : view->form  ? "LILAC"
+                                       : "MINT",
+                         16, ui->menu_open && ui->page == JELLI_UI_MOMENTS ? 2u : 3u);
+    jelli_canvas_heading(c, view->location ? "@ GARDEN" : "@ HOME", 57, 2u);
 }
 
 void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const JelliPetUi *ui,
@@ -261,8 +258,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
         menu_button(&c, ui);
         return;
     }
-    jelli_canvas_heading(&c, view->form ? "LILAC" : "MINT", 16, 3u);
-    jelli_canvas_heading(&c, view->location ? "@ GARDEN" : "@ HOME", 57, 2u);
+    page_heading(&c, ui, view);
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS)
         settings_clock(&c, view);
     else if (ui->actor_frame)
@@ -276,11 +272,12 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     } else {
         if (view->activity == JELLI_EXERCISING)
             jelli_canvas_centered_sprite(&c, 6014u, 233, view->phase ? 205 : 229, 3u);
-        jelli_canvas_caption(&c, status(view), 254, MINT);
+        char message[24];
+        jelli_canvas_caption(&c, status(view, message, sizeof(message)), 254, MINT);
         draw_tile(c, view);
         jelli_pet_gallery_draw_latched(&c, view);
     }
-    ring(&c, game, ui);
+    jelli_pet_menu_ring(&c, game, ui);
     menu_button(&c, ui);
 }
 

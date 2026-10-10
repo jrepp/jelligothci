@@ -44,18 +44,22 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         debug.press("SETTINGS")
         debug.press("PETS")
         assert debug.state()["visual"]["page"] == "pets"
-        debug.press("COMPANION 2")
+        debug.press("JELLI")
         debug.press("EVOLUTIONS")
-        debug.press("LILAC")
+        for _ in range(100):
+            state = debug.state()
+            if state["visual"]["page"] == "evolutions" and not state["transitioning"]:
+                break
+            time.sleep(.01)
+        assert state["visual"]["page"] == "evolutions", state
+        assert any(b["label"] == "LILAC" and not b["enabled"] for b in state["buttons"]), state
         assert debug.state()["visual"]["pet_id"] == 1
         debug.press("BACK")
-        debug.press("BRING OUT")
-        assert debug.state()["visual"]["pet_id"] == 2
-        debug.press("MENU")
-        debug.press("SETTINGS")
+        debug.press("BACK")
+        debug.press("BACK")
         debug.press("CLOCK")
         minute = debug.state()["visual"]["clock_minute"]
-        debug.press("HR +")
+        debug.press("HOUR +")
         assert debug.state()["visual"]["clock_minute"] == (minute + 60) % 1440
         debug.request("swipe 1")
         debug.press("REST")

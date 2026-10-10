@@ -1,3 +1,5 @@
+#include "jelli/wake.h"
+#include "jelli/collection.h"
 #include "game_internal.h"
 #include "jelli/nutrition.h"
 
@@ -29,6 +31,8 @@ static uint64_t deadline_after(const JelliPet *pet, uint64_t duration)
 
 static JelliResult claim_reward(JelliGame *game, JelliPet *pet)
 {
+    if (pet->activity != JELLI_IDLE)
+        return JELLI_BUSY;
     if (!pet->reward_pending || pet->reward_claimed)
         return JELLI_NOT_READY;
     if ((uint32_t)game->food + 3u > JELLI_STACK_LIMIT)
@@ -147,6 +151,7 @@ static JelliResult rest(JelliGame *game, JelliPet *pet)
     session->bed_energy = pet->needs[JELLI_ENERGY];
     session->bed_sleep_score = jelli_habits_sleep_score(&pet->habits);
     session->flags |= JELLI_SLEEP_STATS_KNOWN;
+    pet->rest_ticks = 0u;
     pet->asleep = true;
     pet->scheduled_sleep = false;
     pet->nap_due = UINT64_MAX;
@@ -164,6 +169,7 @@ static JelliResult wake(JelliGame *game, JelliPet *pet)
     uint64_t remaining = 0u;
     if (jelli_game_window(pet, &remaining))
         pet->wake_override_until = deadline_after(pet, remaining);
+    jelli_wake_react(pet);
     pet->asleep = false;
     pet->scheduled_sleep = false;
     pet->nap_due = 0u;
@@ -299,11 +305,29 @@ static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
     return JELLI_OK;
 }
 
+static JelliResult set_volume(JelliGame *game, uint32_t value)
+{
+    if (value > JELLI_VOLUME_MAX)
+        return JELLI_INVALID_TARGET;
+    if (value == game->volume)
+        return JELLI_FULL;
+    game->volume = (uint8_t)value;
+    ++game->revision;
+    return JELLI_OK;
+}
+
+static JelliResult start_exercise(JelliPet *pet)
+{
+    return bedtime_pending(pet) ? JELLI_BUSY : jelli_start_exercise(pet);
+}
+
 static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliPet *pet)
 {
     switch (command.kind) {
+    case JELLI_CMD_FORM:
+        return jelli_collection_set_form(game, command.actor_id, command.value);
     case JELLI_CMD_EXERCISE:
-        return bedtime_pending(pet) ? JELLI_BUSY : jelli_start_exercise(pet);
+        return start_exercise(pet);
     case JELLI_CMD_WATER:
         return jelli_drink_water(pet);
     case JELLI_CMD_FEED:
@@ -317,7 +341,7 @@ static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliP
     case JELLI_CMD_GIFT:
         return start_gift(game, pet);
     case JELLI_CMD_CLAIM:
-        return pet->activity == JELLI_IDLE ? claim_reward(game, pet) : JELLI_BUSY;
+        return claim_reward(game, pet);
     case JELLI_CMD_REST:
         return rest(game, pet);
     case JELLI_CMD_WAKE:
@@ -332,48 +356,24 @@ static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliP
         return jelli_game_touch(pet);
     case JELLI_CMD_HEALTH:
         return healthy_click(pet, command.value);
+    case JELLI_CMD_VOLUME:
+        return set_volume(game, command.value);
+    case JELLI_CMD_REFILL_FOOD:
+        return jelli_refill_food(game);
     case JELLI_CMD_ACTIVATE:
         return activate_pet(game, command, pet);
     }
     return JELLI_INVALID_TARGET;
 }
 
-static JelliResult command_impl(JelliGame *game, JelliCommand command)
+JelliResult jelli_game_command_impl(JelliGame *game, JelliCommand command)
 {
     if (!jelli_game_valid(game))
         return JELLI_INVALID_TARGET;
     if (game->resuming)
         return JELLI_BUSY;
-    if (command.kind == JELLI_CMD_ACTIVATE) {
-        const JelliPet *active = &game->pets[game->active];
-        if (active->id != command.actor_id)
-            return JELLI_INVALID_TARGET;
-        return activate_pet(game, command, active);
-    }
     JelliPet *pet = &game->pets[game->active];
-    if (pet->id != command.actor_id)
+    if (pet->id != command.actor_id && command.kind != JELLI_CMD_FORM)
         return JELLI_INVALID_TARGET;
     return dispatch_action(game, command, pet);
-}
-
-JelliResult jelli_game_command(JelliGame *game, JelliCommand command)
-{
-    if (!jelli_game_valid(game))
-        return JELLI_INVALID_TARGET;
-    JelliEventSnapshot before = jelli_game_observe(game, &game->pets[game->active]);
-    JelliResult result = command_impl(game, command);
-    if (result == JELLI_OK)
-        jelli_game_preference(game, command);
-    jelli_game_emit(game, JELLI_EVENT_COMMAND, (unsigned)command.kind, result, command.value,
-                    &game->pets[game->active], before);
-    return result;
-}
-
-JelliResult jelli_game_check(const JelliGame *game, JelliCommand command, JelliGame *scratch)
-{
-    if (!game || !scratch || game == scratch)
-        return JELLI_INVALID_TARGET;
-    *scratch = *game;
-    scratch->events = NULL;
-    return command_impl(scratch, command);
 }

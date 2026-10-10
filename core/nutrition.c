@@ -50,3 +50,12 @@ JelliResult jelli_start_exercise(JelliPet *pet)
     pet->interaction_due = pet->ticks + jelli_exercise.duration_ticks;
     return JELLI_OK;
 }
+
+JelliResult jelli_refill_food(JelliGame *game)
+{
+    if (game->food)
+        return JELLI_FULL;
+    game->food = 5u;
+    ++game->revision;
+    return JELLI_OK;
+}

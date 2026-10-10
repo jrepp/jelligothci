@@ -215,6 +215,9 @@ static void write_game(Writer *writer, const JelliGame *game)
     }
     for (unsigned i = 0u; i < game->count; ++i)
         put_u8(writer, game->pets[i].food_type);
+    put_u8(writer, game->volume);
+    for (unsigned i = 0u; i < game->count; ++i)
+        put_u32(writer, game->pets[i].rest_ticks);
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -267,6 +270,10 @@ static bool read_game(Reader *reader, JelliGame *game)
     if (reader->version >= 6u)
         for (unsigned i = 0u; i < game->count; ++i)
             game->pets[i].food_type = get_u8(reader);
+    game->volume = reader->version >= 7u ? get_u8(reader) : JELLI_VOLUME_DEFAULT;
+    if (reader->version >= 9u)
+        for (unsigned i = 0u; i < game->count; ++i)
+            game->pets[i].rest_ticks = get_u32(reader);
     return !reader->failed;
 }
 
@@ -322,6 +329,15 @@ static bool header_valid(const uint8_t *bytes, size_t size)
            bytes[6] == SAVE_HEADER_SIZE && bytes[7] == 0u;
 }
 
+static bool migrate_game(JelliGame *game, unsigned version)
+{
+    if (version < 8u) {
+        jelli_collection_merge_starters(game);
+        jelli_collection_unlock(game);
+    }
+    return jelli_game_valid(game);
+}
+
 bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t size,
                                  JelliSave *candidate)
 {
@@ -351,8 +367,8 @@ bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t s
         candidate->game.resume_remaining_ms != 0u || candidate->game.backlog_ms >= 100u ||
         !jelli_game_valid(&candidate->game))
         return false;
-    if (reader.version < 4u)
-        jelli_collection_unlock(&candidate->game);
+    if (!migrate_game(&candidate->game, reader.version))
+        return false;
     *save = *candidate;
     return true;
 }

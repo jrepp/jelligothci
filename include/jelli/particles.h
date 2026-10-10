@@ -3,6 +3,7 @@
 #include "jelli/engine.h"
 
 #define JELLI_PARTICLE_CAPACITY 24u
+enum { JELLI_PARTICLE_BUBBLE = 32u, JELLI_PARTICLE_RISE = 16u };
 /* Q4 positions and Q4 pixels per 20 ms velocities. Zero life means free.
  * style packs a two-bit palette index, size bit, and cross/square bit. */
 typedef struct {

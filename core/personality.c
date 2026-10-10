@@ -51,6 +51,7 @@ JelliResult jelli_game_touch(JelliPet *pet)
 {
     if (pet->asleep)
         return JELLI_ASLEEP;
+    pet->wake_mood = 0u;
     pet->touch_load = adjusted(pet->touch_load, 220, 0u);
     pet->reaction = pet->touch_load >= 900u ? 3u : pet->touch_load >= 600u ? 2u : 1u;
     pet->reaction_ticks = 30u;
@@ -70,6 +71,8 @@ void jelli_pet_touch_decay(JelliPet *pet, uint64_t ticks)
                           : (uint16_t)(pet->touch_load - ticks * 10u);
     pet->reaction_ticks =
         ticks >= pet->reaction_ticks ? 0u : (uint8_t)(pet->reaction_ticks - ticks);
-    if (!pet->reaction_ticks)
+    if (!pet->reaction_ticks) {
         pet->reaction = 0u;
+        pet->wake_mood = 0u;
+    }
 }

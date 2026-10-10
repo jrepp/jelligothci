@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/game.h"
 
 #include <stdio.h>
@@ -54,7 +55,7 @@ static void history_bounds_and_saturation(void)
 static void linked_rest_until_manual_wake(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.wall_known = true;
     game.wall_seconds = 1700000000u;
     const JelliPet *pet = &game.pets[0];

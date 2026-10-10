@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/nutrition.h"
 #include "jelli/save.h"
 #include <stdio.h>
@@ -13,7 +14,7 @@
 static void water_and_time(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     JelliPet *pet = &game.pets[0];
     CHECK(pet->hydration == 700u);
     JelliPet many = *pet, one = *pet;
@@ -44,7 +45,7 @@ static void water_and_time(void)
 static void hydration_save(void)
 {
     JelliSave save = {0}, loaded;
-    jelli_game_init(&save.game);
+    test_game_pair(&save.game);
     save.game.pets[0].hydration = 123u;
     save.game.pets[0].hydration_remainder = 2399u;
     uint8_t bytes[JELLI_SAVE_CAPACITY];
@@ -64,7 +65,7 @@ static void food_choices(void)
 {
     for (unsigned food = 0u; food < jelli_food_count; ++food) {
         JelliSave save = {0}, loaded;
-        jelli_game_init(&save.game);
+        test_game_pair(&save.game);
         JelliPet *pet = &save.game.pets[0];
         pet->needs[JELLI_SATIETY] = 400u;
         pet->hydration = 400u;
@@ -86,7 +87,7 @@ static void food_choices(void)
         CHECK(loaded.game.food == 4u);
     }
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_FEED, 1u, 9u}) ==
           JELLI_INVALID_TARGET);
     CHECK(game.food == 5u && game.pets[0].activity == JELLI_IDLE);

@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/nutrition.h"
 #include "jelli/save.h"
 #include <stdio.h>
@@ -19,7 +20,7 @@ static void advance(JelliGame *game, unsigned ticks)
 static void workout_and_resume(void)
 {
     JelliSave save = {0}, loaded;
-    jelli_game_init(&save.game);
+    test_game_pair(&save.game);
     JelliPet *pet = &save.game.pets[0];
     unsigned food = pet->needs[JELLI_SATIETY], water = pet->hydration;
     unsigned energy = pet->needs[JELLI_ENERGY];
@@ -52,7 +53,7 @@ static void workout_and_resume(void)
 static void workout_guards(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     JelliPet *pet = &game.pets[0];
     JelliCommand workout = {JELLI_CMD_EXERCISE, pet->id, 0u};
     pet->hydration = (uint16_t)(jelli_exercise.hydration_cost - 1u);
@@ -68,7 +69,7 @@ static void workout_guards(void)
     CHECK(jelli_game_command(&game, workout) == JELLI_NOT_READY);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_REST, pet->id, 0u}) == JELLI_OK);
     CHECK(jelli_game_command(&game, workout) == JELLI_ASLEEP);
-    jelli_game_init(&game);
+    test_game_pair(&game);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_CARE, pet->id, 0u}) == JELLI_OK);
     CHECK(jelli_game_command(&game, workout) == JELLI_BUSY);
     CHECK(jelli_game_valid(&game));

@@ -3,6 +3,8 @@
 #include "pet_gallery.h"
 #include "pet_collection.h"
 #include "pet_food.h"
+#include "pet_feedback.h"
+#include "jelli/sound.h"
 #include <stddef.h>
 
 typedef struct {
@@ -13,7 +15,7 @@ typedef struct {
 
 /* Empty slots are neither drawn nor hit-tested. Slot IDs remain stable for debug clients. */
 static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
-                                      {JELLI_UI_ACTION_MOMENTS, "MOMENTS", NULL},
+                                      {JELLI_UI_ACTION_MOMENTS, "ACTIVITIES", NULL},
                                       {0},
                                       {0},
                                       {JELLI_UI_ACTION_COLLECTION, "GIFTS", NULL},
@@ -30,7 +32,10 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
                                      {{0}},
                                      {{JELLI_UI_ACTION_BEDTIME, "BEDTIME +1H", NULL},
                                       {JELLI_UI_ACTION_SWITCH_PET, "PETS", NULL},
-                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"}},
+                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"},
+                                      {0},
+                                      {JELLI_UI_ACTION_VOLUME_DOWN, "VOL -", NULL},
+                                      {JELLI_UI_ACTION_VOLUME_UP, "VOL +", NULL}},
                                      {{JELLI_UI_ACTION_BREAKFAST, "BREAKFAST", NULL},
                                       {JELLI_UI_ACTION_TEA, "TEA", NULL},
                                       {JELLI_UI_ACTION_OUTING, "GOING OUT", NULL},
@@ -83,7 +88,8 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 
 static bool action_persists(JelliPetUiAction action)
 {
-    if (action == JELLI_UI_ACTION_WATER || action == JELLI_UI_ACTION_EXERCISE)
+    if (action == JELLI_UI_ACTION_WATER || action == JELLI_UI_ACTION_EXERCISE ||
+        action == JELLI_UI_ACTION_VOLUME_DOWN || action == JELLI_UI_ACTION_VOLUME_UP)
         return true;
     static const bool persists[] = {true,  false, true, false, false, false, true, true,
                                     true,  false, true, true,  true,  true,  true, true,
@@ -116,7 +122,8 @@ static void execute(JelliPetUi *ui, JelliGame *game, JelliPetUiAction action)
     ui->result = result;
     if (result == JELLI_OK &&
         (game->pets[game->active].activity != JELLI_IDLE || action == JELLI_UI_ACTION_WATER) &&
-        action != JELLI_UI_ACTION_SAVE) {
+        action != JELLI_UI_ACTION_SAVE && action != JELLI_UI_ACTION_VOLUME_DOWN &&
+        action != JELLI_UI_ACTION_VOLUME_UP) {
         ui->menu_open = false;
         ui->page = JELLI_UI_HOME;
     }
@@ -147,16 +154,6 @@ static void finish_event(const JelliPetUi *ui, JelliGame *game, uint32_t sequenc
                         &game->pets[game->active], before);
     if (game->events)
         game->events->input = 0u;
-}
-
-static void celebrate(JelliPetUi *ui, const JelliPet *pet, int x, int y)
-{
-    unsigned amount = jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_BURST_COUNT);
-    if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH) && ui->clicker_done &&
-        ui->result == JELLI_OK && amount)
-        amount = JELLI_PARTICLE_CAPACITY;
-    unsigned spread = jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_SPREAD);
-    jelli_particles_burst_tuned(&ui->particles, x, y, ui->result == JELLI_OK, amount, spread);
 }
 
 static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
@@ -215,6 +212,7 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
             continue;
         if (!hit_button(&button, x, y))
             continue;
+        ui->attempted_slot = (uint8_t)slot;
         unsigned code = input_code(ui, slot, game->pets[game->active].asleep);
         JelliEventSnapshot before = jelli_game_observe(game, &game->pets[game->active]);
         uint32_t sequence = game->events ? game->events->sequence : 0u;
@@ -226,46 +224,13 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
             finish_event(ui, game, sequence, code, before);
             return;
         }
+        bool back = !slot && ui->menu_open;
+        uint32_t actor_id = game->pets[game->active].id;
         activate_slot(ui, game, slot);
         finish_event(ui, game, sequence, code, before);
-        if (ui->result == JELLI_OK)
-            ui->sound_pending = true;
-        celebrate(ui, &game->pets[game->active], x, y);
+        jelli_pet_feedback(ui, game, before, actor_id, back, x, y);
         return;
     }
-}
-
-bool jelli_pet_ui_take_sound(JelliPetUi *ui, uint64_t now_ms)
-{
-    if (!ui || !ui->sound_pending)
-        return false;
-    ui->sound_pending = false;
-    if (ui->sound_played && now_ms >= ui->last_sound_ms && now_ms - ui->last_sound_ms < 120u)
-        return false;
-    ui->sound_played = true;
-    ui->last_sound_ms = now_ms;
-    return true;
-}
-
-unsigned jelli_pet_ui_sound(JelliPetUi *ui, const JelliPet *pet, uint64_t now_ms)
-{
-    if (!ui || !pet)
-        return 0u;
-    bool input = ui->sound_pending;
-    bool tap = jelli_pet_ui_take_sound(ui, now_ms);
-    bool enabled =
-        jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_COO_ENABLED) != 0u;
-    if (input || !enabled || ui->menu_open || pet->asleep || pet->activity != JELLI_IDLE ||
-        ui->coo_pet != pet->id || now_ms < ui->coo_anchor_ms) {
-        ui->coo_anchor_ms = now_ms;
-        ui->coo_pet = pet->id;
-        return tap ? 6u : 0u;
-    }
-    unsigned interval = jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_COO_MS);
-    if (now_ms - ui->coo_anchor_ms < interval)
-        return 0u;
-    ui->coo_anchor_ms = now_ms; /* One cue after stalls; never catch up in bursts. */
-    return 7u;
 }
 
 void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)
@@ -289,6 +254,7 @@ void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)
         return;
     }
     ui->sound_pending = true;
+    ui->sound_cue = (uint8_t)((dy > 0 ? JELLI_SOUND_BACK : JELLI_SOUND_CONFIRM) + 1u);
     ui->result = JELLI_OK;
     const JelliPet *pet = &game->pets[game->active];
     jelli_game_emit(game, JELLI_EVENT_INPUT, code, JELLI_OK, (uint32_t)ui->page, pet,

@@ -3,16 +3,16 @@
   "entries": [
     {
       "id": 1,
-      "name": "COMPANION 1",
+      "name": "JELLI",
       "unlock_prize": 0,
       "hint": "STARTING COMPANION",
       "evolution_set": 1
     },
     {
       "id": 2,
-      "name": "COMPANION 2",
-      "unlock_prize": 0,
-      "hint": "STARTING COMPANION",
+      "name": "FRIEND",
+      "unlock_prize": 9,
+      "hint": "CATCH FRIENDSHIP BOW",
       "evolution_set": 1
     },
     {

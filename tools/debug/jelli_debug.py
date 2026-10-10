@@ -217,6 +217,8 @@ def main():
     tune.add_argument("--creature", type=int, default=0, help="Stable pet ID; default is global")
     network = commands.add_parser("network", help="ESP32 network status or persist/apply staged settings")
     network.add_argument("action", nargs="?", choices=("apply",))
+    display = commands.add_parser("display", help="ESP32 buffer diagnostics or explicit panel refresh")
+    display.add_argument("action", nargs="?", choices=("refresh",))
     ota = commands.add_parser("ota", help="ESP32 HTTPS update: inspect, download/stage, then save/reboot")
     ota.add_argument("action", nargs="?", choices=("start", "reboot"))
     events = commands.add_parser("events", help="Read discrete action/state events")
@@ -225,7 +227,7 @@ def main():
     cheat.add_argument("name", choices=("fullness", "energy", "clean", "fun", "connection", "bond", "food", "gifts", "heal"))
     cheat.add_argument("value", type=int, nargs="?")
     sound = commands.add_parser("sound", help="Queue a tiny procedural pet sound")
-    sound.add_argument("cue", choices=("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo"))
+    sound.add_argument("cue", choices=("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo", "confirm", "pet"))
     sound.add_argument("--volume", type=int, choices=range(81), default=35, metavar="0..80")
     screenshot = commands.add_parser("screenshot")
     screenshot.add_argument("output", type=Path, help="PNG path; also writes .png.json state")
@@ -299,7 +301,7 @@ def main():
             result = client.state()["buttons"]
         elif args.command == "press":
             result = client.press(args.button)
-        elif args.command in ("network", "ota"):
+        elif args.command in ("network", "ota", "display"):
             result = client.request(args.command + (f" {args.action}" if args.action else ""))
         elif args.command == "tunables":
             scope = "device" if args.device else args.creature
@@ -316,7 +318,7 @@ def main():
         elif args.command == "events":
             result = client.request(f"events {args.after}")
         elif args.command == "sound":
-            cue = ("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo").index(args.cue)
+            cue = ("chirp", "happy", "sparkle", "hello", "sleepy", "tap", "coo", "confirm", "pet").index(args.cue)
             result = client.request(f"sound {cue} {args.volume}")
         elif args.command == "swipe":
             result = client.request(f"swipe {('up', 'down', 'left', 'right').index(args.direction)}")

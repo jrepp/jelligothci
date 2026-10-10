@@ -1,3 +1,5 @@
+#include "jelli/wake.h"
+#include "jelli/sound.h"
 #include "pet_draw.h"
 
 static uint32_t frame_id(const JelliPetRenderKey *v)
@@ -5,6 +7,10 @@ static uint32_t frame_id(const JelliPetRenderKey *v)
     uint32_t base = v->form == 0u ? 1000u : 1006u;
     if (v->asleep)
         return base + 5u;
+    if (v->reaction == 4u)
+        return base + 5u;
+    if (v->reaction == 5u)
+        return v->phase == 2u ? 1021u + (v->form ? 2u : 0u) : base + 4u;
     if (v->health == JELLI_UNWELL || v->health == JELLI_RECOVERING)
         return base + 6u;
     /* Keep care feedback visible even when a recent touch reaction is active. */
@@ -54,7 +60,10 @@ uint16_t jelli_pet_background(uint8_t location, unsigned x, unsigned y)
 
 bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
 {
-    if (ui->menu_open || !ui->actor_frame || x < ui->actor_x || y < ui->actor_y)
+    const JelliPet *pet = &game->pets[game->active];
+    bool activity_view = ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH;
+    if ((ui->menu_open && (!activity_view || !pet->asleep)) || !ui->actor_frame ||
+        x < ui->actor_x || y < ui->actor_y)
         return false;
     const JelliAsset *a = ui->actor_frame;
     unsigned column = (unsigned)(x - ui->actor_x) / 6u;
@@ -62,13 +71,16 @@ bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
     if (column >= a->width || row >= a->height ||
         !(a->mask[row * a->mask_stride + column / 8u] & (1u << (7u - column % 8u))))
         return false;
-    const JelliPet *pet = &game->pets[game->active];
-    ui->result = jelli_game_command(game, (JelliCommand){JELLI_CMD_TOUCH, pet->id, 0u});
+    bool waking = pet->asleep;
+    ui->result = jelli_game_command(
+        game, (JelliCommand){waking ? JELLI_CMD_WAKE : JELLI_CMD_TOUCH, pet->id, 0u});
     if (ui->result == JELLI_OK) {
         ui->save_requested = true;
         ui->save_status = JELLI_SAVE_PENDING;
-        ui->sound_pending = pet->reaction == 1u;
-        jelli_particles_burst(&ui->particles, x, y, pet->reaction == 1u);
+        ui->sound_pending = true;
+        ui->sound_cue = JELLI_SOUND_PET + 1u;
+        if (!waking || pet->wake_mood == JELLI_WAKE_HAPPY)
+            jelli_particles_burst(&ui->particles, x, y, waking || pet->reaction == 1u);
     }
     return true;
 }

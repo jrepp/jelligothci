@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/game.h"
 #include "jelli/save.h"
 #include <stdio.h>
@@ -23,7 +24,7 @@ static void check_unchanged(const JelliGame *before, const JelliGame *after)
 
 static void ready(JelliGame *g)
 {
-    jelli_game_init(g);
+    test_game_pair(g);
     for (unsigned i = 0; i < JELLI_NEED_COUNT; ++i)
         g->pets[0].needs[i] = 500u;
 }

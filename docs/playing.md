@@ -59,8 +59,9 @@ screenshots, and reconnect behavior are tested against the actual SDL app.
 The ESP32 build includes a small debug interface on its existing USB Serial/JTAG
 console. Build with `make esp-build`; when ready to deploy, discover the port
 with `./scripts/esp ports` and use the separate `make esp-flash PORT=...` command.
-Close `esp-monitor` and other serial clients before using the CLI. Firmware startup after flashing is verified; this feature has host test coverage,
-but live debug commands and screenshot transfer have not yet been exercised.
+Close `esp-monitor` and other serial clients before using the CLI. Device state,
+commands, and framebuffer screenshots have been exercised over USB. A screenshot
+reads the engine buffer; it cannot verify the pixels shown by the physical panel.
 
 ```sh
 ./scripts/jelli-debug ports
@@ -74,6 +75,24 @@ export JELLI_DEBUG_PORT=/dev/cu.usbmodem...  # Linux typically /dev/ttyACM...
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" tap 114 332
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" screenshot build/pet-live.png
 ```
+
+For an ESP32 display mismatch, `display` reports the latest five-second sample of
+engine/canvas equality, boundary guards, heap integrity, panel transfer counts,
+and minimum remaining
+engine-task stack bytes. `checks: 0` means no sample yet. `mismatches` counts
+unequal samples, not frames. These checks do not read panel memory.
+
+```sh
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" display
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" display refresh
+```
+
+`display refresh` queues a full retransmission of the existing LVGL canvas on
+the next uncaptured frame. It does not reset the device, change pet state, or
+repair a differing canvas. Capture the screenshot and diagnostics before using
+it, then compare the physical panel. The two full PSRAM frames have 32-byte
+boundary guards on each end; invalid copy bounds or damaged guards stop the
+firmware with an error instead of continuing an unsafe copy.
 
 The CLI runs through repository-local uv, Python 3.12, and pinned pyserial 3.5.
 `state` reports the last rendered view and visible buttons. `press` accepts a
@@ -187,9 +206,10 @@ it checks every clicker, internal bond changes, completion guards, and screensho
 
 ### Sound audition
 
-Six tiny procedural cues are available through `jelli-debug sound`: `chirp`,
-`happy`, `sparkle`, `hello`, `sleepy`, and `tap`. Hello and sleepy are vowel-like pet voices.
-Accepted menu presses play a quiet 65 ms tap at volume 25, coalesced within 120 ms.
+Nine tiny procedural cues are available through `jelli-debug sound`: `chirp`,
+`happy`, `sparkle`, `hello`, `sleepy`, `tap`, `coo`, `confirm`, and `pet`. Hello and sleepy are vowel-like pet voices.
+Menu confirmation, Back/Close, and pet interaction use distinct cues, coalesced
+within 120 ms and scaled by the saved master volume.
 Pass `--volume 0..80` (default 35). Both native SDL and the ESP32 support this
 command; sound output is asynchronous and does not block the engine thread.
 Interactive SDL initializes audio at startup; headless SDL needs `--audio`.
@@ -260,7 +280,7 @@ Windows SDL build, install the pinned uv from `toolchain.env`, build/install SDL
 and configure CMake with its install directory in `CMAKE_PREFIX_PATH`.
 
 Settings now owns pet selection, sleep/wake, bedtime, and a large local/pet clock.
-Back and close use icon-only controls partly below the round screen. Ring icons
+Back and Close are labeled controls at the bottom of the round screen. Ring icons
 travel out/in on menu changes; CLI presses wait up to three seconds for the ring
 to settle. Shots take 1–3 taps, medicine one small dose; each has a per-pet hour
 cooldown. Shot progress survives menu changes. The desktop checkpoint codec now
@@ -276,7 +296,7 @@ and a clear dominant axis, and ambiguous drags do nothing.
 navigation over the debug interface; `up`, `down`, and `right` are also supported.
 
 Settings shows a smaller clock face with a gear button. Tap the gear for distinct
-TZ −/+, HR −/+, and MIN −/+ controls; Back returns to Settings. TZ changes a
+ZONE −/+, HOUR −/+, and MIN −/+ controls; Back returns to Settings. TZ changes a
 persisted offset relative to UTC (or the simulated pet clock when time is unknown)
 in 30-minute steps, bounded to −12/+14 hours. Hour and minute adjustments
 wrap at midnight. These affect the display, atmosphere, and moment suggestions;
@@ -341,9 +361,14 @@ pet details. Bring out activates that pet; browsing and viewing Evolutions do
 not switch pets. Back returns to the previous collection view. Linked sleep and
 unfinished activities block activation, with a reason shown in the detail view.
 
-Both existing companions remain owned. The testing catalog adds Bubble, Garden,
-Pearl, Sunny, Tea, Movie, and Moon companions, unlocked by discovering their named
-present. They currently share the same Mint → Lilac artwork and 60-second prototype
+Mint and Lilac occupy one Jelli family slot. A new game starts with Mint;
+growth unlocks Lilac. In Evolutions, tap either unlocked form to select it,
+even while sleeping or busy. The selected form persists without losing care
+state or immediately evolving back. Locked forms cannot be selected.
+
+The testing catalog adds Friend, Bubble, Garden, Pearl, Sunny, Tea, Movie, and
+Moon families, unlocked by discovering their named present. Friend uses the
+Friendship Bow unlock. They currently share the same Mint → Lilac artwork and 60-second prototype
 growth rule. Evolution preserves identity and the collection slot. Stored pets
 remain frozen. NEW marks a newly acquired companion until its details are viewed.
 
@@ -357,23 +382,28 @@ and compiles it for both hosts without a new runtime loader. Entry IDs 1–9 are
 stable slot bindings; do not renumber them. This slice supports the existing
 two-form evolution set; unsupported form/set references fail the build.
 
-Save codec v6 reads v1–v5 and preserves all legacy identities, active selection,
-and present provenance. Legacy records map in stored order to unique slots;
-only the current form is marked reached when earlier history is unavailable.
+Save codec v9 reads v1–v8. The two legacy starter records merge into one Jelli
+slot: the active starter keeps its identity and full care state (otherwise the
+first starter is retained), and their reached forms are combined. Present
+origins and the linked sleep journal follow the retained identity. Other family
+records keep their state. A legacy Lilac also unlocks its Mint ancestor. The
+inactive duplicate starter's separate care history is not retained.
 Existing present discoveries can grant missing companions during migration.
-A full nine-pet checkpoint uses 3568 of the available 4096 bytes. Older firmware
-cannot read v6; keep a backup before downgrading.
+A full nine-pet checkpoint uses 3605 of the available 4096 bytes. Older firmware
+cannot read v9; keep a backup before downgrading.
 
 
 ## Food, water, and exercise
 
 Care → Feed opens a grid of meals, fruit, and soup. Each costs one shared food
-item when eating finishes. Meals add 30 fullness points; fruit adds 15 fullness
+item when eating finishes. When food runs out, tap GET FOOD in the ninth grid
+cell to refill five portions. Labels stay readable even when actions are disabled.
+Meals add 30 fullness points; fruit adds 15 fullness
 and 10 hydration; soup adds 22 fullness and 25 hydration. Care → Water fills
 hydration to 100 without spending food. Swipe the home stat tile to Hydration.
 Hydration slowly falls while awake and at one-quarter that rate while asleep.
 
-Moments → Exercise starts a ten-second barbell workout. Starting costs 15
+Activities → Exercise starts a ten-second barbell workout. Starting costs 15
 fullness, 20 hydration, and 5 energy points; completion adds 20 play points.
 The action is disabled while asleep, busy, or short of those resources. It uses
 fullness already eaten, so it does not spend another food inventory item. Costs
@@ -384,3 +414,76 @@ and effects live in [content/exercise.json](../content/exercise.json). CMake
 checks bounds and compiles both catalogs without a runtime parser. Keep food IDs
 stable because an unfinished meal stores its selected type. Older saves begin
 at 70 hydration and resume any unfinished meal as the original meal type.
+
+
+## Volume
+
+Settings has large VOL − and VOL + controls at the bottom left and right. Each
+tap changes the master level by 10 percentage points, clamped to 0–100. Zero
+shows MUTED and suppresses automatic coos and menu sounds. Raising it previews
+the new level with the normal menu tap. The setting persists across restarts and
+applies to every pet. It remains available during sleep and activities.
+
+The default is 65%: 30% above the previous gain settings, which correspond to
+50% on this scale. At default, menu taps use codec level 33 and coos 23 (rounded
+from the old 25 and 18). New and migrated saves use this louder default; v7 saves
+preserve the chosen level, including mute. The debug CLI's explicit `sound
+--volume` argument remains a raw 0–80 diagnostic override.
+
+
+## Interaction feedback
+
+Opening or confirming a menu plays a short two-note rising cue. Back and Close
+use the original tap sound; accepted pet touches and care actions play a softer
+voiced chirp. Swipe navigation follows the same direction distinction. Menu
+navigation, settings, and collection selection no longer create sprite sprays.
+Pet actions and celebrations retain them. Input audio remains limited to one
+cue per 120 ms, and the master volume controls all automatic sounds.
+
+
+During brushing, small bubbles rise near the mouth, one quarter of the visible
+pet height above its centroid. Bath bubbles fall from across the pet's top.
+Both use the fixed particle pool, stop on completion or exit, and emit at most
+one batch after a timing stall. They do not appear while the pet is asleep.
+
+
+## Waking by touch
+
+Touch the sleeping pet on the main scene or in a care activity to wake it.
+A short rest says GROGGY... without a bonding reward. A good rest shows a brief
+surprised pose, then HAPPY, and grants one bonding point (capped at 100).
+Settings → Wake and automatic wake-ups use the same rule. Current thresholds
+are authored in [content/wake.json](../content/wake.json): 30 minutes of admitted
+sleep for a nap, or six hours for scheduled sleep.
+
+Elapsed sleep is saved across restarts, and waking consumes that duration so
+it cannot award another bonus after a save/reload. Old saves have no trustworthy
+rest-duration field and start it at zero. The brief expression itself is not
+saved. Touching an awake pet retains its ordinary petting behavior.
+
+## Recovering an unwell pet
+
+The home status shows CARE > BASIC CARE when the pet needs treatment. Open Menu,
+choose Care, then Basic Care. A RECOVERING countdown shows the remaining seconds
+until the pet is well (30 seconds from starting treatment). Water, food, and rest
+address their respective meters; they do not replace Basic Care treatment.
+
+## Menu labels and unavailable actions
+
+Every ring control now shows its action name alongside the icon, including when
+unavailable. Activities (formerly Moments) contains Breakfast, Tea, Going Out,
+Movie, and Exercise. Page headings identify the open menu. Bottom Back returns
+one level; Close leaves the root menu. Neither removes a held present: use Put
+Away on that present's action panel.
+
+Medicine and Shot remain visible while cooling down. Tapping either during its
+cooldown explains DOSE GIVEN - WAIT. Their existing one-hour cooldowns and shot
+progress are unchanged. An unavailable exercise explains whether to feed, offer
+water, or rest. A sleeping pet in an activity shows TOUCH PET TO WAKE.
+
+Settings shows Bedtime +1H, Pets, Rest/Wake, VOL −/+, and an EDIT clock control.
+The clock editor names Zone, Hour, and Minute adjustments; Zone changes by 30
+minutes. Food's GET FOOD button refills five portions when inventory is empty.
+
+The [complete menu audit](../docs-cms/memos/memo-030-menu-clarity-audit.md) records
+all pages, their actions, and the remaining physical-device verification.
