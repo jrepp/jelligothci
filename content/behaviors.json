@@ -233,6 +233,59 @@
           }
         }
       ]
+    },
+    {
+      "name": "jelly",
+      "forms": [
+        "MINT",
+        "LILAC"
+      ],
+      "reactions": [
+        {
+          "on": "need_low",
+          "need": "satiety",
+          "state": "asking_food",
+          "chance_pct": 70
+        },
+        {
+          "on": "need_low",
+          "need": "social",
+          "state": "asking_company",
+          "chance_pct": 40
+        },
+        {
+          "on": "present_caught",
+          "state": "delighted"
+        },
+        {
+          "on": "present_given",
+          "state": "delighted"
+        },
+        {
+          "on": "present_offered",
+          "state": "curious",
+          "chance_pct": 50
+        },
+        {
+          "on": "location",
+          "location": "garden",
+          "state": "curious",
+          "chance_pct": 30
+        },
+        {
+          "on": "woke",
+          "state": "curious",
+          "chance_pct": 20
+        },
+        {
+          "on": "idle",
+          "state": "curious",
+          "chance_pct": 1,
+          "when": {
+            "location": "garden"
+          }
+        }
+      ]
     }
   ]
 }

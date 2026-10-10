@@ -3,8 +3,7 @@
 
 #include "jelli/pet_engine.h"
 
-/* Room for a full bank (131072 pixels, 16384 mask and 1152 glyph bytes) plus the
- * header and descriptor allowances that tools/assets/build_slice.py reserves. */
+/* 288 KiB staging buffer covers one bank's payload plus record metadata. */
 #define JELLI_ASSET_PACK_CAPACITY 294912u
 #define JELLI_ASSET_PACK_COUNT 128u
 

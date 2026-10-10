@@ -74,16 +74,13 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw payload (RGB565, masks and font bits) is 267,304 bytes. The RFC's 8,192-byte
-definition and 4,096-byte metadata allowances bring the planned pack to 279,592 bytes,
-under the 294,912-byte ceiling (`JELLI_ASSET_PACK_CAPACITY` in
-`ports/sdl/asset_reload.h`, sized for a full SDL live-reload bank); those allowances
-are not a completed game pack or a linked firmware measurement.
-
-The SDL live-reload bank (`ports/sdl/asset_reload.h`; `build_slice.py` checks it)
-holds 131,072 pixels and 16,384 mask bytes. The current sprites use 125,248 pixels
-and 15,656 mask bytes, leaving 5,824 and 728: room for two more 48x48 frames
-(2,304 pixels and 288 mask bytes each), with both banks running out together.
+Actual raw payload (RGB565, masks, font) is 267,304 bytes. The RFC's 8,192-byte definition
+and 4,096-byte metadata allowances bring the planned pack to 279,592 bytes. The SDL
+live pack is 269,960 bytes, within its 288 KiB staging buffer. Its 125,248 pixels
+and 15,656 mask bytes fit the existing 131,072-pixel and 16,384-byte banks, leaving
+5,824 pixels and 728 mask bytes: room for two more 48x48 frames (2,304 pixels and
+288 mask bytes each), with both banks running out together. These are desktop
+authoring limits, not a linked firmware memory measurement.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 

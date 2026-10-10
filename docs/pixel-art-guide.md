@@ -33,7 +33,8 @@ screen.
 
 ## 2. Palette and ramps
 
-Sprites use only the 16 shared colours in `assets/slice/assets.json`, with
+Sprites use the 16 shared colours in `assets/slice/assets.json`, or their
+named palette (`palettes` in the same file, for example the axolotl), with
 binary alpha (fully transparent or fully opaque). Do not anti-alias, use
 gradients, dither, or add semi-transparent edges. Backgrounds keep their
 separate 16-grey palette.
@@ -52,13 +53,11 @@ and **deep**.
 | Recess | | mauve `#72516b` | plum `#49334f` | |
 
 The ramps live in `palette_ramps` in `assets/slice/assets.json`, light to deep,
-for the shared palette and each named palette, and `palette_names` names each
-palette's colours, keyed by colour. Purple object and sea / teal are parts of
-the lilac and mint ramps, not separate ramps. Jelli Art draws its colours as one
-row per ramp, and its **Shade** tool steps a pixel one colour lighter or deeper
-along its ramp. Cream is the light end of both coral and gold; Shade follows the
-row you chose it from. `build_slice.py` checks that every ramp colour is in its
-palette and that each ramp darkens step by step.
+for the shared palette and each named palette; `palette_names` names each
+colour. Purple object and sea / teal are parts of the lilac and mint ramps.
+`build_slice.py` checks that every ramp colour is in its palette and that each
+ramp darkens step by step. Jelli Art's **Shade** tool steps along these ramps
+([Paint in Jelli Art](artwork.md#paint-in-jelli-art)).
 
 - **Ink `#291b35`** is reserved for outlines and facial features. It is never a
   fill.
