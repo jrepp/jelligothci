@@ -3,6 +3,7 @@
 #include "jelli/collection.h"
 #include "game_internal.h"
 #include "jelli/activities.h"
+#include "jelli/behavior.h"
 #include "jelli/nutrition.h"
 
 #include <limits.h>
@@ -306,9 +307,10 @@ static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
     JelliResult result = start_play(pet);
     if (result != JELLI_OK)
         return result;
+    unsigned percent = jelli_behavior_moment_percent(pet, choice); /* Species affinity. */
     for (unsigned need = 0u; need < JELLI_NEED_COUNT; ++need)
         if (m->gains[need])
-            (void)boost_need(pet, (JelliNeed)need, m->gains[need]);
+            (void)boost_need(pet, (JelliNeed)need, m->gains[need] * percent / 100u);
     if (m->location != JELLI_MOMENT_STAY)
         pet->location = m->location == JELLI_MOMENT_GARDEN ? 1u : 0u;
     pet->moment = (uint8_t)(choice + 1u);

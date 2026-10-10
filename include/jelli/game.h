@@ -24,6 +24,16 @@ typedef enum {
     JELLI_SOCIAL
 } JelliNeed;
 typedef enum { JELLI_WELL, JELLI_UNWELL, JELLI_RECOVERING } JelliHealth;
+/* pet->reaction holds a touch level; the render key adds wake moods after the touch levels. */
+typedef enum {
+    JELLI_REACTION_NONE,
+    JELLI_REACTION_TOUCH_HAPPY,
+    JELLI_REACTION_TOUCH_UPSET,
+    JELLI_REACTION_TOUCH_OVERLOAD,
+    JELLI_REACTION_WAKE_GROGGY, /* JELLI_REACTION_TOUCH_OVERLOAD + JELLI_WAKE_GROGGY */
+    JELLI_REACTION_WAKE_HAPPY
+} JelliReaction;
+
 /* JELLI_CMD_HEALTH values. Brush, floss, mouthwash, spit and clean-up form the dental routine. */
 typedef enum {
     JELLI_HEALTH_BRUSH,
@@ -99,10 +109,15 @@ typedef struct {
     /* Brief session-only touch memory; care changes still persist. */
     uint16_t touch_load;
     uint8_t reaction, reaction_ticks, wake_mood;
+    uint8_t behavior; /* RFC-005 behaviour state + 1, or 0; fills alignment padding. */
     JelliHealth health;
     JelliActivity activity;
     bool asleep, scheduled_sleep, hunger_low, hunger_counted;
     bool reward_pending, reward_claimed;
+    /* RFC-005 behaviour timing in simulated seconds; these fill the struct's tail padding. */
+    uint8_t cooldown_state; /* Most recent state + 1 while its cooldown runs, or 0. */
+    uint8_t low_needs;      /* Bit per JelliNeed below the low threshold (edge detection). */
+    uint16_t behavior_left, cooldown_left;
 } JelliPet;
 
 typedef struct {
@@ -113,6 +128,8 @@ typedef struct {
     uint32_t backlog_ms, revision;
     uint16_t food, gifts;
     uint16_t new_pets;
+    /* Stimuli for the active pet, drained each behaviour second; never saved. */
+    uint8_t stimuli[8][2], stimulus_count, stimuli_dropped;
     uint8_t count, active, volume;
     bool resuming;
     /* Optional borrowed sink; owner outlives commands/advance. Not saved. */

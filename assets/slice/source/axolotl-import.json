@@ -68,6 +68,14 @@
     {
       "source": "Idle1 Surprise.png",
       "pose": "surprised"
+    },
+    {
+      "source": "Pee1.png",
+      "pose": "potty-1"
+    },
+    {
+      "source": "Pee2.png",
+      "pose": "potty-2"
     }
   ]
 }

@@ -1,5 +1,6 @@
 #include "jelli/save.h"
 #include "save_codec.h"
+#include "save_tail.h"
 #include "jelli/collection.h"
 
 #include <string.h>
@@ -216,12 +217,7 @@ static void write_game(Writer *writer, const JelliGame *game)
     for (unsigned i = 0u; i < game->count; ++i)
         put_u8(writer, game->pets[i].food_type);
     put_u8(writer, game->volume);
-    for (unsigned i = 0u; i < game->count; ++i) {
-        put_u32(writer, game->pets[i].rest_ticks);
-        put_u8(writer, game->pets[i].moment); /* Version 10: moments and potty cycle. */
-        put_u16(writer, game->pets[i].digesting);
-        put_u16(writer, game->pets[i].potty);
-    }
+    jelli_save_write_tail(writer, game);
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -275,14 +271,7 @@ static bool read_game(Reader *reader, JelliGame *game)
         for (unsigned i = 0u; i < game->count; ++i)
             game->pets[i].food_type = get_u8(reader);
     game->volume = reader->version >= 7u ? get_u8(reader) : JELLI_VOLUME_DEFAULT;
-    for (unsigned i = 0u; i < game->count && reader->version >= 9u; ++i) {
-        game->pets[i].rest_ticks = get_u32(reader);
-        if (reader->version < 10u)
-            continue;
-        game->pets[i].moment = get_u8(reader);
-        game->pets[i].digesting = get_u16(reader);
-        game->pets[i].potty = get_u16(reader);
-    }
+    jelli_save_read_tail(reader, game);
     return !reader->failed;
 }
 

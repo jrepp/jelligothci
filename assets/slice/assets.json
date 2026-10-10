@@ -1953,6 +1953,48 @@
         30
       ],
       "purpose": "POTTY routine icon; placeholder from source/potty_art.py"
+    },
+    {
+      "id": 1115,
+      "key": "creatures.axolotl-potty-1",
+      "path": "creatures/axolotl-potty-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "potty-1",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1116,
+      "key": "creatures.axolotl-potty-2",
+      "path": "creatures/axolotl-potty-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "potty-2",
+      "palette": "axolotl"
     }
   ],
   "clips": [

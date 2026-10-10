@@ -16,7 +16,7 @@ unsigned jelli_pet_mood(const JelliPet *pet)
     unsigned mood = (comfort * 2u + joy + connection) / 4u;
     if (pet->health == JELLI_UNWELL && mood > 400u)
         mood = 400u;
-    if (pet->reaction >= 2u)
+    if (pet->reaction >= JELLI_REACTION_TOUCH_UPSET)
         mood = mood > 150u ? mood - 150u : 0u;
     return mood ? (mood + 9u) / 10u : 1u;
 }
@@ -53,13 +53,17 @@ JelliResult jelli_game_touch(JelliPet *pet)
         return JELLI_ASLEEP;
     pet->wake_mood = 0u;
     pet->touch_load = adjusted(pet->touch_load, 220, 0u);
-    pet->reaction = pet->touch_load >= 900u ? 3u : pet->touch_load >= 600u ? 2u : 1u;
+    pet->reaction = pet->touch_load >= 900u   ? JELLI_REACTION_TOUCH_OVERLOAD
+                    : pet->touch_load >= 600u ? JELLI_REACTION_TOUCH_UPSET
+                                              : JELLI_REACTION_TOUCH_HAPPY;
     pet->reaction_ticks = 30u;
     unsigned floor = pet->health == JELLI_RECOVERING ? 400u : 0u;
-    int change = pet->reaction == 1u ? (int)jelli_habits_social_gain(&pet->habits, 15u) : -20;
+    int change = pet->reaction == JELLI_REACTION_TOUCH_HAPPY
+                     ? (int)jelli_habits_social_gain(&pet->habits, 15u)
+                     : -20;
     pet->needs[JELLI_SOCIAL] = adjusted(pet->needs[JELLI_SOCIAL], change, floor);
     pet->needs[JELLI_AMUSEMENT] = adjusted(pet->needs[JELLI_AMUSEMENT], change, floor);
-    if (pet->reaction == 1u)
+    if (pet->reaction == JELLI_REACTION_TOUCH_HAPPY)
         pet->bond = adjusted(pet->bond, 3, 0u);
     return JELLI_OK;
 }

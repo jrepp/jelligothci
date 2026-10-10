@@ -3,6 +3,7 @@
 #include "jelli/collection.h"
 #include "jelli/nutrition.h"
 #include "jelli/activities.h"
+#include "jelli/behavior.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -57,11 +58,14 @@ void jelli_game_init(JelliGame *game)
     game->new_pets = 0u;
 }
 
-/* Running moment and potty cycle (save version 10). */
+/* Running moment, potty cycle (save version 10) and behaviour state (version 11). */
 static bool pet_routine_valid(const JelliPet *pet)
 {
     return pet->moment <= jelli_moment_count && pet->digesting <= 1000u && pet->potty <= 1000u &&
-           (pet->moment == 0u || pet->activity == JELLI_PLAYING);
+           (pet->moment == 0u || pet->activity == JELLI_PLAYING) &&
+           pet->behavior <= jelli_behavior_state_count &&
+           pet->cooldown_state <= jelli_behavior_state_count &&
+           (pet->behavior == 0u) == !pet->behavior_left;
 }
 
 static bool pet_profile_valid(const JelliPet *pet)
@@ -73,7 +77,8 @@ static bool pet_profile_valid(const JelliPet *pet)
         pet->hydration > 1000u || pet->hydration_remainder >= 2400u || pet->location > 1u ||
         pet->bond > 1000u || pet->wake_mood > JELLI_WAKE_HAPPY ||
         pet->rest_ticks > jelli_wake_rules.sleep_ticks || pet->touch_load > 1000u ||
-        pet->reaction > 3u || pet->reaction_ticks > 30u || !enum_values_valid(pet))
+        pet->reaction > JELLI_REACTION_TOUCH_OVERLOAD || pet->reaction_ticks > 30u ||
+        !enum_values_valid(pet))
         return false;
     return pet_routine_valid(pet);
 }

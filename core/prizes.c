@@ -1,3 +1,4 @@
+#include "jelli/behavior.h"
 #include "game_internal.h"
 #include "jelli/collection.h"
 
@@ -35,6 +36,7 @@ static bool offer(JelliGame *game, unsigned index)
         return false;
     game->prizes.offered = (uint8_t)(index + 1u);
     game->prizes.offered_pet = game->pets[game->active].id;
+    jelli_behavior_stimulus(game, JELLI_STIM_PRESENT_OFFERED, index);
     return true;
 }
 
@@ -153,6 +155,7 @@ JelliResult jelli_prize_catch(JelliGame *game)
     game->prizes.offered = 0u;
     game->prizes.offered_pet = 0u;
     jelli_collection_unlock(game);
+    jelli_behavior_stimulus(game, JELLI_STIM_PRESENT_CAUGHT, index);
     return JELLI_OK;
 }
 
@@ -188,6 +191,7 @@ JelliResult jelli_prize_gift(JelliGame *game, unsigned index)
         /* A bow cannot manufacture its own replacement by being gifted. */
         if (index != 8u)
             jelli_prize_complete(game, JELLI_PRIZE_GIFT);
+        jelli_behavior_stimulus(game, JELLI_STIM_PRESENT_GIVEN, index);
     }
     unsigned value = index < JELLI_PRIZE_COUNT ? index + 1u : 0u;
     jelli_game_emit(game, JELLI_EVENT_COMMAND, JELLI_CMD_GIFT, result, value, pet, before);

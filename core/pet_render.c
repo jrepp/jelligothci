@@ -1,3 +1,5 @@
+#include "jelli/creature.h"
+#include "jelli/wake.h"
 #include "pet_draw.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
@@ -73,11 +75,13 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.hydration = pet->hydration;
     key.volume = game->volume;
     key.mood = (uint8_t)jelli_pet_mood(pet);
-    key.reaction = pet->wake_mood ? (uint8_t)(3u + pet->wake_mood) : pet->reaction;
-    if (pet->wake_mood == 2u)
-        key.phase = pet->reaction_ticks > 20u ? 2u : 0u;
-    key.care_blocked = (uint8_t)((jelli_pet_health_ready(pet, 1u) ? 0u : 1u) |
-                                 (jelli_pet_health_ready(pet, 2u) ? 0u : 2u));
+    key.reaction =
+        pet->wake_mood ? (uint8_t)(JELLI_REACTION_TOUCH_OVERLOAD + pet->wake_mood) : pet->reaction;
+    if (pet->wake_mood == JELLI_WAKE_HAPPY)
+        key.phase = pet->reaction_ticks > 20u ? JELLI_POSE_CURIOUS
+                                              : JELLI_POSE_IDLE; /* Surprise, then joy. */
+    key.care_blocked = (uint8_t)((jelli_pet_health_ready(pet, JELLI_HEALTH_MEDICINE) ? 0u : 1u) |
+                                 (jelli_pet_health_ready(pet, JELLI_HEALTH_SHOT) ? 0u : 2u));
     key.food = game->food;
     key.gifts = game->gifts;
     key.active = game->active;
