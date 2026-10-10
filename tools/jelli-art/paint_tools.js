@@ -146,6 +146,43 @@
     for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) { const hex = get(b, x, y); if (hex) n.set(hex, (n.get(hex) || 0) + 1); }
     return [...n].sort((p, q) => q[1] - p[1]);
   }
+  /* The rect around every opaque pixel, or null for an empty buffer. Its last row is the ground contact. */
+  function bounds(b) {
+    let x0 = b.w, y0 = b.h, x1 = -1, y1 = -1;
+    for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) if (b.data[(y * b.w + x) * 4 + 3]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    return x1 < 0 ? null : {x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1};
+  }
+  const luma = hex => parseInt(hex.slice(1, 3), 16) * 299 + parseInt(hex.slice(3, 5), 16) * 587 + parseInt(hex.slice(5, 7), 16) * 114;
+  /* The eye row of a face, measured at the catchlight. Face features are 8-connected groups of the darkest
+   * colour (the outline ink) that never touch transparency: eyes and mouths sit inside the body, while the
+   * outline and any seam joined to it reach the edge. The eye row is the topmost white pixel beside such a
+   * group in the middle half of the width. A face without a catchlight (closed or happy eyes) uses the top
+   * of its topmost feature. Null when there is no feature. */
+  function eyeRow(b) {
+    const ink = colours(b).map(([h]) => h).reduce((d, h) => (d === null || luma(h) < luma(d) ? h : d), null);
+    if (!ink) return null;
+    const near = (x, y) => { const out = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) out.push([x + dx, y + dy]); return out; };
+    const seen = new Uint8Array(b.w * b.h), lo = b.w >> 2, hi = b.w - (b.w >> 2);
+    let lit = null, top = null;
+    for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
+      if (seen[y * b.w + x] || get(b, x, y) !== ink) continue;
+      const group = [], stack = [[x, y]]; let inner = true; seen[y * b.w + x] = 1;
+      while (stack.length) {
+        const [cx, cy] = stack.pop(); group.push([cx, cy]);
+        for (const [nx, ny] of near(cx, cy)) {
+          const hex = get(b, nx, ny);
+          if (!hex) inner = false;
+          else if (hex === ink && !seen[ny * b.w + nx]) { seen[ny * b.w + nx] = 1; stack.push([nx, ny]); }
+        }
+      }
+      if (!inner || !group.some(([gx]) => gx >= lo && gx < hi)) continue;
+      for (const [gx, gy] of group) {
+        if (top === null || gy < top) top = gy;
+        for (const [nx, ny] of near(gx, gy)) if (get(b, nx, ny) === '#ffffff' && (lit === null || ny < lit)) lit = ny;
+      }
+    }
+    return lit ?? top;
+  }
   /* Colours of a buffer that the palette lacks. */
   const offPalette = (b, palette) => { const pal = new Set(palette.map(h => h.toLowerCase())); return colours(b).map(([h]) => h).filter(h => !pal.has(h)); };
 
@@ -175,7 +212,7 @@
   const current = h => h.entries[h.at].data;
 
   const api = {line, rect, ellipse, pixelPerfect, blank, copy, get, set, clip, whole, rectFrom, extract, clear, blit,
-    flipH, flipV, rotate, shift, replace, flood, colours, offPalette, pickOutcome, history, record, jump, current};
+    flipH, flipV, rotate, shift, replace, flood, colours, offPalette, pickOutcome, bounds, eyeRow, history, record, jump, current};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.JelliPaint = api;
 })(typeof window !== 'undefined' ? window : globalThis);

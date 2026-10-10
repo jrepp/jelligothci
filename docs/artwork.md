@@ -37,7 +37,9 @@ the repository's pinned tools, and it only listens on your own computer.
    **Issues** to see what still needs attention. Undo with ⌘Z / Ctrl+Z, or click
    any step in the **history** list beside the canvas.
 6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
-   pans. **Grid** and **Guides** (centre and 8 px tile centres) are toggles.
+   pans. **Fit content** (`Z`, under **More tools**) zooms to the drawn pixels
+   with a 2 px margin, which helps on frames with empty rows. **Grid** and
+   **Guides** (centre and 8 px tile centres) are toggles.
    The backdrop starts as the sprite's real surroundings: the scene's wall
    grey for creatures and props, ring grey for icons, menus and health, the
    stat tile for meters, prizes and the font, and black for effects and
@@ -77,8 +79,25 @@ beside the canvas. It plays the clip at its real timing, including strokes you
 have not saved (**Play**, Shift+Space). Click a thumbnail, or press ← and →,
 to paint another frame; the arrows move the keyboard cursor instead while it
 shows, and `,` and `.` always change frame. **Onion skin** (O) ghosts the frames
-before (amber) and after (blue) where they differ from this one; **±1** to
-**±3** sets how many on each side, and **Ghost** sets their strength.
+before (amber) and after (blue). **Changes** ghosts only where they differ from
+this one; **Silhouette** ghosts their whole shape, to judge arcs and volume
+(Shift+O switches). **±1** to **±3** sets how many on each side, and **Ghost**
+sets their strength.
+
+The flip-book compares every frame with frame 1 the way the game places it:
+each frame stands on its own **ground anchor** (its bottom edge, and the
+centre of its bottom three rows), as `core/pet_actor.c` does. It warns when a
+frame **slides** sideways by half a source pixel or more on the panel, or when
+its **eye** sits higher or lower above its bottom edge than frame 1's. The
+frame's thumbnail gets ⚠. **Eye & ground** in the flip-book draws, on the
+canvas and the preview, each frame's ground line (mint), its ground anchor
+(white tick, with frame 1's in mint when they differ), and the eye row (coral)
+where frame 1's eye height puts it. The eye is measured at its white
+catchlight, inside a face feature that does not touch the outline; a face with
+no catchlight, such as closed or happy eyes, uses the top of its highest
+feature. Onion ghosts and the flip-book preview still line frames up by their
+manifest pivot (canvas coordinates); only these guides and warnings use the
+ground anchor.
 
 ### Behaviour and size
 

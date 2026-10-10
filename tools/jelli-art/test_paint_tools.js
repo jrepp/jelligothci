@@ -117,6 +117,24 @@ test('colours and off-palette checks', () => {
   assert.deepStrictEqual(P.offPalette(b, [COLS.a.toUpperCase(), COLS.b]), [COLS.c]);
 });
 
+test('opaque bounds give the ground row; an empty buffer has none', () => {
+  assert.deepStrictEqual(P.bounds(buf(['....', '.ab.', '.b..', '....'])), {x: 1, y: 1, w: 2, h: 2});
+  assert.strictEqual(P.bounds(buf(['..', '..'])), null);
+});
+
+test('the eye row is the catchlight row of a face feature that never touches transparency', () => {
+  const face = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbbbbbba', 'abbbbbdbba', 'abbbbbabba', 'abbbbbabba', 'abbbbbbbba', '.aaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(face)), 3, 'the eye is measured at its catchlight');
+  const low = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbabbbba', 'abbbadbbba', 'abbbaabbba', 'abbbbbbbba', '.aaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(low)), 3, 'a catchlight below the top of the eye still gives the catchlight row');
+  const seam = ['.aaaaaaaaa.', 'abbbbbbbbba', 'aaaabbbbbba', 'abbbbbbbbba', 'abbbbaabbba', 'abbbbbbbbba', '.aaaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(seam)), 4, 'a seam joined to the outline is never a face feature');
+  const closed = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbbbbbba', 'abbabbabba', 'abbbaabbba', 'abbbbbbbba', '.aaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(closed)), 3, 'without a catchlight the top of the topmost feature counts');
+  assert.strictEqual(P.eyeRow(buf(['aaaa', 'abba', 'aaaa'])), null, 'outline ink is never a face');
+  assert.strictEqual(P.eyeRow(buf(['..', '..'])), null);
+});
+
 test('history is bounded, skips no-ops and truncates redo on a new action', () => {
   const data = new Uint8ClampedArray(4), h = P.history(data, 'Opened', 5);
   assert.strictEqual(P.record(h, 'nothing', data), false);

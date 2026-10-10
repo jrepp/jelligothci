@@ -2,16 +2,24 @@
  * Loaded after animation.js. A live preview plays the clip with its real timing from the working
  * pixels, so unsaved strokes animate; a strip of frame thumbnails jumps between frames; onion skin
  * ghosts up to three frames either side. Keys: Left/Right (while the keyboard cursor is hidden)
- * or , and . change frame, Shift+Space plays or pauses, O toggles onion skin. */
+ * or , and . change frame, Shift+Space plays or pauses, O toggles onion skin and Shift+O switches
+ * it between changes only and whole silhouettes. Frames are checked the way core/pet_actor.c places
+ * them: each by its own ground anchor (cr.groundAnchor). A frame whose anchor or eye height differs
+ * from the first frame's is flagged, and the flip-book's Guides draw both on the canvas and preview. */
 'use strict';
 (() => {
-  const S = window.Studio, A = window.JelliAnimation, cr = S?.cr;
+  const S = window.Studio, A = window.JelliAnimation, cr = S?.cr, T = window.JelliPaint;
   if (!S || !cr || !A?.paintContext) return;
   /* Amber before, sky after: apart in hue and lightness, and for red-green colour blindness. */
   const GHOST = {prev: [245, 199, 100], next: [108, 182, 255]};
   const PREVIEW = 132, FALLOFF = 0.3;
-  Object.assign(state, {onionSkin: store.get('onion-skin', true), onionAlpha: store.get('onion-alpha', 0.5), onionRange: store.get('onion-range', 1)});
-  const fb = {playing: false, start: 0, raf: 0, shown: -1};
+  /* Guide colours: the expected eye row in coral, the ground line in mint, ground anchors in white. */
+  const GUIDE = {eye: '#fa8c99', ground: '#85e4b6', anchor: '#ffffff'};
+  /* Onion modes: 'diff' ghosts only where a neighbour differs; 'full' ghosts its whole silhouette. */
+  const ONION_MODES = [['diff', 'Changes', 'Ghost only the pixels that differ from this frame'], ['full', 'Silhouette', 'Ghost every pixel of the neighbouring frames, to judge arcs and volume']];
+  Object.assign(state, {onionSkin: store.get('onion-skin', true), onionAlpha: store.get('onion-alpha', 0.5), onionRange: store.get('onion-range', 1),
+    onionMode: store.get('onion-mode', 'diff') === 'full' ? 'full' : 'diff', animGuides: store.get('anim-guides', false)});
+  const fb = {playing: false, start: 0, raf: 0, shown: -1, measured: new Map(), drawn: null};
   const esc = cr.esc;
   const shell = () => window.JelliShell;
   const announce = text => shell()?.announce?.(text);
@@ -33,6 +41,8 @@
     .fb button kbd,.cr-keys kbd{font:10px ui-monospace,monospace;opacity:.8;margin-left:5px;padding:0 3px;border:1px solid currentColor;border-radius:3px;background:transparent}
     .fb .link{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;justify-self:start;font-size:12px}
     .fb input[type=range]{width:110px}
+    .fb-align{font-size:11px;color:var(--muted)}.fb-align.warn{color:var(--warn);font-weight:600}
+    .fb-strip button.off{border-color:var(--warn)}.fb-strip button.off span:first-of-type::before{content:'⚠ '}
   </style>`);
 
   /* ---------- which clip frame is on the canvas ---------- */
@@ -67,6 +77,7 @@
     const ctx = context(); if (!ctx || ctx.c.frames[ctx.index] !== a.key) return;
     const near = around(ctx, state.onionRange), here = decoded[a.key]?.after;
     const ghosts = [...near.prev.map((i, d) => ['prev', i, d]), ...near.next.map((i, d) => ['next', i, d])].sort((x, y) => y[2] - x[2]);
+    g.save();
     for (const [side, i, d] of ghosts) {  // farthest first, so the nearest frames sit on top
       const k = ctx.c.frames[i], p = decoded[k]?.after, other = byKey[k]; if (!p || k === a.key) continue;
       const dx = (a.pivot?.[0] ?? 0) - (other.pivot?.[0] ?? 0), dy = (a.pivot?.[1] ?? 0) - (other.pivot?.[1] ?? 0);
@@ -76,17 +87,100 @@
        * a bright inner edge keeps each ghost pixel visible on dark backdrops. */
       for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
         const o = (y * p.w + x) * 4; if (!p.data[o + 3]) continue;
-        const seen = pixel(here, x + dx, y + dy);
-        if (seen && seen === hexOf(p.data, o)) continue;
+        const seen = pixel(here, x + dx, y + dy), same = seen && seen === hexOf(p.data, o);
+        if (same && state.onionMode === 'diff') continue;
+        /* Silhouette mode ghosts the whole shape. Over this frame's matching pixels only the ghost's
+         * outline shows, faintly, so even ±3 stays readable. */
+        if (same && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([ex, ey]) => pixel(p, x + ex, y + ey))) continue;
+        g.globalAlpha = same ? 0.35 : 1;
         g.fillRect((x + dx) * z, (y + dy) * z, z, z);
-        if (z >= 6) g.strokeRect((x + dx) * z + 1.5, (y + dy) * z + 1.5, z - 3, z - 3);
+        if (z >= 6 && !same) g.strokeRect((x + dx) * z + 1.5, (y + dy) * z + 1.5, z - 3, z - 3);
       }
     }
+    g.restore();
   };
   function toggleOnion() {
     state.onionSkin = !state.onionSkin; store.set('onion-skin', state.onionSkin);
     renderStage(); document.getElementById('fb-onion')?.focus();
     announce(`Onion skin ${state.onionSkin ? 'on' : 'off'}`);
+  }
+
+  function setOnionMode(mode) {
+    const inPanel = !!document.activeElement?.closest?.('.fb');  // a key press keeps the canvas focused
+    state.onionMode = mode; store.set('onion-mode', mode);
+    renderStage(); if (inPanel) document.querySelector(`[data-onion-mode="${mode}"]`)?.focus();
+    announce(`Onion skin shows ${mode === 'full' ? 'whole silhouettes' : 'changes only'}`);
+  }
+  function toggleAnimGuides() {
+    state.animGuides = !state.animGuides; store.set('anim-guides', state.animGuides);
+    S.redraw?.(); announce(`Eye and ground guides ${state.animGuides ? 'on' : 'off'}`);
+  }
+
+  /* ---------- eye height and ground anchor, as the game places each frame ---------- */
+  /* One frame, from its working pixels: the bottom row edge and anchor x (both from cr.groundAnchor,
+   * q8 like the engine) and the eye's height above that bottom edge. Null for an empty frame. */
+  function measure(k) {
+    const p = decoded[k]?.after, anchor = p && cr.groundAnchor(p); if (!anchor) return null;
+    const bottom = anchor[1] / 256, eye = T.eyeRow(p);
+    return {k, ax: anchor[0], bottom, eyeAbove: eye === null ? null : bottom - eye};
+  }
+  /* Every frame against the first. Only `fresh` (the frame being painted) is measured again; the others
+   * keep their measurement until the flip-book is rebuilt. */
+  function alignment(c, fresh = null) {
+    const ms = c.frames.map(k => {
+      if (k === fresh || !fb.measured.has(k)) fb.measured.set(k, measure(k));
+      return fb.measured.get(k);
+    });
+    const ref = ms[0], scale = cr.scaleFor?.(byKey[c.frames[0]]?.form) || null;  // the form's actor scale (content/creatures.json)
+    const screenX = m => Math.round(m.ax * scale / 256);  // where core/pet_actor.c puts the frame, in panel pixels
+    const off = ms.map((m, i) => {
+      if (!i || !m || !ref) return [];
+      const out = [], slide = scale ? screenX(ref) - screenX(m) : 0;
+      // Under half a source pixel the slide is too small to see, so only larger ones count.
+      if (scale && Math.abs(slide) * 2 >= scale) out.push(`slides ${Math.abs(slide)} px ${slide > 0 ? 'right' : 'left'}`);
+      if (m.eyeAbove !== null && ref.eyeAbove !== null && m.eyeAbove !== ref.eyeAbove) {
+        const d = m.eyeAbove - ref.eyeAbove;
+        out.push(`eye ${Math.abs(d)} px ${d > 0 ? 'higher' : 'lower'}`);
+      }
+      return out;
+    });
+    return {ref, ms, off, scale};
+  }
+  /* Guides over frame m drawn at scale z with its top-left at (ox, oy): the ground line on its bottom edge,
+   * the eye row where the first frame's eye height puts it, and the ground anchors (this frame's, and the
+   * first frame's when they differ) as ticks on the ground line. */
+  function drawGuides(g, a, z, m, ref, ox = 0, oy = 0) {
+    if (!m || !ref) return;
+    const w = a.width * z, floor = oy + m.bottom * z;
+    g.save(); g.setLineDash([]); g.globalAlpha = 0.85;
+    g.fillStyle = GUIDE.ground; g.fillRect(ox, floor - 1, w, 2);
+    const eye = ref.eyeAbove === null ? null : m.bottom - ref.eyeAbove;
+    if (eye !== null) { g.fillStyle = GUIDE.eye; g.fillRect(ox, oy + (eye + 0.5) * z - 1, w, 2); }
+    g.globalAlpha = 1;
+    const tick = (ax, colour) => { const x = ox + ax / 256 * z, r = Math.max(3, z); g.fillStyle = '#291b35'; g.fillRect(x - 2, floor - r - 1, 4, r + 2); g.fillStyle = colour; g.fillRect(x - 1, floor - r, 2, r); };
+    if (ref.ax !== m.ax) tick(ref.ax, GUIDE.ground);
+    tick(m.ax, GUIDE.anchor);
+    if (z >= 8) {
+      g.font = '600 10px ui-monospace,monospace'; g.textBaseline = 'bottom';
+      g.lineWidth = 3; g.lineJoin = 'round'; g.strokeStyle = '#291b35';  // an ink outline keeps labels readable on light backdrops
+      const label = (text, colour, y) => { g.strokeText(text, ox + 3, y); g.fillStyle = colour; g.fillText(text, ox + 3, y); };
+      label('ground', GUIDE.ground, floor - 3);
+      if (eye !== null) label('eye', GUIDE.eye, oy + (eye + 0.5) * z - 3);
+    }
+    g.restore();
+  }
+  /* The paint canvas: measure this frame again (strokes move it) and draw its guides. */
+  S.overlay = (g, a, z) => {
+    const ctx = context(); if (!ctx || ctx.c.frames[ctx.index] !== a.key) return;
+    fb.drawn = alignment(ctx.c, a.key);
+    if (state.animGuides) drawGuides(g, a, z, fb.drawn.ms[ctx.index], fb.drawn.ref);
+  };
+  function alignmentNote(c, al) {
+    if (!al.ref) return '<span class="fb-align warn" role="note">First frame is empty, so nothing is compared</span>';
+    const eye = (al.ref.eyeAbove === null ? 'no eye found' : `eye ${al.ref.eyeAbove} px above the ground`) + (al.scale ? '' : ' · scale unknown, slides not checked');
+    const bad = al.off.map((o, i) => (o.length ? `frame ${i + 1} ${o.join(', ')}` : '')).filter(Boolean);
+    if (bad.length) return `<span class="fb-align warn" role="note">⚠ Against frame 1 (${eye}): ${bad.join('; ')}</span>`;
+    return `<span class="fb-align" role="note">${c.frames.length > 1 ? '✓ Frames keep frame 1\'s ground anchor and' : 'Frame 1 sets the ground anchor and'} ${eye}</span>`;
   }
 
   /* ---------- the preview: every frame aligned on its pivot ---------- */
@@ -106,6 +200,7 @@
     g.setTransform(DPR, 0, 0, DPR, (-px - box.l) * box.s * DPR, (-py - box.t) * box.s * DPR);
     drawPixels(g, decoded[k]?.after, box.s);
     g.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (state.animGuides && a) { const al = alignment(c); drawGuides(g, a, box.s, al.ms[i], al.ref, (-px - box.l) * box.s, (-py - box.t) * box.s); }
   }
   function showFrame(i) {
     const ctx = context(), canvas = document.getElementById('fb-preview'); if (!ctx || !canvas) return;
@@ -136,6 +231,11 @@
   /* After every canvas redraw: the paused preview and this frame's thumbnail follow the strokes. */
   S.afterDraw = () => {
     const ctx = context(); if (!ctx) return;
+    document.getElementById('fb-guides')?.setAttribute('aria-pressed', String(!!state.animGuides));
+    const al = fb.drawn || alignment(ctx.c, ctx.c.frames[ctx.index]), note = document.querySelector('.fb .fb-align'), html = alignmentNote(ctx.c, al);
+    fb.drawn = null;
+    if (note && note.outerHTML !== html) note.outerHTML = html;  // strokes can move the anchor or the eye
+    document.querySelectorAll('#fb-strip button').forEach((b, i) => b.classList.toggle('off', !!al.off[i]?.length));
     if (!fb.playing && document.getElementById('fb-preview')) showFrame(ctx.index);
     const thumb = document.querySelector(`#fb-strip [data-i="${ctx.index}"] canvas`);
     if (thumb) drawThumb(thumb, ctx.c.frames[ctx.index]);
@@ -156,9 +256,11 @@
       box.innerHTML = `<h3 id="fb-title">Flip-book</h3><p class="studio-note" style="margin:0">This frame is not in any clip yet. Add it to a pose with <b>+ clip</b> in the Creature tab's frame library.</p>`;
       side.append(box); return;
     }
-    const {c, index, clip} = ctx, n = c.frames.length, many = n > 1, near = around(ctx, state.onionRange);
+    fb.measured.clear();
+    const {c, index, clip} = ctx, n = c.frames.length, many = n > 1, near = around(ctx, state.onionRange), al = alignment(c);
     const names = list => list.map(i => esc(byKey[c.frames[i]]?.pose || c.frames[i])).join(', ');
     box.innerHTML = `<div class="fb-head"><h3 id="fb-title">Flip-book</h3><span class="lbl">${esc(clip)} · ${n} frame${n === 1 ? '' : 's'} · ${c.loop ? 'loops' : 'plays once'}</span></div>
+      <div class="fb-head">${alignmentNote(c, al)}<button id="fb-guides" aria-pressed="${!!state.animGuides}" title="Draw each frame's ground line and ground anchor, and where frame 1's eye height puts the eye, on the canvas and the preview">Eye &amp; ground</button></div>
       <div class="fb-body"><canvas id="fb-preview" class="fb-preview" role="img" aria-label="${esc(clip)} preview, with unsaved paint"></canvas>
         <div class="fb-controls"><div class="seg" role="group" aria-label="Flip-book">
           <button id="fb-prev" title="Paint the previous frame" aria-keyshortcuts="ArrowLeft ," ${many ? '' : 'disabled'}>◀ Frame${kbd('←')}</button>
@@ -166,8 +268,9 @@
           <button id="fb-next" title="Paint the next frame" aria-keyshortcuts="ArrowRight ." ${many ? '' : 'disabled'}>Frame ▶${kbd('→')}</button></div>
           <span class="fb-now" id="fb-now" aria-live="off"></span>
           <span class="studio-note" style="margin:0">Painting frame <b>${index + 1}</b> of ${n}. ← and → change frame while the keyboard cursor is hidden; , and . always do.</span></div></div>
-      <ol class="fb-strip" id="fb-strip" aria-label="Frames of ${esc(clip)}">${c.frames.map((k, i) => `<li><button data-i="${i}" aria-current="${i === index}" aria-label="Paint frame ${i + 1}: ${esc(byKey[k]?.pose || k)}, ${c.durations_ms[i]} ms"><canvas></canvas><span>${i + 1} · ${esc(byKey[k]?.pose || k)}</span><span>${c.durations_ms[i]} ms</span></button></li>`).join('')}</ol>
-      <div class="fb-onion"><button id="fb-onion" aria-pressed="${state.onionSkin}" title="Ghost the neighbouring frames where they differ from this one" aria-keyshortcuts="O" ${many ? '' : 'disabled'}>Onion skin${kbd('O')}</button>
+      <ol class="fb-strip" id="fb-strip" aria-label="Frames of ${esc(clip)}">${c.frames.map((k, i) => `<li><button data-i="${i}" aria-current="${i === index}"${al.off[i].length ? ' class="off"' : ''} aria-label="Paint frame ${i + 1}: ${esc(byKey[k]?.pose || k)}, ${c.durations_ms[i]} ms${al.off[i].length ? `, ${al.off[i].join(', ')}` : ''}"><canvas></canvas><span>${i + 1} · ${esc(byKey[k]?.pose || k)}</span><span>${c.durations_ms[i]} ms</span></button></li>`).join('')}</ol>
+      <div class="fb-onion"><button id="fb-onion" aria-pressed="${state.onionSkin}" title="Ghost the neighbouring frames (Shift+O: changes only or whole silhouettes)" aria-keyshortcuts="O" ${many ? '' : 'disabled'}>Onion skin${kbd('O')}</button>
+        <div class="seg" role="group" aria-label="Onion skin shows">${ONION_MODES.map(([m, label, what]) => `<button data-onion-mode="${m}" aria-pressed="${state.onionMode === m}" title="${what} (Shift+O switches)" ${many && state.onionSkin ? '' : 'disabled'}>${label}</button>`).join('')}</div>
         <div class="seg" role="group" aria-label="Frames each side">${[1, 2, 3].map(r => `<button data-range="${r}" aria-pressed="${state.onionRange === r}" title="Ghost ${r} frame${r > 1 ? 's' : ''} each side" ${many && state.onionSkin ? '' : 'disabled'}>±${r}</button>`).join('')}</div>
         <label class="lbl">Ghost <input type="range" id="fb-alpha" min="0.15" max="0.9" step="0.05" value="${state.onionAlpha}" aria-label="Onion skin opacity" ${many && state.onionSkin ? '' : 'disabled'}></label>
         ${state.onionSkin && many ? `<span class="fb-legend">${near.prev.length ? `<span><i style="background:rgb(${GHOST.prev})"></i>before: ${names(near.prev)}</span>` : ''}${near.next.length ? `<span><i style="background:rgb(${GHOST.next})"></i>after: ${names(near.next)}</span>` : ''}</span>` : ''}</div>
@@ -184,6 +287,8 @@
     box.querySelector('#fb-next').onclick = () => paintFrame(1);
     box.querySelector('#fb-play').onclick = () => setPlaying(!fb.playing);
     box.querySelector('#fb-onion').onclick = toggleOnion;
+    box.querySelector('#fb-guides').onclick = toggleAnimGuides;
+    box.querySelectorAll('[data-onion-mode]').forEach(b => { b.onclick = () => setOnionMode(b.dataset.onionMode); });
     box.querySelectorAll('[data-range]').forEach(r => { r.onclick = () => { state.onionRange = Number(r.dataset.range); store.set('onion-range', state.onionRange); renderStage(); document.querySelector(`[data-range="${state.onionRange}"]`)?.focus(); }; });
     box.querySelector('#fb-alpha').oninput = e => { state.onionAlpha = Number(e.target.value); store.set('onion-alpha', state.onionAlpha); S.redraw?.(); };
     box.querySelector('#fb-timeline').onclick = () => A.backToTimeline();
@@ -198,6 +303,10 @@
       const k = e.key.toLowerCase(), widget = e.target.closest?.('[role=tablist], [role=slider], [role=listbox], select, input, textarea');
       if (k === ' ' && e.shiftKey) { e.preventDefault(); if (!e.repeat) setPlaying(!fb.playing); return true; }
       if (k === 'o' && !e.shiftKey) { toggleOnion(); return true; }
+      if (k === 'o' && e.shiftKey) {
+        if (state.onionSkin) setOnionMode(state.onionMode === 'full' ? 'diff' : 'full'); else announce('Turn on onion skin first (O)');
+        return true;
+      }
       if (k === ',' || k === '.') { e.preventDefault(); paintFrame(k === ',' ? -1 : 1); return true; }
       if (!widget && !e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); paintFrame(e.key === 'ArrowLeft' ? -1 : 1); return true; }
     }
@@ -207,5 +316,5 @@
     {keys: ['ArrowLeft', 'ArrowRight'], description: 'Paint the previous or next frame (while the keyboard cursor is hidden; Esc hides it)'},
     {keys: [',', '.'], description: 'Paint the previous or next frame, at any time'},
     {keys: ['Shift+Space'], description: 'Play or pause the flip-book preview'},
-    {keys: ['O'], description: 'Onion skin on or off'}]);
+    {keys: ['O'], description: 'Onion skin on or off'}, {keys: ['Shift+O'], description: 'Onion skin: changes only or whole silhouettes'}]);
 })();
