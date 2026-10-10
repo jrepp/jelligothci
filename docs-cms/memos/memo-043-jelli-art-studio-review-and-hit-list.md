@@ -10,11 +10,11 @@ doc_uuid: 1a6c7123-4e5d-420b-a266-6748c9805671
 
 # Overview
 
-Two reviews of Jelli Art Studio 0.4.0: one from the point of view of a pixel
-artist with long commercial experience, one from a web UX designer who works on
-current interactive art tools. This memo merges them into a ranked hit list and
-a staged set of pull requests. It is a proposal: nothing here is approved until
-the user says so, and the larger items need an RFC first.
+Two agent reviews of Jelli Art Studio 0.4.0, one prompted as a pixel artist
+and one as a web UX designer. This memo merges their findings into a ranked
+hit list and records what the owner decided and what shipped. Nothing beyond
+the decisions recorded under Decisions is approved; the layout and workspace
+items continue as a draft in RFC-006.
 
 # Context
 
@@ -59,8 +59,9 @@ These are the changes with the most impact for their cost, in order.
    eraser on a transparent pixel (`tools/jelli-art/studio.js:297-303`). Alt
    should borrow the picker for one click and then return to the current tool
    (code).
-4. **The canvas is not the focus.** The canvas takes about 26% of a 1600×1000
-   viewport, 12% at 1280×800 and starts at y=665 at 800 px. Review-only header
+4. **The canvas is not the focus.** At fit zoom on a 32×32 creature the canvas
+   takes about 26% of a 1600×1000 viewport and 8% at 1280×800 (re-measured on
+   0.6.0 for RFC-006), and starts at y=665 at 800 px. Review-only header
    controls and the asset sidebar stay visible in modes that do not use them
    (browser).
 5. **The lint contradicts the style guide.**
@@ -70,7 +71,7 @@ These are the changes with the most impact for their cost, in order.
    - The guide asks for 4-connected outlines, but the Pixel-perfect pencil
      produces 8-connected strokes, and the shipped art uses diagonal steps
      (browser, code).
-6. **Unsaved Activities edits can be lost.** `activities.js` never calls
+6. **Unsaved Activities edits can be lost.** `activities.js` (on #22) never calls
    `registerDirty`, so neither the header pill nor the leave-page warning sees
    them (code).
 7. **Native `confirm()` is used for destructive actions.** `studio.js:732`
@@ -90,146 +91,26 @@ These are the changes with the most impact for their cost, in order.
     - Tool keys appear only in tooltips.
     - The shortcut dialog opens scrolled to the middle (browser, code).
 
-# Proposed pull requests
+# Outcome
 
-Each PR is scoped to `tools/jelli-art/` (plus `tools/assets/compare.html`
-where the page shell lives) and uses a `fix(jelli-art):` or
-`feat(jelli-art):` title, so Release Please bumps only the studio component.
-Every PR updates `tools/jelli-art/README.md` and `docs/artwork.md` when
-behaviour that artists see changes, and runs `node
-tools/jelli-art/test_paint_tools.js`, `test_server.py` and
-`browser_smoke.sh`.
+| Item | Status |
+|---|---|
+| Hit list 1, 2 (first run, backdrops) | Done in #24 |
+| Hit list 3, 7 (Alt-pick, styled confirms) | Done in #26 |
+| Hit list 5 (lint matches the guide) | Done in #25 |
+| Hit list 8 (eye, ground and slide guides) | Done in #27 |
+| Hit list 9 (palette ramps, Shade tool) | Done in #29 |
+| Line snapping, magic wand, mirror axes, tiled preview | Done in #30 |
+| Deterministic Tidy (found in review) | Done in #31 |
+| Hit list 6 (Activities unsaved edits) | Waits for #22 |
+| Edit several frames at once | Not started |
+| Hit list 4, 10 and the layout, shortcut and workspace items | Draft in RFC-006 |
+| Nit: 9 px palette chip labels | Open |
+| Other polish nits from the review | Not tracked |
 
-## Wave 1: defaults and correctness (small, low risk)
-
-**PR 1. fix(jelli-art): first-run defaults and readable backdrops**
-- Default `changedOnly` to off, and turn it off automatically when nothing has
-  changed. Kind chips show "creatures 31 · 2 changed".
-- Default backdrop per kind: creatures use the scene or panel backdrop, ring
-  icons use ring grey `#4a494a`, and meters use the stat tile.
-- Give the active colour swatch and the hover pixel a contrast ring when the
-  colour is close to the backdrop.
-- Add Getting Started text for **Test in game** and **Activities**
-  (`shell.js:224`).
-- Open the shortcut dialog at the top.
-- Dismiss info toasts that belong to a mode when leaving that mode.
-
-**PR 2. fix(jelli-art): Alt-pick, dialogs and unsaved activities**
-- Make Alt-click pick temporary: keep the tool and only set the colour.
-  Clicking a transparent pixel with the picker tool still selects the eraser.
-  Add a test.
-- Replace the four native `confirm()` calls with `JelliShell.confirm`, using
-  the danger style and a count of what is affected.
-- Register Activities with `registerDirty`, and commit field edits on `input`
-  as well as `change`.
-- Keep a mode parameter in the URL only for modes that use it (no
-  `mode=paint` on `#view=activities`).
-
-## Wave 2: style-guide enforcement
-
-**PR 3. feat(jelli-art): lint that matches the style guide**
-- Flag colour count against the guide's limit of six including ink. The limit
-  comes from asset data, not a JS constant.
-- Show pass or fail per sprite, and add waivers stored as data (for example
-  `assets/slice/source/lint-waivers.json`) with a reason, so intentional
-  specks stop being counted.
-- Preview Tidy outline as a diff that the artist accepts or discards before it
-  is applied.
-- Warn when Flip horizontal is applied to a shaded sprite, since the light
-  then comes from the top right.
-- Needs a decision on the outline rule (4- or 8-connected). Update
-  `docs/pixel-art-guide.md`, the Pixel-perfect help text and the lint together.
-
-**PR 4. feat(jelli-art): animation guides and onion skin modes**
-- Add guides for the eye row, ground row and pivot. Positions come from the
-  form profile and creature data, and the guides show in Paint and the
-  flip-book.
-- Add a full-silhouette onion mode next to the existing difference-only mode.
-- Add **Fit content**: zoom to the opaque bounds plus a margin (the 48×48
-  axolotl wastes 19 rows).
-
-## Wave 3: tools artists expect
-
-**PR 5. feat(jelli-art): colour ramps and shading**
-- Declare ramps as data in `assets.json` (shared and named palettes), taken
-  from the guide's material table. Draw the palette as ramp rows.
-- Add a shade tool that steps a pixel lighter or darker within its ramp.
-- Add main and secondary colours with X to swap them. Right-click paints the
-  secondary colour, with an option to keep right-click as erase.
-
-**PR 6. feat(jelli-art): drawing tool upgrades**
-- Snap Shift-lines to clean ratios: 1:1, 2:1, 3:1, 1:2 and 1:3, as well as
-  0° and 90°.
-- Magic wand: select by colour, contiguous or global. The selection becomes a
-  mask, not only a rectangle.
-- Mirror around a movable axis, with a vertical mirror option.
-- Add a tiled preview for the Wrap nudge option.
-
-**PR 7. feat(jelli-art): edit several frames at once**
-- Apply a stroke or Replace colour to selected frames of a clip, with one
-  history step per frame and one undo.
-
-## Wave 4: layout and interaction
-
-**PR 8. feat(jelli-art): canvas-first layout**
-- Show compare-with, specks, open edges and the before/after line only in
-  Review and Paint.
-- Make the asset sidebar a collapsible drawer and add ⌘P quick-open.
-- The canvas fills the remaining space. The flip-book stays above the fold at
-  1280×800, and the 800 px layout puts the canvas first.
-
-**PR 9. feat(jelli-art): shortcut map and tool rail**
-- Add shortcut tables per mode, with a test that fails on conflicts within a
-  mode.
-- Use a key font that tells O from 0.
-- Print key hints on tool buttons and put them in a vertical tool rail.
-- Optionally offer Aseprite-style key defaults.
-
-**PR 10. feat(jelli-art): Activities and Test in game polish**
-- Activities uses the shared form styles. Read-only names look read-only.
-- Test in game gets scenario presets (hungry, asleep, night, potty), a compact
-  form and the output first.
-
-## Wave 5: bigger bets (RFC first)
-
-- **One animation workspace.** Paint and Creature merge, with the timeline
-  docked under the canvas.
-- **⌘K command palette** across modes.
-- **Always-on device preview.** A pinned 466×466 round panel that updates
-  while painting.
-- **A shared form system** for Behaviour and Activities, with inline
-  validation, field-level unsaved markers and a diff against what is saved.
-- **A sketch layer** that is never exported.
-
-## Polish and nits
-
-These can ride along with the nearest PR above:
-
-- Make palette chip labels at least 11 px; they are about 9 px now.
-- In the light theme, the disabled **Saved** button has white text on pale
-  teal. Raise the contrast.
-- Creature library cards repeat +clip, Duplicate and Retire for each frame.
-  Move those into a menu.
-- The duration bar spans the full width even for a clip with one frame.
-- Tidy outline is disabled for sprites with their own palette. Say why on the
-  button, not only in its tooltip.
-- Number history labels per stroke: "Pencil (12 px)" instead of "Pencil".
-- Name the colours of named palettes, such as axolotl, in data, instead of
-  showing "axolotl 1…10".
-
-# Shipping
-
-Merging to `main` does not deploy by itself. Each studio PR lands in the
-Release Please `jelli-art` release PR. Merging that PR tags
-`jelli-art-vX.Y.Z` and publishes `ghcr.io/jrepp/jelli-art`, and the nuc host
-then runs that release. How nuc pulls the image is defined in t1-hosting and
-was not checked here.
-
-When this memo was written, the repository did not allow auto-merge, and
-`main` had no branch protection or required checks. Auto-merge needs both:
-repository auto-merge enabled, and a ruleset that requires at least the
-**Jelli Art image** workflow and core CI. Changing those settings needs the
-maintainer's approval (memo-005).
+Studio tests run on every pull request since #23. Releases follow ADR-011:
+changes under `tools/assets/` and `assets/` belong to the game component, so
+studio waves can also bump the game version.
 
 # Decisions
 
@@ -237,15 +118,15 @@ The user decided these on 2026-10-10:
 
 - **Outlines are 8-connected.** Diagonal steps are allowed and doubled corners
   are not, which matches the shipped art and Pixel-perfect. Fill must still be
-  sealed from transparency on all four sides (open edges). PR 3 updates
-  `docs/pixel-art-guide.md` to match.
+  sealed from transparency on all four sides (open edges).
 - **Right-click paints the secondary colour** once main and secondary colours
-  exist (PR 5). Erasing uses the eraser tool or a transparent secondary.
+  exist. Erasing uses the eraser tool or a transparent secondary.
 - **Studio releases are batched per wave.** The `jelli-art` release PR is
   merged after each wave lands, not after every PR.
 - **Auto-merge is enabled,** with a `main` ruleset that requires CI checks,
-  including a new studio test job (PR 0). Release Please PRs get their
+  including the studio test job added in #23. Release Please PRs get their
   validation from dispatched runs that do not report on the PR's head commit,
   so a repository admin merges each wave's release PR by bypassing the
   ruleset.
-- Wave 5 items still need an RFC before any work starts.
+- The layout and workspace items need an approved RFC before work starts.
+- **Creatures may use 8 colours;** other kinds keep the guide's limit of 6.
