@@ -437,8 +437,15 @@ def set_palette_slot(index, color, artist="", base=None):
                 changed.append(asset["key"])
         was = palette[index].lower()
         palette[index] = color
-        for ramp in manifest.get("palette_ramps", {}).get("shared", []):  # ramps name colours, so follow the slot
+        for ramp in manifest.get("palette_ramps", {}).get("shared", []):  # ramps and names refer to colours, so follow the slot
             ramp["colours"] = [color if c.lower() == was else c for c in ramp["colours"]]
+            luma = [sum(w * v for w, v in zip((299, 587, 114), bytes.fromhex(c[1:]))) for c in ramp["colours"]]
+            if any(a <= b for a, b in zip(luma, luma[1:])):  # build_slice.py requires light to deep
+                raise StudioError(f"{color} would put the {ramp['name']} ramp out of light-to-deep order; "
+                                  "choose a colour that fits between its neighbours, or edit palette_ramps first")
+        names = manifest.get("palette_names", {}).get("shared", {})
+        if was in names:
+            manifest["palette_names"]["shared"] = {color if c == was else c: n for c, n in names.items()}
         files.append((MANIFEST, storage.json_bytes(manifest)))
         storage.write_files(files)
         paths = [path for path, _ in files]

@@ -160,7 +160,8 @@ def main():
     label = args.before if not Path(args.before).is_dir() else Path(args.before).resolve().name
     lint, lint_error = lint_rules.load(after_dir, SOURCE, DEVICE_SCALE)
     payload = {"before_label": label, "after_label": after_dir.name if after_dir != SOURCE else "working tree",
-               "palette": manifest["palette"], "assets": records, "lint": lint, "lint_error": lint_error}
+               "palette": manifest["palette"], "palette_names": manifest.get("palette_names", {}), "assets": records,
+               "lint": lint, "lint_error": lint_error}
     template = Path(__file__).with_name("compare.html").read_text()
     if template.count("__COMPARE_DATA__") != 1:
         raise ValueError("Compare template data marker mismatch")

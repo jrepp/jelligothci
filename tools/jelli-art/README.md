@@ -62,12 +62,20 @@ browser automation, `localStorage['jelli-shell:guide'] = 'false'` hides the guid
 functions (`window.JelliPaint`): Bresenham lines, rectangles, ellipses inscribed
 in a pixel box, pixel-perfect strokes, flips, quarter turns, wrapped or clipped
 shifts, colour replace, bounded flood fill, ramp shading, and a 100-step
-history with a cursor. The palette panel draws `palette_ramps` from
-`assets.json` (light to deep, per palette; `build_slice.py` validates them) as
-rows, names a named palette's colours from `palette_names`, and the Shade tool
-(T) steps pixels along those ramps. The left button paints the main colour and
-the right button the secondary (transparent by default, so it erases); X swaps
-them. ✎ on a shared slot rewrites that colour in the ramps too. Tools paint only the asset's resolved palette (shared, a named palette
+history with a cursor.
+
+The palette panel draws `palette_ramps` from `assets.json` as rows: lowercase
+colours, light to deep, per palette (`build_slice.py` checks they are in the
+palette and darken step by step). `palette_names` maps each palette's colours
+to names, keyed by colour, for the shared palette too. The Shade tool (T) steps
+pixels along those ramps; a colour in two ramps (cream) follows the row the
+artist last chose a colour from, then the paint colour. The left button paints
+the main colour and the right button the secondary, which is transparent by
+default, so right-click erases and right-click with Fill erases the touching
+area. X swaps them. ✎ on a shared slot rewrites that colour in the ramps and
+names too, and refuses a colour that would break a ramp's light-to-deep order.
+
+Tools paint only the asset's resolved palette (shared, a named palette
 or an inline list) until the artist picks **custom**; paste refuses pixels
 outside the target palette on the same terms. A selection is a rect, plus
 floating pixels while it is moved or transformed, so moving it over other art

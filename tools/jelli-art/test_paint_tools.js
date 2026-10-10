@@ -144,7 +144,9 @@ test('shade steps along the ramp and prefers the paint colour\'s ramp', () => {
   assert.strictEqual(P.shade('#291b35', ramps, 1), null, 'colours outside every ramp are untouched');
   assert.strictEqual(P.shade(null, ramps, 1), null, 'transparent is untouched');
   assert.strictEqual(P.shade('#fff4cf', ramps, 1), '#fa8c99', 'a shared colour uses the first ramp listing it');
-  assert.strictEqual(P.shade('#fff4cf', ramps, 1, '#f5c764'), '#f5c764', '...or the ramp holding the paint colour');
+  assert.strictEqual(P.shade('#fff4cf', ramps, 1, ['#f5c764']), '#f5c764', '...or the ramp holding the paint colour');
+  assert.strictEqual(P.shade('#fff4cf', ramps, 1, [gold, '#fa8c99']), '#f5c764', 'the chosen ramp row beats the paint colour');
+  assert.strictEqual(P.shade('#fa8c99', ramps, 1, [gold]), '#d84f70', 'a chosen row without the colour is skipped');
   assert.strictEqual(P.rampOf('#ae7855', ramps), gold);
 });
 

@@ -24,7 +24,7 @@
   let pointing = false, stroke = null, view = null, statusTimer = null, clipboard = null, selKey = null, pan = null, anchor = null, wheel = 0, queued = 0;
   const prefs = Object.assign({filled: false, perfect: false, wrap: false, guides: false}, store.get('paint', {}));
   /* color is the main colour (left button), color2 the secondary (right button); null is transparent. */
-  Object.assign(state, {tool: 'pencil', color: '#291b35', custom: false, color2: null, custom2: false, mirror: false, before: store.get('before', 'HEAD'), artist: store.get('artist', ''),
+  Object.assign(state, {tool: 'pencil', color: '#291b35', custom: false, color2: null, custom2: false, ramp: null, mirror: false, before: store.get('before', 'HEAD'), artist: store.get('artist', ''),
     sel: null, float: null, cursor: [0, 0], kbd: false}, prefs);
   const savePaintPrefs = () => store.set('paint', {filled: state.filled, perfect: state.perfect, wrap: state.wrap, guides: state.guides});
   MODES.push('paint');
@@ -173,7 +173,7 @@
   const paletteWhere = a => ownPalette(a) ? `the ${a.palette_name} palette` : 'the shared palette';
   /* The outline colour: shared ink, or the darkest colour of the asset's own palette (lint.js; the server agrees). */
   const inkOf = a => window.JelliLint.outlineInk(ownPalette(a) ? paletteOf(a) : null);
-  const slotName = (a, i) => ownPalette(a) ? D.palette_names?.[a.palette_name]?.[i] || `${a.palette_name} ${i + 1}` : NAMES[i];
+  const slotName = (a, i) => ownPalette(a) ? label(paletteOf(a)[i], a) : slotLabel(i);
   /* Shading ramps (light to deep) for the asset's palette, from assets.json palette_ramps. */
   const rampsOf = a => (D.palette_ramps?.[ownPalette(a) ? a.palette_name : 'shared'] || []).map(r => ({name: r.name, colours: r.colours.map(h => h.toLowerCase())}));
   S.ownPalette = ownPalette;
@@ -252,7 +252,7 @@
     const step = (x, y) => {
       if (seen.has(y * p.w + x) || (s.mask && !inRect(s.mask, x, y))) return;
       seen.add(y * p.w + x);
-      const hex = T.shade(T.get(base, x, y), s.ramps, s.dir, state.color); if (hex) T.set(p, x, y, hex);
+      const hex = T.shade(T.get(base, x, y), s.ramps, s.dir, s.prefer); if (hex) T.set(p, x, y, hex);
     };
     for (const [x, y] of strokePoints(s)) { step(x, y); if (state.mirror) step(p.w - 1 - x, y); }
   }
@@ -261,7 +261,8 @@
    * or a deeper shade); deeper: Shift with the shade tool. */
   function press(x, y, tool, {secondary = false, deeper = false, alt = false, pointer = true, held = false} = {}) {
     if (tool === 'picker') return pick(x, y, secondary);
-    if (tool === 'select' && secondary) tool = 'pencil';  // right-click with Select paints the secondary colour, as before it erased
+    // Right-click with Select paints the secondary colour (it used to erase); Shift+Enter at the keyboard cursor stays a select.
+    if (tool === 'select' && secondary && pointer) tool = 'pencil';
     if (tool === 'select') return pressSelect(x, y, alt, pointer);
     if (tool === 'shade') return pressShade(x, y, secondary || deeper, pointer, held);
     const hex = tool === 'eraser' ? null : paintHex(secondary); if (hex === undefined) return;
@@ -275,13 +276,18 @@
     stroke = {kind: SHAPES.has(tool) ? 'shape' : 'free', tool, hex, pointer, held, mask, label, base: p.data.slice(), from: [x, y], to: [x, y], pts: [[x, y]], snap: snapshot()};
     paintStroke(); draw();
   }
+  /* A colour in two ramps (cream in coral and gold) follows the ramp row the artist last chose a colour from, then the paint colour. */
   function pressShade(x, y, deeper, pointer, held) {
-    const a = asset(), ramps = rampsOf(a).map(r => r.colours);
+    const a = asset(), all = rampsOf(a), ramps = all.map(r => r.colours);
     if (!ramps.length) return status(`${paletteWhere(a)} has no ramps yet; add them under palette_ramps in assets.json`, 'warn', true);
-    const p = work(state.key); state.float = null;
-    stroke = {kind: 'free', tool: 'shade', dir: deeper ? 1 : -1, ramps, pointer, held, mask: selRect(), label: deeper ? 'Shade deeper' : 'Shade lighter',
-      base: p.data.slice(), from: [x, y], to: [x, y], pts: [[x, y]], snap: snapshot()};
+    const p = work(state.key), chosen = all.find(r => r.name === state.ramp); state.float = null;
+    stroke = {kind: 'free', tool: 'shade', dir: deeper ? 1 : -1, ramps, prefer: [chosen && ramps[all.indexOf(chosen)], state.color], pointer, held, mask: selRect(),
+      label: deeper ? 'Shade deeper' : 'Shade lighter', base: p.data.slice(), from: [x, y], to: [x, y], pts: [[x, y]], snap: snapshot()};
     paintStroke(); draw();
+    if (!pointer) {  // the keyboard cursor gets told when nothing can change
+      const hex = pixel(p, x, y), before = T.get({w: p.w, h: p.h, data: stroke.base}, x, y);
+      if (hex === before) announce(before ? `${label(before, a)} is ${T.rampOf(before, ramps) ? `at the ${deeper ? 'deep' : 'light'} end of its ramp` : 'in no ramp'}` : 'Transparent; nothing to shade');
+    }
   }
   function pressSelect(x, y, alt, pointer) {
     const snap = snapshot(), r = selRect();
@@ -478,7 +484,8 @@
   function moveCursor(dx, dy, e) {
     const a = view.a, [x0, y0] = state.cursor, x = Math.max(0, Math.min(a.width - 1, x0 + dx)), y = Math.max(0, Math.min(a.height - 1, y0 + dy));
     state.kbd = true;
-    if (e.shiftKey && !stroke && ['pencil', 'eraser', 'shade'].includes(state.tool)) press(x0, y0, state.tool, {pointer: false, held: true});
+    // Shift+arrows draw; with Shade, Alt+Shift+arrows shade deeper.
+    if (e.shiftKey && !stroke && ['pencil', 'eraser', 'shade'].includes(state.tool)) press(x0, y0, state.tool, {pointer: false, held: true, deeper: e.altKey});
     state.cursor = [x, y]; state.hover = [x, y];
     if (stroke && !stroke.pointer) drag(x, y);
     scrollToCursor(); draw(); renderInspector(a); renderReadout();
@@ -498,7 +505,8 @@
   function canvasKey(e) {
     const mod = e.metaKey || e.ctrlKey, dir = ARROWS[e.key];
     /* Arrows move the keyboard cursor while it shows; otherwise Left/Right change the clip frame (animation.js). */
-    if (dir && e.altKey && !mod) nudge(...dir);
+    if (dir && e.altKey && e.shiftKey && !mod && state.tool === 'shade') moveCursor(...dir, e);
+    else if (dir && e.altKey && !mod) nudge(...dir);
     else if (dir && !mod && !e.shiftKey && !state.kbd && !stroke && dir[0] && S.stepFrame?.(dir[0])) { /* changed frame */ }
     else if (dir && !mod) moveCursor(...dir, e);
     else if (e.key === 'Enter' && e.altKey && !stroke && state.tool !== 'select') { if (!e.repeat) pick(...state.cursor); }  // Alt+Enter picks without switching
@@ -529,7 +537,7 @@
     Object.assign(c, {tabIndex: 0}); c.setAttribute('role', 'application'); c.setAttribute('aria-roledescription', 'pixel canvas');
     c.setAttribute('aria-label', `${a.key}, ${a.width} by ${a.height} pixels`); c.setAttribute('aria-describedby', 'paint-hint');
     scroller.append(c); pane.append(scroller);
-    pane.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">Right-click paints the secondary colour (transparent until you set one) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
+    pane.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
       Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. <kbd>?</kbd> lists every shortcut.</p><div id="paint-live" class="vh" aria-live="polite"></div>`);
     const side = document.createElement('div'); side.className = 'paint-side';
     work.append(pane, side); stage.append(work);
@@ -564,7 +572,8 @@
       if (e.button === 1) { pan = {x: e.clientX, y: e.clientY, l: scroller.scrollLeft, t: scroller.scrollTop}; return; }
       if (stroke) return;
       const [x, y] = cell(e), secondary = e.button === 2;
-      const tool = e.altKey && state.tool !== 'select' ? 'picker' : state.tool;
+      // Alt-click picks except with Select (Alt-drag copies there); Alt+right-click picks the secondary with any tool.
+      const tool = e.altKey && (state.tool !== 'select' || secondary) ? 'picker' : state.tool;
       state.kbd = false; state.cursor = [x, y];
       press(x, y, tool, {secondary, deeper: e.shiftKey, alt: e.altKey});
     };
@@ -681,11 +690,16 @@
     const peers = D.assets.filter(x => own ? x.palette_name === a.palette_name : !ownPalette(x));
     const counts = a.after_metrics.colors, usage = hex => peers.filter(x => x.after_metrics.colors[hex]).length;
     if (state.color2 && !pal.includes(state.color2) && !state.custom2) state.color2 = null;  // the secondary keeps to this palette too
-    /* Right-click (or Alt+Enter) on a chip sets the secondary colour; null is transparent. */
+    /* Right-click on a chip (Shift+F10 or the menu key from the keyboard) sets the secondary colour; null is transparent. */
     const setSecondary = (hex, custom) => { state.color2 = hex; state.custom2 = custom; S.renderPalette(el, a); draw(); announce(`Secondary colour ${hex ? label(hex, a) : 'transparent'}`); };
-    const chip = (hex, title, sub, extra = '', custom = false, parent = el) => {
-      const b = document.createElement('div'); b.className = 'paint-chip' + extra; b.tabIndex = 0; b.title = title; b.dataset.chip = hex || 'eraser';
-      const active = hex === null ? state.tool === 'eraser' : state.tool !== 'eraser' && state.color === hex;
+    const ramps = rampsOf(a), inRamp = (name, hex) => !!ramps.find(r => r.name === name)?.colours.includes(hex);
+    /* ramp: the ramp row the chip sits in. A colour in two rows (cream) is one chip per row, and the row clicked last is the
+     * one the Shade tool follows (state.ramp), so only that row's chip shows as chosen. */
+    const chip = (hex, title, sub, extra = '', custom = false, parent = el, ramp = null) => {
+      const b = document.createElement('div'); b.className = 'paint-chip' + extra; b.tabIndex = 0; b.title = title;
+      b.dataset.chip = ramp ? `${ramp}:${hex}` : hex || 'eraser';
+      const here = !ramp || !state.ramp || state.ramp === ramp || !inRamp(state.ramp, hex);
+      const active = hex === null ? state.tool === 'eraser' : state.tool !== 'eraser' && state.color === hex && here;
       if (active && hex && lowContrast(hex, a)) { b.classList.add('faint'); title += ` · hard to see on the ${backdropFor(a)} backdrop`; b.title = title; }
       if (state.color2 === hex) { b.classList.add('second'); title += ' · secondary colour'; b.title = title; }
       b.setAttribute('aria-pressed', String(active)); b.setAttribute('role', 'button'); b.setAttribute('aria-label', title);
@@ -694,13 +708,11 @@
         if (e.shiftKey && hex) { state.isolate = state.isolate === hex ? null : hex; return draw(); }
         if (e.altKey) return setSecondary(hex, custom);
         if (hex === null) state.tool = 'eraser';
-        else { state.color = hex; state.custom = custom; if (['eraser', 'picker', 'select'].includes(state.tool)) state.tool = 'pencil'; }
+        else { state.color = hex; state.custom = custom; state.ramp = ramp; if (['eraser', 'picker', 'select'].includes(state.tool)) state.tool = 'pencil'; }
         S.renderPalette(el, a); renderToolbarState(); draw();
       };
       b.oncontextmenu = e => { e.preventDefault(); setSecondary(hex, custom); };
-      activate(b);
-      const enter = b.onkeydown; b.onkeydown = e => { if (e.altKey && e.key === 'Enter' && e.target === b) { e.preventDefault(); e.stopPropagation(); return setSecondary(hex, custom); } enter(e); };
-      parent.append(b); return b;
+      activate(b); parent.append(b); return b;
     };
     /* A labelled row of chips: one per ramp (light to deep), then the palette colours in no ramp, then the extras. */
     const row = name => {
@@ -714,9 +726,9 @@
       pair.innerHTML = `<span class="pair-sw">${swatch(state.color)}${swatch(state.color2)}</span><span class="studio-note">main ${state.color ? `${label(state.color, a)} ${state.color}` : 'transparent'}
         · secondary (right-click) ${state.color2 ? `${label(state.color2, a)} ${state.color2}` : 'transparent'}</span>${btn('swap-colours', '⇄ Swap', 'Swap the main and secondary colours', 'X', ' data-chip="swap"')}`;
       pair.querySelector('#swap-colours').onclick = swapColours; el.append(pair);
-      const ramps = rampsOf(a), ramped = new Set(ramps.flatMap(r => r.colours)), rest = pal.filter(h => !ramped.has(h));
+      const ramped = new Set(ramps.flatMap(r => r.colours)), rest = pal.filter(h => !ramped.has(h));
       const lines = [...ramps.map(r => [r.name, r.colours.filter(h => pal.includes(h))]), ...(rest.length ? [[ramps.length ? 'other' : 'palette', rest]] : [])];
-      lines.forEach(([name, colours]) => { const r = row(name); colours.forEach(hex => slotChip(hex, pal.indexOf(hex), r)); });
+      lines.forEach(([name, colours], n) => { const r = row(name); colours.forEach(hex => slotChip(hex, pal.indexOf(hex), r, n < ramps.length ? name : null)); });
       const extras = row('more');
       chip(null, 'eraser · transparent', state.color2 === null ? 'right-click' : 'eraser', '', false, extras);
       for (const hex of Object.keys(counts).filter(h => !pal.includes(h)))
@@ -727,21 +739,22 @@
       custom.tabIndex = 0; custom.setAttribute('role', 'button'); custom.setAttribute('aria-label', 'Choose a custom colour'); custom.dataset.chip = 'custom';
       custom.innerHTML = `<span class="sw" style="background:conic-gradient(#fa8c99,#f5c764,#85e4b6,#a47bdb,#fa8c99)"></span><span>custom</span><span>pick…</span><input type="color" value="${state.color || '#ffffff'}" hidden>`;
       const input = custom.querySelector('input'); custom.onclick = e => { if (e.target !== input) input.click(); };
-      input.onchange = e => { state.color = e.target.value.toLowerCase(); state.custom = true; state.tool = 'pencil'; S.renderPalette(el, a); renderToolbarState(); draw(); };
+      custom.oncontextmenu = e => e.preventDefault();  // the secondary takes palette colours only
+      input.onchange = e => { state.color = e.target.value.toLowerCase(); state.custom = true; state.ramp = null; state.tool = 'pencil'; S.renderPalette(el, a); renderToolbarState(); draw(); };
       activate(custom); extras.append(custom);
       const note = document.createElement('p'); note.className = 'studio-note';
       note.textContent = own
-        ? `Click a colour to paint with it; right-click (or Alt+Enter) makes it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. This sprite uses ${where}, so the shared palette and its ✎ do not apply. Tools paint only these colours until you choose custom; custom colours work in the live game only. Shift-click isolates a colour.`
-        : 'Click a colour to paint with it; right-click (or Alt+Enter) makes it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.';
+        ? `Click a colour to paint with it; right-click (or Shift+F10) makes it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. This sprite uses ${where}, so the shared palette and its ✎ do not apply. Tools paint only these colours until you choose custom; custom colours work in the live game only. Shift-click isolates a colour.`
+        : 'Click a colour to paint with it; right-click (or Shift+F10) makes it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.';
       el.append(note);
     });
     /* One palette slot's chip; the shared palette also gets its ✎. */
-    function slotChip(hex, i, parent) {
-      const b = chip(hex, `${slotName(a, i)} · ${hex} · used by ${usage(hex)} assets`, counts[hex] ? `${counts[hex]} px` : '—', '', false, parent);
+    function slotChip(hex, i, parent, ramp) {
+      const b = chip(hex, `${slotName(a, i)} · ${hex} · used by ${usage(hex)} assets`, counts[hex] ? `${counts[hex]} px` : '—', '', false, parent, ramp);
       if (own) return;  // only the shared palette is editable here; a named palette is edited in assets.json
       // The ✎ button is the chip's sibling: a button inside a role=button chip is nested-interactive.
       const slot = document.createElement('div'); slot.className = 'paint-slot'; b.replaceWith(slot); slot.append(b);
-      slot.insertAdjacentHTML('beforeend', `<button class="edit" title="Change ${NAMES[i]} everywhere" aria-label="Change ${NAMES[i]} in every sprite">✎</button><input type="color" value="${hex}" hidden>`);
+      slot.insertAdjacentHTML('beforeend', `<button class="edit" title="Change ${slotLabel(i)} everywhere" aria-label="Change ${slotLabel(i)} in every sprite">✎</button><input type="color" value="${hex}" hidden>`);
       const input = slot.querySelector('input'); slot.querySelector('.edit').onclick = e => { e.stopPropagation(); input.click(); };
       input.onchange = e => editSlot(i, e.target.value);
     }
@@ -761,7 +774,8 @@
     {keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], description: 'Canvas focused: move the keyboard cursor'},
     {keys: ['Enter', 'Space'], description: 'Canvas focused: apply the tool; shapes and select take one press to start and one to finish'},
     {keys: ['Shift+Enter'], description: 'Canvas focused: apply the tool with the secondary colour, or shade deeper'},
-    {keys: ['Shift+ArrowRight'], description: 'Draw with the pencil or eraser while moving the cursor'},
+    {keys: ['Shift+ArrowRight'], description: 'Draw with the pencil, eraser or shade while moving the cursor'},
+    {keys: ['Alt+Shift+ArrowRight'], description: 'Shade deeper while moving the cursor (Shade tool)'},
     {keys: ['Escape'], description: 'Cancel the shape, then clear the selection'},
     {keys: ['Mod+A'], description: 'Select all'}, {keys: ['Mod+C', 'Mod+X', 'Mod+V'], description: 'Copy, cut, paste (paste floats; palette-checked)'},
     {keys: ['Delete', 'Backspace'], description: 'Clear the selected pixels'}, {keys: ['Alt+Drag'], description: 'Copy the selection while moving it'},
@@ -813,22 +827,23 @@
     } catch (err) { status(`Tidy failed: ${err.message}`, 'bad', true); }
   }
   async function editSlot(index, color) {
-    color = color.toLowerCase(); const old = D.palette[index];
+    color = color.toLowerCase(); const old = D.palette[index], name = slotLabel(index);
     if (color === old) return;
     if (Object.keys(edits).some(dirty)) return status('Save or revert your edits before changing the palette', 'warn', true);
     const users = count(D.assets.filter(x => x.after_metrics.colors[old]).length, 'asset');
-    const text = `Change ${NAMES[index]} from ${old} to ${color} in every sprite?\n\n${users} use it. This rewrites their PNGs and the shared palette; git can undo it.`;
-    if (!await ask(text, {title: `Change ${NAMES[index]} in ${users}`, confirmLabel: 'Change colour', danger: true})) return S.renderPalette(document.getElementById('palette'), asset());
+    const text = `Change ${name} from ${old} to ${color} in every sprite?\n\n${users} use it. This rewrites their PNGs and the shared palette; git can undo it.`;
+    if (!await ask(text, {title: `Change ${name} in ${users}`, confirmLabel: 'Change colour', danger: true})) return S.renderPalette(document.getElementById('palette'), asset());
     // The dialog does not block the page, so a reload may have changed the slot meanwhile; the server checks `base` too.
-    if (D.palette[index] !== old) { rerender(); return status(`${NAMES[index]} changed to ${D.palette[index]} while you were deciding; nothing was rewritten`, 'warn', true); }
+    if (D.palette[index] !== old) { rerender(); return status(`${name} changed to ${D.palette[index]} while you were deciding; nothing was rewritten`, 'warn', true); }
     try {
       const res = await api('POST', '/api/palette', {index, color, base: old, artist: state.artist});
       if (state.color === old) state.color = color;
-      await reload(); rerender(); status(`${NAMES[index]} is now ${color} in ${count(res.changed.length, 'asset')}`, '', false, {keep: true});
+      if (state.color2 === old) state.color2 = color;
+      await reload(); rerender(); status(`${name} is now ${color} in ${count(res.changed.length, 'asset')}`, '', false, {keep: true});
     } catch (err) {
       if (err.status !== 409) return status(`Palette change failed: ${err.message}`, 'bad', true);
       await reload(); rerender();
-      status(`${NAMES[index]} is now ${err.body.current} on disk, so nothing was rewritten. Pick the new colour again if you still want it.`, 'warn', true);
+      status(`${name} is now ${err.body.current} on disk, so nothing was rewritten. Pick the new colour again if you still want it.`, 'warn', true);
     }
   }
 

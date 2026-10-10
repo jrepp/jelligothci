@@ -2487,25 +2487,43 @@
     ]
   },
   "palette_names": {
-    "axolotl": [
-      "body",
-      "outline",
-      "body shadow",
-      "gill",
-      "body light",
-      "gill deep",
-      "white",
-      "aqua",
-      "deep aqua",
-      "butter"
-    ],
-    "poop": [
-      "outline",
-      "brown",
-      "dark brown",
-      "light brown",
-      "stink green"
-    ]
+    "shared": {
+      "#291b35": "ink",
+      "#49334f": "plum",
+      "#72516b": "mauve",
+      "#187b79": "teal",
+      "#43bca2": "sea",
+      "#85e4b6": "mint",
+      "#cff5cf": "foam",
+      "#7655a3": "violet",
+      "#a47bdb": "lilac",
+      "#d2b8f3": "haze",
+      "#fff4cf": "cream",
+      "#ffffff": "white",
+      "#d84f70": "rose",
+      "#fa8c99": "coral",
+      "#f5c764": "gold",
+      "#ae7855": "tan"
+    },
+    "axolotl": {
+      "#ffcbdd": "body",
+      "#000000": "outline",
+      "#ffadca": "body shadow",
+      "#ff5994": "gill",
+      "#ffe3ed": "body light",
+      "#d9265d": "gill deep",
+      "#ffffff": "white",
+      "#83ebfb": "aqua",
+      "#1ec1d9": "deep aqua",
+      "#fde77e": "butter"
+    },
+    "poop": {
+      "#000000": "outline",
+      "#b55838": "brown",
+      "#8f4329": "dark brown",
+      "#dfa08a": "light brown",
+      "#c9d6a3": "stink green"
+    }
   },
   "creature_poses": [
     "idle",
