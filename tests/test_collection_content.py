@@ -14,7 +14,9 @@ with tempfile.TemporaryDirectory(prefix="jelli-content-") as directory:
     (work / "content").mkdir()
     shutil.copy(root / "cmake/JelliCollection.cmake", work / "cmake")
     driver = work / "check.cmake"
-    driver.write_text('include("${CMAKE_CURRENT_LIST_DIR}/cmake/JelliCollection.cmake")\n'
+    # Standalone -P scripts do not inherit the project's CMake policy baseline.
+    driver.write_text('cmake_minimum_required(VERSION 3.21)\n'
+                      'include("${CMAKE_CURRENT_LIST_DIR}/cmake/JelliCollection.cmake")\n'
                       'jelli_collection_data(output)\n')
 
     def check(data, valid):
