@@ -3,7 +3,8 @@
 A small virtual pet for the **Waveshare ESP32-S3-Touch-AMOLED-1.75 (SKU 31261)**,
 with a native SDL desktop version. Both run the same C11 game and renderer.
 
-Care for your pet through food, play, healthy routines, and everyday moments.
+Care for your pet through meals, fruit, soup, water, play, and healthy routines.
+Barbell workouts spend fullness, hydration, and energy.
 Collect nine keepsakes and gift them to another pet. Sleep can track your own
 bedtime and wake-up alongside the pet, with a rolling sleep score and a short
 journal. This is a playable prototype; balance and artwork are still evolving.

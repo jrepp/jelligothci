@@ -357,9 +357,30 @@ and compiles it for both hosts without a new runtime loader. Entry IDs 1–9 are
 stable slot bindings; do not renumber them. This slice supports the existing
 two-form evolution set; unsupported form/set references fail the build.
 
-Save codec v4 reads v1–v3 and preserves all legacy identities, active selection,
+Save codec v6 reads v1–v5 and preserves all legacy identities, active selection,
 and present provenance. Legacy records map in stored order to unique slots;
 only the current form is marked reached when earlier history is unavailable.
 Existing present discoveries can grant missing companions during migration.
-A full nine-pet checkpoint uses 3523 of the available 4096 bytes. Older firmware
-cannot read v4; keep a backup before downgrading.
+A full nine-pet checkpoint uses 3568 of the available 4096 bytes. Older firmware
+cannot read v6; keep a backup before downgrading.
+
+
+## Food, water, and exercise
+
+Care → Feed opens a grid of meals, fruit, and soup. Each costs one shared food
+item when eating finishes. Meals add 30 fullness points; fruit adds 15 fullness
+and 10 hydration; soup adds 22 fullness and 25 hydration. Care → Water fills
+hydration to 100 without spending food. Swipe the home stat tile to Hydration.
+Hydration slowly falls while awake and at one-quarter that rate while asleep.
+
+Moments → Exercise starts a ten-second barbell workout. Starting costs 15
+fullness, 20 hydration, and 5 energy points; completion adds 20 play points.
+The action is disabled while asleep, busy, or short of those resources. It uses
+fullness already eaten, so it does not spend another food inventory item. Costs
+are paid once and remain paid after saving/resuming or interrupting with care.
+
+Food effects live in [content/food.json](../content/food.json); workout duration
+and effects live in [content/exercise.json](../content/exercise.json). CMake
+checks bounds and compiles both catalogs without a runtime parser. Keep food IDs
+stable because an unfinished meal stores its selected type. Older saves begin
+at 70 hydration and resume any unfinished meal as the original meal type.
