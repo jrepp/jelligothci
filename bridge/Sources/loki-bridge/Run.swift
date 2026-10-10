@@ -65,7 +65,7 @@ enum Run {
                                   transcriber: LoggedTranscriber(LiveTranscriber(contextualStrings: Listener.projectNames())),
                                   speaker: speaker,
                                   policy: SessionPolicy(protectedFolders: protected),
-                                  models: OllamaRunner(), choices: FileModelChoiceStore(file: BridgeFiles.models))
+                                  models: LoggedModels(OllamaRunner()), choices: FileModelChoiceStore(file: BridgeFiles.models))
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await relayClaude(sidecar.events, to: conductor) }
             group.addTask { await relayBoard(server.events, to: conductor, speaker: speaker) }
@@ -200,5 +200,31 @@ struct LoggedTranscriber: Transcribing {
         let text = try await inner.finish()
         print("Heard: \"\(LokiText.loggable(text, maxBytes: 300))\"")
         return text
+    }
+}
+
+/// Ollama, with each request, each search it makes and how it ended printed, cleaned
+/// for the terminal, as Claude's tool calls are.
+struct LoggedModels: LocalModels {
+    let inner: OllamaRunner
+    init(_ inner: OllamaRunner) { self.inner = inner }
+    func models() async -> [String] { await inner.models() }
+    func forget(_ conversation: String) async { await inner.forget(conversation) }
+    func warm(_ model: String) async { await inner.warm(model) }
+    func answer(_ text: String, model: String, conversation: String,
+                report: @escaping @Sendable (String) async -> Void) async throws -> String {
+        let name = LokiText.loggable(model, maxBytes: 40)
+        print("[\(conversation)] \(name) asked")
+        do {
+            let said = try await inner.answer(text, model: model, conversation: conversation) { line in
+                print("[\(conversation)] \(name): \(LokiText.loggable(line, maxBytes: 300))")
+                await report(line)
+            }
+            print("[\(conversation)] \(name) answered")
+            return said
+        } catch {
+            print("[\(conversation)] \(name) failed: \(LokiText.loggable("\(error)", maxBytes: 300))")
+            throw error
+        }
     }
 }
