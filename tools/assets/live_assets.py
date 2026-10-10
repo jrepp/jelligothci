@@ -23,11 +23,12 @@ MAX_PACK_BYTES = 262144
 MAX_ASSETS = 128
 HEADER = struct.Struct("<4sIII")
 RECORD = struct.Struct("<IHHHHHHBBBBI")
+# Mirrors tools/assets/build_slice.py: creatures may be 32x32 or 48x48.
 DIMENSIONS = {
-    "creatures": (32, 32), "icons": (16, 16), "props": (24, 24),
-    "font": (128, 72), "menus": (32, 32), "meters": (32, 32),
-    "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64),
-    "prizes": (32, 32),
+    "creatures": {(32, 32), (48, 48)}, "icons": {(16, 16)}, "props": {(24, 24)},
+    "font": {(128, 72)}, "menus": {(32, 32)}, "meters": {(32, 32)},
+    "health": {(32, 32)}, "effects": {(16, 16)}, "backgrounds": {(64, 64)},
+    "prizes": {(32, 32)},
 }
 
 
@@ -41,11 +42,11 @@ def asset_image(source, asset):
     require(source in path.parents, f"Asset path escapes source: {asset['path']}")
     dimensions = DIMENSIONS.get(asset["kind"])
     require(dimensions is not None, f"Unknown asset kind: {asset['kind']}")
-    require((asset["width"], asset["height"]) == dimensions,
+    require((asset["width"], asset["height"]) in dimensions,
             f"Manifest dimensions changed: {asset['path']}")
     with Image.open(path) as opened:
         require(opened.format == "PNG", f"Expected PNG: {asset['path']}")
-        require(opened.size == dimensions, f"Wrong dimensions: {asset['path']}")
+        require(opened.size == (asset["width"], asset["height"]), f"Wrong dimensions: {asset['path']}")
         image = opened.convert("RGBA")
     alpha = image.getchannel("A")
     require(set(alpha.getdata()) <= {0, 255}, f"Nonbinary alpha: {asset['path']}")

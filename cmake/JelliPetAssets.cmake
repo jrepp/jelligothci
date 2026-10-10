@@ -15,7 +15,7 @@ function(jelli_generate_pet_assets output_variable)
     DEPENDS "${jelli_root}/tools/assets/embed_slice.py"
             "${jelli_root}/tools/assets/build_slice.py"
             "${jelli_root}/tools/assets/sprite_geometry.py"
-            "${jelli_root}/assets/slice/assets.json" "${jelli_root}/toolchain.env" ${art_inputs}
+            "${jelli_root}/assets/slice/assets.json" "${jelli_root}/content/pets.json" "${jelli_root}/toolchain.env" ${art_inputs}
     COMMENT "Embedding validated slice artwork"
     VERBATIM
   )

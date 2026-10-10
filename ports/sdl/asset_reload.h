@@ -8,8 +8,8 @@
 
 typedef struct {
     JelliAsset descriptors[JELLI_ASSET_PACK_COUNT];
-    uint16_t pixels[98304u];
-    uint8_t masks[12288u], glyphs[1152u];
+    uint16_t pixels[131072u]; /* Room for 48x48 creature forms; see ADR-012. */
+    uint8_t masks[16384u], glyphs[1152u];
     JelliAssetSet set;
 } JelliAssetBank;
 

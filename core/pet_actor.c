@@ -1,31 +1,51 @@
 #include "jelli/wake.h"
 #include "jelli/sound.h"
+#include "jelli/creature.h"
 #include "pet_draw.h"
+
+/* Behaviour picks a pose; content data (generated clips) picks the frames. */
+static unsigned creature_pose(const JelliPetRenderKey *v)
+{
+    if (v->asleep || v->reaction == 4u)
+        return JELLI_POSE_ASLEEP;
+    if (v->reaction == 5u)
+        return v->phase == 2u ? JELLI_POSE_CURIOUS : JELLI_POSE_HAPPY;
+    if (v->health == JELLI_UNWELL || v->health == JELLI_RECOVERING)
+        return JELLI_POSE_UNWELL;
+    /* Keep care feedback visible even when a recent touch reaction is active. */
+    if (v->activity == JELLI_EATING)
+        return JELLI_POSE_EATING;
+    if (v->activity == JELLI_PLAYING || v->activity == JELLI_GIVING ||
+        v->activity == JELLI_EXERCISING || v->reaction == 1u)
+        return JELLI_POSE_HAPPY;
+    if (v->reaction >= 2u)
+        return JELLI_POSE_UNWELL;
+    static const uint8_t idle[] = {JELLI_POSE_IDLE, JELLI_POSE_IDLE_ALT, JELLI_POSE_CURIOUS,
+                                   JELLI_POSE_CONTENT};
+    return idle[v->phase < 4u ? v->phase : 0u];
+}
+
+void jelli_pet_actor_clip(JelliPetUi *ui, JelliPetRenderKey *view, uint64_t time)
+{
+    unsigned pose = creature_pose(view);
+    if (!ui->clip_started || ui->clip_pose != pose || ui->clip_form != view->form ||
+        ui->clip_pet != view->active_id || time < ui->clip_anchor_ms) {
+        ui->clip_anchor_ms = time; /* Each pose change restarts its clip. */
+        ui->clip_pose = (uint8_t)pose;
+        ui->clip_form = view->form;
+        ui->clip_pet = view->active_id;
+        ui->clip_started = true;
+    }
+    /* Clip holds are authored milliseconds, like pet.idle_frame_ms; UI scale does not apply. */
+    view->pose = (uint8_t)pose;
+    view->clip_frame =
+        (uint8_t)jelli_clip_frame(jelli_creature_clip(view->form, pose), time - ui->clip_anchor_ms);
+}
 
 static uint32_t frame_id(const JelliPetRenderKey *v)
 {
-    uint32_t base = v->form == 0u ? 1000u : 1006u;
-    if (v->asleep)
-        return base + 5u;
-    if (v->reaction == 4u)
-        return base + 5u;
-    if (v->reaction == 5u)
-        return v->phase == 2u ? 1021u + (v->form ? 2u : 0u) : base + 4u;
-    if (v->health == JELLI_UNWELL || v->health == JELLI_RECOVERING)
-        return base + 6u;
-    /* Keep care feedback visible even when a recent touch reaction is active. */
-    if (v->activity == JELLI_EATING)
-        return base + 3u;
-    if (v->activity == JELLI_PLAYING || v->activity == JELLI_GIVING ||
-        v->activity == JELLI_EXERCISING)
-        return base + 4u;
-    if (v->reaction >= 2u)
-        return base + 6u;
-    if (v->reaction == 1u)
-        return base + 4u;
-    if (v->phase >= 2u)
-        return 1021u + (v->form ? 2u : 0u) + (v->phase == 3u ? 1u : 0u);
-    return base + 1u + v->phase;
+    const JelliClip *clip = jelli_creature_clip(v->form, v->pose);
+    return clip && v->clip_frame < clip->count ? clip->frames[v->clip_frame] : 0u;
 }
 
 void jelli_pet_actor_layout(JelliPetUi *ui, const JelliPetRenderKey *view)

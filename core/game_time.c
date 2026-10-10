@@ -222,11 +222,11 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
 
 static void evolve_if_due(JelliPet *pet)
 {
-    if (pet->form == 0u && !(pet->reached_forms & 2u) &&
-        pet->stage_ticks >= jelli_collection_growth_ticks) {
-        pet->stage_ticks -= jelli_collection_growth_ticks;
-        pet->form = 1u;
-        pet->reached_forms |= 3u;
+    if (jelli_collection_growth_due(pet)) {
+        const JelliEvolutionSet *set = jelli_collection_set(pet->collection_entry);
+        pet->stage_ticks -= set->growth_ticks;
+        pet->form = set->forms[1];
+        pet->reached_forms |= (uint8_t)jelli_evolution_mask(set);
         if (pet->health == JELLI_RECOVERING) {
             for (size_t i = 0u; i < JELLI_NEED_COUNT; ++i) {
                 if (pet->needs[i] <= 400u) {

@@ -5,12 +5,14 @@
 # ///
 """Emit immutable C pixel and mask arrays for the portable renderer."""
 import argparse
+import json
 from pathlib import Path
 
-from build_slice import load_assets
+from build_slice import CREATURE_POSES, load_assets
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "assets/slice"
+CATALOG = ROOT / "content/pets.json"
 
 
 def mask_rows(image):
@@ -39,6 +41,34 @@ def emit_array(name, ctype, values, columns=12):
         lines.append("    " + ", ".join(f"0x{value:02x}u" if ctype == "uint8_t" else f"0x{value:04x}u" for value in chunk) + ",")
     lines.append("};")
     return "\n".join(lines)
+
+
+def creature_clips(manifest):
+    """Clip table indexed by catalog form ID, then runtime pose."""
+    forms = json.loads(CATALOG.read_text())["forms"]
+    assets = {a["key"]: a for a in manifest["assets"]}
+    clips = {c["key"]: c for c in manifest["clips"]}
+    rows = []
+    for form in sorted(forms, key=lambda f: f["id"]):
+        art = form["art"]
+        portrait = next((a for a in assets.values() if a["id"] == form["portrait"]), None)
+        if portrait is None or portrait.get("form") != art:
+            raise ValueError(f"Portrait {form['portrait']} is not a {art} frame")
+        cells = []
+        for pose in CREATURE_POSES:
+            clip = clips.get(f"{art}.{pose}")
+            if clip is None:
+                raise ValueError(f"Form {form['name']} has no {art}.{pose} clip")
+            frames = ", ".join(f"{assets[k]['id']}u" for k in clip["frames"])
+            holds = ", ".join(f"{n}u" for n in clip["durations_ms"])
+            loop = "true" if clip["loop"] else "false"
+            cells.append(f"        {{{{{frames}}}, {{{holds}}}, {len(clip['frames'])}u, {loop}}}, /* {pose} */")
+        rows.append(f"    {{ /* {form['name']} ({art}) */\n" + "\n".join(cells) + "\n    },")
+    return ["#include \"jelli/creature.h\"",
+            f"static const JelliClip creature_clips[{len(rows)}][JELLI_POSE_COUNT] = {{\n" + "\n".join(rows) + "\n};",
+            "const JelliClip *jelli_creature_clip(unsigned form, unsigned pose)\n{\n"
+            f"    if (form >= {len(rows)}u || pose >= (unsigned)JELLI_POSE_COUNT)\n        return 0;\n"
+            "    return &creature_clips[form][pose];\n}\n"]
 
 
 def generate(output):
@@ -73,6 +103,7 @@ def generate(output):
         else:
             chunks.append(f"    {{{ident}u, {width}u, {height}u, {name}_pixels, {name}_mask, {stride}u, {ground_x}u, {ground_y}u, {center_x}u, {center_y}u, {left}u, {top}u, {right}u, {bottom}u}},")
     chunks.extend(["};", "", "const JelliAsset *jelli_asset_find(uint32_t id)", "{", "    for (unsigned i = 0u; i < sizeof(assets) / sizeof(assets[0]); ++i) {", "        if (assets[i].id == id)", "            return &assets[i];", "    }", "    return 0;", "}", "", "const uint8_t *jelli_asset_glyph(uint8_t codepoint)", "{", "    if (codepoint < 32u || codepoint > 127u)", "        codepoint = (uint8_t)'?';", "    return &font_glyphs[(unsigned)(codepoint - 32u) * 12u];", "}", ""])
+    chunks.extend(creature_clips(manifest))
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n\n".join(chunks))
     if glyph_data is None:

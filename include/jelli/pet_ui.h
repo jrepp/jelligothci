@@ -125,6 +125,7 @@ typedef struct {
     uint8_t page;
     uint8_t save_status;
     uint8_t form;
+    uint8_t pose, clip_frame; /* JelliCreaturePose and its clip frame index. */
     uint8_t location;
     uint8_t health, care_seconds;
     uint8_t activity;
@@ -169,6 +170,10 @@ typedef struct {
     uint8_t clicker_hits, clicker_goal, clicker_stage;
     bool clicker_done;
     uint8_t tuning_form;
+    uint64_t clip_anchor_ms;
+    uint32_t clip_pet;
+    uint8_t clip_pose, clip_form;
+    bool clip_started;
     bool tile_reset;
     uint8_t last_page, ring_from_page, ring_from_visible;
     bool ring_from_open, ring_started, clock_edit, ring_from_clock_edit;

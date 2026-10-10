@@ -1,4 +1,5 @@
 #include "pet_draw.h"
+#include "jelli/collection.h"
 #include "pet_canvas.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
@@ -222,11 +223,9 @@ static void activity(Canvas *c, const JelliPetUi *ui)
 
 static void page_heading(Canvas *c, const JelliPetUi *ui, const JelliPetRenderKey *view)
 {
-    jelli_canvas_heading(c,
-                         ui->menu_open ? jelli_pet_menu_title(ui)
-                         : view->form  ? "LILAC"
-                                       : "MINT",
-                         16, ui->menu_open && ui->page == JELLI_UI_MOMENTS ? 2u : 3u);
+    jelli_canvas_heading(
+        c, ui->menu_open ? jelli_pet_menu_title(ui) : jelli_collection_forms[view->form].name, 16,
+        ui->menu_open && ui->page == JELLI_UI_MOMENTS ? 2u : 3u);
     jelli_canvas_heading(c, view->location ? "@ GARDEN" : "@ HOME", 57, 2u);
 }
 

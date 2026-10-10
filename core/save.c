@@ -333,6 +333,7 @@ static bool migrate_game(JelliGame *game, unsigned version)
 {
     if (version < 8u) {
         jelli_collection_merge_starters(game);
+        jelli_collection_normalize(game);
         jelli_collection_unlock(game);
     }
     return jelli_game_valid(game);
@@ -363,6 +364,8 @@ bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t s
     if (get_u8(&reader) != SAVE_CONTENT_VERSION || get_u8(&reader) != 0u || get_u8(&reader) != 0u)
         reader.failed = true;
     (void)read_game(&reader, &candidate->game);
+    /* Catalog edits may move an entry to another evolution set (e.g. BUBBLE). */
+    jelli_collection_normalize(&candidate->game);
     if (reader.failed || reader.offset != reader.size || candidate->game.resuming ||
         candidate->game.resume_remaining_ms != 0u || candidate->game.backlog_ms >= 100u ||
         !jelli_game_valid(&candidate->game))

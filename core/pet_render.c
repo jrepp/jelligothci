@@ -114,12 +114,17 @@ static bool same_tile_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b
            a->reward_active == b->reward_active && a->tile_phase == b->tile_phase;
 }
 
+static bool same_actor_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
+{
+    return a->phase == b->phase && a->pose == b->pose && a->clip_frame == b->clip_frame;
+}
+
 static bool same_frame_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
     return same_ring_key(a, b) && same_tile_key(a, b) && same_activity_key(a, b) &&
            a->night == b->night && a->clock_known == b->clock_known &&
            a->clock_minute == b->clock_minute && a->menu_open == b->menu_open &&
-           a->phase == b->phase && a->minute == b->minute && a->day == b->day &&
+           same_actor_key(a, b) && a->minute == b->minute && a->day == b->day &&
            a->active == b->active && a->count == b->count && a->page == b->page &&
            a->result == b->result && a->attempted_slot == b->attempted_slot &&
            a->save_status == b->save_status && a->time_unavailable == b->time_unavailable &&
@@ -159,6 +164,7 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
         return;
     uint64_t time = paused && ui->rendered ? ui->last_animation_phase : animation_ms;
     JelliPetRenderKey view = render_key(game, ui, time, paused);
+    jelli_pet_actor_clip(ui, &view, time);
     jelli_pet_actor_layout(ui, &view);
     jelli_pet_sleep_particles(ui, view.asleep, time);
     jelli_pet_bubbles(ui, view.asleep, time);
