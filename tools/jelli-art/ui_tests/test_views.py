@@ -110,8 +110,8 @@ def test_view(open_view, axe_baseline, view, viewport):
     page = open_view(view, viewport)
     case = case_id(view, viewport)
     budget_measure(page, view, case)
-    screenshot_check(page, case)
     aria_check(page, case)
+    screenshot_check(page, case)  # before axe, which injects a script tag
     axe_check(page, case, axe_baseline)
 
 
