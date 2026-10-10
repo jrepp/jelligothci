@@ -21,7 +21,7 @@ SOURCE = REPO / "assets/slice"
 FIXED_SIZES = {"icons": (16, 16), "font": (128, 72), "menus": (32, 32), "meters": (32, 32),
                "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64), "prizes": (32, 32)}
 CREATURE_SIZES = {(32, 32), (48, 48)}
-PROP_SIZES = {(24, 24), (32, 32)}  # 32x32 props hold imported art such as the poop mess.
+PROP_SIZES = {(16, 16), (24, 24), (32, 32)}  # Imported props such as the 16x16 poop mess.
 # Runtime pose order; must match JelliCreaturePose in include/jelli/creature.h.
 CREATURE_POSES = ("idle", "idle-alt", "curious", "content", "eating", "happy", "asleep", "unwell")
 CLIP_FRAME_CAP = 6

@@ -40,6 +40,47 @@ def downsample(image, cell):
     return out
 
 
+def luminance(colour):
+    return 0.299 * colour[0] + 0.587 * colour[1] + 0.114 * colour[2]
+
+
+def reduce_art(image, width, highlight=0.2, line=0.4):
+    """Pixel-art reduction of native art to a target width (for props drawn beside a pet).
+
+    The silhouette follows coverage; the body takes a vote of non-outline colours but keeps
+    the lightest colour where it covers `highlight` of a block (shimmer survives); interior
+    strokes stay where outline fills `line` of a block; then a fresh 1 px outline is drawn
+    around the reduced silhouette, as Jelli Art's Tidy outline does.
+    """
+    step = image.width / width
+    height = max(1, round(image.height / step))
+    px = image.load()
+    opaque = {p[:3] for p in image.getdata() if p[3]}
+    outline, light = min(opaque, key=luminance), max(opaque, key=luminance)
+    out = Image.new("RGBA", (width, height))
+    for y in range(height):
+        for x in range(width):
+            xs = range(int(x * step), max(int(x * step) + 1, int((x + 1) * step)))
+            ys = range(int(y * step), max(int(y * step) + 1, int((y + 1) * step)))
+            block = [px[i, j] for j in ys for i in xs if i < image.width and j < image.height]
+            solid = [p[:3] for p in block if p[3]]
+            if len(solid) * 2 < len(block):
+                continue
+            if sum(p == outline for p in solid) >= line * len(block):
+                out.putpixel((x, y), outline + (255,))
+                continue
+            body = Counter(p for p in solid if p != outline) or Counter(solid)
+            pick = light if body[light] >= highlight * sum(body.values()) else body.most_common(1)[0][0]
+            out.putpixel((x, y), pick + (255,))
+    o = out.load()
+    edge = [(x, y) for y in range(height) for x in range(width) if o[x, y][3] and any(
+        not (0 <= x + dx < width and 0 <= y + dy < height) or not o[x + dx, y + dy][3]
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+    for point in edge:
+        out.putpixel(point, outline + (255,))
+    return out
+
+
 def union_bounds(images):
     boxes = [image.getchannel("A").getbbox() for image in images]
     if any(box is None for box in boxes):
@@ -105,6 +146,9 @@ def main():
     cell = spec["source_cell"]
     # Retired frames still join the union bounds so the remaining frames keep their placement.
     sources = [downsample(Image.open(args.source_dir / f["source"]).convert("RGBA"), cell) for f in spec["frames"]]
+    if spec.get("reduce_to_width"):  # Shared crop first, so every frame reduces identically.
+        box = union_bounds(sources)
+        sources = [reduce_art(source.crop(box), spec["reduce_to_width"]) for source in sources]
     frames = place(sources, spec["canvas"], spec["pivot"])
     for entry, frame in zip(spec["frames"], frames):
         if entry.get("retired"):

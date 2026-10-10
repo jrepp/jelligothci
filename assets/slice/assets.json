@@ -1980,17 +1980,17 @@
       "key": "props.poop-1",
       "path": "props/poop-1.png",
       "kind": "props",
-      "width": 32,
-      "height": 32,
+      "width": 16,
+      "height": 16,
       "pivot": [
-        16,
-        31
+        8,
+        15
       ],
       "bounds": [
-        1,
-        0,
-        31,
-        31
+        2,
+        2,
+        15,
+        15
       ],
       "palette": "poop"
     },
@@ -1999,17 +1999,17 @@
       "key": "props.poop-2",
       "path": "props/poop-2.png",
       "kind": "props",
-      "width": 32,
-      "height": 32,
+      "width": 16,
+      "height": 16,
       "pivot": [
-        16,
-        31
+        8,
+        15
       ],
       "bounds": [
-        1,
-        0,
-        31,
-        31
+        2,
+        2,
+        15,
+        15
       ],
       "palette": "poop"
     }
@@ -2367,8 +2367,8 @@
     ],
     "poop": [
       "#b55838",
-      "#8f4329",
       "#000000",
+      "#8f4329",
       "#dfa08a"
     ]
   },

@@ -4,7 +4,6 @@
 #include "jelli/potty.h"
 
 #define EFFECT_TARGET_PX 40u /* Effect sprites scale to about this size above the head. */
-#define MESS_SCALE 2u
 #define FLOOR_Y 256
 
 /* The mess sits on the floor beside the pet and shimmers through its authored frames. */
@@ -16,10 +15,14 @@ static void draw_mess(Canvas *c, const JelliPetUi *ui, const JelliPetRenderKey *
     const JelliAsset *a = jelli_asset_lookup(ui->assets, id);
     if (!a)
         return;
-    int x = (int)(ui->actor_bounds.x + ui->actor_bounds.width) + 40;
-    if (x > JELLI_WIDTH - 90)
-        x = (int)ui->actor_bounds.x - 40;
-    jelli_canvas_centered_sprite(c, id, x, FLOOR_Y - (int)(a->height * MESS_SCALE) / 2, MESS_SCALE);
+    /* Same pixel scale as the pet, so the mess reads as part of its world; bottom on the floor. */
+    unsigned scale = ui->actor_scale ? ui->actor_scale : 1u;
+    int half = (int)(a->width * scale) / 2;
+    int x = (int)(ui->actor_bounds.x + ui->actor_bounds.width) + half / 2;
+    if (x + half > JELLI_WIDTH - 70)
+        x = (int)ui->actor_bounds.x - half / 2;
+    int y = FLOOR_Y - (int)(a->bottom * scale) + (int)(a->height * scale) / 2;
+    jelli_canvas_centered_sprite(c, id, x, y, scale);
 }
 
 void jelli_pet_draw_behavior(Canvas *c, const JelliPetUi *ui, const JelliPetRenderKey *v)
