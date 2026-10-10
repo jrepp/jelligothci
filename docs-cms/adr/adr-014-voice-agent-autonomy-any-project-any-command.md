@@ -59,15 +59,40 @@ for, without a tap.
 ## How it is enforced
 
 Claude proposed the enforcement below on the same day and stated it to the user;
-changing it amends this ADR.
+changing it amends this ADR. Claude amended it that evening, after two security
+reviews of the first running version: near-miss names are confirmed, the general
+session is read-only and has no network, secret file names are denied in every
+session, git hooks and the bridge's own checkout are write-protected, sessions use
+the Agent SDK's bundled Claude Code with a filtered environment and a fenced `PATH`,
+protected configuration is refused without a card, and cards are shown one at a
+time.
 
 **Any project.** The bridge resolves the spoken name against the user's project
-roots (`~/dev` to start) to one directory directly under a root, matched after
-normalizing case, spaces and punctuation. A single match runs without a tap. An
-ambiguous match becomes a choice on the board, and no match is answered aloud. The
+roots (`~/dev` to start) to one directory directly under a root. A name said
+exactly, after normalizing case, spaces and punctuation, runs without a tap. A near
+miss (a recognizer's spelling such as "codergotchy") is confirmed on the board ("Did
+you mean codergotchi?"), an ambiguous match becomes a choice, and a declined or
+unanswered card drops the request aloud. Each job in a project starts with a spoken
+"Okay, in codergotchi.", so a wrong place is caught before much happens. The
 resolved real path must stay inside a root, so a root itself, the home directory, and
-symlinks that lead out are refused. A request that names no project continues the
-current conversation's project; with none, the board asks.
+symlinks that lead out are refused. So is a folder whose path holds a glob character
+(`*`, `?`, `[`, `{` or `\`): Claude Code does not apply its read block to commands
+when the working directory's path has one.
+
+A request that names no project follows up the job the user last started or heard
+about, while it runs or for two minutes after it ends (stopped jobs do not count).
+When more than one place is busy, the board asks which one. Otherwise the request
+goes to the general session.
+
+**The general session.** Questions that name no project (the user's decision,
+2026-10-09) go to one session working from the projects folder. It reads the
+projects and searches the web but changes nothing: its whole folder is write-denied
+for commands and for the Edit and Write tools, and every entry beside the projects
+(files, links, hidden folders) is read-denied, so a token file at the top of `~/dev`
+stays out of reach. Its commands have no network (`deniedDomains: ["*"]`; an empty
+allow-list alone leaves the network open), so nothing it reads can leave through an
+allowed host; it searches and reads the web through Claude Code's own tools. A change has to be asked for in a project by name. The session reopens after
+ten idle minutes with a fresh view of the folder.
 
 **Any command, inside the sandbox.** Each session's Bash commands run sandboxed and
 auto-approved, configured through the SDK's `settings` option (the command-line
@@ -83,6 +108,10 @@ settings layer):
 | `permissions.blockReadsOutsideWorkingDirectories` | `true` | Commands and the file tools read only the project, not the rest of the home directory |
 | `sandbox.filesystem.allowRead` | Toolchain folders | Re-opens what builds need under the home directory (below) |
 | `sandbox.credentials.envVars` | Token variables, `deny` | `GITHUB_TOKEN`, `GH_TOKEN`, `NPM_TOKEN` and similar are unset for commands |
+| `sandbox.filesystem.denyRead`, `permissions.deny` | Secret file names anywhere under the session's folder | `.env*`, keys and certificates, `id_rsa*`, `.npmrc`, `.netrc`, `.pypirc`, `.git-credentials`, `.pgpass`, `credentials.json`: unreadable and unwritable by commands and by the file tools |
+| `sandbox.filesystem.denyRead`, `permissions.deny` | More secret names | `.envrc`, `.dev.vars`, Terraform variables and state, `.aws` and Docker credentials, keystores, `secrets.*`, `.claude/settings.local.json` |
+| `sandbox.filesystem.denyWrite`, `permissions.deny` | Git hooks in each project | `core.hooksPath` (read from `.git/config` as text), `.githooks`, `.husky`, `.pre-commit-config.yaml`, Lefthook files and `.git/modules`: a commit would run them outside the sandbox |
+| `sandbox.filesystem.denyWrite`, `permissions.deny` | The bridge and its checkout's tooling | `bridge/`, and the checkout's `.githooks`, `scripts`, `Makefile`, `toolchain.env`, `.pre-commit-config.yaml` and `.tools`: a session cannot rewrite code that later runs outside the sandbox |
 
 The network allow-list starts with GitHub (`github.com`, `*.github.com`,
 `*.githubusercontent.com`), npm and Yarn, PyPI (`pypi.org`,
@@ -103,18 +132,54 @@ and the bridge (its TLS key and pairing data) are never re-opened.
 **Session options.** `permissionMode: "acceptEdits"`, always set explicitly, so
 edits inside the project need no tap and the session never starts in auto mode or
 `bypassPermissions`. `settingSources: []`, so no user, project or local settings,
-hooks, skills or plugins load; the sidecar reads the project's `CLAUDE.md` (or
-`AGENTS.md`) and appends it to the system prompt as the project's instructions.
+hooks, skills or plugins load; the bridge reads the project's `CLAUDE.md` (or
+`AGENTS.md`), only as a regular file and never through a symlink, up to 64 KB, and
+appends it to the system prompt as the project's instructions.
 `strictMcpConfig: true` with only the bridge's in-process `device` server, so the
 user's claude.ai connectors and MCP servers stay out. Auto memory is off
-(`CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`). Turn and budget limits apply per job.
+(`autoMemoryEnabled: false`). Each session stops after 300 turns or an estimated
+25 US dollars (`maxTurns`, `maxBudgetUsd`); the next request to its place opens a
+new one.
+
+Sessions run the Claude Code bundled with the pinned Agent SDK. Another binary
+(`loki-bridge run --claude`) must be 2.1.296 or newer, since older versions ignore
+settings this policy depends on. The sidecar receives only a short list of the
+bridge's environment variables (home, path, user, shell, locale, terminal, the SSH
+agent socket), so other secrets in the bridge's environment never reach a session.
+`PATH` itself is fenced: relative and empty entries (which resolve inside the
+project) and entries inside a project root are dropped, since Claude Code runs some
+programs itself outside the sandbox, such as `git` when a session starts. `node` is
+looked up on the same fenced `PATH`.
 
 **What takes one tap on the board.** A command that leaves the sandbox (for
 example a dev server that must listen, `docker`, `git push` over SSH, which the
 macOS sandbox cannot tunnel, or a command that needs a host outside the allow-list);
 edits outside the project; `WebFetch` to other hosts; and Claude Code's own safety
-checks (protected paths, removals of critical paths). The card shows the literal
-command or path, whole or not at all, and an unanswered card denies.
+checks (removals of critical paths). The card shows the literal command or path,
+whole or not at all, in at most eight lines, without invisible or
+direction-changing characters or runs of spaces, and an unanswered card denies. A
+change is judged and shown by where it lands: through links in its folders, and
+through a link at its end, so a link inside the project cannot dress an outside or
+protected file as its own. The board holds one card, so cards are shown one at a
+time in the order asked, and those still waiting when the board leaves are denied.
+
+Edits to configuration that runs code later (`.claude`, `.git/hooks`, `.git/config`,
+`.git/info`, `.git/modules`, `.githooks`, `.husky`, `.pre-commit-config.yaml`,
+Lefthook files, `.mcp.json`, shell startup files, `.gitconfig`, `.ssh`, launch agents
+and daemons) are refused without a card, comparing names without case as APFS does,
+so a single tap cannot install a hook that runs outside the sandbox.
+
+Claude Code itself refuses its file tools' reads outside the working directory
+(`blockReadsOutsideWorkingDirectories`; a canary confirmed no card is asked), so a
+read outside the project never becomes a card today. As a second line, should a
+later Claude Code ask instead, the bridge refuses without a card any read of
+protected configuration, of secret files (the names above), or of the places
+credentials live (`~/.ssh`, `~/.aws`, `~/.config`, `~/.gnupg`, `~/.kube`,
+`~/.docker`, `~/.claude`, `~/.claude.json`, `~/Library`, and the bridge's and
+Chatter's folders), and any search over the home folder or above it. Every path a
+tool names counts, including a search pattern and file filter, and a search's card
+shows what it looks for, where, and in which files. Claude is told when the policy,
+not the user, refused.
 
 The user can ask to drop the sandbox. That is a new decision that supersedes this
 one, not a setting the voice path can change.
@@ -139,17 +204,35 @@ one, not a setting the voice path can change.
 - Voice sessions ignore the project's Claude Code settings, hooks, skills and
   agents, and the user's global ones, so they behave less like the user's
   interactive sessions.
+- The general session changes nothing, so "fix the build" without a project name
+  gets an answer, not a change, until the user names the project.
 - A session reads one project. Work that spans two projects, or a tool that needs a
   folder under the home directory the bridge has not re-opened, fails inside the
   sandbox and then asks to run outside it (a tap).
-- The proxy allows by host name and does not inspect TLS, so allowed hosts such as
-  GitHub remain a possible exfiltration path (for example through domain fronting).
-  Without credentials, a command cannot publish there with the user's account.
+- Code a project session changes runs with the user's full rights when the user,
+  or their interactive Claude session, later builds or tests it. Only the hook entry
+  files are protected (the bridge's own checkout also protects its scripts, Makefile
+  and toolchain); the code a hook calls, such as `package.json` scripts, a project's
+  Makefile or its `scripts/`, stays writable and runs at the next commit. Review a
+  voice session's changes before committing or running them.
+- The proxy allows by host name and does not inspect TLS, so a project session's
+  commands can still send what that project holds to an allowed host such as GitHub,
+  using credentials an injected prompt supplies (the user's are not available to
+  them). The secret names above keep the usual credential files out of that; tokens
+  written into other files, such as a remote URL in `.git/config`, are not covered.
 - Whether a sandboxed command can reach the macOS keychain through its system
   service is not established; the bridge checks it with a harmless probe before
   the first release, and the result is recorded with phase 1.
 
 ## Neutral
+
+- Canary probes against the bundled Claude Code 2.1.296 (2026-10-09), in a scratch
+  project, confirmed the enforcement rather than the model's restraint: a secret
+  file and files beside the projects were refused to commands and to the Read tool,
+  hook folders could not be created by commands or the Write tool, the general
+  session could not write or reach GitHub, project sessions could write their
+  project and reach GitHub, and a Read outside the project was refused by Claude
+  Code without asking. That version has no separate Grep or Glob tools.
 
 - Tools that cannot work inside the sandbox (Go-based CLIs that verify TLS, `docker`,
   SSH remotes) cost a tap each time they run.

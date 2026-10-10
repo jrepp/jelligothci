@@ -48,9 +48,11 @@ esp-monitor:
 esp-agent-build:
 	JELLI_ESP_APP=agent ./scripts/esp build
 
-# Loki Bridge, the voice agent's Mac side (RFC-003); macOS 26 and Swift 6.2 or later.
+# Loki Bridge, the voice agent's Mac side (RFC-003); macOS 26, Swift 6.2 and Node 24 or
+# later. The sidecar's tests use a fake Agent SDK, so they need no npm install.
 bridge-test:
 	cd bridge && swift test
+	cd bridge/sidecar && node --test test/*.test.ts
 
 esp-agent-install:
 	@test -n "$(PORT)" || (echo 'Usage: make esp-agent-install PORT=/dev/cu.usbmodem…'; exit 2)

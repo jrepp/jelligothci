@@ -6,10 +6,14 @@ import LokiProtocol
 ///   loki-bridge identity                         this bridge's certificate fingerprint
 ///   loki-bridge pair SERIAL [--host H] [--port P] pair the board on that USB port
 ///   loki-bridge devices | unpair FINGERPRINT      the paired boards
+///   loki-bridge run [--port P] [--voice V] [--claude PATH] [--node PATH] [--sidecar PATH]
+///       Loki for real: what the board hears goes to Claude Code as background jobs,
+///       each ending in a spoken summary (status, stop and repeat answered locally)
 ///   loki-bridge serve [--port P] [--voice V] [--echo] [--recordings]
-///       run the link: transcribe what the board hears, reply in a Chatter voice (Scar)
+///       the link alone: transcribe what the board hears, optionally say it back
 let usage = """
     usage: loki-bridge identity | pair SERIAL [--host NAME] [--port N] | devices | unpair FINGERPRINT
+           | run [--port N] [--voice NAME] [--claude PATH] [--node PATH] [--sidecar PATH]
            | serve [--port N] [--voice NAME] [--echo] [--recordings]
     """
 
@@ -61,6 +65,18 @@ case "devices":
 case "unpair":
     guard arguments.count == 2 else { fail(usage) }
     do { try store().unpair(fingerprint: arguments[1]) } catch { fail("\(error)") }
+case "run":
+    var options = Run.Options()
+    options.port = port(in: arguments)
+    if let voice = option("--voice", in: arguments) { options.voice = voice }
+    options.node = option("--node", in: arguments)
+    options.claude = option("--claude", in: arguments)
+    options.sidecar = option("--sidecar", in: arguments)
+    do {
+        try await Run.run(identity: identity(), store: store(), options: options)
+    } catch {
+        fail("\(error)")
+    }
 case "serve":
     var options = Serve.Options()
     options.port = port(in: arguments)

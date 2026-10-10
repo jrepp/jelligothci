@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "LokiProtocol", targets: ["LokiProtocol"]),
         .library(name: "LokiBridgeCore", targets: ["LokiBridgeCore"]),
         .library(name: "LokiSpeech", targets: ["LokiSpeech"]),
+        .library(name: "LokiSessions", targets: ["LokiSessions"]),
         .executable(name: "loki-bridge", targets: ["loki-bridge"]),
     ],
     targets: [
@@ -20,10 +21,14 @@ let package = Package(
         .target(name: "LokiBridgeCore", dependencies: ["LokiProtocol"]),
         // Speech: on-device transcription (SpeechAnalyzer) and replies through Chatter.
         .target(name: "LokiSpeech"),
+        // Claude Code sessions under ADR-014: projects, the session policy, approvals.
+        .target(name: "LokiSessions", dependencies: ["LokiProtocol"]),
         // The bridge from the terminal, until the menu-bar app: identity, pairing, serve.
-        .executableTarget(name: "loki-bridge", dependencies: ["LokiBridgeCore", "LokiProtocol", "LokiSpeech"]),
+        .executableTarget(name: "loki-bridge",
+                          dependencies: ["LokiBridgeCore", "LokiProtocol", "LokiSpeech", "LokiSessions"]),
         .testTarget(name: "LokiProtocolTests", dependencies: ["LokiProtocol"]),
         .testTarget(name: "LokiBridgeCoreTests", dependencies: ["LokiBridgeCore", "LokiProtocol"]),
         .testTarget(name: "LokiSpeechTests", dependencies: ["LokiSpeech"]),
+        .testTarget(name: "LokiSessionsTests", dependencies: ["LokiSessions", "LokiProtocol"]),
     ]
 )

@@ -239,6 +239,34 @@ press to talk waits until the last utterance has ended, and the bridge keeps at 
 `$TMPDIR/loki-recordings`, a folder only the user can read; without it nothing the
 board hears is written to disk.
 
+### Talking to Claude Code
+
+`loki-bridge run` puts Claude Code behind the board (RFC-003, under
+[ADR-014](../docs-cms/adr/adr-014-voice-agent-autonomy-any-project-any-command.md)).
+It needs Node 24 or newer, the sidecar's pinned packages, and a Claude login on
+this Mac (run `claude` and `/login` once):
+
+```sh
+npm ci --prefix bridge/sidecar                    # the Agent SDK and its bundled Claude Code
+bridge/.build/debug/loki-bridge run               # listens on 8766; Scar's voice by default
+```
+
+What the board hears becomes a request. "What's running?", "how's chatter going?",
+"stop", "stop chatter" and "say that again" are answered by the bridge itself.
+Anything else is a job for Claude Code: in the project it names ("in codergotchi,
+run the tests", answered "Okay, in codergotchi."), as a follow-up to the job last
+started or heard about within two minutes, or in the general session, which reads
+the projects under `~/dev` and the web but changes nothing. Jobs run side by side,
+and each ends with one or two spoken sentences, never while the board is held to
+talk. A near-miss project name, a choice between busy jobs, and anything Claude
+asks to do outside the sandbox become cards on the board.
+
+`--voice NAME` picks another Chatter voice and `--node PATH` another Node. Sessions
+use the Claude Code bundled with the sidecar's SDK. `--claude PATH` runs another
+binary, which must be 2.1.296 or newer, since older ones ignore settings the
+sandbox policy needs. `make bridge-test` runs the bridge's and the sidecar's
+tests.
+
 ## Board variants
 
 Two Waveshare boards are supported. They share the ESP32-S3R8, the CO5300
