@@ -1,4 +1,5 @@
 #include "debug_internal.h"
+#include "jelli/behavior.h"
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -49,6 +50,30 @@ static size_t collection(char *out, size_t capacity, const JelliPetRenderKey *v)
         owned, (unsigned)v->prize_owned, (unsigned)v->prize_discovered, (unsigned)v->offered_prize,
         (unsigned)v->latched_prize, (unsigned)v->highlighted_prize, origins[0], origins[1],
         origins[2], origins[3], origins[4], origins[5], origins[6], origins[7], origins[8]);
+    return size < 0 || (size_t)size >= capacity ? 0u : (size_t)size;
+}
+
+static const char *state_name(unsigned stored)
+{
+    return stored && stored <= jelli_behavior_state_count ? jelli_behavior_states[stored - 1u].name
+                                                          : "";
+}
+
+/* Behaviour, potty cycle and presentation for the active pet (RFC-005). */
+static size_t creature(char *out, size_t capacity, const JelliPetEngine *engine)
+{
+    const JelliPet *pet = &engine->game.pets[engine->game.active];
+    const JelliPetRenderKey *v = &engine->ui.last_view;
+    int size = snprintf(
+        out, capacity,
+        ",\"creature\":{\"pose\":%u,\"clip_frame\":%u,\"behavior\":\"%s\",\"behavior_left\":%u,"
+        "\"cooldown\":\"%s\",\"cooldown_left\":%u,\"potty\":%u,\"digesting\":%u,"
+        "\"mess\":%s,\"sweep\":%u,\"moment\":%u,\"stimuli_dropped\":%u}",
+        (unsigned)v->pose, (unsigned)v->clip_frame, state_name(pet->behavior),
+        (unsigned)pet->behavior_left, state_name(pet->cooldown_state), (unsigned)pet->cooldown_left,
+        (unsigned)pet->potty, (unsigned)pet->digesting,
+        truth((pet->behavior_flags & JELLI_PET_FLAG_MESS) != 0u), (unsigned)v->sweep,
+        (unsigned)pet->moment, (unsigned)engine->game.stimuli_dropped);
     return size < 0 || (size_t)size >= capacity ? 0u : (size_t)size;
 }
 
@@ -114,6 +139,10 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
     if (size < 0 || (size_t)size >= sizeof(debug->reply))
         return;
     size_t used = (size_t)size;
+    size_t pet = creature(debug->reply + used, sizeof(debug->reply) - used, engine);
+    if (!pet)
+        return;
+    used += pet;
     size_t summary = collection(debug->reply + used, sizeof(debug->reply) - used, v);
     if (!summary)
         return;
