@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/jrepp/jelligothci/compare/v0.5.0...v0.6.0) (2026-10-10)
+
+
+### Features
+
+* **jelli-art:** flip-book, clearer frame keys and a focused Paint layout ([#21](https://github.com/jrepp/jelligothci/issues/21)) ([47e2f77](https://github.com/jrepp/jelligothci/commit/47e2f77c8818ce02201f2e26e24ad100bb9d9d5f))
+* **jelli-art:** game theme, paint tools, animation timeline, test-in-game and reliable saves ([#19](https://github.com/jrepp/jelligothci/issues/19)) ([057754e](https://github.com/jrepp/jelligothci/commit/057754e7788ec2b3fff6e10f0b56c2ec1e917150))
+
 ## [0.5.0](https://github.com/jrepp/jelligothci/compare/v0.4.0...v0.5.0) (2026-10-10)
 
 
