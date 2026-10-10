@@ -12,8 +12,6 @@
 ### Bug Fixes
 
 * expire offline behavior without unseen accidents ([42cff9f](https://github.com/jrepp/jelligothci/commit/42cff9f029e4a3dbc5213b070aa2833d277ed050))
-* keep care interruptions and deferred requests playable ([710197e](https://github.com/jrepp/jelligothci/commit/710197e1a8217196e6a8e94a9f1b1428753429e4))
-* keep care interruptions and deferred requests playable ([1b5d726](https://github.com/jrepp/jelligothci/commit/1b5d726ac30944ec1168627798958328e1365294))
 * keep care interruptions and deferred requests playable ([#17](https://github.com/jrepp/jelligothci/issues/17)) ([710197e](https://github.com/jrepp/jelligothci/commit/710197e1a8217196e6a8e94a9f1b1428753429e4))
 * render the first SDL frame before serving debug clients ([2471db9](https://github.com/jrepp/jelligothci/commit/2471db99a3d404a32a50e83b72b38102856718ec))
 
