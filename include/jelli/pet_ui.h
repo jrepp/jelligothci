@@ -110,7 +110,9 @@ typedef struct {
 
 typedef struct {
     const JelliAssetSet *assets;
-    uint32_t phase;
+    uint32_t phase;       /* Idle pose from the creature's beat schedule; nothing else. */
+    bool wake_surprised;  /* Opening window of a happy wake. */
+    uint8_t exercise_bob; /* Barbell frame 0/1 while exercising. */
     uint8_t night, mood, reaction, care_blocked, ring_page, ring_visible;
     bool ring_moving, clock_edit, ring_clock_edit;
     uint16_t unavailable;

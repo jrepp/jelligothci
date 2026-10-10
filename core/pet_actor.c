@@ -12,7 +12,7 @@ static bool condition_holds(unsigned when, const JelliPetRenderKey *v)
     case JELLI_WHEN_WAKE_GROGGY:
         return v->reaction == JELLI_REACTION_WAKE_GROGGY;
     case JELLI_WHEN_WAKE_SURPRISED:
-        return v->reaction == JELLI_REACTION_WAKE_HAPPY && v->phase == JELLI_POSE_CURIOUS;
+        return v->reaction == JELLI_REACTION_WAKE_HAPPY && v->wake_surprised;
     case JELLI_WHEN_WAKE_HAPPY:
         return v->reaction == JELLI_REACTION_WAKE_HAPPY;
     case JELLI_WHEN_UNWELL:

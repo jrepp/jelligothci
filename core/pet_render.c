@@ -19,11 +19,10 @@ static void reaction_key(const JelliPet *pet, JelliPetRenderKey *key)
 {
     key->reaction =
         pet->wake_mood ? (uint8_t)(JELLI_REACTION_TOUCH_OVERLOAD + pet->wake_mood) : pet->reaction;
-    if (pet->wake_mood == JELLI_WAKE_HAPPY)
-        key->phase =
-            pet->reaction_ticks > jelli_wake_rules.reaction_ticks - jelli_wake_rules.surprise_ticks
-                ? JELLI_POSE_CURIOUS
-                : JELLI_POSE_IDLE; /* Surprise, then joy. */
+    /* Surprise, then joy. */
+    key->wake_surprised =
+        pet->wake_mood == JELLI_WAKE_HAPPY &&
+        pet->reaction_ticks > jelli_wake_rules.reaction_ticks - jelli_wake_rules.surprise_ticks;
 }
 
 static void activity_key(const JelliPet *pet, uint64_t time, JelliPetRenderKey *key)
@@ -145,9 +144,10 @@ static bool same_tile_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b
 
 static bool same_actor_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->phase == b->phase && a->pose == b->pose && a->clip_frame == b->clip_frame &&
-           a->moment == b->moment && a->behavior == b->behavior && a->mess == b->mess &&
-           a->sweep == b->sweep;
+    return a->phase == b->phase && a->wake_surprised == b->wake_surprised &&
+           a->exercise_bob == b->exercise_bob && a->pose == b->pose &&
+           a->clip_frame == b->clip_frame && a->moment == b->moment && a->behavior == b->behavior &&
+           a->mess == b->mess && a->sweep == b->sweep;
 }
 
 static bool same_frame_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)

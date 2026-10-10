@@ -284,7 +284,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
             page_info(&c, game, ui);
     } else {
         if (view->activity == JELLI_EXERCISING)
-            jelli_canvas_centered_sprite(&c, 6014u, 233, view->phase ? 205 : 229, 3u);
+            jelli_canvas_centered_sprite(&c, 6014u, 233, view->exercise_bob ? 205 : 229, 3u);
         moment_prop(&c, ui, view);
         jelli_pet_draw_behavior(&c, ui, view);
         char message[24];
