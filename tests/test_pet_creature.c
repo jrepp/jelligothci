@@ -175,7 +175,7 @@ static void mess_shimmers_on_the_floor(void)
     /* A mess left out costs mood; tapping it starts the same clean-up as Care > Clean. */
     JelliPet *pet = &game.pets[game.active];
     unsigned messy = jelli_pet_mood(pet);
-    pet->behavior_flags &= (uint8_t)~JELLI_PET_FLAG_MESS;
+    jelli_potty_clean(pet);
     CHECK(jelli_pet_mood(pet) > messy);
     pet->behavior_flags |= JELLI_PET_FLAG_MESS;
     (void)frame_at(&game, &ui, 0u);
