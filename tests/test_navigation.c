@@ -229,10 +229,31 @@ static void feedback(void)
     CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 801u) == 0u);
 }
 
+static void recovery_progress(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    game.pets[0].health = JELLI_UNWELL;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_CARE, 1u, 0u}) == JELLI_OK);
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(ui.last_view.care_seconds == 30u);
+    jelli_game_advance(&game, 800u);
+    jelli_game_advance(&game, 200u);
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(ui.last_view.care_seconds == 29u && surface.damage.width == JELLI_WIDTH);
+    for (unsigned i = 0; i < 38u; ++i)
+        jelli_game_advance(&game, 800u);
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(ui.last_view.care_seconds == 0u && game.pets[0].health == JELLI_WELL);
+}
+
 int main(void)
 {
     navigation();
     feedback();
+    recovery_progress();
     refill_food();
     volume_controls();
     clock_controls();

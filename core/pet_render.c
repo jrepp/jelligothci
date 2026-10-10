@@ -3,6 +3,14 @@
 #include "pet_collection.h"
 #include <stddef.h>
 
+static uint8_t recovery_seconds(const JelliPet *pet)
+{
+    if (pet->health != JELLI_RECOVERING || pet->interaction_due <= pet->ticks)
+        return 0u;
+    uint64_t ticks = pet->interaction_due - pet->ticks;
+    return ticks >= 300u ? 30u : (uint8_t)((ticks + 9u) / 10u);
+}
+
 static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint64_t animation_ms,
                                     bool paused)
 {
@@ -70,6 +78,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.form = pet->form;
     key.location = pet->location;
     key.health = (uint8_t)pet->health;
+    key.care_seconds = recovery_seconds(pet);
     key.activity = (uint8_t)pet->activity;
     key.stored_form = other->form;
     key.bedtime = (uint8_t)pet->bedtime;
@@ -135,9 +144,9 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->volume == b->volume && a->hydration == b->hydration && a->assets == b->assets &&
-           same_frame_key(a, b) && same_pet_key(a, b) && jelli_pet_gallery_same(a, b) &&
-           jelli_pet_collection_same(a, b);
+    return a->care_seconds == b->care_seconds && a->volume == b->volume &&
+           a->hydration == b->hydration && a->assets == b->assets && same_frame_key(a, b) &&
+           same_pet_key(a, b) && jelli_pet_gallery_same(a, b) && jelli_pet_collection_same(a, b);
 }
 
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,

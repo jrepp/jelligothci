@@ -396,7 +396,9 @@ cannot read v9; keep a backup before downgrading.
 ## Food, water, and exercise
 
 Care → Feed opens a grid of meals, fruit, and soup. Each costs one shared food
-item when eating finishes. Meals add 30 fullness points; fruit adds 15 fullness
+item when eating finishes. When food runs out, tap MORE in the ninth grid
+cell to refill five portions. Labels stay readable even when actions are disabled.
+Meals add 30 fullness points; fruit adds 15 fullness
 and 10 hydration; soup adds 22 fullness and 25 hydration. Care → Water fills
 hydration to 100 without spending food. Swipe the home stat tile to Hydration.
 Hydration slowly falls while awake and at one-quarter that rate while asleep.
@@ -458,3 +460,10 @@ Elapsed sleep is saved across restarts, and waking consumes that duration so
 it cannot award another bonus after a save/reload. Old saves have no trustworthy
 rest-duration field and start it at zero. The brief expression itself is not
 saved. Touching an awake pet retains its ordinary petting behavior.
+
+## Recovering an unwell pet
+
+The home status shows CARE > BASIC CARE when the pet needs treatment. Open Menu,
+choose Care, then Basic Care. A RECOVERING countdown shows the remaining seconds
+until the pet is well (30 seconds from starting treatment). Water, food, and rest
+address their respective meters; they do not replace Basic Care treatment.

@@ -125,7 +125,7 @@ typedef struct {
     uint8_t save_status;
     uint8_t form;
     uint8_t location;
-    uint8_t health;
+    uint8_t health, care_seconds;
     uint8_t activity;
     uint8_t stored_form;
     uint8_t bedtime;

@@ -76,7 +76,7 @@ static const char *result_status(JelliResult result)
     return "TRY AGAIN";
 }
 
-static const char *status(const JelliPetRenderKey *v)
+static const char *status(const JelliPetRenderKey *v, char *buffer, size_t capacity)
 {
     if (v->resuming)
         return "RESUMING";
@@ -96,10 +96,12 @@ static const char *status(const JelliPetRenderKey *v)
         return "A LITTLE SPACE";
     if (v->reaction == 3u)
         return "TOO MUCH";
-    if (v->health == JELLI_RECOVERING)
-        return "RECOVERING";
+    if (v->health == JELLI_RECOVERING) {
+        int size = snprintf(buffer, capacity, "RECOVERING %uS", (unsigned)v->care_seconds);
+        return size > 0 && (size_t)size < capacity ? buffer : "RECOVERING";
+    }
     if (v->health == JELLI_UNWELL)
-        return "NEEDS CARE";
+        return "CARE > BASIC CARE";
     if (v->activity == JELLI_EXERCISING)
         return "WORKING OUT";
     if (v->activity == JELLI_EATING)
@@ -178,7 +180,7 @@ static void page_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
 {
     const JelliPet *pet = &game->pets[game->active];
     char value[18];
-    const char *label = status(&ui->last_view);
+    const char *label = status(&ui->last_view, value, sizeof(value));
     if (ui->page == JELLI_UI_SETTINGS) {
         int zone = ui->timezone_minutes;
         int size = ui->clock_edit
@@ -234,12 +236,13 @@ static void activity(Canvas *c, const JelliPetUi *ui)
         jelli_canvas_disk(
             c, 233 - (int)(ui->clicker_goal ? ui->clicker_goal - 1u : 0u) * 10 + (int)i * 20, 366,
             5, i < ui->clicker_hits ? GOLD : INK);
+    char message[24];
     if (ui->last_view.reaction >= 4u)
-        jelli_canvas_caption(c, status(&ui->last_view), 82, PALE);
+        jelli_canvas_caption(c, status(&ui->last_view, message, sizeof(message)), 82, PALE);
     else if (ui->result == JELLI_OK && !ui->clicker_done)
         jelli_canvas_heading(c, b.label, 82, 1u);
     if (ui->result != JELLI_OK)
-        jelli_canvas_heading(c, status(&ui->last_view), 82, 1u);
+        jelli_canvas_heading(c, status(&ui->last_view, message, sizeof(message)), 82, 1u);
     else if (ui->clicker_done)
         jelli_canvas_heading(c, "WELL DONE!", 82, 1u);
 }
@@ -287,7 +290,8 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     } else {
         if (view->activity == JELLI_EXERCISING)
             jelli_canvas_centered_sprite(&c, 6014u, 233, view->phase ? 205 : 229, 3u);
-        jelli_canvas_caption(&c, status(view), 254, MINT);
+        char message[24];
+        jelli_canvas_caption(&c, status(view, message, sizeof(message)), 254, MINT);
         draw_tile(c, view);
         jelli_pet_gallery_draw_latched(&c, view);
     }
