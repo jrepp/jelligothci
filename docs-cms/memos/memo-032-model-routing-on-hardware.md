@@ -55,6 +55,8 @@ sentences instead of a clipped end.
 | Ask the local model | Spoken weather question | Searched Brave and answered; first audio 14 s after release with gemma4:12b-mlx |
 | Ask Ollama, qwen3.8:27b-mlx | "insights on how AI harnesses work" | First audio about 30 s after release; a five-sentence answer |
 | Ask Claude | "where they are with my Elysium tasks" | Went to Claude's general session |
+| Picks by Michael | Settings on the board, nemotron3:33b then gemma4:12b-mlx | The bridge logged and kept each pick |
+| One search each | Weather questions, the bridge logging each Ollama search | qwen3.8:27b-mlx: search at 11.2 s, first audio 19.1 s; gemma4:12b-mlx: search at 5.1 s, first audio 9.1 s (after the transcript) |
 
 The Mac's copy of `gpt-oss:20b` does not load ("key not found in model:
 gpt-oss.expert_feed_forward_length"); a request to it now says so in words. Michael
@@ -84,7 +86,8 @@ the bridge suite is 489 tests (one known issue, from memo-030), the sidecar 31.
 
 Not done, for later or for Michael:
 
-- Try the Settings list by finger; it was driven over the console.
+- Confirm that Michael's picks on the board were by finger; the log shows they came
+  from the board's Settings.
 - On the board, a list can briefly reappear after the link drops (cosmetic), and a pick
   waits on a stalled bridge for up to about 2 s, as holding to talk already does.
 - "Ask Ollama … in chatter" goes to Ollama; whether naming a project should win is
