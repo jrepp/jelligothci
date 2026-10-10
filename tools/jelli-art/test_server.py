@@ -12,6 +12,7 @@ repair and the container entrypoint.
 
 Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_server.py
 """
+import faulthandler
 import io
 import json
 import os
@@ -602,4 +603,6 @@ class GitTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    # Under ctest's 300 s limit, print every thread's stack first so a stall shows where it is.
+    faulthandler.dump_traceback_later(270, exit=True)
     unittest.main()

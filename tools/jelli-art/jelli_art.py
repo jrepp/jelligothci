@@ -22,6 +22,7 @@ import json
 import re
 import shutil
 import subprocess
+import socketserver
 import sys
 import threading
 import traceback
@@ -432,6 +433,15 @@ GETS = {"/", "/api/data", "/healthz", "/api/git", "/api/version", "/api/refs", "
         "/api/behaviour"}
 
 
+class StudioServer(ThreadingHTTPServer):
+    """HTTPServer without its bind-time reverse DNS lookup (socket.getfqdn), which can take
+    seconds on some hosts (macOS CI runners) and only fills server_name, which nothing reads."""
+
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "JelliArt/1"
 
@@ -580,7 +590,7 @@ def main():
             print(f"Committed studio edits a previous run left uncommitted ({recovered})", flush=True)
         if args.git_push:
             GIT.request_push()  # unpushed commits from a previous run go out now, not on the next save
-    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    server = StudioServer((args.host, args.port), Handler)
     url = f"http://127.0.0.1:{args.port}/"
     print(f"Jelli Art {STUDIO_VERSION}: {url}  (Ctrl+C to stop)", flush=True)
     print(f"Serving {SOURCE}" + (f"; committing saves to {args.git_branch}" if GIT else ""), flush=True)

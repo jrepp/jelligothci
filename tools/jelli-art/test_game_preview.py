@@ -18,7 +18,6 @@ import threading
 import unittest
 import urllib.error
 import urllib.request
-from http.server import ThreadingHTTPServer
 from pathlib import Path
 from unittest import mock
 
@@ -154,7 +153,7 @@ class EndpointTest(unittest.TestCase):
     def setUp(self):
         self.saved = gp.SERVICE
         self.service = gp.configure(REPO, REPO / "assets/slice", REPO / "content", cache=tempfile.gettempdir())
-        self.server = ThreadingHTTPServer(("127.0.0.1", 0), jelli_art.Handler)
+        self.server = jelli_art.StudioServer(("127.0.0.1", 0), jelli_art.Handler)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.url = f"http://127.0.0.1:{self.server.server_address[1]}/api/game-preview"
 
