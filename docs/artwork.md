@@ -37,7 +37,9 @@ the repository's pinned tools, and it only listens on your own computer.
    **Issues** to see what still needs attention. Undo with ⌘Z / Ctrl+Z, or click
    any step in the **history** list beside the canvas.
 6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
-   pans. **Grid** and **Guides** (centre and 8 px tile centres) are toggles.
+   pans. **Fit content** (`Z`, under **More tools**) zooms to the drawn pixels
+   with a 2 px margin, which helps on frames with empty rows. **Grid** and
+   **Guides** (centre and 8 px tile centres) are toggles.
    The backdrop starts as the sprite's real surroundings: the scene's wall
    grey for creatures and props, ring grey for icons, menus and health, the
    stat tile for meters, prizes and the font, and black for effects and
@@ -77,8 +79,19 @@ beside the canvas. It plays the clip at its real timing, including strokes you
 have not saved (**Play**, Shift+Space). Click a thumbnail, or press ← and →,
 to paint another frame; the arrows move the keyboard cursor instead while it
 shows, and `,` and `.` always change frame. **Onion skin** (O) ghosts the frames
-before (amber) and after (blue) where they differ from this one; **±1** to
-**±3** sets how many on each side, and **Ghost** sets their strength.
+before (amber) and after (blue). **Changes** ghosts only where they differ from
+this one; **Silhouette** ghosts their whole shape, to judge arcs and volume
+(Shift+O switches). **±1** to **±3** sets how many on each side, and **Ghost**
+sets their strength.
+
+With **Guides** on (Shift+G, or the button in the flip-book), the canvas and
+the preview also show the clip's **eye row** (coral), **ground row** (mint)
+and the frame's **pivot** (white cross). The first frame sets the rows. The
+flip-book says when another frame's eye or ground row moves, and marks that
+frame's thumbnail with ⚠, so a pose does not jitter. The ground row is the
+lowest opaque row. The eye row is the top of the eye found by its white
+catchlight; a face without one, such as closed or happy eyes, uses the topmost
+ink inside the outline, so treat its warning as a prompt to check.
 
 ### Behaviour and size
 

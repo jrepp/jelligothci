@@ -124,7 +124,12 @@ ID or name is never handed out again.
 Painting a clip frame shows the **Flip-book** (`flipbook.js`) beside the canvas:
 a preview that plays the clip from the working pixels, so unsaved strokes
 animate, a thumbnail per frame, and onion skin of one to three frames each side
-(amber before, blue after, only where they differ). ← and → change frame unless
+(amber before, blue after), either only where they differ or as whole
+silhouettes (Shift+O). With Guides on, the canvas and the preview show the
+clip's eye row, ground row and the pivot. The first frame sets the rows, and
+frames that move off them are flagged; `JelliPaint.bounds` and
+`JelliPaint.eyeRow` measure them. **Fit content** (Z) zooms the canvas to the
+opaque bounds. ← and → change frame unless
 the keyboard cursor shows; `,` and `.` always do; Shift+Space plays (Space stays
 the before-image peek). The link under it returns to the timeline. Previews
 start paused, so reduced motion needs no special case.
