@@ -277,3 +277,73 @@ func everythingBesideTheProjectsIsCoveredWhateverItsName(_ seed: Int) throws {
     #expect(beside.count == 1)
     #expect(beside.contains { globMatches($0, path) })
 }
+
+// MARK: Model and effort
+
+/// The JSON the sidecar receives, with sorted keys, so two option sets compare exactly.
+private func jsonText(_ object: Any) throws -> String {
+    String(decoding: try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]), as: UTF8.self)
+}
+
+/// Every session option, named: one added, renamed or dropped by a change shows here.
+private let sessionKeys: Set<String> = ["cwd", "permissionMode", "settingSources", "strictMcpConfig", "systemPrompt",
+                                        "settings", "env", "includePartialMessages", "maxTurns", "maxBudgetUsd",
+                                        "model", "effort"]
+
+/// The general session gets the same model and effort as a project's (memo-031), and
+/// still reads only, at its root.
+@Test func theGeneralSessionUsesTheVoiceModelAndEffortToo() throws {
+    let root = try temporaryFolder("loki-model")
+    let project = Project(name: "p", url: root.appendingPathComponent("p"))
+    try FileManager.default.createDirectory(at: project.url, withIntermediateDirectories: true)
+    let general = SessionPolicy().generalOptions(folder: root, projects: [project], operatorRules: "R")
+    #expect(general["model"] as? String == "claude-sonnet-5-5" && general["effort"] as? String == "low")
+    #expect(Set(general.keys) == sessionKeys)
+    #expect(value(general, "settings.sandbox.network.deniedDomains") as? [String] == ["*"])
+}
+
+/// Property, seeded: whatever the project, its instructions, the operator's rules, the
+/// extra hosts and protected folders, a session's options are exactly the named keys,
+/// with the voice model and effort; the permission mode, setting sources, MCP config,
+/// limits and environment are untouched by them; the settings are the policy's own for
+/// that root; the general session differs from a session in its folder only in its
+/// settings and rules; and the options are the same JSON every time.
+@Test(arguments: 0..<60)
+func everySessionGetsTheModelAndEffortAndKeepsItsGuards(_ seed: Int) throws {
+    var random = Seeded(seed)
+    let pieces = ["a", "B", "-", "_", " ", ".", "é", "*", "[", "{", "\\", "model", "effort", "\"", "\n"]
+    func text(_ most: Int) -> String { (0..<random.below(most + 1)).map { _ in random.pick(pieces) }.joined() }
+    let root = URL(fileURLWithPath: "/tmp/loki-model-\(seed)/" + (random.chance(30) ? "./x/../" : "") + "projects")
+    let project = Project(name: "p\(text(6))", url: root.appendingPathComponent("p\(text(8))"))
+    let instructions: String? = random.chance(50) ? text(40) : nil
+    let rules = text(30)
+    let policy = SessionPolicy(extraHosts: (0..<random.below(3)).map { "h\($0)\(text(4)).example" },
+                               protectedFolders: (0..<random.below(3)).map { "/tmp/guard-\($0)/\(text(5))" })
+
+    let options = policy.options(project: project, instructions: instructions, operatorRules: rules)
+    #expect(Set(options.keys) == sessionKeys, "seed \(seed)")
+    #expect(options["model"] as? String == SessionPolicy.model && options["effort"] as? String == SessionPolicy.effort,
+            "seed \(seed)")
+    #expect(options["permissionMode"] as? String == "acceptEdits" && (options["settingSources"] as? [String]) == [],
+            "seed \(seed)")
+    #expect(options["strictMcpConfig"] as? Bool == true && options["includePartialMessages"] as? Bool == true, "seed \(seed)")
+    #expect(options["maxTurns"] as? Int == 300 && options["maxBudgetUsd"] as? Double == 25.0, "seed \(seed)")
+    #expect(options["env"] as? [String: String] == ["CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+                                                     "CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS": "1",
+                                                     "ENABLE_CLAUDEAI_MCP_SERVERS": "false", "ENABLE_TOOL_SEARCH": "false"],
+            "seed \(seed)")
+    #expect(try jsonText(options["settings"]!) == jsonText(policy.settings(root: project.url, denying: [])), "seed \(seed)")
+    #expect(try jsonText(options) == jsonText(policy.options(project: project, instructions: instructions, operatorRules: rules)),
+            "seed \(seed)")
+
+    // Metamorphic: the general session is a session in its folder with the general rules,
+    // and read-only settings; nothing else, the model and effort included, differs.
+    let general = policy.generalOptions(folder: root, projects: [project], operatorRules: rules)
+    var expected = policy.options(project: Project(name: "General", url: root), instructions: nil,
+                                  operatorRules: rules + "\n\n" + SessionPolicy.generalRules)
+    expected["settings"] = policy.settings(root: root, readOnly: true,
+                                           denying: SessionPolicy.besideProjects(in: root, projects: [project]))
+    #expect(try jsonText(general) == jsonText(expected), "seed \(seed)")
+    #expect(general["model"] as? String == SessionPolicy.model && general["effort"] as? String == SessionPolicy.effort,
+            "seed \(seed)")
+}

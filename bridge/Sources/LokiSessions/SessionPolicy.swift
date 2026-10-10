@@ -56,6 +56,11 @@ public struct SessionPolicy: Sendable {
     /// reaches either ends, and the next request to its place opens a new one.
     public static let maxTurns = 300
     public static let maxBudgetUsd = 25.0
+    /// The model and effort for every voice session. Loki says nothing until Claude's first
+    /// words, which took 1.8 to 4.2 s with the account default (memo-030); Michael chose
+    /// Sonnet 5.5 at low effort on 2026-10-10.
+    public static let model = "claude-sonnet-5-5"
+    public static let effort = "low"
 
     public init(extraHosts: [String] = [], protectedFolders: [String] = []) {
         self.extraHosts = extraHosts
@@ -191,6 +196,8 @@ public struct SessionPolicy: Sendable {
             "includePartialMessages": true,
             "maxTurns": Self.maxTurns,
             "maxBudgetUsd": Self.maxBudgetUsd,
+            "model": Self.model,
+            "effort": Self.effort,
         ]
     }
 

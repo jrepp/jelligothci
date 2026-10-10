@@ -47,6 +47,8 @@ private func value(_ object: [String: Any], _ path: String) -> Any? {
     let env = options["env"] as? [String: String] ?? [:]
     #expect(env["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] == "1" && env["ENABLE_CLAUDEAI_MCP_SERVERS"] == "false")
     #expect(env["ENABLE_TOOL_SEARCH"] == "false")  // The device's tools load up front: no lookup turn.
+    // Voice replies wait on the model; every voice session uses Sonnet 5.5 at low effort (memo-031).
+    #expect(options["model"] as? String == "claude-sonnet-5-5" && options["effort"] as? String == "low")
     #expect(try JSONSerialization.data(withJSONObject: options).count > 100)  // it is JSON for the sidecar
 }
 
