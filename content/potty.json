@@ -10,5 +10,14 @@
   "accident_hygiene": 200,
   "mess_hygiene_per_minute": 4,
   "mess_frame_ms": 400,
-  "mess_sprites": [3006, 3007]
+  "mess_sprites": [
+    3006,
+    3007
+  ],
+  "mess_mood_penalty": 150,
+  "broom_sprites": [
+    3008,
+    3009
+  ],
+  "sweep_steps": 10
 }

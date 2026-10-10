@@ -5,6 +5,7 @@
 #include "pet_collection.h"
 #include "pet_food.h"
 #include "pet_feedback.h"
+#include "pet_behavior_draw.h"
 #include "jelli/sound.h"
 #include <stddef.h>
 
@@ -203,15 +204,20 @@ static void sync_clock(const JelliPetUi *ui, JelliGame *game)
     game->clock_minute = jelli_pet_clock_minute(ui, &game->pets[game->active]);
 }
 
+/* Things in the scene take taps before the controls: a falling present, a mess, the pet. */
+static bool scene_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
+{
+    return jelli_pet_gallery_tap(ui, game, x, y) || jelli_pet_tap_mess(ui, game, x, y) ||
+           jelli_pet_touch_actor(ui, game, x, y);
+}
+
 void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
 {
     if (ui == NULL || game == NULL || game->resuming || !jelli_game_valid(game) || x < 0 || y < 0 ||
         x >= 466 || y >= 466)
         return;
     sync_clock(ui, game);
-    if (jelli_pet_gallery_tap(ui, game, x, y))
-        return;
-    if (jelli_pet_touch_actor(ui, game, x, y))
+    if (scene_tap(ui, game, x, y))
         return;
     for (unsigned slot = 0u; slot <= JELLI_PRIZE_COUNT; ++slot) {
         if (slot && ui->last_view.ring_moving)

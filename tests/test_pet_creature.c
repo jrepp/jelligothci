@@ -5,6 +5,7 @@
 #include "jelli/collection.h"
 #include "jelli/creature.h"
 #include "jelli/pet_ui.h"
+#include "../core/pet_behavior_draw.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -171,6 +172,31 @@ static void mess_shimmers_on_the_floor(void)
     CHECK(ui.last_view.mess == 2u);
     for (unsigned i = 0u; i < jelli_potty_rules.mess_sprite_count; ++i)
         CHECK(jelli_asset_find(jelli_potty_rules.mess_sprites[i]) != NULL);
+    /* A mess left out costs mood; tapping it starts the same clean-up as Care > Clean. */
+    JelliPet *pet = &game.pets[game.active];
+    unsigned messy = jelli_pet_mood(pet);
+    pet->behavior_flags &= (uint8_t)~JELLI_PET_FLAG_MESS;
+    CHECK(jelli_pet_mood(pet) > messy);
+    pet->behavior_flags |= JELLI_PET_FLAG_MESS;
+    (void)frame_at(&game, &ui, 0u);
+    JelliRect mess;
+    CHECK(jelli_pet_mess_bounds(&ui, ui.last_view.mess, &mess));
+    CHECK(mess.width == 16u * ui.actor_scale); /* Drawn at the pet's pixel scale. */
+    CHECK(mess.y + mess.height <= 256u + ui.actor_scale && mess.x >= ui.actor_bounds.x);
+    jelli_pet_ui_tap(&ui, &game, (int)(mess.x + mess.width / 2u), (int)(mess.y + mess.height / 2u));
+    CHECK(ui.result == JELLI_OK && pet->activity == JELLI_CLEANING);
+    (void)frame_at(&game, &ui, 1000u);
+    unsigned first = ui.last_view.sweep;
+    CHECK(first == 1u); /* The broom appears as the clean starts... */
+    jelli_game_advance(&game, 500u);
+    jelli_game_advance(&game, 500u);
+    (void)frame_at(&game, &ui, 2000u);
+    CHECK(ui.last_view.sweep > first && ui.last_view.sweep <= jelli_potty_rules.sweep_steps);
+    for (unsigned t = 0u; t < 40u && pet->activity != JELLI_IDLE; ++t)
+        jelli_game_advance(&game, 500u); /* ...and pushes the mess aside until it is gone. */
+    CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
+    (void)frame_at(&game, &ui, 30000u);
+    CHECK(ui.last_view.mess == 0u && !jelli_pet_mess_bounds(&ui, ui.last_view.mess, &mess));
 }
 
 int main(void)

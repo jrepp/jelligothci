@@ -121,7 +121,7 @@ static JelliResult start_clean(JelliPet *pet)
         return JELLI_ASLEEP;
     if (pet->activity != JELLI_IDLE)
         return JELLI_BUSY;
-    return begin_activity(pet, JELLI_CLEANING, 50u) ? JELLI_OK : JELLI_NOT_READY;
+    return begin_activity(pet, JELLI_CLEANING, JELLI_CLEAN_TICKS) ? JELLI_OK : JELLI_NOT_READY;
 }
 
 static JelliResult start_gift(const JelliGame *game, JelliPet *pet)

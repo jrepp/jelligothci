@@ -1988,7 +1988,7 @@
       ],
       "bounds": [
         2,
-        2,
+        1,
         15,
         15
       ],
@@ -2007,11 +2007,49 @@
       ],
       "bounds": [
         2,
-        2,
+        0,
         15,
         15
       ],
       "palette": "poop"
+    },
+    {
+      "id": 3008,
+      "key": "props.broom-1",
+      "path": "props/broom-1.png",
+      "kind": "props",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        15
+      ],
+      "bounds": [
+        1,
+        1,
+        15,
+        16
+      ],
+      "purpose": "Broom sweeping a potty mess away; from source/broom_art.py"
+    },
+    {
+      "id": 3009,
+      "key": "props.broom-2",
+      "path": "props/broom-2.png",
+      "kind": "props",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        15
+      ],
+      "bounds": [
+        1,
+        1,
+        15,
+        16
+      ],
+      "purpose": "Broom sweeping a potty mess away; from source/broom_art.py"
     }
   ],
   "clips": [
@@ -2366,10 +2404,11 @@
       "#fde77e"
     ],
     "poop": [
-      "#b55838",
       "#000000",
+      "#b55838",
       "#8f4329",
-      "#dfa08a"
+      "#dfa08a",
+      "#c9d6a3"
     ]
   },
   "creature_poses": [

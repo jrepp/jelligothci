@@ -1,3 +1,4 @@
+#include "jelli/potty.h"
 #include "jelli/behavior.h"
 #include "game_internal.h"
 
@@ -19,6 +20,10 @@ unsigned jelli_pet_mood(const JelliPet *pet)
         mood = 400u;
     if (pet->reaction >= JELLI_REACTION_TOUCH_UPSET)
         mood = mood > 150u ? mood - 150u : 0u;
+    if (pet->behavior_flags & JELLI_PET_FLAG_MESS) { /* Nobody likes a mess left out. */
+        unsigned mess = jelli_potty_rules.mess_mood_penalty;
+        mood = mood > mess ? mood - mess : 0u;
+    }
     return mood ? (mood + 9u) / 10u : 1u;
 }
 

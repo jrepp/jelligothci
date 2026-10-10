@@ -38,6 +38,12 @@ static void activity_key(const JelliPet *pet, uint64_t time, JelliPetRenderKey *
     unsigned frames = jelli_potty_rules.mess_sprite_count;
     if ((pet->behavior_flags & JELLI_PET_FLAG_MESS) && frames && jelli_potty_rules.mess_frame_ms)
         key->mess = (uint8_t)(1u + time / jelli_potty_rules.mess_frame_ms % frames);
+    if (key->mess && pet->activity == JELLI_CLEANING) { /* Step from the clean's own progress. */
+        uint64_t left = pet->interaction_due > pet->ticks ? pet->interaction_due - pet->ticks : 0u;
+        uint64_t done = JELLI_CLEAN_TICKS - (left < JELLI_CLEAN_TICKS ? left : JELLI_CLEAN_TICKS);
+        unsigned steps = jelli_potty_rules.sweep_steps;
+        key->sweep = (uint8_t)(1u + done * (steps - 1u) / JELLI_CLEAN_TICKS);
+    }
 }
 
 static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint64_t animation_ms,
@@ -140,7 +146,8 @@ static bool same_tile_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b
 static bool same_actor_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
     return a->phase == b->phase && a->pose == b->pose && a->clip_frame == b->clip_frame &&
-           a->moment == b->moment && a->behavior == b->behavior && a->mess == b->mess;
+           a->moment == b->moment && a->behavior == b->behavior && a->mess == b->mess &&
+           a->sweep == b->sweep;
 }
 
 static bool same_frame_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)

@@ -149,6 +149,7 @@ typedef struct {
     uint8_t moment;           /* Running moment ID + 1, or 0. */
     uint8_t behavior;         /* Behaviour state + 1, or 0 (RFC-005). */
     uint8_t mess;             /* Mess sprite frame + 1 while a potty accident waits, or 0. */
+    uint8_t sweep;            /* Broom sweep step + 1 while CLEAN removes a mess, or 0. */
     uint8_t location;
     uint8_t health, care_seconds;
     uint8_t activity;

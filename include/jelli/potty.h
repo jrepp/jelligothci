@@ -8,8 +8,12 @@ typedef struct {
     uint16_t per_meal, per_drink, drain_per_minute, urge_threshold, minimum_to_go;
     uint16_t hygiene_gain, bond_gain;
     uint16_t accident_hygiene, mess_hygiene_per_minute, mess_frame_ms;
-    uint32_t mess_sprites[4]; /* Asset IDs animated while a mess waits for CLEAN. */
+    uint16_t mess_mood_penalty; /* Mood lost (0..1000 internal scale) while a mess waits. */
+    uint32_t mess_sprites[4];   /* Asset IDs animated while a mess waits for CLEAN. */
     uint8_t mess_sprite_count;
+    uint32_t broom_sprites[4]; /* Alternate as the broom sweeps the mess away during CLEAN. */
+    uint8_t broom_sprite_count;
+    uint8_t sweep_steps; /* Positions the mess passes through over one clean. */
 } JelliPottyRules;
 extern const JelliPottyRules jelli_potty_rules;
 
