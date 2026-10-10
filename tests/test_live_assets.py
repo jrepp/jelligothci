@@ -151,14 +151,22 @@ class LiveAssetsTest(unittest.TestCase):
         original = self.destination.read_bytes()
         background = Image.new("RGBA", (64, 64), (100, 150, 200, 255))
         self.manifest["assets"] = []
-        for index in range(31):
+        for index in range(33):
             name = f"background-{index}.png"
             background.save(self.source / name)
             self.manifest["assets"].append({"id": 10000 + index, "kind": "backgrounds",
                                              "width": 64, "height": 64, "path": name})
         self.write_manifest()
-        with self.assertRaisesRegex(ValueError, "256 KiB"):
+        with self.assertRaisesRegex(ValueError, "live banks"):
             live_assets.publish_pack(self.source, self.destination)
+        self.assertEqual(original, self.destination.read_bytes())
+
+    def test_file_capacity_is_enforced_before_replacing_old_pack(self):
+        live_assets.publish_pack(self.source, self.destination)
+        original = self.destination.read_bytes()
+        with patch.object(live_assets, "MAX_PACK_BYTES", len(original) - 1):
+            with self.assertRaisesRegex(ValueError, "byte buffer"):
+                live_assets.publish_pack(self.source, self.destination)
         self.assertEqual(original, self.destination.read_bytes())
 
 

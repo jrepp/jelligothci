@@ -27,7 +27,7 @@ CREATURE_POSES = ("idle", "idle-alt", "curious", "content", "eating", "happy", "
 CLIP_FRAME_CAP = 6
 # Real limits the art must fit: the SDL live-reload pack buffer and its banks
 # (ports/sdl/asset_reload.h). Firmware embeds the same art with ample flash headroom.
-PACK_CEILING = 262144  # JELLI_ASSET_PACK_CAPACITY
+PACK_CEILING = 294912  # JELLI_ASSET_PACK_CAPACITY: 288 KiB desktop staging buffer.
 LIVE_PIXEL_CAPACITY = 131072
 LIVE_MASK_CAPACITY = 16384
 

@@ -15,11 +15,11 @@ import time
 import zlib
 
 from PIL import Image
-from build_slice import pack_mask
+from build_slice import pack_mask, PACK_CEILING, LIVE_PIXEL_CAPACITY, LIVE_MASK_CAPACITY
 from sprite_geometry import ground_anchor_q8, opaque_centroid_q8
 
 ROOT = Path(__file__).resolve().parents[2]
-MAX_PACK_BYTES = 262144
+MAX_PACK_BYTES = PACK_CEILING
 MAX_ASSETS = 128
 HEADER = struct.Struct("<4sIII")
 RECORD = struct.Struct("<IHHHHHHBBBBI")
@@ -76,6 +76,7 @@ def build_pack(source):
     require(0 < len(assets) <= MAX_ASSETS, "Asset count exceeds pack bounds")
     ids, paths = set(), set()
     body = bytearray()
+    pixels, masks = 0, 0
     for asset in sorted(assets, key=lambda item: item["id"]):
         ident = asset["id"]
         require(type(ident) is int and 0 < ident < 2**32, "Invalid asset ID")
@@ -85,6 +86,11 @@ def build_pack(source):
         image = asset_image(source, asset)
         font = asset["kind"] == "font"
         require(not font or ident == 4001, "Font must retain ID 4001")
+        if not font:
+            pixels += image.width * image.height
+            masks += (image.width + 7) // 8 * image.height
+            require(pixels <= LIVE_PIXEL_CAPACITY and masks <= LIVE_MASK_CAPACITY,
+                    "Artwork exceeds live banks")
         data = payload(image, font)
         bounds = image.getchannel("A").getbbox()
         ground = ground_anchor_q8(image) if asset["kind"] == "creatures" else (0, 0)
@@ -92,7 +98,8 @@ def build_pack(source):
         body.extend(RECORD.pack(ident, image.width, image.height, *ground, *center,
                                 *bounds, len(data)))
         body.extend(data)
-        require(HEADER.size + len(body) <= MAX_PACK_BYTES, "Asset pack exceeds 256 KiB")
+        require(HEADER.size + len(body) <= MAX_PACK_BYTES,
+                f"Asset pack exceeds {MAX_PACK_BYTES}-byte buffer")
     return HEADER.pack(b"JLAP", 1, len(assets), zlib.crc32(body)) + body
 
 
