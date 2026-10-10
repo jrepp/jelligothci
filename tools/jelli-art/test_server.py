@@ -565,6 +565,15 @@ class GitTest(unittest.TestCase):
         wait_for(lambda: git(self.origin, "rev-parse", "refs/heads/art/studio") == git(self.work, "rev-parse", "HEAD"),
                  message="force-with-lease push")
 
+    def start_entrypoint(self):
+        env = {"JELLI_REPO": str(self.work), "JELLI_STUDIO_BRANCH": "art/studio", "JELLI_APP": str(HERE),
+               "JELLI_HOST": "127.0.0.1",
+               "GIT_CONFIG_GLOBAL": str(self.root / "gitconfig"),
+               "PATH": f"{Path(sys.executable).parent}{os.pathsep}{os.environ['PATH']}"}
+        server = Server([], env=env, command=["sh", str(HERE / "entrypoint.sh")])
+        self.addCleanup(server.stop)
+        return server
+
     def test_entrypoint_keeps_unlanded_content_and_starts_offline(self):
         content = self.work / "content/creatures.json"
         content.write_text(json.dumps(json.loads(content.read_text()), indent=2) + "\n\n")
@@ -572,15 +581,21 @@ class GitTest(unittest.TestCase):
         studio_head = git(self.work, "rev-parse", "HEAD")
         git(self.work, "remote", "set-url", "origin", str(self.root / "offline.git"))  # fetch fails
         (self.work / ".git/index.lock").write_text("")  # left by a killed git
-        env = {"JELLI_REPO": str(self.work), "JELLI_STUDIO_BRANCH": "art/studio", "JELLI_APP": str(HERE),
-               "JELLI_HOST": "127.0.0.1",
-               "GIT_CONFIG_GLOBAL": str(self.root / "gitconfig"),
-               "PATH": f"{Path(sys.executable).parent}{os.pathsep}{os.environ['PATH']}"}
-        server = Server([], env=env, command=["sh", str(HERE / "entrypoint.sh")])
-        self.addCleanup(server.stop)
+        server = self.start_entrypoint()
         log = git(self.work, "log", "--format=%h %s", "-5")
         self.assertEqual(git(self.work, "rev-parse", "HEAD"), studio_head, log)
         self.assertFalse((self.work / ".git/index.lock").exists())
+        self.assertTrue(server.get("/api/git")["enabled"])
+
+    def test_entrypoint_follows_new_base_art_when_studio_has_none(self):
+        other = self.other_clone()  # main gains art the idle studio branch never saw
+        git(other, "checkout", "--quiet", "main")
+        content = other / "content/creatures.json"
+        content.write_text(json.dumps(json.loads(content.read_text()), indent=2) + "\n\n")
+        git(other, "commit", "--quiet", "-am", "feat: new species")
+        git(other, "push", "--quiet", "origin", "main")
+        server = self.start_entrypoint()
+        self.assertEqual(git(self.work, "rev-parse", "HEAD"), git(self.origin, "rev-parse", "refs/heads/main"))
         self.assertTrue(server.get("/api/git")["enabled"])
 
 

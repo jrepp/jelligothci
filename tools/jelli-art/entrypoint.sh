@@ -63,10 +63,13 @@ if [ -n "$branch" ]; then
     else
         git checkout --quiet -b "$branch"
     fi
-    # Once the studio's work (art and content/) has landed on the base branch,
-    # merged or squashed, restart from it. Uncommitted or new studio files block the reset.
+    # Restart from the base branch when the studio holds no art or content of its own:
+    # either it matches the base (landed, merged or squashed) or it changed nothing
+    # since it forked (the base moved on without it). Uncommitted or new studio files
+    # block the reset.
     if git show-ref --verify --quiet "refs/remotes/origin/$base" \
-        && git diff --quiet "origin/$base" HEAD -- assets/slice content \
+        && { git diff --quiet "origin/$base" HEAD -- assets/slice content \
+            || git diff --quiet "$(git merge-base "origin/$base" HEAD)" HEAD -- assets/slice content; } \
         && git diff --quiet HEAD -- assets/slice content \
         && [ -z "$(git ls-files --others --exclude-standard -- assets/slice content)" ]; then
         git reset --quiet --hard "origin/$base"
