@@ -60,8 +60,8 @@ These are the changes with the most impact for their cost, in order.
    should borrow the picker for one click and then return to the current tool
    (code).
 4. **The canvas is not the focus.** At fit zoom on a 32×32 creature the canvas
-   takes about 26% of a 1600×1000 viewport and 8% at 1280×800, and starts at
-   y=665 at 800 px. Review-only header
+   takes about 26% of a 1600×1000 viewport and 8% at 1280×800 (re-measured on
+   0.6.0 for RFC-006), and starts at y=665 at 800 px. Review-only header
    controls and the asset sidebar stay visible in modes that do not use them
    (browser).
 5. **The lint contradicts the style guide.**
@@ -106,6 +106,7 @@ These are the changes with the most impact for their cost, in order.
 | Edit several frames at once | Not started |
 | Hit list 4, 10 and the layout, shortcut and workspace items | Draft in RFC-006 |
 | Nit: 9 px palette chip labels | Open |
+| Other polish nits from the review | Not tracked |
 
 Studio tests run on every pull request since #23. Releases follow ADR-011:
 changes under `tools/assets/` and `assets/` belong to the game component, so

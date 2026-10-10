@@ -24,9 +24,10 @@ the repository's pinned tools, and it only listens on your own computer.
    the main colour and the right button the secondary colour, which starts
    transparent, so right-click erases (with Fill, the whole touching area) until
    you choose one. X swaps the two. Alt-click picks a colour and keeps your
-   tool (with Select, Alt-drag copies instead). **Mirror** (M) paints both halves of a symmetric sprite. **Shade** (T)
-   steps each pixel one colour lighter along its
-   [ramp](pixel-art-guide.md#2-palette-and-ramps); right-click or Shift steps
+   tool (with Select, Alt-drag copies instead). **Mirror** (M) paints both
+   halves of a symmetric sprite. **Shade** (T) steps each pixel one colour
+   lighter along its [ramp](pixel-art-guide.md#2-palette-and-ramps), following
+   the row you picked the colour from; right-click or Shift steps
    deeper. The **?** overlay lists the remaining keys.
 3. Selection, transforms, nudges, colour replacement, mirror axes, guides,
    the tile preview and **Tidy outline** are under **More tools**, which stays
@@ -58,8 +59,9 @@ the repository's pinned tools, and it only listens on your own computer.
    edges, or more colours than the
    [style guide](pixel-art-guide.md#2-palette-and-ramps) allows. Turn on
    **Issues** to see where. If a failure is intentional, **Waive…** records the
-   rule and your reason, and the sprite stops counting as failing. Flipping a shaded sprite horizontally moves its
-   light to the top right, and the studio reminds you once per session. Undo
+   rule and your reason, and the sprite stops counting as failing. Flipping a
+   shaded sprite horizontally moves its light to the top right, and the studio
+   reminds you once per session. Undo
    with ⌘Z / Ctrl+Z, or click any step in the **history** list beside the
    canvas.
 6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
