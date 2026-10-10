@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/jrepp/jelligothci/compare/v0.4.0...v0.5.0) (2026-10-10)
+
+
+### Features
+
+* add stimulus-driven creature behavior and cleanup ([#14](https://github.com/jrepp/jelligothci/issues/14)) ([375ea79](https://github.com/jrepp/jelligothci/commit/375ea79c4f290fe45b391d751d71830693b62ff5))
+* report behaviour, potty and mess in the debug state and viewer ([fe5157a](https://github.com/jrepp/jelligothci/commit/fe5157aa055512fab5e858cd99f0c6b371ef8eec))
+
+
+### Bug Fixes
+
+* expire offline behavior without unseen accidents ([42cff9f](https://github.com/jrepp/jelligothci/commit/42cff9f029e4a3dbc5213b070aa2833d277ed050))
+* keep care interruptions and deferred requests playable ([#17](https://github.com/jrepp/jelligothci/issues/17)) ([710197e](https://github.com/jrepp/jelligothci/commit/710197e1a8217196e6a8e94a9f1b1428753429e4))
+* render the first SDL frame before serving debug clients ([2471db9](https://github.com/jrepp/jelligothci/commit/2471db99a3d404a32a50e83b72b38102856718ec))
+
 ## [0.4.0](https://github.com/jrepp/jelligothci/compare/v0.3.0...v0.4.0) (2026-10-10)
 
 
