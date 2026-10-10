@@ -124,9 +124,9 @@ static void test_navigation_and_actions(void)
     jelli_pet_ui_init(&ui);
     tap_item(&ui, &game, 5u);
     tap_item(&ui, &game, 1u);
-    CHECK(ui.page == JELLI_UI_SETTINGS);
-    CHECK(game.active == 1u);
-    CHECK(ui.save_requested);
+    CHECK(ui.page == JELLI_UI_PETS);
+    CHECK(game.active == 0u);
+    CHECK(!ui.save_requested);
 
     jelli_game_init(&game);
     jelli_pet_ui_init(&ui);

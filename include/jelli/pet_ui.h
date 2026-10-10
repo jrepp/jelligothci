@@ -25,6 +25,10 @@ typedef enum {
     JELLI_UI_SHOT,
     JELLI_UI_WASH,
     JELLI_UI_STRETCH,
+    JELLI_UI_PETS,
+    JELLI_UI_PET_DETAIL,
+    JELLI_UI_EVOLUTIONS,
+    JELLI_UI_PRESENT_ACTION,
     JELLI_UI_PAGE_COUNT
 } JelliPetPage;
 
@@ -89,6 +93,9 @@ typedef struct {
     uint32_t prize_origins[JELLI_PRIZE_COUNT];
     uint8_t reward_index, offered_prize, latched_prize, highlighted_prize;
     uint8_t catch_phase;
+    uint8_t selected_pet, selected_form, active_entry;
+    uint8_t pet_forms[9], pet_reached[9];
+    uint16_t pets_owned, pets_new;
     bool reward_active;
     int16_t timezone_minutes;
     uint16_t tile_phase;
@@ -132,6 +139,8 @@ typedef struct {
     JelliPetRewards rewards;
     uint64_t catch_anchor_ms;
     uint8_t latched_prize, highlighted_prize, catch_seen;
+    uint8_t selected_pet, selected_form;
+    JelliPetPage present_return;
     JelliGame action_scratch; /* Fixed preflight workspace; never placed on the ESP task stack. */
     uint64_t tile_anchor_ms, idle_anchor_ms, last_animation_phase, last_pet_ticks;
     uint64_t last_sound_ms, coo_anchor_ms, night_anchor_ms, sleep_emit_ms, ring_anchor_ms;

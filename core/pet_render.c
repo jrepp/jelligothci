@@ -1,5 +1,6 @@
 #include "pet_draw.h"
 #include "pet_gallery.h"
+#include "pet_collection.h"
 #include <stddef.h>
 
 static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint64_t animation_ms,
@@ -13,6 +14,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
         (pet->ticks % JELLI_DAY_TICKS + pet->phase_offset % JELLI_DAY_TICKS) % JELLI_DAY_TICKS;
     jelli_pet_timing(ui, pet, animation_ms, &key);
     jelli_pet_gallery_key(ui, game, animation_ms, &key);
+    jelli_pet_collection_key(ui, game, &key);
     if (paused) {
         /* Pausing the pet must not strand navigation behind a frozen transition. */
         key.ring_visible =
@@ -130,7 +132,7 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
     return a->assets == b->assets && same_frame_key(a, b) && same_pet_key(a, b) &&
-           jelli_pet_gallery_same(a, b);
+           jelli_pet_gallery_same(a, b) && jelli_pet_collection_same(a, b);
 }
 
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,

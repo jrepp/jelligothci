@@ -1,6 +1,7 @@
 #include "pet_draw.h"
 #include "pet_canvas.h"
 #include "pet_gallery.h"
+#include "pet_collection.h"
 #include "jelli/assets.h"
 #include <stdio.h>
 #include <string.h>
@@ -238,6 +239,11 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
                 view->assets};
     jelli_pet_draw_background(surface, view, region);
     c.icon_night = view->night;
+    if (ui->menu_open && ui->page >= JELLI_UI_PETS) {
+        jelli_pet_collection_draw(&c, ui, game);
+        menu_button(&c, ui);
+        return;
+    }
     if (ui->menu_open && ui->page == JELLI_UI_COLLECTION) {
         jelli_pet_gallery_draw(&c, view);
         menu_button(&c, ui);
@@ -250,7 +256,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     else if (ui->actor_frame)
         jelli_canvas_sprite(&c, ui->actor_frame->id, ui->actor_x, ui->actor_y, 6u);
     c.icon_night = view->night;
-    if (ui->page >= JELLI_UI_BRUSH) {
+    if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH)) {
         activity(&c, ui);
     } else if (ui->menu_open) {
         if (!view->ring_moving)

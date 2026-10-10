@@ -1,5 +1,6 @@
 #include "jelli/pet_ui.h"
 #include "pet_gallery.h"
+#include "pet_collection.h"
 
 _Static_assert(sizeof(JelliGame) <= 4096u, "Action preflight workspace exceeds budget");
 
@@ -19,7 +20,7 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
                                    JELLI_CMD_GIFT,
                                    JELLI_CMD_CLAIM,
                                    JELLI_CMD_TRAVEL,
-                                   JELLI_CMD_ACTIVATE,
+                                   -1,
                                    JELLI_CMD_BEDTIME,
                                    -1,
                                    -1,
@@ -40,8 +41,7 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
     *command = (JelliCommand){(JelliCommandKind)kinds[action], pet->id, 0u};
     if (command->kind == JELLI_CMD_REST)
         command->kind = pet->asleep ? JELLI_CMD_WAKE : JELLI_CMD_REST;
-    else if (command->kind == JELLI_CMD_ACTIVATE)
-        command->value = game->pets[game->active == 0u ? 1u : 0u].id;
+
     else if (command->kind == JELLI_CMD_TRAVEL)
         command->value = pet->location ? 0u : 1u;
     else if (command->kind == JELLI_CMD_BEDTIME)
@@ -51,16 +51,14 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
                              ? jelli_pet_suggested_moment(pet, ui)
                              : (unsigned)action - JELLI_UI_ACTION_BREAKFAST;
     else if (command->kind == JELLI_CMD_HEALTH)
-        command->value = ui->page >= JELLI_UI_BRUSH ? jelli_pet_health_action(ui)
-                                                    : (unsigned)action - JELLI_UI_ACTION_BRUSH;
+        command->value = (ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH)
+                             ? jelli_pet_health_action(ui)
+                             : (unsigned)action - JELLI_UI_ACTION_BRUSH;
     return true;
 }
 
-JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsigned slot)
+static JelliResult menu_available(JelliPetUi *ui, const JelliGame *game, unsigned slot)
 {
-    if (slot && (ui->page == JELLI_UI_COLLECTION ||
-                 (!ui->menu_open && (ui->catch_seen || ui->latched_prize))))
-        return jelli_pet_gallery_available(ui, game, slot);
     if (!slot || slot > 6u)
         return JELLI_OK;
     if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u)) {
@@ -69,14 +67,24 @@ JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsign
             return JELLI_NOT_READY;
         return JELLI_OK;
     }
-    if (ui->page >= JELLI_UI_BRUSH && ui->clicker_done)
+    if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH) && ui->clicker_done)
         return JELLI_NOT_READY;
     JelliPetUiAction action =
-        ui->page >= JELLI_UI_BRUSH
+        (ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH)
             ? JELLI_UI_ACTION_BRUSH
             : jelli_pet_ui_item(ui->page, slot - 1u, game->pets[game->active].asleep).action;
     JelliCommand command;
     return jelli_pet_ui_command(ui, game, action, &command)
                ? jelli_game_check(game, command, &ui->action_scratch)
                : JELLI_OK;
+}
+
+JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsigned slot)
+{
+    if (slot && ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS)
+        return jelli_pet_collection_available(ui, game, slot);
+    if (slot && (ui->page == JELLI_UI_COLLECTION ||
+                 (!ui->menu_open && (ui->catch_seen || ui->latched_prize))))
+        return jelli_pet_gallery_available(ui, game, slot);
+    return menu_available(ui, game, slot);
 }
