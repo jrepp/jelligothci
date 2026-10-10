@@ -118,6 +118,7 @@ void app_main(void)
     lv_display_t *display = bsp_display_start();
     ESP_ERROR_CHECK(display ? ESP_OK : ESP_FAIL);
     ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
+    jelli_display_transfer_attach(&board.display.transfer, display);
     lv_timer_set_period(lv_display_get_refr_timer(display), FRAME_MS);
     lv_obj_t *screen = lv_screen_active();
     lv_obj_set_style_bg_color(screen, lv_color_black(), 0);

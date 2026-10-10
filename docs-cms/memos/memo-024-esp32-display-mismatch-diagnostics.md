@@ -72,3 +72,21 @@ resolution remains to be verified after that change.
 - [Debug commands](../../docs/playing.md)
 - [Display output implementation](../../ports/esp32/main/display_output.c)
 - [Deployment evidence requirements](memo-004-process-learnings-and-context-remediation.md)
+# Reserved transfer buffer
+
+Reserve a 46,600-byte, four-byte-aligned internal DMA strip before BSP and Wi-Fi
+startup. The size matches the pinned BSP's 466-by-50 RGB565 partial draw buffer.
+The adapter's supported custom bitmap callback copies its already-packed,
+byte-swapped pixels into this strip and submits the existing panel driver.
+LVGL waits for the preceding flush before invoking another flush callback, and
+the existing BSP completion ISR releases it. No early completion or SDK edits
+are introduced. Bounds are checked before copying, including tall narrow strips.
+
+This adds 46,600 persistent internal RAM bytes instead of asking the SPI driver
+to allocate temporary DMA storage during each transfer. The two full PSRAM
+frames and BSP draw buffers remain. Diagnostic snapshots now include submitted
+and failed transfer counts, read under the display mutex.
+
+The fix passes `make esp-build` and `make lint-c`. Its initial flash attempt
+failed before transfer: the enumerated USB device returned no serial data.
+Reconnection was requested; the fixed image is not yet hardware-verified.

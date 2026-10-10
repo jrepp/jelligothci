@@ -77,7 +77,8 @@ export JELLI_DEBUG_PORT=/dev/cu.usbmodem...  # Linux typically /dev/ttyACM...
 ```
 
 For an ESP32 display mismatch, `display` reports the latest five-second sample of
-engine/canvas equality, boundary guards, heap integrity, and minimum remaining
+engine/canvas equality, boundary guards, heap integrity, panel transfer counts,
+and minimum remaining
 engine-task stack bytes. `checks: 0` means no sample yet. `mismatches` counts
 unequal samples, not frames. These checks do not read panel memory.
 

@@ -35,6 +35,7 @@ static bool intact(const uint16_t *pixels)
 
 void jelli_display_output_init(JelliDisplayOutput *output)
 {
+    jelli_display_transfer_init(&output->transfer);
     output->engine_pixels = allocate_frame();
     output->canvas_pixels = allocate_frame();
 }
@@ -50,6 +51,8 @@ static void check_buffers(JelliDisplayOutput *output, uint64_t now)
     output->buffers_equal =
         !memcmp(output->engine_pixels, output->canvas_pixels, FRAME_PIXELS * sizeof(uint16_t));
     output->heap_ok = heap_caps_check_integrity_all(true);
+    output->submitted = output->transfer.submitted;
+    output->failed = output->transfer.failed;
     output->stack_free = (unsigned)uxTaskGetStackHighWaterMark(NULL);
     if (!output->buffers_equal)
         ++output->mismatches;
@@ -97,15 +100,15 @@ bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEn
         output->refresh_requested = true;
         jelli_debug_response(debug, id, "{\"ok\":true,\"pending\":true}");
     } else if (count == 3u) {
-        char body[256];
-        int size =
-            snprintf(body, sizeof(body),
-                     "{\"ok\":true,\"checks\":%" PRIu32 ",\"mismatches\":%" PRIu32
-                     ",\"buffers_equal\":%s,\"guards_ok\":%s,\"heap_ok\":%s,"
-                     "\"stack_free_bytes\":%u}",
-                     output->checks, output->mismatches, output->buffers_equal ? "true" : "false",
-                     output->guards_ok ? "true" : "false", output->heap_ok ? "true" : "false",
-                     output->stack_free);
+        char body[320];
+        int size = snprintf(
+            body, sizeof(body),
+            "{\"ok\":true,\"checks\":%" PRIu32 ",\"mismatches\":%" PRIu32
+            ",\"buffers_equal\":%s,\"guards_ok\":%s,\"heap_ok\":%s,"
+            "\"stack_free_bytes\":%u,\"transfers\":%" PRIu32 ",\"transfer_failures\":%" PRIu32 "}",
+            output->checks, output->mismatches, output->buffers_equal ? "true" : "false",
+            output->guards_ok ? "true" : "false", output->heap_ok ? "true" : "false",
+            output->stack_free, output->submitted, output->failed);
         if (size > 0 && (size_t)size < sizeof(body))
             jelli_debug_response(debug, id, body);
     } else

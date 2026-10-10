@@ -2,10 +2,13 @@
 #define JELLI_DISPLAY_OUTPUT_H
 #include "jelli/debug.h"
 #include "lvgl.h"
+#include "display_transfer.h"
 
 typedef struct {
     uint16_t *engine_pixels, *canvas_pixels;
     lv_obj_t *canvas;
+    JelliDisplayTransfer transfer;
+    uint32_t submitted, failed;
     uint64_t checked_ms;
     uint32_t checks, mismatches;
     unsigned stack_free;
