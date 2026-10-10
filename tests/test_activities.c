@@ -125,8 +125,22 @@ static void potty_cycle(void)
     CHECK(pet->potty == 1000u && jelli_game_valid(&game)); /* Saturates at the cap. */
 }
 
+/* Favourite moments from data match the former ID-parity rule at every minute. */
+static void favorites_match_legacy(void)
+{
+    JelliPet pet = {0};
+    for (uint32_t id = 1u; id <= 4u; ++id) {
+        pet.id = id;
+        for (unsigned minute = 0u; minute < 1440u; ++minute) {
+            unsigned legacy = (id & 1u) ? (minute < 660u ? 0u : 1u) : (minute < 1140u ? 2u : 3u);
+            CHECK(jelli_pet_favorite(&pet, minute) == legacy);
+        }
+    }
+}
+
 int main(void)
 {
+    favorites_match_legacy();
     legacy_moments_unchanged();
     reading_moment();
     potty_cycle();

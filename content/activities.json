@@ -11,5 +11,16 @@
      "gains": {"social": 100}, "icon": 6012, "prop": 0},
     {"id": 4, "name": "READING", "kind": "play", "suggest_hour": -1, "location": "stay",
      "gains": {"amusement": 60, "social": 30}, "icon": 6016, "prop": 3005}
-  ]
+  ],
+  "favorites": {
+    "bond": 10,
+    "profiles": [
+      {"name": "evening", "windows": [{"until_minute": 1140, "moment": "GOING OUT"},
+                                      {"until_minute": 1440, "moment": "MOVIE"}],
+       "strong_from_minute": 900, "strong_until_minute": 1440, "strong_bonus": 60, "bonus": 30},
+      {"name": "morning", "windows": [{"until_minute": 660, "moment": "BREAKFAST"},
+                                      {"until_minute": 1440, "moment": "TEA"}],
+       "strong_from_minute": 0, "strong_until_minute": 900, "strong_bonus": 60, "bonus": 30}
+    ]
+  }
 }
