@@ -205,7 +205,9 @@ const label = (hex, a) => {
 const signature = a => { let h = 0; const s = a.after || ''; for (let i = 0; i < s.length; i += 7) h = (h * 31 + s.charCodeAt(i)) | 0; return String(h); };
 const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrops, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;
   store.set('prefs', {prefsVersion: PREFS_VERSION, mode, grid, issues, backdrops, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop});
-  lastHash = '#' + new URLSearchParams({view, key, mode, zoom: zoom || 'fit'}); location.replace(lastHash); };
+  /* Only the asset views (detail and sheet) use mode and zoom; the other views keep the key so a reload returns to the same asset. */
+  const assetView = view === 'detail' || view === 'sheet';
+  lastHash = '#' + new URLSearchParams(assetView ? {view, key, mode, zoom: zoom || 'fit'} : {view, key}); location.replace(lastHash); };
 let lastHash = '';
 /* Deep links: #view=sheet&key=…&mode=diff&zoom=8, or a bare mode name: #review, #paint, #creature, #behaviour. */
 function applyHash() {

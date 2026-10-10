@@ -61,7 +61,7 @@
     if (shell()?.notify) return shell().notify(text, {tone: tone || 'info', sticky});
     S.status(text, tone, sticky); announce(text);
   };
-  const ask = (message, opts) => shell()?.confirm ? shell().confirm(message, opts) : Promise.resolve(window.confirm(message));
+  const ask = (message, opts) => S.ask(message, opts);
 
   /* ---------- clip helpers ---------- */
   const clipKeys = () => [...new Set([...(D.clips || []).map(c => c.key), ...cr.poses().map(p => `${state.cForm}.${p}`)])];

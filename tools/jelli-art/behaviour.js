@@ -51,6 +51,7 @@
   const dirty = () => !!work && !!loaded && JSON.stringify(work) !== JSON.stringify(loaded);
   const baseClipsDirty = S.clipsDirty;
   S.clipsDirty = () => baseClipsDirty() || dirty();  // also guards the page against closing with edits
+  S.sizeDirty = () => dirty();  // shell.js: the "Behaviour & size" unsaved item
   function sync() {
     if (D.creature_data_sha === seen) return;
     seen = D.creature_data_sha;
