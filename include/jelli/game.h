@@ -70,7 +70,7 @@ typedef struct {
     uint16_t bond, feeds, neglect;
     uint16_t hydration, hydration_remainder;
     uint8_t form, location, shot_goal, shot_hits;
-    uint8_t collection_entry, reached_forms;
+    uint8_t collection_entry, reached_forms, food_type;
     /* Brief session-only touch memory; care changes still persist. */
     uint16_t touch_load;
     uint8_t reaction, reaction_ticks;
@@ -104,9 +104,9 @@ typedef struct {
 typedef struct {
     JelliCommandKind kind;
     uint32_t actor_id;
-    /* ACTIVATE: stable ID; TRAVEL: 0/1; BEDTIME: 0..23.
-     * MOMENT: breakfast/tea/outing/movie 0..3.
-     * HEALTH: brush/medicine/shot/wash/stretch/floss/mouthwash/spit/cleanup 0..8. */
+    /* FEED: food catalog ID (0 is the legacy meal). ACTIVATE: stable ID; TRAVEL: 0/1; BEDTIME:
+     * 0..23. MOMENT: breakfast/tea/outing/movie 0..3. HEALTH:
+     * brush/medicine/shot/wash/stretch/floss/mouthwash/spit/cleanup 0..8. */
     uint32_t value;
 } JelliCommand;
 

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "foods": [
+    {
+      "id": 0,
+      "name": "MEAL",
+      "fullness": 300,
+      "hydration": 0,
+      "icon": 6001
+    },
+    {
+      "id": 1,
+      "name": "FRUIT",
+      "fullness": 150,
+      "hydration": 100,
+      "icon": 6009
+    },
+    {
+      "id": 2,
+      "name": "SOUP",
+      "fullness": 220,
+      "hydration": 250,
+      "icon": 6010
+    }
+  ]
+}

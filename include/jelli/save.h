@@ -4,7 +4,7 @@
 #include "jelli/game.h"
 #include <stddef.h>
 
-#define JELLI_SAVE_VERSION 5u
+#define JELLI_SAVE_VERSION 6u
 #define JELLI_SAVE_CAPACITY 4096u
 
 typedef struct {

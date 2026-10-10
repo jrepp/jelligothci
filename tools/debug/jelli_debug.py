@@ -81,7 +81,7 @@ class Client:
             raise DebugError("Button must uniquely match a current label or index 0–9")
         item = matches[0]
         # The device validates the page before dispatching through normal UI hit testing.
-        page = ["home", "care", "more", "collection", "settings", "moments", "health", "brush", "medicine", "shot", "wash", "stretch", "pets", "pet_detail", "evolutions", "present_action"].index(state["visual"]["page"])
+        page = ["home", "care", "more", "collection", "settings", "moments", "health", "brush", "medicine", "shot", "wash", "stretch", "pets", "pet_detail", "evolutions", "present_action", "food"].index(state["visual"]["page"])
         return self.request(f"press {page} {item['id']}")
 
     def set_clock(self, seconds, offset_minutes):

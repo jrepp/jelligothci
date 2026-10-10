@@ -213,6 +213,8 @@ static void write_game(Writer *writer, const JelliGame *game)
         put_u16(writer, game->pets[i].hydration);
         put_u16(writer, game->pets[i].hydration_remainder);
     }
+    for (unsigned i = 0u; i < game->count; ++i)
+        put_u8(writer, game->pets[i].food_type);
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -262,6 +264,9 @@ static bool read_game(Reader *reader, JelliGame *game)
             game->pets[i].hydration_remainder = get_u16(reader);
         }
     }
+    if (reader->version >= 6u)
+        for (unsigned i = 0u; i < game->count; ++i)
+            game->pets[i].food_type = get_u8(reader);
     return !reader->failed;
 }
 

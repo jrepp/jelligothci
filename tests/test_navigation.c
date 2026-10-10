@@ -88,6 +88,10 @@ static void unavailable_actions(void)
     game.events = &events;
     ui.menu_open = true;
     ui.page = JELLI_UI_CARE;
+    jelli_pet_ui_tap(&ui, &game, 110, 111);
+    CHECK(ui.page == JELLI_UI_FOOD && game.pets[0].activity == JELLI_IDLE);
+    ui.sound_pending = false;
+    events = (JelliEventLog){0};
     game.food = 0;
     CHECK(jelli_pet_ui_available(&ui, &game, 1) == JELLI_NO_ITEM);
     CHECK(events.sequence == 0 && game.pets[0].activity == JELLI_IDLE);

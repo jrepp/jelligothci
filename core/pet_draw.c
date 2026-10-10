@@ -2,6 +2,7 @@
 #include "pet_canvas.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
+#include "pet_food.h"
 #include "jelli/assets.h"
 #include <stdio.h>
 #include <string.h>
@@ -244,7 +245,9 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     jelli_pet_draw_background(surface, view, region);
     c.icon_night = view->night;
     if (ui->menu_open && ui->page >= JELLI_UI_PETS) {
-        if (ui->page == JELLI_UI_PRESENT_ACTION)
+        if (ui->page == JELLI_UI_FOOD)
+            jelli_pet_food_draw(&c, ui);
+        else if (ui->page == JELLI_UI_PRESENT_ACTION)
             jelli_pet_gallery_draw_action(&c, ui, game);
         else
             jelli_pet_collection_draw(&c, ui, game);

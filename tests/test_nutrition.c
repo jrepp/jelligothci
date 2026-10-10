@@ -60,10 +60,45 @@ static void hydration_save(void)
     CHECK(!jelli_game_valid(&loaded.game));
 }
 
+static void food_choices(void)
+{
+    for (unsigned food = 0u; food < jelli_food_count; ++food) {
+        JelliSave save = {0}, loaded;
+        jelli_game_init(&save.game);
+        JelliPet *pet = &save.game.pets[0];
+        pet->needs[JELLI_SATIETY] = 400u;
+        pet->hydration = 400u;
+        CHECK(jelli_game_command(&save.game, (JelliCommand){JELLI_CMD_FEED, 1u, food}) == JELLI_OK);
+        CHECK(save.game.food == 5u);
+        CHECK(jelli_game_command(&save.game, (JelliCommand){JELLI_CMD_FEED, 1u, food}) ==
+              JELLI_BUSY);
+        uint8_t bytes[JELLI_SAVE_CAPACITY];
+        size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
+        CHECK(size && jelli_save_decode(&loaded, bytes, size));
+        CHECK(loaded.game.pets[0].food_type == food);
+        for (unsigned step = 0u; step < 10u; ++step)
+            jelli_game_advance(&loaded.game, 500u);
+        CHECK(loaded.game.food == 4u && loaded.game.pets[0].activity == JELLI_IDLE);
+        CHECK(loaded.game.pets[0].needs[JELLI_SATIETY] >= 399u + jelli_foods[food].fullness);
+        CHECK(loaded.game.pets[0].hydration == 400u + jelli_foods[food].hydration);
+        for (unsigned step = 0u; step < 10u; ++step)
+            jelli_game_advance(&loaded.game, 500u);
+        CHECK(loaded.game.food == 4u);
+    }
+    JelliGame game;
+    jelli_game_init(&game);
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_FEED, 1u, 9u}) ==
+          JELLI_INVALID_TARGET);
+    CHECK(game.food == 5u && game.pets[0].activity == JELLI_IDLE);
+    game.food = 0u;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_FEED, 1u, 1u}) == JELLI_NO_ITEM);
+}
+
 int main(void)
 {
     water_and_time();
     hydration_save();
+    food_choices();
     puts("PASS: hydration timing, saturation, water guards and save continuity");
     return 0;
 }

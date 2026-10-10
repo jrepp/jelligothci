@@ -2,6 +2,7 @@
 #include "game_internal.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
+#include "pet_food.h"
 #include <stddef.h>
 
 typedef struct {
@@ -58,7 +59,9 @@ JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep)
 
 static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 {
-    if (action == JELLI_UI_ACTION_SWITCH_PET)
+    if (action == JELLI_UI_ACTION_FEED)
+        ui->page = JELLI_UI_FOOD;
+    else if (action == JELLI_UI_ACTION_SWITCH_PET)
         ui->page = JELLI_UI_PETS;
     else if (action == JELLI_UI_ACTION_MOMENTS)
         ui->page = JELLI_UI_MOMENTS;
@@ -160,6 +163,8 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
     if (slot == 0u) {
         jelli_pet_ui_back(ui);
         ui->result = JELLI_OK;
+    } else if (ui->page == JELLI_UI_FOOD) {
+        jelli_pet_food_select(ui, game, slot);
     } else if (ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS) {
         jelli_pet_collection_select(ui, game, slot);
     } else if (ui->page == JELLI_UI_PRESENT_ACTION) {

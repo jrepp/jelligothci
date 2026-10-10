@@ -29,6 +29,7 @@ typedef enum {
     JELLI_UI_PET_DETAIL,
     JELLI_UI_EVOLUTIONS,
     JELLI_UI_PRESENT_ACTION,
+    JELLI_UI_FOOD,
     JELLI_UI_PAGE_COUNT
 } JelliPetPage;
 

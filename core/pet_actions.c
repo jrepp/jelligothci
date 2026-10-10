@@ -1,13 +1,14 @@
 #include "jelli/pet_ui.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
+#include "pet_food.h"
 
 _Static_assert(sizeof(JelliGame) <= 4096u, "Action preflight workspace exceeds budget");
 
 bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetUiAction action,
                           JelliCommand *command)
 {
-    static const int8_t kinds[] = {JELLI_CMD_FEED,
+    static const int8_t kinds[] = {-1,
                                    -1,
                                    JELLI_CMD_REST,
                                    -1,
@@ -82,6 +83,8 @@ static JelliResult menu_available(JelliPetUi *ui, const JelliGame *game, unsigne
 
 JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsigned slot)
 {
+    if (slot && ui->page == JELLI_UI_FOOD)
+        return jelli_pet_food_available(ui, game, slot);
     if (slot && ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS)
         return jelli_pet_collection_available(ui, game, slot);
     if (slot && (ui->page == JELLI_UI_COLLECTION || ui->page == JELLI_UI_PRESENT_ACTION ||

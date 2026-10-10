@@ -55,10 +55,10 @@ static size_t collection(char *out, size_t capacity, const JelliPetRenderKey *v)
 void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id)
 {
     const JelliPetRenderKey *v = &engine->ui.last_view;
-    static const char *const pages[] = {"home",     "care",       "more",       "collection",
-                                        "settings", "moments",    "health",     "brush",
-                                        "medicine", "shot",       "wash",       "stretch",
-                                        "pets",     "pet_detail", "evolutions", "present_action"};
+    static const char *const pages[] = {
+        "home",   "care",       "more",       "collection",     "settings", "moments",
+        "health", "brush",      "medicine",   "shot",           "wash",     "stretch",
+        "pets",   "pet_detail", "evolutions", "present_action", "food"};
     const char *page = v->page < JELLI_UI_PAGE_COUNT ? pages[v->page] : "unknown";
     int size = snprintf(
         debug->reply, sizeof(debug->reply),

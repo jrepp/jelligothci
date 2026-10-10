@@ -50,7 +50,7 @@ static void clock_pause_and_input(JelliSurface surface)
     CHECK(jelli_pet_init(&engine, platform, surface));
     CHECK(jelli_pet_frame(&engine));
     engine.ui.menu_open = true;
-    engine.ui.page = JELLI_UI_CARE;
+    engine.ui.page = JELLI_UI_FOOD;
     send(&fake, JELLI_TAP, 110, 111);
     CHECK(jelli_pet_frame(&engine));
     CHECK(engine.game.pets[0].activity == JELLI_EATING);
@@ -79,7 +79,7 @@ static void resume_blocks_final_batch(JelliSurface surface)
     JelliPetEngine engine;
     CHECK(jelli_pet_init(&engine, platform, surface));
     engine.ui.menu_open = true;
-    engine.ui.page = JELLI_UI_CARE;
+    engine.ui.page = JELLI_UI_FOOD;
     jelli_game_resume_begin(&engine.game, 1000u);
     send(&fake, JELLI_TAP, 110, 111);
     CHECK(jelli_pet_frame(&engine));

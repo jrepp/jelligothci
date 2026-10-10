@@ -1,20 +1,28 @@
 #include "jelli/pet_ui.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
+#include "pet_food.h"
+
+static bool health_hidden(const JelliPetUi *ui, unsigned slot)
+{
+    return ui->page == JELLI_UI_HEALTH && ((slot == 2u && (ui->last_view.care_blocked & 1u)) ||
+                                           (slot == 3u && (ui->last_view.care_blocked & 2u)));
+}
 
 bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
                           JelliPetUiButton *button)
 {
     if (!ui || !button)
         return false;
+    if (ui->menu_open && ui->page == JELLI_UI_FOOD && slot)
+        return jelli_pet_food_button(slot, button);
     if (jelli_pet_collection_button(ui, slot, button))
         return true;
     if (jelli_pet_gallery_button(ui, slot, button))
         return true;
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot && (ui->clock_edit || slot == 4u))
         return jelli_pet_clock_button(ui->clock_edit, slot, button);
-    if (ui->page == JELLI_UI_HEALTH && ((slot == 2u && (ui->last_view.care_blocked & 1u)) ||
-                                        (slot == 3u && (ui->last_view.care_blocked & 2u))))
+    if (health_hidden(ui, slot))
         return false;
     if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH) && slot == 1u &&
         ui->menu_open) {
@@ -138,7 +146,9 @@ void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game)
 void jelli_pet_ui_back(JelliPetUi *ui)
 {
     if (ui->menu_open && ui->page >= JELLI_UI_PETS) {
-        if (ui->page == JELLI_UI_PETS)
+        if (ui->page == JELLI_UI_FOOD)
+            ui->page = JELLI_UI_CARE;
+        else if (ui->page == JELLI_UI_PETS)
             ui->page = JELLI_UI_SETTINGS;
         else if (ui->page == JELLI_UI_PET_DETAIL)
             ui->page = JELLI_UI_PETS;

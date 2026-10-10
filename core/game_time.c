@@ -167,7 +167,10 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
             bool useful = pet->needs[JELLI_SATIETY] < 700u;
             --game->food;
             jelli_habits_record_meal(&pet->habits, pet->ticks);
-            adjust_need(pet, JELLI_SATIETY, 300);
+            const JelliFood *food = &jelli_foods[pet->food_type];
+            adjust_need(pet, JELLI_SATIETY, food->fullness);
+            if (food->hydration)
+                jelli_hydration_add(pet, food->hydration);
             adjust_need(pet, JELLI_HYGIENE, -10);
             if (useful && !pet->reward_claimed) {
                 pet->reward_pending = true;
