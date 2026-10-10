@@ -136,6 +136,10 @@ if(BUILD_TESTING)
       "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_creature_content.py")
     add_test(NAME jelli_art_creatures COMMAND "${JELLI_ASSET_UV}" run --python 3.12
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_creatures.py")
+    # Builds the engine again in a scratch tree for the real-render cases.
+    add_test(NAME jelli_art_game_preview COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
+      "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_game_preview.py")
+    set_tests_properties(jelli_art_game_preview PROPERTIES TIMEOUT 600)
     add_test(NAME game_preview_smoke COMMAND jelli_game_preview --out . --entry 3 --form 2 --mess 1 --frames 2)
     add_test(NAME sdl_shapes_smoke COMMAND jelligotchi --shapes --headless --frames 5)
     add_test(NAME sdl_pet_smoke COMMAND jelligotchi --pet --headless --frames 5)
