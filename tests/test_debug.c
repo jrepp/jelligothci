@@ -107,6 +107,8 @@ static int parser_tests(void)
     CHECK(contains("\"page\":\"home\""));
     CHECK(contains("\"label\":\"MENU\""));
     CHECK(contains("\"collection\":{\"owned_count\":0,\"owned_mask\":0,\"discovered_mask\":0"));
+    CHECK(contains("\"creature\":{\"pose\":") && contains("\"behavior\":\"\"") &&
+          contains("\"mess\":false"));
     request("@J1 1 press 0 0\n");
     request("@J1 2 press 0 1\n");
     CHECK(engine.ui.page == JELLI_UI_CARE);
@@ -162,6 +164,20 @@ static int cheat_tests(void)
     return 0;
 }
 
+static int reply_capacity_tests(void)
+{
+    /* The largest reply (a six-item ring with labels) still fits with the creature block. */
+    engine.ui.menu_open = true;
+    engine.ui.page = JELLI_UI_MOMENTS;
+    for (unsigned frame = 0u; frame < 2u; ++frame) { /* Start, then settle, the ring. */
+        clock_ms += 5000u;
+        (void)jelli_pet_frame(&engine);
+    }
+    request("@J1 10 state\n");
+    CHECK(debug.reply_size > 0u && contains("\"creature\"") && contains("READING"));
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     JelliPlatform platform = {.now_ms = now, .present = present};
@@ -190,6 +206,7 @@ int main(int argc, char **argv)
     CHECK(capture_tests() == 0);
     CHECK(tunable_tests() == 0);
     CHECK(cheat_tests() == 0);
+    CHECK(reply_capacity_tests() == 0); /* Last: it opens a ring and advances the clock. */
     printf("debug state: %zu bytes\n", sizeof(JelliDebug));
     return 0;
 }

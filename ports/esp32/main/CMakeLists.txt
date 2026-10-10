@@ -25,6 +25,7 @@ idf_component_register(
          "../../../core/game_advance.c" "../../../core/save.c" "../../../core/pet_engine.c" "../../../core/pet_rewards.c"
          "../../../core/pet_bubbles.c" "../../../core/pet_atmosphere.c" "../../../core/pet_timing.c" "../../../core/pet_actions.c" "../../../core/pet_clock.c" "../../../core/pet_layout.c" "../../../core/pet_actor.c" "../../../core/pet_health.c" "../../../core/pet_feedback.c" "../../../core/pet_ui.c" "../../../core/pet_particles.c" "../../../core/pet_food.c" "../../../core/pet_collection.c" "../../../core/pet_gallery.c" "../../../core/asset_source.c" "../../../core/pet_canvas.c" "../../../core/pet_menu.c" "../../../core/pet_behavior_draw.c" "../../../core/pet_draw.c" "../../../core/pet_render.c" "${pet_assets}"
     INCLUDE_DIRS "../../../include"
+    PRIV_INCLUDE_DIRS "${JELLI_ASSET_IDS_DIR}"
     REQUIRES esp_lcd esp_lvgl_adapter esp_wifi esp_event esp_netif esp_http_client app_update mbedtls nvs_flash esp_driver_i2c esp_driver_usb_serial_jtag esp_timer esp_psram esp32_s3_touch_amoled_1_75 lvgl
 )
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra -Werror)

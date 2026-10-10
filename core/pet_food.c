@@ -1,3 +1,4 @@
+#include "jelli_asset_ids.h"
 #include "pet_food.h"
 #include "jelli/nutrition.h"
 #include <stdio.h>
@@ -11,7 +12,7 @@ bool jelli_pet_food_button(unsigned slot, JelliPetUiButton *button)
     unsigned i = slot - 1u;
     *button = (JelliPetUiButton){.bounds = {95u + i % 3u * 96u, 88u + i / 3u * 96u, 84u, 84u},
                                  .label = slot == 9u ? "GET FOOD" : jelli_foods[i].name,
-                                 .icon = slot == 9u ? 6001u : jelli_foods[i].icon,
+                                 .icon = slot == 9u ? JELLI_ASSET_MENUS_FOOD : jelli_foods[i].icon,
                                  .scale = 2u};
     return true;
 }

@@ -1,3 +1,4 @@
+#include "jelli_asset_ids.h"
 #include "jelli/pet_ui.h"
 
 uint16_t jelli_pet_clock_minute(const JelliPetUi *ui, const JelliPet *pet)
@@ -21,7 +22,7 @@ bool jelli_pet_clock_button(bool editing, unsigned slot, JelliPetUiButton *butto
             return false;
         *button = (JelliPetUiButton){.bounds = {205, 239, 56, 56},
                                      .label = "CLOCK",
-                                     .icon = 6006u,
+                                     .icon = JELLI_ASSET_MENUS_SETTINGS,
                                      .scale = 1u,
                                      .circular = true};
         return true;

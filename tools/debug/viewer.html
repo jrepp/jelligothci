@@ -63,14 +63,14 @@ function title(e) {
     if(e.kind===4)return 'Cheat · '+(['Fullness','Energy','Cleanliness','Fun','Connection','Bond','Food','Gifts','Heal'][e.code] || 'State');
     if (e.kind===0 && e.code===12) return healthActions[e.value] || 'Healthy activity';
     if (e.kind===2) return ['Activity finished','Meal finished','Play finished','Cleaning finished','Recovery finished','Gift delivered'][e.code] || 'Activity finished';
-    if (e.kind===3) return e.code===1 ? 'Evolved to a new form' : 'Pet state changed';
+    if (e.kind===3) return ['Pet state changed','Evolved to a new form','Behaviour began','Behaviour ended','Request answered','Potty accident'][e.code] || 'Pet state changed'; // JELLI_STATUS_* codes
     if (e.kind===0 && e.code===11) return ['Breakfast','Tea','Going out','Movie','Reading'][e.value] || 'Moment';
     return (e.input ? inputLabel(e.input-1) : e.kind===1 ? inputLabel(e.code) : commands[e.code]) || 'Pet action';
 }
 function category(e) {
     if(e.kind===4)return 'Debug';
     if (e.kind===1) return e.code>=72 && e.code<80 ? 'Settings' : 'Navigation';
-    if (e.kind===3) return 'State';
+    if (e.kind===3) return e.code>=2 ? 'Behaviour' : 'State';
     if (e.kind===2) return e.code===5 ? 'Gifts' : e.code===2 ? 'Moments' : 'Care';
     return ['Care','Moments','Care','Care','Sleep','Sleep','Gifts','Gifts','Pet','Pet','Settings','Moments','Care','Touch'][e.code] || 'State';
 }

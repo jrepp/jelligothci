@@ -1,6 +1,8 @@
 #include "jelli/creature.h"
 #include "pet_draw.h"
 
+#define EXERCISE_BOB_MS 500u /* The barbell lifts and lowers on this beat. */
+
 static void ring_phase(const JelliPetUi *ui, JelliPetRenderKey *view, uint64_t elapsed,
                        uint64_t duration, bool target)
 {
@@ -83,7 +85,7 @@ void jelli_pet_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliP
     unsigned pose = jelli_creature_idle_pose(jelli_creature_profile(pet->form), beat, pet->id);
     view->phase = pet->activity == JELLI_IDLE && !pet->asleep ? pose : 0u;
     if (pet->activity == JELLI_EXERCISING)
-        view->phase = (unsigned)(time / 500u % 2u);
+        view->exercise_bob = (uint8_t)(time / EXERCISE_BOB_MS % 2u);
     ring_timing(ui, pet, time, view);
     /* Manual pages only: never slide or wrap a tile automatically. */
     view->stat_index = (uint8_t)(ui->stat_offset % JELLI_PET_STAT_COUNT);

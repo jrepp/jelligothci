@@ -1,3 +1,4 @@
+#include "jelli_asset_ids.h"
 #include "jelli/wake.h"
 #include "jelli/sound.h"
 #include "jelli/creature.h"
@@ -12,7 +13,7 @@ static bool condition_holds(unsigned when, const JelliPetRenderKey *v)
     case JELLI_WHEN_WAKE_GROGGY:
         return v->reaction == JELLI_REACTION_WAKE_GROGGY;
     case JELLI_WHEN_WAKE_SURPRISED:
-        return v->reaction == JELLI_REACTION_WAKE_HAPPY && v->phase == JELLI_POSE_CURIOUS;
+        return v->reaction == JELLI_REACTION_WAKE_HAPPY && v->wake_surprised;
     case JELLI_WHEN_WAKE_HAPPY:
         return v->reaction == JELLI_REACTION_WAKE_HAPPY;
     case JELLI_WHEN_UNWELL:
@@ -95,7 +96,8 @@ void jelli_pet_actor_layout(JelliPetUi *ui, const JelliPetRenderKey *view)
 
 uint16_t jelli_pet_background(uint8_t location, unsigned x, unsigned y)
 {
-    const JelliAsset *a = jelli_asset_find(location ? 10002u : 10001u);
+    const JelliAsset *a =
+        jelli_asset_find(location ? JELLI_ASSET_BACKGROUNDS_GARDEN : JELLI_ASSET_BACKGROUNDS_HOME);
     if (!a || x >= JELLI_WIDTH || y >= JELLI_HEIGHT)
         return 0u;
     unsigned column = x * a->width / JELLI_WIDTH;

@@ -1,3 +1,4 @@
+#include "jelli/activities.h"
 #include "jelli/potty.h"
 #include "jelli/behavior.h"
 #include "game_internal.h"
@@ -27,13 +28,20 @@ unsigned jelli_pet_mood(const JelliPet *pet)
     return mood ? (mood + 9u) / 10u : 1u;
 }
 
+static const JelliFavoriteProfile *favorite_profile(const JelliPet *pet)
+{
+    /* Stable identity survives evolution: the profile follows the pet's ID. */
+    return &jelli_favorite_profiles[pet->id % jelli_favorite_profile_count];
+}
+
 unsigned jelli_pet_favorite(const JelliPet *pet, unsigned minute)
 {
-    /* Stable identity survives evolution. Morning companions enjoy breakfast/tea;
-     * evening companions favor outings/movies. Balance is a prototype profile. */
-    if (pet->id & 1u)
-        return minute < 660u ? 0u : 1u;
-    return minute < 1140u ? 2u : 3u;
+    const JelliFavoriteProfile *p = favorite_profile(pet);
+    unsigned count = p->window_count < 4u ? p->window_count : 4u;
+    for (unsigned i = 0u; i < count; ++i)
+        if (minute < p->windows[i].until_minute)
+            return p->windows[i].moment;
+    return count ? p->windows[count - 1u].moment : 0u;
 }
 
 void jelli_game_preference(JelliGame *game, JelliCommand command)
@@ -45,12 +53,14 @@ void jelli_game_preference(JelliGame *game, JelliCommand command)
                                        JELLI_DAY_TICKS / 600u);
     if (command.kind != JELLI_CMD_MOMENT || command.value != jelli_pet_favorite(pet, minute))
         return;
-    unsigned bonus = ((pet->id & 1u) ? minute < 900u : minute >= 900u) ? 60u : 30u;
+    const JelliFavoriteProfile *p = favorite_profile(pet);
+    bool strong = minute >= p->strong_from_minute && minute < p->strong_until_minute;
+    unsigned bonus = strong ? p->strong_bonus : p->bonus;
     pet->needs[JELLI_AMUSEMENT] = adjusted(pet->needs[JELLI_AMUSEMENT],
                                            (int)jelli_habits_social_gain(&pet->habits, bonus), 0u);
     pet->needs[JELLI_SOCIAL] = adjusted(
         pet->needs[JELLI_SOCIAL], (int)jelli_habits_social_gain(&pet->habits, bonus / 2u), 0u);
-    pet->bond = adjusted(pet->bond, 10, 0u);
+    pet->bond = adjusted(pet->bond, (int)jelli_favorite_bond, 0u);
 }
 
 JelliResult jelli_game_touch(JelliPet *pet)

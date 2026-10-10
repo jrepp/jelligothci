@@ -7,6 +7,7 @@
 import argparse
 from pathlib import Path
 
+import asset_ids
 import creature_data
 from build_slice import load_assets
 
@@ -77,6 +78,7 @@ def generate(output):
     chunks.extend(creature_data.emit(manifest))
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n\n".join(chunks))
+    (output.parent / "jelli_asset_ids.h").write_text(asset_ids.header(manifest))
     if glyph_data is None:
         raise ValueError("Font asset is missing")
     print(f"Embedded {len(records)} assets: {output}")
