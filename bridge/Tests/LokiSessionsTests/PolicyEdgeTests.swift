@@ -341,7 +341,7 @@ func everySessionGetsTheModelAndEffortAndKeepsItsGuards(_ seed: Int) throws {
     let general = policy.generalOptions(folder: root, projects: [project], operatorRules: rules)
     var expected = policy.options(project: Project(name: "General", url: root), instructions: nil,
                                   operatorRules: rules + "\n\n" + SessionPolicy.generalRules)
-    expected["settings"] = policy.settings(root: root, readOnly: true,
+    expected["settings"] = policy.settings(root: root, readOnly: true, anyWebPage: true,
                                            denying: SessionPolicy.besideProjects(in: root, projects: [project]))
     #expect(try jsonText(general) == jsonText(expected), "seed \(seed)")
     #expect(general["model"] as? String == SessionPolicy.model && general["effort"] as? String == SessionPolicy.effort,

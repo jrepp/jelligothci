@@ -21,6 +21,28 @@ private func value(_ object: [String: Any], _ path: String) -> Any? {
     #expect(allows.contains("WebFetch(domain:github.com)") && !allows.contains { $0.hasPrefix("Bash") })
 }
 
+/// The general session answers any question: WebFetch reads any page without a card
+/// (Michael's decision, 2026-10-10), while its commands stay off the network. A project
+/// session still reads only the listed hosts without one.
+@Test func theGeneralSessionReadsAnyWebPageAndItsCommandsStayOffline() throws {
+    let root = URL(fileURLWithPath: "/tmp/loki-web/projects")
+    let project = Project(name: "p", url: root.appendingPathComponent("p"))
+    let policy = SessionPolicy(extraHosts: ["example.org"])
+    let general = policy.generalOptions(folder: root, projects: [project], operatorRules: "R")
+    let allows = try #require(value(general, "settings.permissions.allow") as? [String])
+    #expect(allows == ["WebSearch", "WebFetch"])
+    #expect(value(general, "settings.sandbox.network.allowedDomains") as? [String] == [])
+    #expect(value(general, "settings.sandbox.network.deniedDomains") as? [String] == ["*"])
+    #expect((value(general, "settings.permissions.ask") as? [String]) == ["Bash(dangerouslyDisableSandbox:true)"])
+    #expect(value(general, "settings.sandbox.allowUnsandboxedCommands") as? Bool == false)
+    #expect(SessionPolicy.generalRules.contains("read any web page"))
+    let options = policy.options(project: project, instructions: nil, operatorRules: "R")
+    let projectAllows = try #require(value(options, "settings.permissions.allow") as? [String])
+    #expect(!projectAllows.contains("WebFetch") && projectAllows.contains("WebFetch(domain:example.org)"))
+    #expect(value(options, "settings.sandbox.allowUnsandboxedCommands") as? Bool == true)  // after a tap
+    #expect(projectAllows.allSatisfy { $0 == "WebSearch" || $0.hasPrefix("WebFetch(domain:") })
+}
+
 @Test func secretsStayUnreadable() {
     let settings = SessionPolicy().settings
     let denied = value(settings, "sandbox.filesystem.denyRead") as? [String] ?? []

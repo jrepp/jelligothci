@@ -69,6 +69,13 @@ extension Conductor {
 
     private func decide(permission request: String, in id: String, tool: String, input: JSONValue,
                         blockedPath: String?, place: Place) async {
+        // The general session reads any web page, so a page could talk Claude into asking
+        // to leave it: such asks are refused at once, with no card, and Claude is pointed
+        // at the web tools, which answer without one.
+        if place == .general, Self.leavesTheGeneralSession(tool: tool, input: input) {
+            return sidecar.send(.decision(session: id, request: request, allow: false,
+                                          message: Self.generalRefusal, answers: nil))
+        }
         book.asking(true, in: id)
         let answer = await permit(tool: tool, input: input, blockedPath: blockedPath, place: place)
         book.asking(false, in: id)
@@ -94,6 +101,21 @@ extension Conductor {
         let place = book.place(of: session)?.name ?? ""
         state(.working, caption: place.isEmpty ? line : "\(place): \(line)", progress: progress)
     }
+
+    /// What the general session never does, tap or not: only its reading tools may ask,
+    /// and a command only while it stays in the sandbox, where it has no network. Any
+    /// sign of leaving counts (a string "true" as much as true).
+    static func leavesTheGeneralSession(tool: String, input: JSONValue) -> Bool {
+        guard generalTools.contains(tool) else { return true }
+        guard tool == "Bash", let leave = input["dangerouslyDisableSandbox"] else { return false }
+        return leave != .null && leave != .bool(false)
+    }
+
+    /// The tools whose asks the general session may put to the user.
+    static let generalTools: Set<String> = ["Bash", "Read", "Glob", "Grep", "WebFetch", "WebSearch"]
+
+    static let generalRefusal = "The general session only reads: it cannot change files, run commands outside the "
+        + "sandbox or use that tool. A change has to be asked for in a project by name."
 
     /// The user's answer on a card; nil when the policy refuses without one.
     private func permit(tool: String, input: JSONValue, blockedPath: String?, place: Place?) async -> Bool? {

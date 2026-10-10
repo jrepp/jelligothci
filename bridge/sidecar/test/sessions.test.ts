@@ -108,6 +108,28 @@ test("prompts flow in and what Claude does flows out", async () => {
   assert.equal(query.interrupted, 1);
 });
 
+test("the general session's web rules reach the SDK unchanged, and a WebFetch prompt still waits", async () => {
+  // Allowing any page is the SDK's job, through these settings; the sidecar never
+  // answers a prompt itself, so one that does reach it waits for the bridge.
+  const { sent, queries, sessions } = harness();
+  const settings = {
+    sandbox: { network: { allowedDomains: [], deniedDomains: ["*"], strictAllowlist: true } },
+    permissions: { allow: ["WebSearch", "WebFetch"], ask: ["Bash(dangerouslyDisableSandbox:true)"], deny: [] },
+  };
+  sessions.handle({ type: "start", session: "s1", options: { cwd: "/p", settings } });
+  assert.deepEqual(queries[0].options.settings, settings);
+  const input = { url: "https://weather.example/paris", prompt: "today's forecast" };
+  let settled = false;
+  const answer = queries[0].options.canUseTool("WebFetch", input, { signal: new AbortController().signal });
+  void answer.then(() => (settled = true));
+  await tick();
+  assert.equal(settled, false);
+  assert.deepEqual(sent, [{ type: "permission", session: "s1", request: "r1", tool: "WebFetch", input,
+    reason: undefined, blockedPath: undefined }]);
+  sessions.handle({ type: "decision", session: "s1", request: "r1", allow: false, message: "No." });
+  assert.deepEqual(await answer, { behavior: "deny", message: "No." });
+});
+
 test("permission prompts wait for the bridge's decision", async () => {
   const { sent, queries, sessions } = harness();
   sessions.handle({ type: "start", session: "s1", options: {} });

@@ -56,6 +56,10 @@ Facts from the Claude Code documentation (checked 2026-10-09) that shape the ans
 The voice agent works on any project the user names and runs any command they ask
 for, without a tap.
 
+On 2026-10-10 the user added: any question should be answered, including web
+lookups for the weather, stock prices and anything else, so the general session
+reads any web page without a tap.
+
 ## How it is enforced
 
 Claude proposed the enforcement below on the same day and stated it to the user;
@@ -91,7 +95,11 @@ for commands and for the Edit and Write tools, and every entry beside the projec
 (files, links, hidden folders) is read-denied, so a token file at the top of `~/dev`
 stays out of reach. Its commands have no network (`deniedDomains: ["*"]`; an empty
 allow-list alone leaves the network open), so nothing it reads can leave through an
-allowed host; it searches and reads the web through Claude Code's own tools. A change has to be asked for in a project by name. The session reopens after
+allowed host; it searches the web and reads any web page through Claude Code's own
+tools, without a tap (the user's decision, 2026-10-10). Because a page can now
+steer it, the bridge refuses at once, with no card, any ask from this session to
+change a file or to run a command outside the sandbox, and points Claude at the web
+tools instead. A change has to be asked for in a project by name. The session reopens after
 ten idle minutes with a fresh view of the folder.
 
 **Any command, inside the sandbox.** Each session's Bash commands run sandboxed and
@@ -116,8 +124,9 @@ settings layer):
 The network allow-list starts with GitHub (`github.com`, `*.github.com`,
 `*.githubusercontent.com`), npm and Yarn, PyPI (`pypi.org`,
 `files.pythonhosted.org`), crates.io, the Go module proxy, and Espressif's
-component and download hosts. The bridge's settings can extend it. `WebFetch`
-allow rules mirror the list, and `WebSearch` is allowed.
+component and download hosts. The bridge's settings can extend it. In a project
+session `WebFetch` allow rules mirror the list; the general session allows
+`WebFetch` for every host. `WebSearch` is allowed everywhere.
 
 Reads are blocked rather than listed because credentials do not only live in known
 places: a token file can sit at the top of a project root, beside the projects.
@@ -154,7 +163,8 @@ looked up on the same fenced `PATH`.
 **What takes one tap on the board.** A command that leaves the sandbox (for
 example a dev server that must listen, `docker`, `git push` over SSH, which the
 macOS sandbox cannot tunnel, or a command that needs a host outside the allow-list);
-edits outside the project; `WebFetch` to other hosts; and Claude Code's own safety
+edits outside the project; `WebFetch` to other hosts from a project session; and
+Claude Code's own safety
 checks (removals of critical paths). The card shows the literal command or path,
 whole or not at all, in at most eight lines, without invisible or
 direction-changing characters or runs of spaces, and an unanswered card denies. A
@@ -220,6 +230,13 @@ one, not a setting the voice path can change.
   using credentials an injected prompt supplies (the user's are not available to
   them). The secret names above keep the usual credential files out of that; tokens
   written into other files, such as a remote URL in `.git/config`, are not covered.
+- The general session reads the projects and fetches any web page, so a page that
+  steers Claude could have it put project text into the address of a page it then
+  fetches, and the page's owner would see it. Secret files and the files beside the
+  projects stay unreadable, and the session's commands have no network; what
+  remains reachable is the projects' own text, and any HTTPS service on the Mac or
+  the local network whose certificate the Mac trusts. The user accepted this on
+  2026-10-10 so that any question gets an answer.
 - Whether a sandboxed command can reach the macOS keychain through its system
   service is not established; the bridge checks it with a harmless probe before
   the first release, and the result is recorded with phase 1.

@@ -78,8 +78,11 @@ public struct SessionPolicy: Sendable {
     /// unwritable, and everything under it unwritable when `readOnly`, by sandboxed
     /// commands and by Claude Code's own file tools alike. A read-only session's
     /// commands have no network: it reads for the user, and nothing it read can leave
-    /// from a command. Its WebFetch tool still reads the developer hosts without a tap.
-    public func settings(root: URL? = nil, readOnly: Bool = false, denying paths: [String]) -> [String: Any] {
+    /// from a command. WebFetch reads the developer hosts without a tap, and any web
+    /// page at all when `anyWebPage` (the general session, which answers any question:
+    /// Michael's decision, 2026-10-10, ADR-014).
+    public func settings(root: URL? = nil, readOnly: Bool = false, anyWebPage: Bool = false,
+                         denying paths: [String]) -> [String: Any] {
         let base = root.map { Self.loose($0.standardizedFileURL.path) }
         let secrets = base.map { base in Self.secretNames.map { "\(base)/**/\($0)" } } ?? []
         let unwritable = protectedFolders.map(Self.loose) + (root.map { Self.hookPaths(in: $0).map(Self.loose) } ?? [])
@@ -89,7 +92,9 @@ public struct SessionPolicy: Sendable {
                 "enabled": true,
                 "failIfUnavailable": true,
                 "autoAllowBashIfSandboxed": true,
-                "allowUnsandboxedCommands": true,
+                // A read-only session never leaves the sandbox: Claude Code then ignores
+                // dangerouslyDisableSandbox altogether, whatever the input says.
+                "allowUnsandboxedCommands": !readOnly,
                 // Other hosts are refused, not prompted: the SDK does not say how such a
                 // prompt would reach the board. Reaching one means leaving the sandbox,
                 // which takes a tap.
@@ -104,7 +109,7 @@ public struct SessionPolicy: Sendable {
                 "blockReadsOutsideWorkingDirectories": true,
                 // Leaving the sandbox always takes a tap, whatever else would allow it.
                 "ask": ["Bash(dangerouslyDisableSandbox:true)"],
-                "allow": ["WebSearch"] + hosts.map { "WebFetch(domain:\($0))" },
+                "allow": ["WebSearch"] + (anyWebPage ? ["WebFetch"] : hosts.map { "WebFetch(domain:\($0))" }),
                 "deny": (paths + secrets).flatMap { ["Read(/\($0))", "Edit(/\($0))", "Write(/\($0))"] }
                     + unwritable.flatMap { ["Edit(/\($0))", "Write(/\($0))", "Edit(/\($0)/**)", "Write(/\($0)/**)"] },
             ] as [String: Any],
@@ -161,17 +166,18 @@ public struct SessionPolicy: Sendable {
     /// name no project.
     public static let generalRules = """
         This is the general session, working from the folder that holds the user's projects. Answer questions \
-        briefly and plainly. It can read the projects and search the web but cannot change files: when the user \
+        briefly and plainly. It can read the projects, search the web and read any web page, but cannot change \
+        files: when the user \
         wants a change in a project, tell them to ask for it in that project by name ("in chatter, ..."). Files \
         beside the projects are off limits.
         """
 
-    /// Query options for the general session, rooted at `folder`: read-only, and
-    /// unable to read anything beside the projects.
+    /// Query options for the general session, rooted at `folder`: read-only, unable to
+    /// read anything beside the projects, and free to read any web page.
     public func generalOptions(folder: URL, projects: [Project], operatorRules: String) -> [String: Any] {
         var options = options(project: Project(name: "General", url: folder), instructions: nil,
                               operatorRules: operatorRules + "\n\n" + Self.generalRules)
-        options["settings"] = settings(root: folder, readOnly: true,
+        options["settings"] = settings(root: folder, readOnly: true, anyWebPage: true,
                                        denying: Self.besideProjects(in: folder, projects: projects))
         return options
     }
