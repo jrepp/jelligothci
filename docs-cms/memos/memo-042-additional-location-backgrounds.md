@@ -73,6 +73,19 @@ keeping PNG payloads unnecessary for the core-only build. The full local
 `scripts/release-validate` passes, including the existing incremental-version
 regression. CI packaging remains to be confirmed on the corrected revision.
 
+The next run, `38070099269`, passed release validation and all 57 Windows tests,
+then rejected the artwork export against the old 256 KiB live pack cap. The
+complete authored pack contains 107 assets: 125,504 pixels, 15,688 mask bytes,
+1,152 glyph bytes and 2,584 bytes of headers (270,432 bytes total). The existing
+131,072-pixel and 16,384-byte mask banks fit; the desktop staging buffer grows
+by 32,768 bytes to 288 KiB. Firmware memory and the core are unaffected.
+The decoder's stale 98,304-pixel guard now uses the actual array capacity, and
+the publisher checks bank bounds as well as file size. A full-pack export and
+SDL load test now runs in desktop CI, including Windows; small synthetic packs
+alone had not exposed either mismatch. Local desktop and sanitizer suites pass
+62/62 tests, as do hooks, artwork export, full-pack loading and macOS packaging.
+Final corrected CI results are pending.
+
 # References
 
 - [Activity balance and location integrity](memo-041-activity-balance-and-location-integrity.md)
