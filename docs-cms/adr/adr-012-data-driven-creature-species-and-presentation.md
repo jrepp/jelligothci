@@ -60,6 +60,15 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
    the heading (more than 300x176 on-panel pixels), and icons wider than a grid
    cell. The `jelly` behaviour reproduces the former tables exactly; a test
    compares them beat for beat.
+
+   *Amended 2026-10-10 (PR #37):* a rule may also name a state pose from
+   `assets.json` `state_poses` (RFC-005), such as the axolotl's `touch_happy` →
+   `hug`. A form without a clip for that state pose plays its fallback base
+   pose; fallbacks are one level deep, because every fallback is a base pose.
+   `tools/assets/creature_data.py` validates rule poses against the base and
+   state pose list and resolves the fallback in the clip table. Jelli Art's
+   Behaviour & size editor offers and simulates the same list, and
+   `jelli_creature_clip` returns no clip for a pose index outside the table.
 5. **Art size and palette are per asset.** Creature frames may be 32x32 or 48x48.
    An asset may name a palette in `manifest.palettes` (at most 16 colours), and
    binary alpha is unchanged. `tools/assets/import_creature.py` converts upscaled

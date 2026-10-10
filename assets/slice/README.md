@@ -1,7 +1,7 @@
 # Jelligotchi slice artwork
 
-The review set contains 95 PNG files: 30 creature frames, 12 small icons, 15 ring icons,
-five meter pictograms, nine health icons, eight celebration sprites, nine collectible prizes, two backgrounds, four props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
+The review set contains 110 PNG files: 38 creature frames, 12 small icons, 16 ring icons,
+five meter pictograms, 10 health icons, eight celebration sprites, nine collectible prizes, two backgrounds, nine props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
 form; BUBBLE is a separate species that grows from the baby axolotl into the axolotl. The SDL and ESP32 pet builds embed these assets using
 `tools/assets/embed_slice.py`. Physical board appearance remains unverified.
 
@@ -79,6 +79,11 @@ definition and 4,096-byte metadata allowances bring the planned pack to 279,592 
 under the 294,912-byte ceiling (`JELLI_ASSET_PACK_CAPACITY` in
 `ports/sdl/asset_reload.h`, sized for a full SDL live-reload bank); those allowances
 are not a completed game pack or a linked firmware measurement.
+
+The SDL live-reload bank (`ports/sdl/asset_reload.h`; `build_slice.py` checks it)
+holds 131,072 pixels and 16,384 mask bytes. The current sprites use 125,248 pixels
+and 15,656 mask bytes, leaving 5,824 and 728: room for two more 48x48 frames
+(2,304 pixels and 288 mask bytes each), with both banks running out together.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 
