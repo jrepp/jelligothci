@@ -65,6 +65,14 @@ frames, circular clipping and stride preservation. Content mutation tests cover
 unknown/wrong-kind backgrounds, duplicate keys, invalid flags and unstable IDs.
 Hardware is unflashed and unverified.
 
+PR #22 release validation failed in run `38069721880` after all 27 core tests
+passed: the incremental-version test's isolated source copy omitted
+`assets/slice/assets.json`. Core configuration now reads that catalog to validate
+activity and location references. The fixture now copies the manifest while
+keeping PNG payloads unnecessary for the core-only build. The full local
+`scripts/release-validate` passes, including the existing incremental-version
+regression. CI packaging remains to be confirmed on the corrected revision.
+
 # References
 
 - [Activity balance and location integrity](memo-041-activity-balance-and-location-integrity.md)
