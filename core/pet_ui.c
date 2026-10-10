@@ -158,7 +158,8 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
         ui->result = JELLI_OK;
     } else if (ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS) {
         jelli_pet_collection_select(ui, game, slot);
-
+    } else if (ui->page == JELLI_UI_PRESENT_ACTION) {
+        jelli_pet_gallery_action(ui, game, slot);
     } else if (ui->page == JELLI_UI_COLLECTION) {
         jelli_pet_gallery_select(ui, game, slot);
     } else if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u)) {

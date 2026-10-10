@@ -12,6 +12,8 @@ void jelli_pet_gallery_key(const JelliPetUi *ui, const JelliGame *game, uint64_t
                            JelliPetRenderKey *key);
 bool jelli_pet_gallery_same(const JelliPetRenderKey *a, const JelliPetRenderKey *b);
 void jelli_pet_gallery_draw(Canvas *canvas, const JelliPetRenderKey *view);
+void jelli_pet_gallery_action(JelliPetUi *ui, JelliGame *game, unsigned slot);
+void jelli_pet_gallery_draw_action(Canvas *c, const JelliPetUi *ui, const JelliGame *game);
 void jelli_pet_gallery_draw_latched(Canvas *canvas, const JelliPetRenderKey *view);
 
 #endif

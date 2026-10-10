@@ -83,7 +83,7 @@ JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsign
 {
     if (slot && ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS)
         return jelli_pet_collection_available(ui, game, slot);
-    if (slot && (ui->page == JELLI_UI_COLLECTION ||
+    if (slot && (ui->page == JELLI_UI_COLLECTION || ui->page == JELLI_UI_PRESENT_ACTION ||
                  (!ui->menu_open && (ui->catch_seen || ui->latched_prize))))
         return jelli_pet_gallery_available(ui, game, slot);
     return menu_available(ui, game, slot);

@@ -332,3 +332,34 @@ unreadable ESP32 checkpoint blobs are preserved. ESP32 disables writes to a
 protected checkpoint and continues an unsaved session. Checkpoints use a bounded
 4 KiB codec buffer; NVS supplies the device transaction, desktop uses alternating
 files. Portable individual pet memory import/export remains planned.
+
+
+## Pet collection and putting presents away
+
+Settings → Pets opens a fixed 3×3 grid. Tap a slot for its unlock hint or owned
+pet details. Bring out activates that pet; browsing and viewing Evolutions do
+not switch pets. Back returns to the previous collection view. Linked sleep and
+unfinished activities block activation, with a reason shown in the detail view.
+
+Both existing companions remain owned. The testing catalog adds Bubble, Garden,
+Pearl, Sunny, Tea, Movie, and Moon companions, unlocked by discovering their named
+present. They currently share the same Mint → Lilac artwork and 60-second prototype
+growth rule. Evolution preserves identity and the collection slot. Stored pets
+remain frozen. NEW marks a newly acquired companion until its details are viewed.
+
+Tap a held present on the main scene, or its selected cell in Presents, to open
+Give / Put away. Put away only deselects it; Back retains the selection. Give
+checks the active recipient again and remains disabled for its original giver,
+a sleeping pet, or a busy pet. Put away works in each of those cases.
+
+The authored catalog is [content/pets.json](../content/pets.json). CMake validates
+and compiles it for both hosts without a new runtime loader. Entry IDs 1–9 are
+stable slot bindings; do not renumber them. This slice supports the existing
+two-form evolution set; unsupported form/set references fail the build.
+
+Save codec v4 reads v1–v3 and preserves all legacy identities, active selection,
+and present provenance. Legacy records map in stored order to unique slots;
+only the current form is marked reached when earlier history is unavailable.
+Existing present discoveries can grant missing companions during migration.
+A full nine-pet checkpoint uses 3523 of the available 4096 bytes. Older firmware
+cannot read v4; keep a backup before downgrading.

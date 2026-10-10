@@ -31,6 +31,11 @@ Next increment: [RFC-002: Pet memory and persistent activities](rfcs/rfc-002-pet
 
 ## Proposed game architecture
 
+[RFC-004: Pet collection and evolution data](rfcs/rfc-004-pet-collection-and-evolution-data.md)
+describes nine pet slots, unlocks, evolution sets, and touch controls for putting
+away a selected present. [Memo-020](memos/memo-020-pet-collection-and-present-controls.md)
+records the implemented testing catalog and validation.
+
 [RFC-001: Virtual pet systems](rfcs/rfc-001-virtual-pet-systems-architecture.md)
 covers lifecycle, evolution, multiple creatures, gifts and rewards, sleep/wake,
 objects, locations, menus, state machines, content loading, saves, resource budgets,

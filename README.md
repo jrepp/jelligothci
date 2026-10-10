@@ -31,8 +31,8 @@ First builds download the pinned local Python/asset tools. Nothing changes your
 shell profile. [CONTRIBUTING.md](CONTRIBUTING.md) covers other platforms and setup.
 
 Tap MENU or swipe up to open the ring. Swipe down goes back or closes it;
-swipe sideways on the main scene changes the visible stat. Settings holds pet
-selection, sleep/wake, and the clock. Space pauses; Escape quits.
+swipe sideways on the main scene changes the visible stat. Settings holds the nine-slot Pets
+collection, sleep/wake, and the clock. Space pauses; Escape quits.
 
 The executable starts an unsaved session unless given `--save BASE`. `make run`
 enables saves. See [playing and persistence](docs/playing.md) for sleep, habits,
@@ -47,6 +47,10 @@ collections, and offline progress.
 ./scripts/jelli-debug --socket build/jelli-debug.sock state
 ./scripts/jelli-debug --socket build/jelli-debug.sock habits
 ```
+
+In Pets, tap a companion to inspect its evolution set or Bring out an owned pet.
+Locked companions show their unlock hint. Tap a held present for Give or Put away;
+Put away clears the selection and keeps the item.
 
 The viewer is a readable event stream with game controls, cheats, clock sync,
 and sleep history. The same protocol works over the ESP32 USB port. Details:
