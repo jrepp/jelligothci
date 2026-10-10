@@ -33,7 +33,7 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 
 | Directory | Contents |
 | --- | --- |
-| `creatures/` | Mint and Lilac: idle A/B, eating, happy, asleep, unwell, curious, content at 32x32. Axolotl: 18 frames at 48x48 (idle bob, blink, happy, surprised, chew, sleep breath, sad, potty, hug) and the baby axolotl's 3 idle frames, both in the axolotl palette |
+| `creatures/` | Mint and Lilac: idle A/B, eating, happy, asleep, unwell, curious, content at 32x32. Axolotl: 18 frames at 48x48 (idle bob, blink, happy, surprised, chew, sleep breath, sad, potty, hug) and the baby axolotl's 4 frames (3 idle, surprised), both in the axolotl palette |
 | `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
 | `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
 | `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
@@ -50,7 +50,7 @@ and clip timings. PNGs in the asset directories are the editable runtime
 art sources. The large generated atlas is retained for provenance and reproduction;
 it is not part of the runtime payload. Keep IDs stable when revising art.
 
-Sprites use 16 shared opaque colors plus transparent pixels, unless they name a palette in `palettes` (the axolotl uses its own 9 colours); backgrounds use a separate 16-gray palette. Alpha is
+Sprites use 16 shared opaque colors plus transparent pixels, unless they name a palette in `palettes` (the axolotl uses its own 11 colours); backgrounds use a separate 16-gray palette. Alpha is
 binary. The font deliberately uses small-cap forms for lowercase letters; slot
 127 is a fallback glyph, not a printable ASCII character. The font is cream on
 transparent; preview it against a dark surface. Recovery reuses the unwell pose
@@ -74,8 +74,8 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw payload (RGB565, masks and font bits) is 262,408 bytes. The RFC's 8,192-byte
-definition and 4,096-byte metadata allowances bring the planned pack to 274,696 bytes,
+Actual raw payload (RGB565, masks and font bits) is 267,304 bytes. The RFC's 8,192-byte
+definition and 4,096-byte metadata allowances bring the planned pack to 279,592 bytes,
 under the 294,912-byte ceiling (`JELLI_ASSET_PACK_CAPACITY` in
 `ports/sdl/asset_reload.h`, sized for a full SDL live-reload bank); those allowances
 are not a completed game pack or a linked firmware measurement.

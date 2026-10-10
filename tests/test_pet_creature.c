@@ -61,6 +61,13 @@ static void baby_axolotl_idles_then_grows(void)
     CHECK(frame_at(&game, &ui, 450u) == 1202u);
     CHECK(ui.actor_scale == jelli_creature_profile(3u)->scale);
     CHECK(jelli_creature_profile(3u)->scale < jelli_creature_profile(2u)->scale);
+    /* Like the adult, the baby is surprised when curious and when it asks for something. */
+    CHECK(jelli_creature_clip(3u, JELLI_POSE_CURIOUS)->frames[0] == 1204u);
+    for (unsigned state = 0u; state < jelli_behavior_state_count; ++state)
+        if (strcmp(jelli_behavior_states[state].name, "asking_food") == 0) {
+            const JelliClip *ask = jelli_creature_clip(3u, jelli_behavior_look(state)->pose);
+            CHECK(ask->count == 2u && ask->frames[0] == 1204u && ask->frames[1] == 1201u);
+        }
     for (unsigned i = 0u; i < 75u; ++i)
         jelli_game_advance(&game, 800u);
     CHECK(game.pets[game.active].form == 2u && game.pets[game.active].reached_forms == 12u);

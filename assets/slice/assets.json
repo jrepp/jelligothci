@@ -2176,6 +2176,27 @@
       "palette": "axolotl",
       "form": "axolotl-baby",
       "pose": "idle-3"
+    },
+    {
+      "id": 1204,
+      "key": "creatures.axolotl-baby-surprised",
+      "path": "creatures/axolotl-baby-surprised.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        8,
+        18,
+        42,
+        46
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "surprised"
     }
   ],
   "clips": [
@@ -2562,7 +2583,7 @@
       "id": 5203,
       "key": "axolotl-baby.curious",
       "frames": [
-        "creatures.axolotl-baby-idle-1"
+        "creatures.axolotl-baby-surprised"
       ],
       "durations_ms": [
         900
@@ -2625,6 +2646,19 @@
         600
       ],
       "loop": false
+    },
+    {
+      "id": 5209,
+      "key": "axolotl-baby.ask",
+      "frames": [
+        "creatures.axolotl-baby-surprised",
+        "creatures.axolotl-baby-idle-1"
+      ],
+      "durations_ms": [
+        500,
+        500
+      ],
+      "loop": true
     }
   ],
   "palettes": {
@@ -2638,7 +2672,8 @@
       "#ffffff",
       "#83ebfb",
       "#1ec1d9",
-      "#fde77e"
+      "#fde77e",
+      "#fff3cb"
     ],
     "poop": [
       "#000000",
@@ -2752,7 +2787,8 @@
       "#ffffff": "white",
       "#83ebfb": "aqua",
       "#1ec1d9": "deep aqua",
-      "#fde77e": "butter"
+      "#fde77e": "butter",
+      "#fff3cb": "cream"
     },
     "poop": {
       "#000000": "outline",

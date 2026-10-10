@@ -24,6 +24,10 @@
     {
       "source": "Axolotl Baby Idle 3.png",
       "pose": "idle-3"
+    },
+    {
+      "source": "Axolotl Baby surprise.png",
+      "pose": "surprised"
     }
   ]
 }
