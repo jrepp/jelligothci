@@ -33,9 +33,17 @@ the repository's pinned tools, and it only listens on your own computer.
    palette colours until you choose **custom**, which paints any colour. The
    ✎ on a palette colour changes that colour in every sprite at once; it asks
    before doing so.
-5. **Tidy outline** applies the house outline and removes stray pixels. Turn on
-   **Issues** to see what still needs attention. Undo with ⌘Z / Ctrl+Z, or click
-   any step in the **history** list beside the canvas.
+5. **Tidy outline** shows the house outline and stray-pixel fixes side by side,
+   with the changed pixels marked. Nothing changes until you choose **Apply**.
+   The header says **lint pass** or which rules the sprite fails: specks, open
+   edges, or more colours than the
+   [style guide](pixel-art-guide.md#2-palette-and-ramps) allows. Turn on
+   **Issues** to see where. If a failure is intentional, **Waive…** records the
+   rule and your reason in `assets/slice/source/lint.json`, and the sprite
+   stops counting as failing. Flipping a shaded sprite horizontally moves its
+   light to the top right, and the studio reminds you once per session. Undo
+   with ⌘Z / Ctrl+Z, or click any step in the **history** list beside the
+   canvas.
 6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
    pans. **Fit content** (`Z`, under **More tools**) zooms to the drawn pixels
    with a 2 px margin, which helps on frames with empty rows. **Grid** and

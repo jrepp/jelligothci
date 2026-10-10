@@ -22,7 +22,7 @@ RUN apt-get update \
     && useradd --uid 10001 --create-home --home-dir /home/studio studio \
     && mkdir -p /work && chown studio:studio /work
 
-COPY tools/assets/compare.html tools/assets/compare_slice.py /app/tools/assets/
+COPY tools/assets/compare.html tools/assets/compare_slice.py tools/assets/lint_rules.py /app/tools/assets/
 COPY tools/jelli-art/ /app/tools/jelli-art/
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 JELLI_REPO=/work/jelligotchi JELLI_PORT=8765
