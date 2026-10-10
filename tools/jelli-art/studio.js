@@ -35,7 +35,7 @@
     .live-badge{font:600 11px ui-monospace,monospace;color:var(--accent)}
     select{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:4px 6px;max-width:220px}
     .studio-status{font-size:12px;color:var(--muted)}.studio-status.warn{color:var(--warn)}.studio-status.bad{color:var(--bad)}
-    button.primary{background:var(--accent);color:#1b1b1f;border-color:var(--accent);font-weight:600}
+    button.primary{background:var(--primary);color:var(--on-primary);border-color:var(--primary);font-weight:700}
     button:disabled{opacity:.45;cursor:default}
     select:focus-visible,[role=button]:focus-visible,canvas:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     .paint-chip{display:grid;grid-template-columns:auto;justify-items:center;gap:3px;background:var(--raised);border:2px solid transparent;border-radius:8px;padding:6px;cursor:pointer;min-width:62px;font:10px ui-monospace,monospace;color:var(--muted);position:relative}

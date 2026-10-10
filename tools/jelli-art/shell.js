@@ -244,6 +244,7 @@
   /* ---------- page furniture ---------- */
   function insertChrome() {
     const header = document.querySelector('header');
+    if (D.live) header.querySelector('h1').innerHTML = '<span class="mark" aria-hidden="true"></span><b>Jelli Art</b> <span>studio</span>';
     header.querySelector('h1').insertAdjacentHTML('afterend', '<nav id="shell-modes" class="shell-modes hidden" aria-label="Modes"><div role="tablist" aria-label="Modes"></div></nav>' +
       '<div class="shell-tools"><button type="button" id="shell-unsaved" class="shell-unsaved hidden" aria-haspopup="dialog"></button>' +
       '<button type="button" id="shell-help-button" aria-haspopup="dialog" aria-keyshortcuts="Shift+?">Shortcuts <kbd>?</kbd></button>' +

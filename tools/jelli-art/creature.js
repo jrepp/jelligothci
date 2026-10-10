@@ -159,7 +159,7 @@
   function drawCell(view, key) {
     const {ctx, w, h} = view;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#2c2c33'; ctx.fillRect(0, h - 10, w, 1);
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#49334f'; ctx.fillRect(0, h - 10, w, 1);
     if (key) drawSprite(ctx, key, STRIP_SCALE, w / 2, h - 10);
   }
 
