@@ -63,7 +63,7 @@ STUDIO_JS = HERE / "studio.js"
 CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
-PAGE_SCRIPTS = (SHELL_JS, STUDIO_JS, CREATURE_JS, HERE / "animation.js", BEHAVIOUR_JS, HERE / "simulator.js",
+PAGE_SCRIPTS = (SHELL_JS, HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", BEHAVIOUR_JS, HERE / "simulator.js",
                 HERE / "reactions.js", HERE / "game_preview.js")
 EDITABLE_CONTENT = ("behaviors", "creatures")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
