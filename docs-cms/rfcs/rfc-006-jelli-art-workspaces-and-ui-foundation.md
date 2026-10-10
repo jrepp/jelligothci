@@ -152,7 +152,8 @@ Evidence from studio 0.6.0 on `main` (4eab889):
   - Views register through the shell instead of reassigning globals.
 - **Types.**
   - JSDoc in plain `.js`, checked by `tsc --noEmit --checkJs` in CI only.
-  - TypeScript is pinned in `toolchain.env` (ADR-004).
+  - TypeScript (and the Node that runs it) gets a pin in `toolchain.env` and a
+    `scripts/` wrapper, following ADR-004.
 - **Escape hatch.** If hand-written patching becomes the bottleneck for the
   timeline or the Behaviour editor, a vendored rendering library may be used
   for them, after an ADR.
@@ -336,7 +337,8 @@ are delivered by F4–F11.
 # Drawbacks
 
 - **Weeks of front-end work,** with merge friction in `studio.js` and
-  `compare.html`. Each wave also bumps the game version (ADR-011).
+  `compare.html`. Waves that edit `compare.html` also bump the game version
+  (ADR-011).
 - **Accessibility depends on us.** In-house controls need their own discipline,
   guarded by the axe and aria-snapshot tests.
 - **No reactive framework,** so state flow needs discipline.
