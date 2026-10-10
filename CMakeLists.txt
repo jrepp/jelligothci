@@ -180,6 +180,9 @@ if(BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_debug_cli.py $<TARGET_FILE:jelli_debug_tests>)
       add_test(NAME live_assets COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_live_assets.py)
+      add_test(NAME full_asset_pack COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_full_asset_pack.py $<TARGET_FILE:jelligotchi>)
+      set_tests_properties(full_asset_pack PROPERTIES TIMEOUT 30)
       add_test(NAME pet_session COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_pet_session.py $<TARGET_FILE:jelligotchi>)
     endif()

@@ -74,9 +74,11 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw pixel payload is 220,384 bytes (ADR-012 raised the pack ceiling to 237,568 bytes for the axolotl). The RFC's 8,192-byte definition and
-4,096-byte metadata allowances bring the planned pack to 232,672 bytes; those
-allowances are not a completed game pack or a linked firmware measurement.
+Actual raw pixel payload is 233,032 bytes. The RFC's 8,192-byte definition and
+4,096-byte metadata allowances bring the planned pack to 245,320 bytes. The SDL
+live pack is 235,520 bytes, within its 288 KiB staging buffer. Its 109,120 pixels
+and 13,640 mask bytes fit the existing 131,072-pixel and 16,384-byte banks.
+These are desktop authoring limits, not a linked firmware memory measurement.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 

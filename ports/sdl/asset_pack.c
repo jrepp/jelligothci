@@ -66,7 +66,8 @@ static bool payload(JelliAssetBank *bank, JelliAsset *asset, const uint8_t *byte
     size_t count = (size_t)asset->width * asset->height;
     size_t stride = ((size_t)asset->width + 7u) / 8u;
     size_t mask_size = stride * asset->height;
-    if (size != count * 2u + mask_size || count > 98304u - *pixels ||
+    if (size != count * 2u + mask_size ||
+        count > sizeof(bank->pixels) / sizeof(bank->pixels[0]) - *pixels ||
         mask_size > sizeof(bank->masks) - *masks || stride > UINT8_MAX)
         return false;
     asset->pixels = bank->pixels + *pixels;

@@ -66,7 +66,10 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
    source art from a committed spec. IDs are `first_id` plus list position, so new
    frames are appended. The planned pack ceiling rises from 164,864 to
    237,568 bytes, and the SDL live-reload bank grows to 131,072 pixels and
-   16,384 mask bytes.
+   16,384 mask bytes. *Amended 2026-10-10 (owner-approved):* the desktop
+   live-reload staging buffer is 294,912 bytes (288 KiB) and is the pack
+   ceiling the build checks; the SDL decoder bounds pixels by the bank's real
+   capacity instead of a stale 98,304-pixel limit.
 6. **Jelli Art authors the data.** Its Creature view edits clips with an animated
    preview at game placement. Profile and behaviour editing follows the same
    validate-then-commit path.
@@ -89,8 +92,9 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
 - A multi-frame clip redraws the full panel on each frame change, as idle phase
   changes already did. On ESP32 this costs one full frame every 250–900 ms while
   such a clip plays. It is not measured on hardware yet.
-- The art pack is about 45% larger (220,384 raw pixel bytes). The firmware app
-  still has 59% of its partition free.
+- The art pack is larger: 233,032 raw pixel bytes as of 2026-10-10, using
+  109,120 of 131,072 live pixels and 13,640 of 16,384 mask bytes. The firmware
+  app still has 58% of its partition free.
 - `make run-live` reloads frame pixels but not clip or profile edits; those need
   a rebuild.
 
