@@ -54,10 +54,13 @@
   }
   /* Clean ratios: the slopes pixel artists use (flat, 3:1, 2:1, 1:1, 1:2, 1:3, upright), as [x run, y run] per step. */
   const RATIOS = [[1, 0], [3, 1], [2, 1], [1, 1], [1, 2], [1, 3], [0, 1]];
-  /* Snap a drag from (x0, y0) towards (x1, y1) to the nearest clean ratio by angle. The end point makes every run
-   * whole: k steps of rx by ry span rx*k columns and ry*k rows. */
+  /* Snap a drag from (x0, y0) to (x1, y1) to a clean ratio. Ratios count pixels, so a line covering 4×2 pixels
+   * (a drag of 3, 1) is already 2:1 and stays put. Otherwise the nearest ratio by angle wins, and the end point
+   * makes every run whole: k steps of rx by ry cover rx*k columns and ry*k rows. */
   function snapClean(x0, y0, x1, y1) {
     const ax = Math.abs(x1 - x0), ay = Math.abs(y1 - y0), sx = Math.sign(x1 - x0) || 1, sy = Math.sign(y1 - y0) || 1;
+    if (RATIOS.some(([rx, ry]) => (ax + 1) * ry === (ay + 1) * rx && (!rx || (ax + 1) % rx === 0) && (!ry || (ay + 1) % ry === 0))) return [x1, y1];
+    if (!ax || !ay) return [x1, y1];
     const angle = Math.atan2(ay, ax), off = ([rx, ry]) => Math.abs(Math.atan2(ry, rx) - angle);
     const [rx, ry] = RATIOS.reduce((best, r) => off(r) < off(best) ? r : best);
     if (!ry) return [x1, y0];
@@ -65,8 +68,8 @@
     const k = Math.max(1, Math.round(((ax + 1) * rx + (ay + 1) * ry) / (rx * rx + ry * ry)));
     return [x0 + sx * (rx * k - 1), y0 + sy * (ry * k - 1)];
   }
-  /* A line whose span is a whole ratio (n:1 or 1:n) drawn as equal runs of n, the same pixels from either end;
-   * any other line falls back to Bresenham. */
+  /* A line covering a whole ratio of pixels (n:1 or 1:n, so n*k by k) drawn as k equal runs of n, the same pixels
+   * from either end; any other line falls back to Bresenham. */
   function cleanLine(x0, y0, x1, y1) {
     const ax = Math.abs(x1 - x0) + 1, ay = Math.abs(y1 - y0) + 1, sx = x1 < x0 ? -1 : 1, sy = y1 < y0 ? -1 : 1;
     const n = Math.max(ax, ay) / Math.min(ax, ay);
@@ -231,7 +234,7 @@
   /* ---------- masks: a selection that is not a rectangle ----------
    * A mask is a buffer the size of the selection rect r whose opaque pixels are selected; null means all of r. */
   const ON = '#ffffff';
-  /* Whether pixel (x, y) is selected: inside r and, with a mask, on it. */
+  /* Whether pixel (x, y) is selected: inside rect r and, with a mask (cropped to r, opaque = selected), on it. */
   const selected = (r, mask, x, y) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h && (!mask || !!get(mask, x - r.x, y - r.y));
   /* Crop a predicate over a w×h buffer to {rect, mask}; null when it selects nothing. */
   function maskFrom(w, h, on) {
@@ -299,10 +302,11 @@
   /* ---------- history: a bounded list of states with a cursor ---------- */
   /* Each entry is {label, data}; entries after `at` are redo steps until the next record. */
   function history(data, label = 'Opened', limit = 100) { return {limit, at: 0, entries: [{label, data: data.slice()}]}; }
-  /* Record the buffer after an action; returns false (and records nothing) when it did not change. */
-  function record(h, label, data) {
+  /* Record the buffer after an action; returns false (and records nothing) when it did not change. `extra` rides
+   * along on the entry (the studio keeps the selection before and after the action there). */
+  function record(h, label, data, extra = {}) {
     if (same(h.entries[h.at].data, data)) return false;
-    h.entries.splice(h.at + 1); h.entries.push({label, data: data.slice()});
+    h.entries.splice(h.at + 1); h.entries.push({...extra, label, data: data.slice()});
     while (h.entries.length > h.limit) h.entries.shift();
     h.at = h.entries.length - 1;
     return true;

@@ -198,11 +198,19 @@
     const a = asset(); refresh(a.key); draft(a.key);
     renderHeader(a); renderPalette(a); renderContext(a); renderTotals(); renderList(); draw(); renderToolbarState(); renderHistory(); renderReadout();
   }
+  /* The selection as history stores it. selSeen is the selection when the last action finished, or as last changed
+   * by selecting, so an action records the selection it started from as well as the one it left. */
+  const selNow = () => state.sel ? {sel: {...state.sel}, mask: state.selMask} : null;
+  let selSeen = null;
+  const noteSel = () => { selSeen = selNow(); };
   /* Finish an action: record it in the asset's history (no-ops are skipped) and redraw. */
-  function done(label) { T.record(ensure(state.key).hist, label, work(state.key).data); commit(); }
+  function done(label) { T.record(ensure(state.key).hist, label, work(state.key).data, {before: selSeen, after: selNow()}); noteSel(); commit(); }
+  /* Jump to history entry i. Undo puts back the selection the next step started from, redo the one entry i left. */
   function restore(i) {
-    const e = edits[state.key], data = e && T.jump(e.hist, i); if (!data) return;
-    work(state.key).data.set(data); state.float = null; stroke = null; commit();
+    const e = edits[state.key], from = e?.hist.at, data = e && T.jump(e.hist, i); if (!data) return;
+    const s = i < from ? e.hist.entries[i + 1].before : e.hist.entries[i].after;
+    work(state.key).data.set(data); state.float = null; stroke = null;
+    state.sel = s ? {...s.sel} : null; state.selMask = s?.mask || null; noteSel(); commit();
     announce(`History: ${e.hist.entries[i].label}`);
   }
   const undo = () => { const e = edits[state.key]; if (e) restore(e.hist.at - 1); };
@@ -323,7 +331,7 @@
     const s = stroke; if (!s) return; stroke = null;
     if (s.kind === 'marquee') {
       if (s.pointer && !s.moved) state.sel = null;  // a click without a drag clears the selection
-      draw(); renderToolbarState(); renderReadout();
+      noteSel(); draw(); renderToolbarState(); renderReadout();
       return announce(state.sel ? `Selected ${state.sel.w} by ${state.sel.h} at ${state.sel.x}, ${state.sel.y}` : 'Selection cleared');
     }
     done(s.label);
@@ -360,8 +368,11 @@
   }
   /* Magic wand: select the colour under (x, y), touching it or (global) everywhere. */
   function pressWand(x, y, global) {
-    const hit = T.wand(work(state.key), x, y, !global); stroke = null; state.float = null;
-    state.sel = hit && hit.rect; state.selMask = hit && hit.mask; afterSelect();
+    const p = work(state.key), hit = T.wand(p, x, y, !global), hex = pixel(p, x, y); stroke = null; state.float = null;
+    state.sel = hit && hit.rect; state.selMask = hit && hit.mask;
+    if (!hit) return afterSelect();
+    let n = 0; for (let i = 3; i < hit.mask.data.length; i += 4) if (hit.mask.data[i]) n++;
+    afterSelect(`Selected ${n} px of ${hex ? label(hex, asset()) : 'transparent'}${global ? ' everywhere' : ''} (${hit.rect.w} by ${hit.rect.h})`);
   }
   /* Keep a floating selection overlapping the sprite by at least one pixel. */
   function place(f, x, y) {
@@ -371,7 +382,7 @@
   function compose() { const p = work(state.key), f = state.float; p.data.set(f.base); T.blit(p, f.region, f.x, f.y); }
   function selectAll() { const p = work(state.key); stroke = null; state.float = null; state.sel = T.whole(p); state.selMask = null; state.tool = 'select'; afterSelect(); }
   function deselect() { state.float = null; state.sel = null; state.selMask = null; afterSelect(); }
-  function afterSelect() { draw(); renderToolbarState(); renderReadout(); announce(state.sel ? `Selected ${state.sel.w} by ${state.sel.h}` : 'Selection cleared'); }
+  function afterSelect(text) { noteSel(); draw(); renderToolbarState(); renderReadout(); announce(text || (state.sel ? `Selected ${state.sel.w} by ${state.sel.h}` : 'Selection cleared')); }
   function deleteSel() {
     const r = selRect(); if (!r) return false;
     const p = work(state.key);
@@ -409,11 +420,13 @@
     done(label);
     if (label === 'Flip horizontal') S.warnFlip?.(asset());  // lint_ui.js: the light now comes from the top right
   }
+  let wrapNoted = false;
   /* Alt+arrows: move the selection, or with Wrap on (or no selection) shift the pixels inside it or the sprite. */
   function nudge(dx, dy) {
     if (!view) return;
     const p = work(state.key), r = selRect();
     if (r && (!state.wrap || state.selMask)) {  // a magic-wand selection always moves; Wrap shifts rectangles
+      if (state.wrap && !wrapNoted) { wrapNoted = true; status('Wrap shifts rectangles; moved the magic-wand selection instead'); }
       lift(); place(state.float, state.float.x + dx, state.float.y + dy); compose();
       return done('Move selection');
     }
@@ -476,12 +489,19 @@
       box?.remove(); box = document.createElement('div'); box.className = 'pane'; box.id = 'paint-tiles'; box.dataset.key = id;
       box.innerHTML = '<div class="lbl"><span>tiled 3×3</span><span>seams show while Wrap nudges</span></div>';
       const [c] = makeCanvas(3 * a.width * s, 3 * a.height * s); c.setAttribute('role', 'img'); c.setAttribute('aria-label', `${a.key} repeated 3 by 3`);
+      Object.assign(c.style, {maxWidth: '100%', height: 'auto', imageRendering: 'pixelated'});
       box.append(c); side.insertBefore(box, side.children[1] || null);
     }
-    const ctx = box.querySelector('canvas').getContext('2d');
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.imageSmoothingEnabled = false; fillBackdrop(ctx, 3 * a.width, 3 * a.height, s, backdropFor(a));
-    for (let ty = 0; ty < 3; ty++) for (let tx = 0; tx < 3; tx++) { ctx.setTransform(DPR, 0, 0, DPR, DPR * tx * a.width * s, DPR * ty * a.height * s); drawPixels(ctx, p, s); }
-    ctx.globalAlpha = 1;
+    // Hover moves redraw the canvas; the tiles only change with the pixels, the backdrop or the isolated colour.
+    const look = `${backdropFor(a)}|${state.isolate}`, last = box.last;
+    if (last && last.look === look && last.data.length === p.data.length && last.data.every((v, i) => v === p.data[i])) return;
+    box.last = {look, data: p.data.slice()};
+    const [tile, tctx] = box.tile?.dataset.key === id ? [box.tile, box.tile.getContext('2d')] : makeCanvas(a.width * s, a.height * s);
+    tile.dataset.key = id; box.tile = tile;
+    tctx.setTransform(DPR, 0, 0, DPR, 0, 0); tctx.imageSmoothingEnabled = false; fillBackdrop(tctx, a.width, a.height, s, backdropFor(a)); drawPixels(tctx, p, s); tctx.globalAlpha = 1;
+    const c = box.querySelector('canvas'), ctx = c.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
+    for (let ty = 0; ty < 3; ty++) for (let tx = 0; tx < 3; tx++) ctx.drawImage(tile, tx * tile.width, ty * tile.height);
   }
   /* A paint colour that would barely show on the asset's backdrop (ink on black, say) gets a contrast ring. */
   const lowContrast = (hex, a) => !!hex && Math.abs(lumaOf(hex) - backdropLuma(backdropFor(a))) < 48;
@@ -493,10 +513,16 @@
     ctx.fillStyle = 'rgba(245,199,100,.55)';
     for (let ty = 4; ty < a.height; ty += 8) for (let tx = 4; tx < a.width; tx += 8) { ctx.fillRect(tx * z - 3, ty * z, 6, 1); ctx.fillRect(tx * z, ty * z - 3, 1, 6); }
   }
+  let antsCache = null;
   function drawSelection(ctx, z) {
     const r = state.sel; if (!r) return;
-    if (state.selMask) {  // a magic-wand selection: marching ants along the mask's edge
-      const path = new Path2D(); for (const [x0, y0, x1, y1] of T.maskEdges(r, state.selMask)) { path.moveTo(x0 * z, y0 * z); path.lineTo(x1 * z, y1 * z); }
+    if (state.selMask) {  // a magic-wand selection: marching ants along the mask's edge, cached until it changes
+      const c = antsCache;
+      if (!c || c.mask !== state.selMask || c.x !== r.x || c.y !== r.y || c.z !== z) {
+        const path = new Path2D(); for (const [x0, y0, x1, y1] of T.maskEdges(r, state.selMask)) { path.moveTo(x0 * z, y0 * z); path.lineTo(x1 * z, y1 * z); }
+        antsCache = {mask: state.selMask, x: r.x, y: r.y, z, path};
+      }
+      const path = antsCache.path;
       ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
       ctx.strokeStyle = '#000'; ctx.lineDashOffset = 0; ctx.stroke(path); ctx.strokeStyle = '#fff'; ctx.lineDashOffset = 4; ctx.stroke(path);
       ctx.setLineDash([]); return;
@@ -530,12 +556,12 @@
     const hex = pixel(work(a.key), x, y); announce(`${x}, ${y} ${hex ? label(hex, a) : 'transparent'}`);
   }
   /* Enter (or Space once the keyboard cursor is in use) applies the tool at the cursor. */
-  /* Shift+Enter applies the secondary colour (or a deeper shade). */
-  function applyAtCursor(secondary = false) {
+  /* Shift+Enter selects everywhere with the magic wand; with any other tool it applies the secondary colour (or a deeper shade). */
+  function applyAtCursor(shift = false) {
     const [x, y] = state.cursor; state.kbd = true; state.hover = [x, y];
     if (stroke?.pointer) return;
     if (stroke) return release();
-    press(x, y, state.tool, {pointer: false, secondary});
+    press(x, y, state.tool, state.tool === 'wand' ? {pointer: false, shift} : {pointer: false, secondary: shift});
     if (stroke?.kind === 'free') release();
     else if (stroke) announce(`${stroke.kind === 'move' ? 'Moving' : 'Started'} at ${x}, ${y}; arrows to move, Enter to finish, Escape to cancel`);
     draw(); renderReadout();
@@ -562,7 +588,7 @@
     if (LOCKED.has(a.kind)) { view = null; stage.innerHTML = '<p class="studio-note">The font atlas and backgrounds are not paintable here yet; edit those PNGs in an image editor.</p>'; return; }
     if (selKey !== a.key) {  // a keyboard artist stepping through clip frames keeps the cursor where it was
       const keep = hadFocus && state.kbd && state.cursor[0] < a.width && state.cursor[1] < a.height;
-      selKey = a.key; stroke = null; state.sel = state.float = state.selMask = null; state.kbd = keep;
+      selKey = a.key; stroke = null; state.sel = state.float = state.selMask = null; selSeen = null; state.kbd = keep;
       if (!keep) state.cursor = [a.width >> 1, a.height >> 1];
     }
     ensure(a.key);
@@ -767,7 +793,7 @@
         if (e.shiftKey && hex) { state.isolate = state.isolate === hex ? null : hex; return draw(); }
         if (e.altKey) return setSecondary(hex, custom);
         if (hex === null) state.tool = 'eraser';
-        else { state.color = hex; state.custom = custom; state.ramp = ramp; if (['eraser', 'picker', 'select'].includes(state.tool)) state.tool = 'pencil'; }
+        else { state.color = hex; state.custom = custom; state.ramp = ramp; if (['eraser', 'picker', 'select', 'wand'].includes(state.tool)) state.tool = 'pencil'; }
         S.renderPalette(el, a); renderToolbarState(); draw();
       };
       b.oncontextmenu = e => { e.preventDefault(); setSecondary(hex, custom); };

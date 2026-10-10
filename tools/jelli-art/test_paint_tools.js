@@ -160,6 +160,8 @@ test('history is bounded, skips no-ops and truncates redo on a new action', () =
   data[0] = 42; P.record(h, 'branch', data);
   assert.deepStrictEqual(h.entries.map(e => e.label), ['step 3', 'step 4', 'branch']);
   data[0] = 0; assert.strictEqual(P.current(h)[0], 42, 'history keeps copies, not the live buffer');
+  data[0] = 7; P.record(h, 'with extra', data, {before: 'a', after: 'b', label: 'ignored'});
+  assert.deepStrictEqual([h.entries[h.at].label, h.entries[h.at].before, h.entries[h.at].after], ['with extra', 'a', 'b'], 'extra rides along, label wins');
 });
 
 test('Alt-pick keeps the tool; the Pick colour tool hands over to pencil or eraser', () => {
@@ -183,6 +185,8 @@ test('clean-ratio snapping picks the nearest slope and ends on a whole run', () 
   assert.deepStrictEqual(P.snapClean(0, 0, 9, 4), [9, 4], '2:1 by angle, five runs of two');
   assert.deepStrictEqual(P.snapClean(0, 0, 11, 3), [11, 3], '3:1, four runs of three');
   assert.deepStrictEqual(P.snapClean(5, 5, 1, -3), [1, -4], '1:2 up and to the left');
+  for (const [dx, dy] of [[3, 1], [1, 3], [5, 2], [2, 5], [8, 2], [2, 8], [2, 2], [-3, 1], [3, -1], [-5, -2], [7, 0], [0, -4]])
+    assert.deepStrictEqual(P.snapClean(4, 4, 4 + dx, 4 + dy), [4 + dx, 4 + dy], `a ${Math.abs(dx) + 1}×${Math.abs(dy) + 1} span is already clean`);
   for (const [x1, y1] of [[13, 5], [-8, 3], [4, -11], [-6, -6], [17, 2], [3, 20], [0, 0]]) {
     const [ex, ey] = P.snapClean(2, 3, 2 + x1, 3 + y1), ax = Math.abs(ex - 2) + 1, ay = Math.abs(ey - 3) + 1;
     assert.ok(ax === 1 || ay === 1 || [1, 2, 3].includes(Math.max(ax, ay) / Math.min(ax, ay)), `${x1},${y1} snaps to ${ax}:${ay}`);
