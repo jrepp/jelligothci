@@ -96,7 +96,8 @@ shared palette only.
 ### Animation timeline
 
 The clip editor is a timeline (`animation.js`). Each frame card has a
-thumbnail, its duration and buttons to move, duplicate, remove or paint it.
+thumbnail, its duration and labelled buttons: **Paint ✎**, **◀ Move**,
+**Move ▶**, **Duplicate** and **Remove**.
 Drag a card, or press Alt+←/→ on it, to reorder. The duration track below sizes
 each frame by its time and shows the playhead. Drag a handle, or focus it and
 use the arrow keys (Shift or Page Up/Down for 100 ms), to retime a frame.
@@ -118,10 +119,13 @@ import spec. The studio refuses frames that a saved or unsaved clip, a
 `source/studio-frames.json` records every added and retired frame, so a retired
 ID or name is never handed out again.
 
-While painting a clip frame, **Onion skin** (O) tints the pixels where the
-previous (rose) and next (mint) frames differ. **◀ Frame** and **Frame ▶**
-(`,` and `.`) step through the clip, and **Timeline** returns to it. Reduced
-motion starts the preview paused.
+Painting a clip frame shows the **Flip-book** (`flipbook.js`) beside the canvas:
+a preview that plays the clip from the working pixels, so unsaved strokes
+animate, a thumbnail per frame, and onion skin of one to three frames each side
+(amber before, blue after, only where they differ). ← and → change frame unless
+the keyboard cursor shows; `,` and `.` always do; Shift+Space plays (Space stays
+the before-image peek). The link under it returns to the timeline. Previews
+start paused, so reduced motion needs no special case.
 
 | Endpoint | Purpose |
 | --- | --- |

@@ -21,7 +21,7 @@
   ];
   const ARROWS = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]};
   const edits = {};  // key -> {saved, hist}; the working buffer is decoded[key].after
-  let stroke = null, view = null, statusTimer = null, clipboard = null, selKey = null, pan = null, anchor = null, wheel = 0, queued = 0;
+  let pointing = false, stroke = null, view = null, statusTimer = null, clipboard = null, selKey = null, pan = null, anchor = null, wheel = 0, queued = 0;
   const prefs = Object.assign({filled: false, perfect: false, wrap: false, guides: false}, store.get('paint', {}));
   Object.assign(state, {tool: 'pencil', color: '#291b35', custom: false, mirror: false, before: store.get('before', 'HEAD'), artist: store.get('artist', ''),
     sel: null, float: null, cursor: [0, 0], kbd: false}, prefs);
@@ -53,7 +53,15 @@
     .paint-hist button{display:block;width:100%;text-align:left;border:0;border-radius:0;background:none;padding:3px 9px;font-size:12px}
     .paint-hist button:hover{background:var(--raised)}.paint-hist button[aria-current=step]{background:var(--ink);color:var(--bg)}
     .paint-hist button.redo{color:var(--muted);font-style:italic}
-    .paint-hint{flex-basis:100%;order:9;margin:0}
+    .paint-hint{margin:6px 0 0;max-width:640px}
+    .paint-work{display:flex;gap:16px;align-items:flex-start;width:100%}
+    .paint-canvas{flex:0 1 auto;min-width:0}.paint-side{flex:1 1 300px;min-width:260px;max-width:440px;display:grid;gap:14px;align-content:start}
+    .paint-side #palette-block{margin:0;padding:0;border:0}.paint-side #palette-block h3{margin:0 0 6px;font-size:12px}
+    .paint-side .palette{gap:4px;margin:0}.paint-side .paint-chip{min-width:46px;padding:4px 3px;font-size:9px}.paint-side .paint-chip .sw{width:26px;height:26px}
+    .paint-side .studio-note{font-size:11px}.paint-refs{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}.paint-refs .paint-hist{max-height:180px}
+    .paint-more{margin-top:8px}.paint-more>summary{cursor:pointer;font-weight:600;font-size:12px;width:fit-content;padding:2px 0}.paint-more>summary .lbl{font-weight:400;margin-left:6px}
+    .paint-more>.paint-tools{margin-top:6px}
+    @media(max-width:1100px){.paint-work{flex-wrap:wrap}.paint-side{max-width:none}}
     .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
     @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important}}
   </style>`);
@@ -125,7 +133,7 @@
     setInterval(poll, 2000);
     window.addEventListener('beforeunload', e => { if (Object.keys(edits).some(dirty) || S.clipsDirty?.()) { e.preventDefault(); e.returnValue = ''; } });
   };
-  Object.assign(S, {api, status, reload, rerender: () => rerender(), renderGit, paintDirty: key => dirty(key)});
+  Object.assign(S, {api, status, reload, rerender: () => rerender(), renderGit, paintDirty: key => dirty(key), redraw: () => draw()});
   function renderGit(git) {
     const el = document.getElementById('git-status'); if (!git?.enabled) { el.textContent = ''; return; }
     const push = git.last_push || {}, pending = git.unpushed ? `${git.unpushed} to push` : 'synced';
@@ -388,6 +396,7 @@
       drawHover(ctx, z);
       if (state.kbd) { ctx.strokeStyle = '#85e4b6'; ctx.lineWidth = 2; ctx.strokeRect(x * z - 3, y * z - 3, z + 6, z + 6); }
     }
+    S.afterDraw?.();  // flipbook.js: the paused preview and this frame's thumbnail
   }
   /* Centre guides: the sprite's middle row and column, and the centre of each 8 px tile. */
   function drawGuides(ctx, a, z) {
@@ -438,10 +447,13 @@
   }
   function canvasKey(e) {
     const mod = e.metaKey || e.ctrlKey, dir = ARROWS[e.key];
+    /* Arrows move the keyboard cursor while it shows; otherwise Left/Right change the clip frame (animation.js). */
     if (dir && e.altKey && !mod) nudge(...dir);
+    else if (dir && !mod && !e.shiftKey && !state.kbd && !stroke && dir[0] && S.stepFrame?.(dir[0])) { /* changed frame */ }
     else if (dir && !mod) moveCursor(...dir, e);
-    else if (e.key === 'Enter' || (e.key === ' ' && (state.kbd || stroke))) { if (!e.repeat) applyAtCursor(); }
+    else if (e.key === 'Enter' || (e.key === ' ' && !e.shiftKey && (state.kbd || stroke))) { if (!e.repeat) applyAtCursor(); }
     else if (e.key === 'Escape' && (stroke || state.sel)) { if (!cancel()) deselect(); }
+    else if (e.key === 'Escape' && state.kbd) { state.kbd = false; draw(); renderReadout(); announce(S.stepFrame ? 'Keyboard cursor hidden; Left and Right change frame' : 'Keyboard cursor hidden'); }
     else return;
     e.preventDefault(); e.stopPropagation();
   }
@@ -451,41 +463,52 @@
     stage.textContent = '';
     document.getElementById('zoom-label').textContent = `· ${z}×`;
     if (LOCKED.has(a.kind)) { view = null; stage.innerHTML = '<p class="studio-note">The font atlas and backgrounds are not paintable here yet; edit those PNGs in an image editor.</p>'; return; }
-    if (selKey !== a.key) { selKey = a.key; stroke = null; state.sel = state.float = null; state.kbd = false; state.cursor = [a.width >> 1, a.height >> 1]; }
+    if (selKey !== a.key) {  // a keyboard artist stepping through clip frames keeps the cursor where it was
+      const keep = hadFocus && state.kbd && state.cursor[0] < a.width && state.cursor[1] < a.height;
+      selKey = a.key; stroke = null; state.sel = state.float = null; state.kbd = keep;
+      if (!keep) state.cursor = [a.width >> 1, a.height >> 1];
+    }
     ensure(a.key);
-    const pane = document.createElement('div'); pane.className = 'pane';
+    /* Canvas on the left; a side column holds the colours, the flip-book (flipbook.js), the before image and history. */
+    const work = document.createElement('div'); work.className = 'paint-work';
+    const pane = document.createElement('div'); pane.className = 'pane paint-canvas';
     pane.innerHTML = '<div class="lbl"><span>paint</span><span class="paint-readout" id="paint-readout"></span></div>';
-    const scroller = document.createElement('div'); scroller.className = 'scroller'; scroller.style.maxHeight = `${window.innerHeight - 200}px`;
+    const scroller = document.createElement('div'); scroller.className = 'scroller';
     const [c, ctx] = makeCanvas(a.width * z, a.height * z); c.style.cursor = 'crosshair'; c.style.touchAction = 'none';
     Object.assign(c, {tabIndex: 0}); c.setAttribute('role', 'application'); c.setAttribute('aria-roledescription', 'pixel canvas');
     c.setAttribute('aria-label', `${a.key}, ${a.width} by ${a.height} pixels`); c.setAttribute('aria-describedby', 'paint-hint');
     scroller.append(c); pane.append(scroller);
-    stage.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">Right-click erases · Alt-click picks · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
-      Keyboard: focus the canvas, arrows move the cursor, Enter or Space applies the tool, Shift+arrows draw. <kbd>?</kbd> lists every shortcut.</p><div id="paint-live" class="vh" aria-live="polite"></div>`);
-    stage.prepend(pane);
+    pane.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">Right-click erases · Alt-click picks · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
+      Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. <kbd>?</kbd> lists every shortcut.</p><div id="paint-live" class="vh" aria-live="polite"></div>`);
+    const side = document.createElement('div'); side.className = 'paint-side';
+    work.append(pane, side); stage.append(work);
     view = {c, ctx, a, z, scroller};
+    const colours = document.getElementById('palette-block'); if (colours) side.append(colours);
+    S.renderSide?.(side, a);  // flipbook.js: the clip's flip-book and onion skin
+    const refs = document.createElement('div'); refs.className = 'paint-refs'; side.append(refs);
     const ref = decoded[a.key].before;
     if (ref) {
-      const rz = Math.max(2, Math.floor(z / 3)), box = document.createElement('div'); box.className = 'pane';
+      const rz = Math.max(1, Math.min(4, Math.floor(96 / Math.max(a.width, a.height)))), box = document.createElement('div'); box.className = 'pane';
       box.innerHTML = `<div class="lbl"><span>before</span><span>${D.before_label}</span></div>`;
       const [rc, rctx] = makeCanvas(a.width * rz, a.height * rz); fillBackdrop(rctx, a.width, a.height, rz, backdropFor(a)); drawPixels(rctx, ref, rz);
       rc.setAttribute('role', 'img'); rc.setAttribute('aria-label', `${a.key} before (${D.before_label})`);
-      box.append(rc); stage.append(box);
+      box.append(rc); refs.append(box);
     }
     const hist = document.createElement('div'); hist.className = 'pane';
     hist.innerHTML = '<div class="lbl" id="paint-hist-label"><span>history</span><span>click a step to go back</span></div><ol class="paint-hist" id="paint-history" aria-labelledby="paint-hist-label"></ol>';
     hist.querySelector('ol').onclick = e => { const b = e.target.closest('[data-step]'); if (b) restore(Number(b.dataset.step)); };
-    stage.append(hist);
+    refs.append(hist);
+    scroller.style.maxHeight = `${Math.max(240, window.innerHeight - Math.max(0, scroller.getBoundingClientRect().top) - 24)}px`;
     wireCanvas(c, scroller, a);
     if (anchor) { scroller.scrollLeft = anchor.px * z - anchor.ox; scroller.scrollTop = anchor.py * z - anchor.oy; anchor = null; }
     else if (scroll) [scroller.scrollLeft, scroller.scrollTop] = scroll;
-    if (hadFocus) c.focus({preventScroll: true});
+    if (hadFocus) { pointing = true; c.focus({preventScroll: true}); pointing = false; }  // a rebuild keeps the cursor as it was
     draw(); renderReadout(); renderHistory();
   };
   function wireCanvas(c, scroller, a) {
     c.oncontextmenu = e => e.preventDefault();
     c.onpointerdown = e => {
-      e.preventDefault(); c.focus({preventScroll: true});
+      e.preventDefault(); pointing = true; c.focus({preventScroll: true}); pointing = false;
       try { c.setPointerCapture(e.pointerId); } catch { /* synthetic or already-released pointers cannot be captured */ }
       if (e.button === 1) { pan = {x: e.clientX, y: e.clientY, l: scroller.scrollLeft, t: scroller.scrollTop}; return; }
       if (stroke) return;
@@ -506,6 +529,7 @@
     c.onpointerup = finish; c.onpointercancel = () => { pan = null; if (stroke?.pointer) cancel(); };
     c.onpointerleave = () => { if (!stroke && !state.kbd) { state.hover = null; draw(); renderReadout(); } };
     c.onkeydown = canvasKey;
+    c.onfocus = () => { if (!pointing && !state.kbd) { state.kbd = true; state.hover = [...state.cursor]; draw(); renderReadout(); } };
     c.onkeyup = e => { if (e.key === 'Shift' && stroke?.held) release(); };
     c.onblur = () => { if (stroke && !stroke.pointer) release(); };
     c.addEventListener('wheel', e => {
@@ -536,19 +560,23 @@
   const btn = (id, text, title, keys, extra = '') => `<button id="${id}" title="${title}${keys ? ` (${keys})` : ''}"${keys ? ` aria-keyshortcuts="${keys.replace(/⌘/g, 'Meta+').replace(/⇧/g, 'Shift+')}"` : ''}${extra}>${text}</button>`;
   S.renderToolbar = extra => {
     if (LOCKED.has(asset().kind)) return;
+    /* Everyday tools stay in view; the rest folds into More tools (remembered) so the canvas sits near the top. */
     extra.innerHTML = `<div class="paint-tools" role="toolbar" aria-label="Paint tools">
       <div><div class="lbl" id="tools-label">Tool</div><div class="seg" id="tools" role="group" aria-labelledby="tools-label">${TOOLS.map(([id, name, key, what]) =>
         `<button data-tool="${id}" title="${name} (${key}): ${what}" aria-keyshortcuts="${key}">${name}</button>`).join('')}</div></div>
       <div><div class="lbl">Options</div><div class="seg" role="group" aria-label="Options">${btn('filled', 'Filled', 'Filled rectangles and ellipses', '⇧F')}${btn('perfect', 'Pixel-perfect', 'Pencil strokes drop L-shaped corners', '⇧P')}${btn('mirror', 'Mirror', 'Mirror left/right', 'M')}</div></div>
+      <div><div class="lbl">History</div><div class="seg" role="group" aria-label="History">${btn('undo', 'Undo', 'Undo', '⌘Z')}${btn('redo', 'Redo', 'Redo', '⇧⌘Z')}</div></div>
+      <div><div class="lbl">File</div><div class="seg" role="group" aria-label="File">${btn('revert', 'Revert', 'Discard unsaved edits', '')}${btn('reset', 'Use before', 'Load the before image into the canvas', '')}${btn('save', 'Save', 'Save', '⌘S', ' class="primary"')}</div></div></div>
+      <details class="paint-more" id="paint-more"${store.get('paint-more', false) ? ' open' : ''}><summary>More tools <span class="lbl">selection · transform · nudge · replace colour · guides · tidy</span></summary>
+      <div class="paint-tools" role="toolbar" aria-label="More paint tools">
       <div><div class="lbl">Selection</div><div class="seg" role="group" aria-label="Selection">${btn('sel-all', 'All', 'Select the whole sprite', '⌘A')}${btn('sel-copy', 'Copy', 'Copy the selection, or the whole sprite', '⌘C')}${btn('sel-cut', 'Cut', 'Cut the selection', '⌘X')}${btn('sel-paste', 'Paste', 'Paste as a floating selection', '⌘V')}${btn('sel-delete', 'Delete', 'Clear the selected pixels', 'Delete')}${btn('sel-none', 'Deselect', 'Drop the selection', 'Escape')}</div></div>
       <div><div class="lbl">Transform</div><div class="seg" role="group" aria-label="Transform">${btn('flip-h', '⇋', 'Flip left/right: the selection, or the whole sprite', '⇧H', ' aria-label="Flip horizontally"')}${btn('flip-v', '⇅', 'Flip top/bottom: the selection, or the whole sprite', '⇧V', ' aria-label="Flip vertically"')}${btn('rot-cw', '↻', 'Rotate 90° clockwise', '⇧R', ' aria-label="Rotate clockwise"')}${btn('rot-ccw', '↺', 'Rotate 90° anticlockwise', '', ' aria-label="Rotate anticlockwise"')}</div></div>
       <div><div class="lbl">Nudge</div><div class="seg" role="group" aria-label="Nudge">${[['ArrowLeft', '←', 'left'], ['ArrowUp', '↑', 'up'], ['ArrowDown', '↓', 'down'], ['ArrowRight', '→', 'right']].map(([k, g, w]) =>
         btn(`nudge-${w}`, g, `Move the selection (or shift the sprite) 1 px ${w}`, `Alt+${k}`, ` aria-label="Nudge ${w}" data-nudge="${k}"`)).join('')}${btn('wrap', 'Wrap', 'Nudges wrap pixels round inside the selection or sprite', 'W')}</div></div>
       <div><div class="lbl"><label for="replace-from">Replace colour</label></div><div class="seg" role="group" aria-label="Replace colour"><select id="replace-from"></select>${btn('replace', '→ paint colour', 'Replace this colour with the paint colour (or transparent with the eraser), in the selection or the whole sprite', '')}</div></div>
-      <div><div class="lbl">View</div><div class="seg" role="group" aria-label="View">${btn('guides', 'Guides', 'Centre and tile-centre guides', '⇧G')}${btn('help', '?', 'Keyboard shortcuts', '?', ' aria-label="Keyboard shortcuts"')}</div></div>
-      <div><div class="lbl">History</div><div class="seg" role="group" aria-label="History">${btn('undo', 'Undo', 'Undo', '⌘Z')}${btn('redo', 'Redo', 'Redo', '⇧⌘Z')}</div></div>
-      <div><div class="lbl">Clean up</div>${btn('tidy', 'Tidy outline', 'Closed 1px outline, remove specks, bottom shadow', '')}</div>
-      <div><div class="lbl">File</div><div class="seg" role="group" aria-label="File">${btn('revert', 'Revert', 'Discard unsaved edits', '')}${btn('reset', 'Use before', 'Load the before image into the canvas', '')}${btn('save', 'Save', 'Save', '⌘S', ' class="primary"')}</div></div></div>`;
+      <div><div class="lbl">View</div><div class="seg" role="group" aria-label="View">${btn('guides', 'Guides', 'Centre and tile-centre guides', '⇧G')}</div></div>
+      <div><div class="lbl">Clean up</div>${btn('tidy', 'Tidy outline', 'Closed 1px outline, remove specks, bottom shadow', '')}</div></div></details>`;
+    extra.querySelector('#paint-more').ontoggle = e => store.set('paint-more', e.target.open);
     const on = (id, fn) => { extra.querySelector('#' + id).onclick = fn; };
     extra.querySelector('#tools').onclick = e => { const t = e.target.closest('button')?.dataset.tool; if (t) setTool(t); };
     on('filled', () => toggle('filled', 'Filled shapes')); on('perfect', () => toggle('perfect', 'Pixel-perfect')); on('mirror', () => toggle('mirror', 'Mirror'));
@@ -556,7 +584,7 @@
     on('flip-h', () => transform('Flip horizontal', T.flipH)); on('flip-v', () => transform('Flip vertical', T.flipV));
     on('rot-cw', () => transform('Rotate clockwise', r => T.rotate(r, true))); on('rot-ccw', () => transform('Rotate anticlockwise', r => T.rotate(r, false)));
     extra.querySelectorAll('[data-nudge]').forEach(b => { b.onclick = () => nudge(...ARROWS[b.dataset.nudge]); });
-    on('wrap', () => toggle('wrap', 'Wrap')); on('replace', replaceColour); on('guides', () => toggle('guides', 'Guides')); on('help', () => window.JelliShell?.openHelp());
+    on('wrap', () => toggle('wrap', 'Wrap')); on('replace', replaceColour); on('guides', () => toggle('guides', 'Guides'));
     on('undo', undo); on('redo', redo);
     const tidyButton = extra.querySelector('#tidy');
     tidyButton.onclick = tidy;
