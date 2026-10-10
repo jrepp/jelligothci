@@ -142,6 +142,11 @@ if(BUILD_TESTING)
     add_test(NAME jelli_art_server COMMAND "${JELLI_ASSET_UV}" run --python 3.12
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_server.py")
     set_tests_properties(jelli_art_server PROPERTIES TIMEOUT 300) # Real servers and scratch git repos.
+    find_program(JELLI_NODE node)
+    if(JELLI_NODE) # Pure paint-tool logic (rasterisers, selection transforms); skipped without node.
+      add_test(NAME jelli_art_paint_tools COMMAND "${JELLI_NODE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_paint_tools.js")
+    endif()
     # Builds the engine again in a scratch tree for the real-render cases.
     add_test(NAME jelli_art_game_preview COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_game_preview.py")
