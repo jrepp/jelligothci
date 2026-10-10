@@ -31,6 +31,19 @@ builds accept only the 16 palette colours. To ship a new colour, put it in a
 palette slot with ✎. The font atlas and backgrounds are not paintable yet.
 Follow the [pixel art authoring guide](pixel-art-guide.md) for the house style.
 
+Sprites with their own palette, such as the 48×48 axolotl, paint from that
+palette. The shared ✎ and **Tidy outline** do not apply to them.
+
+### Animate creatures
+
+Choose **Creature** at the top, then a form and one of its eight poses. Add
+frames from that form's thumbnails, reorder or remove them, set each frame's
+milliseconds, and choose **Loop** or play-once. A play-once clip holds its last
+frame. **Replay one-shots** repeats it in the preview only. The preview uses the
+game's scale and ground position; **All poses** plays every pose together. Space
+plays or pauses; `,` and `.` step frames. **Save clips** (⌘S / Ctrl+S) checks
+the whole manifest and writes only the edited clips to `assets.json`.
+
 ## Edit in the running game
 
 ```sh

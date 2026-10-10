@@ -47,6 +47,11 @@
   async function reload() {
     const keep = Object.entries(edits).filter(([key]) => dirty(key)).map(([key]) => [key, decoded[key].after.data.slice()]);
     await loadPayload(await api('GET', `/api/data?before=${encodeURIComponent(state.before)}`));
+    // The server measures with the shared ink; re-measure sprites outlined from their own palette.
+    for (const a of D.assets.filter(x => ownPalette(x) && !LOCKED.has(x.kind))) {
+      if (decoded[a.key].after) a.after_metrics = measure(decoded[a.key].after, a);
+      if (decoded[a.key].before) a.before_metrics = measure(decoded[a.key].before, a);
+    }
     for (const key of Object.keys(edits)) {
       if (!decoded[key]?.after) { delete edits[key]; continue; }
       edits[key].saved = decoded[key].after.data.slice();
@@ -67,8 +72,9 @@
     document.getElementById('live-badge').textContent = `● Jelli Art ${D.studio_version || ''}`;
     renderGit(D.git);
     setInterval(poll, 2000);
-    window.addEventListener('beforeunload', e => { if (Object.keys(edits).some(dirty)) { e.preventDefault(); e.returnValue = ''; } });
+    window.addEventListener('beforeunload', e => { if (Object.keys(edits).some(dirty) || S.clipsDirty?.()) { e.preventDefault(); e.returnValue = ''; } });
   };
+  Object.assign(S, {api, status, reload, rerender: () => rerender(), renderGit, paintDirty: key => dirty(key)});
   function renderGit(git) {
     const el = document.getElementById('git-status'); if (!git?.enabled) { el.textContent = ''; return; }
     const push = git.last_push || {}, pending = git.unpushed ? `${git.unpushed} to push` : 'synced';
@@ -96,15 +102,23 @@
     if (!hex) { p.data[i] = p.data[i + 1] = p.data[i + 2] = p.data[i + 3] = 0; return; }
     p.data[i] = parseInt(hex.slice(1, 3), 16); p.data[i + 1] = parseInt(hex.slice(3, 5), 16); p.data[i + 2] = parseInt(hex.slice(5, 7), 16); p.data[i + 3] = 255;
   }
-  function measure(p, kind) {
-    const colors = {}, specks = [], open = [], measured = !LOCKED.has(kind);
+  /* Assets may carry their own palette (a name in manifest.palettes or an inline list). */
+  const ownPalette = a => !!a.palette_name && a.palette_name !== 'shared';
+  const paletteOf = a => a.palette || D.palette;
+  const luma = hex => [1, 3, 5].reduce((n, i, k) => n + parseInt(hex.slice(i, i + 2), 16) * [299, 587, 114][k], 0);
+  /* The outline colour: shared ink, or the darkest colour of the asset's own palette. */
+  const inkOf = a => ownPalette(a) ? paletteOf(a).reduce((d, h) => luma(h) < luma(d) ? h : d) : '#291b35';
+  const slotName = (a, i) => ownPalette(a) ? `${a.palette_name} ${i + 1}` : NAMES[i];
+  S.ownPalette = ownPalette;
+  function measure(p, a) {
+    const kind = a.kind, ink = inkOf(a), colors = {}, specks = [], open = [], measured = !LOCKED.has(kind);
     for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
       const hex = pixel(p, x, y); if (!hex) continue;
       colors[hex] = (colors[hex] || 0) + 1;
       const n4 = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => pixel(p, x + dx, y + dy));
       const n8 = [...n4, ...[[1, 1], [-1, -1], [1, -1], [-1, 1]].map(([dx, dy]) => pixel(p, x + dx, y + dy))];
-      if (measured && hex !== '#291b35' && hex !== '#ffffff' && !n8.includes(hex)) specks.push([x, y]);
-      if (OUTLINED.has(kind) && hex !== '#291b35' && n4.includes(null)) open.push([x, y]);
+      if (measured && hex !== ink && hex !== '#ffffff' && !n8.includes(hex)) specks.push([x, y]);
+      if (OUTLINED.has(kind) && hex !== ink && n4.includes(null)) open.push([x, y]);
     }
     return {colors, opaque: Object.values(colors).reduce((n, v) => n + v, 0), specks, open_edges: open};
   }
@@ -112,7 +126,7 @@
   function refresh(key) {
     const a = byKey[key], p = work(key), before = decoded[key].before;
     p.img.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(p.data), p.w, p.h), 0, 0);
-    a.after_metrics = measure(p, a.kind);
+    a.after_metrics = measure(p, a);
     a.after = p.img.toDataURL('image/png');
     if (before) { let n = 0; for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) if (pixel(before, x, y) !== pixel(p, x, y)) n++; a.changed = n; }
   }
@@ -213,7 +227,9 @@
     extra.querySelector('#mirror').onclick = () => { state.mirror = !state.mirror; renderToolbarState(); draw(); };
     extra.querySelector('#undo').onclick = () => history('undo', 'redo');
     extra.querySelector('#redo').onclick = () => history('redo', 'undo');
-    extra.querySelector('#tidy').onclick = tidy;
+    const tidyButton = extra.querySelector('#tidy');
+    tidyButton.onclick = tidy;
+    if (ownPalette(asset())) { tidyButton.disabled = true; tidyButton.title = 'Tidy inks with the shared palette; this sprite has its own palette'; }
     extra.querySelector('#revert').onclick = () => { const e = edits[state.key]; if (e && dirty(state.key)) { begin(); work(state.key).data.set(e.saved); commit(); } };
     extra.querySelector('#reset').onclick = () => { const b = decoded[state.key].before; if (b) { begin(); work(state.key).data.set(b.data); commit(); } };
     extra.querySelector('#save').onclick = save;
@@ -233,8 +249,13 @@
   };
   S.renderPalette = (el, a) => {
     el.textContent = '';
-    el.previousElementSibling.innerHTML = 'Paint colours <span class="lbl">· click to paint · ✎ edits the shared palette</span>';
-    const counts = a.after_metrics.colors, usage = hex => D.assets.filter(x => x.after_metrics.colors[hex]).length;
+    const own = ownPalette(a), pal = paletteOf(a), where = own ? `the ${a.palette_name} palette` : 'the shared palette';
+    // Arriving at a sprite with its own palette: start from one of its colours, not the shared ink.
+    if (S.paletteKey !== a.key) { S.paletteKey = a.key; if (state.color && !pal.includes(state.color)) state.color = inkOf(a); }
+    el.previousElementSibling.innerHTML = own ? `Paint colours <span class="lbl">· ${a.palette_name} palette · click to paint</span>`
+      : 'Paint colours <span class="lbl">· click to paint · ✎ edits the shared palette</span>';
+    const peers = D.assets.filter(x => own ? x.palette_name === a.palette_name : !ownPalette(x));
+    const counts = a.after_metrics.colors, usage = hex => peers.filter(x => x.after_metrics.colors[hex]).length;
     const chip = (hex, title, sub, extra = '') => {
       const b = document.createElement('div'); b.className = 'paint-chip' + extra; b.tabIndex = 0; b.title = title;
       const active = hex === null ? state.tool === 'eraser' : state.tool !== 'eraser' && state.color === hex;
@@ -248,22 +269,25 @@
       };
       el.append(b); return b;
     };
-    D.palette.forEach((hex, i) => {
-      const b = chip(hex, `${NAMES[i]} · ${hex} · used by ${usage(hex)} assets`, counts[hex] ? `${counts[hex]} px` : '—');
+    pal.forEach((hex, i) => {
+      const b = chip(hex, `${slotName(a, i)} · ${hex} · used by ${usage(hex)} assets`, counts[hex] ? `${counts[hex]} px` : '—');
+      if (own) return;  // only the shared palette is editable here; a named palette is edited in assets.json
       b.insertAdjacentHTML('beforeend', `<label class="edit" title="Change this palette colour everywhere">✎<input type="color" value="${hex}" hidden></label>`);
       b.querySelector('input').onchange = e => editSlot(i, e.target.value);
     });
     chip(null, 'eraser · transparent', 'right-click');
-    for (const hex of Object.keys(counts).filter(h => !D.palette.includes(h)))
-      chip(hex, `custom · ${hex} · not in the shared palette; release builds reject it until a slot uses this colour`, `${counts[hex]} px`, ' off');
-    if (!D.palette.includes(state.color) && state.color && !counts[state.color])
-      chip(state.color, `custom · ${state.color} · not in the shared palette`, state.color.slice(1), ' off');
+    for (const hex of Object.keys(counts).filter(h => !pal.includes(h)))
+      chip(hex, `custom · ${hex} · not in ${where}; release builds reject it until a slot uses this colour`, `${counts[hex]} px`, ' off');
+    if (!pal.includes(state.color) && state.color && !counts[state.color])
+      chip(state.color, `custom · ${state.color} · not in ${where}`, state.color.slice(1), ' off');
     const custom = document.createElement('label'); custom.className = 'paint-chip'; custom.title = 'Paint with any colour';
     custom.innerHTML = `<span class="sw" style="background:conic-gradient(#fa8c99,#f5c764,#85e4b6,#a47bdb,#fa8c99)"></span><span>custom</span><span>pick…</span><input type="color" value="${state.color || '#ffffff'}" hidden>`;
     custom.querySelector('input').onchange = e => { state.color = e.target.value.toLowerCase(); state.tool = 'pencil'; S.renderPalette(el, a); renderToolbarState(); draw(); };
     el.append(custom);
     const note = document.createElement('p'); note.className = 'studio-note';
-    note.textContent = 'Click a colour to paint with it. ✎ changes that palette colour in every sprite. Custom colours work in the live game; to ship one, put it in a palette slot. Shift-click isolates a colour.';
+    note.textContent = own
+      ? `Click a colour to paint with it. This sprite uses ${where} from assets.json, so the shared palette and its ✎ do not apply. Custom colours work in the live game only. Shift-click isolates a colour.`
+      : 'Click a colour to paint with it. ✎ changes that palette colour in every sprite. Custom colours work in the live game; to ship one, put it in a palette slot. Shift-click isolates a colour.';
     el.append(note);
   };
 
