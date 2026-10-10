@@ -25,6 +25,9 @@ void jelli_canvas_text(Canvas *c, const char *value, int x, int y, unsigned scal
 void jelli_canvas_centered(Canvas *c, const char *value, int y, unsigned scale, uint16_t color);
 void jelli_canvas_sprite(Canvas *c, uint32_t id, int x, int y, unsigned scale);
 void jelli_canvas_centered_sprite(Canvas *c, uint32_t id, int x, int y, unsigned scale);
+/* Largest whole scale that keeps sprite id's width within target_px (at least 1). Uses the
+ * asset's real width, never its ID range; live packs cannot change dimensions. */
+unsigned jelli_canvas_fit_scale(uint32_t id, unsigned target_px);
 void jelli_canvas_heading(Canvas *c, const char *value, int y, unsigned scale);
 void jelli_canvas_caption(Canvas *c, const char *value, int y, uint16_t color);
 #endif

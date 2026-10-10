@@ -2,6 +2,8 @@
   "version": 1,
   "night": {"start_minute": 1200, "end_minute": 360},
   "need_low": 250,
+  "touch": {"load_per_tap": 220, "upset_load": 600, "overload_load": 900, "decay_per_tick": 10,
+            "reaction_ticks": 30, "happy_gain": 15, "upset_loss": 20, "bond_gain": 3},
   "states": [
     {"name": "curious", "duration_s": [8, 15], "cooldown_s": 40,
      "effects": {"amusement": 10}, "ends_on": ["touched", "activity_started"]},

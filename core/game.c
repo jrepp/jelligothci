@@ -38,27 +38,22 @@ void jelli_game_init(JelliGame *game)
         return;
     *game = (JelliGame){.volume = JELLI_VOLUME_DEFAULT};
     game->count = 1u;
-    game->food = 5u;
-    game->gifts = 3u;
-    uint8_t form = jelli_collection_set(1u)->forms[0];
-    game->pets[0] = (JelliPet){.id = 1u,
-                               .collection_entry = 1u,
-                               .form = form,
-                               .reached_forms = (uint8_t)(1u << form),
-                               .phase_offset = 324000u,
-                               .bedtime = 22u,
-                               .sleep_duration = 288000u,
-                               .random_state = 1u,
-                               .needs = {500u, 700u, 700u, 500u, 500u},
-                               .bond = 100u,
-                               .hydration = 700u,
-                               .health = JELLI_WELL,
-                               .activity = JELLI_IDLE};
+    game->food = jelli_collection_start.food;
+    game->gifts = jelli_collection_start.gifts;
+    game->pets[0] = jelli_collection_new_pet(1u, 1u);
     jelli_collection_unlock(game);
     game->new_pets = 0u;
 }
 
 /* Running moment, potty cycle (save version 10) and behaviour state (version 11). */
+/* Longest reaction any species' touch or a wake can start. */
+static unsigned reaction_ticks_limit(void)
+{
+    return jelli_behavior_touch_ticks_max > jelli_wake_rules.reaction_ticks
+               ? jelli_behavior_touch_ticks_max
+               : jelli_wake_rules.reaction_ticks;
+}
+
 static bool pet_routine_valid(const JelliPet *pet)
 {
     return pet->moment <= jelli_moment_count && pet->digesting <= 1000u && pet->potty <= 1000u &&
@@ -77,8 +72,8 @@ static bool pet_profile_valid(const JelliPet *pet)
         pet->hydration > 1000u || pet->hydration_remainder >= 2400u || pet->location > 1u ||
         pet->bond > 1000u || pet->wake_mood > JELLI_WAKE_HAPPY ||
         pet->rest_ticks > jelli_wake_rules.sleep_ticks || pet->touch_load > 1000u ||
-        pet->reaction > JELLI_REACTION_TOUCH_OVERLOAD || pet->reaction_ticks > 30u ||
-        !enum_values_valid(pet))
+        pet->reaction > JELLI_REACTION_TOUCH_OVERLOAD ||
+        pet->reaction_ticks > reaction_ticks_limit() || !enum_values_valid(pet))
         return false;
     return pet_routine_valid(pet);
 }

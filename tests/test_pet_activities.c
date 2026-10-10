@@ -97,8 +97,24 @@ static void reading_shows_its_book(void)
     CHECK(changed > 0u);
 }
 
+/* Width-based fit reproduces the former ID-range rule for every existing ring icon. */
+static void ring_icon_scale_follows_width(void)
+{
+    unsigned checked = 0u;
+    for (unsigned page = 0u; page < JELLI_UI_BRUSH; ++page)
+        for (unsigned slot = 1u; slot <= 6u; ++slot) {
+            JelliPetUiButton b;
+            if (!jelli_pet_ui_button((JelliPetPage)page, slot, false, true, &b) || !b.icon)
+                continue;
+            CHECK(b.scale == (b.icon >= 6000u ? 3u : 6u)); /* The rule this test retires. */
+            ++checked;
+        }
+    CHECK(checked > 20u);
+}
+
 int main(void)
 {
+    ring_icon_scale_follows_width();
     ring_items_come_from_data();
     potty_routine_from_the_ring();
     reading_shows_its_book();

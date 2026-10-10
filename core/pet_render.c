@@ -14,11 +14,25 @@ static uint8_t recovery_seconds(const JelliPet *pet)
     return ticks >= 300u ? 30u : (uint8_t)((ticks + 9u) / 10u);
 }
 
+/* Touch reactions, or a wake mood after them; a happy wake opens with surprise. */
+static void reaction_key(const JelliPet *pet, JelliPetRenderKey *key)
+{
+    key->reaction =
+        pet->wake_mood ? (uint8_t)(JELLI_REACTION_TOUCH_OVERLOAD + pet->wake_mood) : pet->reaction;
+    if (pet->wake_mood == JELLI_WAKE_HAPPY)
+        key->phase =
+            pet->reaction_ticks > jelli_wake_rules.reaction_ticks - jelli_wake_rules.surprise_ticks
+                ? JELLI_POSE_CURIOUS
+                : JELLI_POSE_IDLE; /* Surprise, then joy. */
+}
+
 static void activity_key(const JelliPet *pet, uint64_t time, JelliPetRenderKey *key)
 {
     key->health = (uint8_t)pet->health;
     key->care_seconds = recovery_seconds(pet);
     key->activity = (uint8_t)pet->activity;
+    key->care_blocked = (uint8_t)((jelli_pet_health_ready(pet, JELLI_HEALTH_MEDICINE) ? 0u : 1u) |
+                                  (jelli_pet_health_ready(pet, JELLI_HEALTH_SHOT) ? 0u : 2u));
     key->moment = pet->moment;
     key->behavior = pet->behavior;
     unsigned frames = jelli_potty_rules.mess_sprite_count;
@@ -80,13 +94,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.hydration = pet->hydration;
     key.volume = game->volume;
     key.mood = (uint8_t)jelli_pet_mood(pet);
-    key.reaction =
-        pet->wake_mood ? (uint8_t)(JELLI_REACTION_TOUCH_OVERLOAD + pet->wake_mood) : pet->reaction;
-    if (pet->wake_mood == JELLI_WAKE_HAPPY)
-        key.phase = pet->reaction_ticks > 20u ? JELLI_POSE_CURIOUS
-                                              : JELLI_POSE_IDLE; /* Surprise, then joy. */
-    key.care_blocked = (uint8_t)((jelli_pet_health_ready(pet, JELLI_HEALTH_MEDICINE) ? 0u : 1u) |
-                                 (jelli_pet_health_ready(pet, JELLI_HEALTH_SHOT) ? 0u : 2u));
+    reaction_key(pet, &key);
     key.food = game->food;
     key.gifts = game->gifts;
     key.active = game->active;

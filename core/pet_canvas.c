@@ -119,3 +119,10 @@ void jelli_canvas_caption(Canvas *c, const char *value, int y, uint16_t color)
     }
     jelli_canvas_centered(c, value, y, 2u, color);
 }
+
+unsigned jelli_canvas_fit_scale(uint32_t id, unsigned target_px)
+{
+    const JelliAsset *asset = jelli_asset_find(id);
+    unsigned scale = asset && asset->width ? target_px / asset->width : 1u;
+    return scale ? scale : 1u;
+}

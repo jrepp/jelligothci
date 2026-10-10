@@ -7,13 +7,6 @@
 #define MESS_SCALE 2u
 #define FLOOR_Y 256
 
-static unsigned fit_scale(const JelliPetUi *ui, uint32_t id, unsigned target)
-{
-    const JelliAsset *a = jelli_asset_lookup(ui->assets, id);
-    unsigned scale = a && a->width ? target / a->width : 1u;
-    return scale ? scale : 1u;
-}
-
 /* The mess sits on the floor beside the pet and shimmers through its authored frames. */
 static void draw_mess(Canvas *c, const JelliPetUi *ui, const JelliPetRenderKey *v)
 {
@@ -44,7 +37,7 @@ void jelli_pet_draw_behavior(Canvas *c, const JelliPetUi *ui, const JelliPetRend
         int bob = (v->clip_frame & 1u) ? 4 : 0; /* Follows the clip, so no extra redraws. */
         int y = (int)ui->actor_bounds.y - 22 - bob;
         jelli_canvas_centered_sprite(c, look->effect, x + (int)ui->actor_bounds.width / 3, y,
-                                     fit_scale(ui, look->effect, EFFECT_TARGET_PX));
+                                     jelli_canvas_fit_scale(look->effect, EFFECT_TARGET_PX));
     }
 }
 

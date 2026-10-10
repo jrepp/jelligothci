@@ -1,5 +1,7 @@
 {
   "nap_ticks": 18000,
   "sleep_ticks": 216000,
-  "bond_gain": 10
+  "bond_gain": 10,
+  "reaction_ticks": 30,
+  "surprise_ticks": 10
 }

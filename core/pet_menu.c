@@ -2,6 +2,8 @@
 #include "jelli/nutrition.h"
 #include <string.h>
 
+#define RING_ICON_PX 32u /* Ring item icons draw at about this size. */
+
 static void label_line(Canvas *c, const char *text, int x, int y)
 {
     int width = (int)strlen(text) * 16;
@@ -56,7 +58,8 @@ void jelli_pet_menu_ring(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
         jelli_canvas_disk(c, x, y, 48, edge);
         jelli_canvas_disk(c, x, y, 46, 0x4a49u);
         if (b.icon)
-            jelli_canvas_centered_sprite(c, b.icon, x, y - 17, b.icon >= 6000u ? 1u : 2u);
+            jelli_canvas_centered_sprite(c, b.icon, x, y - 17,
+                                         jelli_canvas_fit_scale(b.icon, RING_ICON_PX));
         c->dim = false; /* Disabled controls retain readable action labels. */
         button_label(c, b.label, x, y + (b.icon ? 7 : -12));
         if (jelli_pet_ui_starts(v->ring_page, slot))

@@ -1,5 +1,8 @@
 #include "jelli/pet_ui.h"
+#include "pet_canvas.h"
 #include "jelli/activities.h"
+
+#define BUTTON_ICON_PX 96u /* Ring buttons are 96 px discs. */
 
 static uint32_t action_icon(JelliPetUiAction action, bool asleep)
 {
@@ -54,7 +57,7 @@ bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool men
         .bounds = {centers[position][0] - 48u, centers[position][1] - 48u, 96u, 96u},
         .label = item.label,
         .icon = icon,
-        .scale = icon >= 6000u ? 3u : 6u,
+        .scale = jelli_canvas_fit_scale(icon, BUTTON_ICON_PX),
         .circular = true};
     return true;
 }

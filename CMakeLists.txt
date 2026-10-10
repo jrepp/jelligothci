@@ -137,6 +137,8 @@ if(BUILD_TESTING)
     if(Python3_Interpreter_FOUND)
       add_test(NAME collection_content COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_collection_content.py)
+      add_test(NAME behavior_content COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_behavior_content.py)
       if(NOT WIN32)
       add_test(NAME network_timezones COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_network_timezones.py $<TARGET_FILE:jelli_network_config_tests>)

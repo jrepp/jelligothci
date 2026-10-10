@@ -18,6 +18,12 @@ static const JelliRepertoire *repertoire_of(const JelliPet *pet)
     return index < jelli_behavior_repertoire_count ? &jelli_behavior_repertoires[index] : NULL;
 }
 
+const JelliTouchRules *jelli_behavior_touch_rules(const JelliPet *pet)
+{
+    const JelliRepertoire *rep = repertoire_of(pet);
+    return &jelli_behavior_touch[rep ? (unsigned)(rep - jelli_behavior_repertoires) + 1u : 0u];
+}
+
 const JelliBehaviorState *jelli_behavior_current(const JelliPet *pet)
 {
     return pet->behavior && pet->behavior <= jelli_behavior_state_count

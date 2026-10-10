@@ -103,6 +103,28 @@ static uint32_t unused_id(const JelliGame *game)
     return 0u;
 }
 
+JelliPet jelli_collection_new_pet(uint32_t id, unsigned entry)
+{
+    const JelliNewborn *n = &jelli_collection_newborn;
+    const JelliEvolutionSet *set = jelli_collection_set(entry);
+    uint8_t form = set ? set->forms[0] : 0u;
+    JelliPet pet = {.id = id,
+                    .collection_entry = (uint8_t)entry,
+                    .form = form,
+                    .reached_forms = (uint8_t)(1u << form),
+                    .phase_offset = n->phase_offset,
+                    .bedtime = n->bedtime,
+                    .sleep_duration = n->sleep_duration,
+                    .random_state = id,
+                    .bond = n->bond,
+                    .hydration = n->hydration,
+                    .health = JELLI_WELL,
+                    .activity = JELLI_IDLE};
+    for (unsigned need = 0u; need < JELLI_NEED_COUNT; ++need)
+        pet.needs[need] = n->needs[need];
+    return pet;
+}
+
 void jelli_collection_unlock(JelliGame *game)
 {
     for (unsigned i = 0u; i < 9u && game->count < JELLI_PET_CAPACITY; ++i) {
@@ -114,20 +136,7 @@ void jelli_collection_unlock(JelliGame *game)
         uint32_t id = unused_id(game);
         if (!id)
             return;
-        uint8_t form = jelli_collection_set(entry->id)->forms[0];
-        game->pets[game->count++] = (JelliPet){.id = id,
-                                               .collection_entry = entry->id,
-                                               .form = form,
-                                               .reached_forms = (uint8_t)(1u << form),
-                                               .phase_offset = 324000u,
-                                               .bedtime = 22u,
-                                               .sleep_duration = 288000u,
-                                               .random_state = id,
-                                               .needs = {500u, 700u, 700u, 500u, 500u},
-                                               .bond = 100u,
-                                               .hydration = 700u,
-                                               .health = JELLI_WELL,
-                                               .activity = JELLI_IDLE};
+        game->pets[game->count++] = jelli_collection_new_pet(id, entry->id);
         game->new_pets |= (uint16_t)(1u << i);
         ++game->revision;
     }

@@ -82,6 +82,16 @@ typedef struct {
     uint16_t night_start_minute, night_end_minute, need_low;
 } JelliBehaviorRules;
 
+/* How a species responds to touch (content/behaviors.json "touch", per repertoire override). */
+typedef struct {
+    uint16_t load_per_tap, upset_load, overload_load, decay_per_tick, reaction_ticks;
+    uint16_t happy_gain, upset_loss, bond_gain;
+} JelliTouchRules;
+/* Index 0 is the default; repertoire r uses r + 1. */
+extern const JelliTouchRules jelli_behavior_touch[];
+extern const unsigned jelli_behavior_touch_ticks_max;
+const JelliTouchRules *jelli_behavior_touch_rules(const JelliPet *pet);
+
 extern const JelliBehaviorRules jelli_behavior_rules;
 extern const JelliBehaviorState jelli_behavior_states[];
 extern const unsigned jelli_behavior_state_count;
