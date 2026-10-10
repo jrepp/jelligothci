@@ -64,12 +64,21 @@ if [ -n "$branch" ]; then
         git checkout --quiet -b "$branch"
     fi
     # Restart from the base branch when the studio holds no art or content of its own:
-    # either it matches the base (landed, merged or squashed) or it changed nothing
-    # since it forked (the base moved on without it). Uncommitted or new studio files
-    # block the reset.
+    # every art or content file it changed since it forked (none, if the base just moved
+    # on without it) is identical on the base, so its work landed by merge or squash even
+    # when the base has gained other changes since. A file the base edited again after
+    # landing keeps the branch, which errs towards keeping work. Uncommitted or new studio
+    # files block the reset.
+    studio_landed() {
+        fork=$(git merge-base "origin/$base" HEAD) || return 1
+        # Empty: the studio changed nothing since it forked.
+        [ -z "$(git diff --name-only --no-renames -z "$fork" HEAD -- assets/slice content | head -c 1)" ] && return 0
+        # NUL-separated so paths with spaces survive; deleted files compare as absent on both sides.
+        git diff --name-only --no-renames -z "$fork" HEAD -- assets/slice content \
+            | xargs -0 git diff --quiet "origin/$base" HEAD --
+    }
     if git show-ref --verify --quiet "refs/remotes/origin/$base" \
-        && { git diff --quiet "origin/$base" HEAD -- assets/slice content \
-            || git diff --quiet "$(git merge-base "origin/$base" HEAD)" HEAD -- assets/slice content; } \
+        && studio_landed \
         && git diff --quiet HEAD -- assets/slice content \
         && [ -z "$(git ls-files --others --exclude-standard -- assets/slice content)" ]; then
         git reset --quiet --hard "origin/$base"

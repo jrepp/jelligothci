@@ -699,6 +699,77 @@ class GitTest(unittest.TestCase):
         self.assertEqual(git(self.work, "rev-parse", "HEAD"), git(self.origin, "rev-parse", "refs/heads/main"))
         self.assertTrue(server.get("/api/git")["enabled"])
 
+    # Squash-merge scenarios: the studio branch landed on main, which then gained other changes.
+    @staticmethod
+    def reformat(repo, rel, tail="\n\n"):
+        """Rewrite a content JSON file with a distinct whitespace tail (still valid JSON)."""
+        path = repo / rel
+        path.write_text(json.dumps(json.loads(path.read_text()), indent=2) + tail)
+
+    def studio_commit(self, rel, tail="\n\n"):
+        self.reformat(self.work, rel, tail)
+        git(self.work, "commit", "--quiet", "-am", f"chore(art): edit {rel}")
+        return git(self.work, "rev-parse", "HEAD")
+
+    def main_clone(self):
+        other = self.root / "main-clone"
+        if not other.exists():
+            git(self.root, "clone", "--quiet", str(self.origin), str(other))
+            git(other, "checkout", "--quiet", "main")
+        git(other, "pull", "--quiet", "origin", "main")
+        return other
+
+    def squash_land(self, *rels):
+        """Push art/studio and squash its files onto main, as a merged pull request would."""
+        git(self.work, "push", "--quiet", "origin", "art/studio")
+        other = self.main_clone()
+        git(other, "fetch", "--quiet", "origin")
+        git(other, "checkout", "origin/art/studio", "--", *rels)
+        git(other, "commit", "--quiet", "-m", "feat: studio edits (#1)")
+        git(other, "push", "--quiet", "origin", "main")
+
+    def main_moves_on(self, rel, tail):
+        other = self.main_clone()
+        self.reformat(other, rel, tail)
+        git(other, "commit", "--quiet", "-am", f"feat: main edits {rel}")
+        git(other, "push", "--quiet", "origin", "main")
+
+    @unittest.skipIf(os.name == "nt", "entrypoint.sh is the container's POSIX start script")
+    def test_entrypoint_resets_after_squash_when_base_moved_on(self):
+        self.studio_commit("content/creatures.json")
+        self.squash_land("content/creatures.json")
+        self.main_moves_on("content/pets.json", "\n\n\n")
+        self.start_entrypoint()
+        self.assertEqual(git(self.work, "rev-parse", "HEAD"), git(self.origin, "rev-parse", "refs/heads/main"))
+
+    @unittest.skipIf(os.name == "nt", "entrypoint.sh is the container's POSIX start script")
+    def test_entrypoint_keeps_unlanded_work_on_top_of_landed_work(self):
+        self.studio_commit("content/creatures.json")
+        self.squash_land("content/creatures.json")
+        studio_head = self.studio_commit("content/behaviors.json")
+        self.main_moves_on("content/pets.json", "\n\n\n")
+        self.start_entrypoint()
+        self.assertEqual(git(self.work, "rev-parse", "HEAD"), studio_head)
+
+    @unittest.skipIf(os.name == "nt", "entrypoint.sh is the container's POSIX start script")
+    def test_entrypoint_keeps_work_when_base_reedited_the_same_file(self):
+        studio_head = self.studio_commit("content/creatures.json")
+        self.squash_land("content/creatures.json")
+        self.main_moves_on("content/creatures.json", "\n\n\n")  # ambiguous, so the studio keeps its branch
+        self.start_entrypoint()
+        self.assertEqual(git(self.work, "rev-parse", "HEAD"), studio_head)
+
+    @unittest.skipIf(os.name == "nt", "entrypoint.sh is the container's POSIX start script")
+    def test_entrypoint_keeps_uncommitted_studio_edits_after_squash(self):
+        studio_head = self.studio_commit("content/creatures.json")
+        self.squash_land("content/creatures.json")
+        self.main_moves_on("content/pets.json", "\n\n\n")
+        self.reformat(self.work, "content/behaviors.json", "\n\n\n\n")  # unsaved on disk
+        edited = (self.work / "content/behaviors.json").read_text()
+        self.start_entrypoint()
+        self.assertEqual((self.work / "content/behaviors.json").read_text(), edited)
+        self.assertIn(studio_head, git(self.work, "rev-list", "HEAD"))
+
 
 if __name__ == "__main__":
     # Under ctest's 300 s limit, print every thread's stack first so a stall shows where it is.
