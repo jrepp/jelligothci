@@ -21,9 +21,18 @@ void jelli_canvas_rect(Canvas *c, int x, int y, int w, int h, uint16_t color)
         x = c->left;
     if (y < c->top)
         y = c->top;
-    for (int row = y; row < bottom; ++row)
-        for (int column = x; column < right; ++column)
-            jelli_canvas_pixel(c, column, row, color);
+    if (c->dim)
+        color = (uint16_t)((color >> 1) & 0x7befu);
+    for (int row = y; row < bottom; ++row) {
+        int left = x, end = right;
+        /* A circle intersects each row in one contiguous interval. */
+        while (left < end && !jelli_canvas_in_round(left, row))
+            ++left;
+        while (end > left && !jelli_canvas_in_round(end - 1, row))
+            --end;
+        for (int column = left; column < end; ++column)
+            c->s->pixels[(unsigned)row * c->s->stride + (unsigned)column] = color;
+    }
 }
 void jelli_canvas_disk(Canvas *c, int x, int y, int radius, uint16_t color)
 {
