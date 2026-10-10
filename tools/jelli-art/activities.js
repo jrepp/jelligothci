@@ -131,7 +131,7 @@
   }
   const previous=renderView, oldKeys=S.keydown;
   renderView=()=>{const on=state.view==='activities';root.classList.toggle('hidden',!on);cancelAnimationFrame(frame);if(!on)return previous();
-    for(const id of ['detail','sheet','creature','behaviour'])document.getElementById(id)?.classList.add('hidden');
+    for(const id of ['detail','sheet','creature','behaviour','game'])document.getElementById(id)?.classList.add('hidden');
     document.querySelectorAll('#views button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view==='activities')));render();};
   S.keydown=e=>{if(state.view!=='activities')return oldKeys?.(e);if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();if(dirty()&&!stale)save();}return true;};
 })();

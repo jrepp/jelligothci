@@ -179,14 +179,22 @@ def load_validator(repo):
     return load_checkout_module(repo, "build_slice")
 
 
-def _run_load_assets(validator, manifest, source):
-    """build_slice.load_assets against a scratch copy holding this manifest and the source PNGs."""
+def _run_load_assets(validator, manifest, source, images=None):
+    """build_slice.load_assets against a scratch copy holding this manifest and the source PNGs.
+
+    images maps manifest paths to PIL images not yet on disk (a new frame); they
+    are saved into the scratch copy instead of copied from source.
+    """
+    images = images or {}
     with tempfile.TemporaryDirectory(prefix="jelli-art-clips-") as scratch:
         root = Path(scratch)
         for asset in manifest["assets"]:
             target = root / asset["path"]
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(Path(source) / asset["path"], target)
+            if asset["path"] in images:
+                images[asset["path"]].save(target)
+            else:
+                shutil.copyfile(Path(source) / asset["path"], target)
         (root / "assets.json").write_text(json.dumps(manifest, indent=2) + "\n")
         saved = validator.SOURCE
         validator.SOURCE = root
@@ -199,7 +207,7 @@ def _run_load_assets(validator, manifest, source):
             validator.SOURCE = saved
 
 
-def validate(manifest, original, source, validator):
+def validate(manifest, original, source, validator, images=None):
     """Raise ClipError when the edited manifest fails build_slice; returns a warning or "".
 
     When the unedited manifest already fails (for example a live paintover with a
@@ -208,16 +216,16 @@ def validate(manifest, original, source, validator):
     """
     if validator is None or not hasattr(validator, "load_assets"):
         raise ClipError("This checkout has no tools/assets/build_slice.py, so clip edits cannot be validated")
-    error = _run_load_assets(validator, manifest, source)
+    error = _run_load_assets(validator, manifest, source, images)
     if error is None:
         return ""
     baseline = _run_load_assets(validator, original, source)
     if baseline is None:
-        raise ClipError(f"The edited clips fail validation: {error}")
+        raise ClipError(f"The edit fails validation: {error}")
     check = getattr(validator, "check_creature_clips", None)
     if check:
         try:
             check(json.loads(json.dumps(manifest)))
         except (ValueError, KeyError) as clip_error:
-            raise ClipError(f"The edited clips fail validation: {clip_error}") from clip_error
+            raise ClipError(f"The edit fails validation: {clip_error}") from clip_error
     return f"Saved, but the manifest already failed validation before this edit: {baseline}"

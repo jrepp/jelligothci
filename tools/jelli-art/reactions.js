@@ -21,12 +21,28 @@
 
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="behaviour" aria-pressed="false">Behaviour</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="behaviour" class="hidden"></div><div id="bv-picker" class="bv-picker hidden" role="dialog" aria-label="Choose a sprite"></div>');
+  /* Fields are written as <label>Name</label><control>; give each unlabelled control the
+   * visible text of the label before it, so screen readers announce it (re-applied on render). */
+  const labelControls = root => {
+    for (const label of root.querySelectorAll('label:not([for])')) {
+      if (label.querySelector('input,select,textarea')) continue; // Already wraps its control.
+      let next = label.nextElementSibling;
+      while (next && !next.matches('input,select,textarea') && !next.querySelector('input,select,textarea')) next = next.nextElementSibling;
+      const control = next && (next.matches('input,select,textarea') ? next : next.querySelector('input,select,textarea'));
+      if (control && !control.hasAttribute('aria-label') && !control.hasAttribute('aria-labelledby'))
+        control.setAttribute('aria-label', label.textContent.trim());
+    }
+  };
+  for (const id of ['behaviour', 'bv-picker']) {
+    const root = document.getElementById(id);
+    new MutationObserver(() => labelControls(root)).observe(root, {childList: true, subtree: true});
+  }
   document.head.insertAdjacentHTML('beforeend', `<style>
     .bv-grid{display:grid;grid-template-columns:220px minmax(0,1fr) auto;gap:20px;align-items:start}
     @media(max-width:1300px){.bv-grid{grid-template-columns:200px minmax(0,1fr)}.bv-preview{grid-column:1/-1}}
     @media(max-width:800px){.bv-grid{grid-template-columns:1fr}}
     .bv-list{display:grid;gap:4px}.bv-list button{text-align:left;display:flex;justify-content:space-between;gap:8px}
-    .bv-list button .sub{font:10px ui-monospace,monospace;color:var(--muted)}
+    .bv-list button .sub{font:10px ui-monospace,monospace;color:inherit}
     .bv-field{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:5px 0}
     .bv-field label,.bv-k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
     .bv-note{font-size:11px;color:var(--muted)}.bv-field input[type=number]{width:78px}.bv-field input[type=text]{width:180px}
@@ -423,7 +439,7 @@
     const users = bwork.repertoires.flatMap(r => (r.reactions || []).map((x, i) => [r.name, i, x]).filter(([, , x]) => x.state === s.name));
     const poseOpts = cr.poses().map(pose => { const f = cr.fallbackOf(pose); return `<option value="${esc(pose)}"${pose === look?.pose ? ' selected' : ''}>${esc(pose)}${f ? ` (state pose; falls back to ${esc(f)})` : ''}</option>`; }).join('');
     return `<div class="bv-field"><label>Name</label><input type="text" data-rename="${esc(s.name)}" value="${esc(s.name)}" pattern="[a-z][a-z0-9_]*" aria-label="State name"><button id="bv-delete-state">Delete state</button></div>
-      <div class="bv-field"><label>Lasts</label>${num(`${p}.duration_s.0`, s.duration_s?.[0], 1, lim.duration_max_s)}–${num(`${p}.duration_s.1`, s.duration_s?.[1], 1, lim.duration_max_s)}<span class="bv-note">s</span>
+      <div class="bv-field"><label>Lasts</label>${num(`${p}.duration_s.0`, s.duration_s?.[0], 1, lim.duration_max_s, 'int', 'aria-label="Shortest duration, seconds"')}–${num(`${p}.duration_s.1`, s.duration_s?.[1], 1, lim.duration_max_s, 'int', 'aria-label="Longest duration, seconds"')}<span class="bv-note">s</span>
         <label>Cooldown</label>${num(`${p}.cooldown_s`, s.cooldown_s, 0, lim.cooldown_max_s)}<span class="bv-note">s before it can start again</span></div>
       <div class="bv-k" style="margin-top:8px">Effects on entry · ±${lim.effect}, then clamped to 0–1000</div><div style="display:flex;flex-wrap:wrap;gap:4px 14px">${effects}</div>
       <div class="bv-k" style="margin-top:8px">Ends early on</div><div class="bv-chips" id="bv-ends">${lists.stimuli.map(st => `<button data-end="${st}" aria-pressed="${(s.ends_on || []).includes(st)}">${st}</button>`).join('')}</div>

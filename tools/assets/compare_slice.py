@@ -37,13 +37,17 @@ def read_before(spec, relative):
     if folder.is_dir():
         path = folder / relative
         return path.read_bytes() if path.exists() else None
-    return git_blob(resolve(spec), relative)
+    commit = resolve(spec)
+    return git_blob(commit, relative) if commit else None
 
 
 def resolve(spec):
-    """Commit SHA for a revision, so cached blobs stay correct when HEAD moves."""
-    result = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--verify", f"{spec}^{{commit}}"],
-                            capture_output=True, text=True, check=False)
+    """Commit SHA for a revision, so cached blobs stay correct when HEAD moves; None without git."""
+    try:
+        result = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--verify", f"{spec}^{{commit}}"],
+                                capture_output=True, text=True, check=False)
+    except OSError:  # git is not installed: there is no history to compare with
+        return None
     if result.returncode:
         raise ValueError(f"Unknown revision: {spec}")
     return result.stdout.strip()
@@ -141,6 +145,10 @@ def main():
     template = Path(__file__).with_name("compare.html").read_text()
     if template.count("__COMPARE_DATA__") != 1:
         raise ValueError("Compare template data marker mismatch")
+    # The Jelli Art shell (mode tabs, toasts, themes, shortcut help) works without the studio scripts.
+    shell = Path(__file__).resolve().parent.parent / "jelli-art/shell.js"
+    if shell.exists():
+        template = template.replace("/*__STUDIO_JS__*/", shell.read_text())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(template.replace("__COMPARE_DATA__", json.dumps(payload).replace("<", "\\u003c")))
     changed = sum(r["changed"] != 0 for r in records)
