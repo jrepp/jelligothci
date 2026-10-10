@@ -101,5 +101,23 @@
       ],
       "growth_ticks": 0
     }
-  ]
+  ],
+  "newborn": {
+    "needs": {
+      "satiety": 500,
+      "energy": 700,
+      "hygiene": 700,
+      "amusement": 500,
+      "social": 500
+    },
+    "bond": 100,
+    "hydration": 700,
+    "bedtime_hour": 22,
+    "sleep_minutes": 480,
+    "clock_offset_minutes": 540
+  },
+  "start": {
+    "food": 5,
+    "gifts": 3
+  }
 }

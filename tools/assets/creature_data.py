@@ -12,6 +12,8 @@ from build_slice import CREATURE_POSES
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "content/pets.json"
 CREATURES = ROOT / "content/creatures.json"
+BEHAVIORS = ROOT / "content/behaviors.json"
+CAPTION_LIMIT = 16
 # Order matches JelliCreatureCondition in include/jelli/creature.h.
 CREATURE_CONDITIONS = ("asleep", "wake_groggy", "wake_surprised", "wake_happy", "unwell",
                        "eating", "playing", "touch_happy", "touch_upset")
@@ -63,8 +65,8 @@ def check_profile(profile, manifest):
 def load(manifest):
     forms = sorted(json.loads(CATALOG.read_text())["forms"], key=lambda f: f["id"])
     data = json.loads(CREATURES.read_text())
-    require(data.get("version") == 1 and set(data) == {"version", "behaviors", "profiles"},
-            "Unknown creature data schema")
+    require(data.get("version") == 1 and {"version", "behaviors", "profiles"} <= set(data) <=
+            {"version", "behaviors", "profiles", "state_presentation"}, "Unknown creature data schema")
     behaviors = {}
     for behavior in data["behaviors"]:
         check_behavior(behavior)
@@ -80,6 +82,27 @@ def load(manifest):
     return forms, profiles, behaviors
 
 
+def pose_names(manifest):
+    """Base poses in enum order, then the manifest's state poses."""
+    return list(CREATURE_POSES) + [p["name"] for p in manifest.get("state_poses", [])]
+
+
+def load_looks(manifest):
+    """One presentation per behaviour state, in content/behaviors.json state order."""
+    states = [s["name"] for s in json.loads(BEHAVIORS.read_text())["states"]]
+    looks = {p["state"]: p for p in json.loads(CREATURES.read_text()).get("state_presentation", [])}
+    require(set(looks) == set(states), f"state_presentation must cover exactly: {states}")
+    keys = {a["key"]: a for a in manifest["assets"]}
+    for name, look in looks.items():
+        require(look["pose"] in pose_names(manifest), f"State {name}: unknown pose {look['pose']}")
+        caption = look.get("caption", "")
+        require(len(caption) <= CAPTION_LIMIT and all(c.isupper() or c in " !?.,0123456789" for c in caption),
+                f"State {name}: caption is upper case, at most {CAPTION_LIMIT}")
+        for field in ("effect", "prop"):
+            require(look.get(field) is None or look[field] in keys, f"State {name}: unknown {field} asset")
+    return [looks[name] for name in states], keys
+
+
 def clip_rows(forms, manifest):
     assets = {a["key"]: a for a in manifest["assets"]}
     clips = {c["key"]: c for c in manifest["clips"]}
@@ -90,8 +113,9 @@ def clip_rows(forms, manifest):
         require(portrait is not None and portrait.get("form") == art,
                 f"Portrait {form['portrait']} is not a {art} frame")
         cells = []
-        for pose in CREATURE_POSES:
-            clip = clips.get(f"{art}.{pose}")
+        fallback = {p["name"]: p["fallback"] for p in manifest.get("state_poses", [])}
+        for pose in pose_names(manifest):
+            clip = clips.get(f"{art}.{pose}") or clips.get(f"{art}.{fallback.get(pose, pose)}")
             require(clip is not None, f"Form {form['name']} has no {art}.{pose} clip")
             frames = ", ".join(f"{assets[k]['id']}u" for k in clip["frames"])
             holds = ", ".join(f"{n}u" for n in clip["durations_ms"])
@@ -116,11 +140,20 @@ def emit(manifest):
     rows = clip_rows(forms, manifest)
     count = len(forms)
     profile_rows = [profile_row(f, profiles[f["art"]], behaviors[profiles[f["art"]]["behavior"]]) for f in forms]
+    looks, keys = load_looks(manifest)
+    poses = pose_names(manifest)
+    look_rows = [f"    {{{poses.index(l['pose'])}u, \"{l.get('caption', '')}\", "
+                 f"{keys[l['effect']]['id'] if l.get('effect') else 0}u, "
+                 f"{keys[l['prop']]['id'] if l.get('prop') else 0}u}}, /* {l['state']} */" for l in looks] or ["    {0}, /* no states */"]
     return ["#include \"jelli/creature.h\"",
-            f"static const JelliClip creature_clips[{count}][JELLI_POSE_COUNT] = {{\n" + "\n".join(rows) + "\n};",
+            f"const unsigned jelli_creature_pose_count = {len(poses)}u;",
+            f"static const JelliClip creature_clips[{count}][{len(poses)}] = {{\n" + "\n".join(rows) + "\n};",
+            f"static const JelliBehaviorLook behavior_looks[] = {{\n" + "\n".join(look_rows) + "\n};",
+            "const JelliBehaviorLook *jelli_behavior_look(unsigned state)\n{\n"
+            f"    return state < {len(looks)}u ? &behavior_looks[state] : 0;\n}}\n",
             f"static const JelliCreatureProfile creature_profiles[{count}] = {{\n" + "\n".join(profile_rows) + "\n};",
             "const JelliClip *jelli_creature_clip(unsigned form, unsigned pose)\n{\n"
-            f"    if (form >= {count}u || pose >= (unsigned)JELLI_POSE_COUNT)\n        return 0;\n"
+            f"    if (form >= {count}u || pose >= {len(poses)}u)\n        return 0;\n"
             "    return &creature_clips[form][pose];\n}\n",
             "const JelliCreatureProfile *jelli_creature_profile(unsigned form)\n{\n"
             f"    return &creature_profiles[form < {count}u ? form : 0u];\n}}\n"]

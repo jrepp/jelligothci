@@ -1,3 +1,4 @@
+#include "jelli/behavior.h"
 #include "jelli/potty.h"
 #include "jelli/wake.h"
 #include "game_internal.h"
@@ -90,15 +91,14 @@ static void adjust_need(JelliPet *pet, JelliNeed need, int32_t delta)
 
 void jelli_game_add_clock(JelliGame *game, JelliPet *pet, uint64_t ticks)
 {
-    (void)game;
     uint64_t old_ticks = pet->ticks;
     pet->ticks = saturating_add(pet->ticks, ticks);
     pet->stage_ticks = saturating_add(pet->stage_ticks, ticks);
     jelli_wake_advance(pet, pet->ticks - old_ticks);
     integrate_needs(pet, pet->ticks - old_ticks);
     jelli_hydration_advance(pet, pet->ticks - old_ticks);
-    (void)jelli_potty_advance(pet,
-                              old_ticks); /* RFC-005: urge stimulus joins the behaviour engine. */
+    if (jelli_potty_advance(pet, old_ticks))
+        jelli_behavior_stimulus(game, JELLI_STIM_POTTY_URGE, 0u);
     jelli_habits_advance(&pet->habits, old_ticks, pet->ticks - old_ticks, pet->asleep,
                          pet->activity == JELLI_PLAYING);
     jelli_pet_touch_decay(pet, pet->ticks - old_ticks);
@@ -166,6 +166,8 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
 {
     JelliEventSnapshot before = jelli_game_observe(game, pet);
     unsigned activity = (unsigned)pet->activity;
+    unsigned finished = pet->moment ? JELLI_ACTIVITY_CODE_MOMENT + pet->moment - 1u
+                                    : JELLI_ACTIVITY_CODE_CARE + activity;
     switch (pet->activity) {
     case JELLI_EATING:
         if (game->food > 0u) {
@@ -204,6 +206,7 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
         break;
     case JELLI_CLEANING:
         adjust_need(pet, JELLI_HYGIENE, 350);
+        jelli_potty_clean(pet);
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
         break;
@@ -223,8 +226,10 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
     case JELLI_IDLE:
         break;
     }
-    if (activity != JELLI_IDLE)
+    if (activity != JELLI_IDLE) {
         jelli_game_emit(game, JELLI_EVENT_EFFECT, activity, JELLI_OK, 0u, pet, before);
+        jelli_behavior_stimulus(game, JELLI_STIM_ACTIVITY_FINISHED, finished);
+    }
 }
 
 static void evolve_if_due(JelliPet *pet)
@@ -301,5 +306,5 @@ void jelli_game_endpoint(JelliGame *game, JelliPet *pet, uint64_t ticks, bool of
         form != pet->form)
         jelli_game_emit(game, JELLI_EVENT_STATUS, form != pet->form ? 1u : 0u, JELLI_OK, pet->form,
                         pet, before);
-    (void)offline;
+    jelli_behavior_step(game, pet, previous_ticks, offline);
 }

@@ -53,6 +53,14 @@ with tempfile.TemporaryDirectory(prefix="jelli-content-") as directory:
         invalid = copy.deepcopy(catalog)
         invalid["forms"][2][field] = value
         check(invalid, False)
+    for path, value in ((("newborn", "needs", "social"), 1001), (("newborn", "bedtime_hour"), 24),
+                        (("newborn", "sleep_minutes"), 0), (("start", "food"), -1)):
+        invalid = copy.deepcopy(catalog)
+        target = invalid
+        for key in path[:-1]:
+            target = target[key]
+        target[path[-1]] = value
+        check(invalid, False)
     invalid = copy.deepcopy(catalog)
     invalid["version"] = 1
     check(invalid, False)

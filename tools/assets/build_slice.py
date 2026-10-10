@@ -18,13 +18,18 @@ SOURCE = REPO / "assets/slice"
 
 
 # Creature frames may be 32x32 or 48x48 (ADR-012); other kinds have one size.
-FIXED_SIZES = {"icons": (16, 16), "props": (24, 24), "font": (128, 72), "menus": (32, 32), "meters": (32, 32),
+FIXED_SIZES = {"icons": (16, 16), "font": (128, 72), "menus": (32, 32), "meters": (32, 32),
                "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64), "prizes": (32, 32)}
 CREATURE_SIZES = {(32, 32), (48, 48)}
+PROP_SIZES = {(16, 16), (24, 24), (32, 32)}  # Imported props such as the 16x16 poop mess.
 # Runtime pose order; must match JelliCreaturePose in include/jelli/creature.h.
 CREATURE_POSES = ("idle", "idle-alt", "curious", "content", "eating", "happy", "asleep", "unwell")
 CLIP_FRAME_CAP = 6
-PACK_CEILING = 245760  # 240 KiB: axolotl (ADR-012), then Reading and POTTY icons (RFC-005).
+# Real limits the art must fit: the SDL live-reload pack buffer and its banks
+# (ports/sdl/asset_reload.h). Firmware embeds the same art with ample flash headroom.
+PACK_CEILING = 262144  # JELLI_ASSET_PACK_CAPACITY
+LIVE_PIXEL_CAPACITY = 131072
+LIVE_MASK_CAPACITY = 16384
 
 
 def require(condition, message):
@@ -63,7 +68,15 @@ def check_creature_clips(manifest):
     require(tuple(manifest.get("creature_poses", ())) == CREATURE_POSES, "Creature pose list mismatch")
     forms = {a["form"] for a in manifest["assets"] if a["kind"] == "creatures"}
     keys = {clip["key"] for clip in manifest["clips"]}
-    require(keys == {f"{form}.{pose}" for form in forms for pose in CREATURE_POSES}, "Creature clip coverage mismatch")
+    base = {f"{form}.{pose}" for form in forms for pose in CREATURE_POSES}
+    require(base <= keys, f"Missing base pose clips: {sorted(base - keys)}")
+    # State poses (behaviour states) are optional per form; a missing clip uses its fallback.
+    state_poses = manifest.get("state_poses", [])
+    names = [p["name"] for p in state_poses]
+    require(len(names) == len(set(names)) and not set(names) & set(CREATURE_POSES), "State pose names must be new and unique")
+    require(all(p["fallback"] in CREATURE_POSES for p in state_poses), "State pose fallbacks must be base poses")
+    optional = {f"{form}.{name}" for form in forms for name in names}
+    require(keys <= base | optional, f"Clips for unknown poses: {sorted(keys - base - optional)}")
     for clip in manifest["clips"]:
         form = clip["key"].split(".", 1)[0]
         assets = {a["key"]: a for a in manifest["assets"]}
@@ -79,6 +92,7 @@ def load_assets():
     counts = {"creatures": 0, "icons": 0, "props": 0, "font": 0, "menus": 0, "meters": 0, "health": 0, "effects": 0, "backgrounds": 0, "prizes": 0}
     expected = {kind: {size} for kind, size in FIXED_SIZES.items()}
     expected["creatures"] = CREATURE_SIZES
+    expected["props"] = PROP_SIZES
     for asset in manifest["assets"]:
         key, ident, path = asset["key"], asset["id"], asset["path"]
         require(key not in images and ident not in ids and path not in paths, f"Duplicate asset: {key}")
@@ -149,7 +163,12 @@ def export_pixels(output, manifest, images):
                         **({"ground_anchor_q8": asset["ground_anchor_q8"]} if asset["kind"] == "creatures" else {}),
                         "files": {k: {"bytes": len(v), "sha256": hashlib.sha256(v).hexdigest()} for k, v in payloads.items()}})
     total = sum(r["bytes"] for r in records)
-    require(total + 8192 + 4096 <= PACK_CEILING, "Art exceeds the planned pack budget")
+    require(total + 8192 + 4096 <= PACK_CEILING, f"Art ({total} bytes + allowances) exceeds the {PACK_CEILING}-byte live pack")
+    sprites = [a for a in manifest["assets"] if a["kind"] != "font"]
+    pixels = sum(a["width"] * a["height"] for a in sprites)
+    masks = sum((a["width"] + 7) // 8 * a["height"] for a in sprites)
+    require(pixels <= LIVE_PIXEL_CAPACITY and masks <= LIVE_MASK_CAPACITY,
+            f"Art needs {pixels} pixels / {masks} mask bytes; live banks hold {LIVE_PIXEL_CAPACITY} / {LIVE_MASK_CAPACITY}")
     report = {"pixel_bytes": total, "definition_allowance": 8192, "metadata_allowance": 4096,
               "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": PACK_CEILING,
               "note": "Raw pixels are real exports; definitions, metadata and pack assembly remain allowances, not a compiled game pack.", "assets": records}

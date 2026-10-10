@@ -134,8 +134,10 @@ drink adds to a per-pet `digesting` pool. The pool drains into a `potty` urge
 (0..1000) at an authored rate per simulated minute, so the urge arrives a while
 after the meal. When the urge crosses its threshold, a `potty_urge` stimulus fires,
 and a repertoire can answer it with a request, such as BUBBLE asking for help.
-POTTY is a short tap-to-finish health routine: it clears the urge and gives a
-little hygiene. There are no accidents or penalties. The rates (amount per meal
+POTTY is a one-tap health routine: it clears the urge and gives a little
+hygiene. The user later chose "accident if ignored": an unanswered `asking_potty`
+request times out into an accident that leaves an animated mess, which drains
+hygiene until CLEAN. The rates (amount per meal
 and per drink, drain per minute, threshold, hygiene gain) live in
 `content/potty.json`, with optional per-species multipliers on the repertoire.
 This adds 4 bytes per pet to the save (`digesting`, `potty`).
@@ -185,6 +187,19 @@ a seed, and see which state is chosen and how it looks.
 3. Presentation: state poses with fallback, captions and effect sprites.
 4. Magic-number scrub, in tested slices.
 5. Jelli Art behaviour authoring.
+
+# Implementation status (2026-10-10, `feat/axolotl-species`)
+
+| Step | State |
+| --- | --- |
+| Activities as data, READING, potty cycle, POTTY routine | Implemented and tested (save v10) |
+| Behaviour engine, stimuli, requests, BUBBLE repertoire | Implemented and tested (save v11; fields fit `JelliPet` padding) |
+| Presentation: state poses with fallback, captions, effects, props | Implemented and tested |
+| Potty accident and animated mess | The user changed this to "accident if ignored": the `asking_potty` timeout leaves a mess that CLEAN fixes |
+| Magic-number scrub | In progress; see [memo-032](../memos/memo-032-magic-number-inventory.md) |
+| Jelli Art behaviour authoring | In progress |
+
+Not yet verified on hardware: the multi-frame clip and effect redraw cost on ESP32.
 
 # Alternatives Considered
 

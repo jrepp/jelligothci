@@ -10,11 +10,11 @@ static bool condition_holds(unsigned when, const JelliPetRenderKey *v)
     case JELLI_WHEN_ASLEEP:
         return v->asleep;
     case JELLI_WHEN_WAKE_GROGGY:
-        return v->reaction == 4u;
+        return v->reaction == JELLI_REACTION_WAKE_GROGGY;
     case JELLI_WHEN_WAKE_SURPRISED:
-        return v->reaction == 5u && v->phase == 2u;
+        return v->reaction == JELLI_REACTION_WAKE_HAPPY && v->phase == JELLI_POSE_CURIOUS;
     case JELLI_WHEN_WAKE_HAPPY:
-        return v->reaction == 5u;
+        return v->reaction == JELLI_REACTION_WAKE_HAPPY;
     case JELLI_WHEN_UNWELL:
         return v->health == JELLI_UNWELL || v->health == JELLI_RECOVERING;
     case JELLI_WHEN_EATING:
@@ -23,9 +23,10 @@ static bool condition_holds(unsigned when, const JelliPetRenderKey *v)
         return v->activity == JELLI_PLAYING || v->activity == JELLI_GIVING ||
                v->activity == JELLI_EXERCISING;
     case JELLI_WHEN_TOUCH_HAPPY:
-        return v->reaction == 1u;
+        return v->reaction == JELLI_REACTION_TOUCH_HAPPY;
     case JELLI_WHEN_TOUCH_UPSET:
-        return v->reaction == 2u || v->reaction == 3u;
+        return v->reaction == JELLI_REACTION_TOUCH_UPSET ||
+               v->reaction == JELLI_REACTION_TOUCH_OVERLOAD;
     case JELLI_WHEN_COUNT:
         break;
     }
@@ -39,7 +40,10 @@ static unsigned creature_pose(const JelliCreatureProfile *profile, const JelliPe
     for (unsigned i = 0u; i < count; ++i)
         if (condition_holds(profile->rules[i].when, v))
             return profile->rules[i].pose;
-    /* Idle phases are the idle poses chosen by the profile's beat schedule. */
+    /* Then a behaviour state's pose (content/creatures.json), then the idle schedule. */
+    const JelliBehaviorLook *look = v->behavior ? jelli_behavior_look(v->behavior - 1u) : NULL;
+    if (look && look->pose < jelli_creature_pose_count)
+        return look->pose;
     return v->phase <= JELLI_POSE_CONTENT ? v->phase : JELLI_POSE_IDLE;
 }
 
@@ -122,7 +126,8 @@ bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
         ui->sound_pending = true;
         ui->sound_cue = JELLI_SOUND_PET + 1u;
         if (!waking || pet->wake_mood == JELLI_WAKE_HAPPY)
-            jelli_particles_burst(&ui->particles, x, y, waking || pet->reaction == 1u);
+            jelli_particles_burst(&ui->particles, x, y,
+                                  waking || pet->reaction == JELLI_REACTION_TOUCH_HAPPY);
     }
     return true;
 }

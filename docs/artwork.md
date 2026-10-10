@@ -59,6 +59,28 @@ rule and clip the game would choose. The idle timeline plays the beat schedule
 with its clips. While simulating, `,` and `.` step one beat. **Save behaviour
 & size** validates the file and writes `content/creatures.json`.
 
+State poses such as `study` and `ponder` are listed after the 8 base poses. A
+form without its own clip for one uses the fallback pose shown. **Add clip**
+gives the form its own clip; **Remove clip** goes back to the fallback.
+
+### Behaviour and reactions
+
+Choose **Behaviour** at the top. **States & looks** edits each behaviour state.
+It sets how long the state lasts and its cooldown, its need and bond changes,
+the stimuli that end it early, and an optional request with its bond reward.
+It also sets the state's look: pose, upper-case caption of up to 16 characters,
+an effect sprite above the head, and a prop. **Repertoires** chooses which forms
+react and which moments they enjoy more. It also edits their reactions: a
+stimulus, an optional value, the state, the weight, the chance, and conditions
+for place, night, mood and bond.
+
+**Stimulus simulator** shows what a form would do when a stimulus arrives:
+every reaction that fits, the weighted pick, the chance roll and the state it
+enters. A running state is only ended by its ends-on stimuli, never replaced.
+The odds bar covers the next ten minutes, and the preview shows the resulting
+look with an optional potty mess. **Save behaviour** (⌘S / Ctrl+S) checks both
+files with the engine's own validator before writing them.
+
 ## Edit in the running game
 
 ```sh

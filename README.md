@@ -88,10 +88,16 @@ build time ([ADR-012](docs-cms/adr/adr-012-data-driven-creature-species-and-pres
 | --- | --- |
 | `content/pets.json` | Collection entries, forms (`art` name, portrait), evolution sets and growth |
 | `assets/slice/assets.json` `clips` | Frames, holds and looping for each form's eight runtime poses |
-| `content/creatures.json` | Per-form actor/icon/portrait scale and behaviour: pose rules, idle beats, quiet cycle |
+| `content/creatures.json` | Per-form actor/icon/portrait scale, pose rules, idle beats, and how each behaviour state looks |
+| `content/behaviors.json` | Behaviour states (curious, studying, asking for help…), their effects and requests, and each species' stimulus reactions |
+| `content/activities.json` | Activities ring moments (including READING): gains, location, suggestion hour, icon, prop |
+| `content/potty.json` | The potty cycle from meals and drinks, accidents, and the mess animation |
 
 Mint grows into Lilac; catching the Bubble Gem adds BUBBLE, a single-form
-axolotl. Import upscaled frame art with `tools/assets/import_creature.py SPEC DIR`
+axolotl. BUBBLE reacts to presents, the garden, night, reading and her needs:
+she studies, contemplates, and asks for food, company or the potty (POTTY in the
+Health ring). Ignore the potty request and she has an accident that CLEAN fixes
+([RFC-005](docs-cms/rfcs/rfc-005-stimulus-driven-creature-behaviour.md)). Import upscaled frame art with `tools/assets/import_creature.py SPEC DIR`
 (see `assets/slice/source/axolotl-import.json`), then edit clips in Jelli Art's
 Creature view.
 

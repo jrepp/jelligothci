@@ -10,13 +10,16 @@ never touch an arbitrary path. Saved art is recorded in
 assets/slice/source/hand-painted.json, which the polish recipe leaves alone.
 Creature clip edits change only the "clips" entries of assets.json and are
 validated by the checkout's tools/assets/build_slice.py before they are written.
-Creature behaviour and render profiles are written to content/creatures.json
-after the checkout's tools/assets/creature_data.py accepts them.
+Creature render profiles and state looks are written to content/creatures.json
+after the checkout's tools/assets/creature_data.py accepts them, and behaviour
+states and repertoires to content/behaviors.json after the checkout's
+cmake/JelliBehaviors.cmake accepts them (cmake -P on a scratch copy).
 With --git-branch, each save is also committed (and with --git-push, pushed).
 """
 import argparse
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import threading
@@ -31,6 +34,7 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "assets"))
 from compare_slice import REPO, SOURCE, collect  # noqa: E402
+import behaviors  # noqa: E402
 import creatures  # noqa: E402
 import profiles  # noqa: E402
 from git_sync import GitSync  # noqa: E402
@@ -52,6 +56,8 @@ TEMPLATE = HERE.parent / "assets/compare.html"
 STUDIO_JS = HERE / "studio.js"
 CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
+PAGE_SCRIPTS = (STUDIO_JS, CREATURE_JS, BEHAVIOUR_JS, HERE / "simulator.js", HERE / "reactions.js")
+EDITABLE_CONTENT = ("behaviors", "creatures")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
 MAX_BODY = 1 << 20
@@ -76,7 +82,8 @@ def write_json(path, value):
 def version():
     """Changes whenever the manifest, creature content or any PNG changes on disk."""
     digest = hashlib.sha1()
-    for path in [MANIFEST, *[p for p in (PETS, CREATURE_DATA) if p.exists()], *sorted(SOURCE.glob("*/*.png"))]:
+    content = [PETS, CREATURE_DATA, *(CONTENT / f"{n}.json" for n in ("behaviors", "activities", "potty"))]
+    for path in [MANIFEST, *[p for p in content if p.exists()], *sorted(SOURCE.glob("*/*.png"))]:
         stat = path.stat()
         digest.update(f"{path.name}{stat.st_mtime_ns}{stat.st_size}".encode())
     return digest.hexdigest()[:16]
@@ -95,8 +102,22 @@ def payload(before):
         record.update(details[record["key"]])
     return {"live": True, "before_label": before, "after_label": "working tree", "version": version(),
             "studio_version": STUDIO_VERSION, "palette": manifest["palette"], "assets": records,
-            **creatures.creature_data(manifest, PETS), **creature_profiles(),
+            **creatures.creature_data(manifest, PETS), **creature_profiles(), **behaviour_data(),
             "git": GIT.status() if GIT else {"enabled": False}}
+
+
+def content_paths():
+    """The content files the studio may write, by name."""
+    return {"behaviors": CONTENT / "behaviors.json", "creatures": CREATURE_DATA}
+
+
+def behaviour_data():
+    path = content_paths()["behaviors"]
+    vocab = behaviors.vocabulary(REPO, CONTENT)
+    editable = CONTENT_WRITABLE and vocab is not None and path.exists() and shutil.which("cmake") is not None
+    return {"behavior_data": behaviors.read_json(path), "behavior_data_sha": profiles.digest(path),
+            "behavior_vocab": vocab, "behavior_editable": editable,
+            "potty": behaviors.read_json(CONTENT / "potty.json")}
 
 
 def creature_profiles():
@@ -201,23 +222,50 @@ def save_clips(edits, artist=""):
     return {"ok": True, "changed": changed, "version": version(), **({"warning": warning} if warning else {}), **git}
 
 
-def save_creature_data(data, base, artist=""):
-    """Replace content/creatures.json once creature_data.load accepts it; base is the hash the page edited."""
+def save_content(docs, bases, artist=""):
+    """Replace content/behaviors.json and/or content/creatures.json together.
+
+    bases holds the hash of each file as the page loaded it, so a save never
+    overwrites changes made elsewhere. The candidates are validated as a set:
+    behaviors.json by cmake/JelliBehaviors.cmake, creatures.json (profiles and
+    one look per behaviour state) by creature_data.py, then written in one commit.
+    """
+    if not isinstance(docs, dict) or not docs or not set(docs) <= set(EDITABLE_CONTENT):
+        raise StudioError(f"Save one or more of: {', '.join(EDITABLE_CONTENT)}")
+    bases = bases if isinstance(bases, dict) else {}
     with LOCK:
         if not CONTENT_WRITABLE:
             raise StudioError("This trial serves copied assets; pass --content with a copy of content/ to edit creature data")
-        if base != profiles.digest(CREATURE_DATA):
-            raise StudioError("content/creatures.json changed since you loaded it; revert to load the new version")
-        current = json.loads(CREATURE_DATA.read_text()) if CREATURE_DATA.exists() else None
-        if data == current:
-            return {"ok": True, "changed": False, "version": version(), "sha": base}
-        try:
-            profiles.validate(data, read_manifest(), creatures.load_checkout_module(REPO, "creature_data"), PETS)
-        except profiles.ProfileError as error:
-            raise StudioError(str(error)) from error
-        write_json(CREATURE_DATA, data)
-        git = record([CREATURE_DATA], "chore(art): edit creature behaviour and profiles in Jelli Art", artist)
-    return {"ok": True, "changed": True, "version": version(), "sha": profiles.digest(CREATURE_DATA), **git}
+        paths = content_paths()
+        for name in docs:
+            if bases.get(name) != profiles.digest(paths[name]):
+                raise StudioError(f"content/{name}.json changed since you loaded it; revert to load the new version")
+        current = {name: behaviors.read_json(path) for name, path in paths.items()}
+        changed = {name: doc for name, doc in docs.items() if doc != current[name]}
+        git = {}
+        if changed:
+            candidate = {**current, **changed}
+            try:
+                if "behaviors" in changed:
+                    behaviors.validate(candidate["behaviors"], REPO, CONTENT)
+                module = creatures.load_checkout_module(REPO, "creature_data")
+                profiles.validate(candidate["creatures"], read_manifest(), module, PETS, candidate["behaviors"])
+            except (behaviors.BehaviorError, profiles.ProfileError) as error:
+                raise StudioError(str(error)) from error
+            for name, doc in changed.items():
+                write_json(paths[name], doc)
+            files = " and ".join(f"{name}.json" for name in sorted(changed))
+            git = record([paths[name] for name in sorted(changed)], f"chore(art): edit {files} in Jelli Art", artist)
+    return {"ok": True, "changed": sorted(changed), "version": version(),
+            "shas": {name: profiles.digest(path) for name, path in paths.items()}, **git}
+
+
+def save_creature_data(data, base, artist=""):
+    """content/creatures.json alone (the Creature view's Behaviour & size panel)."""
+    result = save_content({"creatures": data}, {"creatures": base}, artist)
+    extra = {k: result[k] for k in ("commit", "git_error") if k in result}
+    return {"ok": True, "changed": bool(result["changed"]), "version": result["version"],
+            "sha": result["shas"]["creatures"], **extra}
 
 
 def set_palette_slot(index, color, artist=""):
@@ -273,7 +321,7 @@ class Handler(BaseHTTPRequestHandler):
         query = parse_qs(url.query)
         if method == "GET" and url.path == "/":
             page = TEMPLATE.read_text().replace("__COMPARE_DATA__", json.dumps({"live": True}))
-            page = page.replace("/*__STUDIO_JS__*/", "\n".join(p.read_text() for p in (STUDIO_JS, CREATURE_JS, BEHAVIOUR_JS)))
+            page = page.replace("/*__STUDIO_JS__*/", "\n".join(p.read_text() for p in PAGE_SCRIPTS))
             return self.send(HTTPStatus.OK, page.encode(), "text/html; charset=utf-8")
         if method == "GET" and url.path == "/api/data":
             return self.send(HTTPStatus.OK, payload(query.get("before", ["HEAD"])[0]))
@@ -301,6 +349,11 @@ class Handler(BaseHTTPRequestHandler):
         if method == "POST" and url.path == "/api/creatures":
             body = self.body()
             return self.send(HTTPStatus.OK, save_creature_data(body["data"], body.get("base"), str(body.get("artist", ""))))
+        if method == "GET" and url.path == "/api/behaviour":
+            return self.send(HTTPStatus.OK, {**behaviour_data(), **creature_profiles()})
+        if method == "POST" and url.path == "/api/content":
+            body = self.body()
+            return self.send(HTTPStatus.OK, save_content(body["docs"], body.get("bases"), str(body.get("artist", ""))))
         if method == "POST" and url.path == "/api/palette":
             body = self.body()
             return self.send(HTTPStatus.OK, set_palette_slot(int(body["index"]), str(body["color"]), str(body.get("artist", ""))))

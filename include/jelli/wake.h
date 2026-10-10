@@ -4,6 +4,7 @@
 
 typedef struct {
     uint32_t nap_ticks, sleep_ticks, bond_gain;
+    uint8_t reaction_ticks, surprise_ticks; /* Wake reaction length; surprise opens it. */
 } JelliWakeRules;
 extern const JelliWakeRules jelli_wake_rules;
 enum { JELLI_WAKE_NONE, JELLI_WAKE_GROGGY, JELLI_WAKE_HAPPY };

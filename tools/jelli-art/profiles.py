@@ -59,8 +59,12 @@ def profile_data(path, module):
             "creature_limits": limits(module), "creature_data_editable": module is not None and data is not None}
 
 
-def validate(data, manifest, module, pets_path):
-    """Run creature_data.load(manifest) on a scratch copy of the candidate document."""
+def validate(data, manifest, module, pets_path, behaviors=None):
+    """Run creature_data.load(manifest), and load_looks(manifest) when the checkout has it, on scratch copies.
+
+    behaviors is the content/behaviors.json document the looks must cover (the
+    candidate when both files are saved together); None leaves the module's path.
+    """
     if module is None or not hasattr(module, "load"):
         raise ProfileError("This checkout has no tools/assets/creature_data.py, so creature data cannot be validated")
     if not isinstance(data, dict):
@@ -68,12 +72,19 @@ def validate(data, manifest, module, pets_path):
     with tempfile.TemporaryDirectory(prefix="jelli-art-creatures-") as scratch:
         candidate = Path(scratch) / "creatures.json"
         candidate.write_text(json.dumps(data, indent=2) + "\n")
-        saved = module.CREATURES, module.CATALOG
+        globals_ = ("CREATURES", "CATALOG", "BEHAVIORS")
+        saved = {name: getattr(module, name) for name in globals_ if hasattr(module, name)}
         module.CREATURES, module.CATALOG = candidate, Path(pets_path)
+        if behaviors is not None and "BEHAVIORS" in saved:
+            module.BEHAVIORS = Path(scratch) / "behaviors.json"
+            module.BEHAVIORS.write_text(json.dumps(behaviors, indent=2) + "\n")
         try:
             module.load(manifest)
+            if hasattr(module, "load_looks") and hasattr(module, "BEHAVIORS") and Path(module.BEHAVIORS).exists():
+                module.load_looks(manifest)
         except (ValueError, KeyError, TypeError, AttributeError) as error:
             detail = str(error) if isinstance(error, ValueError) else f"missing or malformed field {error}"
             raise ProfileError(f"Creature data fails validation: {detail}") from error
         finally:
-            module.CREATURES, module.CATALOG = saved
+            for name, value in saved.items():
+                setattr(module, name, value)

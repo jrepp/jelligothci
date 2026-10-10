@@ -25,6 +25,20 @@ extern const unsigned jelli_collection_form_count;
 extern const JelliEvolutionSet jelli_evolution_sets[];
 extern const unsigned jelli_evolution_set_count;
 extern const JelliCollectionEntry jelli_collection_entries[9];
+/* content/pets.json "newborn" and "start": every new pet's stats and the new game's items. */
+typedef struct {
+    uint16_t needs[JELLI_NEED_COUNT];
+    uint16_t bond, hydration;
+    uint8_t bedtime;
+    uint32_t sleep_duration, phase_offset; /* Ticks. */
+} JelliNewborn;
+typedef struct {
+    uint16_t food, gifts;
+} JelliStartingItems;
+extern const JelliNewborn jelli_collection_newborn;
+extern const JelliStartingItems jelli_collection_start;
+/* A new pet for a collection entry, in its set's starting form. */
+JelliPet jelli_collection_new_pet(uint32_t id, unsigned entry);
 /* Entry IDs are stable 1..9, independent of instance IDs and storage order. */
 int jelli_collection_find(const JelliGame *game, unsigned entry);
 /* NULL for entries outside 1..9. */

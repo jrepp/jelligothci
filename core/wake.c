@@ -18,7 +18,7 @@ void jelli_wake_react(JelliPet *pet)
     bool happy = pet->asleep && pet->rest_ticks >= needed;
     pet->wake_mood = (uint8_t)(happy ? JELLI_WAKE_HAPPY : JELLI_WAKE_GROGGY);
     pet->reaction = 0u;
-    pet->reaction_ticks = 30u;
+    pet->reaction_ticks = jelli_wake_rules.reaction_ticks;
     pet->rest_ticks = 0u;
     if (happy) {
         uint32_t bond = pet->bond + jelli_wake_rules.bond_gain;

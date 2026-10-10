@@ -1,7 +1,11 @@
 #include "jelli/assets.h"
+#include <string.h>
+#include "jelli/potty.h"
+#include "jelli/behavior.h"
 #include "jelli/collection.h"
 #include "jelli/creature.h"
 #include "jelli/pet_ui.h"
+#include "../core/pet_behavior_draw.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +57,7 @@ static void every_form_has_grounded_clips(void)
         }
     }
     CHECK(jelli_creature_clip(jelli_collection_form_count, 0u) == NULL);
-    CHECK(jelli_creature_clip(0u, JELLI_POSE_COUNT) == NULL);
+    CHECK(jelli_creature_clip(0u, jelli_creature_pose_count) == NULL);
 }
 
 static void axolotl_idles_and_blinks(void)
@@ -69,7 +73,7 @@ static void axolotl_idles_and_blinks(void)
     CHECK(frame_at(&game, &ui, 1350u) == 1104u);
     CHECK(frame_at(&game, &ui, 1800u) == 1101u); /* idle-alt: blink starts open... */
     CHECK(frame_at(&game, &ui, 1890u) == 1105u);
-    CHECK(frame_at(&game, &ui, 1980u) == 1106u);
+    CHECK(frame_at(&game, &ui, 1980u) == 1105u); /* Half blink holds; blink-2 was retired. */
     CHECK(frame_at(&game, &ui, 2160u) == 1101u); /* ...and holds open after one blink. */
     CHECK(frame_at(&game, &ui, 2700u) == 1101u); /* Back to idle: the bob restarts. */
     CHECK(frame_at(&game, &ui, 3150u) == 1102u);
@@ -128,8 +132,77 @@ static void jelly_profile_matches_legacy_rules(void)
     CHECK(jelli_creature_profile(99u) == jelli_creature_profile(0u));
 }
 
+static void behaviour_states_show_their_look(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    axolotl_game(&game);
+    jelli_pet_ui_init(&ui);
+    JelliPet *pet = &game.pets[game.active];
+    for (unsigned state = 0u; state < jelli_behavior_state_count; ++state) {
+        const JelliBehaviorLook *look = jelli_behavior_look(state);
+        CHECK(look && look->pose < jelli_creature_pose_count && look->caption[0]);
+        CHECK(!look->effect || jelli_asset_find(look->effect));
+        CHECK(!look->prop || jelli_asset_find(look->prop));
+        pet->behavior = (uint8_t)(state + 1u);
+        pet->behavior_left = 10u;
+        (void)frame_at(&game, &ui, 10000u + state * 1000u);
+        CHECK(ui.last_view.pose == look->pose && ui.last_view.behavior == state + 1u);
+        const JelliClip *clip = jelli_creature_clip(pet->form, look->pose);
+        CHECK(clip && ui.actor_frame->id == clip->frames[ui.last_view.clip_frame]);
+    }
+    /* The axolotl's own potty clip, not the unwell fallback, plays while it needs to go. */
+    for (unsigned state = 0u; state < jelli_behavior_state_count; ++state)
+        if (strcmp(jelli_behavior_states[state].name, "asking_potty") == 0)
+            CHECK(jelli_creature_clip(pet->form, jelli_behavior_look(state)->pose)->frames[0] ==
+                  1115u);
+    CHECK(jelli_creature_clip(0u, jelli_behavior_look(0u)->pose) != NULL); /* Mint falls back. */
+}
+
+static void mess_shimmers_on_the_floor(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    axolotl_game(&game);
+    jelli_pet_ui_init(&ui);
+    game.pets[game.active].behavior_flags |= JELLI_PET_FLAG_MESS;
+    (void)frame_at(&game, &ui, 0u);
+    CHECK(ui.last_view.mess == 1u);
+    (void)frame_at(&game, &ui, jelli_potty_rules.mess_frame_ms);
+    CHECK(ui.last_view.mess == 2u);
+    for (unsigned i = 0u; i < jelli_potty_rules.mess_sprite_count; ++i)
+        CHECK(jelli_asset_find(jelli_potty_rules.mess_sprites[i]) != NULL);
+    /* A mess left out costs mood; tapping it starts the same clean-up as Care > Clean. */
+    JelliPet *pet = &game.pets[game.active];
+    unsigned messy = jelli_pet_mood(pet);
+    jelli_potty_clean(pet);
+    CHECK(jelli_pet_mood(pet) > messy);
+    pet->behavior_flags |= JELLI_PET_FLAG_MESS;
+    (void)frame_at(&game, &ui, 0u);
+    JelliRect mess;
+    CHECK(jelli_pet_mess_bounds(&ui, ui.last_view.mess, &mess));
+    CHECK(mess.width == 16u * ui.actor_scale); /* Drawn at the pet's pixel scale. */
+    CHECK(mess.y + mess.height <= 256u + ui.actor_scale && mess.x >= ui.actor_bounds.x);
+    jelli_pet_ui_tap(&ui, &game, (int)(mess.x + mess.width / 2u), (int)(mess.y + mess.height / 2u));
+    CHECK(ui.result == JELLI_OK && pet->activity == JELLI_CLEANING);
+    (void)frame_at(&game, &ui, 1000u);
+    unsigned first = ui.last_view.sweep;
+    CHECK(first == 1u); /* The broom appears as the clean starts... */
+    jelli_game_advance(&game, 500u);
+    jelli_game_advance(&game, 500u);
+    (void)frame_at(&game, &ui, 2000u);
+    CHECK(ui.last_view.sweep > first && ui.last_view.sweep <= jelli_potty_rules.sweep_steps);
+    for (unsigned t = 0u; t < 40u && pet->activity != JELLI_IDLE; ++t)
+        jelli_game_advance(&game, 500u); /* ...and pushes the mess aside until it is gone. */
+    CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
+    (void)frame_at(&game, &ui, 30000u);
+    CHECK(ui.last_view.mess == 0u && !jelli_pet_mess_bounds(&ui, ui.last_view.mess, &mess));
+}
+
 int main(void)
 {
+    behaviour_states_show_their_look();
+    mess_shimmers_on_the_floor();
     jelly_profile_matches_legacy_rules();
     every_form_has_grounded_clips();
     axolotl_idles_and_blinks();

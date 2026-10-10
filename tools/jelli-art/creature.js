@@ -45,20 +45,32 @@
     .cr-strip{display:flex;flex-wrap:wrap;gap:10px}
     .cr-cell{display:grid;gap:4px;justify-items:center;cursor:pointer;background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:6px;font:11px ui-monospace,monospace;color:var(--muted)}
     .cr-cell[aria-current=true]{border-color:var(--accent);color:var(--ink)}
-    .cr-dirty{color:var(--warn)}
+    .cr-dirty{color:var(--warn)}button.cr-fallback{border-style:dashed;color:var(--muted)}
     .cr-pose-help{font-size:12px;color:var(--muted);margin:4px 0 0}
   </style>`);
 
   /* ---------- clip data ---------- */
   const forms = () => D.creature_forms?.length ? D.creature_forms
     : [...new Set(D.assets.filter(a => a.kind === 'creatures' && a.form).map(a => a.form))].map(art => ({art, name: null}));
-  const poses = () => D.creature_poses || [];
+  /* The 8 base poses, then the manifest's state poses: optional per form, falling back to a base pose. */
+  const statePoses = () => D.state_poses || [];
+  const poses = () => [...(D.creature_poses || []), ...statePoses().map(p => p.name)];
+  const fallbackOf = pose => statePoses().find(p => p.name === pose)?.fallback || null;
   const cap = () => D.clip_frame_cap || 6, maxMs = () => D.clip_duration_max_ms || 10000;
   const clipOf = key => (D.clips || []).find(c => c.key === key);
-  const current = key => working[key] || clipOf(key);
+  /* working[key] is an unsaved clip, or {removed: true} for a state pose clip that will be deleted. */
+  const current = key => working[key]?.removed ? undefined : working[key] || clipOf(key);
+  const fallbackKey = key => { const [form, pose] = key.split('.'); const f = fallbackOf(pose); return f ? `${form}.${f}` : null; };
+  /* The clip the game plays for a pose: its own, else the state pose's fallback. */
+  const resolved = key => current(key) || (fallbackKey(key) && current(fallbackKey(key)));
   const copy = c => ({frames: [...c.frames], durations_ms: [...c.durations_ms], loop: c.loop});
   const sameClip = (a, b) => JSON.stringify(copy(a)) === JSON.stringify(copy(b));
-  const clipDirty = key => !!working[key] && !!clipOf(key) && !sameClip(working[key], clipOf(key));
+  const clipDirty = key => {
+    const w = working[key], saved = clipOf(key);
+    if (!w) return false;
+    if (w.removed) return !!saved;
+    return !saved || !sameClip(w, saved);
+  };
   const dirtyKeys = () => Object.keys(working).filter(clipDirty);
   S.clipsDirty = () => dirtyKeys().length > 0;
   const selectedKey = () => `${state.cForm}.${state.cPose}`;
@@ -74,7 +86,7 @@
     return out;
   }
   function change(fn, rerender = true) {
-    const key = selectedKey(), base = clipOf(key); if (!base) return;
+    const key = selectedKey(), base = current(key); if (!base) return;
     const w = working[key] ||= copy(base); fn(w);
     if (!clipDirty(key)) delete working[key];
     restart();
@@ -93,7 +105,7 @@
   const offsetOf = (c, i) => safeDurations(c).slice(0, i).reduce((n, v) => n + v, 0);
   function restart() { play.start = performance.now(); play.frame = 0; play.drawn = {}; schedule(); }
   function setPlaying(on) {
-    const c = current(selectedKey());
+    const c = resolved(selectedKey());
     if (on && c) play.start = performance.now() - offsetOf(c, Math.max(0, play.frame));
     if (!on && c) play.frame = Math.max(0, frameAt(c, performance.now() - play.start, state.cRepeat));
     play.on = on; play.drawn = {};
@@ -102,7 +114,7 @@
   }
   function stepFrame(n) {
     if (cr.step?.(n)) { play.drawn = {}; return schedule(); }  // the simulation steps by idle beat
-    const c = current(selectedKey()); if (!c?.frames.length) return;
+    const c = resolved(selectedKey()); if (!c?.frames.length) return;
     if (play.on) setPlaying(false);
     play.frame = (play.frame + n + c.frames.length) % c.frames.length; play.drawn = {}; schedule();
   }
@@ -152,10 +164,11 @@
     let frameKey = null, text = '', index = -1;
     if (sim) ({key: frameKey, text} = sim);
     else {
-      const c = current(selectedKey());
+      const c = resolved(selectedKey());
       index = c ? (play.on ? frameAt(c, elapsed, state.cRepeat) : Math.min(play.frame, c.frames.length - 1)) : -1;
       frameKey = index >= 0 ? c.frames[index] : null;
-      text = index < 0 ? 'No frames' : `frame ${index + 1}/${c.frames.length} · ${c.durations_ms[index]} ms · ${c.loop ? 'loops' : 'plays once, holds last frame'}${play.on ? '' : ' · paused'}`;
+      const fallback = current(selectedKey()) ? '' : ` · fallback ${fallbackOf(state.cPose)}`;
+      text = index < 0 ? 'No frames' : `frame ${index + 1}/${c.frames.length} · ${c.durations_ms[index]} ms · ${c.loop ? 'loops' : 'plays once, holds last frame'}${fallback}${play.on ? '' : ' · paused'}`;
     }
     const signature = `${frameKey}|${text}|${scale}`;
     if (play.drawn.panel !== signature) {
@@ -167,7 +180,7 @@
     }
     for (const hook of cr.tickHooks) hook(now);
     for (const cell of cells) {
-      const cc = current(cell.key), i = cc ? (play.on ? frameAt(cc, elapsed, true) : 0) : -1;
+      const cc = resolved(cell.key), i = cc ? (play.on ? frameAt(cc, elapsed, true) : 0) : -1;
       if (play.drawn[cell.key] !== i) { drawCell(cell, i >= 0 ? cc.frames[i] : null); play.drawn[cell.key] = i; }
     }
     if (play.on) schedule();
@@ -200,7 +213,8 @@
     play.drawn = {}; schedule();
   }
   function renderForms() {
-    const el = document.getElementById('cr-forms'); el.textContent = '';
+    const el = document.getElementById('cr-forms'); if (!el) return;
+    el.textContent = '';
     for (const f of forms()) {
       const b = document.createElement('button'), dirty = dirtyKeys().some(k => k.startsWith(f.art + '.'));
       b.innerHTML = `${esc(formLabel(f))}${dirty ? ' <span class="cr-dirty" title="unsaved clip edits">●</span>' : ''}`;
@@ -225,12 +239,36 @@
   }
   function renderEditor() {
     const el = document.getElementById('cr-editor'); if (!el) return;
-    const key = selectedKey(), c = current(key);
-    const tabs = poses().map((p, i) => `<button data-pose="${esc(p)}" aria-pressed="${p === state.cPose}" title="${esc(POSE_HELP[p] || p)} (${i + 1})">${esc(p)}${clipDirty(`${state.cForm}.${p}`) ? ' <span class="cr-dirty">●</span>' : ''}</button>`).join('');
-    if (!c) { el.innerHTML = `<div class="seg" id="cr-poses">${tabs}</div><p class="studio-note">No clip ${esc(key)} in assets.json.</p>`; wirePoses(el); return; }
+    const key = selectedKey(), c = current(key), fallback = fallbackOf(state.cPose);
+    const tab = (p, i) => {
+      const f = fallbackOf(p), own = current(`${state.cForm}.${p}`);
+      const title = f ? `State pose · ${own ? 'own clip' : `uses fallback ${f}`}` : POSE_HELP[p] || p;
+      return `<button data-pose="${esc(p)}" aria-pressed="${p === state.cPose}" title="${esc(title)} (${i + 1})"${f && !own ? ' class="cr-fallback"' : ''}>${esc(p)}${clipDirty(`${state.cForm}.${p}`) ? ' <span class="cr-dirty">●</span>' : ''}</button>`;
+    };
+    const base = (D.creature_poses || []).length, list = poses();
+    const tabs = `${list.slice(0, base).map(tab).join('')}</div><div class="lbl" style="margin-top:6px">State poses</div><div class="seg" style="flex-wrap:wrap">${list.slice(base).map((p, i) => tab(p, i + base)).join('')}`;
+    if (!c) {
+      const msg = fallback
+        ? `<p class="cr-pose-help">State pose with no ${esc(state.cForm)} clip: it <b>uses fallback: ${esc(fallback)}</b>, which the preview plays.</p>
+           <div class="bar"><button id="cr-add-clip" title="Start from a copy of the ${esc(fallback)} clip">Add clip</button>
+           ${clipDirty(key) ? '<button id="cr-revert">Keep the clip</button>' : ''}</div><ul class="cr-msgs" id="cr-msgs"></ul>
+           <div class="bar"><div class="seg"><button id="cr-revert-all">Revert all</button><button id="cr-save" class="primary" title="Save clips (⌘S)">Save clips</button></div></div>`
+        : `<p class="studio-note">No clip ${esc(key)} in assets.json.</p>`;
+      el.innerHTML = `<div class="lbl">Pose</div><div class="seg" id="cr-poses" style="flex-wrap:wrap">${tabs}</div>${msg}`;
+      wirePoses(el);
+      el.querySelector('#cr-add-clip')?.addEventListener('click', () => {
+        const from = resolved(key); if (!from) return;
+        if (working[key]?.removed) delete working[key]; else working[key] = copy(from);
+        restart(); renderEditor();
+      });
+      el.querySelector('#cr-revert')?.addEventListener('click', () => { delete working[key]; restart(); renderEditor(); });
+      wireSaveBar(el);
+      return;
+    }
     const total = safeDurations(c).reduce((n, v) => n + v, 0);
     el.innerHTML = `<div class="lbl">Pose</div><div class="seg" id="cr-poses" style="flex-wrap:wrap">${tabs}</div>
-      <p class="cr-pose-help">${esc(POSE_HELP[state.cPose] || '')} Clip <b>${esc(key)}</b> · ID ${clipOf(key).id}</p>
+      <p class="cr-pose-help">${esc(fallback ? `State pose; without this clip it falls back to ${fallback}.` : POSE_HELP[state.cPose] || '')} Clip <b>${esc(key)}</b> · ${clipOf(key) ? `ID ${clipOf(key).id}` : 'new, ID assigned on save'}
+        ${fallback ? `<button id="cr-remove-clip" title="Delete this clip so the ${esc(fallback)} clip plays">Remove clip (use ${esc(fallback)})</button>` : ''}</p>
       <div class="lbl" style="margin-top:12px">Frames · ${c.frames.length}/${cap()} · ${total} ms total</div>
       <div class="cr-frames" id="cr-frames"></div>
       <div class="bar"><button id="cr-loop" aria-pressed="${c.loop}" title="Loop cycles the frames; otherwise the clip plays once and holds the last frame">Loop</button>
@@ -271,6 +309,13 @@
       picks.append(b);
     }
     el.querySelector('#cr-revert').onclick = () => { delete working[key]; restart(); renderEditor(); };
+    el.querySelector('#cr-remove-clip')?.addEventListener('click', () => {
+      if (clipOf(key)) working[key] = {removed: true}; else delete working[key];
+      restart(); renderEditor();
+    });
+    wireSaveBar(el);
+  }
+  function wireSaveBar(el) {
     el.querySelector('#cr-revert-all').onclick = () => {
       if (dirtyKeys().length && !confirm(`Discard unsaved edits to ${dirtyKeys().length} clips?`)) return;
       for (const k of Object.keys(working)) delete working[k];
@@ -280,7 +325,7 @@
     renderSaveState();
   }
   function wirePoses(el) {
-    el.querySelector('#cr-poses').onclick = e => { const p = e.target.closest('button')?.dataset.pose; if (p) selectPose(p); };
+    el.querySelectorAll('button[data-pose]').forEach(b => { b.onclick = () => selectPose(b.dataset.pose); });
   }
   function selectPose(pose) {
     state.cPose = pose; store.set('creature-pose', pose); restart(); renderEditor(); renderStripState();
@@ -288,7 +333,7 @@
   /* Messages, save button, form and strip markers: updated without rebuilding inputs mid-typing. */
   function renderSaveState() {
     const key = selectedKey(), c = current(key), msgs = document.getElementById('cr-msgs'), save = document.getElementById('cr-save');
-    const issues = c ? problems(key, c) : [], blocked = dirtyKeys().filter(k => problems(k, current(k)).length);
+    const issues = c ? problems(key, c) : [], blocked = dirtyKeys().filter(k => current(k) && problems(k, current(k)).length);
     if (msgs) {
       const others = blocked.filter(k => k !== key);
       msgs.innerHTML = issues.map(m => `<li>${esc(m)}</li>`).join('') + (others.length ? `<li>Fix ${others.map(esc).join(', ')} before saving.</li>` : '')
@@ -314,9 +359,10 @@
   }
   function renderStripState() {
     for (const cell of cells) {
-      const c = current(cell.key), sub = cell.el.querySelector('.sub');
+      const c = current(cell.key), sub = cell.el.querySelector('.sub'), dot = clipDirty(cell.key) ? ' <span class="cr-dirty">●</span>' : '';
       cell.el.setAttribute('aria-current', String(cell.key === selectedKey()));
-      if (sub) sub.innerHTML = c ? `${c.frames.length}f · ${c.loop ? 'loop' : 'once'}${clipDirty(cell.key) ? ' <span class="cr-dirty">●</span>' : ''}` : 'missing';
+      const f = fallbackOf(cell.key.split('.')[1]);
+      if (sub) sub.innerHTML = c ? `${c.frames.length}f · ${c.loop ? 'loop' : 'once'}${dot}` : f ? `uses ${esc(f)}${dot}` : 'missing';
     }
     play.drawn = {}; schedule();
   }
@@ -327,14 +373,17 @@
   /* ---------- save ---------- */
   async function saveClips() {
     const keys = dirtyKeys(); if (!keys.length) return;
-    const blocked = keys.filter(k => problems(k, current(k)).length);
+    const blocked = keys.filter(k => current(k) && problems(k, current(k)).length);
     if (blocked.length) return S.status(`Fix ${blocked.join(', ')} before saving`, 'bad', true);
     try {
-      const clips = keys.map(k => ({key: k, ...copy(working[k])}));
+      const clips = keys.map(k => working[k].removed ? {key: k, remove: true} : {key: k, ...copy(working[k])});
       const res = await S.api('POST', '/api/clips', {clips, artist: state.artist});
-      for (const k of keys) { Object.assign(clipOf(k), copy(working[k])); delete working[k]; }
-      D.version = res.version;
-      renderEditor();
+      const added = keys.some(k => !clipOf(k)), removed = keys.some(k => working[k].removed);
+      for (const k of keys) { if (clipOf(k) && !working[k].removed) Object.assign(clipOf(k), copy(working[k])); delete working[k]; }
+      D.version = res.version;  // before reloading, so the disk poll does not reload a second time
+      if (added || removed) await S.reload();  // new clips get IDs from the server; removed ones leave D.clips
+      else D.version = res.version;
+      renderEditor(); renderStrip();
       if (res.git_error) S.status(`Saved clips, but the commit failed: ${res.git_error}`, 'bad', true);
       else if (res.warning) S.status(res.warning, 'warn', true);
       else {
@@ -377,7 +426,7 @@
     if (/^[1-9]$/.test(k) && Number(k) <= list.length) { selectPose(list[Number(k) - 1]); return true; }
     return ['a', 'x', 'g', 'i', 'b', 'd', '0', '[', ']', '-', '=', '+'].includes(k);  // detail-view keys do nothing here
   };
-  Object.assign(cr, {esc, poses, forms, formLabel, formFrames, clipOf, current, frameAt, drawSprite, groundAnchor,
+  Object.assign(cr, {esc, poses, statePoses, fallbackOf, resolved, forms, formLabel, formFrames, clipOf, current, frameAt, drawSprite, groundAnchor,
     selectedKey, setPlaying, playing: () => play.on, redraw: () => { play.drawn = {}; schedule(); }, rerender: () => renderCreature(),
     renderForms: () => renderForms(), PANEL, CENTER, FLOOR, reduced});
   let resizeTimer = null;

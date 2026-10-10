@@ -1,3 +1,6 @@
+#include "jelli/potty.h"
+#include "jelli/creature.h"
+#include "jelli/wake.h"
 #include "pet_draw.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
@@ -11,12 +14,36 @@ static uint8_t recovery_seconds(const JelliPet *pet)
     return ticks >= 300u ? 30u : (uint8_t)((ticks + 9u) / 10u);
 }
 
-static void activity_key(const JelliPet *pet, JelliPetRenderKey *key)
+/* Touch reactions, or a wake mood after them; a happy wake opens with surprise. */
+static void reaction_key(const JelliPet *pet, JelliPetRenderKey *key)
+{
+    key->reaction =
+        pet->wake_mood ? (uint8_t)(JELLI_REACTION_TOUCH_OVERLOAD + pet->wake_mood) : pet->reaction;
+    if (pet->wake_mood == JELLI_WAKE_HAPPY)
+        key->phase =
+            pet->reaction_ticks > jelli_wake_rules.reaction_ticks - jelli_wake_rules.surprise_ticks
+                ? JELLI_POSE_CURIOUS
+                : JELLI_POSE_IDLE; /* Surprise, then joy. */
+}
+
+static void activity_key(const JelliPet *pet, uint64_t time, JelliPetRenderKey *key)
 {
     key->health = (uint8_t)pet->health;
     key->care_seconds = recovery_seconds(pet);
     key->activity = (uint8_t)pet->activity;
+    key->care_blocked = (uint8_t)((jelli_pet_health_ready(pet, JELLI_HEALTH_MEDICINE) ? 0u : 1u) |
+                                  (jelli_pet_health_ready(pet, JELLI_HEALTH_SHOT) ? 0u : 2u));
     key->moment = pet->moment;
+    key->behavior = pet->behavior;
+    unsigned frames = jelli_potty_rules.mess_sprite_count;
+    if ((pet->behavior_flags & JELLI_PET_FLAG_MESS) && frames && jelli_potty_rules.mess_frame_ms)
+        key->mess = (uint8_t)(1u + time / jelli_potty_rules.mess_frame_ms % frames);
+    if (key->mess && pet->activity == JELLI_CLEANING) { /* Step from the clean's own progress. */
+        uint64_t left = pet->interaction_due > pet->ticks ? pet->interaction_due - pet->ticks : 0u;
+        uint64_t done = JELLI_CLEAN_TICKS - (left < JELLI_CLEAN_TICKS ? left : JELLI_CLEAN_TICKS);
+        unsigned steps = jelli_potty_rules.sweep_steps;
+        key->sweep = (uint8_t)(1u + done * (steps - 1u) / JELLI_CLEAN_TICKS);
+    }
 }
 
 static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint64_t animation_ms,
@@ -73,11 +100,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.hydration = pet->hydration;
     key.volume = game->volume;
     key.mood = (uint8_t)jelli_pet_mood(pet);
-    key.reaction = pet->wake_mood ? (uint8_t)(3u + pet->wake_mood) : pet->reaction;
-    if (pet->wake_mood == 2u)
-        key.phase = pet->reaction_ticks > 20u ? 2u : 0u;
-    key.care_blocked = (uint8_t)((jelli_pet_health_ready(pet, 1u) ? 0u : 1u) |
-                                 (jelli_pet_health_ready(pet, 2u) ? 0u : 2u));
+    reaction_key(pet, &key);
     key.food = game->food;
     key.gifts = game->gifts;
     key.active = game->active;
@@ -86,7 +109,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.save_status = ui->save_status;
     key.form = pet->form;
     key.location = pet->location;
-    activity_key(pet, &key);
+    activity_key(pet, animation_ms, &key);
     key.stored_form = other->form;
     key.bedtime = (uint8_t)pet->bedtime;
     key.asleep = pet->asleep;
@@ -123,7 +146,8 @@ static bool same_tile_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b
 static bool same_actor_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
     return a->phase == b->phase && a->pose == b->pose && a->clip_frame == b->clip_frame &&
-           a->moment == b->moment;
+           a->moment == b->moment && a->behavior == b->behavior && a->mess == b->mess &&
+           a->sweep == b->sweep;
 }
 
 static bool same_frame_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)

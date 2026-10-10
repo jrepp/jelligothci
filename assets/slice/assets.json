@@ -1709,27 +1709,6 @@
       "palette": "axolotl"
     },
     {
-      "id": 1106,
-      "key": "creatures.axolotl-blink-2",
-      "path": "creatures/axolotl-blink-2.png",
-      "kind": "creatures",
-      "width": 48,
-      "height": 48,
-      "pivot": [
-        24,
-        46
-      ],
-      "bounds": [
-        5,
-        19,
-        44,
-        46
-      ],
-      "form": "axolotl",
-      "pose": "blink-2",
-      "palette": "axolotl"
-    },
-    {
       "id": 1107,
       "key": "creatures.axolotl-happy",
       "path": "creatures/axolotl-happy.png",
@@ -1947,12 +1926,130 @@
         16
       ],
       "bounds": [
-        3,
-        3,
-        30,
-        30
+        7,
+        4,
+        26,
+        29
       ],
       "purpose": "POTTY routine icon; placeholder from source/potty_art.py"
+    },
+    {
+      "id": 1115,
+      "key": "creatures.axolotl-potty-1",
+      "path": "creatures/axolotl-potty-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "potty-1",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1116,
+      "key": "creatures.axolotl-potty-2",
+      "path": "creatures/axolotl-potty-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "potty-2",
+      "palette": "axolotl"
+    },
+    {
+      "id": 3006,
+      "key": "props.poop-1",
+      "path": "props/poop-1.png",
+      "kind": "props",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        15
+      ],
+      "bounds": [
+        2,
+        1,
+        15,
+        15
+      ],
+      "palette": "poop"
+    },
+    {
+      "id": 3007,
+      "key": "props.poop-2",
+      "path": "props/poop-2.png",
+      "kind": "props",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        15
+      ],
+      "bounds": [
+        2,
+        0,
+        15,
+        15
+      ],
+      "palette": "poop"
+    },
+    {
+      "id": 3008,
+      "key": "props.broom-1",
+      "path": "props/broom-1.png",
+      "kind": "props",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        15
+      ],
+      "bounds": [
+        1,
+        1,
+        15,
+        16
+      ],
+      "purpose": "Broom sweeping a potty mess away; from source/broom_art.py"
+    },
+    {
+      "id": 3009,
+      "key": "props.broom-2",
+      "path": "props/broom-2.png",
+      "kind": "props",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        15
+      ],
+      "bounds": [
+        1,
+        1,
+        15,
+        16
+      ],
+      "purpose": "Broom sweeping a potty mess away; from source/broom_art.py"
     }
   ],
   "clips": [
@@ -2155,15 +2252,11 @@
       "frames": [
         "creatures.axolotl-idle-1",
         "creatures.axolotl-blink-1",
-        "creatures.axolotl-blink-2",
-        "creatures.axolotl-blink-1",
         "creatures.axolotl-idle-1"
       ],
       "durations_ms": [
         90,
-        90,
-        90,
-        90,
+        180,
         450
       ],
       "loop": false
@@ -2183,7 +2276,7 @@
       "id": 5104,
       "key": "axolotl.content",
       "frames": [
-        "creatures.axolotl-blink-2"
+        "creatures.axolotl-blink-1"
       ],
       "durations_ms": [
         900
@@ -2239,6 +2332,62 @@
         600
       ],
       "loop": true
+    },
+    {
+      "id": 5109,
+      "key": "axolotl.study",
+      "frames": [
+        "creatures.axolotl-blink-1",
+        "creatures.axolotl-idle-1",
+        "creatures.axolotl-blink-1",
+        "creatures.axolotl-idle-3"
+      ],
+      "durations_ms": [
+        900,
+        150,
+        700,
+        250
+      ],
+      "loop": true
+    },
+    {
+      "id": 5110,
+      "key": "axolotl.ponder",
+      "frames": [
+        "creatures.axolotl-blink-1",
+        "creatures.axolotl-idle-3"
+      ],
+      "durations_ms": [
+        1400,
+        500
+      ],
+      "loop": true
+    },
+    {
+      "id": 5111,
+      "key": "axolotl.ask",
+      "frames": [
+        "creatures.axolotl-surprised",
+        "creatures.axolotl-idle-1"
+      ],
+      "durations_ms": [
+        500,
+        500
+      ],
+      "loop": true
+    },
+    {
+      "id": 5112,
+      "key": "axolotl.potty",
+      "frames": [
+        "creatures.axolotl-potty-1",
+        "creatures.axolotl-potty-2"
+      ],
+      "durations_ms": [
+        300,
+        300
+      ],
+      "loop": true
     }
   ],
   "palettes": {
@@ -2253,6 +2402,13 @@
       "#83ebfb",
       "#1ec1d9",
       "#fde77e"
+    ],
+    "poop": [
+      "#000000",
+      "#b55838",
+      "#8f4329",
+      "#dfa08a",
+      "#c9d6a3"
     ]
   },
   "creature_poses": [
@@ -2264,5 +2420,23 @@
     "happy",
     "asleep",
     "unwell"
+  ],
+  "state_poses": [
+    {
+      "name": "study",
+      "fallback": "content"
+    },
+    {
+      "name": "ponder",
+      "fallback": "content"
+    },
+    {
+      "name": "ask",
+      "fallback": "curious"
+    },
+    {
+      "name": "potty",
+      "fallback": "unwell"
+    }
   ]
 }

@@ -1,0 +1,27 @@
+{
+  "kind": "props",
+  "name": "poop",
+  "first_id": 3006,
+  "source_cell": 72,
+  "canvas": [
+    16,
+    16
+  ],
+  "pivot": [
+    8,
+    15
+  ],
+  "palette": "poop",
+  "note": "Hand-drawn two-frame poop shimmer for a potty accident, delivered 2026-10-09 at creature scale (72x per art pixel). reduce_to_width shrinks it to about a third of the axolotl's width with the pixel-art reduction, so it draws at the pet's pixel scale. IDs are first_id + list position, so append new frames; never reorder.",
+  "frames": [
+    {
+      "source": "poop1.png",
+      "pose": "1"
+    },
+    {
+      "source": "poop2.png",
+      "pose": "2"
+    }
+  ],
+  "reduce_to_width": 13
+}

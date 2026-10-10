@@ -1,3 +1,5 @@
+#include "jelli/potty.h"
+#include "jelli/behavior.h"
 #include "game_internal.h"
 
 static uint16_t adjusted(uint16_t value, int delta, unsigned floor)
@@ -16,8 +18,12 @@ unsigned jelli_pet_mood(const JelliPet *pet)
     unsigned mood = (comfort * 2u + joy + connection) / 4u;
     if (pet->health == JELLI_UNWELL && mood > 400u)
         mood = 400u;
-    if (pet->reaction >= 2u)
+    if (pet->reaction >= JELLI_REACTION_TOUCH_UPSET)
         mood = mood > 150u ? mood - 150u : 0u;
+    if (pet->behavior_flags & JELLI_PET_FLAG_MESS) { /* Nobody likes a mess left out. */
+        unsigned mess = jelli_potty_rules.mess_mood_penalty;
+        mood = mood > mess ? mood - mess : 0u;
+    }
     return mood ? (mood + 9u) / 10u : 1u;
 }
 
@@ -51,24 +57,28 @@ JelliResult jelli_game_touch(JelliPet *pet)
 {
     if (pet->asleep)
         return JELLI_ASLEEP;
+    const JelliTouchRules *t = jelli_behavior_touch_rules(pet); /* Species data. */
     pet->wake_mood = 0u;
-    pet->touch_load = adjusted(pet->touch_load, 220, 0u);
-    pet->reaction = pet->touch_load >= 900u ? 3u : pet->touch_load >= 600u ? 2u : 1u;
-    pet->reaction_ticks = 30u;
+    pet->touch_load = adjusted(pet->touch_load, t->load_per_tap, 0u);
+    pet->reaction = pet->touch_load >= t->overload_load ? JELLI_REACTION_TOUCH_OVERLOAD
+                    : pet->touch_load >= t->upset_load  ? JELLI_REACTION_TOUCH_UPSET
+                                                        : JELLI_REACTION_TOUCH_HAPPY;
+    pet->reaction_ticks = (uint8_t)t->reaction_ticks;
     unsigned floor = pet->health == JELLI_RECOVERING ? 400u : 0u;
-    int change = pet->reaction == 1u ? (int)jelli_habits_social_gain(&pet->habits, 15u) : -20;
+    int change = pet->reaction == JELLI_REACTION_TOUCH_HAPPY
+                     ? (int)jelli_habits_social_gain(&pet->habits, t->happy_gain)
+                     : -(int)t->upset_loss;
     pet->needs[JELLI_SOCIAL] = adjusted(pet->needs[JELLI_SOCIAL], change, floor);
     pet->needs[JELLI_AMUSEMENT] = adjusted(pet->needs[JELLI_AMUSEMENT], change, floor);
-    if (pet->reaction == 1u)
-        pet->bond = adjusted(pet->bond, 3, 0u);
+    if (pet->reaction == JELLI_REACTION_TOUCH_HAPPY)
+        pet->bond = adjusted(pet->bond, (int)t->bond_gain, 0u);
     return JELLI_OK;
 }
 
 void jelli_pet_touch_decay(JelliPet *pet, uint64_t ticks)
 {
-    pet->touch_load = ticks >= 100u || ticks * 10u >= pet->touch_load
-                          ? 0u
-                          : (uint16_t)(pet->touch_load - ticks * 10u);
+    uint64_t decay = ticks * jelli_behavior_touch_rules(pet)->decay_per_tick;
+    pet->touch_load = decay >= pet->touch_load ? 0u : (uint16_t)(pet->touch_load - decay);
     pet->reaction_ticks =
         ticks >= pet->reaction_ticks ? 0u : (uint8_t)(pet->reaction_ticks - ticks);
     if (!pet->reaction_ticks) {

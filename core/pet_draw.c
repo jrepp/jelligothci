@@ -1,3 +1,4 @@
+#include "pet_behavior_draw.h"
 #include "pet_draw.h"
 #include "jelli/collection.h"
 #include "jelli/activities.h"
@@ -89,15 +90,15 @@ static const char *status(const JelliPetRenderKey *v, char *buffer, size_t capac
         return result_status(v->result);
     if (v->asleep)
         return "ASLEEP";
-    if (v->reaction == 4u)
+    if (v->reaction == JELLI_REACTION_WAKE_GROGGY)
         return "GROGGY...";
-    if (v->reaction == 5u)
+    if (v->reaction == JELLI_REACTION_WAKE_HAPPY)
         return "HAPPY";
-    if (v->reaction == 1u)
+    if (v->reaction == JELLI_REACTION_TOUCH_HAPPY)
         return "THAT IS NICE";
-    if (v->reaction == 2u)
+    if (v->reaction == JELLI_REACTION_TOUCH_UPSET)
         return "A LITTLE SPACE";
-    if (v->reaction == 3u)
+    if (v->reaction == JELLI_REACTION_TOUCH_OVERLOAD)
         return "TOO MUCH";
     if (v->health == JELLI_RECOVERING) {
         int size = snprintf(buffer, capacity, "RECOVERING %uS", (unsigned)v->care_seconds);
@@ -113,7 +114,7 @@ static const char *status(const JelliPetRenderKey *v, char *buffer, size_t capac
         return "ENJOYING";
     if (v->activity == JELLI_GIVING)
         return "THANK YOU";
-    return "";
+    return jelli_pet_behavior_caption(v);
 }
 
 static void menu_button(Canvas *c, const JelliPetUi *ui)
@@ -214,7 +215,7 @@ static void activity(Canvas *c, const JelliPetUi *ui)
     const char *label = b.label;
     if (ui->last_view.asleep)
         label = "TOUCH PET TO WAKE";
-    else if (ui->last_view.reaction >= 4u || ui->result != JELLI_OK)
+    else if (ui->last_view.reaction >= JELLI_REACTION_WAKE_GROGGY || ui->result != JELLI_OK)
         label = status(&ui->last_view, message, sizeof(message));
     else if (ui->clicker_done)
         label = "WELL DONE!";
@@ -285,6 +286,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
         if (view->activity == JELLI_EXERCISING)
             jelli_canvas_centered_sprite(&c, 6014u, 233, view->phase ? 205 : 229, 3u);
         moment_prop(&c, ui, view);
+        jelli_pet_draw_behavior(&c, ui, view);
         char message[24];
         jelli_canvas_caption(&c, status(view, message, sizeof(message)), 254, MINT);
         draw_tile(c, view);
