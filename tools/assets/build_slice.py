@@ -106,7 +106,7 @@ def load_assets():
         paths.add(path)
         counts[asset["kind"]] += 1
         images[key] = image
-    on_disk = {str(png.relative_to(SOURCE)) for kind in counts for png in (SOURCE / kind).glob("*.png")}
+    on_disk = {png.relative_to(SOURCE).as_posix() for kind in counts for png in (SOURCE / kind).glob("*.png")}
     require(on_disk == paths, f"Manifest and PNGs disagree: {sorted(on_disk ^ paths)}")
     require(all(counts.values()), f"Every asset kind needs art: {counts}")
     prize_pixels = {image.tobytes() for key, image in images.items() if key.startswith("prizes.")}
