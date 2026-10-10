@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0](https://github.com/jrepp/jelligothci/compare/v0.2.0...v0.3.0) (2026-10-10)
+
+
+### Features
+
+* add authored meal fruit and soup choices ([0edea6a](https://github.com/jrepp/jelligothci/commit/0edea6a81f11183364ca96858b89764a5b9b7dc6))
+* add authored pet collections and persistent unlocks ([9786862](https://github.com/jrepp/jelligothci/commit/9786862c44b3eca1d117249cead0c13c758f1ed1))
+* add barbell workouts with food and hydration costs ([f79f7ba](https://github.com/jrepp/jelligothci/commit/f79f7baef441826f14b613f9749e88e2a429d191))
+* add explicit give and put-away controls for presents ([ad8e7b0](https://github.com/jrepp/jelligothci/commit/ad8e7b05c71f23b7c34970e1416b670999795275))
+* add persistent hydration and water care ([a12c374](https://github.com/jrepp/jelligothci/commit/a12c374999ca25efd9915921eba3df30a39e7a73))
+* add pixel-art barbell and water icons ([4524f88](https://github.com/jrepp/jelligothci/commit/4524f88715b9914c83b84603886a3c92600aacfb))
+* add Wi-Fi time sync and OTA foundation ([b5f1997](https://github.com/jrepp/jelligothci/commit/b5f19975385b2aefafe97d99f8e31b34a9db58ec))
+* browse pets and evolutions through a nine-slot collection ([e8591dc](https://github.com/jrepp/jelligothci/commit/e8591dc2ddf94f0e5e9ad873a7c0900a0c9e7c9d))
+
+
+### Bug Fixes
+
+* restore green CI for collection, exercise, and debug host checks ([#6](https://github.com/jrepp/jelligothci/issues/6)) ([2369614](https://github.com/jrepp/jelligothci/commit/2369614a509dc36bd229186ae5b25f4e95a01aa6))
+
 ## [0.2.0](https://github.com/jrepp/jelligothci/compare/v0.1.1...v0.2.0) (2026-10-08)
 
 
