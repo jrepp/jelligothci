@@ -54,6 +54,23 @@ click, holding Space still peeks at the before image. An element with
 `role="button"` that has no `onkeydown` handler also gets Enter and Space. For
 browser automation, `localStorage['jelli-shell:guide'] = 'false'` hides the guide.
 
+## Paint tools
+
+`studio.js` is the Paint mode UI; `paint_tools.js` holds its pixel logic as pure
+functions (`window.JelliPaint`): Bresenham lines, rectangles, ellipses inscribed
+in a pixel box, pixel-perfect strokes, flips, quarter turns, wrapped or clipped
+shifts, colour replace, bounded flood fill, and a 100-step history with a
+cursor. Tools paint only the asset's resolved palette (shared, a named palette
+or an inline list) until the artist picks **custom**; paste refuses pixels
+outside the target palette on the same terms. A selection is a rect, plus
+floating pixels while it is moved or transformed, so moving it over other art
+and back is lossless until the selection is dropped. Shortcuts are registered
+with the shell's `?` overlay.
+
+```sh
+node tools/jelli-art/test_paint_tools.js
+```
+
 ## Creature clips
 
 The **Creature** view edits the per-pose clips in `assets.json` (`clips`, keyed

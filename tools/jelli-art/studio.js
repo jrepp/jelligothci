@@ -1,17 +1,33 @@
 /* Jelli Art: painting, palette editing and live reload for compare.html.
  * Injected only by tools/jelli-art/jelli_art.py; the static review page never loads it.
- * Shares the page's globals (state, D, decoded, renderers) and adds a Paint mode. */
+ * Shares the page's globals (state, D, decoded, renderers) and adds a Paint mode.
+ * The pixel logic (rasterisers, selection transforms, history) is paint_tools.js (window.JelliPaint). */
 'use strict';
 (() => {
-  const S = window.Studio = {};
+  const S = window.Studio = {}, T = window.JelliPaint;
   const OUTLINED = new Set(['creatures', 'icons', 'menus', 'meters', 'health', 'effects', 'prizes', 'props']);
   const LOCKED = new Set(['font', 'backgrounds']);
-  const TOOLS = [['pencil', 'Pencil', 'P'], ['eraser', 'Eraser', 'E'], ['fill', 'Fill', 'F'], ['picker', 'Pick colour', 'C']];
-  const edits = {};  // key -> {saved, undo: [], redo: []}; the working buffer is decoded[key].after
-  let stroke = null, view = null, statusTimer = null, queued = 0;
-  Object.assign(state, {tool: 'pencil', color: '#291b35', mirror: false, before: store.get('before', 'HEAD'), artist: store.get('artist', '')});
+  const SHAPES = new Set(['line', 'rect', 'ellipse']);
+  /* [id, name, key, what it does] */
+  const TOOLS = [
+    ['pencil', 'Pencil', 'P', 'Draw pixels. Shift+arrows draw with the keyboard cursor'],
+    ['eraser', 'Eraser', 'E', 'Make pixels transparent (right-click erases with any tool)'],
+    ['fill', 'Fill', 'F', 'Fill the touching area of one colour'],
+    ['picker', 'Pick colour', 'C', 'Take a palette colour from the sprite (Alt-click with any tool)'],
+    ['line', 'Line', 'L', 'Drag from end to end; Shift snaps to 45°'],
+    ['rect', 'Rectangle', 'R', 'Drag corner to corner; Shift makes a square'],
+    ['ellipse', 'Ellipse', 'U', 'Drag the bounding box; Shift makes a circle'],
+    ['select', 'Select', 'V', 'Drag a rectangle; drag inside it to move, Alt-drag to copy'],
+  ];
+  const ARROWS = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]};
+  const edits = {};  // key -> {saved, hist}; the working buffer is decoded[key].after
+  let stroke = null, view = null, statusTimer = null, clipboard = null, selKey = null, pan = null, anchor = null, wheel = 0, queued = 0;
+  const prefs = Object.assign({filled: false, perfect: false, wrap: false, guides: false}, store.get('paint', {}));
+  Object.assign(state, {tool: 'pencil', color: '#291b35', custom: false, mirror: false, before: store.get('before', 'HEAD'), artist: store.get('artist', ''),
+    sel: null, float: null, cursor: [0, 0], kbd: false}, prefs);
+  const savePaintPrefs = () => store.set('paint', {filled: state.filled, perfect: state.perfect, wrap: state.wrap, guides: state.guides});
   MODES.push('paint');
-  document.getElementById('modes').insertAdjacentHTML('beforeend', '<button data-mode="paint">Paint</button>');
+  document.getElementById('modes').insertAdjacentHTML('beforeend', '<button data-mode="paint" title="Paint (6)">Paint</button>');
   document.querySelector('header .refs').insertAdjacentHTML('afterend',
     '<span class="live-badge" id="live-badge">● live</span><label class="lbl" for="before-ref">compare with</label><select id="before-ref"></select>' +
     '<input id="artist" class="artist" placeholder="Your name (for history)" aria-label="Your name, recorded with saves"><span id="git-status" class="studio-status"></span><span id="studio-status" class="studio-status" role="status"></span>');
@@ -20,7 +36,8 @@
     select{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:4px 6px;max-width:220px}
     .studio-status{font-size:12px;color:var(--muted)}.studio-status.warn{color:var(--warn)}.studio-status.bad{color:var(--bad)}
     button.primary{background:var(--accent);color:#1b1b1f;border-color:var(--accent);font-weight:600}
-    button.primary:disabled{opacity:.45;cursor:default}
+    button:disabled{opacity:.45;cursor:default}
+    select:focus-visible,[role=button]:focus-visible,canvas:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     .paint-chip{display:grid;grid-template-columns:auto;justify-items:center;gap:3px;background:var(--raised);border:2px solid transparent;border-radius:8px;padding:6px;cursor:pointer;min-width:62px;font:10px ui-monospace,monospace;color:var(--muted);position:relative}
     .paint-chip .sw{width:34px;height:34px;border-radius:6px;border:1px solid #fff3}
     .paint-chip[aria-pressed=true]{border-color:var(--ink);color:var(--ink)}
@@ -29,6 +46,15 @@
     .eraser-sw{background:repeating-conic-gradient(#555 0 25%,#2b2b31 0 50%) 0 0/10px 10px}
     .studio-note{font-size:12px;color:var(--muted);max-width:760px;margin:6px 0}
     .artist{width:170px;padding:4px 8px}
+    .paint-tools{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:end}
+    .paint-readout{font:12px ui-monospace,monospace;color:var(--ink);text-transform:none;letter-spacing:0}
+    .paint-hist{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto;position:relative;min-width:150px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+    .paint-hist button{display:block;width:100%;text-align:left;border:0;border-radius:0;background:none;padding:3px 9px;font-size:12px}
+    .paint-hist button:hover{background:var(--raised)}.paint-hist button[aria-current=step]{background:var(--ink);color:var(--bg)}
+    .paint-hist button.redo{color:var(--muted);font-style:italic}
+    .paint-hint{flex-basis:100%;order:9;margin:0}
+    .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+    @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important}}
   </style>`);
 
   /* ---------- server calls ---------- */
@@ -43,6 +69,7 @@
     const el = document.getElementById('studio-status'); el.textContent = text; el.className = 'studio-status ' + cls;
     clearTimeout(statusTimer); if (!sticky) statusTimer = setTimeout(() => { el.textContent = ''; }, 4000);
   }
+  const announce = text => { if (window.JelliShell) return window.JelliShell.announce(text); const el = document.getElementById('paint-live'); if (el) el.textContent = text; };
 
   /* ---------- loading and live reload ---------- */
   async function reload() {
@@ -53,26 +80,32 @@
       if (decoded[a.key].after) a.after_metrics = measure(decoded[a.key].after, a);
       if (decoded[a.key].before) a.before_metrics = measure(decoded[a.key].before, a);
     }
+    state.float = null; stroke = null;
     const kept = new Set(keep.map(([key]) => key));
     for (const key of Object.keys(edits)) {
       if (!decoded[key]?.after) { delete edits[key]; continue; }
-      edits[key].saved = decoded[key].after.data.slice();
-      if (!kept.has(key)) edits[key].base = byKey[key].sha;  // dirty edits keep the base they started from
+      const data = decoded[key].after.data, e = edits[key];
+      e.saved = data.slice();
+      if (!kept.has(key)) e.base = byKey[key].sha;  // dirty edits keep the base they started from
+      // A clean sprite that changed on disk starts a fresh history; dirty ones keep theirs (restored below).
+      if (!kept.has(key) && !T.current(e.hist).every((v, i) => v === data[i])) e.hist = T.history(data, 'Loaded from disk');
     }
     for (const [key, data] of keep) if (decoded[key]?.after) { decoded[key].after.data.set(data); refresh(key); }
   }
-  /* Unsaved paint from a previous visit (drafts.js); a stale one saves only after a confirm (409). */
+  /* Unsaved paint from a previous visit (drafts.js); a stale one saves only after a confirm (409).
+   * The history starts at the file on disk, then a "Restored draft" step, so Undo shows what is on disk. */
   function restoreDrafts() {
     const back = [];
     for (const {key} of window.JelliDrafts?.list('paint') || []) {
       const p = work(key), d = JelliDrafts.restore('paint', key, byKey[key]?.sha), data = d && JelliDrafts.decodeBytes(d.data);
       if (!p || !data || data.length !== p.data.length) { JelliDrafts.drop('paint', key); continue; }
-      ensure(key).base = d.base; p.data.set(data); refresh(key); back.push(key + (d.stale ? ' (changed on disk since)' : ''));
+      const e = ensure(key); e.base = d.base; p.data.set(data); T.record(e.hist, 'Restored draft', p.data); refresh(key);
+      back.push(key + (d.stale ? ' (changed on disk since)' : ''));
     }
     if (!back.length) return;
     const text = `Restored unsaved edits from your last visit: ${back.join(', ')}`;
-    status(text, 'warn', true);
-    window.JelliShell?.notify(text, {tone: 'warn', id: 'drafts', hint: 'Save to keep them, or Revert to discard them.'});
+    if (window.JelliShell) window.JelliShell.notify(text, {tone: 'warn', id: 'drafts', hint: 'Save to keep them, or Revert to discard them.'});
+    else status(text, 'warn', true);
   }
   S.boot = async () => {
     await reload();
@@ -118,16 +151,11 @@
   /* ---------- pixel buffer helpers ---------- */
   const work = key => decoded[key]?.after;
   const dirty = key => { const e = edits[key], p = work(key); if (!e || !p) return false; for (let i = 0; i < p.data.length; i++) if (p.data[i] !== e.saved[i]) return true; return false; };
-  const ensure = key => (edits[key] ||= {saved: work(key).data.slice(), undo: [], redo: [], base: byKey[key]?.sha});
-  function setPixel(p, x, y, hex) {
-    if (x < 0 || y < 0 || x >= p.w || y >= p.h) return;
-    const i = (y * p.w + x) * 4;
-    if (!hex) { p.data[i] = p.data[i + 1] = p.data[i + 2] = p.data[i + 3] = 0; return; }
-    p.data[i] = parseInt(hex.slice(1, 3), 16); p.data[i + 1] = parseInt(hex.slice(3, 5), 16); p.data[i + 2] = parseInt(hex.slice(5, 7), 16); p.data[i + 3] = 255;
-  }
+  const ensure = key => (edits[key] ||= {saved: work(key).data.slice(), hist: T.history(work(key).data), base: byKey[key]?.sha});
   /* Assets may carry their own palette (a name in manifest.palettes or an inline list). */
   const ownPalette = a => !!a.palette_name && a.palette_name !== 'shared';
-  const paletteOf = a => a.palette || D.palette;
+  const paletteOf = a => (a.palette || D.palette).map(h => h.toLowerCase());
+  const paletteWhere = a => ownPalette(a) ? `the ${a.palette_name} palette` : 'the shared palette';
   const luma = hex => [1, 3, 5].reduce((n, i, k) => n + parseInt(hex.slice(i, i + 2), 16) * [299, 587, 114][k], 0);
   /* The outline colour: shared ink, or the darkest colour of the asset's own palette. */
   const inkOf = a => ownPalette(a) ? paletteOf(a).reduce((d, h) => luma(h) < luma(d) ? h : d) : '#291b35';
@@ -153,6 +181,7 @@
     a.after = p.img.toDataURL('image/png');
     if (before) { let n = 0; for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) if (pixel(before, x, y) !== pixel(p, x, y)) n++; a.changed = n; }
   }
+  /* Keep unsaved paint in drafts.js after each change, or drop the draft once the sprite is clean again. */
   function draft(key) {
     if (!window.JelliDrafts) return;
     if (!dirty(key)) return JelliDrafts.drop('paint', key);
@@ -160,34 +189,183 @@
   }
   function commit() {
     const a = asset(); refresh(a.key); draft(a.key);
-    renderHeader(a); renderPalette(a); renderContext(a); renderTotals(); renderList(); draw(); renderToolbarState();
+    renderHeader(a); renderPalette(a); renderContext(a); renderTotals(); renderList(); draw(); renderToolbarState(); renderHistory(); renderReadout();
   }
-  function begin() { const e = ensure(state.key); e.undo.push(work(state.key).data.slice()); if (e.undo.length > 200) e.undo.shift(); e.redo = []; }
-  function history(from, to) {
-    const e = edits[state.key]; if (!e || !e[from].length) return;
-    const p = work(state.key); e[to].push(p.data.slice()); p.data.set(e[from].pop()); commit();
+  /* Finish an action: record it in the asset's history (no-ops are skipped) and redraw. */
+  function done(label) { T.record(ensure(state.key).hist, label, work(state.key).data); commit(); }
+  function restore(i) {
+    const e = edits[state.key], data = e && T.jump(e.hist, i); if (!data) return;
+    work(state.key).data.set(data); state.float = null; stroke = null; commit();
+    announce(`History: ${e.hist.entries[i].label}`);
   }
+  const undo = () => { const e = edits[state.key]; if (e) restore(e.hist.at - 1); };
+  const redo = () => { const e = edits[state.key]; if (e) restore(e.hist.at + 1); };
 
-  /* ---------- tools ---------- */
-  function plot(x, y, hex) { const p = work(state.key); setPixel(p, x, y, hex); if (state.mirror) setPixel(p, p.w - 1 - x, y, hex); }
-  function line(x0, y0, x1, y1, hex) {
-    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let err = dx + dy;
-    for (;;) { plot(x0, y0, hex); if (x0 === x1 && y0 === y1) return; const e2 = 2 * err; if (e2 >= dy) { err += dy; x0 += sx; } if (e2 <= dx) { err += dx; y0 += sy; } }
+  /* ---------- painting ---------- */
+  /* The colour tools may paint: a colour of the asset's palette, or any colour once "custom" is chosen. */
+  function paintHex() {
+    const a = asset();
+    if (paletteOf(a).includes(state.color) || state.custom) return state.color;
+    status(`${state.color} is not in ${paletteWhere(a)}; pick a palette colour, or choose it under custom`, 'warn', true);
+    return undefined;
   }
-  function flood(x, y, hex) {
-    const p = work(state.key), target = pixel(p, x, y); if (target === hex) return;
-    const stack = [[x, y]], seen = new Set();
-    while (stack.length) {
-      const [cx, cy] = stack.pop(), id = cy * p.w + cx;
-      if (cx < 0 || cy < 0 || cx >= p.w || cy >= p.h || seen.has(id) || pixel(p, cx, cy) !== target) continue;
-      seen.add(id); setPixel(p, cx, cy, hex); stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+  const selRect = () => state.sel && T.clip(work(state.key), state.sel);
+  const inRect = (r, x, y) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
+  /* Paint one pixel (and its mirror twin); a selection keeps painting inside it. */
+  function plot(p, x, y, hex, mask) {
+    if (!mask || inRect(mask, x, y)) T.set(p, x, y, hex);
+    const mx = p.w - 1 - x; if (state.mirror && (!mask || inRect(mask, mx, y))) T.set(p, mx, y, hex);
+  }
+  function constrain(tool, [x0, y0], [x1, y1]) {
+    const dx = x1 - x0, dy = y1 - y0, d = Math.max(Math.abs(dx), Math.abs(dy)), sx = Math.sign(dx) || 1, sy = Math.sign(dy) || 1;
+    if (tool !== 'line') return [x0 + sx * d, y0 + sy * d];
+    if (Math.abs(dx) > 2 * Math.abs(dy)) return [x1, y0];
+    if (Math.abs(dy) > 2 * Math.abs(dx)) return [x0, y1];
+    return [x0 + sx * d, y0 + sy * d];
+  }
+  function strokePoints(s) {
+    if (s.kind === 'free') return state.perfect && s.hex ? T.pixelPerfect(s.pts) : s.pts;
+    const [[x0, y0], [x1, y1]] = [s.from, s.to];
+    if (s.tool === 'line') return T.line(x0, y0, x1, y1);
+    return (s.tool === 'rect' ? T.rect : T.ellipse)(x0, y0, x1, y1, state.filled);
+  }
+  function paintStroke() {
+    const p = work(state.key); p.data.set(stroke.base);
+    for (const [x, y] of strokePoints(stroke)) plot(p, x, y, stroke.hex, stroke.mask);
+  }
+  const snapshot = () => ({data: work(state.key).data.slice(), sel: state.sel && {...state.sel}, float: state.float && {...state.float}});
+  /* Start the tool at a pixel. pointer: false for the keyboard cursor. */
+  function press(x, y, tool, {erase = false, alt = false, pointer = true, held = false} = {}) {
+    if (tool === 'picker') return pick(x, y);
+    if (tool === 'select') return pressSelect(x, y, alt, pointer);
+    const hex = tool === 'eraser' || erase ? null : paintHex(); if (hex === undefined) return;
+    const p = work(state.key), mask = selRect(); state.float = null;  // painting drops a floating selection where it is
+    if (tool === 'fill') {
+      if (mask && !inRect(mask, x, y)) return status('Fill inside the selection, or press Escape to clear it', 'warn');
+      T.flood(p, x, y, hex, mask || T.whole(p)); if (state.mirror) T.flood(p, p.w - 1 - x, y, hex, mask || T.whole(p));
+      return done(hex ? 'Fill' : 'Erase fill');
     }
+    const label = SHAPES.has(tool) ? TOOLS.find(t => t[0] === tool)[1] + (tool !== 'line' && state.filled ? ' (filled)' : '') : hex ? 'Pencil' : 'Eraser';
+    stroke = {kind: SHAPES.has(tool) ? 'shape' : 'free', tool, hex, pointer, held, mask, label, base: p.data.slice(), from: [x, y], to: [x, y], pts: [[x, y]], snap: snapshot()};
+    paintStroke(); draw();
+  }
+  function pressSelect(x, y, alt, pointer) {
+    const snap = snapshot(), r = selRect();
+    if (r && inRect(state.sel, x, y)) {
+      if (state.float && alt) state.float.base = work(state.key).data.slice();  // Alt-drag a floating selection: stamp a copy here
+      lift(alt);
+      stroke = {kind: 'move', pointer, from: [x, y], origin: [state.float.x, state.float.y], snap, label: alt ? 'Copy selection' : 'Move selection'};
+    } else {
+      state.float = null; state.sel = {x, y, w: 1, h: 1};
+      stroke = {kind: 'marquee', pointer, from: [x, y], to: [x, y], snap, moved: false};
+    }
+    draw(); renderReadout();
+  }
+  function drag(x, y, snapTo = false) {
+    const s = stroke; if (!s) return;
+    if (s.kind === 'free') { const [lx, ly] = s.pts[s.pts.length - 1]; s.pts.push(...T.line(lx, ly, x, y).slice(1)); paintStroke(); }
+    else if (s.kind === 'shape') { s.to = snapTo ? constrain(s.tool, s.from, [x, y]) : [x, y]; paintStroke(); }
+    else if (s.kind === 'marquee') { s.moved ||= x !== s.from[0] || y !== s.from[1]; s.to = [x, y]; state.sel = T.clip(work(state.key), T.rectFrom(...s.from, x, y)); }
+    else if (s.kind === 'move') {
+      place(state.float, s.origin[0] + x - s.from[0], s.origin[1] + y - s.from[1]); compose();
+    }
+    draw(); renderReadout();
+  }
+  function release() {
+    const s = stroke; if (!s) return; stroke = null;
+    if (s.kind === 'marquee') {
+      if (s.pointer && !s.moved) state.sel = null;  // a click without a drag clears the selection
+      draw(); renderToolbarState(); renderReadout();
+      return announce(state.sel ? `Selected ${state.sel.w} by ${state.sel.h} at ${state.sel.x}, ${state.sel.y}` : 'Selection cleared');
+    }
+    done(s.label);
+  }
+  function cancel() {
+    const s = stroke; if (!s) return false; stroke = null;
+    work(state.key).data.set(s.snap.data); state.sel = s.snap.sel; state.float = s.snap.float;
+    draw(); renderReadout(); announce('Cancelled'); return true;
   }
   function pick(x, y) {
-    const hex = pixel(work(state.key), x, y);
-    if (hex) { state.color = hex; state.tool = 'pencil'; } else state.tool = 'eraser';
-    renderPalette(asset()); renderToolbarState();
+    const a = asset(), hex = pixel(work(state.key), x, y);
+    if (!hex) state.tool = 'eraser';
+    else if (paletteOf(a).includes(hex)) { state.color = hex; state.custom = false; state.tool = 'pencil'; }
+    else return status(`${hex} is not in ${paletteWhere(a)}; click its custom chip under Paint colours to paint with it`, 'warn', true);
+    renderPalette(a); renderToolbarState(); renderReadout();
   }
+
+  /* ---------- selection: a rect, plus floating pixels while it is being moved or transformed ---------- */
+  /* float = {region, base, x, y}: base is the sprite without the region; the buffer is base with region drawn at x, y. */
+  function lift(copyOnly = false) {
+    if (state.float) return;
+    const p = work(state.key), r = selRect(), base = {w: p.w, h: p.h, data: p.data.slice()};
+    if (!copyOnly) T.clear(base, r);
+    state.float = {region: T.extract(p, r), base: base.data, x: r.x, y: r.y}; state.sel = {...r};
+  }
+  /* Keep a floating selection overlapping the sprite by at least one pixel. */
+  function place(f, x, y) {
+    const p = work(state.key); f.x = Math.max(1 - f.region.w, Math.min(p.w - 1, x)); f.y = Math.max(1 - f.region.h, Math.min(p.h - 1, y));
+    state.sel = {x: f.x, y: f.y, w: f.region.w, h: f.region.h};
+  }
+  function compose() { const p = work(state.key), f = state.float; p.data.set(f.base); T.blit(p, f.region, f.x, f.y); }
+  function selectAll() { const p = work(state.key); stroke = null; state.float = null; state.sel = T.whole(p); state.tool = 'select'; afterSelect(); }
+  function deselect() { state.float = null; state.sel = null; afterSelect(); }
+  function afterSelect() { draw(); renderToolbarState(); renderReadout(); announce(state.sel ? `Selected ${state.sel.w} by ${state.sel.h}` : 'Selection cleared'); }
+  function deleteSel() {
+    const r = selRect(); if (!r) return false;
+    const p = work(state.key);
+    if (state.float) { p.data.set(state.float.base); state.float = null; } else T.clear(p, r);
+    done('Delete selection'); return true;
+  }
+  function copySel() {
+    const p = work(state.key), r = selRect();
+    clipboard = state.float ? T.copy(state.float.region) : T.extract(p, r || T.whole(p));
+    status(`Copied ${clipboard.w}×${clipboard.h}${r ? '' : ' (the whole sprite)'}`); renderToolbarState();
+  }
+  function cutSel() { if (!selRect()) return status('Select an area to cut', 'warn'); copySel(); deleteSel(); }
+  function paste() {
+    if (!clipboard) return status('Copy something first (⌘C / Ctrl+C)', 'warn');
+    const a = asset(), p = work(state.key), off = T.offPalette(clipboard, paletteOf(a));
+    if (off.length && !state.custom) return status(`The copied pixels use ${off.join(', ')}, which ${paletteWhere(a)} lacks; choose custom to paste them anyway`, 'bad', true);
+    const r = selRect(), [cx, cy] = state.kbd ? state.cursor : [0, 0];
+    const x = Math.max(0, Math.min(r ? r.x : cx, p.w - clipboard.w)), y = Math.max(0, Math.min(r ? r.y : cy, p.h - clipboard.h));
+    state.float = {region: T.copy(clipboard), base: p.data.slice(), x, y}; state.sel = {x, y, w: clipboard.w, h: clipboard.h};
+    state.tool = 'select'; compose(); done('Paste');
+    announce(`Pasted ${clipboard.w} by ${clipboard.h} at ${x}, ${y}; arrows with Alt move it`);
+  }
+  /* Flip or rotate the selection (about its centre), or the whole sprite. */
+  function transform(label, fn) {
+    if (!view) return;
+    const p = work(state.key);
+    if (selRect()) {
+      lift(); const f = state.float, r = fn(f.region);
+      const x = f.x + Math.floor((f.region.w - r.w) / 2), y = f.y + Math.floor((f.region.h - r.h) / 2);
+      f.region = r; place(f, x, y); compose();
+    } else {
+      const r = fn(T.copy(p)); if (r.w !== p.w) return status('This sprite is not square; select a square area to rotate', 'warn');
+      p.data.set(r.data); state.float = null;
+    }
+    done(label);
+  }
+  /* Alt+arrows: move the selection, or with Wrap on (or no selection) shift the pixels inside it or the sprite. */
+  function nudge(dx, dy) {
+    if (!view) return;
+    const p = work(state.key), r = selRect();
+    if (r && !state.wrap) {
+      lift(); place(state.float, state.float.x + dx, state.float.y + dy); compose();
+      return done('Move selection');
+    }
+    state.float = null; T.shift(p, r || T.whole(p), dx, dy, state.wrap);
+    done(r ? 'Shift selection' : 'Shift sprite');
+  }
+  function replaceColour() {
+    const from = document.getElementById('replace-from')?.value; if (!from || !view) return;
+    const to = state.tool === 'eraser' ? null : paintHex(); if (to === undefined) return;
+    const p = work(state.key), r = selRect(); state.float = null;
+    const n = T.replace(p, r || T.whole(p), from, to);
+    done('Replace colour');
+    status(n ? `Replaced ${n} px of ${from} with ${to || 'transparent'}${r ? ' in the selection' : ''}` : `No ${from} pixels to replace`);
+  }
+  const toggle = (name, label) => { state[name] = !state[name]; savePaintPrefs(); renderToolbarState(); draw(); announce(`${label} ${state[name] ? 'on' : 'off'}`); };
 
   /* ---------- paint stage ---------- */
   function cell(e) { return [Math.floor(e.offsetX / view.z), Math.floor(e.offsetY / view.z)]; }
@@ -200,126 +378,290 @@
     if (!state.peek) S.onion?.(ctx, a, z);  // animation.js ghosts the neighbouring clip frames
     drawGrid(ctx, a.width, a.height, z);
     drawIssues(ctx, a.after_metrics, z);
+    if (state.guides) drawGuides(ctx, a, z);
     if (state.mirror) { ctx.fillStyle = 'rgba(133,228,182,.8)'; ctx.fillRect(a.width * z / 2 - 1, 0, 2, a.height * z); }
+    drawSelection(ctx, z);
     if (state.hover) {
       const [x, y] = state.hover;
-      if (!['picker'].includes(state.tool) && state.color && state.tool === 'pencil') { ctx.globalAlpha = 0.55; ctx.fillStyle = state.color; ctx.fillRect(x * z, y * z, z, z); ctx.globalAlpha = 1; }
+      if (state.tool === 'pencil' && !stroke && state.color) { ctx.globalAlpha = 0.55; ctx.fillStyle = state.color; ctx.fillRect(x * z, y * z, z, z); ctx.globalAlpha = 1; }
       drawHover(ctx, z);
+      if (state.kbd) { ctx.strokeStyle = '#85e4b6'; ctx.lineWidth = 2; ctx.strokeRect(x * z - 3, y * z - 3, z + 6, z + 6); }
     }
   }
+  /* Centre guides: the sprite's middle row and column, and the centre of each 8 px tile. */
+  function drawGuides(ctx, a, z) {
+    ctx.fillStyle = 'rgba(245,199,100,.8)';
+    ctx.fillRect(Math.round(a.width * z / 2) - 1, 0, 2, a.height * z); ctx.fillRect(0, Math.round(a.height * z / 2) - 1, a.width * z, 2);
+    if (z < 4) return;
+    ctx.fillStyle = 'rgba(245,199,100,.55)';
+    for (let ty = 4; ty < a.height; ty += 8) for (let tx = 4; tx < a.width; tx += 8) { ctx.fillRect(tx * z - 3, ty * z, 6, 1); ctx.fillRect(tx * z, ty * z - 3, 1, 6); }
+  }
+  function drawSelection(ctx, z) {
+    const r = state.sel; if (!r) return;
+    ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#000'; ctx.lineDashOffset = 0; ctx.strokeRect(r.x * z + 1, r.y * z + 1, r.w * z - 2, r.h * z - 2);
+    ctx.strokeStyle = '#fff'; ctx.lineDashOffset = 4; ctx.strokeRect(r.x * z + 1, r.y * z + 1, r.w * z - 2, r.h * z - 2);
+    ctx.setLineDash([]);
+  }
+  function renderReadout() {
+    const el = document.getElementById('paint-readout'); if (!el || !view) return;
+    const a = view.a, at = state.hover || (state.kbd ? state.cursor : null), parts = [];
+    if (at) { const hex = pixel(work(a.key), at[0], at[1]); parts.push(`x ${at[0]}, y ${at[1]} · ${hex ? `${hex} ${label(hex, a)}` : 'transparent'}`); }
+    if (state.sel) parts.push(`selection ${state.sel.w}×${state.sel.h} at ${state.sel.x}, ${state.sel.y}${state.float ? ' (floating)' : ''}`);
+    if (stroke && !stroke.pointer) parts.push('Enter finishes · Esc cancels');
+    el.textContent = parts.join(' · ') || 'Hover or focus the canvas';
+  }
+  function scrollToCursor() {
+    const s = view.scroller, z = view.z, [x, y] = state.cursor;
+    if (x * z < s.scrollLeft) s.scrollLeft = x * z - z; else if ((x + 1) * z > s.scrollLeft + s.clientWidth) s.scrollLeft = (x + 2) * z - s.clientWidth;
+    if (y * z < s.scrollTop) s.scrollTop = y * z - z; else if ((y + 1) * z > s.scrollTop + s.clientHeight) s.scrollTop = (y + 2) * z - s.clientHeight;
+  }
+  function moveCursor(dx, dy, e) {
+    const a = view.a, [x0, y0] = state.cursor, x = Math.max(0, Math.min(a.width - 1, x0 + dx)), y = Math.max(0, Math.min(a.height - 1, y0 + dy));
+    state.kbd = true;
+    if (e.shiftKey && !stroke && (state.tool === 'pencil' || state.tool === 'eraser')) press(x0, y0, state.tool, {pointer: false, held: true});
+    state.cursor = [x, y]; state.hover = [x, y];
+    if (stroke && !stroke.pointer) drag(x, y);
+    scrollToCursor(); draw(); renderInspector(a); renderReadout();
+    const hex = pixel(work(a.key), x, y); announce(`${x}, ${y} ${hex ? label(hex, a) : 'transparent'}`);
+  }
+  /* Enter (or Space once the keyboard cursor is in use) applies the tool at the cursor. */
+  function applyAtCursor() {
+    const [x, y] = state.cursor; state.kbd = true; state.hover = [x, y];
+    if (stroke?.pointer) return;
+    if (stroke) return release();
+    press(x, y, state.tool, {pointer: false});
+    if (stroke?.kind === 'free') release();
+    else if (stroke) announce(`${stroke.kind === 'move' ? 'Moving' : 'Started'} at ${x}, ${y}; arrows to move, Enter to finish, Escape to cancel`);
+    draw(); renderReadout();
+  }
+  function canvasKey(e) {
+    const mod = e.metaKey || e.ctrlKey, dir = ARROWS[e.key];
+    if (dir && e.altKey && !mod) nudge(...dir);
+    else if (dir && !mod) moveCursor(...dir, e);
+    else if (e.key === 'Enter' || (e.key === ' ' && (state.kbd || stroke))) { if (!e.repeat) applyAtCursor(); }
+    else if (e.key === 'Escape' && (stroke || state.sel)) { if (!cancel()) deselect(); }
+    else return;
+    e.preventDefault(); e.stopPropagation();
+  }
   S.renderStage = (a, z) => {
-    const stage = document.getElementById('stage'); stage.textContent = '';
+    const stage = document.getElementById('stage'), old = view;
+    const hadFocus = old && document.activeElement === old.c, scroll = old && old.a.key === a.key ? [old.scroller.scrollLeft, old.scroller.scrollTop] : null;
+    stage.textContent = '';
     document.getElementById('zoom-label').textContent = `· ${z}×`;
     if (LOCKED.has(a.kind)) { view = null; stage.innerHTML = '<p class="studio-note">The font atlas and backgrounds are not paintable here yet; edit those PNGs in an image editor.</p>'; return; }
+    if (selKey !== a.key) { selKey = a.key; stroke = null; state.sel = state.float = null; state.kbd = false; state.cursor = [a.width >> 1, a.height >> 1]; }
+    ensure(a.key);
     const pane = document.createElement('div'); pane.className = 'pane';
-    pane.innerHTML = '<div class="lbl"><span>paint</span><span>right-click erases · Alt-click picks · hold Space to peek</span></div>';
+    pane.innerHTML = '<div class="lbl"><span>paint</span><span class="paint-readout" id="paint-readout"></span></div>';
     const scroller = document.createElement('div'); scroller.className = 'scroller'; scroller.style.maxHeight = `${window.innerHeight - 200}px`;
     const [c, ctx] = makeCanvas(a.width * z, a.height * z); c.style.cursor = 'crosshair'; c.style.touchAction = 'none';
-    scroller.append(c); pane.append(scroller); stage.append(pane);
-    view = {c, ctx, a, z};
+    Object.assign(c, {tabIndex: 0}); c.setAttribute('role', 'application'); c.setAttribute('aria-roledescription', 'pixel canvas');
+    c.setAttribute('aria-label', `${a.key}, ${a.width} by ${a.height} pixels`); c.setAttribute('aria-describedby', 'paint-hint');
+    scroller.append(c); pane.append(scroller);
+    stage.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">Right-click erases · Alt-click picks · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
+      Keyboard: focus the canvas, arrows move the cursor, Enter or Space applies the tool, Shift+arrows draw. <kbd>?</kbd> lists every shortcut.</p><div id="paint-live" class="vh" aria-live="polite"></div>`);
+    stage.prepend(pane);
+    view = {c, ctx, a, z, scroller};
     const ref = decoded[a.key].before;
     if (ref) {
       const rz = Math.max(2, Math.floor(z / 3)), box = document.createElement('div'); box.className = 'pane';
       box.innerHTML = `<div class="lbl"><span>before</span><span>${D.before_label}</span></div>`;
       const [rc, rctx] = makeCanvas(a.width * rz, a.height * rz); fillBackdrop(rctx, a.width, a.height, rz, backdropFor(a)); drawPixels(rctx, ref, rz);
+      rc.setAttribute('role', 'img'); rc.setAttribute('aria-label', `${a.key} before (${D.before_label})`);
       box.append(rc); stage.append(box);
     }
+    const hist = document.createElement('div'); hist.className = 'pane';
+    hist.innerHTML = '<div class="lbl" id="paint-hist-label"><span>history</span><span>click a step to go back</span></div><ol class="paint-hist" id="paint-history" aria-labelledby="paint-hist-label"></ol>';
+    hist.querySelector('ol').onclick = e => { const b = e.target.closest('[data-step]'); if (b) restore(Number(b.dataset.step)); };
+    stage.append(hist);
+    wireCanvas(c, scroller, a);
+    if (anchor) { scroller.scrollLeft = anchor.px * z - anchor.ox; scroller.scrollTop = anchor.py * z - anchor.oy; anchor = null; }
+    else if (scroll) [scroller.scrollLeft, scroller.scrollTop] = scroll;
+    if (hadFocus) c.focus({preventScroll: true});
+    draw(); renderReadout(); renderHistory();
+  };
+  function wireCanvas(c, scroller, a) {
     c.oncontextmenu = e => e.preventDefault();
     c.onpointerdown = e => {
-      e.preventDefault(); c.setPointerCapture(e.pointerId);
-      const [x, y] = cell(e), tool = e.button === 2 ? 'eraser' : e.altKey ? 'picker' : state.tool;
-      if (tool === 'picker') return pick(x, y);
-      begin();
-      if (tool === 'fill') { flood(x, y, state.color); if (state.mirror) flood(a.width - 1 - x, y, state.color); return commit(); }
-      stroke = {hex: tool === 'eraser' ? null : state.color, last: [x, y]}; plot(x, y, stroke.hex); draw();
+      e.preventDefault(); c.focus({preventScroll: true});
+      try { c.setPointerCapture(e.pointerId); } catch { /* synthetic or already-released pointers cannot be captured */ }
+      if (e.button === 1) { pan = {x: e.clientX, y: e.clientY, l: scroller.scrollLeft, t: scroller.scrollTop}; return; }
+      if (stroke) return;
+      const [x, y] = cell(e), erase = e.button === 2;
+      const tool = erase && !SHAPES.has(state.tool) ? 'eraser' : e.altKey && state.tool !== 'select' ? 'picker' : state.tool;
+      state.kbd = false; state.cursor = [x, y];
+      press(x, y, tool, {erase, alt: e.altKey});
     };
     c.onpointermove = e => {
-      const [x, y] = cell(e); state.hover = [x, y];
-      if (stroke) { line(stroke.last[0], stroke.last[1], x, y, stroke.hex); stroke.last = [x, y]; }
-      draw(); renderInspector(a);
+      if (pan) { scroller.scrollLeft = pan.l - (e.clientX - pan.x); scroller.scrollTop = pan.t - (e.clientY - pan.y); return; }
+      const [x, y] = cell(e);
+      if (state.hover?.[0] === x && state.hover?.[1] === y && !stroke) return;
+      state.hover = [x, y]; state.kbd = false; state.cursor = [Math.max(0, Math.min(a.width - 1, x)), Math.max(0, Math.min(a.height - 1, y))];
+      if (stroke?.pointer) drag(x, y, e.shiftKey); else draw();
+      renderInspector(a); renderReadout();
     };
-    const finish = () => { if (stroke) { stroke = null; commit(); } };
-    c.onpointerup = finish; c.onpointercancel = finish;
-    c.onpointerleave = () => { if (!stroke) { state.hover = null; draw(); } };
-    draw();
-  };
+    const finish = () => { if (pan) { pan = null; return; } if (stroke?.pointer) release(); };
+    c.onpointerup = finish; c.onpointercancel = () => { pan = null; if (stroke?.pointer) cancel(); };
+    c.onpointerleave = () => { if (!stroke && !state.kbd) { state.hover = null; draw(); renderReadout(); } };
+    c.onkeydown = canvasKey;
+    c.onkeyup = e => { if (e.key === 'Shift' && stroke?.held) release(); };
+    c.onblur = () => { if (stroke && !stroke.pointer) release(); };
+    c.addEventListener('wheel', e => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault(); wheel += e.deltaY; if (Math.abs(wheel) < 30) return;
+      const z = view.z, next = Math.max(1, Math.min(32, z + (wheel < 0 ? 1 : -1))); wheel = 0;
+      if (next === z) return;
+      anchor = {px: e.offsetX / z, py: e.offsetY / z, ox: e.offsetX - scroller.scrollLeft, oy: e.offsetY - scroller.scrollTop};
+      setZoom(next);
+    }, {passive: false});
+  }
+  /* Rebuild a list while keeping keyboard focus on the matching control. */
+  function keepFocus(el, attr, build, want) {
+    const had = el.contains(document.activeElement) ? document.activeElement.getAttribute(attr) : null;
+    build();
+    if (had !== null) el.querySelector(`[${attr}="${want ?? had}"]`)?.focus({preventScroll: true});
+  }
+  function renderHistory() {
+    const el = document.getElementById('paint-history'), e = edits[state.key]; if (!el || !e) return;
+    keepFocus(el, 'data-step', () => {
+      el.innerHTML = e.hist.entries.map((h, i) => `<li><button data-step="${i}" aria-current="${i === e.hist.at ? 'step' : 'false'}"${i > e.hist.at ? ' class="redo"' : ''}>${i + 1}. ${h.label}</button></li>`).join('');
+    }, e.hist.at);
+    const cur = el.querySelector('[aria-current=step]');
+    if (cur) el.scrollTop = Math.max(0, cur.offsetTop - el.clientHeight / 2);
+  }
 
   /* ---------- toolbar, header and palette ---------- */
+  const btn = (id, text, title, keys, extra = '') => `<button id="${id}" title="${title}${keys ? ` (${keys})` : ''}"${keys ? ` aria-keyshortcuts="${keys.replace(/⌘/g, 'Meta+').replace(/⇧/g, 'Shift+')}"` : ''}${extra}>${text}</button>`;
   S.renderToolbar = extra => {
     if (LOCKED.has(asset().kind)) return;
-    extra.innerHTML = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end">
-      <div><div class="lbl">Tool</div><div class="seg" id="tools">${TOOLS.map(([id, name, key]) => `<button data-tool="${id}" title="${name} (${key})">${name}</button>`).join('')}</div></div>
-      <div><div class="lbl">Symmetry</div><button id="mirror" title="Mirror left/right (M)">Mirror</button></div>
-      <div><div class="lbl">History</div><div class="seg"><button id="undo" title="Undo (⌘Z)">Undo</button><button id="redo" title="Redo (⇧⌘Z)">Redo</button></div></div>
-      <div><div class="lbl">Clean up</div><button id="tidy" title="Closed 1px outline, remove specks, bottom shadow">Tidy outline</button></div>
-      <div><div class="lbl">File</div><div class="seg"><button id="revert" title="Discard unsaved edits">Revert</button><button id="reset" title="Load the before image into the canvas">Use before</button><button id="save" class="primary" title="Save (⌘S)">Save</button></div></div></div>`;
-    extra.querySelector('#tools').onclick = e => { const t = e.target.closest('button')?.dataset.tool; if (t) { state.tool = t; renderToolbarState(); draw(); } };
-    extra.querySelector('#mirror').onclick = () => { state.mirror = !state.mirror; renderToolbarState(); draw(); };
-    extra.querySelector('#undo').onclick = () => history('undo', 'redo');
-    extra.querySelector('#redo').onclick = () => history('redo', 'undo');
+    extra.innerHTML = `<div class="paint-tools" role="toolbar" aria-label="Paint tools">
+      <div><div class="lbl" id="tools-label">Tool</div><div class="seg" id="tools" role="group" aria-labelledby="tools-label">${TOOLS.map(([id, name, key, what]) =>
+        `<button data-tool="${id}" title="${name} (${key}): ${what}" aria-keyshortcuts="${key}">${name}</button>`).join('')}</div></div>
+      <div><div class="lbl">Options</div><div class="seg" role="group" aria-label="Options">${btn('filled', 'Filled', 'Filled rectangles and ellipses', '⇧F')}${btn('perfect', 'Pixel-perfect', 'Pencil strokes drop L-shaped corners', '⇧P')}${btn('mirror', 'Mirror', 'Mirror left/right', 'M')}</div></div>
+      <div><div class="lbl">Selection</div><div class="seg" role="group" aria-label="Selection">${btn('sel-all', 'All', 'Select the whole sprite', '⌘A')}${btn('sel-copy', 'Copy', 'Copy the selection, or the whole sprite', '⌘C')}${btn('sel-cut', 'Cut', 'Cut the selection', '⌘X')}${btn('sel-paste', 'Paste', 'Paste as a floating selection', '⌘V')}${btn('sel-delete', 'Delete', 'Clear the selected pixels', 'Delete')}${btn('sel-none', 'Deselect', 'Drop the selection', 'Escape')}</div></div>
+      <div><div class="lbl">Transform</div><div class="seg" role="group" aria-label="Transform">${btn('flip-h', '⇋', 'Flip left/right: the selection, or the whole sprite', '⇧H', ' aria-label="Flip horizontally"')}${btn('flip-v', '⇅', 'Flip top/bottom: the selection, or the whole sprite', '⇧V', ' aria-label="Flip vertically"')}${btn('rot-cw', '↻', 'Rotate 90° clockwise', '⇧R', ' aria-label="Rotate clockwise"')}${btn('rot-ccw', '↺', 'Rotate 90° anticlockwise', '', ' aria-label="Rotate anticlockwise"')}</div></div>
+      <div><div class="lbl">Nudge</div><div class="seg" role="group" aria-label="Nudge">${[['ArrowLeft', '←', 'left'], ['ArrowUp', '↑', 'up'], ['ArrowDown', '↓', 'down'], ['ArrowRight', '→', 'right']].map(([k, g, w]) =>
+        btn(`nudge-${w}`, g, `Move the selection (or shift the sprite) 1 px ${w}`, `Alt+${k}`, ` aria-label="Nudge ${w}" data-nudge="${k}"`)).join('')}${btn('wrap', 'Wrap', 'Nudges wrap pixels round inside the selection or sprite', 'W')}</div></div>
+      <div><div class="lbl"><label for="replace-from">Replace colour</label></div><div class="seg" role="group" aria-label="Replace colour"><select id="replace-from"></select>${btn('replace', '→ paint colour', 'Replace this colour with the paint colour (or transparent with the eraser), in the selection or the whole sprite', '')}</div></div>
+      <div><div class="lbl">View</div><div class="seg" role="group" aria-label="View">${btn('guides', 'Guides', 'Centre and tile-centre guides', '⇧G')}${btn('help', '?', 'Keyboard shortcuts', '?', ' aria-label="Keyboard shortcuts"')}</div></div>
+      <div><div class="lbl">History</div><div class="seg" role="group" aria-label="History">${btn('undo', 'Undo', 'Undo', '⌘Z')}${btn('redo', 'Redo', 'Redo', '⇧⌘Z')}</div></div>
+      <div><div class="lbl">Clean up</div>${btn('tidy', 'Tidy outline', 'Closed 1px outline, remove specks, bottom shadow', '')}</div>
+      <div><div class="lbl">File</div><div class="seg" role="group" aria-label="File">${btn('revert', 'Revert', 'Discard unsaved edits', '')}${btn('reset', 'Use before', 'Load the before image into the canvas', '')}${btn('save', 'Save', 'Save', '⌘S', ' class="primary"')}</div></div></div>`;
+    const on = (id, fn) => { extra.querySelector('#' + id).onclick = fn; };
+    extra.querySelector('#tools').onclick = e => { const t = e.target.closest('button')?.dataset.tool; if (t) setTool(t); };
+    on('filled', () => toggle('filled', 'Filled shapes')); on('perfect', () => toggle('perfect', 'Pixel-perfect')); on('mirror', () => toggle('mirror', 'Mirror'));
+    on('sel-all', selectAll); on('sel-copy', copySel); on('sel-cut', cutSel); on('sel-paste', paste); on('sel-delete', deleteSel); on('sel-none', deselect);
+    on('flip-h', () => transform('Flip horizontal', T.flipH)); on('flip-v', () => transform('Flip vertical', T.flipV));
+    on('rot-cw', () => transform('Rotate clockwise', r => T.rotate(r, true))); on('rot-ccw', () => transform('Rotate anticlockwise', r => T.rotate(r, false)));
+    extra.querySelectorAll('[data-nudge]').forEach(b => { b.onclick = () => nudge(...ARROWS[b.dataset.nudge]); });
+    on('wrap', () => toggle('wrap', 'Wrap')); on('replace', replaceColour); on('guides', () => toggle('guides', 'Guides')); on('help', () => window.JelliShell?.openHelp());
+    on('undo', undo); on('redo', redo);
     const tidyButton = extra.querySelector('#tidy');
     tidyButton.onclick = tidy;
     if (ownPalette(asset())) { tidyButton.disabled = true; tidyButton.title = 'Tidy inks with the shared palette; this sprite has its own palette'; }
-    extra.querySelector('#revert').onclick = () => { const e = edits[state.key]; if (e && dirty(state.key)) { begin(); work(state.key).data.set(e.saved); commit(); } };
-    extra.querySelector('#reset').onclick = () => { const b = decoded[state.key].before; if (b) { begin(); work(state.key).data.set(b.data); commit(); } };
-    extra.querySelector('#save').onclick = save;
+    on('revert', () => { const e = edits[state.key]; if (e && dirty(state.key)) { state.float = null; work(state.key).data.set(e.saved); done('Revert'); } });
+    on('reset', () => { const b = decoded[state.key].before; if (b) { state.float = null; work(state.key).data.set(b.data); done('Use before'); } });
+    on('save', save);
     renderToolbarState();
   };
+  function setTool(tool) {
+    if (tool === state.tool) return;
+    if (stroke) cancel();
+    state.tool = tool; renderToolbarState(); renderPalette(asset()); draw(); renderReadout();
+    announce(`${TOOLS.find(t => t[0] === tool)[1]} tool`);
+  }
   function renderToolbarState() {
     document.querySelectorAll('#tools button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool)));
-    document.getElementById('mirror')?.setAttribute('aria-pressed', String(state.mirror));
+    for (const id of ['mirror', 'filled', 'perfect', 'wrap', 'guides']) document.getElementById(id)?.setAttribute('aria-pressed', String(!!state[id]));
     const e = edits[state.key], isDirty = dirty(state.key), save = document.getElementById('save');
     if (save) { save.disabled = !isDirty; save.textContent = isDirty ? 'Save' : 'Saved'; }
-    const undo = document.getElementById('undo'), redo = document.getElementById('redo');
-    if (undo) undo.disabled = !e?.undo.length; if (redo) redo.disabled = !e?.redo.length;
+    const able = (id, ok) => { const b = document.getElementById(id); if (b) b.disabled = !ok; };
+    able('undo', e && e.hist.at > 0); able('redo', e && e.hist.at < e.hist.entries.length - 1);
+    const p = work(state.key), sel = view && selRect();
+    for (const id of ['sel-cut', 'sel-delete', 'sel-none']) able(id, !!sel);
+    able('sel-paste', !!clipboard); able('rot-cw', sel || p?.w === p?.h); able('rot-ccw', sel || p?.w === p?.h);
+    const from = document.getElementById('replace-from'); if (!from || !p) return;
+    const a = asset(), keep = from.value, list = T.colours(p, sel || T.whole(p));
+    from.innerHTML = list.map(([hex, n]) => `<option value="${hex}">${label(hex, a)} ${hex} · ${n} px</option>`).join('') || '<option value="">no colours</option>';
+    if (list.some(([hex]) => hex === keep)) from.value = keep;
+    able('replace', list.length > 0);
   }
   S.decorateHeader = (a, items) => {
     if (dirty(a.key)) items.push(['worse', 'unsaved edits']);
     if (a.hand_painted) items.push(['good', 'hand-painted · recipe leaves it alone']);
   };
+  const activate = el => { el.onkeydown = e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === el) { e.preventDefault(); e.stopPropagation(); el.click(); } }; };
   S.renderPalette = (el, a) => {
-    el.textContent = '';
-    const own = ownPalette(a), pal = paletteOf(a), where = own ? `the ${a.palette_name} palette` : 'the shared palette';
-    // Arriving at a sprite with its own palette: start from one of its colours, not the shared ink.
-    if (S.paletteKey !== a.key) { S.paletteKey = a.key; if (state.color && !pal.includes(state.color)) state.color = inkOf(a); }
+    const own = ownPalette(a), pal = paletteOf(a), where = paletteWhere(a);
+    // Arriving at a sprite: keep a custom colour the artist chose, otherwise start from one of its palette colours.
+    if (S.paletteKey !== a.key) { S.paletteKey = a.key; if (state.color && !pal.includes(state.color) && !state.custom) state.color = inkOf(a); }
     el.previousElementSibling.innerHTML = own ? `Paint colours <span class="lbl">· ${a.palette_name} palette · click to paint</span>`
       : 'Paint colours <span class="lbl">· click to paint · ✎ edits the shared palette</span>';
     const peers = D.assets.filter(x => own ? x.palette_name === a.palette_name : !ownPalette(x));
     const counts = a.after_metrics.colors, usage = hex => peers.filter(x => x.after_metrics.colors[hex]).length;
-    const chip = (hex, title, sub, extra = '') => {
-      const b = document.createElement('div'); b.className = 'paint-chip' + extra; b.tabIndex = 0; b.title = title;
+    const chip = (hex, title, sub, extra = '', custom = false) => {
+      const b = document.createElement('div'); b.className = 'paint-chip' + extra; b.tabIndex = 0; b.title = title; b.dataset.chip = hex || 'eraser';
       const active = hex === null ? state.tool === 'eraser' : state.tool !== 'eraser' && state.color === hex;
-      b.setAttribute('aria-pressed', String(active)); b.setAttribute('role', 'button');
+      b.setAttribute('aria-pressed', String(active)); b.setAttribute('role', 'button'); b.setAttribute('aria-label', title);
       b.innerHTML = `<span class="sw ${hex ? '' : 'eraser-sw'}" style="${hex ? `background:${hex}` : ''}"></span><span>${title.split(' · ')[0]}</span><span>${sub}</span>`;
       b.onclick = e => {
         if (e.target.closest('.edit')) return;
         if (e.shiftKey && hex) { state.isolate = state.isolate === hex ? null : hex; return draw(); }
-        if (hex === null) state.tool = 'eraser'; else { state.color = hex; if (state.tool === 'eraser' || state.tool === 'picker') state.tool = 'pencil'; }
+        if (hex === null) state.tool = 'eraser';
+        else { state.color = hex; state.custom = custom; if (['eraser', 'picker', 'select'].includes(state.tool)) state.tool = 'pencil'; }
         S.renderPalette(el, a); renderToolbarState(); draw();
       };
-      el.append(b); return b;
+      activate(b); el.append(b); return b;
     };
-    pal.forEach((hex, i) => {
-      const b = chip(hex, `${slotName(a, i)} · ${hex} · used by ${usage(hex)} assets`, counts[hex] ? `${counts[hex]} px` : '—');
-      if (own) return;  // only the shared palette is editable here; a named palette is edited in assets.json
-      b.insertAdjacentHTML('beforeend', `<label class="edit" title="Change this palette colour everywhere">✎<input type="color" value="${hex}" hidden></label>`);
-      b.querySelector('input').onchange = e => editSlot(i, e.target.value);
+    keepFocus(el, 'data-chip', () => {
+      el.textContent = '';
+      pal.forEach((hex, i) => {
+        const b = chip(hex, `${slotName(a, i)} · ${hex} · used by ${usage(hex)} assets`, counts[hex] ? `${counts[hex]} px` : '—');
+        if (own) return;  // only the shared palette is editable here; a named palette is edited in assets.json
+        b.insertAdjacentHTML('beforeend', `<button class="edit" title="Change ${NAMES[i]} everywhere" aria-label="Change ${NAMES[i]} in every sprite">✎</button><input type="color" value="${hex}" hidden>`);
+        const input = b.querySelector('input'); b.querySelector('.edit').onclick = e => { e.stopPropagation(); input.click(); };
+        input.onchange = e => editSlot(i, e.target.value);
+      });
+      chip(null, 'eraser · transparent', 'right-click');
+      for (const hex of Object.keys(counts).filter(h => !pal.includes(h)))
+        chip(hex, `custom · ${hex} · not in ${where}; release builds reject it until a slot uses this colour`, `${counts[hex]} px`, ' off', true);
+      if (!pal.includes(state.color) && state.color && !counts[state.color])
+        chip(state.color, `custom · ${state.color} · not in ${where}`, state.color.slice(1), ' off', true);
+      const custom = document.createElement('div'); custom.className = 'paint-chip'; custom.title = 'Paint with any colour, outside the palette';
+      custom.tabIndex = 0; custom.setAttribute('role', 'button'); custom.setAttribute('aria-label', 'Choose a custom colour'); custom.dataset.chip = 'custom';
+      custom.innerHTML = `<span class="sw" style="background:conic-gradient(#fa8c99,#f5c764,#85e4b6,#a47bdb,#fa8c99)"></span><span>custom</span><span>pick…</span><input type="color" value="${state.color || '#ffffff'}" hidden>`;
+      const input = custom.querySelector('input'); custom.onclick = e => { if (e.target !== input) input.click(); };
+      input.onchange = e => { state.color = e.target.value.toLowerCase(); state.custom = true; state.tool = 'pencil'; S.renderPalette(el, a); renderToolbarState(); draw(); };
+      activate(custom); el.append(custom);
+      const note = document.createElement('p'); note.className = 'studio-note';
+      note.textContent = own
+        ? `Click a colour to paint with it. This sprite uses ${where} from assets.json, so the shared palette and its ✎ do not apply. Tools paint only these colours until you choose custom; custom colours work in the live game only. Shift-click isolates a colour.`
+        : 'Click a colour to paint with it. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.';
+      el.append(note);
     });
-    chip(null, 'eraser · transparent', 'right-click');
-    for (const hex of Object.keys(counts).filter(h => !pal.includes(h)))
-      chip(hex, `custom · ${hex} · not in ${where}; release builds reject it until a slot uses this colour`, `${counts[hex]} px`, ' off');
-    if (!pal.includes(state.color) && state.color && !counts[state.color])
-      chip(state.color, `custom · ${state.color} · not in ${where}`, state.color.slice(1), ' off');
-    const custom = document.createElement('label'); custom.className = 'paint-chip'; custom.title = 'Paint with any colour';
-    custom.innerHTML = `<span class="sw" style="background:conic-gradient(#fa8c99,#f5c764,#85e4b6,#a47bdb,#fa8c99)"></span><span>custom</span><span>pick…</span><input type="color" value="${state.color || '#ffffff'}" hidden>`;
-    custom.querySelector('input').onchange = e => { state.color = e.target.value.toLowerCase(); state.tool = 'pencil'; S.renderPalette(el, a); renderToolbarState(); draw(); };
-    el.append(custom);
-    const note = document.createElement('p'); note.className = 'studio-note';
-    note.textContent = own
-      ? `Click a colour to paint with it. This sprite uses ${where} from assets.json, so the shared palette and its ✎ do not apply. Custom colours work in the live game only. Shift-click isolates a colour.`
-      : 'Click a colour to paint with it. ✎ changes that palette colour in every sprite. Custom colours work in the live game; to ship one, put it in a palette slot. Shift-click isolates a colour.';
-    el.append(note);
   };
+
+  /* ---------- shortcut docs: the shell's ? overlay lists them; the handlers are S.keydown and canvasKey ---------- */
+  window.JelliShell?.registerShortcuts('Paint', [
+    {keys: ['P', 'E', 'F', 'C'], description: 'Pencil, eraser, fill, pick colour'}, {keys: ['L', 'R', 'U'], description: 'Line, rectangle, ellipse'},
+    {keys: ['V'], description: 'Select'}, {keys: ['Shift+F'], description: 'Filled shapes on/off'}, {keys: ['Shift+P'], description: 'Pixel-perfect pencil on/off'},
+    {keys: ['M'], description: 'Mirror left/right'}, {keys: ['Right-click'], description: 'Erase'}, {keys: ['Alt+Click'], description: 'Pick a colour'},
+    {keys: ['Shift+Drag'], description: 'Snap lines to 45°; square rectangles and circles'},
+    {keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], description: 'Canvas focused: move the keyboard cursor'},
+    {keys: ['Enter', 'Space'], description: 'Canvas focused: apply the tool; shapes and select take one press to start and one to finish'},
+    {keys: ['Shift+ArrowRight'], description: 'Draw with the pencil or eraser while moving the cursor'},
+    {keys: ['Escape'], description: 'Cancel the shape, then clear the selection'},
+    {keys: ['Mod+A'], description: 'Select all'}, {keys: ['Mod+C', 'Mod+X', 'Mod+V'], description: 'Copy, cut, paste (paste floats; palette-checked)'},
+    {keys: ['Delete', 'Backspace'], description: 'Clear the selected pixels'}, {keys: ['Alt+Drag'], description: 'Copy the selection while moving it'},
+    {keys: ['Alt+ArrowLeft', 'Alt+ArrowRight', 'Alt+ArrowUp', 'Alt+ArrowDown'], description: 'Move the selection 1 px, or shift the sprite'},
+    {keys: ['W'], description: 'Wrap nudges round inside the selection or sprite'},
+    {keys: ['Shift+H', 'Shift+V'], description: 'Flip horizontally, vertically (selection or sprite)'}, {keys: ['Shift+R'], description: 'Rotate 90° clockwise'},
+    {keys: ['[', ']', '0'], description: 'Zoom out, in, fit'}, {keys: ['Mod+Wheel'], description: 'Zoom at the pointer'}, {keys: ['Middle-drag'], description: 'Pan'},
+    {keys: ['G'], description: 'Pixel grid'}, {keys: ['Shift+G'], description: 'Centre and tile-centre guides'},
+    {keys: ['Space'], description: 'Hold to peek at the before image (until the keyboard cursor is in use)'},
+    {keys: ['Mod+Z'], description: 'Undo; the history list jumps to any of the last 100 steps'}, {keys: ['Mod+Shift+Z', 'Mod+Y'], description: 'Redo'},
+    {keys: ['Mod+S'], description: 'Save the asset'}]);
 
   /* ---------- server-backed actions ---------- */
   async function save() {
@@ -328,8 +670,8 @@
     const pixels = []; for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) pixels.push(pixel(p, x, y));
     try {
       const e = edits[a.key], send = base => api('POST', '/api/save', {key: a.key, pixels, artist: state.artist, base});
-      const res = await send(e.base ?? a.sha).catch(err => {
-        if (err.status !== 409 || !confirm(`${a.key} changed on disk since you started editing it.\n\nOverwrite it with your version?`)) throw err;
+      const res = await send(e.base ?? a.sha).catch(async err => {
+        if (err.status !== 409 || !await askOverwrite(a.key)) throw err;  // Cancel keeps the newer file on disk
         return send(err.body.current);  // the 409 names the hash now on disk
       });
       e.saved = p.data.slice(); e.base = a.sha = res.sha; a.hand_painted = true; D.version = res.version;
@@ -339,12 +681,16 @@
       else status(res.commit ? `Saved ${a.key} (commit ${res.commit}).` : `Saved ${a.key}. With make run-live, the game shows it now.`);
     } catch (err) { status(`Save failed: ${err.message}`, 'bad', true); }
   }
+  async function askOverwrite(key) {
+    const text = `${key} changed on disk since you started editing it. Overwrite it with your version?`;
+    return window.JelliShell?.confirm ? window.JelliShell.confirm(text, {title: 'File changed on disk', confirmLabel: 'Overwrite', danger: true}) : confirm(text);
+  }
   async function tidy() {
     const a = asset(), p = work(a.key), pixels = [];
     for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) pixels.push(pixel(p, x, y));
     try {
-      const res = await api('POST', '/api/tidy', {key: a.key, pixels}); begin();
-      res.pixels.forEach((hex, i) => setPixel(p, i % p.w, Math.floor(i / p.w), hex)); commit();
+      const res = await api('POST', '/api/tidy', {key: a.key, pixels}); state.float = null;
+      res.pixels.forEach((hex, i) => T.set(p, i % p.w, Math.floor(i / p.w), hex)); done('Tidy outline');
       status('Tidied: closed outline, specks removed. Undo if you prefer the old version.');
     } catch (err) { status(`Tidy failed: ${err.message}`, 'bad', true); }
   }
@@ -362,16 +708,27 @@
   }
 
   /* ---------- keyboard ---------- */
+  const SHIFTED = {h: () => transform('Flip horizontal', T.flipH), v: () => transform('Flip vertical', T.flipV), r: () => transform('Rotate clockwise', r => T.rotate(r, true)),
+    f: () => toggle('filled', 'Filled shapes'), p: () => toggle('perfect', 'Pixel-perfect'), g: () => toggle('guides', 'Guides')};
+  const MODDED = {a: selectAll, c: copySel, x: cutSel, v: paste};
   S.keydown = e => {
     const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
     if (e.repeat && !(mod && k === 'z')) return false;
     if (mod && k === 's') { e.preventDefault(); save(); return true; }
-    if (mod && k === 'z') { e.preventDefault(); history(e.shiftKey ? 'redo' : 'undo', e.shiftKey ? 'undo' : 'redo'); return true; }
-    if (mod && k === 'y') { e.preventDefault(); history('redo', 'undo'); return true; }
-    if (state.mode !== 'paint' || mod || e.altKey) return false;
-    const tool = {p: 'pencil', e: 'eraser', f: 'fill', c: 'picker'}[k];
-    if (tool) { state.tool = tool; renderToolbarState(); renderPalette(asset()); draw(); return true; }
-    if (k === 'm') { state.mirror = !state.mirror; renderToolbarState(); draw(); return true; }
+    if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return true; }
+    if (mod && k === 'y') { e.preventDefault(); redo(); return true; }
+    if (state.mode !== 'paint' || state.view !== 'detail' || !view) return false;
+    if (mod && !e.altKey && !e.shiftKey && MODDED[k]) { e.preventDefault(); MODDED[k](); return true; }
+    if (mod) return false;
+    if (e.altKey && ARROWS[e.key]) { e.preventDefault(); nudge(...ARROWS[e.key]); return true; }
+    if (e.altKey) return false;
+    if (e.key === 'Escape') return cancel() || (state.sel ? (deselect(), true) : false);
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); return deleteSel(); }
+    if (e.shiftKey) { if (SHIFTED[k]) { SHIFTED[k](); return true; } return false; }
+    const tool = {p: 'pencil', e: 'eraser', f: 'fill', c: 'picker', l: 'line', r: 'rect', u: 'ellipse', v: 'select'}[k];
+    if (tool) { setTool(tool); return true; }
+    if (k === 'm') { toggle('mirror', 'Mirror'); return true; }
+    if (k === 'w') { toggle('wrap', 'Wrap'); return true; }
     return false;
   };
 })();

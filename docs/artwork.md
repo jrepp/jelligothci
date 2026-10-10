@@ -14,15 +14,28 @@ the repository's pinned tools, and it only listens on your own computer.
 
 1. Pick a sprite in the left list, or use **Sheet** to browse them all.
    Press **?** for the keyboard shortcuts.
-2. Choose the **Paint** tab at the top. Use the pencil, eraser, fill, and colour picker.
-   Right-click erases, Alt-click picks a colour, and **Mirror** paints both halves
-   of a symmetric sprite.
-3. Choose a colour under **Paint colours**. **custom** paints any colour. The
+2. Choose the **Paint** tab at the top. The tools are pencil, eraser, fill,
+   colour picker, line, rectangle, ellipse and select. **Filled** fills
+   rectangles and ellipses; Shift while dragging snaps lines to 45° and makes
+   squares and circles. Right-click erases, Alt-click picks a colour, and
+   **Mirror** paints both halves of a symmetric sprite.
+3. **Select** a rectangle to move it (drag inside it, or Alt+arrow keys), copy,
+   cut, paste, delete, flip, rotate, or replace one colour with another. While
+   a selection exists, painting stays inside it; Escape clears it. Without a
+   selection, flip, rotate and Alt+arrows apply to the whole sprite. **Wrap**
+   makes nudges come round the other side, for tiling patterns.
+4. Choose a colour under **Paint colours**. Tools paint only the sprite's
+   palette colours until you choose **custom**, which paints any colour. The
    ✎ on a palette colour changes that colour in every sprite at once; it asks
    before doing so.
-4. **Tidy outline** applies the house outline and removes stray pixels. Turn on
-   **Issues** to see what still needs attention. Undo with ⌘Z / Ctrl+Z.
-5. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
+5. **Tidy outline** applies the house outline and removes stray pixels. Turn on
+   **Issues** to see what still needs attention. Undo with ⌘Z / Ctrl+Z, or click
+   any step in the **history** list beside the canvas.
+6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
+   pans. **Grid** and **Guides** (centre and 8 px tile centres) are toggles.
+   Without a mouse, focus the canvas: the arrow keys move a cursor, Enter or
+   Space applies the tool, and Shift with the arrows draws.
+7. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
    shows it straight away. "Compare with" picks what the before image is: the
    last commit, a release tag, or a recent commit.
 
