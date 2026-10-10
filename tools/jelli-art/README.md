@@ -313,6 +313,11 @@ suggests keys.
 tools/jelli-art/browser_smoke.sh [port]                        # optional, needs agent-browser
 ```
 
+The **Studio tests** job in `.github/workflows/jelli-art.yml` runs
+`test_paint_tools.js`, `test_server.py`, `test_creatures.py`,
+`test_animation.py` and `test_game_preview.py` on every pull request, and a
+release image is built only after they pass.
+
 `test_server.py` starts real servers on scratch copies and a scratch git
 checkout with a bare origin. It covers:
 
