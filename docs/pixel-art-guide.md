@@ -174,8 +174,9 @@ listed in `assets/slice/source/hand-painted.json`. The studio adds every sprite 
 saves to that list. If you paint one of those PNGs in another editor, add its key
 to the list yourself, or the recipe will overwrite your edit. Every other icon is
 hand- or script-authored, and the re-ink pass only normalises its outline and
-specks. That pass is idempotent: running it twice changes nothing. Assets in
-`icon_polish.SKIP` are left exactly as authored.
+specks. That pass is idempotent and deterministic: running it twice changes
+nothing, and every run gives the same pixels. Studio **Tidy outline** uses the
+same pass. Assets in `icon_polish.SKIP` are left exactly as authored.
 
 ## 10. Review checklist
 
