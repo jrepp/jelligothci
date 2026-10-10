@@ -77,9 +77,12 @@ names too, and refuses a colour that would break a ramp's light-to-deep order.
 
 Tools paint only the asset's resolved palette (shared, a named palette
 or an inline list) until the artist picks **custom**; paste refuses pixels
-outside the target palette on the same terms. A selection is a rect, plus
-floating pixels while it is moved or transformed, so moving it over other art
-and back is lossless until the selection is dropped. Shortcuts are registered
+outside the target palette on the same terms. A selection is a rect, plus a
+mask when the magic wand made it, plus floating pixels while it is moved or
+transformed, so moving it over other art and back is lossless until the
+selection is dropped. Shift-dragged lines snap to clean ratios and draw equal
+runs (`snapClean`, `cleanLine`); mirroring uses axes in half pixels
+(`mirrorPoints`), kept per asset in this browser. Shortcuts are registered
 with the shell's `?` overlay.
 
 ```sh

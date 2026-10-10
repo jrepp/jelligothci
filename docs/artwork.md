@@ -17,25 +17,38 @@ the repository's pinned tools, and it only listens on your own computer.
    image; when none do, **Show all** turns it off.
    Press **?** for the keyboard shortcuts.
 2. Choose the **Paint** tab at the top. The tools are pencil, eraser, fill,
-   colour picker, shade, line, rectangle, ellipse and select. **Filled** fills
-   rectangles and ellipses; Shift while dragging snaps lines to 45° and makes
-   squares and circles. The left button paints the main colour and the right
-   button the secondary colour, which starts transparent, so right-click
-   erases until you choose one. With Fill, right-click fills with the
-   secondary colour, so by default it erases the whole touching area. X swaps
-   the two colours. Alt-click (or Alt+Enter at the keyboard cursor) picks the
-   main colour and keeps your tool, except with Select, where Alt-drag copies;
-   Alt+right-click picks the secondary colour with any tool. **Mirror** paints
-   both halves of a symmetric sprite. **Shade** (T) steps each pixel it
-   touches one colour lighter along its ramp; right-click or Shift steps
-   deeper. Colours outside every ramp, such as ink, are left alone.
-3. Selection, transforms, nudges, colour replacement, guides and **Tidy
-   outline** are under **More tools**, which stays open once you open it.
-   **Select** a rectangle to move it (drag inside it, or Alt+arrow keys), copy,
-   cut, paste, delete, flip, rotate, or replace one colour with another. While
-   a selection exists, painting stays inside it; Escape clears it. Without a
-   selection, flip, rotate and Alt+arrows apply to the whole sprite. **Wrap**
-   makes nudges come round the other side, for tiling patterns.
+   colour picker, shade, line, rectangle, ellipse, select and magic wand.
+   **Filled** fills rectangles and ellipses. Shift while dragging snaps lines
+   to the clean ratios (flat, 3:1, 2:1, 1:1, 1:2, 1:3 and upright), with every
+   run the same length, and makes squares and circles. The left button paints
+   the main colour and the right button the secondary colour, which starts
+   transparent, so right-click erases until you choose one. With Fill,
+   right-click fills with the secondary colour, so by default it erases the
+   whole touching area. X swaps the two colours. Alt-click (or Alt+Enter at the
+   keyboard cursor) picks the main colour and keeps your tool, except with
+   Select, where Alt-drag copies; Alt+right-click picks the secondary colour
+   with any tool. **Mirror** (M) paints both halves of a symmetric sprite.
+   **Shade** (T) steps each pixel it touches one colour lighter along its ramp;
+   right-click or Shift steps deeper. Colours outside every ramp, such as ink,
+   are left alone. Shade follows the mirror axes and the selection like the
+   other tools.
+3. Selection, transforms, nudges, colour replacement, mirror axes, guides,
+   the tile preview and **Tidy outline** are under **More tools**, which stays
+   open once you open it. **Select** a rectangle, or click a colour with the
+   **Magic wand** (Q) to select the pixels of that colour touching it
+   (Shift-click, or Shift+Enter at the keyboard cursor while the wand is the
+   tool, selects it everywhere). Move a selection by dragging inside it with
+   Select, or with Alt+arrow keys; copy, cut, paste, delete, flip, rotate, or
+   replace one colour with another. While a selection exists, painting, fill
+   and shade stay inside it; Escape clears it, and undo puts back the
+   selection each step had. Without a selection, flip, rotate and Alt+arrows
+   apply to the whole sprite. **Wrap** makes nudges come round the other side,
+   for tiling patterns (a magic-wand selection moves instead), and **Tile
+   3×3** (Shift+T) shows the sprite repeated beside the canvas so the seams
+   show. **Top/bottom** (Shift+M) mirrors vertically too. The arrows beside it
+   move the axes half a pixel at a time, so an axis can sit between two
+   columns or on one; **Centre** puts them back. Moved axes are remembered per
+   sprite (so each clip frame separately) in this browser.
 4. Choose a colour under **Paint colours**, beside the canvas. Each row is a
    ramp from `assets.json`, light to deep; colours in no ramp come last.
    Click a colour for the main colour. For the secondary, right-click it,
