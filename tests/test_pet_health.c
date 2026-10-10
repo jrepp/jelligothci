@@ -33,7 +33,7 @@ static void press(JelliPetUi *ui, JelliGame *game, unsigned slot)
 
 static void test_clicker(void)
 {
-    for (unsigned kind = 0; kind < 5u; ++kind) {
+    for (unsigned kind = 0; kind < 4u; ++kind) {
         JelliGame g;
         JelliPetUi ui;
         test_game_pair(&g);

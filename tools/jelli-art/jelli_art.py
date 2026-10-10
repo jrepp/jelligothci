@@ -35,6 +35,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "assets"))
 from compare_slice import REPO, SOURCE, collect  # noqa: E402
 import behaviors  # noqa: E402
+import activities  # noqa: E402
 import creatures  # noqa: E402
 import profiles  # noqa: E402
 from git_sync import GitSync  # noqa: E402
@@ -56,8 +57,8 @@ TEMPLATE = HERE.parent / "assets/compare.html"
 STUDIO_JS = HERE / "studio.js"
 CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
-PAGE_SCRIPTS = (STUDIO_JS, CREATURE_JS, BEHAVIOUR_JS, HERE / "simulator.js", HERE / "reactions.js")
-EDITABLE_CONTENT = ("behaviors", "creatures")
+PAGE_SCRIPTS = (STUDIO_JS, CREATURE_JS, BEHAVIOUR_JS, HERE / "simulator.js", HERE / "reactions.js", HERE / "activities.js")
+EDITABLE_CONTENT = ("behaviors", "creatures", "activities")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
 MAX_BODY = 1 << 20
@@ -108,14 +109,17 @@ def payload(before):
 
 def content_paths():
     """The content files the studio may write, by name."""
-    return {"behaviors": CONTENT / "behaviors.json", "creatures": CREATURE_DATA}
+    return {"behaviors": CONTENT / "behaviors.json", "creatures": CREATURE_DATA, "activities": CONTENT / "activities.json"}
 
 
 def behaviour_data():
     path = content_paths()["behaviors"]
     vocab = behaviors.vocabulary(REPO, CONTENT)
     editable = CONTENT_WRITABLE and vocab is not None and path.exists() and shutil.which("cmake") is not None
-    return {"behavior_data": behaviors.read_json(path), "behavior_data_sha": profiles.digest(path),
+    return {"activity_data": behaviors.read_json(CONTENT / "activities.json"),
+            "activity_sha": profiles.digest(CONTENT / "activities.json"),
+            "activity_animations": activities.ANIMATIONS,
+            "behavior_data": behaviors.read_json(path), "behavior_data_sha": profiles.digest(path),
             "behavior_vocab": vocab, "behavior_editable": editable,
             "potty": behaviors.read_json(CONTENT / "potty.json")}
 
@@ -246,6 +250,8 @@ def save_content(docs, bases, artist=""):
         if changed:
             candidate = {**current, **changed}
             try:
+                if "activities" in changed:
+                    activities.validate(candidate["activities"], REPO, CONTENT, read_manifest())
                 if "behaviors" in changed:
                     behaviors.validate(candidate["behaviors"], REPO, CONTENT)
                 module = creatures.load_checkout_module(REPO, "creature_data")

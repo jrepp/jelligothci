@@ -31,7 +31,7 @@ static const struct {
     [JELLI_HEALTH_MEDICINE] = {"MEDICINE", JELLI_ASSET_HEALTH_MEDICINE},
     [JELLI_HEALTH_SHOT] = {"SHOT", JELLI_ASSET_HEALTH_SHOT},
     [JELLI_HEALTH_WASH] = {"WASH", JELLI_ASSET_HEALTH_WASH},
-    [JELLI_HEALTH_STRETCH] = {"STRETCH", JELLI_ASSET_HEALTH_STRETCH},
+    [JELLI_HEALTH_STRETCH] = {"YOGA", JELLI_ASSET_HEALTH_STRETCH},
     [JELLI_HEALTH_FLOSS] = {"FLOSS", JELLI_ASSET_HEALTH_FLOSS},
     [JELLI_HEALTH_MOUTHWASH] = {"MOUTHWASH", JELLI_ASSET_HEALTH_MOUTHWASH},
     [JELLI_HEALTH_SPIT] = {"SPIT", JELLI_ASSET_HEALTH_SPIT},
@@ -74,6 +74,8 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
 {
     if (!ui || !button)
         return false;
+    if (ui->menu_open && ui->page == JELLI_UI_MOMENTS && slot)
+        return jelli_pet_activity_button(ui->activity_page, slot, asleep, button);
     if (ui->menu_open && ui->page == JELLI_UI_FOOD && slot)
         return jelli_pet_food_button(slot, button);
     if (jelli_pet_collection_button(ui, slot, button))
@@ -146,6 +148,8 @@ static void start_round(JelliPetUi *ui, const JelliPet *pet)
 
 bool jelli_pet_health_select(JelliPetUi *ui, const JelliGame *game, JelliPetUiAction action)
 {
+    if (action == JELLI_UI_ACTION_STRETCH)
+        return false; /* Yoga uses the authored timed activity, including its unlock rules. */
     if (action == JELLI_UI_ACTION_HEALTH) {
         ui->page = JELLI_UI_HEALTH;
         return true;

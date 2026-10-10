@@ -1,3 +1,4 @@
+#include "jelli/activities.h"
 #include "jelli/pet_ui.h"
 #include "jelli/sound.h"
 #include "../core/pet_menu.h"
@@ -258,11 +259,15 @@ static void menu_guidance(void)
     jelli_pet_ui_init(&ui);
     ui.menu_open = true;
     ui.page = JELLI_UI_MOMENTS;
+    ui.activity_page = (uint8_t)(jelli_moment_count / 5u);
     game.pets[0].needs[JELLI_SATIETY] = 0;
     game.pets[0].hydration = 0;
     game.pets[0].needs[JELLI_ENERGY] = 0;
-    jelli_pet_ui_tap(&ui, &game, 110, 355);
-    CHECK(ui.result == JELLI_NOT_READY && ui.attempted_slot == 5u);
+    unsigned exercise_slot = jelli_moment_count % 5u + 1u;
+    JelliPetUiButton exercise;
+    CHECK(jelli_pet_ui_control(&ui, exercise_slot, false, &exercise));
+    jelli_pet_ui_tap(&ui, &game, (int)(exercise.bounds.x + 48u), (int)(exercise.bounds.y + 48u));
+    CHECK(ui.result == JELLI_NOT_READY && ui.attempted_slot == exercise_slot);
     CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "CARE > FEED FIRST") == 0);
     game.pets[0].needs[JELLI_SATIETY] = 500;
     CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "CARE > WATER FIRST") == 0);

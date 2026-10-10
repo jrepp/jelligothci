@@ -1,4 +1,5 @@
 #include "pet_menu.h"
+#include "jelli/activities.h"
 #include "jelli/nutrition.h"
 #include <string.h>
 
@@ -45,11 +46,11 @@ void jelli_pet_menu_ring(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
         JelliPetUiButton b;
         if (!jelli_pet_ring_button(ui, slot, game->pets[game->active].asleep, &b))
             continue;
-        uint16_t edge =
-            v->ring_page == JELLI_UI_MOMENTS &&
-                    slot == jelli_pet_suggested_moment(&game->pets[game->active], ui) + 1u
-                ? GOLD
-                : 0x738eu;
+        uint16_t edge = v->ring_page == JELLI_UI_MOMENTS && slot < 6u &&
+                                jelli_pet_activity_choice(ui, slot) ==
+                                    jelli_pet_suggested_moment(&game->pets[game->active], ui)
+                            ? GOLD
+                            : 0x738eu;
         int factor = 510 - v->ring_visible;
         int x = 233 + ((int)b.bounds.x + 48 - 233) * factor / 255;
         int y = 233 + ((int)b.bounds.y + 48 - 233) * factor / 255;
@@ -72,7 +73,7 @@ const char *jelli_pet_menu_title(const JelliPetUi *ui)
 {
     static const char *const titles[] = {"MENU",     "CARE",       "MORE",   "PRESENTS",
                                          "SETTINGS", "ACTIVITIES", "HEALTH", "BRUSH",
-                                         "MEDICINE", "SHOT",       "BATH",   "STRETCH"};
+                                         "MEDICINE", "SHOT",       "BATH",   "YOGA"};
     if (ui->page == JELLI_UI_SETTINGS && ui->clock_edit)
         return "CLOCK";
     return (unsigned)ui->page < sizeof(titles) / sizeof(titles[0]) ? titles[ui->page] : "MENU";
@@ -91,10 +92,16 @@ static const char *exercise_hint(const JelliPet *pet)
 
 static const char *not_ready_hint(const JelliPetUi *ui, const JelliGame *game)
 {
+    if (ui->page == JELLI_UI_HEALTH && ui->attempted_slot == 5u)
+        return jelli_moment_hint(game, &game->pets[game->active], 8u);
     if (ui->page == JELLI_UI_HEALTH && (ui->attempted_slot == 2u || ui->attempted_slot == 3u))
         return "DOSE GIVEN - WAIT";
-    if (ui->page == JELLI_UI_MOMENTS && ui->attempted_slot == 5u)
-        return exercise_hint(&game->pets[game->active]);
+    if (ui->page == JELLI_UI_MOMENTS) {
+        if (jelli_pet_activity_choice(ui, ui->attempted_slot) == jelli_moment_count)
+            return exercise_hint(&game->pets[game->active]);
+        return jelli_moment_hint(game, &game->pets[game->active],
+                                 jelli_pet_activity_choice(ui, ui->attempted_slot));
+    }
     if (ui->page == JELLI_UI_MORE && ui->attempted_slot == 2u)
         return "NO REWARD YET";
     if (ui->page == JELLI_UI_SETTINGS && ui->clock_edit)

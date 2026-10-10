@@ -1,26 +1,469 @@
 {
   "version": 1,
   "moments": [
-    {"id": 0, "name": "BREAKFAST", "kind": "feed", "suggest_hour": 5, "location": "stay",
-     "gains": {}, "icon": 6009, "prop": 0},
-    {"id": 1, "name": "TEA", "kind": "play", "suggest_hour": 11, "location": "stay",
-     "gains": {"social": 60, "energy": 100}, "icon": 6010, "prop": 0},
-    {"id": 2, "name": "GOING OUT", "kind": "play", "suggest_hour": 15, "location": "garden",
-     "gains": {}, "icon": 6011, "prop": 0},
-    {"id": 3, "name": "MOVIE", "kind": "play", "suggest_hour": 19, "location": "stay",
-     "gains": {"social": 100}, "icon": 6012, "prop": 0},
-    {"id": 4, "name": "READING", "kind": "play", "suggest_hour": -1, "location": "stay",
-     "gains": {"amusement": 60, "social": 30}, "icon": 6016, "prop": 3005}
+    {
+      "id": 0,
+      "name": "BREAKFAST",
+      "kind": "feed",
+      "suggest_hour": 6,
+      "location": "stay",
+      "gains": {},
+      "icon": 6009,
+      "prop": 0,
+      "duration_s": 5,
+      "start_minute": 360,
+      "end_minute": 660,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "hold"
+    },
+    {
+      "id": 1,
+      "name": "TEA",
+      "kind": "play",
+      "suggest_hour": 13,
+      "location": "stay",
+      "gains": {
+        "social": 60,
+        "energy": 100
+      },
+      "icon": 6010,
+      "prop": 6010,
+      "duration_s": 8,
+      "start_minute": 780,
+      "end_minute": 960,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "sip"
+    },
+    {
+      "id": 2,
+      "name": "GOING OUT",
+      "kind": "play",
+      "suggest_hour": 15,
+      "location": "garden",
+      "gains": {},
+      "icon": 6011,
+      "prop": 0,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "hold"
+    },
+    {
+      "id": 3,
+      "name": "MOVIE",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "social": 100
+      },
+      "icon": 6012,
+      "prop": 6012,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "watch"
+    },
+    {
+      "id": 4,
+      "name": "READING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "amusement": 60,
+        "social": 30
+      },
+      "icon": 6016,
+      "prop": 3005,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "hold"
+    },
+    {
+      "id": 5,
+      "name": "LUNCH",
+      "kind": "feed",
+      "suggest_hour": 11,
+      "location": "stay",
+      "gains": {},
+      "icon": 6009,
+      "prop": 6009,
+      "duration_s": 5,
+      "start_minute": 660,
+      "end_minute": 840,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "sip"
+    },
+    {
+      "id": 6,
+      "name": "DINNER",
+      "kind": "feed",
+      "suggest_hour": 16,
+      "location": "stay",
+      "gains": {},
+      "icon": 6009,
+      "prop": 6009,
+      "duration_s": 5,
+      "start_minute": 960,
+      "end_minute": 1260,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "sip"
+    },
+    {
+      "id": 7,
+      "name": "DESSERT",
+      "kind": "feed",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {},
+      "icon": 6009,
+      "prop": 6009,
+      "duration_s": 5,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 0,
+      "requires": 6,
+      "animation": "sip"
+    },
+    {
+      "id": 8,
+      "name": "YOGA",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "energy": 100
+      },
+      "icon": 8005,
+      "prop": 8005,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "breathe"
+    },
+    {
+      "id": 9,
+      "name": "JOGGING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {},
+      "icon": 6011,
+      "prop": 6011,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "jog"
+    },
+    {
+      "id": 10,
+      "name": "FISHING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {},
+      "icon": 6011,
+      "prop": 6011,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "cast"
+    },
+    {
+      "id": 11,
+      "name": "DAY DREAMING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "social": 30
+      },
+      "icon": 9007,
+      "prop": 9007,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "dream"
+    },
+    {
+      "id": 12,
+      "name": "NAP",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "energy": 200
+      },
+      "icon": 6003,
+      "prop": 3004,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "rest"
+    },
+    {
+      "id": 13,
+      "name": "CHESS",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "amusement": 100
+      },
+      "icon": 3005,
+      "prop": 3005,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "think"
+    },
+    {
+      "id": 14,
+      "name": "DRAWING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "amusement": 80
+      },
+      "icon": 8001,
+      "prop": 8001,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "sketch"
+    },
+    {
+      "id": 15,
+      "name": "THINKING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "social": 40
+      },
+      "icon": 9007,
+      "prop": 9007,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "think"
+    },
+    {
+      "id": 16,
+      "name": "GARDENING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "garden",
+      "gains": {
+        "amusement": 80
+      },
+      "icon": 6011,
+      "prop": 6011,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "dig"
+    },
+    {
+      "id": 17,
+      "name": "SOCCER",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "amusement": 100
+      },
+      "icon": 9003,
+      "prop": 9003,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "kick"
+    },
+    {
+      "id": 18,
+      "name": "VOLLEYBALL",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "social": 100
+      },
+      "icon": 9003,
+      "prop": 9003,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "volley"
+    },
+    {
+      "id": 19,
+      "name": "SWIMMING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "energy": 60
+      },
+      "icon": 6015,
+      "prop": 6015,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "swim"
+    },
+    {
+      "id": 20,
+      "name": "BASEBALL",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "amusement": 100
+      },
+      "icon": 9003,
+      "prop": 9003,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "swing"
+    },
+    {
+      "id": 21,
+      "name": "BUG CATCHING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "garden",
+      "gains": {
+        "amusement": 80
+      },
+      "icon": 11001,
+      "prop": 11001,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "catch"
+    },
+    {
+      "id": 22,
+      "name": "SCIENCE",
+      "kind": "play",
+      "suggest_hour": -1,
+      "location": "stay",
+      "gains": {
+        "amusement": 80
+      },
+      "icon": 6010,
+      "prop": 6010,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "mix"
+    }
   ],
   "favorites": {
     "bond": 10,
     "profiles": [
-      {"name": "evening", "windows": [{"until_minute": 1140, "moment": "GOING OUT"},
-                                      {"until_minute": 1440, "moment": "MOVIE"}],
-       "strong_from_minute": 900, "strong_until_minute": 1440, "strong_bonus": 60, "bonus": 30},
-      {"name": "morning", "windows": [{"until_minute": 660, "moment": "BREAKFAST"},
-                                      {"until_minute": 1440, "moment": "TEA"}],
-       "strong_from_minute": 0, "strong_until_minute": 900, "strong_bonus": 60, "bonus": 30}
+      {
+        "name": "evening",
+        "windows": [
+          {
+            "until_minute": 1140,
+            "moment": "GOING OUT"
+          },
+          {
+            "until_minute": 1440,
+            "moment": "MOVIE"
+          }
+        ],
+        "strong_from_minute": 900,
+        "strong_until_minute": 1440,
+        "strong_bonus": 60,
+        "bonus": 30
+      },
+      {
+        "name": "morning",
+        "windows": [
+          {
+            "until_minute": 660,
+            "moment": "BREAKFAST"
+          },
+          {
+            "until_minute": 1440,
+            "moment": "TEA"
+          }
+        ],
+        "strong_from_minute": 0,
+        "strong_until_minute": 900,
+        "strong_bonus": 60,
+        "bonus": 30
+      }
     ]
   }
 }

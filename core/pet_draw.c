@@ -107,6 +107,8 @@ static const char *status(const JelliPetRenderKey *v, char *buffer, size_t capac
     }
     if (v->health == JELLI_UNWELL)
         return "CARE > BASIC CARE";
+    if (v->moment && v->moment <= jelli_moment_count)
+        return jelli_moments[v->moment - 1u].name;
     if (v->activity == JELLI_EXERCISING)
         return "WORKING OUT";
     if (v->activity == JELLI_EATING)
@@ -223,16 +225,47 @@ static void activity(Canvas *c, const JelliPetUi *ui)
     jelli_canvas_caption(c, label, 82, PALE);
 }
 
+static void moment_prop_offset(unsigned animation, int beat, int *x, int *y)
+{
+    /* Four half-second positions per shared prop motion. Offsets are screen pixels. */
+    static const int8_t offsets[][4][2] = {
+        {{0, 0}, {0, 0}, {0, 0}, {0, 0}},               /* hold */
+        {{0, -12}, {0, -12}, {0, 0}, {0, 0}},           /* sip */
+        {{55, 0}, {55, 0}, {55, 0}, {55, 0}},           /* watch */
+        {{0, -4}, {0, -4}, {0, 4}, {0, 4}},             /* breathe */
+        {{-12, 0}, {-12, -6}, {12, 0}, {12, -6}},       /* jog */
+        {{30, -18}, {36, -14}, {42, -10}, {48, -6}},    /* cast */
+        {{0, -90}, {4, -95}, {8, -100}, {12, -105}},    /* dream */
+        {{36, -75}, {36, -78}, {36, -81}, {36, -84}},   /* rest */
+        {{-8, 0}, {-8, 0}, {8, 0}, {8, 0}},             /* think */
+        {{0, -18}, {0, -18}, {0, 0}, {0, 0}},           /* lift */
+        {{-12, 0}, {0, -6}, {12, 0}, {0, 6}},           /* sketch */
+        {{24, -16}, {24, 0}, {24, 12}, {24, 0}},        /* dig */
+        {{-16, 10}, {12, 0}, {42, -15}, {62, -5}},      /* kick */
+        {{-30, -35}, {0, -75}, {30, -35}, {0, 0}},      /* volley */
+        {{-30, 0}, {-10, -8}, {10, 0}, {30, -8}},       /* swim */
+        {{-35, -15}, {-10, -25}, {20, -10}, {50, 5}},   /* swing */
+        {{-30, -35}, {-10, -50}, {20, -45}, {35, -20}}, /* catch */
+        {{-8, -8}, {8, -8}, {8, 8}, {-8, 8}}            /* mix */
+    };
+    if (animation < sizeof(offsets) / sizeof(offsets[0]) && beat >= 0 && beat < 4) {
+        *x += offsets[animation][beat][0];
+        *y += offsets[animation][beat][1];
+    }
+}
+
 /* A running moment may show its authored prop (e.g. the book) in front of the pet. */
 static void moment_prop(Canvas *c, const JelliPetUi *ui, const JelliPetRenderKey *view)
 {
     if (view->activity != JELLI_PLAYING || !view->moment || view->moment > jelli_moment_count)
         return;
-    uint32_t prop = jelli_moments[view->moment - 1u].prop;
+    const JelliMoment *moment = &jelli_moments[view->moment - 1u];
+    uint32_t prop = moment->prop;
     if (!prop || !ui->actor_bounds.height)
         return;
     int x = (int)(ui->actor_bounds.x + ui->actor_bounds.width / 2u);
     int y = (int)(ui->actor_bounds.y + ui->actor_bounds.height * 2u / 3u);
+    moment_prop_offset(moment->animation, (int)view->exercise_bob, &x, &y);
     jelli_canvas_centered_sprite(c, prop, x, y, 3u);
 }
 

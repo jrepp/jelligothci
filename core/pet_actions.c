@@ -12,11 +12,9 @@ bool jelli_pet_moment_for_action(JelliPetUiAction action, unsigned *moment)
     static const struct {
         JelliPetUiAction action;
         uint8_t moment;
-    } moments[] = {{JELLI_UI_ACTION_BREAKFAST, 0u},
-                   {JELLI_UI_ACTION_TEA, 1u},
-                   {JELLI_UI_ACTION_OUTING, 2u},
-                   {JELLI_UI_ACTION_MOVIE, 3u},
-                   {JELLI_UI_ACTION_READING, 4u}};
+    } moments[] = {{JELLI_UI_ACTION_BREAKFAST, 0u}, {JELLI_UI_ACTION_TEA, 1u},
+                   {JELLI_UI_ACTION_OUTING, 2u},    {JELLI_UI_ACTION_MOVIE, 3u},
+                   {JELLI_UI_ACTION_READING, 4u},   {JELLI_UI_ACTION_STRETCH, 8u}};
     for (unsigned i = 0u; i < sizeof(moments) / sizeof(moments[0]); ++i)
         if (moments[i].action == action && moments[i].moment < jelli_moment_count) {
             *moment = moments[i].moment;
@@ -72,7 +70,7 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
         [JELLI_UI_ACTION_MEDICINE] = JELLI_CMD_HEALTH,
         [JELLI_UI_ACTION_SHOT] = JELLI_CMD_HEALTH,
         [JELLI_UI_ACTION_WASH] = JELLI_CMD_HEALTH,
-        [JELLI_UI_ACTION_STRETCH] = JELLI_CMD_HEALTH,
+        [JELLI_UI_ACTION_STRETCH] = JELLI_CMD_MOMENT,
         [JELLI_UI_ACTION_WATER] = JELLI_CMD_WATER,
         [JELLI_UI_ACTION_EXERCISE] = JELLI_CMD_EXERCISE,
         [JELLI_UI_ACTION_VOLUME_DOWN] = JELLI_CMD_VOLUME,
@@ -112,6 +110,15 @@ static JelliResult menu_available(JelliPetUi *ui, const JelliGame *game, unsigne
     }
     if (jelli_pet_page_is_routine(ui->page) && ui->clicker_done)
         return JELLI_NOT_READY;
+    if (ui->page == JELLI_UI_MOMENTS) {
+        if (slot == 6u)
+            return JELLI_OK;
+        unsigned choice = jelli_pet_activity_choice(ui, slot);
+        JelliCommand command = {
+            choice == jelli_moment_count ? JELLI_CMD_EXERCISE : JELLI_CMD_MOMENT,
+            game->pets[game->active].id, choice == jelli_moment_count ? 0u : choice};
+        return jelli_game_check(game, command, &ui->action_scratch);
+    }
     JelliPetUiAction action =
         jelli_pet_page_is_routine(ui->page)
             ? JELLI_UI_ACTION_BRUSH

@@ -57,7 +57,8 @@ static unsigned reaction_ticks_limit(void)
 static bool pet_routine_valid(const JelliPet *pet)
 {
     return pet->moment <= jelli_moment_count && pet->digesting <= 1000u && pet->potty <= 1000u &&
-           (pet->moment == 0u || pet->activity == JELLI_PLAYING) &&
+           (pet->moment == 0u ||
+            (pet->activity == JELLI_PLAYING || pet->activity == JELLI_EATING)) &&
            pet->behavior <= jelli_behavior_state_count &&
            pet->cooldown_state <= jelli_behavior_state_count &&
            (pet->behavior == 0u) == !pet->behavior_left;

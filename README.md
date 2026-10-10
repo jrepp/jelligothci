@@ -68,6 +68,11 @@ before running this diagnostic, which briefly pauses rendering.
 Paint in the browser with `make jelli-art`, or edit PNGs under `assets/slice/`
 in any editor, while `make run-live` runs. Valid edits refresh
 without restarting the pet; bad or incomplete files retain the last valid art.
+The **Activities** view authors shared recipes and previews their props on each pet.
+Breakfast opens 6–11am, lunch 11am–2pm, tea 1–4pm, and dinner 4–9pm.
+Finishing dinner unlocks dessert for that pet until midnight. One random fun
+activity is offered each hour; use MORE in the game’s Activities ring to browse.
+Yoga replaces Stretch and shares the same authored recipe from Health.
 Style rules are in the [pixel art guide](docs/pixel-art-guide.md).
 Bounds, centroids, and creature ground anchors update with the image.
 
@@ -90,7 +95,7 @@ build time ([ADR-012](docs-cms/adr/adr-012-data-driven-creature-species-and-pres
 | `assets/slice/assets.json` `clips` | Frames, holds and looping for each form's eight runtime poses |
 | `content/creatures.json` | Per-form actor/icon/portrait scale, pose rules, idle beats, and how each behaviour state looks |
 | `content/behaviors.json` | Behaviour states (curious, studying, asking for help…), their effects and requests, and each species' stimulus reactions |
-| `content/activities.json` | Activities ring moments (including READING): gains, location, suggestion hour, icon, prop |
+| `content/activities.json` | Activity recipes: pet eligibility, timed unlocks, prerequisites, random weights, duration, effects, shared icons and animations |
 | `content/potty.json` | The potty cycle from meals and drinks, accidents, and the mess animation |
 
 Mint grows into Lilac; catching the Bubble Gem adds BUBBLE, a single-form
