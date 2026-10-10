@@ -102,7 +102,9 @@ urge waits through activities, sleep and cooldowns; offline catch-up never start
 a request or creates an unseen accident. Care can interrupt a moment and still
 save and resume normally. Import upscaled frame art with `tools/assets/import_creature.py SPEC DIR`
 (see `assets/slice/source/axolotl-import.json`), then edit clips in Jelli Art's
-Creature view.
+Creature view. Jelli Art's **Test in game** view renders a chosen scenario with
+the real engine (`tools/game-preview/preview.c`, built with
+`-DJELLI_BUILD_SDL=OFF -DJELLI_BUILD_PET=ON`) from the art and content on disk.
 
 ## Hardware bring-up
 

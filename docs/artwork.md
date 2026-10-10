@@ -13,15 +13,29 @@ The studio is the review page with painting turned on. It needs no setup beyond
 the repository's pinned tools, and it only listens on your own computer.
 
 1. Pick a sprite in the left list, or use **Sheet** to browse them all.
-2. Choose **Paint** under Mode. Use the pencil, eraser, fill, and colour picker.
-   Right-click erases, Alt-click picks a colour, and **Mirror** paints both halves
-   of a symmetric sprite.
-3. Choose a colour under **Paint colours**. **custom** paints any colour. The
+   Press **?** for the keyboard shortcuts.
+2. Choose the **Paint** tab at the top. The tools are pencil, eraser, fill,
+   colour picker, line, rectangle, ellipse and select. **Filled** fills
+   rectangles and ellipses; Shift while dragging snaps lines to 45° and makes
+   squares and circles. Right-click erases, Alt-click picks a colour, and
+   **Mirror** paints both halves of a symmetric sprite.
+3. **Select** a rectangle to move it (drag inside it, or Alt+arrow keys), copy,
+   cut, paste, delete, flip, rotate, or replace one colour with another. While
+   a selection exists, painting stays inside it; Escape clears it. Without a
+   selection, flip, rotate and Alt+arrows apply to the whole sprite. **Wrap**
+   makes nudges come round the other side, for tiling patterns.
+4. Choose a colour under **Paint colours**. Tools paint only the sprite's
+   palette colours until you choose **custom**, which paints any colour. The
    ✎ on a palette colour changes that colour in every sprite at once; it asks
    before doing so.
-4. **Tidy outline** applies the house outline and removes stray pixels. Turn on
-   **Issues** to see what still needs attention. Undo with ⌘Z / Ctrl+Z.
-5. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
+5. **Tidy outline** applies the house outline and removes stray pixels. Turn on
+   **Issues** to see what still needs attention. Undo with ⌘Z / Ctrl+Z, or click
+   any step in the **history** list beside the canvas.
+6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
+   pans. **Grid** and **Guides** (centre and 8 px tile centres) are toggles.
+   Without a mouse, focus the canvas: the arrow keys move a cursor, Enter or
+   Space applies the tool, and Shift with the arrows draws.
+7. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
    shows it straight away. "Compare with" picks what the before image is: the
    last commit, a release tag, or a recent commit.
 
@@ -156,6 +170,8 @@ The axolotl was added this way, without species-specific C:
    `./scripts/uv run --python 3.12 tools/assets/import_creature.py SPEC SOURCE_DIR`.
    Every source cell becomes one pixel, and all frames keep their shared placement.
    IDs are `first_id` plus list position, so append new frames and never reorder.
+   Jelli Art's timeline can also add frames; it appends a `"studio": true` entry
+   that holds the ID, and the importer leaves that frame alone.
 2. **Clips.** Give the form one `<form>.<pose>` clip for each of the eight
    `creature_poses` in `assets/slice/assets.json`. Edit and preview them in
    Jelli Art's Creature view.

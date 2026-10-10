@@ -270,7 +270,7 @@
         <label for="bh-pet">Pet ID</label><input type="number" id="bh-pet" min="0" max="999" value="${sim.petId}" style="width:70px"></div>
       <p class="studio-note" id="bh-result" aria-live="polite"></p>
       <div class="lbl">Idle timeline · ${lim.beat_ms} ms per beat · dashed beats are quieted</div>
-      <div class="bh-timeline" id="bh-timeline"></div>
+      <div class="bh-timeline" id="bh-timeline" tabindex="0" role="region" aria-label="Idle timeline"></div>
       <ul class="cr-msgs">${issues.map(m => `<li>${esc(m)}</li>`).join('') || `<li class="ok">${dirty() ? 'Unsaved behaviour or size edits.' : 'No unsaved behaviour or size edits.'}</li>`}</ul>
       <div class="seg"><button id="bh-revert" ${dirty() || stale ? '' : 'disabled'}>Revert</button><button id="bh-save" class="primary" ${dirty() && !issues.length && editable ? '' : 'disabled'} title="Save behaviour and size (⌘S)">${dirty() ? 'Save behaviour & size' : 'Saved'}</button></div>`;
     wire(p, b);

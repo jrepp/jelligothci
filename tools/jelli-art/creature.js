@@ -16,7 +16,9 @@
     asleep: 'Shown while the pet sleeps.', unwell: 'Shown while the pet is unwell or recovering.'};
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const working = {};  // clip key -> unsaved {frames, durations_ms, loop}
-  const play = {on: !reduced?.matches, start: performance.now(), frame: 0, raf: null, drawn: {}};
+  const SPEEDS = [0.25, 0.5, 1, 2];
+  const play = {on: !reduced?.matches, start: performance.now(), frame: 0, raf: null, drawn: {},
+    speed: SPEEDS.includes(store.get('creature-speed', 1)) ? store.get('creature-speed', 1) : 1};
   Object.assign(state, {cForm: store.get('creature-form', null), cPose: store.get('creature-pose', 'idle'),
     cRepeat: store.get('creature-repeat', true), cBackground: store.get('creature-background', true), cGuides: false});
   const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
@@ -32,15 +34,6 @@
     @media(max-width:1100px){.cr-layout{grid-template-columns:1fr}}
     .cr-panel{display:grid;gap:8px;justify-items:start}.cr-panel canvas{border-radius:50%}
     .cr-readout{font:12px ui-monospace,monospace;color:var(--muted);min-height:18px}
-    .cr-frames{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
-    .cr-frame{background:var(--raised);border:2px solid var(--line);border-radius:8px;padding:6px;display:grid;gap:4px;justify-items:center;width:112px;font:10px ui-monospace,monospace;color:var(--muted)}
-    .cr-frame.now{border-color:var(--accent)}
-    .cr-frame img,.cr-pick img{image-rendering:pixelated;width:72px;height:72px;background:#000;border-radius:4px;object-fit:contain}
-    .cr-frame input{width:80px;padding:3px 5px}.cr-frame .row{display:flex;gap:3px}.cr-frame .row button{padding:1px 6px}
-    .cr-frame .name{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .cr-picks{display:flex;flex-wrap:wrap;gap:6px}
-    .cr-pick{display:grid;justify-items:center;gap:2px;padding:4px;font:10px ui-monospace,monospace;color:var(--muted)}
-    .cr-pick img{width:48px;height:48px}
     .cr-msgs{margin:6px 0;padding:0;list-style:none;font-size:12px}.cr-msgs li{color:var(--bad)}.cr-msgs li.ok{color:var(--muted)}
     .cr-strip{display:flex;flex-wrap:wrap;gap:10px}
     .cr-cell{display:grid;gap:4px;justify-items:center;cursor:pointer;background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:6px;font:11px ui-monospace,monospace;color:var(--muted)}
@@ -95,19 +88,36 @@
 
   /* ---------- timing: frame from elapsed milliseconds, never from frame counts ---------- */
   const safeDurations = c => c.durations_ms.map(n => Number.isFinite(n) && n > 0 ? n : 1);
+  const totalOf = c => safeDurations(c).reduce((n, v) => n + v, 0);
+  /* The clip's own time: loops wrap, one-shots hold the last frame (or replay after HOLD_MS when repeating). */
+  function clipTime(c, elapsed, repeat) {
+    const total = totalOf(c);
+    if (c.loop) return elapsed % total;
+    return repeat ? elapsed % (total + HOLD_MS) : elapsed;
+  }
+  /* animation.js clipFrame mirrors core/creature.c jelli_clip_frame. */
   function frameAt(c, elapsed, repeat) {
-    const d = safeDurations(c), total = d.reduce((n, v) => n + v, 0);
-    if (!c.frames.length || !total) return -1;
-    let t = c.loop ? elapsed % total : repeat ? elapsed % (total + HOLD_MS) : elapsed;
-    for (let i = 0; i < d.length; i++) { if (t < d[i]) return i; t -= d[i]; }
-    return d.length - 1;  // one-shot clips hold their last frame
+    if (!c.frames.length || !totalOf(c)) return -1;
+    return window.JelliAnimation.clipFrame({...c, durations_ms: safeDurations(c)}, clipTime(c, elapsed, repeat));
   }
   const offsetOf = (c, i) => safeDurations(c).slice(0, i).reduce((n, v) => n + v, 0);
+  const elapsedAt = now => (now - play.start) * play.speed;  // playback speed scales the game's elapsed time
   function restart() { play.start = performance.now(); play.frame = 0; play.drawn = {}; schedule(); }
+  function setSpeed(speed) {
+    if (!SPEEDS.includes(speed)) return;
+    const now = performance.now(), elapsed = elapsedAt(now);
+    play.speed = speed; play.start = now - elapsed / speed; store.set('creature-speed', speed);
+    play.drawn = {}; schedule();
+  }
+  function seek(i) {  // pause on frame i of the selected clip
+    const c = resolved(selectedKey()); if (!c?.frames.length) return;
+    if (play.on) setPlaying(false);
+    play.frame = Math.max(0, Math.min(i, c.frames.length - 1)); play.drawn = {}; schedule();
+  }
   function setPlaying(on) {
     const c = resolved(selectedKey());
-    if (on && c) play.start = performance.now() - offsetOf(c, Math.max(0, play.frame));
-    if (!on && c) play.frame = Math.max(0, frameAt(c, performance.now() - play.start, state.cRepeat));
+    if (on && c) play.start = performance.now() - offsetOf(c, Math.max(0, play.frame)) / play.speed;
+    if (!on && c) play.frame = Math.max(0, frameAt(c, elapsedAt(performance.now()), state.cRepeat));
     play.on = on; play.drawn = {};
     for (const hook of cr.playHooks) hook(on);
     renderTransport(); schedule();
@@ -149,7 +159,7 @@
   function drawCell(view, key) {
     const {ctx, w, h} = view;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#2c2c33'; ctx.fillRect(0, h - 10, w, 1);
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#49334f'; ctx.fillRect(0, h - 10, w, 1);
     if (key) drawSprite(ctx, key, STRIP_SCALE, w / 2, h - 10);
   }
 
@@ -159,7 +169,7 @@
   function tick(now) {
     play.raf = null;
     if (state.view !== 'creature' || document.hidden || !panelView) return;
-    const elapsed = now - play.start, scale = scaleOf(state.cForm);
+    const elapsed = elapsedAt(now), scale = scaleOf(state.cForm);
     const sim = cr.panelSource?.(now);  // {key, text} while simulating behaviour
     let frameKey = null, text = '', index = -1;
     if (sim) ({key: frameKey, text} = sim);
@@ -168,7 +178,8 @@
       index = c ? (play.on ? frameAt(c, elapsed, state.cRepeat) : Math.min(play.frame, c.frames.length - 1)) : -1;
       frameKey = index >= 0 ? c.frames[index] : null;
       const fallback = current(selectedKey()) ? '' : ` · fallback ${fallbackOf(state.cPose)}`;
-      text = index < 0 ? 'No frames' : `frame ${index + 1}/${c.frames.length} · ${c.durations_ms[index]} ms · ${c.loop ? 'loops' : 'plays once, holds last frame'}${fallback}${play.on ? '' : ' · paused'}`;
+      text = index < 0 ? 'No frames' : `frame ${index + 1}/${c.frames.length} · ${c.durations_ms[index]} ms · ${c.loop ? 'loops' : 'plays once, holds last frame'}${fallback}${play.speed === 1 ? '' : ` · ${play.speed}× speed`}${play.on ? '' : ' · paused'}`;
+      if (index >= 0) cr.onFrame?.(index, Math.min(play.on ? clipTime(c, elapsed, state.cRepeat) : offsetOf(c, index), totalOf(c)), c);
     }
     const signature = `${frameKey}|${text}|${scale}`;
     if (play.drawn.panel !== signature) {
@@ -199,7 +210,7 @@
       <div class="cr-layout">
         <div class="cr-panel"><div class="lbl"><span>On the panel · <span id="cr-scale">${scaleOf(state.cForm)}×</span> · ground at (${CENTER}, ${FLOOR})</span></div><div id="cr-canvas"></div>
           <div class="cr-readout" id="cr-readout" aria-live="off"></div>
-          <div class="bar" id="cr-transport"></div></div>
+          <div class="bar" id="cr-transport" style="max-width:${css}px"></div></div>
         <div id="cr-editor"></div>
       </div>
       <section class="block"><h3>All poses <span class="lbl">· click one to edit it</span></h3><div class="cr-strip" id="cr-strip"></div></section>
@@ -226,8 +237,9 @@
   }
   function renderTransport() {
     const el = document.getElementById('cr-transport'); if (!el) return;
-    el.innerHTML = `<div class="seg"><button id="cr-play">${play.on ? 'Pause' : 'Play'}</button><button id="cr-prev" title="Previous frame (,)">◀ Step</button><button id="cr-next" title="Next frame (.)">Step ▶</button><button id="cr-restart" title="Play from the first frame">Restart</button></div>
+    el.innerHTML = `<div class="seg"><button id="cr-play" aria-keyshortcuts="Space">${play.on ? 'Pause' : 'Play'}</button><button id="cr-prev" title="Previous frame (,)">◀ Step</button><button id="cr-next" title="Next frame (.)">Step ▶</button><button id="cr-restart" title="Play from the first frame">Restart</button></div>
       <div class="seg"><button id="cr-repeat" aria-pressed="${state.cRepeat}" title="The game plays a one-shot clip once and holds its last frame; this replays it after a pause">Replay one-shots</button><button id="cr-bg" aria-pressed="${state.cBackground}">Home background</button><button id="cr-guides" aria-pressed="${state.cGuides}" title="Ground line and centre">Guides</button></div>
+      <label class="lbl" for="cr-speed">Speed</label><select id="cr-speed" title="Playback speed; the game always plays at 1×">${SPEEDS.map(s => `<option value="${s}"${s === play.speed ? ' selected' : ''}>${s}×</option>`).join('')}</select>
       ${reduced?.matches ? '<span class="studio-note">Reduced motion is on, so the preview starts paused. Step through frames or press Play.</span>' : ''}`;
     el.querySelector('#cr-play').onclick = () => setPlaying(!play.on);
     el.querySelector('#cr-prev').onclick = () => stepFrame(-1);
@@ -236,6 +248,7 @@
     el.querySelector('#cr-repeat').onclick = () => { state.cRepeat = !state.cRepeat; store.set('creature-repeat', state.cRepeat); restart(); renderTransport(); };
     el.querySelector('#cr-bg').onclick = () => { state.cBackground = !state.cBackground; store.set('creature-background', state.cBackground); play.drawn = {}; renderTransport(); schedule(); };
     el.querySelector('#cr-guides').onclick = () => { state.cGuides = !state.cGuides; play.drawn = {}; renderTransport(); schedule(); };
+    el.querySelector('#cr-speed').onchange = e => setSpeed(Number(e.target.value));
   }
   function renderEditor() {
     const el = document.getElementById('cr-editor'); if (!el) return;
@@ -265,49 +278,18 @@
       wireSaveBar(el);
       return;
     }
-    const total = safeDurations(c).reduce((n, v) => n + v, 0);
     el.innerHTML = `<div class="lbl">Pose</div><div class="seg" id="cr-poses" style="flex-wrap:wrap">${tabs}</div>
       <p class="cr-pose-help">${esc(fallback ? `State pose; without this clip it falls back to ${fallback}.` : POSE_HELP[state.cPose] || '')} Clip <b>${esc(key)}</b> · ${clipOf(key) ? `ID ${clipOf(key).id}` : 'new, ID assigned on save'}
         ${fallback ? `<button id="cr-remove-clip" title="Delete this clip so the ${esc(fallback)} clip plays">Remove clip (use ${esc(fallback)})</button>` : ''}</p>
-      <div class="lbl" style="margin-top:12px">Frames · ${c.frames.length}/${cap()} · ${total} ms total</div>
-      <div class="cr-frames" id="cr-frames"></div>
+      <div id="cr-timeline"></div>
       <div class="bar"><button id="cr-loop" aria-pressed="${c.loop}" title="Loop cycles the frames; otherwise the clip plays once and holds the last frame">Loop</button>
         <span class="studio-note" style="margin:0">${c.loop ? 'Cycles while the pose lasts.' : 'Plays once, then holds the last frame.'}</span></div>
       <ul class="cr-msgs" id="cr-msgs"></ul>
-      <div class="lbl" style="margin-top:12px">Add a frame · ${esc(state.cForm)} frames</div><div class="cr-picks" id="cr-picks"></div>
+      <div id="cr-library"></div>
       <div class="bar" style="margin-top:12px"><div class="seg"><button id="cr-revert">Revert pose</button><button id="cr-revert-all">Revert all</button><button id="cr-save" class="primary" title="Save clips (⌘S)">Save clips</button></div></div>`;
     wirePoses(el);
-    const frames = el.querySelector('#cr-frames');
-    c.frames.forEach((k, i) => {
-      const a = byKey[k], card = document.createElement('div'); card.className = 'cr-frame'; card.dataset.index = i;
-      card.innerHTML = `<img alt="${esc(k)}" src="${a?.after || ''}"><span class="name" title="${esc(k)}">${i + 1}. ${esc(a?.pose || k)}</span>
-        <label class="lbl" style="text-transform:none">ms <input type="number" min="1" max="${maxMs()}" step="10" value="${Number.isFinite(c.durations_ms[i]) ? c.durations_ms[i] : ''}" aria-label="Frame ${i + 1} duration in milliseconds"></label>
-        <div class="row"><button data-act="left" title="Move earlier" ${i ? '' : 'disabled'}>←</button><button data-act="right" title="Move later" ${i < c.frames.length - 1 ? '' : 'disabled'}>→</button><button data-act="remove" title="Remove this frame">✕</button><button data-act="paint" title="Paint this sprite">✎</button></div>`;
-      card.querySelector('input').oninput = e => change(w => { w.durations_ms[i] = e.target.value === '' ? NaN : Number(e.target.value); }, false);
-      card.querySelector('input').onchange = () => renderEditor();
-      card.querySelector('.row').onclick = e => {
-        const act = e.target.closest('button')?.dataset.act; if (!act) return;
-        if (act === 'paint') return paint(k);
-        change(w => {
-          const swap = j => { [w.frames[i], w.frames[j]] = [w.frames[j], w.frames[i]]; [w.durations_ms[i], w.durations_ms[j]] = [w.durations_ms[j], w.durations_ms[i]]; };
-          if (act === 'left') swap(i - 1); else if (act === 'right') swap(i + 1);
-          else { w.frames.splice(i, 1); w.durations_ms.splice(i, 1); }
-        });
-      };
-      frames.append(card);
-    });
     el.querySelector('#cr-loop').onclick = () => change(w => { w.loop = !w.loop; });
-    const picks = el.querySelector('#cr-picks');
-    for (const a of formFrames(state.cForm)) {
-      const b = document.createElement('button'); b.className = 'cr-pick'; b.title = `Append ${a.key}`;
-      b.innerHTML = `<img alt="" src="${a.after}"><span>${esc(a.pose || a.key)}</span>`;
-      b.onclick = () => {
-        if (current(key).frames.length >= cap()) return S.status(`A clip holds at most ${cap()} frames`, 'warn');
-        const last = current(key).durations_ms.at(-1);
-        change(w => { w.frames.push(a.key); w.durations_ms.push(Number.isInteger(last) ? last : 450); });
-      };
-      picks.append(b);
-    }
+    cr.renderTimeline?.(el.querySelector('#cr-timeline'), el.querySelector('#cr-library'), key, c);
     el.querySelector('#cr-revert').onclick = () => { delete working[key]; restart(); renderEditor(); };
     el.querySelector('#cr-remove-clip')?.addEventListener('click', () => {
       if (clipOf(key)) working[key] = {removed: true}; else delete working[key];
@@ -352,7 +334,7 @@
       cell.setAttribute('role', 'button'); cell.tabIndex = 0; cell.title = POSE_HELP[pose] || pose;
       const [c, ctx] = makeCanvas(size, size + 6); cell.append(c);
       cell.insertAdjacentHTML('beforeend', `<span>${i + 1}. ${esc(pose)}</span><span class="sub"></span>`);
-      cell.onclick = () => selectPose(pose); cell.onkeydown = e => { if (e.key === 'Enter') selectPose(pose); };
+      cell.onclick = () => selectPose(pose); cell.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); selectPose(pose); } };
       el.append(cell); cells.push({key, ctx, w: size, h: size + 6, el: cell});
     });
     renderStripState();
@@ -417,6 +399,9 @@
     if (state.view !== 'creature') return baseKeydown(e);
     if (mod && k === 's') { e.preventDefault(); saveClips(); cr.save?.(); return true; }
     if (mod || e.altKey) return false;
+    /* Space activates a focused button, and arrows adjust a focused slider or menu, instead of driving playback. */
+    if (k === ' ' && e.target.closest?.('button, [role=button], a, summary')) return true;
+    if (k.startsWith('arrow') && e.target.closest?.('[role=slider], select')) return true;
     if (k === ' ') { e.preventDefault(); if (!e.repeat) setPlaying(!play.on); return true; }
     if (k === ',' || e.key === 'ArrowLeft') { e.preventDefault(); stepFrame(-1); return true; }
     if (k === '.' || e.key === 'ArrowRight') { e.preventDefault(); stepFrame(1); return true; }
@@ -428,7 +413,9 @@
   };
   Object.assign(cr, {esc, poses, statePoses, fallbackOf, resolved, forms, formLabel, formFrames, clipOf, current, frameAt, drawSprite, groundAnchor,
     selectedKey, setPlaying, playing: () => play.on, redraw: () => { play.drawn = {}; schedule(); }, rerender: () => renderCreature(),
-    renderForms: () => renderForms(), PANEL, CENTER, FLOOR, reduced});
+    renderForms: () => renderForms(), PANEL, CENTER, FLOOR, reduced,
+    change, restart, seek, paint, cap, maxMs, clipDirty, copy, offsetOf, totalOf, safeDurations, renderEditor: () => renderEditor(),
+    pausedFrame: () => play.on ? null : play.frame});
   let resizeTimer = null;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (state.view === 'creature') renderCreature(); }, 150); });
 })();
