@@ -69,7 +69,7 @@ section.block{margin-top:22px;border-top:1px solid var(--line);padding-top:14px}
 .card canvas{border-radius:4px}
 .kbd{font:11px ui-monospace,monospace;color:var(--muted);margin-top:26px;line-height:1.9}.kbd kbd{background:var(--raised);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--ink)}
 .peek{position:fixed;top:60px;right:20px;background:var(--warn);color:#291b35;font-weight:700;padding:4px 10px;border-radius:6px;display:none}body.peeking .peek{display:block}
-.hidden{display:none!important}
+.hidden{display:none!important}#detail.painting .review-only{display:none}
 input[type=range]{accent-color:var(--accent);width:140px}
 @media(max-width:760px){body{overflow:auto}.layout{grid-template-columns:1fr}aside{max-height:40vh;border-right:0;border-bottom:1px solid var(--line)}.totals{margin-left:0}}
 body{grid-template-columns:minmax(0,1fr)}.layout>*{min-width:0}
@@ -143,17 +143,17 @@ section.block{border-top-width:2px}.title h2{letter-spacing:.01em}
       <div class="stage" id="stage"></div>
       <div id="inspector"></div>
       <div class="legend" id="legend"></div>
-      <section class="block"><h3 id="palette-title">Palette usage <span class="lbl">· click a colour to isolate it</span></h3><div class="palette" id="palette"></div></section>
-      <section class="block"><h3>On the panel</h3>
+      <section class="block" id="palette-block"><h3 id="palette-title">Palette usage <span class="lbl">· click a colour to isolate it</span></h3><div class="palette" id="palette"></div></section>
+      <section class="block review-only"><h3>On the panel</h3>
         <div class="bar"><button id="physical" aria-pressed="false">Physical size</button><label for="ppi">Your screen CSS px / inch</label><input type="number" id="ppi" min="60" max="300" step="1" style="width:80px"><span class="lbl" id="calib-hint"></span></div>
         <div id="calibrator" class="hidden" style="margin-bottom:12px"><div class="lbl">Calibrate: adjust until this bar is exactly as wide as a bank card (85.6 mm)</div><div id="card-bar" style="height:14px;background:var(--accent);border-radius:3px;margin-top:6px"></div></div>
         <div class="context" id="context"></div>
         <p class="lbl" style="text-transform:none;letter-spacing:0">Drawn at the core's draw scale on a 466 px panel (≈266 ppi: 466 px across 1.75 in). Physical size approximates the real board.</p>
       </section>
-      <section class="block"><h3>Review</h3>
+      <section class="block review-only"><h3>Review</h3>
         <div class="review"><div class="seg" id="verdict" role="group" aria-label="Verdict"><button data-verdict="ok">Looks good</button><button data-verdict="fix">Needs work</button><button data-verdict="">Clear</button></div><textarea id="note" aria-label="Review notes for this asset" placeholder="Notes for this asset (stored in this browser; Copy review notes exports all)"></textarea></div>
       </section>
-      <div class="kbd"><kbd>J</kbd>/<kbd>K</kbd> next/previous · <kbd>1</kbd>–<kbd>5</kbd> compare · <kbd>[</kbd>/<kbd>]</kbd> zoom · <kbd>0</kbd> fit · <kbd>D</kbd> device scale · <kbd>G</kbd> grid · <kbd>I</kbd> issues · <kbd>B</kbd> backdrop · hold <kbd>Space</kbd> to peek at before · <kbd>A</kbd>/<kbd>X</kbd> mark good/needs work · <kbd>S</kbd> sheet · <kbd>?</kbd> all shortcuts</div>
+      <div class="kbd review-only"><kbd>J</kbd>/<kbd>K</kbd> next/previous · <kbd>1</kbd>–<kbd>5</kbd> compare · <kbd>[</kbd>/<kbd>]</kbd> zoom · <kbd>0</kbd> fit · <kbd>D</kbd> device scale · <kbd>G</kbd> grid · <kbd>I</kbd> issues · <kbd>B</kbd> backdrop · hold <kbd>Space</kbd> to peek at before · <kbd>A</kbd>/<kbd>X</kbd> mark good/needs work · <kbd>S</kbd> sheet · <kbd>?</kbd> all shortcuts</div>
     </div>
     <div id="sheet" class="sheet hidden">
       <div class="bar">
@@ -267,7 +267,9 @@ const asset = () => byKey[state.key];
 const backdropFor = a => state.backdrop || KIND_BACKDROP[a.kind];
 function fitZoom(a) {
   const stage = document.getElementById('stage'); const panes = state.mode === 'side' ? 2 : 1;
-  const avail = Math.max(200, (stage.clientWidth - 16 * panes) / panes - (state.mode === 'paint' ? 220 : 0)); const tall = Math.max(240, window.innerHeight - 330);
+  // Paint keeps a side column (flip-book, colours, history) beside the canvas and fits the canvas below the toolbar.
+  const paint = state.mode === 'paint', top = paint ? Math.max(0, stage.getBoundingClientRect().top) + 70 : 330;
+  const avail = Math.max(200, (stage.clientWidth - 16 * panes) / panes - (paint ? 340 : 0)); const tall = Math.max(240, window.innerHeight - top);
   return Math.max(1, Math.min(32, Math.floor(Math.min(avail / a.width, tall / a.height))));
 }
 const zoom = a => state.zoom || fitZoom(a);
@@ -312,8 +314,11 @@ function wireHover(c, a, z) {
   c.onclick = () => { if (state.mode === 'flip') { state.flipBefore = !state.flipBefore; renderStage(); } };
 }
 
+/* Paint borrows the colour section into its side column; put it back before the stage is rebuilt. */
+function homePalette() { const block = document.getElementById('palette-block'), legend = document.getElementById('legend'); if (block && block.previousElementSibling !== legend) legend.after(block); }
 function renderStage() {
   const a = asset(); if (!a || !decoded[a.key]) return;
+  homePalette();
   if (state.mode === 'paint' && window.Studio) { window.Studio.renderStage(a, zoom(a)); renderInspector(a); return; }
   const stage = document.getElementById('stage'); const scrolls = [...stage.querySelectorAll('.scroller')].map(s => [s.scrollLeft, s.scrollTop]);
   stage.textContent = ''; const z = zoom(a);
@@ -452,6 +457,7 @@ function renderDetail() {
   document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)));
   renderBackdrops('backdrops', backdropFor(a), name => { state.backdrop = name === KIND_BACKDROP[a.kind] ? null : name; renderDetail(); });
   document.getElementById('grid').setAttribute('aria-pressed', state.grid); document.getElementById('issues').setAttribute('aria-pressed', state.issues);
+  document.getElementById('detail').classList.toggle('painting', state.mode === 'paint');
   renderHeader(a); renderLegend(); renderStage(); renderPalette(a); renderContext(a); renderReview(a);
 }
 function renderBackdrops(id, current, onPick, extra = []) {

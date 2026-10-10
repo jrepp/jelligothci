@@ -1,8 +1,8 @@
 /* Jelli Art: the animation timeline for a creature clip, loaded after creature.js.
  * A frame strip with thumbnails (drag or Alt+arrow to reorder), per-frame durations (number
  * field or a draggable/arrow-key handle on the duration track), a playhead, new frames (blank
- * or duplicated, appended with the next free ID through POST /api/frames), retiring unused
- * frames, and onion skinning (previous/next clip frame ghosted) while painting a frame.
+ * or duplicated, appended with the next free ID through POST /api/frames), and retiring unused
+ * frames. Painting a clip frame (flip-book, onion skin, frame keys) is flipbook.js.
  * Playback timing lives in creature.js and follows clipFrame below, which mirrors
  * core/creature.c jelli_clip_frame: loops wrap; a one-shot holds its last frame. */
 'use strict';
@@ -20,20 +20,18 @@
   const A = window.JelliAnimation = {clipFrame};
   const S = window.Studio, cr = S?.cr;
   if (!cr) return;
-  const GHOST = {prev: [250, 140, 153], next: [133, 228, 182]};
-  Object.assign(state, {onionSkin: store.get('onion-skin', true), onionAlpha: store.get('onion-alpha', 0.35)});
   const anim = {overview: null, focus: null, drag: null, paintClip: null};
   const esc = cr.esc;
 
   document.head.insertAdjacentHTML('beforeend', `<style>
     .an-strip{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;padding:0;list-style:none}
-    .an-card{background:var(--raised);border:2px solid var(--line);border-radius:8px;padding:6px;display:grid;gap:4px;justify-items:center;width:98px;font:10px ui-monospace,monospace;color:var(--muted);cursor:grab}
+    .an-card{background:var(--raised);border:2px solid var(--line);border-radius:8px;padding:6px;display:grid;gap:4px;justify-items:center;width:132px;font:10px ui-monospace,monospace;color:var(--muted);cursor:grab}
     .an-card.now{border-color:var(--accent)}.an-card.drop-before{box-shadow:-5px 0 0 -1px var(--warn)}.an-card.drop-after{box-shadow:5px 0 0 -1px var(--warn)}
     .an-card.dragging{opacity:.45}
     .an-card img,.an-lib img{image-rendering:pixelated;width:56px;height:56px;background:#000;border-radius:4px;object-fit:contain}
     .an-card .thumb-btn{padding:0;border:0;background:none;border-radius:4px}
-    .an-card input{width:72px;padding:3px 5px}.an-card .row{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}.an-card .row button{padding:1px 5px;min-width:24px;min-height:24px}
-    .an-card .name{max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .an-card input{width:72px;padding:3px 5px}.an-card .row{display:flex;gap:3px;justify-content:center;width:100%}.an-card .row button{flex:1;padding:3px 4px;min-height:28px;font-size:11px}
+    .an-card .name{max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .an-track{position:relative;display:flex;height:34px;margin:4px 0 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);overflow:hidden;max-width:760px}
     .an-seg{position:relative;flex:1 1 0;min-width:44px;border-right:1px solid var(--line);display:flex}
     .an-seg button.body{flex:1;border:0;border-radius:0;background:transparent;font:10px ui-monospace,monospace;color:var(--muted);padding:0 22px 0 4px;text-align:left;white-space:nowrap;overflow:hidden}
@@ -50,7 +48,6 @@
     .an-lib .row{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}.an-lib .row button{padding:1px 6px;min-width:24px;min-height:24px}
     .an-lib.unused{border-style:dashed}
     .an-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-    .an-onion{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
     @media (prefers-reduced-motion: reduce){.an-card,.an-handle{transition:none}}
   </style>`);
   document.body.insertAdjacentHTML('beforeend', '<div id="an-live" class="an-sr" role="status" aria-live="polite"></div>');
@@ -97,7 +94,7 @@
   /* ---------- timeline ---------- */
   cr.renderTimeline = (el, lib, key, c) => {
     const total = cr.totalOf(c), mine = cr.clipDirty(key);
-    el.innerHTML = `<div class="lbl" style="margin-top:12px" id="an-strip-label">Timeline · ${c.frames.length}/${cr.cap()} frames · ${total} ms ${c.loop ? 'per loop' : 'once'}</div>
+    el.innerHTML = `<div class="lbl" style="margin-top:12px" id="an-strip-label">Timeline · ${c.frames.length} frame${c.frames.length === 1 ? '' : 's'} (max ${cr.cap()}) · ${total} ms ${c.loop ? 'per loop' : 'once'}</div>
       <ol class="an-strip" id="an-strip" aria-labelledby="an-strip-label" aria-describedby="an-strip-help"></ol>
       <p class="an-sr" id="an-strip-help">Drag a frame, or focus it and press Alt+Left or Alt+Right, to reorder.</p>
       <div class="lbl">Durations · drag a handle, or focus it and use the arrow keys (Shift: 100 ms)</div>
@@ -132,11 +129,13 @@
       li.innerHTML = `<button class="thumb-btn" data-act="show" aria-label="Show frame ${i + 1} (${esc(name)}) on the panel"><img alt="" src="${a?.after || ''}"></button>
         <span class="name" title="${esc(k)}">${i + 1}. ${esc(name)}</span>
         <label class="lbl" style="text-transform:none">ms <input type="number" min="1" max="${cr.maxMs()}" step="10" value="${Number.isFinite(c.durations_ms[i]) ? c.durations_ms[i] : ''}" aria-label="Frame ${i + 1} duration in milliseconds"></label>
-        <div class="row"><button data-act="left" aria-label="Move frame ${i + 1} earlier" title="Move earlier (Alt+←)" ${i ? '' : 'disabled'}>←</button><button data-act="right" aria-label="Move frame ${i + 1} later" title="Move later (Alt+→)" ${i < c.frames.length - 1 ? '' : 'disabled'}>→</button><button data-act="dup" aria-label="Duplicate frame ${i + 1} as a new frame" title="Duplicate as a new frame">⧉</button><button data-act="remove" aria-label="Remove frame ${i + 1} from this clip" title="Remove from this clip (the frame stays in the library)">✕</button><button data-act="paint" aria-label="Paint frame ${i + 1} with onion skin" title="Paint with onion skin">✎</button></div>`;
+        <div class="row"><button data-act="paint" aria-label="Paint frame ${i + 1} with the flip-book and onion skin" title="Paint this frame with the flip-book and onion skin">Paint ✎</button></div>
+        <div class="row"><button data-act="left" aria-label="Move frame ${i + 1} earlier" title="Move earlier (Alt+←)" ${i ? '' : 'disabled'}>◀ Move</button><button data-act="right" aria-label="Move frame ${i + 1} later" title="Move later (Alt+→)" ${i < c.frames.length - 1 ? '' : 'disabled'}>Move ▶</button></div>
+        <div class="row"><button data-act="dup" aria-label="Duplicate frame ${i + 1} as a new frame" title="Copy this frame to a new PNG and insert it">Duplicate</button><button data-act="remove" aria-label="Remove frame ${i + 1} from this clip" title="Remove from this clip (the frame stays in the library)">Remove</button></div></div>`;
       const input = li.querySelector('input');
       input.oninput = () => { cr.change(w => { w.durations_ms[i] = input.value === '' ? NaN : Number(input.value); }, false); updateTrack(); };
       input.onchange = () => { anim.focus = {index: i, sel: 'input'}; cr.renderEditor(); };
-      li.querySelector('.row').onclick = e => act(e.target.closest('button')?.dataset.act, i, k);
+      li.querySelectorAll('.row').forEach(row => { row.onclick = e => act(e.target.closest('button')?.dataset.act, i, k); });
       li.querySelector('.thumb-btn').onclick = () => cr.seek(i);
       li.onkeydown = e => {
         if (!e.altKey || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
@@ -240,7 +239,7 @@
       const users = usersOf(a.key), other = otherUsers(a.key), used = users.length + other.length;
       const card = document.createElement('div'); card.className = `an-lib${used ? '' : ' unused'}`; card.setAttribute('role', 'listitem');
       card.innerHTML = `<img alt="" src="${a.after}"><span class="name" title="${esc(a.key)}">${esc(a.pose || a.key)}</span><span>ID ${a.id} · ${used ? `${used} use${used > 1 ? 's' : ''}` : 'unused'}</span>
-        <div class="row"><button data-act="add" aria-label="Append ${esc(a.pose || a.key)} to this clip" title="Append to this clip">+ clip</button><button data-act="dup" aria-label="Duplicate ${esc(a.pose || a.key)} as a new frame" title="Duplicate as a new frame">⧉</button><button data-act="retire" aria-label="Retire ${esc(a.pose || a.key)}" title="${used ? `Used by ${esc([...users, ...other].join(', '))}` : 'Retire this unused frame; its ID stays reserved'}">Retire</button></div>`;
+        <div class="row"><button data-act="add" aria-label="Append ${esc(a.pose || a.key)} to this clip" title="Append to this clip">+ clip</button><button data-act="dup" aria-label="Duplicate ${esc(a.pose || a.key)} as a new frame" title="Copy this frame to a new PNG">Duplicate</button><button data-act="retire" aria-label="Retire ${esc(a.pose || a.key)}" title="${used ? `Used by ${esc([...users, ...other].join(', '))}` : 'Retire this unused frame; its ID stays reserved'}">Retire</button></div>`;
       card.querySelector('.row').onclick = e => {
         const what = e.target.closest('button')?.dataset.act;
         if (what === 'add') {
@@ -308,76 +307,12 @@
     for (const k of keys) { const c = cr.current(k), i = c?.frames.indexOf(key); if (c && i >= 0) return {clip: k, c, index: i}; }
     return null;
   }
-  function neighbours(ctx) {
-    const {c, index} = ctx, n = c.frames.length, wrap = c.loop;
-    const prev = index > 0 ? index - 1 : wrap && n > 1 ? n - 1 : null, next = index < n - 1 ? index + 1 : wrap && n > 1 ? 0 : null;
-    return {prev, next};
-  }
-  S.onion = (g, a, z) => {
-    if (!state.onionSkin || a.kind !== 'creatures' || state.mode !== 'paint') return;
-    const ctx = paintContext(a.key); if (!ctx) return;
-    const {prev, next} = neighbours(ctx);
-    for (const [which, i] of [['prev', prev], ['next', next]]) {
-      if (i === null) continue;
-      const k = ctx.c.frames[i], p = decoded[k]?.after, other = byKey[k]; if (!p || k === a.key) continue;
-      const dx = (a.pivot?.[0] ?? 0) - (other.pivot?.[0] ?? 0), dy = (a.pivot?.[1] ?? 0) - (other.pivot?.[1] ?? 0);
-      const [r, gr, b] = GHOST[which], here = decoded[a.key]?.after;
-      g.fillStyle = `rgba(${r},${gr},${b},${state.onionAlpha})`;
-      /* Ghost only where the neighbour differs from this frame, so unchanged pixels stay readable. */
-      for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
-        const i = (y * p.w + x) * 4; if (!p.data[i + 3]) continue;
-        const seen = pixel(here, x + dx, y + dy);
-        if (seen && seen === hexOf(p.data, i)) continue;
-        g.fillRect((x + dx) * z, (y + dy) * z, z, z);
-      }
-    }
-  };
-  function paintFrame(step) {
-    const a = asset(), ctx = a && paintContext(a.key); if (!ctx) return;
-    const n = ctx.c.frames.length, i = (ctx.index + step + n) % n;
-    anim.paintClip = {key: ctx.clip, index: i}; select(ctx.c.frames[i]);
-    announce(`Painting frame ${i + 1} of ${n} in ${ctx.clip}: ${ctx.c.frames[i]}`);
-  }
   function backToTimeline() {
     const a = asset(), ctx = a && paintContext(a.key);
     if (ctx) { const [form, pose] = ctx.clip.split('.'); state.cForm = form; state.cPose = pose; store.set('creature-form', form); store.set('creature-pose', pose); }
     state.view = 'creature'; renderView(); savePrefs();
     if (ctx) { cr.seek(ctx.index); anim.focus = {index: ctx.index, sel: '[data-act="paint"]'}; cr.renderEditor(); }
   }
-  const baseToolbar = S.renderToolbar;
-  S.renderToolbar = extra => {
-    baseToolbar(extra);
-    const a = asset(); if (!a || a.kind !== 'creatures') return;
-    const ctx = paintContext(a.key), {prev, next} = ctx ? neighbours(ctx) : {};
-    const where = ctx ? `frame ${ctx.index + 1}/${ctx.c.frames.length} of ${ctx.clip}` : 'not in any clip';
-    const box = document.createElement('div'); box.className = 'an-onion';
-    box.innerHTML = `<div><div class="lbl">Animation · ${esc(where)}</div><div class="seg">
-        <button id="an-onion" aria-pressed="${state.onionSkin}" title="Ghost where the previous (rose) and next (mint) clip frames differ from this one (O)" ${ctx ? '' : 'disabled'}>Onion skin</button>
-        <button id="an-prev" title="Paint the previous clip frame (,)" ${ctx && ctx.c.frames.length > 1 ? '' : 'disabled'}>◀ Frame</button><button id="an-next" title="Paint the next clip frame (.)" ${ctx && ctx.c.frames.length > 1 ? '' : 'disabled'}>Frame ▶</button>
-        <button id="an-back" title="Back to the clip timeline">Timeline</button></div></div>
-      <label class="lbl">Ghost opacity <input type="range" id="an-alpha" min="0.1" max="0.8" step="0.05" value="${state.onionAlpha}" aria-label="Onion skin opacity" ${ctx ? '' : 'disabled'}></label>
-      ${ctx && state.onionSkin ? `<span class="studio-note" style="margin:0">${prev !== null ? `<span style="color:rgb(${GHOST.prev})">◼</span> ${esc(byKey[ctx.c.frames[prev]]?.pose || '')}` : ''} ${next !== null ? `<span style="color:rgb(${GHOST.next})">◼</span> ${esc(byKey[ctx.c.frames[next]]?.pose || '')}` : ''}</span>` : ''}`;
-    extra.firstElementChild?.append(box);
-    box.querySelector('#an-onion').onclick = () => toggleOnion();
-    box.querySelector('#an-prev').onclick = () => paintFrame(-1);
-    box.querySelector('#an-next').onclick = () => paintFrame(1);
-    box.querySelector('#an-back').onclick = backToTimeline;
-    box.querySelector('#an-alpha').oninput = e => { state.onionAlpha = Number(e.target.value); store.set('onion-alpha', state.onionAlpha); renderStage(); };
-  };
-  function toggleOnion() {
-    state.onionSkin = !state.onionSkin; store.set('onion-skin', state.onionSkin);
-    renderLegend(); renderStage(); document.getElementById('an-onion')?.focus();
-  }
-  const baseKeydown = S.keydown;
-  S.keydown = e => {
-    const a = asset();
-    if (state.view === 'detail' && state.mode === 'paint' && a?.kind === 'creatures' && !(e.metaKey || e.ctrlKey || e.altKey)) {
-      const k = e.key.toLowerCase();
-      if (k === 'o') { toggleOnion(); return true; }
-      if (k === ',' || k === '.') { e.preventDefault(); paintFrame(k === ',' ? -1 : 1); return true; }
-    }
-    return baseKeydown(e);
-  };
   /* The page shell's ? overlay (shell.js), when it is loaded. */
   shell()?.registerShortcuts?.('Creature', [{keys: ['Space'], description: 'Play or pause'}, {keys: [',', 'ArrowLeft'], description: 'Previous frame'},
     {keys: ['.', 'ArrowRight'], description: 'Next frame'}, {keys: ['J', 'ArrowDown'], description: 'Next pose'}, {keys: ['K', 'ArrowUp'], description: 'Previous pose'},
@@ -385,7 +320,5 @@
     {keys: ['ArrowLeft', 'ArrowRight'], description: 'On a duration handle: 10 ms shorter or longer'},
     {keys: ['Shift+ArrowLeft', 'Shift+ArrowRight', 'PageDown', 'PageUp'], description: 'On a duration handle: 100 ms'},
     {keys: ['Mod+S'], description: 'Save clips and behaviour & size'}]);
-  shell()?.registerShortcuts?.('Paint · clip frame', [{keys: ['O'], description: 'Onion skin on or off'},
-    {keys: [',', '.'], description: 'Paint the previous or next frame of the clip'}]);
-  Object.assign(A, {paintContext, loadOverview});
+  Object.assign(A, {paintContext, loadOverview, backToTimeline, setPaintClip: p => { anim.paintClip = p; }});
 })();

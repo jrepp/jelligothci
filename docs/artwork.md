@@ -19,12 +19,14 @@ the repository's pinned tools, and it only listens on your own computer.
    rectangles and ellipses; Shift while dragging snaps lines to 45° and makes
    squares and circles. Right-click erases, Alt-click picks a colour, and
    **Mirror** paints both halves of a symmetric sprite.
-3. **Select** a rectangle to move it (drag inside it, or Alt+arrow keys), copy,
+3. Selection, transforms, nudges, colour replacement, guides and **Tidy
+   outline** are under **More tools**, which stays open once you open it.
+   **Select** a rectangle to move it (drag inside it, or Alt+arrow keys), copy,
    cut, paste, delete, flip, rotate, or replace one colour with another. While
    a selection exists, painting stays inside it; Escape clears it. Without a
    selection, flip, rotate and Alt+arrows apply to the whole sprite. **Wrap**
    makes nudges come round the other side, for tiling patterns.
-4. Choose a colour under **Paint colours**. Tools paint only the sprite's
+4. Choose a colour under **Paint colours**, beside the canvas. Tools paint only the sprite's
    palette colours until you choose **custom**, which paints any colour. The
    ✎ on a palette colour changes that colour in every sprite at once; it asks
    before doing so.
@@ -33,8 +35,9 @@ the repository's pinned tools, and it only listens on your own computer.
    any step in the **history** list beside the canvas.
 6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
    pans. **Grid** and **Guides** (centre and 8 px tile centres) are toggles.
-   Without a mouse, focus the canvas: the arrow keys move a cursor, Enter or
-   Space applies the tool, and Shift with the arrows draws.
+   Without a mouse, Tab to the canvas to show the keyboard cursor: the arrow
+   keys move it, Enter or Space applies the tool, Shift with the arrows draws,
+   and Escape hides it.
 7. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
    shows it straight away. "Compare with" picks what the before image is: the
    last commit, a release tag, or a recent commit.
@@ -55,8 +58,17 @@ frames from that form's thumbnails, reorder or remove them, set each frame's
 milliseconds, and choose **Loop** or play-once. A play-once clip holds its last
 frame. **Replay one-shots** repeats it in the preview only. The preview uses the
 game's scale and ground position; **All poses** plays every pose together. Space
-plays or pauses; `,` and `.` step frames. **Save clips** (⌘S / Ctrl+S) checks
-the whole manifest and writes only the edited clips to `assets.json`.
+plays or pauses; ← and → (or `,` and `.`) step frames. **Save clips** (⌘S /
+Ctrl+S) checks the whole manifest and writes only the edited clips to
+`assets.json`.
+
+**Paint ✎** on a frame card opens that frame in Paint with the **Flip-book**
+beside the canvas. It plays the clip at its real timing, including strokes you
+have not saved (**Play**, Shift+Space). Click a thumbnail, or press ← and →,
+to paint another frame; the arrows move the keyboard cursor instead while it
+shows, and `,` and `.` always change frame. **Onion skin** (O) ghosts the frames
+before (amber) and after (blue) where they differ from this one; **±1** to
+**±3** sets how many on each side, and **Ghost** sets their strength.
 
 ### Behaviour and size
 

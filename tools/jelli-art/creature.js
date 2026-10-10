@@ -237,7 +237,7 @@
   }
   function renderTransport() {
     const el = document.getElementById('cr-transport'); if (!el) return;
-    el.innerHTML = `<div class="seg"><button id="cr-play" aria-keyshortcuts="Space">${play.on ? 'Pause' : 'Play'}</button><button id="cr-prev" title="Previous frame (,)">◀ Step</button><button id="cr-next" title="Next frame (.)">Step ▶</button><button id="cr-restart" title="Play from the first frame">Restart</button></div>
+    el.innerHTML = `<div class="seg cr-keys"><button id="cr-play" aria-keyshortcuts="Space">${play.on ? 'Pause' : 'Play'}<kbd>Space</kbd></button><button id="cr-prev" title="Previous frame" aria-keyshortcuts="ArrowLeft ,">◀ Step<kbd>←</kbd></button><button id="cr-next" title="Next frame" aria-keyshortcuts="ArrowRight .">Step ▶<kbd>→</kbd></button><button id="cr-restart" title="Play from the first frame">Restart</button></div>
       <div class="seg"><button id="cr-repeat" aria-pressed="${state.cRepeat}" title="The game plays a one-shot clip once and holds its last frame; this replays it after a pause">Replay one-shots</button><button id="cr-bg" aria-pressed="${state.cBackground}">Home background</button><button id="cr-guides" aria-pressed="${state.cGuides}" title="Ground line and centre">Guides</button></div>
       <label class="lbl" for="cr-speed">Speed</label><select id="cr-speed" title="Playback speed; the game always plays at 1×">${SPEEDS.map(s => `<option value="${s}"${s === play.speed ? ' selected' : ''}>${s}×</option>`).join('')}</select>
       ${reduced?.matches ? '<span class="studio-note">Reduced motion is on, so the preview starts paused. Step through frames or press Play.</span>' : ''}`;
