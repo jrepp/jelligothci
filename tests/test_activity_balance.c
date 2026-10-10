@@ -1,4 +1,5 @@
 #include "jelli/activities.h"
+#include "jelli/locations.h"
 #include "jelli/save.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -131,11 +132,12 @@ static void pet_costs_locations_and_age(void)
     for (unsigned i = 0u; i < 50u; ++i) {
         pet->interaction_due = (uint64_t)i * 80u + 80u;
         unsigned location = jelli_moment_location(pet, 4u);
-        CHECK(location < 2u && location == jelli_moment_location(pet, 4u));
+        CHECK(location < jelli_location_count && location == jelli_moment_location(pet, 4u));
+        CHECK(jelli_moments[4].locations & (1u << location));
         seen |= 1u << location;
         CHECK(jelli_moment_location(pet, 16u) == 1u); /* Gardening stays outdoors. */
     }
-    CHECK(seen == 3u);
+    CHECK(seen == jelli_moments[4].locations);
     ready(&game);
     unsigned bond = pet->bond;
     CHECK(reading(&game) == JELLI_OK);

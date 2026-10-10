@@ -1,3 +1,4 @@
+#include "jelli/locations.h"
 #include "jelli/pet_ui.h"
 #include "jelli/activities.h"
 #include "pet_gallery.h"
@@ -90,7 +91,7 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
         command->kind = pet->asleep ? JELLI_CMD_WAKE : JELLI_CMD_REST;
 
     else if (command->kind == JELLI_CMD_TRAVEL)
-        command->value = pet->location ? 0u : 1u;
+        command->value = (pet->location + 1u) % jelli_location_count;
     else if (command->kind == JELLI_CMD_BEDTIME)
         command->value = (pet->bedtime + 1u) % 24u;
     else if (command->kind == JELLI_CMD_MOMENT || command->kind == JELLI_CMD_HEALTH)

@@ -1,3 +1,4 @@
+#include "jelli/locations.h"
 #include "jelli_asset_ids.h"
 #include "pet_behavior_draw.h"
 #include "pet_draw.h"
@@ -274,7 +275,9 @@ static void page_heading(Canvas *c, const JelliPetUi *ui, const JelliPetRenderKe
     jelli_canvas_heading(
         c, ui->menu_open ? jelli_pet_menu_title(ui) : jelli_collection_forms[view->form].name, 16,
         ui->menu_open && ui->page == JELLI_UI_MOMENTS ? 2u : 3u);
-    jelli_canvas_heading(c, view->location ? "@ GARDEN" : "@ HOME", 57, 2u);
+    jelli_canvas_heading(
+        c, jelli_locations[view->location < jelli_location_count ? view->location : 0u].heading, 57,
+        2u);
 }
 
 void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const JelliPetUi *ui,

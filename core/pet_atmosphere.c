@@ -1,3 +1,4 @@
+#include "jelli/locations.h"
 #include "jelli_asset_ids.h"
 #include "pet_draw.h"
 
@@ -74,9 +75,9 @@ void jelli_pet_sleep_particles(JelliPetUi *ui, bool asleep, uint64_t time)
 
 void jelli_pet_draw_background(JelliSurface *s, const JelliPetRenderKey *view, JelliRect region)
 {
-    const JelliAsset *a =
-        jelli_asset_lookup(view->assets, view->location ? JELLI_ASSET_BACKGROUNDS_GARDEN
-                                                        : JELLI_ASSET_BACKGROUNDS_HOME);
+    const JelliAsset *a = jelli_asset_lookup(
+        view->assets,
+        jelli_locations[view->location < jelli_location_count ? view->location : 0u].background);
     if (!a)
         return;
     for (unsigned y = region.y; y < region.y + region.height; ++y) {
@@ -90,8 +91,10 @@ void jelli_pet_draw_background(JelliSurface *s, const JelliPetRenderKey *view, J
             unsigned b = (color & 31u) * shade >> 8;
             int mx = (int)x - 233, my = (int)y - 126;
             int cutx = (int)x - 251, cuty = (int)y - 113;
-            if (view->night && mx * mx + my * my <= 42 * 42 &&
-                cutx * cutx + cuty * cuty > 38 * 38) {
+            if (view->night &&
+                jelli_locations[view->location < jelli_location_count ? view->location : 0u]
+                    .outdoors &&
+                mx * mx + my * my <= 42 * 42 && cutx * cutx + cuty * cuty > 38 * 38) {
                 r = (r * (256u - view->night) + 23u * view->night) >> 8;
                 g = (g * (256u - view->night) + 46u * view->night) >> 8;
                 b = (b * (256u - view->night) + 25u * view->night) >> 8;

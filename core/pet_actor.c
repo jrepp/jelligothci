@@ -1,3 +1,4 @@
+#include "jelli/locations.h"
 #include "jelli_asset_ids.h"
 #include "jelli/activities.h"
 #include "jelli/wake.h"
@@ -106,8 +107,8 @@ void jelli_pet_actor_layout(JelliPetUi *ui, const JelliPetRenderKey *view)
 
 uint16_t jelli_pet_background(uint8_t location, unsigned x, unsigned y)
 {
-    const JelliAsset *a =
-        jelli_asset_find(location ? JELLI_ASSET_BACKGROUNDS_GARDEN : JELLI_ASSET_BACKGROUNDS_HOME);
+    const JelliAsset *a = jelli_asset_find(
+        jelli_locations[location < jelli_location_count ? location : 0u].background);
     if (!a || x >= JELLI_WIDTH || y >= JELLI_HEIGHT)
         return 0u;
     unsigned column = x * a->width / JELLI_WIDTH;

@@ -1,7 +1,47 @@
 {
   "version": 1,
   "locations": [
-    {"id": 0, "key": "home", "name": "HOME"},
-    {"id": 1, "key": "garden", "name": "GARDEN"}
+    {
+      "id": 0,
+      "key": "home",
+      "name": "HOME",
+      "background": 10001,
+      "outdoors": false
+    },
+    {
+      "id": 1,
+      "key": "garden",
+      "name": "GARDEN",
+      "background": 10002,
+      "outdoors": true
+    },
+    {
+      "id": 2,
+      "key": "park",
+      "name": "PARK",
+      "background": 10003,
+      "outdoors": true
+    },
+    {
+      "id": 3,
+      "key": "pond",
+      "name": "POND",
+      "background": 10004,
+      "outdoors": true
+    },
+    {
+      "id": 4,
+      "key": "beach",
+      "name": "BEACH",
+      "background": 10005,
+      "outdoors": true
+    },
+    {
+      "id": 5,
+      "key": "library",
+      "name": "LIBRARY",
+      "background": 10006,
+      "outdoors": false
+    }
   ]
 }

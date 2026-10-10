@@ -1,3 +1,4 @@
+#include "jelli/locations.h"
 #include "jelli/potty.h"
 #include "jelli/wake.h"
 #include "jelli/collection.h"
@@ -191,7 +192,7 @@ static JelliResult travel(JelliPet *pet, uint32_t location)
 {
     if (pet->activity != JELLI_IDLE)
         return JELLI_BUSY;
-    if (location > 1u)
+    if (location >= jelli_location_count)
         return JELLI_INVALID_TARGET;
     if (pet->asleep)
         return JELLI_ASLEEP;

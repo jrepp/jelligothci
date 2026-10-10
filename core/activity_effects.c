@@ -1,3 +1,4 @@
+#include "jelli/locations.h"
 #include "jelli/activities.h"
 #include "jelli/behavior.h"
 #include "jelli/nutrition.h"
@@ -43,16 +44,28 @@ unsigned jelli_moment_location(const JelliPet *pet, unsigned id)
     const JelliMoment *m = &jelli_moments[id];
     if (!m->randomize_location && (m->locations & (1u << pet->location)))
         return pet->location;
-    if (m->locations == 3u && m->randomize_location) {
+    unsigned count = 0u;
+    for (unsigned i = 0u; i < jelli_location_count; ++i)
+        if (m->locations & (1u << i))
+            ++count;
+    unsigned pick = 0u;
+    if (m->randomize_location && count > 1u) {
         uint64_t start = pet->interaction_due - (uint64_t)m->duration_s * 10u;
         /* Stable accepted start time; no menu/check RNG mutation. */
         uint32_t seed = (uint32_t)start ^ (uint32_t)(start >> 32) ^ pet->id ^ id;
         seed ^= seed >> 16;
         seed *= UINT32_C(3266489917);
         seed ^= seed >> 13;
-        return seed & 1u;
+        pick = seed % count;
     }
-    return (m->locations & 1u) ? 0u : 1u;
+    for (unsigned i = 0u; i < jelli_location_count; ++i) {
+        if (!(m->locations & (1u << i)))
+            continue;
+        if (!pick)
+            return i;
+        --pick;
+    }
+    return pet->location;
 }
 
 const char *jelli_moment_cost_hint(const JelliPet *pet, unsigned id)
