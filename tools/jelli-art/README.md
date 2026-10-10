@@ -124,7 +124,14 @@ ID or name is never handed out again.
 Painting a clip frame shows the **Flip-book** (`flipbook.js`) beside the canvas:
 a preview that plays the clip from the working pixels, so unsaved strokes
 animate, a thumbnail per frame, and onion skin of one to three frames each side
-(amber before, blue after, only where they differ). ← and → change frame unless
+(amber before, blue after), either only where they differ or as whole
+silhouettes (Shift+O). Frames are compared with frame 1 as `core/pet_actor.c`
+places them, each by its own ground anchor (`cr.groundAnchor`): the flip-book
+warns when a frame slides by half a source pixel or more at the form's scale,
+or when its eye height above its bottom edge changes (`JelliPaint.eyeRow`
+measures the catchlight row). **Eye & ground** draws the ground line, anchor
+and expected eye row. **Fit content** (Z) zooms the canvas to the
+opaque bounds. ← and → change frame unless
 the keyboard cursor shows; `,` and `.` always do; Shift+Space plays (Space stays
 the before-image peek). The link under it returns to the timeline. Previews
 start paused, so reduced motion needs no special case.

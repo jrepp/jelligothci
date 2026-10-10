@@ -62,7 +62,7 @@
   const behaviourOf = name => work?.behaviors?.find(b => b.name === name);
   const usersOf = name => (work?.profiles || []).filter(p => p.behavior === name).map(p => p.art);
   const savedProfile = art => loaded?.profiles?.find(p => p.art === art);
-  cr.scaleFor = art => profileOf(art)?.scale;
+  cr.scaleFor = art => { sync(); return profileOf(art)?.scale; };  // Paint can ask before this view has loaded the data
   cr.formDirty = art => {
     const p = profileOf(art), s = savedProfile(art);
     if (JSON.stringify(p) !== JSON.stringify(s)) return true;
