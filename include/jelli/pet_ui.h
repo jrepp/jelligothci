@@ -92,7 +92,8 @@ enum {
     JELLI_INPUT_CLOCK = 72,      /* + clock slot 0..6 */
     JELLI_INPUT_COLLECTION = 80, /* + collection slot 1..9 */
 };
-_Static_assert(JELLI_UI_ACTION_COUNT <= JELLI_INPUT_FIRST, "Input codes overlap UI actions");
+_Static_assert((int)JELLI_UI_ACTION_COUNT <= (int)JELLI_INPUT_FIRST,
+               "Input codes overlap UI actions");
 
 typedef struct {
     const char *label;

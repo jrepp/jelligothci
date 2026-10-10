@@ -2,7 +2,7 @@
 title: Magic-number inventory for importing more creatures
 author: Jacob Repp
 created: 2026-10-10T06:32:34Z
-tags: [memo, technical, content, creatures, data-driven]
+tags: [content, creatures, data-driven, memo, technical]
 id: memo-032
 project_id: jelligotchi
 doc_uuid: 50acbef8-6ffb-44b5-bd95-6a8f455dd61d

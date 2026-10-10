@@ -1,9 +1,10 @@
 ---
-title: Stimulus-driven creature behaviour, activities as data, and the magic-number scrub
+title: Stimulus-driven creature behaviour, activities as data, and the magic-number
+  scrub
 status: Draft
 author: Jacob Repp
 created: 2026-10-10T06:40:00Z
-tags: [behaviour, content, creatures, activities, data-driven]
+tags: [activities, behaviour, content, creatures, data-driven]
 id: rfc-005
 project_id: jelligotchi
 doc_uuid: f56747f9-66dd-4b2b-85ea-5d8a190352df

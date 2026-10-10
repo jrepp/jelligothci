@@ -46,7 +46,7 @@ static void ring_items_come_from_data(void)
     CHECK(jelli_asset_find(b.icon) != NULL);
     for (unsigned a = 0u; a < JELLI_HEALTH_COUNT; ++a)
         CHECK(jelli_asset_find(jelli_pet_health_icon(a)) != NULL);
-    CHECK(JELLI_UI_ACTION_COUNT <= JELLI_INPUT_FIRST);
+    CHECK((int)JELLI_UI_ACTION_COUNT <= (int)JELLI_INPUT_FIRST);
 }
 
 static void potty_routine_from_the_ring(void)
