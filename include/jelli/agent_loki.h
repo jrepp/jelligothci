@@ -25,6 +25,8 @@
 #define JELLI_LOKI_DETAIL 601u
 #define JELLI_LOKI_OPTION 41u
 #define JELLI_LOKI_OPTIONS 4u
+#define JELLI_LOKI_MODEL_NAME 41u /* A model name: 1..40 of A-Z a-z 0-9 . _ : / + - */
+#define JELLI_LOKI_MODEL_MAX 16u  /* Names a models message holds. */
 
 typedef enum {
     JELLI_LOKI_UNKNOWN = 0, /* A well-formed message of a type this board does not know. */
@@ -36,7 +38,8 @@ typedef enum {
     JELLI_LOKI_REPLY_BEGIN,
     JELLI_LOKI_REPLY_END,
     JELLI_LOKI_STOP_AUDIO,
-    JELLI_LOKI_SETTINGS
+    JELLI_LOKI_SETTINGS,
+    JELLI_LOKI_MODELS /* ADR-018 */
 } JelliLokiType;
 
 typedef enum {
@@ -73,8 +76,11 @@ typedef struct {
     char options[JELLI_LOKI_OPTIONS][JELLI_LOKI_OPTION];
     unsigned option_count;
     uint32_t timeout_ms;
-    uint32_t reply, rate, frames; /* reply_begin, reply_end */
-    uint32_t volume;              /* settings */
+    uint32_t reply, rate, frames;                             /* reply_begin, reply_end */
+    uint32_t volume;                                          /* settings */
+    char models[JELLI_LOKI_MODEL_MAX][JELLI_LOKI_MODEL_NAME]; /* models */
+    unsigned model_count;                                     /* models: 1..16 */
+    uint32_t current;                                         /* models: below model_count */
 } JelliLokiMessage;
 
 typedef enum {
@@ -102,13 +108,15 @@ typedef enum {
     JELLI_LOKI_CANCEL,
     JELLI_LOKI_ANSWER,
     JELLI_LOKI_PLAYED,
-    JELLI_LOKI_STATUS
+    JELLI_LOKI_STATUS,
+    JELLI_LOKI_SET_MODEL /* ADR-018 */
 } JelliLokiOutType;
 
 /* One message for the bridge; only the fields of its type are read. */
 typedef struct {
     const char *fw, *board;          /* hello */
     const char *id, *nonce, *digest; /* answer */
+    const char *model;               /* set_model: a model name */
     JelliLokiOutType type;
     uint32_t seq;
     unsigned channels, frame_ms;      /* hello */
@@ -123,6 +131,10 @@ typedef struct {
 /* Encodes message as the bridge expects it, with a NUL. Returns the length, or 0
  * when a field breaks the protocol's rules or out is too small. */
 size_t jelli_loki_encode(const JelliLokiOut *message, char *out, size_t capacity);
+
+/* Whether text holds length bytes that make a model name (docs/loki-protocol.md):
+ * 1 to 40 characters of A-Z a-z 0-9 . _ : / + -. */
+bool jelli_loki_model_name(const char *text, size_t length);
 
 typedef enum { JELLI_LOKI_MIC = 1, JELLI_LOKI_REPLY = 2 } JelliLokiAudioKind;
 

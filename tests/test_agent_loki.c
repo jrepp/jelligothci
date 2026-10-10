@@ -75,7 +75,7 @@ static void decodes_the_vectors(void)
         else
             check_control(v);
     }
-    CHECK(decoded > 25u && audio_frames == 2u);
+    CHECK(decoded > 29u && audio_frames == 2u);
 }
 
 static const Vector *find(const char *name) { return loki_vector_named(name); }
@@ -132,6 +132,11 @@ static void encodes_what_the_bridge_decodes(void)
         {.type = JELLI_LOKI_PLAYED, .seq = 6u, .reply = 1u, .complete = true},
         {.type = JELLI_LOKI_STATUS, .seq = 7u, .battery = 87, .charging = false, .rssi = -61},
         {.type = JELLI_LOKI_STATUS, .seq = 8u, .battery = -1, .charging = true, .rssi = -127},
+        {.type = JELLI_LOKI_SET_MODEL, .seq = 9u, .model = "gpt-oss:20b"},
+        {.type = JELLI_LOKI_SET_MODEL,
+         .seq = 1u,
+         .model = "abcdefghijabcdefghijabcdefghijabcdefghij"},
+        {.type = JELLI_LOKI_SET_MODEL, .seq = 2u, .model = "hf.co/Org_1/Model-2:Q4+K"},
     };
     for (size_t i = 0u; i < sizeof(messages) / sizeof(messages[0]); ++i)
         encode_and_find(&messages[i]);
@@ -216,6 +221,16 @@ static void rejects_what_breaks_the_rules(void)
         {.type = JELLI_LOKI_STATUS, .seq = 1u, .battery = -2, .rssi = -40},
         {.type = JELLI_LOKI_STATUS, .seq = 1u, .battery = 50, .rssi = 1},
         {.type = JELLI_LOKI_STATUS, .seq = 1u, .battery = 50, .rssi = -128},
+        {.type = JELLI_LOKI_SET_MODEL, .seq = 1u}, /* No name. */
+        {.type = JELLI_LOKI_SET_MODEL, .seq = 1u, .model = ""},
+        {.type = JELLI_LOKI_SET_MODEL, .seq = 1u, .model = "gpt oss"},
+        {.type = JELLI_LOKI_SET_MODEL, .seq = 1u, .model = "a\"b"},
+        {.type = JELLI_LOKI_SET_MODEL, .seq = 1u, .model = "a\\b"},
+        {.type = JELLI_LOKI_SET_MODEL, .seq = 1u, .model = "g\xc3\xa9mma"},
+        {.type = JELLI_LOKI_SET_MODEL,
+         .seq = 1u,
+         .model = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+        {.type = JELLI_LOKI_SET_MODEL, .seq = 0u, .model = "Claude"},
     };
     for (size_t i = 0u; i < sizeof(bad) / sizeof(bad[0]); ++i)
         expect_rejected(&bad[i]);

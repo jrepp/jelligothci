@@ -161,7 +161,7 @@ static bool fill(JelliLokiOut *out, const char *type, unsigned count)
     } TYPES[] = {{"hello", JELLI_LOKI_HELLO, 4u},     {"ptt_start", JELLI_LOKI_PTT_START, 1u},
                  {"ptt_end", JELLI_LOKI_PTT_END, 3u}, {"cancel", JELLI_LOKI_CANCEL, 0u},
                  {"answer", JELLI_LOKI_ANSWER, 4u},   {"played", JELLI_LOKI_PLAYED, 2u},
-                 {"status", JELLI_LOKI_STATUS, 3u}};
+                 {"status", JELLI_LOKI_STATUS, 3u},   {"set_model", JELLI_LOKI_SET_MODEL, 1u}};
     for (size_t i = 0u; i < sizeof(TYPES) / sizeof(TYPES[0]); ++i) {
         if (strcmp(type, TYPES[i].name) != 0)
             continue;
@@ -204,6 +204,9 @@ static void fields(JelliLokiOut *out, char **args)
         out->battery = (int)number(args[0]);
         out->charging = number(args[1]) != 0;
         out->rssi = (int)number(args[2]);
+        break;
+    case JELLI_LOKI_SET_MODEL:
+        out->model = text(args[0], 0u);
         break;
     case JELLI_LOKI_CANCEL:
     case JELLI_LOKI_NONE:

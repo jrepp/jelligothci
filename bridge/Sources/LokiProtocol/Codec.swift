@@ -30,6 +30,7 @@ enum Specs {
             TypeSpec(name: "reply_end", fields: [f("reply", .unsigned(1...u32), nil), f("frames", .unsigned(0...u32), nil)]),
             TypeSpec(name: "stop_audio", fields: []),
             TypeSpec(name: "settings", fields: [f("volume", .unsigned(0...100), nil)]),
+            TypeSpec(name: "models", fields: [f("models", .modelNames(1...16), nil), f("current", .unsigned(0...15), nil)]),
         ]
         return Dictionary(uniqueKeysWithValues: list.map { ($0.name, $0) })
     }()
@@ -57,6 +58,7 @@ enum Specs {
             TypeSpec(name: "status", fields: [
                 f("battery", .signed(-1...100), nil), f("charging", .flag, nil), f("rssi", .signed(-127...0), nil),
             ]),
+            TypeSpec(name: "set_model", fields: [f("model", .modelName, nil)]),
         ]
         return Dictionary(uniqueKeysWithValues: list.map { ($0.name, $0) })
     }()
@@ -107,6 +109,10 @@ extension BridgeMessage {
         case "reply_end": self = .replyEnd(reply: v.u32("reply"), frames: v.u32("frames"))
         case "stop_audio": self = .stopAudio
         case "settings": self = .settings(volume: v.u32("volume"))
+        case "models":
+            let names = v.strings("models"), current = v.u32("current")
+            guard current < names.count else { throw LokiError("current is not one of the models") }
+            self = .models(names: names, current: current)
         default: throw LokiError("unknown type")
         }
     }
@@ -129,6 +135,7 @@ extension BridgeMessage {
         case .replyEnd(let reply, let frames): ("reply_end", ["reply": n(reply), "frames": n(frames)])
         case .stopAudio: ("stop_audio", [:])
         case .settings(let volume): ("settings", ["volume": n(volume)])
+        case .models(let names, let current): ("models", ["models": .strings(names), "current": n(current)])
         }
         return RawMessage(type: type, seq: seq, values: values)
     }
@@ -149,6 +156,7 @@ extension DeviceMessage {
                            choice: v.u32("choice"))
         case "played": self = .played(reply: v.u32("reply"), complete: v.flag("complete"))
         case "status": self = .status(battery: v.i32("battery"), charging: v.flag("charging"), rssi: v.i32("rssi"))
+        case "set_model": self = .setModel(v.string("model"))
         default: throw LokiError("unknown type")
         }
     }
@@ -169,6 +177,7 @@ extension DeviceMessage {
         case .played(let reply, let complete): ("played", ["reply": n(reply), "complete": .flag(complete)])
         case .status(let battery, let charging, let rssi):
             ("status", ["battery": n(battery), "charging": .flag(charging), "rssi": n(rssi)])
+        case .setModel(let model): ("set_model", ["model": .string(model)])
         }
         return RawMessage(type: type, seq: seq, values: values)
     }
@@ -194,6 +203,9 @@ public enum LokiCodec {
     public static func encode(_ message: BridgeMessage, seq: UInt32) throws(LokiError) -> [UInt8] {
         if case .ask(let ask) = message, ask.kind == .approve, ask.options.count != 2 {
             throw LokiError("an approval has exactly two options")
+        }
+        if case .models(let names, let current) = message, current >= names.count {
+            throw LokiError("current is not one of the models")
         }
         return try Schema.encode(message.raw(seq: seq), specs: Specs.bridge, maxBytes: Loki.maxBridgeMessage)
     }

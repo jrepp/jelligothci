@@ -144,6 +144,11 @@ static bool fields(Json *json, const JelliLokiOut *message)
         put_int(json, "rssi", message->rssi);
         return message->battery >= -1 && message->battery <= 100 && message->rssi >= -127 &&
                message->rssi <= 0;
+    case JELLI_LOKI_SET_MODEL: /* Its charset needs no escaping either. */
+        if (!message->model || !jelli_loki_model_name(message->model, strlen(message->model)))
+            return false;
+        put_string(json, "model", message->model);
+        return true;
     case JELLI_LOKI_NONE:
         return false;
     }
@@ -152,8 +157,10 @@ static bool fields(Json *json, const JelliLokiOut *message)
 
 size_t jelli_loki_encode(const JelliLokiOut *message, char *out, size_t capacity)
 {
-    static const char *const NAMES[] = {"",       "hello",  "ptt_start", "ptt_end",
-                                        "cancel", "answer", "played",    "status"};
+    static const char *const NAMES[] = {"",       "hello",  "ptt_start", "ptt_end",  "cancel",
+                                        "answer", "played", "status",    "set_model"};
+    _Static_assert(sizeof(NAMES) / sizeof(NAMES[0]) == JELLI_LOKI_SET_MODEL + 1,
+                   "a name for every type the board sends");
     Json json = {out, capacity, 0u, !out || capacity == 0u};
     char head[48];
     if (out && capacity)

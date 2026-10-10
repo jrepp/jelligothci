@@ -29,7 +29,7 @@ typedef struct {
 bool jelli_agent_ui_controls_ask(AskKind kind, int x, int y);
 
 /* Any task: whether the screen is dark, Settings' screen (JelliPrefsScreen), and how many
- * networks it lists; false when the controls have not started. */
-bool jelli_agent_ui_controls_status(bool *dark, int *view, int *networks);
+ * networks and models it lists; false when the controls have not started. */
+bool jelli_agent_ui_controls_status(bool *dark, int *view, int *networks, int *models);
 
 #endif

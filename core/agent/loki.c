@@ -9,22 +9,18 @@
 enum { NAME_BYTES = 32, VALUE_DEPTH = 4 };
 #define SEQ_SEEN 0x80000000u /* Bit of seq among the seen fields. */
 
-static bool is_id_char(char c)
-{
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' ||
-           c == '-';
-}
-
 static bool valid_text(const JelliLokiField *field, const char *text, size_t length)
 {
     bool id = field->kind == JELLI_LOKI_FIELD_ID, hex = field->kind == JELLI_LOKI_FIELD_HEX;
     if (field->kind == JELLI_LOKI_FIELD_LINE)
         return memchr(text, '\n', length) == NULL;
+    if (field->kind == JELLI_LOKI_FIELD_MODEL)
+        return jelli_loki_model_name(text, length);
     if (id || hex) {
         if (!length || (hex && length != (size_t)field->min))
             return false;
         for (size_t i = 0u; i < length; ++i)
-            if (id ? !is_id_char(text[i])
+            if (id ? !jelli_loki_id_char(text[i])
                    : !((text[i] >= '0' && text[i] <= '9') || (text[i] >= 'a' && text[i] <= 'f')))
                 return false;
     }
@@ -40,25 +36,30 @@ static bool read_word(JelliJson *json, int (*index_of)(const char *), int *index
     return *index >= 0;
 }
 
-static bool read_options(JelliJson *json, const JelliLokiField *field, JelliLokiMessage *message)
+/* An array of strings into the list's items, each checked as the list's item kind. */
+static bool read_list(JelliJson *json, const JelliLokiField *field, JelliLokiMessage *message)
 {
+    const JelliLokiList *list = jelli_loki_list(field->kind);
     unsigned count = 0u;
     size_t length;
-    if (!jelli_json_take(json, '['))
+    if (!list || !jelli_json_take(json, '['))
         return false;
+    const JelliLokiField item = {field->name, list->item, true,
+                                 0u,          0,          (int64_t)list->item_size - 1};
+    char *items = (char *)message + list->offset;
     if (!jelli_json_take(json, ']')) {
         do {
-            if (count == JELLI_LOKI_OPTIONS ||
-                !jelli_json_string(json, message->options[count], JELLI_LOKI_OPTION - 1u,
-                                   &length) ||
-                memchr(message->options[count], '\n', length))
+            char *at = items + (size_t)count * list->item_size;
+            if (count == list->capacity ||
+                !jelli_json_string(json, at, list->item_size - 1u, &length) ||
+                !valid_text(&item, at, length))
                 return false;
             ++count;
         } while (jelli_json_take(json, ','));
         if (!jelli_json_take(json, ']'))
             return false;
     }
-    message->option_count = count;
+    memcpy((unsigned char *)message + list->count_offset, &count, sizeof(count));
     return count >= (unsigned)field->min && count <= (unsigned)field->max;
 }
 
@@ -103,9 +104,11 @@ static bool read_field(JelliJson *json, const JelliLokiField *field, JelliLokiMe
         message->kind = (JelliLokiKind)index;
         return true;
     case JELLI_LOKI_FIELD_OPTIONS:
-        return read_options(json, field, message);
+    case JELLI_LOKI_FIELD_MODELS:
+        return read_list(json, field, message);
     case JELLI_LOKI_FIELD_TEXT:
     case JELLI_LOKI_FIELD_LINE:
+    case JELLI_LOKI_FIELD_MODEL:
     case JELLI_LOKI_FIELD_ID:
     case JELLI_LOKI_FIELD_HEX:
         return jelli_json_string(json, (char *)member, (size_t)field->max, &length) &&
@@ -153,11 +156,14 @@ static bool read_type(JelliJson *json, const JelliLokiTypeSpec **type)
     return true;
 }
 
+/* Rules across fields: approve has exactly two options, and current indexes models. */
 static bool complete(const JelliLokiTypeSpec *type, uint32_t seen, const JelliLokiMessage *message)
 {
     for (unsigned i = 0u; i < type->count; ++i)
         if (type->fields[i].required && !(seen & (1u << i)))
             return false;
+    if (type->type == JELLI_LOKI_MODELS)
+        return message->current < message->model_count;
     return type->type != JELLI_LOKI_ASK || message->kind != JELLI_LOKI_APPROVE ||
            message->option_count == 2u;
 }

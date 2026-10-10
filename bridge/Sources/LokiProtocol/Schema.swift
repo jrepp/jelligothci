@@ -12,6 +12,8 @@ enum FieldKind: Sendable {
     case word([String])             // an enumeration, written bare in the canonical form
     case constant(String)           // one exact string, written quoted
     case options(ClosedRange<Int>)  // strings of at most 40 bytes, no line feeds
+    case modelName                  // 1...40 of A-Z a-z 0-9 . _ : / + -
+    case modelNames(ClosedRange<Int>)  // that many model names
 }
 
 enum FieldValue: Equatable, Sendable {
@@ -104,8 +106,10 @@ enum Schema {
         case .text(let maxBytes), .line(let maxBytes):
             let value = try reader.string(maxBytes: maxBytes)
             return .string(try checked(value, kind))
-        case .identifier, .hex:
+        case .identifier, .hex, .modelName:
             return .string(try checked(try reader.string(maxBytes: 64), kind))
+        case .modelNames(let count):
+            return .strings(try names(count, &reader))
         case .word(let words):
             let word = try reader.string(maxBytes: keyBytes)
             guard let match = words.first(where: { Array($0.utf8) == word }) else { throw LokiError("unknown value") }
@@ -130,6 +134,20 @@ enum Schema {
         }
     }
 
+    private static func names(_ count: ClosedRange<Int>, _ reader: inout JSONReader) throws(LokiError) -> [String] {
+        try reader.expect(0x5B, "an array")
+        var names: [String] = []
+        if !reader.take(0x5D) {
+            repeat {
+                guard names.count < count.upperBound else { throw LokiError("too many names") }
+                names.append(try checked(try reader.string(maxBytes: 64), .modelName))
+            } while reader.take(0x2C)
+            try reader.expect(0x5D, "the end of the names")
+        }
+        guard count.contains(names.count) else { throw LokiError("wrong number of names") }
+        return names
+    }
+
     /// Applies a string field's rules to validated UTF-8 bytes.
     static func checked(_ bytes: [UInt8], _ kind: FieldKind) throws(LokiError) -> String {
         switch kind {
@@ -142,6 +160,10 @@ enum Schema {
             }
         case .hex(let length):
             guard bytes.count == length, bytes.allSatisfy(isLowerHex) else { throw LokiError("bad hex") }
+        case .modelName:
+            guard (1...40).contains(bytes.count), bytes.allSatisfy(isModelNameByte) else {
+                throw LokiError("bad model name")
+            }
         default:
             break
         }
@@ -151,6 +173,11 @@ enum Schema {
     static func isIdentifierByte(_ c: UInt8) -> Bool {
         (0x61...0x7A).contains(c) || (0x41...0x5A).contains(c) || (0x30...0x39).contains(c) ||
             c == 0x5F || c == 0x2D
+    }
+
+    /// A-Z a-z 0-9 . _ : / + -
+    static func isModelNameByte(_ c: UInt8) -> Bool {
+        isIdentifierByte(c) || c == 0x2E || c == 0x3A || c == 0x2F || c == 0x2B
     }
 
     static func isLowerHex(_ c: UInt8) -> Bool {
@@ -221,7 +248,7 @@ enum Schema {
         case (.flag, .flag):
             break
         case (.text, .string(let s)), (.line, .string(let s)), (.identifier, .string(let s)),
-             (.hex, .string(let s)):
+             (.hex, .string(let s)), (.modelName, .string(let s)):
             let bytes = Array(s.utf8)
             guard bytes.allSatisfy({ $0 >= 0x20 || $0 == 0x0A }) else {
                 throw LokiError("\(field.name) has a control character")
@@ -231,6 +258,9 @@ enum Schema {
             guard words.contains(s) else { throw LokiError("\(field.name) has an unknown value") }
         case (.constant(let expected), .string(let s)):
             guard s == expected else { throw LokiError("\(field.name) has an unexpected value") }
+        case (.modelNames(let count), .strings(let list)):
+            guard count.contains(list.count) else { throw LokiError("wrong number of names") }
+            for name in list { _ = try checked(Array(name.utf8), .modelName) }
         case (.options(let count), .strings(let list)):
             guard count.contains(list.count) else { throw LokiError("wrong number of options") }
             for option in list {

@@ -9,10 +9,11 @@
  * "ui" asks that stand in for the button and touches. Console task; the UI task does
  * the work. */
 
+/* In JelliPrefsScreen's order. */
 static const char *view_name(int view)
 {
     static const char *const names[] = {"closed",   "menu",    "searching", "networks",
-                                        "password", "joining", "result"};
+                                        "password", "joining", "result",    "models"};
     return view >= 0 && view < (int)(sizeof(names) / sizeof(names[0])) ? names[view] : "closed";
 }
 
@@ -23,16 +24,16 @@ static bool screen_command(const JelliAgentRequest *request, char *out, size_t c
               (!strcmp(what, "sleep") && jelli_agent_ui_controls_ask(ASK_SLEEP, 0, 0)) ||
               (!strcmp(what, "wake") && jelli_agent_ui_controls_ask(ASK_WAKE, 0, 0));
     bool dark = false;
-    int view = 0, networks = 0;
-    bool started = jelli_agent_ui_controls_status(&dark, &view, &networks);
+    int view = 0, networks = 0, models = 0;
+    bool started = jelli_agent_ui_controls_status(&dark, &view, &networks, &models);
     if (!ok)
         (void)snprintf(out, capacity, "{\"ok\":false,\"error\":\"%s\"}",
                        started ? "syntax" : "unavailable");
     else
         (void)snprintf(out, capacity,
                        "{\"ok\":true,\"asleep\":%s,\"settings\":\"%s\",\"networks\":%d,"
-                       "\"idle_ms\":%u,\"listening\":%s,\"ui_stack_free\":%u}",
-                       dark ? "true" : "false", view_name(view), networks,
+                       "\"models\":%d,\"idle_ms\":%u,\"listening\":%s,\"ui_stack_free\":%u}",
+                       dark ? "true" : "false", view_name(view), networks, models,
                        (unsigned)JELLI_AGENT_SCREEN_IDLE_MS,
                        jelli_agent_voice_holding() ? "true" : "false", jelli_agent_ui_stack_free());
     return true;

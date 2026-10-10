@@ -33,6 +33,7 @@ struct EncoderEdgeTests {
         .replyEnd(reply: UInt32.max, frames: UInt32.max),
         .stopAudio,
         .settings(volume: 100),
+        .models(names: Array(repeating: repeated("+", 40), count: 16), current: 15),
     ]
 
     @Test func largestMessagesFitAndRoundTrip() throws {
@@ -91,6 +92,13 @@ struct EncoderEdgeTests {
         (.replyBegin(reply: 1), true), (.replyBegin(reply: UInt32.max), true), (.replyBegin(reply: 0), false),
         (.replyEnd(reply: 1, frames: 0), true), (.replyEnd(reply: 0, frames: 0), false),
         (.settings(volume: 0), true), (.settings(volume: 100), true), (.settings(volume: 101), false),
+        (.models(names: ["a"], current: 0), true), (.models(names: [repeated("z", 40)], current: 0), true),
+        (.models(names: [repeated("z", 41)], current: 0), false), (.models(names: [""], current: 0), false),
+        (.models(names: ["a b"], current: 0), false), (.models(names: ["a,b"], current: 0), false),
+        (.models(names: ["g\u{e9}mma"], current: 0), false), (.models(names: ["a\"b"], current: 0), false),
+        (.models(names: ["a", "b"], current: 2), false), (.models(names: [], current: 0), false),
+        (.models(names: Array(repeating: "m", count: 16), current: 15), true),
+        (.models(names: Array(repeating: "m", count: 17), current: 0), false),
     ]
 
     @Test func bridgeFieldLimits() throws {
@@ -130,6 +138,8 @@ struct EncoderEdgeTests {
         (.status(battery: -1, charging: false, rssi: -127), true), (.status(battery: 100, charging: true, rssi: 0), true),
         (.status(battery: -2, charging: false, rssi: 0), false), (.status(battery: 101, charging: false, rssi: 0), false),
         (.status(battery: 0, charging: false, rssi: -128), false), (.status(battery: 0, charging: false, rssi: 1), false),
+        (.setModel("Claude"), true), (.setModel(repeated("z", 40)), true), (.setModel(repeated("z", 41)), false),
+        (.setModel(""), false), (.setModel("a b"), false), (.setModel("a\\b"), false),
     ]
 
     @Test func deviceFieldLimits() throws {

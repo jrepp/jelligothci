@@ -463,3 +463,40 @@ cancel-unknown-fields	d2b	ok	{"t":"cancel","seq":1,"x":[[[{}]]],"y":"\ud83e\udd8
 d2b-depth-5	d2b	reject	{"t":"cancel","seq":1,"x":[[[[[1]]]]]}
 d2b-type-32	d2b	ignore	{"t":"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy","seq":1}
 d2b-type-33	d2b	reject	{"t":"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy","seq":1}
+# Model choice (ADR-018): the bridge offers the models the board may pick from as
+# `models`, and the board answers `set_model`. Names are 1 to 40 characters of
+# A-Z a-z 0-9 . _ : / + -, a list holds 1 to 16, and `current` indexes it.
+models-one	b2d	ok	{"t":"models","seq":17,"models":["Claude"],"current":0}	models seq=17 models=["Claude"] current=0
+models-two	b2d	ok	{"t":"models","seq":18,"models":["Claude","gpt-oss:20b"],"current":1}	models seq=18 models=["Claude","gpt-oss:20b"] current=1
+models-charset	b2d	ok	{"t":"models","seq":1,"models":["hf.co/Org_1/Model-2:Q4+K","A"],"current":1}	models seq=1 models=["hf.co/Org_1/Model-2:Q4+K","A"] current=1
+models-max	b2d	ok	{"t":"models","seq":1,"models":["Claude","m01:x","m02:x","m03:x","m04:x","m05:x","m06:x","m07:x","m08:x","m09:x","m10:x","m11:x","m12:x","m13:x","m14:x","abcdefghijabcdefghijabcdefghijabcdefghij"],"current":15}	models seq=1 models=["Claude","m01:x","m02:x","m03:x","m04:x","m05:x","m06:x","m07:x","m08:x","m09:x","m10:x","m11:x","m12:x","m13:x","m14:x","abcdefghijabcdefghijabcdefghijabcdefghij"] current=15
+models-empty	b2d	reject	{"t":"models","seq":1,"models":[],"current":0}
+models-17	b2d	reject	{"t":"models","seq":1,"models":["Claude","m01:x","m02:x","m03:x","m04:x","m05:x","m06:x","m07:x","m08:x","m09:x","m10:x","m11:x","m12:x","m13:x","m14:x","abcdefghijabcdefghijabcdefghijabcdefghij","x"],"current":0}
+models-name-41	b2d	reject	{"t":"models","seq":1,"models":["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],"current":0}
+models-name-empty	b2d	reject	{"t":"models","seq":1,"models":[""],"current":0}
+models-name-space	b2d	reject	{"t":"models","seq":1,"models":["gpt oss"],"current":0}
+models-name-quote	b2d	reject	{"t":"models","seq":1,"models":["a\"b"],"current":0}
+models-name-backslash	b2d	reject	{"t":"models","seq":1,"models":["a\\b"],"current":0}
+models-name-comma	b2d	reject	{"t":"models","seq":1,"models":["a,b"],"current":0}
+models-name-unicode	b2d	reject	{"t":"models","seq":1,"models":["gémma"],"current":0}
+models-name-newline	b2d	reject	{"t":"models","seq":1,"models":["a\nb"],"current":0}
+models-current-out	b2d	reject	{"t":"models","seq":1,"models":["Claude","x"],"current":2}
+models-current-16	b2d	reject	{"t":"models","seq":1,"models":["Claude","m01:x","m02:x","m03:x","m04:x","m05:x","m06:x","m07:x","m08:x","m09:x","m10:x","m11:x","m12:x","m13:x","m14:x","abcdefghijabcdefghijabcdefghijabcdefghij"],"current":16}
+models-current-missing	b2d	reject	{"t":"models","seq":1,"models":["Claude"]}
+models-missing	b2d	reject	{"t":"models","seq":1,"current":0}
+models-not-array	b2d	reject	{"t":"models","seq":1,"models":"Claude","current":0}
+models-not-strings	b2d	reject	{"t":"models","seq":1,"models":[1],"current":0}
+models-nested	b2d	reject	{"t":"models","seq":1,"models":[["a"]],"current":0}
+models-current-negative	b2d	reject	{"t":"models","seq":1,"models":["a"],"current":-1}
+models-to-bridge	d2b	ignore	{"t":"models","seq":1,"models":["Claude"],"current":0}
+set-model	d2b	ok	{"t":"set_model","seq":9,"model":"gpt-oss:20b"}	set_model seq=9 model="gpt-oss:20b"
+set-model-claude	d2b	ok	{"t":"set_model","seq":1,"model":"Claude"}	set_model seq=1 model="Claude"
+set-model-max	d2b	ok	{"t":"set_model","seq":1,"model":"abcdefghijabcdefghijabcdefghijabcdefghij"}	set_model seq=1 model="abcdefghijabcdefghijabcdefghijabcdefghij"
+set-model-charset	d2b	ok	{"t":"set_model","seq":2,"model":"hf.co/Org_1/Model-2:Q4+K"}	set_model seq=2 model="hf.co/Org_1/Model-2:Q4+K"
+set-model-empty	d2b	reject	{"t":"set_model","seq":1,"model":""}
+set-model-41	d2b	reject	{"t":"set_model","seq":1,"model":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+set-model-space	d2b	reject	{"t":"set_model","seq":1,"model":"gpt oss"}
+set-model-quote	d2b	reject	{"t":"set_model","seq":1,"model":"a\"b"}
+set-model-missing	d2b	reject	{"t":"set_model","seq":1}
+set-model-number	d2b	reject	{"t":"set_model","seq":1,"model":1}
+set-model-to-board	b2d	ignore	{"t":"set_model","seq":1,"model":"Claude"}

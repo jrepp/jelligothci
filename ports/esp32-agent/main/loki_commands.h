@@ -11,6 +11,8 @@
  *   loki answer CHOICE      answer the last question the inbox showed
  *   loki ptt start|stop     hold to talk: stream MIC1 to the bridge, then end
  *   loki cancel             send cancel
+ *   loki models             the models the bridge offers as the default (ADR-018)
+ *   loki model NAME         make NAME, one it offers, the default (set_model)
  * Returns false for other verbs. Console task only. */
 bool jelli_agent_command_loki(const JelliAgentRequest *request, char *out, size_t capacity);
 

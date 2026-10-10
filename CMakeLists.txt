@@ -30,7 +30,7 @@ add_library(jelli_agent_core STATIC core/agent/args.c core/agent/console.c core/
   core/agent/loki_canonical.c core/agent/loki_json.c core/agent/loki_out.c
   core/agent/loki_schema.c core/agent/pcm.c core/agent/pmu.c
   core/agent/present.c core/agent/sha256.c core/agent/touch.c core/agent/prefs.c
-  core/agent/prefs_keys.c)
+  core/agent/prefs_keys.c core/agent/prefs_models.c)
 target_include_directories(jelli_agent_core PUBLIC include)
 add_executable(jelli_sound_export tools/audio/export.c)
 target_link_libraries(jelli_sound_export PRIVATE jelli_core)
@@ -118,6 +118,27 @@ if(BUILD_TESTING)
   add_executable(jelli_agent_loki_limits_tests tests/test_agent_loki_limits.c)
   target_link_libraries(jelli_agent_loki_limits_tests PRIVATE jelli_agent_core jelli_loki_vectors)
   add_test(NAME agent_loki_limits COMMAND jelli_agent_loki_limits_tests)
+  # Model choice (ADR-018): generated models messages and set_model against a reference.
+  add_executable(jelli_agent_loki_models_tests tests/test_agent_loki_models.c)
+  target_link_libraries(jelli_agent_loki_models_tests PRIVATE jelli_agent_core)
+  add_test(NAME agent_loki_models COMMAND jelli_agent_loki_models_tests)
+  # The list kind ask.options and models share, and set_model end to end (ADR-018).
+  add_executable(jelli_agent_loki_lists_tests tests/test_agent_loki_lists.c)
+  target_link_libraries(jelli_agent_loki_lists_tests PRIVATE jelli_agent_core)
+  add_test(NAME agent_loki_lists COMMAND jelli_agent_loki_lists_tests)
+  add_executable(jelli_agent_loki_set_model_tests tests/test_agent_loki_set_model.c)
+  target_link_libraries(jelli_agent_loki_set_model_tests PRIVATE jelli_agent_core jelli_loki_vectors)
+  add_test(NAME agent_loki_set_model COMMAND jelli_agent_loki_set_model_tests)
+  # The firmware's models slot (ports/esp32-agent/main/loki_models.c) on the host: its
+  # FreeRTOS spinlock a mutex (tests/fake_freertos), so real threads can race it.
+  if(NOT WIN32)
+    find_package(Threads REQUIRED)
+    add_executable(jelli_agent_loki_models_slot_tests tests/test_agent_loki_models_slot.c
+      ports/esp32-agent/main/loki_models.c)
+    target_include_directories(jelli_agent_loki_models_slot_tests PRIVATE tests/fake_freertos)
+    target_link_libraries(jelli_agent_loki_models_slot_tests PRIVATE jelli_agent_core Threads::Threads)
+    add_test(NAME agent_loki_models_slot COMMAND jelli_agent_loki_models_slot_tests)
+  endif()
   # Drives the codec line by line for tests/test_loki_diff.py and the bridge's
   # differential tests, which compare it with the Swift codec.
   add_executable(jelli_loki_diff tests/loki_diff.c)
@@ -126,8 +147,8 @@ if(BUILD_TESTING)
   target_link_libraries(jelli_agent_present_tests PRIVATE jelli_agent_core)
   add_test(NAME agent_present COMMAND jelli_agent_present_tests)
   # Loki Agent's Settings and touches (ADR-016): logic only, no art needed.
-  foreach(suite prefs prefs_fuzz prefs_props prefs_flow prefs_alike touch touch_props
-    touch_holds touch_bounds)
+  foreach(suite prefs prefs_fuzz prefs_props prefs_flow prefs_alike prefs_models
+    prefs_models_flow prefs_models_props touch touch_props touch_holds touch_bounds)
     add_executable(jelli_agent_${suite}_tests tests/test_agent_${suite}.c)
     target_link_libraries(jelli_agent_${suite}_tests PRIVATE jelli_agent_core)
     add_test(NAME agent_${suite} COMMAND jelli_agent_${suite}_tests)
@@ -266,16 +287,17 @@ if(BUILD_TESTING)
       target_link_libraries(jelli_agent_prance_art_tests PRIVATE m)
     endif()
     add_test(NAME agent_prance_art COMMAND jelli_agent_prance_art_tests)
-    # Settings drawn in the agent's real font (ADR-016); given a folder, it writes
-    # each screen there as a BMP preview.
-    add_executable(jelli_agent_prefs_draw_tests tests/test_agent_prefs_draw.c
-      core/agent/draw.c core/agent/lowercase.c core/agent/prefs_draw.c core/agent/prefs_parts.c
-      core/asset_source.c
-      ${agent_test_assets})
-    target_link_libraries(jelli_agent_prefs_draw_tests PRIVATE jelli_agent_core jelli_core)
-    add_test(NAME agent_prefs_draw COMMAND jelli_agent_prefs_draw_tests)
+    # Settings drawn in the agent's real font (ADR-016), and its model choice
+    # (ADR-018); given a folder, each writes its screens there as BMP previews.
+    foreach(suite prefs_draw prefs_models_draw)
+      add_executable(jelli_agent_${suite}_tests tests/test_agent_${suite}.c tests/prefs_bmp.c
+        core/agent/draw.c core/agent/lowercase.c core/agent/prefs_draw.c
+        core/agent/prefs_parts.c core/asset_source.c ${agent_test_assets})
+      target_link_libraries(jelli_agent_${suite}_tests PRIVATE jelli_agent_core jelli_core)
+      add_test(NAME agent_${suite} COMMAND jelli_agent_${suite}_tests)
+    endforeach()
     # The drawing primitives and font white-box, and Settings drawn from fuzzed states.
-    foreach(suite draw text prefs_screens)
+    foreach(suite draw text prefs_screens prefs_models_screens)
       add_executable(jelli_agent_${suite}_tests tests/test_agent_${suite}.c
         core/agent/draw.c core/agent/lowercase.c core/agent/prefs_draw.c
         core/agent/prefs_parts.c core/asset_source.c ${agent_test_assets})

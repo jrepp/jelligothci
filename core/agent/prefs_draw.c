@@ -20,21 +20,40 @@ static void waiting(JelliSurface *surface, const char *word, int y, unsigned fra
                      PREFS_WHITE);
 }
 
-static void draw_menu(const JelliPrefs *prefs, JelliSurface *surface)
+static void draw_wifi_card(const JelliPrefs *prefs, JelliSurface *surface)
 {
-    title(surface, "Settings", 70);
     PrefsBox card = prefs_box(PREFS_MENU_WIFI);
-    jelli_agent_round_outline(surface, card.x, card.y, card.width, card.height, 22, 3, PREFS_LILAC);
-    jelli_agent_text(surface, card.x + 24, card.y + 14, "Wi-Fi", 5u, 3u, PREFS_WHITE);
+    prefs_card(surface, card, "Wi-Fi", true);
     const char *status = prefs->connected ? "online" : "offline";
     int status_width = jelli_agent_text_width(strlen(status), 2u);
-    jelli_agent_text(surface, card.x + card.width - 24 - status_width, card.y + 20, status,
+    jelli_agent_text(surface, card.x + card.width - 24 - status_width, card.y + 16, status,
                      strlen(status), 2u, prefs->connected ? PREFS_LILAC : PREFS_GREY);
     if (prefs->current_size)
-        prefs_name(surface, card.x + 24, card.y + 58, prefs->current, prefs->current_size, 17u,
+        prefs_name(surface, card.x + 24, card.y + 50, prefs->current, prefs->current_size, 17u,
                    prefs->connected ? PREFS_LILAC : PREFS_GREY);
     else
-        jelli_agent_text(surface, card.x + 24, card.y + 58, "Not set up", 10u, 2u, PREFS_GREY);
+        jelli_agent_text(surface, card.x + 24, card.y + 50, "Not set up", 10u, 2u, PREFS_GREY);
+}
+
+/* The default model; without a list, why there is none, and no way in (grey). */
+static void draw_model_card(const JelliPrefs *prefs, JelliSurface *surface)
+{
+    PrefsBox card = prefs_box(PREFS_MENU_MODEL);
+    const char *name = jelli_prefs_model(prefs);
+    prefs_card(surface, card, "Model", name != NULL);
+    if (name) {
+        prefs_model_name(surface, card.x + 24, card.y + 50, name, 17u, PREFS_LILAC);
+        return;
+    }
+    const char *why = prefs->bridge_online ? "None offered" : "Bridge offline";
+    jelli_agent_text(surface, card.x + 24, card.y + 50, why, strlen(why), 2u, PREFS_GREY);
+}
+
+static void draw_menu(const JelliPrefs *prefs, JelliSurface *surface)
+{
+    title(surface, "Settings", 58);
+    draw_wifi_card(prefs, surface);
+    draw_model_card(prefs, surface);
     prefs_button(surface, prefs_box(PREFS_MENU_DONE), "Done", PREFS_PRIMARY);
 }
 
@@ -75,6 +94,23 @@ static void draw_list(const JelliPrefs *prefs, JelliSurface *surface)
         more(surface, 344, false);
     prefs_button(surface, prefs_box(PREFS_LIST_BACK), "Back", PREFS_SECONDARY);
     prefs_button(surface, prefs_box(PREFS_LIST_SCAN), "Scan", PREFS_SECONDARY);
+}
+
+static void draw_models(const JelliPrefs *prefs, JelliSurface *surface)
+{
+    const JelliPrefsModels *models = &prefs->models;
+    title(surface, "Model", 46);
+    for (unsigned row = 0u; row < PREFS_LIST_ROWS && prefs->model_top + row < models->count;
+         ++row) {
+        unsigned index = prefs->model_top + row;
+        prefs_model_row(surface, prefs_row_box(row), models->names[index],
+                        index == models->current);
+    }
+    if (prefs->model_top)
+        more(surface, 88, true);
+    if (prefs->model_top + PREFS_LIST_ROWS < models->count)
+        more(surface, 344, false);
+    prefs_button(surface, prefs_box(PREFS_MODELS_BACK), "Back", PREFS_SECONDARY);
 }
 
 static void draw_password(const JelliPrefs *prefs, JelliSurface *surface)
@@ -192,6 +228,9 @@ void jelli_prefs_draw(JelliPrefs *prefs, JelliSurface *surface)
         break;
     case JELLI_PREFS_RESULT:
         draw_result(prefs, surface);
+        break;
+    case JELLI_PREFS_MODELS:
+        draw_models(prefs, surface);
         break;
     case JELLI_PREFS_CLOSED:
         break;

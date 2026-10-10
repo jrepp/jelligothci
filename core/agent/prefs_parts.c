@@ -19,6 +19,13 @@ void prefs_button(JelliSurface *surface, PrefsBox box, const char *label, PrefsB
     jelli_agent_text_centered(surface, box.x + box.width / 2, y, label, length, 2u, color);
 }
 
+void prefs_card(JelliSurface *surface, PrefsBox box, const char *label, bool opens)
+{
+    jelli_agent_round_outline(surface, box.x, box.y, box.width, box.height, 22, 3,
+                              opens ? PREFS_LILAC : PREFS_GREY);
+    jelli_agent_text(surface, box.x + 24, box.y + 10, label, strlen(label), 3u, PREFS_WHITE);
+}
+
 /* The name as at most limit glyphs: whole, or its start and "..". */
 static size_t shortened(const uint8_t *ssid, size_t size, size_t limit, char *out, size_t capacity)
 {
@@ -52,6 +59,14 @@ void prefs_name_centered(JelliSurface *surface, int y, const uint8_t *ssid, size
     jelli_agent_text_centered(surface, PREFS_CENTER, y, name, length, 2u, color);
 }
 
+void prefs_model_name(JelliSurface *surface, int x, int y, const char *name, size_t limit,
+                      uint16_t color)
+{
+    const char *end = memchr(name, '\0', JELLI_PREFS_MODEL_MAX + 1u);
+    size_t size = end ? (size_t)(end - name) : JELLI_PREFS_MODEL_MAX + 1u;
+    prefs_name(surface, x, y, (const uint8_t *)name, size, limit, color);
+}
+
 /* A padlock, 16 by 20: a shackle over a body. */
 static void lock(JelliSurface *surface, int x, int y, uint16_t color)
 {
@@ -81,6 +96,15 @@ void prefs_network_row(JelliSurface *surface, PrefsBox box, const JelliPrefsNetw
     if (network->security != JELLI_PREFS_OPEN_NETWORK)
         lock(surface, box.x + box.width - 76, box.y + 12, PREFS_GREY);
     bars(surface, box.x + box.width - 48, box.y + box.height - 10, network->rssi);
+}
+
+void prefs_model_row(JelliSurface *surface, PrefsBox box, const char *name, bool current)
+{
+    jelli_agent_round_rect(surface, box.x, box.y, box.width, box.height, 10, PREFS_KEY);
+    if (current)
+        jelli_agent_round_outline(surface, box.x, box.y, box.width, box.height, 10, 3, PREFS_LILAC);
+    prefs_model_name(surface, box.x + 14, box.y + (box.height - 24) / 2, name, 19u,
+                     current ? PREFS_LILAC : PREFS_WHITE);
 }
 
 static const char *label(const PrefsKey *key, const JelliPrefs *prefs, char *one)

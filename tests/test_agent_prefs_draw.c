@@ -1,6 +1,7 @@
 #include "../core/agent/prefs_internal.h"
 #include "jelli/agent_draw.h"
 #include "jelli/agent_prefs.h"
+#include "prefs_bmp.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,36 +68,10 @@ static void tap(JelliPrefs *prefs, PrefsBox box)
     (void)jelli_prefs_tap(prefs, box.x + box.width / 2, box.y + box.height / 2, 0u, &join);
 }
 
-/* BMP (bottom-up, 24-bit) with the corners outside the panel grey, as it looks. */
+/* A preview of the screen, when a folder is given. */
 static void save(const char *folder, const char *name, const uint16_t *memory)
 {
-    if (!folder)
-        return;
-    char path[512];
-    (void)snprintf(path, sizeof(path), "%s/%s.bmp", folder, name);
-    FILE *file = fopen(path, "wb");
-    CHECK(file);
-    uint8_t header[54] = {'B', 'M'};
-    const uint32_t data = SIDE * (SIDE * 3u + 2u),
-                   values[] = {54u + data, 0u, 54u, 40u, SIDE, SIDE};
-    memcpy(header + 2, &values[0], 4u);
-    memcpy(header + 10, &values[2], 16u); /* Offset, header size, width, height. */
-    header[26] = 1u;
-    header[28] = 24u;
-    CHECK(fwrite(header, 1u, sizeof(header), file) == sizeof(header));
-    for (int y = SIDE - 1; y >= 0; --y) {
-        uint8_t row[SIDE * 3 + 2] = {0};
-        for (int x = 0; x < SIDE; ++x) {
-            uint16_t pixel = memory[y * STRIDE + x];
-            int64_t dx = x - 233, dy = y - 233;
-            bool outside = dx * dx + dy * dy > (int64_t)233 * 233;
-            row[x * 3 + 0] = outside ? 90u : (uint8_t)((pixel & 31u) << 3);
-            row[x * 3 + 1] = outside ? 90u : (uint8_t)(((pixel >> 5) & 63u) << 2);
-            row[x * 3 + 2] = outside ? 90u : (uint8_t)((pixel >> 11) << 3);
-        }
-        CHECK(fwrite(row, 1u, sizeof(row), file) == sizeof(row));
-    }
-    CHECK(fclose(file) == 0);
+    CHECK(!folder || prefs_bmp_save(folder, name, memory, SIDE, STRIDE));
 }
 
 static void shoot(JelliPrefs *prefs, const char *folder, const char *name)

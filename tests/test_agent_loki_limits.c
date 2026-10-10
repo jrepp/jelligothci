@@ -156,7 +156,7 @@ static void number_limits(void)
         {{.type = JELLI_LOKI_CANCEL}, NULL},
         /* Out of range on purpose: the encoder bounds the type a caller sets. */
         /* NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange) */
-        {{.type = (JelliLokiOutType)8, .seq = 1u}, NULL},
+        {{.type = (JelliLokiOutType)(JELLI_LOKI_SET_MODEL + 1), .seq = 1u}, NULL},
         /* NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange) */
         {{.type = (JelliLokiOutType)99, .seq = 1u}, NULL},
         {{.type = JELLI_LOKI_NONE, .seq = 1u}, NULL},
@@ -239,7 +239,8 @@ static bool no_text(const JelliLokiMessage *m)
     return zero(m->bridge, sizeof(m->bridge)) && zero(m->voice, sizeof(m->voice)) &&
            zero(m->text, sizeof(m->text)) && zero(m->id, sizeof(m->id)) &&
            zero(m->nonce, sizeof(m->nonce)) && zero(m->title, sizeof(m->title)) &&
-           zero(m->detail, sizeof(m->detail)) && zero(m->options, sizeof(m->options));
+           zero(m->detail, sizeof(m->detail)) && zero(m->options, sizeof(m->options)) &&
+           zero(m->models, sizeof(m->models));
 }
 
 /* Only type and seq set, progress at its default of -1, and everything else zero. */
@@ -247,7 +248,7 @@ static bool clean(const JelliLokiMessage *m, JelliLokiType type, uint32_t seq)
 {
     return m->type == type && m->seq == seq && m->progress == -1 && !m->proto && !m->state &&
            !m->queue && !m->final && !m->kind && !m->option_count && !m->timeout_ms && !m->reply &&
-           !m->rate && !m->frames && !m->volume && no_text(m);
+           !m->rate && !m->frames && !m->volume && !m->model_count && !m->current && no_text(m);
 }
 
 /* A decode starts from a clean message: nothing of an earlier one survives, an
@@ -267,6 +268,12 @@ static void decode_resets(void)
     CHECK(jelli_loki_decode(UNKNOWN, strlen(UNKNOWN), &message) == JELLI_LOKI_IGNORED);
     CHECK(clean(&message, JELLI_LOKI_UNKNOWN, 9u));
     CHECK(jelli_loki_decode(ASK, strlen(ASK), &message) == JELLI_LOKI_OK);
+    CHECK(jelli_loki_decode(STOP, strlen(STOP), &message) == JELLI_LOKI_OK);
+    CHECK(clean(&message, JELLI_LOKI_STOP_AUDIO, 4u));
+    static const char MODELS[] =
+        "{\"t\":\"models\",\"seq\":5,\"models\":[\"a\",\"b\"],\"current\":1}";
+    CHECK(jelli_loki_decode(MODELS, strlen(MODELS), &message) == JELLI_LOKI_OK);
+    CHECK(message.model_count == 2u && message.current == 1u && !strcmp(message.models[1], "b"));
     CHECK(jelli_loki_decode(STOP, strlen(STOP), &message) == JELLI_LOKI_OK);
     CHECK(clean(&message, JELLI_LOKI_STOP_AUDIO, 4u));
 }

@@ -35,8 +35,12 @@ struct Random {
         String((0..<length).map { _ in pick(Array("0123456789abcdef")) })
     }
 
+    mutating func modelName() -> String {
+        String((0..<(1 + below(40))).map { _ in pick(Array("abcXYZ019._:/+-")) })
+    }
+
     mutating func bridgeMessage() -> BridgeMessage {
-        switch below(9) {
+        switch below(10) {
         case 0: return .welcome(bridge: text(maxBytes: 40, lineFeeds: false), voice: text(maxBytes: 40, lineFeeds: false))
         case 1:
             return .state(pick(LokiState.allCases), caption: text(maxBytes: 200, lineFeeds: true),
@@ -53,12 +57,15 @@ struct Random {
         case 5: return .replyBegin(reply: UInt32(1 + below(Int(UInt32.max - 1))))
         case 6: return .replyEnd(reply: UInt32(1 + below(1000)), frames: UInt32(below(Int(UInt32.max))))
         case 7: return .stopAudio
+        case 8:
+            let names = (0..<(1 + below(16))).map { _ in modelName() }
+            return .models(names: names, current: UInt32(below(names.count)))
         default: return .settings(volume: UInt32(below(101)))
         }
     }
 
     mutating func deviceMessage() -> DeviceMessage {
-        switch below(7) {
+        switch below(8) {
         case 0:
             return .hello(fw: text(maxBytes: 40, lineFeeds: false), board: text(maxBytes: 16, lineFeeds: false),
                           channels: UInt32(1 + below(4)), frameMs: UInt32(20 + below(81)))
@@ -67,6 +74,7 @@ struct Random {
         case 3: return .cancel
         case 4: return .answer(id: identifier(), nonce: hex(32), digest: hex(64), choice: UInt32(below(4)))
         case 5: return .played(reply: UInt32(1 + below(1000)), complete: below(2) == 0)
+        case 6: return .setModel(modelName())
         default: return .status(battery: Int32(below(102)) - 1, charging: below(2) == 0, rssi: -Int32(below(128)))
         }
     }
@@ -136,6 +144,10 @@ struct Random {
         .replyBegin(reply: 0),
         .settings(volume: 101),
         .welcome(bridge: String(repeating: "b", count: 41)),
+        .models(names: [], current: 0),
+        .models(names: ["Claude"], current: 1),
+        .models(names: ["gpt oss"], current: 0),
+        .models(names: Array(repeating: "m", count: 17), current: 0),
     ]
     for message in bad {
         #expect(throws: LokiError.self, "\(message)") { try LokiCodec.encode(message, seq: 1) }

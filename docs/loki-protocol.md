@@ -48,7 +48,8 @@ Receivers are strict, so the two implementations cannot read one message two way
 - Strings are limited in bytes (UTF-8) as listed and contain no control
   characters (U+0000 to U+001F), except that `caption`, `text` and `detail` may
   contain line feeds. Identifiers (`id`) are 1 to 32 characters of
-  `A–Z a–z 0–9 _ -`; nonces are 32 and digests 64 lowercase hex digits.
+  `A–Z a–z 0–9 _ -`; nonces are 32 and digests 64 lowercase hex digits. Model
+  names are 1 to 40 characters of `A–Z a–z 0–9 . _ : / + -`.
 
 Senders write keys in the order shown, without spaces, so encoders can be compared
 byte for byte. Optional fields with their default value are left out.
@@ -66,6 +67,7 @@ byte for byte. Optional fields with their default value are left out.
 | `reply_end` | `reply`, `frames` (0..2³²−1) | The last frame of the reply was sent |
 | `stop_audio` | — | Stop playback now and drop what is queued |
 | `settings` | `volume` (0..100) | Speaker level |
+| `models` | `models` (1–16 model names), `current` (0..15, below the count) | The models the user may pick as the default, and the one in use ([ADR-018](../docs-cms/adr/adr-018-route-voice-requests-to-claude-or-a-local-ollama-model.md)) |
 
 `state` is one of `idle`, `listening`, `heard`, `thinking`, `working`, `asking`,
 `speaking`, `success`, `partial`, `failure`. `kind` is `approve`, with exactly two
@@ -82,6 +84,7 @@ options of which 0 allows and 1 denies, or `choose`.
 | `answer` | `id`, `nonce`, `digest`, `choice` (0..3) | The user tapped an option of the card `id` |
 | `played` | `reply`, `complete` (bool) | Playback of `reply` finished or was cut short; a reply that begins while the user holds to talk is not played and is answered at once with `complete` false |
 | `status` | `battery` (−1..100), `charging` (bool), `rssi` (−127..0) | Periodic health; −1 when the battery level is unknown |
+| `set_model` | `model` (a model name) | The user picked this model, one the last `models` offered, as the default |
 
 An `answer` echoes the question's `id` and `nonce` and carries `digest`: the
 SHA-256, in lowercase hex, of the card as the board decoded and showed it, written

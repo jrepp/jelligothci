@@ -1,6 +1,7 @@
 #include "loki_link.h"
 #include "identity.h"
 #include "loki_link_rx.h"
+#include "loki_models.h"
 #include "loki_peer.h"
 #include "pairing.h"
 #include "wifi.h"
@@ -80,6 +81,7 @@ void jelli_agent_link_closed(const char *why)
         set_last_error(why);
     xEventGroupClearBits(bits, JELLI_LINK_WELCOMED);
     xEventGroupSetBits(bits, JELLI_LINK_CLOSED);
+    jelli_agent_models_forget(); /* Only a connected bridge's list can be picked from. */
 }
 
 /* esp_websocket_client keeps reading a frame or a handshake for as long as bytes

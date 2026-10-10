@@ -1,4 +1,5 @@
 #include "loki_link_rx.h"
+#include "loki_models.h"
 #include "esp_log.h"
 #include "esp_websocket_client.h"
 #include <inttypes.h>
@@ -31,9 +32,11 @@ void jelli_agent_link_rx_reset(void)
     inbound_size = 0u;
     assembling = welcomed = false;
     rx_seq = 0u;
+    jelli_agent_models_forget();
 }
 
-/* Audio control stays inside the link; the rest goes to the app. */
+/* Audio control stays inside the link, and the list of models goes to Settings
+ * (ADR-018), which shows only the latest; the rest goes to the app's inbox. */
 static void route(void)
 {
     switch (decoded.type) {
@@ -53,6 +56,11 @@ static void route(void)
     case JELLI_LOKI_STOP_AUDIO:
         if (player.stop_audio)
             player.stop_audio();
+        break;
+    case JELLI_LOKI_MODELS:
+        jelli_agent_models_offer(&decoded);
+        ESP_LOGI(TAG, "The bridge offers %u models; the default is %s", decoded.model_count,
+                 decoded.models[decoded.current]);
         break;
     case JELLI_LOKI_STATE:
         if (state_hook)

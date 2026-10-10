@@ -13,7 +13,7 @@ jelli_generate_pet_assets(agent_assets NAME agent_assets KEYS creatures.unicorn-
 idf_component_register(
     SRCS "agent_main.c" "boot.c" "commands.c" "console_wire.c" "probe.c" "screen.c"
          "audio.c" "commands_setup.c" "render_bench.c" "settings.c" "wifi.c"
-         "identity.c" "pairing.c" "loki_link.c" "loki_link_rx.c" "loki_peer.c" "loki_commands.c"
+         "identity.c" "pairing.c" "loki_link.c" "loki_link_rx.c" "loki_peer.c" "loki_commands.c" "loki_models.c"
          "player.c" "voice.c" "ui.c" "ui_art.c" "ui_controls.c" "ui_controls_console.c" "input.c" "prefs_wifi.c" "wifi_scan.c" "wifi_status.c"
          "../../../core/agent/args.c" "../../../core/agent/console.c" "../../../core/agent/pcm.c"
          "../../../core/agent/loki.c" "../../../core/agent/loki_canonical.c"
@@ -23,6 +23,7 @@ idf_component_register(
          "../../../core/agent/scene.c" "../../../core/agent/sprite.c"
          "../../../core/agent/prance.c" "../../../core/agent/touch.c"
          "../../../core/agent/prefs.c" "../../../core/agent/prefs_keys.c"
+         "../../../core/agent/prefs_models.c"
          "../../../core/agent/prefs_draw.c" "../../../core/agent/prefs_parts.c"
          "../../../core/agent/draw.c" "../../../core/agent/lowercase.c"
          "../../../core/pet_screen.c"

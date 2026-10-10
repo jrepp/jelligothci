@@ -9,7 +9,7 @@ struct MessageGrammar {
     enum Value {
         case integer(ClosedRange<Int64>)
         case text(maxBytes: Int, lineFeeds: Bool)
-        case identifier, nonce, flag, options
+        case identifier, nonce, flag, options, models
         case word([String])
     }
 
@@ -33,6 +33,8 @@ struct MessageGrammar {
         ("reply_end", [("reply", .integer(1...u32), true), ("frames", .integer(0...u32), true)]),
         ("stop_audio", []),
         ("settings", [("volume", .integer(0...100), true)]),
+        // current must also be below the number of models; the generator often breaks that.
+        ("models", [("models", .models, true), ("current", .integer(0...15), true)]),
     ]
 
     static let unknownTypes = ["confetti", "hello", "answer", "", "STATE", " state", "st\\u0061te",
@@ -134,6 +136,26 @@ struct MessageGrammar {
         return "[" + space() + items.joined(separator: ",") + space() + "]"
     }
 
+    /// A model name: 1 to 40 of A-Z a-z 0-9 . _ : / + -, often at a limit or past one,
+    /// sometimes with a character outside the set or an escape.
+    mutating func modelName() -> String {
+        let chars = Array("aZ09._:/+-")
+        let count = random.pick([1, 1, 8, 20, 40, 40, 0, 41])
+        var name = String((0..<count).map { _ in random.pick(chars) })
+        if random.below(8) == 0 {
+            let at = name.index(name.startIndex, offsetBy: random.below(name.count + 1))
+            name.insert(contentsOf: random.pick([" ", ",", "\\\\", "\\\"", "\\u0041", "\u{e9}", "\\n", "@", "*"]), at: at)
+        }
+        return "\"" + name + "\""
+    }
+
+    mutating func models() -> String {
+        if random.below(20) == 0 { return random.pick(["[]", "null", "\"a\"", "[[\"a\"]]", "[1]"]) }
+        let count = random.pick([1, 1, 2, 3, 5, 16, 16, 17])
+        let items = (0..<count).map { _ in space() + modelName() + space() }
+        return "[" + space() + items.joined(separator: ",") + space() + "]"
+    }
+
     mutating func value(_ kind: Value) -> String {
         switch kind {
         case .integer(let range): return integer(range)
@@ -142,6 +164,7 @@ struct MessageGrammar {
         case .nonce: return nonce()
         case .flag: return random.pick(["true", "false", "true", "false", "null", "1", "\"true\"", "True"])
         case .options: return random.below(20) == 0 ? random.pick(["[]", "null", "\"a\"", "[[\"a\"],\"b\"]"]) : options()
+        case .models: return models()
         case .word(let words):
             if random.below(10) == 0 {
                 return random.pick(["\"IDLE\"", "\"\"", "\"dancing\"", "null", "\"\\u0069dle\"", "\"ch\\u006fose\""])

@@ -191,15 +191,20 @@ The board can also join Wi-Fi by itself
 On the 1.75C, the side button that is not power (BOOT) opens Settings, which shows
 the network in use; tap it to list the networks nearby, then tap one and type its
 password on the on-screen keyboard. The board tries the network first and keeps it
-only if it connects; otherwise it stays on the old one and says why. The screen
-goes dark after two idle minutes; a double tap or the side button wakes it. Over the
-console:
+only if it connects; otherwise it stays on the old one and says why. Below Wi-Fi,
+the Model card shows the model the bridge answers with by default
+([ADR-018](../docs-cms/adr/adr-018-route-voice-requests-to-claude-or-a-local-ollama-model.md));
+tap it to list the models the bridge offers, the default outlined, and tap another to
+make it the default. Without a list it says "Bridge offline" or "None offered" (an
+older bridge) and opens nothing. The screen goes dark after two idle minutes; a double
+tap or the side button wakes it. Over the console:
 
 ```sh
-./scripts/loki-agent --port <port> screen status         # asleep, Settings' screen, networks listed
+./scripts/loki-agent --port <port> screen status         # asleep, Settings' screen, networks and models listed
 ./scripts/loki-agent --port <port> screen sleep          # or wake
 ./scripts/loki-agent --port <port> ui button             # as if the side button were pressed
 ./scripts/loki-agent --port <port> ui tap 233 188        # a tap on the panel (here, Settings' Wi-Fi)
+./scripts/loki-agent --port <port> ui tap 233 244        # Settings' Model card
 ./scripts/loki-agent --port <port> ui drag up 48         # scroll the network list a row
 ```
 
@@ -258,6 +263,8 @@ session ended. Until the board has its interface, the console stands in for it:
 ./scripts/loki-agent --port <port> loki ptt stop    # let go; the bridge transcribes the utterance
 ./scripts/loki-agent --port <port> loki inbox       # the next message from the bridge
 ./scripts/loki-agent --port <port> loki answer 0    # answer the last question
+./scripts/loki-agent --port <port> loki models      # the models the bridge offers (ADR-018)
+./scripts/loki-agent --port <port> loki model gpt-oss:20b  # make one of them the default
 ```
 
 In `loki-bridge serve`, `play FILE` sends any audio file to the board as a reply,

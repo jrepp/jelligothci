@@ -22,6 +22,8 @@ typedef enum {
     PREFS_RESULT_RETRY, /* Left of two: Try again. */
     PREFS_RESULT_BACK,  /* Right of two: Back. */
     PREFS_RESULT_ALONE, /* One button: OK or Back. */
+    PREFS_MENU_MODEL,   /* The Model card, below Wi-Fi (ADR-018). */
+    PREFS_MODELS_BACK,
     PREFS_PART_COUNT
 } PrefsPart;
 
@@ -36,6 +38,8 @@ enum {
 };
 
 PrefsBox prefs_box(PrefsPart part);
+/* Shows screen from now on, from its start: no drag in hand, its first frame. */
+void prefs_enter(JelliPrefs *prefs, JelliPrefsScreen screen, uint64_t now_ms);
 PrefsBox prefs_row_box(unsigned row); /* Row 0..PREFS_LIST_ROWS-1 on screen. */
 bool prefs_inside(PrefsBox box, int x, int y);
 
@@ -72,5 +76,10 @@ bool prefs_type(JelliPrefs *prefs, const PrefsKey *key);
 
 /* Wipes the password, so no copy outlives its use. */
 void prefs_wipe(JelliPrefs *prefs);
+
+/* The models (prefs_models.c): the Model card opens the list when there is one, with
+ * the default in view; a tap on the list picks a model or goes Back. */
+JelliPrefsAction prefs_open_models(JelliPrefs *prefs, uint64_t now_ms);
+JelliPrefsAction prefs_tap_models(JelliPrefs *prefs, int x, int y, uint64_t now_ms);
 
 #endif

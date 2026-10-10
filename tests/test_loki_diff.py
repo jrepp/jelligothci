@@ -5,6 +5,7 @@ from pathlib import Path
 import hashlib
 import json
 import random
+import re
 import subprocess
 import sys
 import unittest
@@ -21,6 +22,7 @@ SENT = {
     "answer": ["id", "nonce", "digest", "choice"],
     "played": ["reply", "complete"],
     "status": ["battery", "charging", "rssi"],
+    "set_model": ["model"],
 }
 
 
@@ -126,6 +128,25 @@ class LokiDiff(unittest.TestCase):
         self.assertGreater(sum(e.startswith("ok") for e in expected), 15)
         for name, want, got in zip(names, expected, run(commands)):
             self.assertEqual(got, want, name)
+
+    def test_board_sends_only_model_names(self):
+        """set_model carries a name of 1 to 40 characters of A-Z a-z 0-9 . _ : / + -,
+        written as Python's json writes it, and the board refuses any other name."""
+        generator = random.Random(0x5E7)
+        alphabet = "abcXYZ019._:/+-" + ' "\\,\t\x7f\u00e9\u2603'
+        names = ["", "a", "a" * 40, "a" * 41, "Claude", "gpt-oss:20b", "hf.co/Org_1/Model-2:Q4+K"]
+        names += ["".join(generator.choice(alphabet) for _ in range(generator.randrange(46)))
+                  for _ in range(600)]
+        lines = run(["e set_model 7 x" + name.encode("utf-8").hex() for name in names])
+        valid = 0
+        for name, got in zip(names, lines):
+            if re.fullmatch(r"[A-Za-z0-9._:/+\-]{1,40}", name):
+                sent = json.dumps({"t": "set_model", "seq": 7, "model": name}, separators=(",", ":"))
+                self.assertEqual(got, "ok\t" + sent.encode("ascii").hex(), name)
+                valid += 1
+            else:
+                self.assertEqual(got, "reject", name)
+        self.assertGreater(valid, 30)
 
 
 if __name__ == "__main__":

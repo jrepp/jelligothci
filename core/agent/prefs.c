@@ -2,7 +2,8 @@
 #include <string.h>
 
 static const PrefsBox BOXES[PREFS_PART_COUNT] = {
-    [PREFS_MENU_WIFI] = {73, 140, 320, 96},     [PREFS_MENU_DONE] = {153, 300, 160, 56},
+    [PREFS_MENU_WIFI] = {73, 112, 320, 80},     [PREFS_MENU_MODEL] = {73, 204, 320, 80},
+    [PREFS_MENU_DONE] = {153, 300, 160, 56},    [PREFS_MODELS_BACK] = {173, 360, 120, 48},
     [PREFS_SCAN_BACK] = {163, 320, 140, 52},    [PREFS_LIST_BACK] = {103, 360, 120, 48},
     [PREFS_LIST_SCAN] = {243, 360, 120, 48},    [PREFS_PASS_FIELD] = {78, 72, 236, 42},
     [PREFS_PASS_SHOW] = {320, 72, 70, 42},      [PREFS_PASS_CANCEL] = {163, 318, 140, 44},
@@ -34,7 +35,7 @@ void jelli_prefs_init(JelliPrefs *prefs)
     }
 }
 
-static void enter(JelliPrefs *prefs, JelliPrefsScreen screen, uint64_t now_ms)
+void prefs_enter(JelliPrefs *prefs, JelliPrefsScreen screen, uint64_t now_ms)
 {
     prefs->screen = screen;
     prefs->since_ms = now_ms;
@@ -54,7 +55,7 @@ void jelli_prefs_open(JelliPrefs *prefs, const uint8_t *ssid, size_t ssid_size, 
         prefs->current_size = (uint8_t)ssid_size;
     }
     prefs->connected = connected && prefs->current_size;
-    enter(prefs, JELLI_PREFS_MENU, now_ms);
+    prefs_enter(prefs, JELLI_PREFS_MENU, now_ms);
 }
 
 void jelli_prefs_secured(JelliPrefs *prefs, bool secured)
@@ -80,8 +81,10 @@ void jelli_prefs_close(JelliPrefs *prefs)
     prefs_wipe(prefs);
     memset(prefs->networks, 0, sizeof(prefs->networks));
     memset(prefs->current, 0, sizeof(prefs->current));
-    prefs->count = prefs->top = prefs->chosen = prefs->current_size = 0u;
+    memset(&prefs->models, 0, sizeof(prefs->models));
+    prefs->count = prefs->top = prefs->chosen = prefs->current_size = prefs->model_top = 0u;
     prefs->connected = prefs->scan_failed = prefs->current_secured = false;
+    prefs->bridge_online = false;
     prefs->screen = JELLI_PREFS_CLOSED;
     prefs->dirty = false;
 }
@@ -100,14 +103,14 @@ static JelliPrefsAction join(JelliPrefs *prefs, uint64_t now_ms, JelliPrefsJoin 
         request->password_size = prefs->password_size;
     }
     prefs_wipe(prefs);
-    enter(prefs, JELLI_PREFS_JOINING, now_ms);
+    prefs_enter(prefs, JELLI_PREFS_JOINING, now_ms);
     return JELLI_PREFS_DO_JOIN;
 }
 
 static void show_outcome(JelliPrefs *prefs, JelliPrefsOutcome outcome, uint64_t now_ms)
 {
     prefs->outcome = (uint8_t)outcome;
-    enter(prefs, JELLI_PREFS_RESULT, now_ms);
+    prefs_enter(prefs, JELLI_PREFS_RESULT, now_ms);
 }
 
 /* Asks for a password, joins an open network at once, and refuses an enterprise one. */
@@ -124,7 +127,7 @@ static JelliPrefsAction choose(JelliPrefs *prefs, unsigned index, uint64_t now_m
     case JELLI_PREFS_PASSWORD_NETWORK:
         prefs_wipe(prefs);
         prefs->page = PREFS_LOWER;
-        enter(prefs, JELLI_PREFS_PASSWORD, now_ms);
+        prefs_enter(prefs, JELLI_PREFS_PASSWORD, now_ms);
         return JELLI_PREFS_DO_NOTHING;
     default:
         show_outcome(prefs, JELLI_PREFS_UNSUPPORTED, now_ms);
@@ -134,7 +137,7 @@ static JelliPrefsAction choose(JelliPrefs *prefs, unsigned index, uint64_t now_m
 
 static JelliPrefsAction scan(JelliPrefs *prefs, uint64_t now_ms)
 {
-    enter(prefs, JELLI_PREFS_SCANNING, now_ms);
+    prefs_enter(prefs, JELLI_PREFS_SCANNING, now_ms);
     return JELLI_PREFS_DO_SCAN;
 }
 
@@ -142,6 +145,8 @@ static JelliPrefsAction tap_menu(JelliPrefs *prefs, int x, int y, uint64_t now_m
 {
     if (prefs_inside(prefs_box(PREFS_MENU_WIFI), x, y))
         return scan(prefs, now_ms);
+    if (prefs_inside(prefs_box(PREFS_MENU_MODEL), x, y))
+        return prefs_open_models(prefs, now_ms);
     if (!prefs_inside(prefs_box(PREFS_MENU_DONE), x, y))
         return JELLI_PREFS_DO_NOTHING;
     jelli_prefs_close(prefs);
@@ -152,7 +157,7 @@ static JelliPrefsAction tap_list(JelliPrefs *prefs, int x, int y, uint64_t now_m
                                  JelliPrefsJoin *request)
 {
     if (prefs_inside(prefs_box(PREFS_LIST_BACK), x, y))
-        enter(prefs, JELLI_PREFS_MENU, now_ms);
+        prefs_enter(prefs, JELLI_PREFS_MENU, now_ms);
     else if (prefs_inside(prefs_box(PREFS_LIST_SCAN), x, y))
         return scan(prefs, now_ms);
     for (unsigned row = 0u; row < PREFS_LIST_ROWS && prefs->screen == JELLI_PREFS_LIST; ++row) {
@@ -169,7 +174,7 @@ static JelliPrefsAction tap_password(JelliPrefs *prefs, int x, int y, uint64_t n
     PrefsKey key;
     if (prefs_inside(prefs_box(PREFS_PASS_CANCEL), x, y)) {
         prefs_wipe(prefs);
-        enter(prefs, JELLI_PREFS_LIST, now_ms);
+        prefs_enter(prefs, JELLI_PREFS_LIST, now_ms);
     } else if (prefs_inside(prefs_box(PREFS_PASS_SHOW), x, y)) {
         prefs->reveal = !prefs->reveal;
         prefs->dirty = true;
@@ -185,19 +190,19 @@ static JelliPrefsAction tap_result(JelliPrefs *prefs, int x, int y, uint64_t now
 {
     JelliPrefsOutcome outcome = (JelliPrefsOutcome)prefs->outcome;
     if (outcome == JELLI_PREFS_JOINED) {
-        enter(prefs, JELLI_PREFS_MENU, now_ms);
+        prefs_enter(prefs, JELLI_PREFS_MENU, now_ms);
     } else if (outcome == JELLI_PREFS_NOT_LOCKED) {
         if (prefs_inside(prefs_box(PREFS_RESULT_RETRY), x, y))
             return join(prefs, now_ms, request); /* Joined anyway, knowingly. */
         if (prefs_inside(prefs_box(PREFS_RESULT_BACK), x, y))
-            enter(prefs, JELLI_PREFS_LIST, now_ms);
+            prefs_enter(prefs, JELLI_PREFS_LIST, now_ms);
     } else if (outcome == JELLI_PREFS_UNSUPPORTED) {
         if (prefs_inside(prefs_box(PREFS_RESULT_ALONE), x, y))
-            enter(prefs, JELLI_PREFS_LIST, now_ms);
+            prefs_enter(prefs, JELLI_PREFS_LIST, now_ms);
     } else if (prefs_inside(prefs_box(PREFS_RESULT_RETRY), x, y)) {
         return choose(prefs, prefs->chosen, now_ms, request);
     } else if (prefs_inside(prefs_box(PREFS_RESULT_BACK), x, y)) {
-        enter(prefs, JELLI_PREFS_LIST, now_ms);
+        prefs_enter(prefs, JELLI_PREFS_LIST, now_ms);
     }
     return JELLI_PREFS_DO_NOTHING;
 }
@@ -212,7 +217,7 @@ JelliPrefsAction jelli_prefs_tap(JelliPrefs *prefs, int x, int y, uint64_t now_m
         return tap_menu(prefs, x, y, now_ms);
     case JELLI_PREFS_SCANNING:
         if (prefs_inside(prefs_box(PREFS_SCAN_BACK), x, y))
-            enter(prefs, JELLI_PREFS_MENU, now_ms);
+            prefs_enter(prefs, JELLI_PREFS_MENU, now_ms);
         return JELLI_PREFS_DO_NOTHING;
     case JELLI_PREFS_LIST:
         return tap_list(prefs, x, y, now_ms, join_request);
@@ -220,6 +225,8 @@ JelliPrefsAction jelli_prefs_tap(JelliPrefs *prefs, int x, int y, uint64_t now_m
         return tap_password(prefs, x, y, now_ms, join_request);
     case JELLI_PREFS_RESULT:
         return tap_result(prefs, x, y, now_ms, join_request);
+    case JELLI_PREFS_MODELS:
+        return prefs_tap_models(prefs, x, y, now_ms);
     case JELLI_PREFS_CLOSED:
     case JELLI_PREFS_JOINING:
         return JELLI_PREFS_DO_NOTHING;
@@ -227,23 +234,32 @@ JelliPrefsAction jelli_prefs_tap(JelliPrefs *prefs, int x, int y, uint64_t now_m
     return JELLI_PREFS_DO_NOTHING;
 }
 
-void jelli_prefs_drag(JelliPrefs *prefs, int dy)
+/* Scrolls a list of count rows whose first shown is *top. */
+static void scroll(JelliPrefs *prefs, uint8_t *top, unsigned count, int dy)
 {
-    if (!prefs || prefs->screen != JELLI_PREFS_LIST || dy < -4096 || dy > 4096)
-        return;
     prefs->drag += dy;
-    unsigned last = prefs->count > PREFS_LIST_ROWS ? prefs->count - PREFS_LIST_ROWS : 0u;
+    unsigned last = count > PREFS_LIST_ROWS ? count - PREFS_LIST_ROWS : 0u;
     /* A row per row's height of finger movement, so the list follows the finger. */
     while (prefs->drag >= PREFS_ROW_PITCH || prefs->drag <= -PREFS_ROW_PITCH) {
         bool down = prefs->drag > 0; /* A finger moving down shows the rows above. */
-        if (down ? prefs->top == 0u : prefs->top >= last) {
+        if (down ? *top == 0u : *top >= last) {
             prefs->drag = 0; /* At the end: no drag builds up beyond it. */
             break;
         }
-        prefs->top = (uint8_t)(down ? prefs->top - 1u : prefs->top + 1u);
+        *top = (uint8_t)(down ? *top - 1u : *top + 1u);
         prefs->drag += down ? -PREFS_ROW_PITCH : PREFS_ROW_PITCH;
         prefs->dirty = true;
     }
+}
+
+void jelli_prefs_drag(JelliPrefs *prefs, int dy)
+{
+    if (!prefs || dy < -4096 || dy > 4096)
+        return;
+    if (prefs->screen == JELLI_PREFS_LIST)
+        scroll(prefs, &prefs->top, prefs->count, dy);
+    else if (prefs->screen == JELLI_PREFS_MODELS)
+        scroll(prefs, &prefs->model_top, prefs->models.count, dy);
 }
 
 /* Where a network with this name and security already is in the list; count when it
@@ -304,7 +320,7 @@ void jelli_prefs_scanned(JelliPrefs *prefs, const JelliPrefsNetwork *found, size
     for (size_t i = 0u; ok && found && i < count; ++i)
         keep(prefs, &found[i]);
     strongest_first(prefs);
-    enter(prefs, JELLI_PREFS_LIST, now_ms);
+    prefs_enter(prefs, JELLI_PREFS_LIST, now_ms);
 }
 
 void jelli_prefs_joined(JelliPrefs *prefs, JelliPrefsOutcome outcome, uint64_t now_ms)
@@ -329,7 +345,7 @@ bool jelli_prefs_tick(JelliPrefs *prefs, uint64_t now_ms)
     uint64_t shown = now_ms >= prefs->since_ms ? now_ms - prefs->since_ms : 0u;
     if (prefs->screen == JELLI_PREFS_RESULT && prefs->outcome == JELLI_PREFS_JOINED &&
         shown >= JELLI_PREFS_RESULT_MS)
-        enter(prefs, JELLI_PREFS_MENU, now_ms);
+        prefs_enter(prefs, JELLI_PREFS_MENU, now_ms);
     bool animated = prefs->screen == JELLI_PREFS_SCANNING || prefs->screen == JELLI_PREFS_JOINING;
     unsigned frame = (unsigned)((shown / JELLI_PREFS_ANIMATE_MS) % 4u);
     if (animated && frame != prefs->frame) {

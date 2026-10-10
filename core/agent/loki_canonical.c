@@ -61,6 +61,21 @@ static void emit_number(Writer *writer, const JelliLokiField *field, const unsig
     emit_text(writer, number);
 }
 
+/* ["a","b"], cut to the list's capacity, since callers may build messages themselves. */
+static void emit_list(Writer *writer, const JelliLokiList *list, const JelliLokiMessage *message)
+{
+    const char *items = (const char *)message + list->offset;
+    unsigned count;
+    memcpy(&count, (const unsigned char *)message + list->count_offset, sizeof(count));
+    emit(writer, "[", 1u);
+    for (unsigned i = 0u; i < count && i < list->capacity; ++i) {
+        if (i)
+            emit(writer, ",", 1u);
+        emit_quoted(writer, items + (size_t)i * list->item_size);
+    }
+    emit(writer, "]", 1u);
+}
+
 static void emit_value(Writer *writer, const JelliLokiField *field, const JelliLokiMessage *message)
 {
     const unsigned char *member = (const unsigned char *)message + field->offset;
@@ -81,16 +96,12 @@ static void emit_value(Writer *writer, const JelliLokiField *field, const JelliL
         emit_text(writer, jelli_loki_kind_name((unsigned)message->kind));
         break;
     case JELLI_LOKI_FIELD_OPTIONS:
-        emit(writer, "[", 1u);
-        for (unsigned i = 0u; i < message->option_count && i < JELLI_LOKI_OPTIONS; ++i) {
-            if (i)
-                emit(writer, ",", 1u);
-            emit_quoted(writer, message->options[i]);
-        }
-        emit(writer, "]", 1u);
+    case JELLI_LOKI_FIELD_MODELS:
+        emit_list(writer, jelli_loki_list(field->kind), message);
         break;
     case JELLI_LOKI_FIELD_TEXT:
     case JELLI_LOKI_FIELD_LINE:
+    case JELLI_LOKI_FIELD_MODEL:
     case JELLI_LOKI_FIELD_ID:
     case JELLI_LOKI_FIELD_HEX:
         emit_quoted(writer, (const char *)member);

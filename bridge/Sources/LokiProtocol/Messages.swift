@@ -54,6 +54,8 @@ public enum BridgeMessage: Equatable, Sendable {
     case replyEnd(reply: UInt32, frames: UInt32)
     case stopAudio
     case settings(volume: UInt32)
+    /// The models the user may pick as the default, and the index of the one in use.
+    case models(names: [String], current: UInt32)
 }
 
 /// What the board sends to the bridge.
@@ -65,6 +67,8 @@ public enum DeviceMessage: Equatable, Sendable {
     case answer(id: String, nonce: String, digest: String, choice: UInt32)
     case played(reply: UInt32, complete: Bool)
     case status(battery: Int32, charging: Bool, rssi: Int32)
+    /// The user picked this model, one the last `models` offered, as the default.
+    case setModel(String)
 }
 
 /// A decoded control message: a known one with its sequence number, or one of a type
@@ -87,4 +91,10 @@ public enum Loki {
     public static let maxDeviceMessage = 512
     public static let path = "/loki/1"
     public static let defaultPort: UInt16 = 8766
+
+    /// A model name loki/1 can carry: 1 to 40 of A-Z a-z 0-9 . _ : / + -.
+    public static func isModelName(_ name: String) -> Bool {
+        let bytes = Array(name.utf8)
+        return (1...40).contains(bytes.count) && bytes.allSatisfy(Schema.isModelNameByte)
+    }
 }

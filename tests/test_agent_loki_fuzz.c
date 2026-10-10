@@ -32,7 +32,6 @@ static uint32_t next(void)
     return rng;
 }
 
-/* Strict UTF-8 without control characters; line feeds only where allowed. */
 /* The code point of a sequence whose continuation bytes were checked. */
 static uint32_t code_point(const unsigned char *at, size_t extra)
 {
@@ -127,6 +126,9 @@ static void check_type(const JelliLokiMessage *m)
     case JELLI_LOKI_REPLY_END:
         CHECK(m->reply >= 1u);
         break;
+    case JELLI_LOKI_MODELS:
+        CHECK(m->current < m->model_count && m->model_count <= JELLI_LOKI_MODEL_MAX);
+        break;
     case JELLI_LOKI_UNKNOWN:
     case JELLI_LOKI_STATE:
     case JELLI_LOKI_CAPTION:
@@ -156,7 +158,7 @@ static void decode_case(const uint8_t *input, size_t size)
         ++ignored;
         return;
     }
-    CHECK(first.type >= JELLI_LOKI_WELCOME && first.type <= JELLI_LOKI_SETTINGS);
+    CHECK(first.type >= JELLI_LOKI_WELCOME && first.type <= JELLI_LOKI_MODELS);
     CHECK(first.state <= JELLI_LOKI_STATE_FAILURE && first.kind <= JELLI_LOKI_CHOOSE);
     CHECK(first.progress >= -1 && first.progress <= 1000 && first.queue <= 999u);
     CHECK(first.volume <= 100u && size <= JELLI_LOKI_MAX_IN);
@@ -286,6 +288,9 @@ static void append_value(char *out, size_t capacity)
                                          "[\"a\",\"b\",\"c\",\"d\",\"e\"]",
                                          "[]",
                                          "[\"a\",2]",
+                                         "[\"Claude\",\"gpt-oss:20b\"]",
+                                         "[\"hf.co/a+b\"]",
+                                         "15",
                                          "{}",
                                          "{\"a\":[1,{\"b\":[[[]]]}]}",
                                          "[[[[[0]]]]]"};
@@ -310,13 +315,13 @@ static void append_value(char *out, size_t capacity)
 
 static void generated_messages(void)
 {
-    static const char *const TYPES[] = {"welcome",    "state",       "caption",   "ask",
-                                        "ask_cancel", "reply_begin", "reply_end", "stop_audio",
-                                        "settings",   "confetti",    "hello"};
+    static const char *const TYPES[] = {
+        "welcome",    "state",    "caption",  "ask",   "ask_cancel", "reply_begin", "reply_end",
+        "stop_audio", "settings", "confetti", "hello", "models",     "set_model"};
     static const char *const KEYS[] = {
-        "seq",        "proto", "bridge", "voice",  "state",  "caption", "progress", "queue",
-        "text",       "final", "id",     "nonce",  "kind",   "title",   "detail",   "options",
-        "timeout_ms", "reply", "rate",   "frames", "volume", "t",       "zzz"};
+        "seq",   "proto",  "bridge", "voice", "state", "caption", "progress", "queue",      "text",
+        "final", "id",     "nonce",  "kind",  "title", "detail",  "options",  "timeout_ms", "reply",
+        "rate",  "frames", "volume", "t",     "zzz",   "models",  "current",  "model"};
     static char text[CAPACITY];
     for (current_case = 0u; current_case < GENERATED; ++current_case) {
         (void)snprintf(text, sizeof(text), "{\"t\":\"%s\",\"seq\":%u",

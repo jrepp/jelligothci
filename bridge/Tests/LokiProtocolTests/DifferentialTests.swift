@@ -101,7 +101,7 @@ private extension Random {
         func hex(_ count: Int, _ random: inout Random) -> String {
             String((0..<count).map { _ in random.pick(hexDigits) })
         }
-        switch below(7) {
+        switch below(8) {
         case 0:
             return .hello(fw: deviceText(maxBytes: 40), board: deviceText(maxBytes: 16),
                           channels: UInt32(below(6)), frameMs: UInt32(18 + below(85)))
@@ -117,6 +117,10 @@ private extension Random {
             return .answer(id: id, nonce: upperNonce ? nonce.uppercased() : nonce,
                            digest: upperDigest ? digest.uppercased() : digest, choice: UInt32(below(6)))
         case 5: return .played(reply: pick(u32), complete: below(2) == 0)
+        case 6:
+            let pieces = ["a", "Z", "0", ".", ":", "/", "+", "-", "_", " ", "\"", "\\", "\u{e9}", ","]
+            let plain = below(3) != 0
+            return .setModel(String((0..<below(43)).map { _ in plain ? "m" : Character(pick(pieces)) }))
         default:
             return .status(battery: Int32(below(105)) - 3, charging: below(2) == 0, rssi: Int32(3 - below(133)))
         }

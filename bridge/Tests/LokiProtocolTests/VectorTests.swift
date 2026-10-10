@@ -111,6 +111,9 @@ private func expectSent(_ bytes: [UInt8], direction: String) {
         (.replyEnd(reply: UInt32.max, frames: 0), 14),
         (.stopAudio, 15),
         (.settings(volume: 35), 16),
+        (.models(names: ["Claude"], current: 0), 17),
+        (.models(names: ["Claude", "gpt-oss:20b"], current: 1), 18),
+        (.models(names: ["hf.co/Org_1/Model-2:Q4+K", "A"], current: 1), 1),
     ]
     for (message, seq) in messages {
         expectSent(try LokiCodec.encode(message, seq: seq), direction: "b2d")
@@ -133,6 +136,9 @@ private func expectSent(_ bytes: [UInt8], direction: String) {
         (.played(reply: 1, complete: true), 6),
         (.status(battery: 87, charging: false, rssi: -61), 7),
         (.status(battery: -1, charging: true, rssi: -127), 8),
+        (.setModel("gpt-oss:20b"), 9),
+        (.setModel("Claude"), 1),
+        (.setModel("hf.co/Org_1/Model-2:Q4+K"), 2),
     ]
     for (message, seq) in messages {
         expectSent(try LokiCodec.encode(message, seq: seq), direction: "d2b")

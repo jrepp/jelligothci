@@ -527,7 +527,12 @@ class LinkCommandTests(unittest.TestCase):
                  (dict(command="loki", action="cancel", value=None), "loki cancel"),
                  (dict(command="loki", action="answer", value="2"), "loki answer 2"),
                  (dict(command="loki", action="ptt", value="start"), "loki ptt start"),
-                 (dict(command="loki", action="ptt", value="stop"), "loki ptt stop"))
+                 (dict(command="loki", action="ptt", value="stop"), "loki ptt stop"),
+                 (dict(command="loki", action="models", value=None), "loki models"),
+                 (dict(command="loki", action="model", value="gpt-oss:20b"),
+                  "loki model gpt-oss:20b"),
+                 (dict(command="loki", action="model", value="hf.co/Org_1/Model-2:Q4+K"),
+                  "loki model hf.co/Org_1/Model-2:Q4+K"))
         for values, expected in cases:
             with self.subTest(values=values):
                 self.assertEqual(agent.command_line(self.args(**values)), (expected, 0.0))
@@ -535,7 +540,9 @@ class LinkCommandTests(unittest.TestCase):
     def test_values_are_checked_so_no_words_can_be_added(self):
         cases = (("answer", None), ("answer", "4"), ("answer", "-1"), ("answer", "1 boot pet"),
                  ("answer", "1\n@A1 9 boot pet"), ("ptt", None), ("ptt", "hold"), ("ptt", "start "),
-                 ("status", "now"), ("inbox", "0"), ("cancel", "all"))
+                 ("status", "now"), ("inbox", "0"), ("cancel", "all"), ("models", "x"),
+                 ("model", None), ("model", ""), ("model", "gpt oss"), ("model", "a" * 41),
+                 ("model", "gpt\n@A1 9 boot pet"), ("model", "g\u00e9mma"), ("model", "a\"b"))
         for action, value in cases:
             with self.subTest(action=action, value=value):
                 with self.assertRaises(agent.AgentError):

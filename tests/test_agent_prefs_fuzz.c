@@ -5,8 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Property: any mix of taps, drags, scan and join results, ticks, and closes keeps
- * Settings consistent, and a password is never held outside the password screen. */
+/* Property: any mix of taps, drags, scan and join results, model lists, ticks, and
+ * closes keeps Settings consistent, and a password is never held outside the password
+ * screen. */
 
 #define CHECK(expr)                                                                                \
     do {                                                                                           \
@@ -17,7 +18,7 @@
         }                                                                                          \
     } while (0)
 
-static unsigned seed, step;
+static unsigned seed, step, picks;
 static uint32_t state;
 
 static uint32_t next(void)
@@ -53,6 +54,24 @@ static void random_scan(JelliPrefs *prefs, uint64_t now)
     jelli_prefs_scanned(prefs, found, count, next() % 5u != 0u, now);
 }
 
+/* Mostly lists loki/1 allows; sometimes a name, count, or current it does not. */
+static void random_models(JelliPrefs *prefs)
+{
+    JelliPrefsModels models;
+    memset(&models, 0, sizeof(models));
+    models.count = (uint8_t)(next() % 19u);
+    models.current = (uint8_t)(next() % 8u ? (models.count ? next() % models.count : 0u) : next());
+    for (unsigned i = 0u; i < models.count && i < JELLI_PREFS_MAX_MODELS; ++i) {
+        size_t length = next() % 8u ? 1u + next() % 40u : next() % 42u;
+        for (size_t c = 0u; c < length && c < JELLI_PREFS_MODEL_MAX + 1u; ++c)
+            models.names[i][c] = next() % 400u ? (char)('a' + next() % 26u) : (char)next();
+    }
+    bool online = next() & 1u;
+    JelliPrefs before = *prefs;
+    bool taken = jelli_prefs_models(prefs, next() % 16u ? &models : NULL, online);
+    CHECK(taken || !memcmp(&before.models, &prefs->models, sizeof(before.models)));
+}
+
 static bool printable(const JelliPrefs *prefs)
 {
     for (unsigned i = 0u; i < prefs->password_size; ++i)
@@ -64,9 +83,34 @@ static bool printable(const JelliPrefs *prefs)
     return true;
 }
 
+/* The length of a model name within its buffer; one past the buffer when unterminated. */
+static size_t strnlen_bound(const char *name)
+{
+    const char *end = memchr(name, '\0', JELLI_PREFS_MODEL_MAX + 1u);
+    return end ? (size_t)(end - name) : JELLI_PREFS_MODEL_MAX + 1u;
+}
+
+/* The models: a list loki/1 allows, shown only when there is one, and none while closed. */
+static void model_invariants(const JelliPrefs *prefs, JelliPrefsAction action)
+{
+    picks += action == JELLI_PREFS_DO_SET_MODEL;
+    const JelliPrefsModels *models = &prefs->models;
+    CHECK(models->count <= JELLI_PREFS_MAX_MODELS);
+    CHECK(models->count ? models->current < models->count : models->current == 0u);
+    CHECK(prefs->model_top == 0u || prefs->model_top + PREFS_LIST_ROWS <= models->count);
+    for (unsigned i = 0u; i < JELLI_PREFS_MAX_MODELS; ++i) {
+        size_t length = strnlen_bound(models->names[i]);
+        CHECK(i < models->count ? length >= 1u && length <= JELLI_PREFS_MODEL_MAX : length == 0u);
+    }
+    if (prefs->screen == JELLI_PREFS_MODELS || action == JELLI_PREFS_DO_SET_MODEL)
+        CHECK(prefs->screen == JELLI_PREFS_MODELS && models->count && jelli_prefs_model(prefs));
+    if (prefs->screen == JELLI_PREFS_CLOSED)
+        CHECK(!models->count && !prefs->bridge_online);
+}
+
 static void invariants(const JelliPrefs *prefs, const JelliPrefsJoin *join, JelliPrefsAction action)
 {
-    CHECK(prefs->screen <= JELLI_PREFS_RESULT);
+    CHECK(prefs->screen <= JELLI_PREFS_MODELS);
     CHECK(prefs->password_size <= JELLI_PREFS_PASSWORD_MAX && printable(prefs));
     CHECK(prefs->screen == JELLI_PREFS_PASSWORD || prefs->password_size == 0u);
     CHECK(prefs->count <= JELLI_PREFS_MAX_NETWORKS);
@@ -86,6 +130,7 @@ static void invariants(const JelliPrefs *prefs, const JelliPrefsJoin *join, Jell
     }
     if (action == JELLI_PREFS_DO_CLOSE)
         CHECK(prefs->screen == JELLI_PREFS_CLOSED);
+    model_invariants(prefs, action);
 }
 
 static void run(unsigned which)
@@ -101,7 +146,7 @@ static void run(unsigned which)
     for (step = 0u; step < 4000u; ++step) {
         now += next() % 700u;
         JelliPrefsAction action = JELLI_PREFS_DO_NOTHING;
-        switch (next() % 12u) {
+        switch (next() % 13u) {
         case 0:
             jelli_prefs_open(&prefs, current, next() % 40u, next() & 1u, now);
             break;
@@ -120,6 +165,9 @@ static void run(unsigned which)
         case 5:
             (void)jelli_prefs_tick(&prefs, now);
             break;
+        case 6:
+            random_models(&prefs);
+            break;
         default:
             action = jelli_prefs_tap(&prefs, coordinate(), coordinate(), now, &join);
             break;
@@ -132,6 +180,8 @@ int main(void)
 {
     for (unsigned which = 0u; which < 300u; ++which)
         run(which);
-    printf("Settings fuzz checks passed (300 seeds of 4000 steps)\n");
+    seed = step = 0u;
+    CHECK(picks > 400u); /* Models were picked, not only listed. */
+    printf("Settings fuzz checks passed (300 seeds of 4000 steps, %u models picked)\n", picks);
     return 0;
 }

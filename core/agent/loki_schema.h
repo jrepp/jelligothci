@@ -20,7 +20,9 @@ typedef enum {
     JELLI_LOKI_FIELD_HEX,
     JELLI_LOKI_FIELD_STATE,
     JELLI_LOKI_FIELD_KIND,
-    JELLI_LOKI_FIELD_OPTIONS
+    JELLI_LOKI_FIELD_MODEL, /* A model name (jelli_loki_model_name). */
+    JELLI_LOKI_FIELD_OPTIONS,
+    JELLI_LOKI_FIELD_MODELS
 } JelliLokiFieldKind;
 
 typedef struct {
@@ -37,6 +39,22 @@ typedef struct {
     JelliLokiType type;
     unsigned count;
 } JelliLokiTypeSpec;
+
+/* A field that is a list of strings (OPTIONS, MODELS): where its items and their
+ * count (an unsigned) lie in JelliLokiMessage, and the kind each item is read as.
+ * The field's min and max bound the count. */
+typedef struct {
+    size_t offset, count_offset;
+    size_t item_size; /* Bytes per item, NUL included. */
+    unsigned capacity;
+    JelliLokiFieldKind item;
+} JelliLokiList;
+
+/* The layout of a list kind; NULL for any other kind. */
+const JelliLokiList *jelli_loki_list(JelliLokiFieldKind kind);
+
+/* A-Z a-z 0-9 _ -: the characters of an identifier. */
+bool jelli_loki_id_char(char c);
 
 /* NULL when the name or type is not one the board receives. */
 const JelliLokiTypeSpec *jelli_loki_type_named(const char *name);

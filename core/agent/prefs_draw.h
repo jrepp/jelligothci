@@ -22,7 +22,12 @@ typedef enum {
 
 void prefs_button(JelliSurface *surface, PrefsBox box, const char *label, PrefsButtonStyle style);
 
-/* A network's name, shortened to at most limit glyphs with "..", at scale 2. */
+/* A menu card: an outline, lilac when it opens something and grey when not, and its
+ * label at scale 3 in its top left. */
+void prefs_card(JelliSurface *surface, PrefsBox box, const char *label, bool opens);
+
+/* A name (a network's bytes, or a model's), shortened to at most limit glyphs (at most
+ * 32) with "..", at scale 2. */
 void prefs_name(JelliSurface *surface, int x, int y, const uint8_t *ssid, size_t size, size_t limit,
                 uint16_t color);
 void prefs_name_centered(JelliSurface *surface, int y, const uint8_t *ssid, size_t size,
@@ -32,6 +37,14 @@ void prefs_name_centered(JelliSurface *surface, int y, const uint8_t *ssid, size
  * and an outline when the board uses it. */
 void prefs_network_row(JelliSurface *surface, PrefsBox box, const JelliPrefsNetwork *network,
                        bool current);
+
+/* A model's name (a buffer of JELLI_PREFS_MODEL_MAX + 1 bytes), as prefs_name draws it. */
+void prefs_model_name(JelliSurface *surface, int x, int y, const char *name, size_t limit,
+                      uint16_t color);
+
+/* One model the bridge offers: its name, up to 19 glyphs, and when it is the default
+ * an outline and lilac. */
+void prefs_model_row(JelliSurface *surface, PrefsBox box, const char *name, bool current);
 
 void prefs_keyboard(JelliSurface *surface, const JelliPrefs *prefs);
 

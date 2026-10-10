@@ -1,6 +1,8 @@
 #include "ui_controls.h"
 #include "ui_controls_internal.h"
 #include "input.h"
+#include "loki_link.h"
+#include "loki_models.h"
 #include "prefs_wifi.h"
 #include "screen.h"
 #include "voice.h"
@@ -29,14 +31,18 @@ static QueueHandle_t asks;
 static StaticQueue_t asks_control;
 static uint8_t asks_storage[ASKS * sizeof(Ask)];
 static atomic_bool wake_asked, dark_now, started;
-/* What Settings shows (JelliPrefsScreen) and how many networks it lists, for status. */
-static atomic_int view_now, networks_now;
+/* What Settings shows (JelliPrefsScreen), how many networks and models it lists, for
+ * status. */
+static atomic_int view_now, networks_now, models_now;
 /* The UI task's alone from here on. */
 static JelliPetScreen power;
 static JelliAgentTouch touch;
 static JelliPrefs prefs;
 static JelliPrefsJoin join;      /* A join Settings asked for, until handed over. */
 static JelliPrefsAction pending; /* A scan or join still to hand over (errand busy). */
+static JelliPrefsModels offered; /* The bridge's latest list, as last copied. */
+static uint32_t models_seen;     /* Its generation. */
+static bool online_seen;         /* Whether the bridge was online then. */
 static bool fresh_unicorn, petted, refused;
 /* Whether the press under way began on the unicorn's lit screen, the only place a press
  * may become a hold (ADR-017); decided when the finger lands, kept until it lifts. */
@@ -62,6 +68,33 @@ bool jelli_agent_ui_controls_start(void)
     return asks && input && errands;
 }
 
+/* Settings shows the bridge's latest list of models and whether the bridge is online
+ * (ADR-018): copied when either changed, or always when forced. */
+static void refresh_models(bool force)
+{
+    uint32_t generation = jelli_agent_models_generation();
+    bool online = jelli_agent_link_online();
+    if (!force && generation == models_seen && online == online_seen)
+        return;
+    models_seen = jelli_agent_models_get(&offered);
+    online_seen = online;
+    (void)jelli_prefs_models(&prefs, &offered, online);
+}
+
+/* The model just picked goes to the bridge now, whose next list confirms it. Sent from
+ * this task: the send waits at most the link's send timeout. When it cannot be sent,
+ * Settings goes back to what the bridge last said. */
+static void send_model(void)
+{
+    JelliLokiOut choice = {.type = JELLI_LOKI_SET_MODEL, .model = jelli_prefs_model(&prefs)};
+    if (choice.model && jelli_agent_link_send(&choice)) {
+        ESP_LOGI(TAG, "Asked the bridge to answer with %s", choice.model);
+        return;
+    }
+    ESP_LOGW(TAG, "The model picked could not be sent");
+    refresh_models(true);
+}
+
 /* Settings and a dark screen show no listening ring, so an utterance ends with either
  * (ADR-017): speech never reaches the bridge unseen. */
 static void open_settings(uint64_t now_ms)
@@ -73,6 +106,7 @@ static void open_settings(uint64_t now_ms)
     jelli_agent_wifi_current(ssid, &size, &secured, &connected);
     jelli_prefs_open(&prefs, ssid, size, connected, now_ms);
     jelli_prefs_secured(&prefs, secured);
+    refresh_models(true);
 }
 
 static void close_settings(void)
@@ -117,6 +151,8 @@ static void tap(int x, int y, uint64_t now_ms)
     JelliPrefsAction action = jelli_prefs_tap(&prefs, x, y, now_ms, &join);
     if (action == JELLI_PREFS_DO_CLOSE)
         close_settings();
+    else if (action == JELLI_PREFS_DO_SET_MODEL)
+        send_model();
     else if (action != JELLI_PREFS_DO_NOTHING)
         pending = action;
 }
@@ -274,6 +310,7 @@ static void go_dark(JelliSurface *canvas)
 static void run_settings(JelliSurface *canvas, uint64_t now_ms)
 {
     jelli_agent_prefs_wifi_deliver(&prefs, now_ms);
+    refresh_models(false);
     hand_over();
     if (jelli_prefs_tick(&prefs, now_ms)) {
         jelli_prefs_draw(&prefs, canvas);
@@ -298,6 +335,7 @@ JelliUiView jelli_agent_ui_controls_tick(JelliSurface *canvas, uint64_t now_ms, 
     atomic_store(&dark_now, power.asleep);
     atomic_store(&view_now, (int)prefs.screen);
     atomic_store(&networks_now, (int)prefs.count);
+    atomic_store(&models_now, (int)prefs.models.count);
     if (power.asleep)
         return JELLI_UI_DARK;
     if (prefs.screen != JELLI_PREFS_CLOSED) {
@@ -340,10 +378,11 @@ bool jelli_agent_ui_controls_ask(AskKind kind, int x, int y)
     return atomic_load(&started) && xQueueSend(asks, &ask, 0) == pdTRUE;
 }
 
-bool jelli_agent_ui_controls_status(bool *dark, int *view, int *networks)
+bool jelli_agent_ui_controls_status(bool *dark, int *view, int *networks, int *models)
 {
     *dark = atomic_load(&dark_now);
     *view = atomic_load(&view_now);
     *networks = atomic_load(&networks_now);
+    *models = atomic_load(&models_now);
     return atomic_load(&started);
 }

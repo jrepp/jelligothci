@@ -11,6 +11,7 @@ port, so only the line that starts with this request's prefix is the reply.
 import argparse
 import getpass
 import json
+import re
 import secrets
 import sys
 import time
@@ -79,6 +80,11 @@ def setup_line(args):
     return f"audio {args.action} {args.value}", args.value / 1000 if args.action == "test" else 0.0
 
 
+# loki/1's model names (docs/loki-protocol.md), matched whole: no space or newline can
+# add words to the console line.
+MODEL_NAME = re.compile(r"[A-Za-z0-9._:/+\-]{1,40}")
+
+
 def loki_line(args):
     """The link to Loki Bridge: pairing state and the commands for trying it without
     the board's interface. Pairing itself is bridge/'s `loki-bridge pair`."""
@@ -93,6 +99,10 @@ def loki_line(args):
         if args.value not in ("start", "stop"):
             raise AgentError("loki ptt needs start or stop")
         return f"loki ptt {args.value}", 0.0
+    if args.action == "model":
+        if args.value is None or not MODEL_NAME.fullmatch(args.value):
+            raise AgentError("loki model needs a model name: 1 to 40 of A-Z a-z 0-9 . _ : / + -")
+        return f"loki model {args.value}", 0.0
     if args.value is not None:
         raise AgentError(f"loki {args.action} takes no more words")
     return f"loki {args.action}", 0.0
@@ -172,8 +182,10 @@ def main():
     pair = commands.add_parser("pair", help="The paired Loki Bridge (pair with bridge/'s loki-bridge)")
     pair.add_argument("action", choices=("show", "status", "clear"))
     loki = commands.add_parser("loki", help="The link to Loki Bridge")
-    loki.add_argument("action", choices=("status", "inbox", "answer", "ptt", "cancel"))
-    loki.add_argument("value", nargs="?", help="ptt: start or stop; answer: the option, 0 to 3")
+    loki.add_argument("action", choices=("status", "inbox", "answer", "ptt", "cancel", "models",
+                                         "model"))
+    loki.add_argument("value", nargs="?", help="ptt: start or stop; answer: the option, 0 to 3; "
+                                               "model: a name the bridge offers")
     ui = commands.add_parser("ui", help="Prance now; hold the screen to talk or let go; pet the "
                                         "unicorn; or press the side button, tap X Y, or drag "
                                         "up|down PX on the screen")

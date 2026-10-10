@@ -1,6 +1,7 @@
 #include "loki_commands.h"
 #include "identity.h"
 #include "loki_link.h"
+#include "loki_models.h"
 #include "pairing.h"
 #include "player.h"
 #include "voice.h"
@@ -79,6 +80,19 @@ static void answer(const char *word, char *out, size_t capacity)
     (void)snprintf(out, capacity, sent ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"offline\"}");
 }
 
+/* "loki models" and "loki model NAME" (ADR-018); false for other verbs. */
+static bool model_command(const JelliAgentRequest *request, const char *verb, char *out,
+                          size_t capacity)
+{
+    if (!strcmp(verb, "models") && request->count == 2u)
+        jelli_agent_models_show(out, capacity);
+    else if (!strcmp(verb, "model") && request->count == 3u)
+        jelli_agent_models_pick(request->words[2], out, capacity);
+    else
+        return false;
+    return true;
+}
+
 bool jelli_agent_command_loki(const JelliAgentRequest *request, char *out, size_t capacity)
 {
     const char *verb = request->count >= 2u ? request->words[1] : "";
@@ -98,6 +112,8 @@ bool jelli_agent_command_loki(const JelliAgentRequest *request, char *out, size_
     } else if (!strcmp(verb, "ptt") && request->count == 3u && !strcmp(request->words[2], "stop")) {
         jelli_agent_voice_end();
         (void)snprintf(out, capacity, "{\"ok\":true}");
+    } else if (model_command(request, verb, out, capacity)) {
+        return true;
     } else if (!strcmp(verb, "cancel") && request->count == 2u) {
         JelliLokiOut cancel = {.type = JELLI_LOKI_CANCEL};
         (void)snprintf(out, capacity,

@@ -135,6 +135,7 @@ enum BoardCodec {
             "answer \(seq) \(text(id)) \(text(nonce)) \(text(digest)) \(choice)"
         case .played(let reply, let complete): "played \(seq) \(reply) \(complete ? 1 : 0)"
         case .status(let battery, let charging, let rssi): "status \(seq) \(battery) \(charging ? 1 : 0) \(rssi)"
+        case .setModel(let model): "set_model \(seq) \(text(model))"
         }
         return "e " + fields
     }
