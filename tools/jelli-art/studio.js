@@ -13,7 +13,7 @@
     ['pencil', 'Pencil', 'P', 'Draw pixels. Shift+arrows draw with the keyboard cursor'],
     ['eraser', 'Eraser', 'E', 'Make pixels transparent (right-click erases with any tool)'],
     ['fill', 'Fill', 'F', 'Fill the touching area of one colour'],
-    ['picker', 'Pick colour', 'C', 'Take a palette colour from the sprite (Alt-click with any tool)'],
+    ['picker', 'Pick colour', 'C', 'Take a palette colour from the sprite (Alt-click with any tool except Select picks without switching)'],
     ['line', 'Line', 'L', 'Drag from end to end; Shift snaps to 45°'],
     ['rect', 'Rectangle', 'R', 'Drag corner to corner; Shift makes a square'],
     ['ellipse', 'Ellipse', 'U', 'Drag the bounding box; Shift makes a circle'],
@@ -134,7 +134,10 @@
     setInterval(poll, 2000);
     window.addEventListener('beforeunload', e => { if (Object.keys(edits).some(dirty) || S.clipsDirty?.()) { e.preventDefault(); e.returnValue = ''; } });
   };
-  Object.assign(S, {api, status, reload, rerender: () => rerender(), renderGit, paintDirty: key => dirty(key), redraw: () => draw()});
+  /* Confirm through the shell's styled dialog (plain confirm() without it); "1 clip", "3 clips". */
+  const ask = (text, opts = {}) => window.JelliShell?.confirm ? window.JelliShell.confirm(text, opts) : Promise.resolve(confirm(text));
+  const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  Object.assign(S, {api, status, reload, rerender: () => rerender(), renderGit, paintDirty: key => dirty(key), redraw: () => draw(), ask, count});
   function renderGit(git) {
     const el = document.getElementById('git-status'); if (!git?.enabled) { el.textContent = ''; return; }
     const push = git.last_push || {}, pending = git.unpushed ? `${git.unpushed} to push` : 'synced';
@@ -458,6 +461,7 @@
     if (dir && e.altKey && !mod) nudge(...dir);
     else if (dir && !mod && !e.shiftKey && !state.kbd && !stroke && dir[0] && S.stepFrame?.(dir[0])) { /* changed frame */ }
     else if (dir && !mod) moveCursor(...dir, e);
+    else if (e.key === 'Enter' && e.altKey && !stroke && state.tool !== 'select') { if (!e.repeat) pick(...state.cursor); }  // Alt+Enter picks without switching
     else if (e.key === 'Enter' || (e.key === ' ' && !e.shiftKey && (state.kbd || stroke))) { if (!e.repeat) applyAtCursor(); }
     else if (e.key === 'Escape' && (stroke || state.sel)) { if (!cancel()) deselect(); }
     else if (e.key === 'Escape' && state.kbd) { state.kbd = false; draw(); renderReadout(); announce(S.stepFrame ? 'Keyboard cursor hidden; Left and Right change frame' : 'Keyboard cursor hidden'); }
@@ -684,7 +688,7 @@
   window.JelliShell?.registerShortcuts('Paint', [
     {keys: ['P', 'E', 'F', 'C'], description: 'Pencil, eraser, fill, pick colour'}, {keys: ['L', 'R', 'U'], description: 'Line, rectangle, ellipse'},
     {keys: ['V'], description: 'Select'}, {keys: ['Shift+F'], description: 'Filled shapes on/off'}, {keys: ['Shift+P'], description: 'Pixel-perfect pencil on/off'},
-    {keys: ['M'], description: 'Mirror left/right'}, {keys: ['Right-click'], description: 'Erase'}, {keys: ['Alt+Click'], description: 'Pick a colour and keep the current tool'},
+    {keys: ['M'], description: 'Mirror left/right'}, {keys: ['Right-click'], description: 'Erase'}, {keys: ['Alt+Click', 'Alt+Enter'], description: 'Pick a colour and keep the current tool (any tool except Select)'},
     {keys: ['Shift+Drag'], description: 'Snap lines to 45°; square rectangles and circles'},
     {keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], description: 'Canvas focused: move the keyboard cursor'},
     {keys: ['Enter', 'Space'], description: 'Canvas focused: apply the tool; shapes and select take one press to start and one to finish'},
@@ -721,7 +725,7 @@
   }
   async function askOverwrite(key) {
     const text = `${key} changed on disk since you started editing it. Overwrite it with your version?`;
-    return window.JelliShell?.confirm ? window.JelliShell.confirm(text, {title: 'File changed on disk', confirmLabel: 'Overwrite', danger: true}) : confirm(text);
+    return ask(text, {title: 'File changed on disk', confirmLabel: 'Overwrite', danger: true});
   }
   async function tidy() {
     const a = asset(), p = work(a.key), pixels = [];
@@ -736,15 +740,20 @@
     color = color.toLowerCase(); const old = D.palette[index];
     if (color === old) return;
     if (Object.keys(edits).some(dirty)) return status('Save or revert your edits before changing the palette', 'warn', true);
-    const users = D.assets.filter(x => x.after_metrics.colors[old]).length;
-    const text = `Change ${NAMES[index]} from ${old} to ${color} in every sprite?\n\n${users} assets use it. This rewrites their PNGs and the shared palette; git can undo it.`;
-    const ok = await (window.JelliShell?.confirm ? window.JelliShell.confirm(text, {title: `Change ${NAMES[index]} in ${users} assets`, confirmLabel: 'Change colour', danger: true}) : confirm(text));
-    if (!ok) return S.renderPalette(document.getElementById('palette'), asset());
+    const users = count(D.assets.filter(x => x.after_metrics.colors[old]).length, 'asset');
+    const text = `Change ${NAMES[index]} from ${old} to ${color} in every sprite?\n\n${users} use it. This rewrites their PNGs and the shared palette; git can undo it.`;
+    if (!await ask(text, {title: `Change ${NAMES[index]} in ${users}`, confirmLabel: 'Change colour', danger: true})) return S.renderPalette(document.getElementById('palette'), asset());
+    // The dialog does not block the page, so a reload may have changed the slot meanwhile; the server checks `base` too.
+    if (D.palette[index] !== old) { rerender(); return status(`${NAMES[index]} changed to ${D.palette[index]} while you were deciding; nothing was rewritten`, 'warn', true); }
     try {
-      const res = await api('POST', '/api/palette', {index, color, artist: state.artist});
+      const res = await api('POST', '/api/palette', {index, color, base: old, artist: state.artist});
       if (state.color === old) state.color = color;
-      await reload(); rerender(); status(`${NAMES[index]} is now ${color} in ${res.changed.length} assets`);
-    } catch (err) { status(`Palette change failed: ${err.message}`, 'bad', true); }
+      await reload(); rerender(); status(`${NAMES[index]} is now ${color} in ${count(res.changed.length, 'asset')}`, '', false, {keep: true});
+    } catch (err) {
+      if (err.status !== 409) return status(`Palette change failed: ${err.message}`, 'bad', true);
+      await reload(); rerender();
+      status(`${NAMES[index]} is now ${err.body.current} on disk, so nothing was rewritten. Pick the new colour again if you still want it.`, 'warn', true);
+    }
   }
 
   /* ---------- keyboard ---------- */

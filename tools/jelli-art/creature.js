@@ -66,6 +66,7 @@
   };
   const dirtyKeys = () => Object.keys(working).filter(clipDirty);
   S.clipsDirty = () => dirtyKeys().length > 0;
+  S.clipEdits = () => dirtyKeys().length;  // shell.js: the "Creature clips" unsaved item
   const selectedKey = () => `${state.cForm}.${state.cPose}`;
   const formLabel = f => f.name ? `${f.name} · ${f.art}` : f.art;
   const formFrames = form => D.assets.filter(a => a.kind === 'creatures' && a.form === form).sort((a, b) => a.id - b.id);
@@ -299,8 +300,8 @@
   }
   function wireSaveBar(el) {
     el.querySelector('#cr-revert-all').onclick = async () => {
-      const n = dirtyKeys().length, clips = `${n} clip${n === 1 ? '' : 's'}`, text = `Discard unsaved edits to ${clips}?`;
-      if (n && !await (window.JelliShell?.confirm ? window.JelliShell.confirm(text, {title: 'Discard clip edits', confirmLabel: `Discard ${clips}`, danger: true}) : confirm(text))) return;
+      const n = dirtyKeys().length, clips = S.count(n, 'clip');
+      if (n && !await S.ask(`Discard unsaved edits to ${clips}?`, {title: 'Discard clip edits', confirmLabel: `Discard ${clips}`, danger: true})) return;
       for (const k of Object.keys(working)) delete working[k];
       restart(); renderEditor();
     };
