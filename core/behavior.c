@@ -168,7 +168,7 @@ static void deliver(JelliGame *game, JelliPet *pet, unsigned kind, unsigned valu
         react(game, pet, kind, value);
 }
 
-static void count_down(JelliGame *game, JelliPet *pet, uint64_t seconds)
+static void count_down(JelliGame *game, JelliPet *pet, uint64_t seconds, bool offline)
 {
     uint16_t step = (uint16_t)(seconds > UINT16_MAX ? UINT16_MAX : seconds);
     pet->cooldown_left = pet->cooldown_left > step ? (uint16_t)(pet->cooldown_left - step) : 0u;
@@ -181,7 +181,8 @@ static void count_down(JelliGame *game, JelliPet *pet, uint64_t seconds)
         return;
     }
     const JelliBehaviorState *state = jelli_behavior_current(pet);
-    bool accident = state && state->on_timeout == JELLI_TIMEOUT_ACCIDENT && !pet->asleep;
+    bool accident =
+        !offline && state && state->on_timeout == JELLI_TIMEOUT_ACCIDENT && !pet->asleep;
     end_state(game, pet, false);
     if (accident) {
         JelliEventSnapshot before = jelli_game_observe(game, pet);
@@ -214,7 +215,7 @@ void jelli_behavior_step(JelliGame *game, JelliPet *pet, uint64_t old_ticks, boo
     uint64_t seconds = pet->ticks / JELLI_BEHAVIOR_TICKS - old_ticks / JELLI_BEHAVIOR_TICKS;
     if (!seconds)
         return;
-    count_down(game, pet, seconds);
+    count_down(game, pet, seconds, offline);
     if (offline) {
         /* Catch-up only expires states; it never starts new ones (RFC-005). */
         game->stimulus_count = 0u;

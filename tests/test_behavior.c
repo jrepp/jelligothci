@@ -158,6 +158,15 @@ static void offline_only_expires(void)
     while (!jelli_game_resume_step(&game)) {
     }
     CHECK(pet->behavior == 0u); /* Expired offline, and hunger did not start a request. */
+    pet->behavior = (uint8_t)state_named("asking_potty");
+    pet->behavior_left = 2u;
+    pet->potty = 800u;
+    jelli_game_resume_begin(&game, 5000u);
+    while (!jelli_game_resume_step(&game)) {
+    }
+    CHECK(pet->behavior == 0u);
+    CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
+    CHECK(pet->potty == 800u); /* Unseen requests expire without a timeout accident. */
 }
 
 static void saves_and_affinity(void)
