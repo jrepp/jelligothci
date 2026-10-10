@@ -39,6 +39,7 @@
     return data;
   }
   function status(text, cls = '', sticky = false) {
+    if (window.JelliShell) return window.JelliShell.notify(text, {tone: cls, sticky});  // shell.js: live region and toasts
     const el = document.getElementById('studio-status'); el.textContent = text; el.className = 'studio-status ' + cls;
     clearTimeout(statusTimer); if (!sticky) statusTimer = setTimeout(() => { el.textContent = ''; }, 4000);
   }

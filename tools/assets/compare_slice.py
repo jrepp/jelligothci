@@ -141,6 +141,10 @@ def main():
     template = Path(__file__).with_name("compare.html").read_text()
     if template.count("__COMPARE_DATA__") != 1:
         raise ValueError("Compare template data marker mismatch")
+    # The Jelli Art shell (mode tabs, toasts, themes, shortcut help) works without the studio scripts.
+    shell = Path(__file__).resolve().parent.parent / "jelli-art/shell.js"
+    if shell.exists():
+        template = template.replace("/*__STUDIO_JS__*/", shell.read_text())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(template.replace("__COMPARE_DATA__", json.dumps(payload).replace("<", "\\u003c")))
     changed = sum(r["changed"] != 0 for r in records)

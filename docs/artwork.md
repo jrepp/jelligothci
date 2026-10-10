@@ -13,7 +13,8 @@ The studio is the review page with painting turned on. It needs no setup beyond
 the repository's pinned tools, and it only listens on your own computer.
 
 1. Pick a sprite in the left list, or use **Sheet** to browse them all.
-2. Choose **Paint** under Mode. Use the pencil, eraser, fill, and colour picker.
+   Press **?** for the keyboard shortcuts.
+2. Choose the **Paint** tab at the top. Use the pencil, eraser, fill, and colour picker.
    Right-click erases, Alt-click picks a colour, and **Mirror** paints both halves
    of a symmetric sprite.
 3. Choose a colour under **Paint colours**. **custom** paints any colour. The

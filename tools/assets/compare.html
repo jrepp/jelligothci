@@ -3,8 +3,14 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jelligotchi pixel review</title>
+<script>try { const t = JSON.parse(localStorage.getItem('jelli-shell:theme')); if (t && t !== 'auto') document.documentElement.dataset.theme = t; } catch { /* storage unavailable */ }</script>
 <style>
-:root{--bg:#1b1b1f;--panel:#232328;--raised:#2c2c33;--line:#3a3a42;--ink:#ecebf2;--muted:#9a99a8;--accent:#85e4b6;--warn:#f5c764;--bad:#fa8c99;--add:#43bca2;--del:#d84f70;--mod:#a47bdb;color-scheme:dark}
+/* Themes: dark by default; light and high contrast follow the system unless the Theme menu (shell.js) sets data-theme. */
+:root{--bg:#1b1b1f;--panel:#232328;--raised:#2c2c33;--line:#3a3a42;--field:#75747f;--hover:#5a5a66;--ink:#ecebf2;--muted:#a9a8b6;--accent:#85e4b6;--on-accent:#1b1b1f;--focus:#85e4b6;--chip-on:#3a3a44;--warn:#f5c764;--bad:#fa8c99;--add:#43bca2;--del:#d84f70;--mod:#a47bdb;--shadow:#0009;color-scheme:dark}
+@media(prefers-color-scheme:light){:root:not([data-theme]){--bg:#f6f5f1;--panel:#ffffff;--raised:#ecebe6;--line:#d3d1ca;--field:#86847c;--hover:#86847c;--ink:#1d1c22;--muted:#56555f;--accent:#0a6646;--on-accent:#ffffff;--focus:#1f5fbf;--chip-on:#dcdad3;--warn:#7a5100;--bad:#b0213a;--shadow:#0004;color-scheme:light}}
+:root[data-theme=light]{--bg:#f6f5f1;--panel:#ffffff;--raised:#ecebe6;--line:#d3d1ca;--field:#86847c;--hover:#86847c;--ink:#1d1c22;--muted:#56555f;--accent:#0a6646;--on-accent:#ffffff;--focus:#1f5fbf;--chip-on:#dcdad3;--warn:#7a5100;--bad:#b0213a;--shadow:#0004;color-scheme:light}
+@media(prefers-contrast:more){:root:not([data-theme]){--bg:#000;--panel:#000;--raised:#141414;--line:#9a9a9a;--field:#fff;--hover:#fff;--ink:#fff;--muted:#e0e0e0;--accent:#7dffbf;--on-accent:#000;--focus:#ffd400;--chip-on:#333;--warn:#ffd866;--bad:#ffa3b1;--shadow:#000;color-scheme:dark}}
+:root[data-theme=contrast]{--bg:#000;--panel:#000;--raised:#141414;--line:#9a9a9a;--field:#fff;--hover:#fff;--ink:#fff;--muted:#e0e0e0;--accent:#7dffbf;--on-accent:#000;--focus:#ffd400;--chip-on:#333;--warn:#ffd866;--bad:#ffa3b1;--shadow:#000;color-scheme:dark}
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 system-ui,-apple-system,BlinkMacSystemFont,sans-serif;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
 header{display:flex;align-items:center;gap:18px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 header h1{font-size:15px;margin:0;font-weight:650;letter-spacing:-.01em}header h1 span{color:var(--muted);font-weight:400}
@@ -13,16 +19,18 @@ header h1{font-size:15px;margin:0;font-weight:650;letter-spacing:-.01em}header h
 .layout{display:grid;grid-template-columns:290px 1fr;min-height:0}
 aside{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
 .filters{padding:10px;display:grid;gap:8px;border-bottom:1px solid var(--line)}
-input[type=search],input[type=number],textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:6px 8px;font:inherit}
+input[type=search],input[type=number],textarea{width:100%;background:var(--bg);border:1px solid var(--field);color:var(--ink);border-radius:6px;padding:6px 8px;font:inherit}
 .chips,.seg{display:flex;flex-wrap:wrap;gap:4px}
 button{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:4px 9px;cursor:pointer}
-button:hover{border-color:#5a5a66}button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:hover{border-color:var(--hover)}button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+html select,html input,html textarea{border-color:var(--field)}select{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--field);border-radius:6px;padding:4px 6px;max-width:220px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}:root[data-theme=contrast] :focus-visible{outline-width:3px}
+:root button.primary{color:var(--on-accent)}
 .seg button{border-radius:0;margin-left:-1px}.seg button:first-child{border-radius:6px 0 0 6px;margin:0}.seg button:last-child{border-radius:0 6px 6px 0}
 .seg{flex-wrap:nowrap}
 #list{overflow:auto;flex:1;padding:4px 0}
 .item{display:grid;grid-template-columns:36px 36px 1fr;gap:6px;align-items:center;padding:5px 10px;cursor:pointer;border-left:3px solid transparent}
-.item:hover{background:var(--raised)}.item[aria-current=true]{background:var(--raised);border-left-color:var(--accent)}
+.item:hover{background:var(--raised)}.item[aria-selected=true]{background:var(--raised);border-left-color:var(--accent)}
 .thumb{width:36px;height:36px;background:#4a494a;border-radius:4px;display:grid;place-items:center;overflow:hidden}
 .thumb img{image-rendering:pixelated;max-width:32px;max-height:32px;width:32px;height:32px;object-fit:contain}
 .thumb.none{background:repeating-linear-gradient(45deg,#2a2a30 0 4px,#33333a 4px 8px)}
@@ -45,7 +53,7 @@ canvas{display:block;image-rendering:pixelated}
 #inspector .sw{display:inline-block;width:12px;height:12px;border:1px solid #fff4;vertical-align:-2px;margin-right:4px;border-radius:2px}
 .palette{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
 .chip{display:grid;grid-template-columns:18px auto;gap:2px 6px;align-items:center;background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:4px 7px;cursor:pointer;font:10px ui-monospace,monospace;color:var(--muted)}
-.chip .sw{grid-row:span 2;width:18px;height:18px;border-radius:3px;border:1px solid #fff3}.chip[aria-pressed=true]{border-color:var(--ink);background:#3a3a44}
+.chip .sw{grid-row:span 2;width:18px;height:18px;border-radius:3px;border:1px solid #fff3}.chip[aria-pressed=true]{border-color:var(--ink);background:var(--chip-on)}
 .chip .delta.up{color:var(--warn)}.chip .delta.down{color:var(--accent)}.chip.off .sw{outline:2px solid var(--bad)}
 .legend{font-size:11px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}.legend i{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:-1px;border-radius:2px}
 section.block{margin-top:22px;border-top:1px solid var(--line);padding-top:14px}section.block h3{margin:0 0 10px;font-size:13px}
@@ -54,7 +62,7 @@ section.block{margin-top:22px;border-top:1px solid var(--line);padding-top:14px}
 .sheet h3{margin:20px 0 8px;font-size:13px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
 .cards{display:flex;flex-wrap:wrap;gap:10px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer;display:grid;gap:6px}
-.card:hover{border-color:#5a5a66}.card.same{opacity:.45}.card .pair{display:flex;gap:6px;align-items:center}
+.card:hover{border-color:var(--hover)}.card.same{opacity:.45}.card .pair{display:flex;gap:6px;align-items:center}
 .card .name{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
 .card canvas{border-radius:4px}
 .kbd{font:11px ui-monospace,monospace;color:var(--muted);margin-top:26px;line-height:1.9}.kbd kbd{background:var(--raised);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--ink)}
@@ -62,33 +70,63 @@ section.block{margin-top:22px;border-top:1px solid var(--line);padding-top:14px}
 .hidden{display:none!important}
 input[type=range]{accent-color:var(--accent);width:140px}
 @media(max-width:760px){body{overflow:auto}.layout{grid-template-columns:1fr}aside{max-height:40vh;border-right:0;border-bottom:1px solid var(--line)}.totals{margin-left:0}}
+body{grid-template-columns:minmax(0,1fr)}.layout>*{min-width:0}
+@media(max-height:520px){html,body{height:auto}body{overflow:auto}.layout,main,aside{min-height:auto;overflow:visible}#list{max-height:60vh}}
+/* Shell (tools/jelli-art/shell.js): skip link, mode tabs, toasts, dialogs, guide. */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:8px;top:-60px;z-index:60;background:var(--ink);color:var(--bg);padding:6px 12px;border-radius:6px;font-weight:600}.skip-link:focus{top:8px}
+.shell-modes{overflow-x:auto;max-width:100%}.shell-modes [role=tablist]{display:flex;gap:2px}
+.shell-modes [role=tab]{border-radius:6px 6px 0 0;border-width:0 0 3px;border-bottom-color:transparent;background:transparent;padding:6px 12px;font-weight:600;color:var(--muted);white-space:nowrap}
+.shell-modes [role=tab]:hover{color:var(--ink);background:var(--raised)}.shell-modes [role=tab][aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent);background:var(--raised)}
+.shell-tab-dirty,.shell-unsaved,.shell-warn{color:var(--warn)}
+.shell-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}.shell-break{flex-basis:100%;height:0}header{row-gap:6px}.shell-tools kbd,.shell-guide kbd,.shell-keys kbd{font:11px ui-monospace,monospace;background:var(--raised);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--ink)}
+.shell-unsaved{border-color:var(--warn);font-weight:600}
+.shell-toasts{position:fixed;right:16px;bottom:16px;z-index:50;display:grid;gap:8px;width:min(420px,calc(100vw - 32px))}
+.shell-toast{position:relative;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-left:5px solid var(--muted);border-radius:8px;padding:10px 36px 10px 12px;box-shadow:0 6px 24px var(--shadow);animation:shell-in .18s ease-out}
+.shell-toast p{margin:0}.shell-toast .shell-hint{margin-top:4px;color:var(--muted);font-size:12px}.shell-tone{font-weight:700}
+.shell-toast.ok{border-left-color:var(--accent)}.shell-toast.warn{border-left-color:var(--warn)}.shell-toast.bad{border-left-color:var(--bad)}
+.shell-dismiss{position:absolute;top:6px;right:6px;padding:0 7px;line-height:20px}
+@keyframes shell-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.shell-dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0;width:min(640px,calc(100vw - 32px));max-height:85vh;box-shadow:0 10px 40px var(--shadow)}
+.shell-dialog::backdrop{background:#000a}.shell-dialog form{display:grid;max-height:85vh}
+.shell-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}.shell-dialog-head h2{margin:0;font-size:16px}
+.shell-dialog-body{padding:12px 16px;overflow:auto}.shell-dialog-body h3{margin:12px 0 6px;font-size:13px}
+.shell-dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding:10px 16px;border-top:1px solid var(--line)}
+.shell-dialog button.danger{border-color:var(--bad);color:var(--bad);font-weight:600}
+.shell-keys{display:grid;grid-template-columns:minmax(120px,auto) 1fr;gap:4px 14px;margin:0}.shell-keys dt{white-space:nowrap}.shell-keys dd{margin:0;color:var(--muted)}
+.shell-guide{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:10px 16px;margin:0 0 14px;max-width:860px}
+.shell-guide h2{margin:2px 0 6px;font-size:15px}.shell-guide ul{margin:4px 0;padding-left:20px}.shell-guide p{margin:6px 0}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media(forced-colors:active){button[aria-pressed=true],[role=tab][aria-selected=true],.item[aria-selected=true]{outline:2px solid Highlight;outline-offset:-2px}}
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 <header>
   <h1>Jelligotchi <span>pixel review</span></h1>
   <div class="refs">before <b id="before-label"></b> → after <b id="after-label"></b></div>
-  <div class="seg" id="views"><button data-view="detail" aria-pressed="true">Detail</button><button data-view="sheet" aria-pressed="false">Sheet</button></div>
+  <div class="seg" id="views" role="group" aria-label="Review layout"><button data-view="detail" aria-pressed="true">Detail</button><button data-view="sheet" aria-pressed="false">Sheet</button></div>
   <div class="totals" id="totals"></div>
 </header>
 <div class="layout">
-  <aside>
+  <aside aria-label="Assets">
     <div class="filters">
       <input type="search" id="query" placeholder="Filter assets…" aria-label="Filter assets">
-      <div class="chips" id="kinds"></div>
+      <div class="chips" id="kinds" role="group" aria-label="Asset kind"></div>
       <div class="chips"><button id="changed-only" aria-pressed="true">Changed only</button><button id="copy-notes">Copy review notes</button></div>
     </div>
-    <div id="list" role="listbox" aria-label="Assets"></div>
+    <p id="list-empty" class="hidden" style="padding:12px;margin:0;color:var(--muted)">No assets match. Try turning off “Changed only”.</p>
+    <div id="list" role="listbox" aria-label="Assets" tabindex="0"></div>
   </aside>
-  <main>
+  <main id="main" tabindex="-1">
     <div id="detail">
       <div class="title"><h2 id="asset-name"></h2><div class="stats" id="asset-stats"></div></div>
       <div class="bar">
-        <div><div class="lbl">Mode</div><div class="seg" id="modes">
+        <div><div class="lbl" id="modes-label">Compare</div><div class="seg" id="modes" role="group" aria-labelledby="modes-label">
           <button data-mode="side">Side by side</button><button data-mode="swipe">Swipe</button><button data-mode="flip">Flip</button><button data-mode="onion">Onion</button><button data-mode="diff">Diff</button></div></div>
-        <div><div class="lbl">Zoom <span id="zoom-label"></span></div><div class="seg"><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-fit">Fit</button><button id="zoom-device">Device</button><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
-        <div><div class="lbl">Backdrop</div><div class="seg" id="backdrops"></div></div>
-        <div><div class="lbl">Overlays</div><div class="seg"><button id="grid" aria-pressed="true">Grid</button><button id="issues" aria-pressed="false">Issues</button></div></div>
+        <div><div class="lbl" id="zoom-group-label">Zoom <span id="zoom-label"></span></div><div class="seg" role="group" aria-labelledby="zoom-group-label"><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-fit">Fit</button><button id="zoom-device">Device</button><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
+        <div><div class="lbl" id="backdrops-label">Backdrop</div><div class="seg" id="backdrops" role="group" aria-labelledby="backdrops-label"></div></div>
+        <div><div class="lbl" id="overlays-label">Overlays</div><div class="seg" role="group" aria-labelledby="overlays-label"><button id="grid" aria-pressed="true">Grid</button><button id="issues" aria-pressed="false">Issues</button></div></div>
         <div id="mode-extra"></div>
       </div>
       <div class="stage" id="stage"></div>
@@ -102,22 +140,22 @@ input[type=range]{accent-color:var(--accent);width:140px}
         <p class="lbl" style="text-transform:none;letter-spacing:0">Drawn at the core's draw scale on a 466 px panel (≈266 ppi: 466 px across 1.75 in). Physical size approximates the real board.</p>
       </section>
       <section class="block"><h3>Review</h3>
-        <div class="review"><div class="seg" id="verdict"><button data-verdict="ok">Looks good</button><button data-verdict="fix">Needs work</button><button data-verdict="">Clear</button></div><textarea id="note" placeholder="Notes for this asset (stored in this browser; Copy review notes exports all)"></textarea></div>
+        <div class="review"><div class="seg" id="verdict" role="group" aria-label="Verdict"><button data-verdict="ok">Looks good</button><button data-verdict="fix">Needs work</button><button data-verdict="">Clear</button></div><textarea id="note" aria-label="Review notes for this asset" placeholder="Notes for this asset (stored in this browser; Copy review notes exports all)"></textarea></div>
       </section>
-      <div class="kbd"><kbd>J</kbd>/<kbd>K</kbd> next/previous · <kbd>1</kbd>–<kbd>5</kbd> mode · <kbd>[</kbd>/<kbd>]</kbd> zoom · <kbd>0</kbd> fit · <kbd>D</kbd> device scale · <kbd>G</kbd> grid · <kbd>I</kbd> issues · <kbd>B</kbd> backdrop · hold <kbd>Space</kbd> to peek at before · <kbd>A</kbd>/<kbd>X</kbd> mark good/needs work · <kbd>S</kbd> sheet</div>
+      <div class="kbd"><kbd>J</kbd>/<kbd>K</kbd> next/previous · <kbd>1</kbd>–<kbd>5</kbd> compare · <kbd>[</kbd>/<kbd>]</kbd> zoom · <kbd>0</kbd> fit · <kbd>D</kbd> device scale · <kbd>G</kbd> grid · <kbd>I</kbd> issues · <kbd>B</kbd> backdrop · hold <kbd>Space</kbd> to peek at before · <kbd>A</kbd>/<kbd>X</kbd> mark good/needs work · <kbd>S</kbd> sheet · <kbd>?</kbd> all shortcuts</div>
     </div>
     <div id="sheet" class="sheet hidden">
       <div class="bar">
-        <div><div class="lbl">Show</div><div class="seg" id="sheet-show"><button data-show="both">Before + after</button><button data-show="before">Before</button><button data-show="after">After</button></div></div>
-        <div><div class="lbl">Scale</div><div class="seg" id="sheet-scale"><button data-scale="device">Device</button><button data-scale="2">2×</button><button data-scale="4">4×</button><button data-scale="8">8×</button></div></div>
-        <div><div class="lbl">Backdrop</div><div class="seg" id="sheet-backdrops"></div></div>
+        <div><div class="lbl" id="sheet-show-label">Show</div><div class="seg" id="sheet-show" role="group" aria-labelledby="sheet-show-label"><button data-show="both">Before + after</button><button data-show="before">Before</button><button data-show="after">After</button></div></div>
+        <div><div class="lbl" id="sheet-scale-label">Scale</div><div class="seg" id="sheet-scale" role="group" aria-labelledby="sheet-scale-label"><button data-scale="device">Device</button><button data-scale="2">2×</button><button data-scale="4">4×</button><button data-scale="8">8×</button></div></div>
+        <div><div class="lbl" id="sheet-backdrops-label">Backdrop</div><div class="seg" id="sheet-backdrops" role="group" aria-labelledby="sheet-backdrops-label"></div></div>
         <span class="lbl" style="text-transform:none">Hold Space to flip every card to before. Click a card to inspect it.</span>
       </div>
       <div id="sheet-body"></div>
     </div>
   </main>
 </div>
-<div class="peek">BEFORE</div>
+<div class="peek" aria-hidden="true">BEFORE</div>
 <script id="compare-data" type="application/json">__COMPARE_DATA__</script>
 <script>
 'use strict';
@@ -146,7 +184,22 @@ const label = (hex, a) => {
 };
 const signature = a => { let h = 0; const s = a.after || ''; for (let i = 0; i < s.length; i += 7) h = (h * 31 + s.charCodeAt(i)) | 0; return String(h); };
 const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrop, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;
-  store.set('prefs', {mode, grid, issues, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop}); location.replace('#' + new URLSearchParams({key, mode, zoom: zoom || 'fit'})); };
+  store.set('prefs', {mode, grid, issues, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop});
+  lastHash = '#' + new URLSearchParams({view, key, mode, zoom: zoom || 'fit'}); location.replace(lastHash); };
+let lastHash = '';
+/* Deep links: #view=sheet&key=…&mode=diff&zoom=8, or a bare mode name: #review, #paint, #creature, #behaviour. */
+function applyHash() {
+  const raw = decodeURIComponent(location.hash.slice(1)), hash = new URLSearchParams(raw.includes('=') ? raw : '');
+  const views = [...document.querySelectorAll('#views [data-view]')].map(b => b.dataset.view);
+  let view = raw.includes('=') ? hash.get('view') : raw;
+  if (view === 'paint') { view = 'detail'; hash.set('mode', 'paint'); }
+  else if (view === 'review') { view = state.view === 'sheet' ? 'sheet' : 'detail'; if (state.mode === 'paint') state.mode = 'side'; }
+  if (views.includes(view)) state.view = view;
+  if (MODES.includes(hash.get('mode'))) state.mode = hash.get('mode');
+  if (!MODES.includes(state.mode)) state.mode = 'side';
+  if (hash.get('zoom') === 'fit') state.zoom = null; else if (Number(hash.get('zoom'))) state.zoom = Number(hash.get('zoom'));
+  if (byKey[hash.get('key')]) state.key = hash.get('key');
+}
 
 function decode(uri) {
   return new Promise(resolve => {
@@ -260,7 +313,7 @@ function renderStage() {
     pane.innerHTML = `<div class="lbl"><span>${kind === 'side' ? '' : kind}</span><span>${sub}</span></div>`;
     const scroller = document.createElement('div'); scroller.className = 'scroller'; scroller.style.maxHeight = `${window.innerHeight - 260}px`;
     if (kind === 'before' && !decoded[a.key].before) { scroller.innerHTML = '<div style="padding:30px;color:var(--muted)">No before image (new asset)</div>'; }
-    else scroller.append(paneCanvas(a, z, kind));
+    else { const c = paneCanvas(a, z, kind); c.setAttribute('role', 'img'); c.setAttribute('aria-label', `${a.key} ${kind} at ${z}×; hover to inspect pixels`); scroller.append(c); }
     scroller.onscroll = () => stage.querySelectorAll('.scroller').forEach(s => { if (s !== scroller) { s.scrollLeft = scroller.scrollLeft; s.scrollTop = scroller.scrollTop; } });
     pane.append(scroller); stage.append(pane);
   }
@@ -333,7 +386,8 @@ function renderContext(a) {
   for (const side of ['before', 'after']) {
     const p = decoded[a.key][side]; if (!p) continue;
     const box = document.createElement('div'); box.className = 'pane'; box.innerHTML = `<div class="lbl"><span>${side}</span><span>${state.physical ? 'approx. real size' : '1 css px = 1 panel px'}</span></div>`;
-    box.append(contextCanvas(a, side === 'after' && state.peek ? decoded[a.key].before : p, decoded[bgKey]?.[side])); el.append(box);
+    const c = contextCanvas(a, side === 'after' && state.peek ? decoded[a.key].before : p, decoded[bgKey]?.[side]);
+    c.setAttribute('role', 'img'); c.setAttribute('aria-label', `${a.key} ${side}, on the round panel at device scale`); box.append(c); el.append(box);
   }
   document.getElementById('ppi').value = state.ppi; document.getElementById('physical').setAttribute('aria-pressed', state.physical);
   document.getElementById('calibrator').classList.toggle('hidden', !state.physical);
@@ -359,16 +413,17 @@ function filtered() {
 function renderList() {
   const el = document.getElementById('list'); el.textContent = '';
   const items = filtered();
-  if (!items.length) el.innerHTML = '<p style="padding:12px;color:var(--muted)">No assets match. Try turning off “Changed only”.</p>';
-  for (const a of items) {
-    const row = document.createElement('div'); row.className = 'item'; row.setAttribute('role', 'option'); row.setAttribute('aria-current', String(a.key === state.key));
+  document.getElementById('list-empty').classList.toggle('hidden', items.length > 0); el.hidden = !items.length; el.removeAttribute('aria-activedescendant');
+  for (const [i, a] of items.entries()) {
+    const row = document.createElement('div'); row.className = 'item'; row.id = `asset-option-${i}`; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', String(a.key === state.key));
+    if (a.key === state.key) el.setAttribute('aria-activedescendant', row.id);
     const thumb = uri => uri ? `<div class="thumb"><img alt="" src="${uri}"></div>` : '<div class="thumb none"></div>';
     const sp = a.before_metrics ? `${a.before_metrics.specks.length}→${a.after_metrics.specks.length} specks` : 'new';
     row.innerHTML = `${thumb(a.before)}${thumb(a.after)}<div><div class="name">${reviewDot(a)}${a.key.split('.')[1]}</div><div class="sub">${a.kind} · ${a.changed < 0 ? 'new' : a.changed + ' px'} · ${sp}</div></div>`;
     row.onclick = () => select(a.key);
     el.append(row);
   }
-  el.querySelector('[aria-current=true]')?.scrollIntoView({block: 'nearest'});
+  el.querySelector('[aria-selected=true]')?.scrollIntoView({block: 'nearest'});
 }
 function renderKinds() {
   const kinds = ['all', ...new Set(D.assets.map(a => a.kind))], el = document.getElementById('kinds'); el.textContent = '';
@@ -443,7 +498,12 @@ function exportNotes() {
   const text = lines.join('\n');
   navigator.clipboard?.writeText(text).then(() => flash('Copied review notes'), () => prompt('Copy review notes', text)) ?? prompt('Copy review notes', text);
 }
-function flash(text) { const b = document.getElementById('copy-notes'), old = b.textContent; b.textContent = text; setTimeout(() => { b.textContent = old; }, 1400); }
+function flash(text) { const b = document.getElementById('copy-notes'), old = b.textContent; b.textContent = text; window.JelliShell?.notify(text, {tone: 'ok'}); setTimeout(() => { b.textContent = old; }, 1400); }
+/* Keyboard users activate a focused button with Space or Enter; after a click, Space still peeks. */
+let keyboardNav = false;
+document.addEventListener('pointerdown', () => { keyboardNav = false; }, true);
+document.addEventListener('keydown', e => { if (['Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'].includes(e.key)) keyboardNav = true; }, true);
+const activatesControl = e => (e.key === ' ' || e.key === 'Enter') && keyboardNav && !!e.target.closest?.('button, a[href], summary, label, [role=button], [role=tab], [role=checkbox], [role=switch]');
 
 function wire() {
   document.getElementById('views').onclick = e => { const v = e.target.closest('button')?.dataset.view; if (v) { state.view = v; renderView(); savePrefs(); } };
@@ -463,8 +523,13 @@ function wire() {
   document.getElementById('sheet-scale').onclick = e => { const s = e.target.closest('button')?.dataset.scale; if (s) { state.sheetScale = s; renderSheet(); savePrefs(); } };
   document.getElementById('changed-only').setAttribute('aria-pressed', state.changedOnly);
   window.addEventListener('resize', () => { if (state.view === 'detail' && !state.zoom) renderStage(); });
+  window.addEventListener('hashchange', () => { if (location.hash === lastHash) return; applyHash(); renderList(); renderView(); });
+  document.getElementById('list').addEventListener('keydown', e => {
+    const items = filtered(); if (!items.length || !['Home', 'End'].includes(e.key)) return;
+    e.preventDefault(); select(items[e.key === 'Home' ? 0 : items.length - 1].key);
+  });
   document.addEventListener('keydown', e => {
-    if (e.target.matches?.('input, textarea, select')) return;
+    if (e.target.matches?.('input, textarea, select') || e.target.closest?.('dialog') || activatesControl(e)) return;
     const k = e.key.toLowerCase();
     if (e.repeat && !['j', 'k', 'arrowdown', 'arrowup', '[', ']', '=', '-', '+', ' '].includes(k)) return;  // toggles fire once per press
     if (window.Studio?.keydown(e)) return;
@@ -494,12 +559,8 @@ async function loadPayload(data) {
 }
 async function boot() {
   if (BOOT.live && window.Studio) await window.Studio.boot(); else await loadPayload(BOOT);
-  const hash = new URLSearchParams(location.hash.slice(1));
-  if (MODES.includes(hash.get('mode'))) state.mode = hash.get('mode');
-  if (!MODES.includes(state.mode)) state.mode = 'side';
-  if (Number(hash.get('zoom'))) state.zoom = Number(hash.get('zoom'));
-  const first = filtered()[0] || D.assets[0];
-  state.key = byKey[hash.get('key')] ? hash.get('key') : first.key;
+  applyHash();
+  if (!byKey[state.key]) state.key = (filtered()[0] || D.assets[0]).key;
   wire(); renderTotals(); renderKinds(); renderList(); renderView();
   document.body.dataset.ready = 'true';
 }
