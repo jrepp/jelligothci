@@ -40,22 +40,21 @@ Check off a line only when a test shows the behaviour is unchanged.
 - [x] The art builder checks the real live-reload pack, pixel and mask capacities. It
   no longer uses a hand-raised ceiling. Tests derive creature counts from disk.
 - [x] `behavior_flags` names its bits (`JELLI_PET_FLAG_MESS`, `JELLI_PET_FLAG_WAS_ASLEEP`).
+- [x] Newborn stats and starting items come from `pets.json` (`newborn`, `start`).
+  One helper replaces the two duplicated initialisers.
+- [x] Touch response is `behaviors.json` `touch`, with an optional per-repertoire
+  override. Wake reaction length and surprise window are in `wake.json`.
+- [x] Ring and button icon scale follows the asset's width, not its ID range.
 
 # Remaining, in priority order
 
 1. **Overloaded phase.** The render key's `phase` still carries the idle pose, the
    wake-surprise flag and the exercise bob. Split it into separate fields.
-2. **Species tuning into behaviour data.** Touch load 220/600/900, decay
-   100/×10, gains 15/−20/3, `reaction_ticks` 30 (`personality.c`, `wake.c`,
-   `game.c:68`), and the favourite moments currently chosen by **instance-ID
-   parity** (`personality.c:28-47`).
-3. **Newborn defaults.** They are duplicated in `game.c:42-52` and
-   `collection.c:117-128` (needs 500/700/700/500/500, bond 100, hydration 700,
-   bedtime 22, sleep 288000). Move them to `pets.json`.
+2. **Favourite moments.** These are still chosen by **instance-ID parity**
+   (`personality.c:28-47`). Move them to repertoire data.
 4. **Asset IDs.** Generate `jelli_asset_ids.h` from `assets.json` keys. Replace
-   `11000u + prize`, `9001u + style`, `10001u/10002u` backgrounds (in two places),
-   the stat-tile icons (MOOD and SOCIAL both 7005), and **scale inferred from the
-   ID range** (`icon >= 6000u ? 3u : 6u` in `pet_layout.c` and `pet_menu.c`).
+   `11000u + prize`, `9001u + style`, the `10001u/10002u` backgrounds (in two
+   places), and the stat-tile icons (MOOD and SOCIAL both 7005).
 5. **Needs and activity tuning.** Name the recovery floor `400u` (more than 10
    sites), plus 100/200/350/700/800/150. Move them, the decay rates
    (`game_time.c:64-74`) and the activity durations/effects
