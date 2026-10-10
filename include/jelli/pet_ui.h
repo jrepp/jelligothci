@@ -157,6 +157,7 @@ typedef struct {
     JelliTunables tunables;
     JelliPetPage page;
     int actor_x, actor_y;
+    uint8_t actor_scale; /* Pixel multiplier from the active form's creature profile. */
     uint32_t clicker_pet, routine_random, tuning_revision, tuning_pet;
     JelliResult result;
     uint8_t attempted_slot;

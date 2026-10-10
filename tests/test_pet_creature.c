@@ -62,16 +62,17 @@ static void axolotl_idles_and_blinks(void)
     JelliPetUi ui;
     axolotl_game(&game);
     jelli_pet_ui_init(&ui);
-    /* 900 ms idle beats: idle, blink (idle-alt), then two idle beats in a row. */
+    /* 900 ms beats from the axolotl profile: idle, idle (one continuous 4-frame bob), blink. */
     CHECK(frame_at(&game, &ui, 0u) == 1101u);
     CHECK(frame_at(&game, &ui, 450u) == 1102u);
-    CHECK(frame_at(&game, &ui, 900u) == 1101u);
-    CHECK(frame_at(&game, &ui, 990u) == 1105u);
-    CHECK(frame_at(&game, &ui, 1080u) == 1106u);
-    CHECK(frame_at(&game, &ui, 1800u) == 1101u);
-    CHECK(frame_at(&game, &ui, 2250u) == 1102u);
-    CHECK(frame_at(&game, &ui, 2700u) == 1103u);
-    CHECK(frame_at(&game, &ui, 3150u) == 1104u);
+    CHECK(frame_at(&game, &ui, 900u) == 1103u);
+    CHECK(frame_at(&game, &ui, 1350u) == 1104u);
+    CHECK(frame_at(&game, &ui, 1800u) == 1101u); /* idle-alt: blink starts open... */
+    CHECK(frame_at(&game, &ui, 1890u) == 1105u);
+    CHECK(frame_at(&game, &ui, 1980u) == 1106u);
+    CHECK(frame_at(&game, &ui, 2160u) == 1101u); /* ...and holds open after one blink. */
+    CHECK(frame_at(&game, &ui, 2700u) == 1101u); /* Back to idle: the bob restarts. */
+    CHECK(frame_at(&game, &ui, 3150u) == 1102u);
 }
 
 static void axolotl_sleep_breathes_and_frame_changes_redraw(void)
@@ -103,12 +104,33 @@ static void axolotl_actor_sits_on_the_floor(void)
     (void)frame_at(&game, &ui, 0u);
     const JelliAsset *a = ui.actor_frame;
     CHECK(a->width == 48u && a->height == 48u);
-    CHECK(ui.actor_y + (int)a->bottom * 6 == 256); /* Contact row matches 32x32 forms. */
-    CHECK(ui.actor_bounds.width == (unsigned)(a->right - a->left) * 6u);
+    unsigned scale = jelli_creature_profile(2u)->scale;
+    CHECK(ui.actor_scale == scale && scale != jelli_creature_profile(0u)->scale);
+    CHECK(ui.actor_y + (int)(a->bottom * scale) == 256); /* Same contact row as 32x32 forms. */
+    CHECK(ui.actor_bounds.width == (unsigned)(a->right - a->left) * scale);
+}
+
+/* The jelly behaviour in content/creatures.json reproduces the former code tables. */
+static void jelly_profile_matches_legacy_rules(void)
+{
+    static const uint8_t legacy[] = {0, 1, 0, 0, 2, 0, 1, 1, 0, 3, 3, 0, 0, 1, 0, 0};
+    for (unsigned form = 0u; form < 2u; ++form) {
+        const JelliCreatureProfile *p = jelli_creature_profile(form);
+        CHECK(p->scale == 6u && p->icon_scale == 2u && p->portrait_scale == 4u);
+        for (uint32_t id = 1u; id <= 3u; ++id)
+            for (uint64_t beat = 0u; beat < 160u; ++beat) {
+                unsigned pose = legacy[beat % 16u];
+                if (pose >= 2u && ((beat / 16u + id) % 3u) == 0u)
+                    pose = 0u;
+                CHECK(jelli_creature_idle_pose(p, beat, id) == pose);
+            }
+    }
+    CHECK(jelli_creature_profile(99u) == jelli_creature_profile(0u));
 }
 
 int main(void)
 {
+    jelly_profile_matches_legacy_rules();
     every_form_has_grounded_clips();
     axolotl_idles_and_blinks();
     axolotl_sleep_breathes_and_frame_changes_redraw();

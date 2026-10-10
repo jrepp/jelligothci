@@ -54,8 +54,8 @@ void jelli_pet_sleep_particles(JelliPetUi *ui, bool asleep, uint64_t time)
         (ui->sleep_emitted && time >= ui->sleep_emit_ms && time - ui->sleep_emit_ms < 900u))
         return;
     const JelliAsset *a = ui->actor_frame;
-    int x = ui->actor_x + (int)((a->centroid_x_q8 * 6u + 128u) / 256u);
-    int y = ui->actor_y + (int)((a->centroid_y_q8 * 6u + 128u) / 256u) -
+    int x = ui->actor_x + (int)((a->centroid_x_q8 * (unsigned)ui->actor_scale + 128u) / 256u);
+    int y = ui->actor_y + (int)((a->centroid_y_q8 * (unsigned)ui->actor_scale + 128u) / 256u) -
             (int)ui->actor_bounds.height / 2;
     if (x < 0 || y < 0 || x >= JELLI_WIDTH || y >= JELLI_HEIGHT)
         return;

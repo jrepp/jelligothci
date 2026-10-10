@@ -1,4 +1,5 @@
 #include "pet_collection.h"
+#include "jelli/creature.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -36,7 +37,7 @@ bool jelli_pet_collection_button(const JelliPetUi *ui, unsigned slot, JelliPetUi
                                .label = forms ? jelli_collection_forms[form].name
                                               : jelli_collection_entries[index].name,
                                .icon = jelli_collection_forms[form].portrait,
-                               .scale = 2u};
+                               .scale = jelli_creature_profile(form)->icon_scale};
         return true;
     }
     if (ui->page != JELLI_UI_PET_DETAIL || slot > 2u)
@@ -185,7 +186,7 @@ static void draw_grid(Canvas *c, const JelliPetUi *ui)
         jelli_canvas_rect(c, x, y, 84, 84, focus ? GOLD : INK);
         jelli_canvas_rect(c, x + 3, y + 3, 78, 78, BG);
         c->dim = !owned;
-        jelli_canvas_centered_sprite(c, b.icon, x + 42, y + 36, 2u);
+        jelli_canvas_centered_sprite(c, b.icon, x + 42, y + 36, b.scale);
         c->dim = false;
         const char *badge = !owned                                  ? "LOCKED"
                             : active                                ? "ACTIVE"
@@ -209,8 +210,9 @@ static void draw_detail(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
     bool owned = (v->pets_owned & (1u << entry)) != 0u;
     jelli_canvas_heading(c, jelli_collection_entries[entry].name, 28, 2u);
     c->dim = !owned;
-    jelli_canvas_centered_sprite(c, jelli_collection_forms[v->pet_forms[entry]].portrait, 233, 145,
-                                 4u);
+    unsigned form = v->pet_forms[entry];
+    jelli_canvas_centered_sprite(c, jelli_collection_forms[form].portrait, 233, 145,
+                                 jelli_creature_profile(form)->portrait_scale);
     c->dim = false;
     const char *hint = !owned                   ? jelli_collection_entries[entry].hint
                        : game->sleep_log.active ? "WAKE TO SWITCH PETS"

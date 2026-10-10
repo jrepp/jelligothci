@@ -43,11 +43,29 @@ static void degenerate_clips(void)
     CHECK(jelli_clip_frame(&oversized, 100u) == JELLI_CLIP_FRAME_CAPACITY - 1u);
 }
 
+static void idle_schedules(void)
+{
+    JelliCreatureProfile profile = {.idle_beats = {JELLI_POSE_IDLE, JELLI_POSE_CURIOUS},
+                                    .idle_beat_count = 2u};
+    CHECK(jelli_creature_idle_pose(&profile, 1u, 7u) == JELLI_POSE_CURIOUS); /* Never quiet. */
+    profile.quiet_cycle = 2u;
+    CHECK(jelli_creature_idle_pose(&profile, 1u, 0u) == JELLI_POSE_IDLE); /* Cycle 0 quiet. */
+    CHECK(jelli_creature_idle_pose(&profile, 3u, 0u) == JELLI_POSE_CURIOUS);
+    CHECK(jelli_creature_idle_pose(&profile, 1u, 1u) == JELLI_POSE_CURIOUS); /* Offset by ID. */
+    profile.idle_beats[1] = JELLI_POSE_EATING;                               /* Not an idle pose. */
+    CHECK(jelli_creature_idle_pose(&profile, 1u, 1u) == JELLI_POSE_IDLE);
+    profile.idle_beat_count = 0u;
+    CHECK(jelli_creature_idle_pose(&profile, 5u, 1u) == JELLI_POSE_IDLE);
+    profile.idle_beat_count = JELLI_IDLE_BEAT_CAPACITY + 1u;
+    CHECK(jelli_creature_idle_pose(&profile, 5u, 1u) == JELLI_POSE_IDLE);
+}
+
 int main(void)
 {
+    idle_schedules();
     looping_clip_wraps();
     one_shot_clip_holds();
     degenerate_clips();
-    puts("PASS: creature clips loop, hold, and bound malformed timing");
+    puts("PASS: creature clips and idle schedules loop, hold, and bound malformed data");
     return 0;
 }

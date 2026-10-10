@@ -14,8 +14,10 @@ static void emit_bubbles(JelliPetUi *ui, bool brushing)
 {
     const JelliAsset *asset = ui->actor_frame;
     JelliParticles *pool = &ui->particles;
-    int mouth_x = ui->actor_x + (int)((asset->centroid_x_q8 * 6u + 128u) / 256u);
-    int mouth_y = ui->actor_y + (int)((asset->centroid_y_q8 * 6u + 128u) / 256u) -
+    int mouth_x =
+        ui->actor_x + (int)((asset->centroid_x_q8 * (unsigned)ui->actor_scale + 128u) / 256u);
+    int mouth_y = ui->actor_y +
+                  (int)((asset->centroid_y_q8 * (unsigned)ui->actor_scale + 128u) / 256u) -
                   (int)ui->actor_bounds.height / 4;
     for (unsigned i = 0; i < (brushing ? 2u : 4u); ++i) {
         unsigned phase = pool->next;

@@ -22,3 +22,17 @@ unsigned jelli_clip_frame(const JelliClip *clip, uint64_t elapsed_ms)
     }
     return count - 1u;
 }
+
+unsigned jelli_creature_idle_pose(const JelliCreatureProfile *profile, uint64_t beat,
+                                  uint32_t pet_id)
+{
+    unsigned count = profile->idle_beat_count;
+    if (count == 0u || count > JELLI_IDLE_BEAT_CAPACITY)
+        return JELLI_POSE_IDLE;
+    unsigned pose = profile->idle_beats[beat % count];
+    bool gesture = pose == JELLI_POSE_CURIOUS || pose == JELLI_POSE_CONTENT;
+    /* Some cycles stay quiet instead of repeating every gesture. */
+    if (gesture && profile->quiet_cycle && (beat / count + pet_id) % profile->quiet_cycle == 0u)
+        return JELLI_POSE_IDLE;
+    return pose <= JELLI_POSE_CONTENT ? pose : JELLI_POSE_IDLE;
+}

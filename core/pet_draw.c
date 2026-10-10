@@ -261,7 +261,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS)
         settings_clock(&c, view);
     else if (ui->actor_frame)
-        jelli_canvas_sprite(&c, ui->actor_frame->id, ui->actor_x, ui->actor_y, 6u);
+        jelli_canvas_sprite(&c, ui->actor_frame->id, ui->actor_x, ui->actor_y, ui->actor_scale);
     c.icon_night = view->night;
     if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH)) {
         activity(&c, ui);
