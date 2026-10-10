@@ -72,7 +72,7 @@ static void axolotl_idles_and_blinks(void)
     CHECK(frame_at(&game, &ui, 1350u) == 1104u);
     CHECK(frame_at(&game, &ui, 1800u) == 1101u); /* idle-alt: blink starts open... */
     CHECK(frame_at(&game, &ui, 1890u) == 1105u);
-    CHECK(frame_at(&game, &ui, 1980u) == 1106u);
+    CHECK(frame_at(&game, &ui, 1980u) == 1105u); /* Half blink holds; blink-2 was retired. */
     CHECK(frame_at(&game, &ui, 2160u) == 1101u); /* ...and holds open after one blink. */
     CHECK(frame_at(&game, &ui, 2700u) == 1101u); /* Back to idle: the bob restarts. */
     CHECK(frame_at(&game, &ui, 3150u) == 1102u);

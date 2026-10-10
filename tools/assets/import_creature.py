@@ -80,6 +80,10 @@ def upsert(manifest, spec, frames):
     by_key = {asset["key"]: asset for asset in manifest["assets"]}
     for index, (entry, frame) in enumerate(zip(spec["frames"], frames)):
         name = frame_name(spec, entry)
+        if entry.get("retired"):  # Keeps its ID slot; the asset and PNG are removed.
+            manifest["assets"] = [a for a in manifest["assets"] if a["key"] != f"{kind}.{name}"]
+            (SOURCE / kind / f"{name}.png").unlink(missing_ok=True)
+            continue
         record = {"id": spec["first_id"] + index, "key": f"{kind}.{name}",
                   "path": f"{kind}/{name}.png", "kind": kind,
                   "width": frame.width, "height": frame.height, "pivot": list(spec["pivot"]),
@@ -99,15 +103,19 @@ def main():
     args = parser.parse_args()
     spec = json.loads(args.spec.read_text())
     cell = spec["source_cell"]
+    # Retired frames still join the union bounds so the remaining frames keep their placement.
     sources = [downsample(Image.open(args.source_dir / f["source"]).convert("RGBA"), cell) for f in spec["frames"]]
     frames = place(sources, spec["canvas"], spec["pivot"])
     for entry, frame in zip(spec["frames"], frames):
+        if entry.get("retired"):
+            continue
         frame.save(SOURCE / spec.get("kind", "creatures") / f"{frame_name(spec, entry)}.png", optimize=True)
     manifest_path = SOURCE / "assets.json"
     manifest = json.loads(manifest_path.read_text())
     upsert(manifest, spec, frames)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
-    print(f"Imported {len(frames)} {spec.get('form') or spec['name']} frames ({frames[0].width}x{frames[0].height})")
+    kept = sum(not entry.get("retired") for entry in spec["frames"])
+    print(f"Imported {kept} {spec.get('form') or spec['name']} frames ({frames[0].width}x{frames[0].height})")
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@
     46
   ],
   "palette": "axolotl",
-  "note": "Hand-drawn axolotl frames, upscaled 72x per art pixel, delivered 2026-10-09 (surprised frame added the same evening) as 3294x3546 PNGs. All frames share one source canvas; the importer keeps their relative placement. IDs are first_id + list position, so append new frames; never reorder.",
+  "note": "Hand-drawn axolotl frames, upscaled 72x per art pixel, delivered 2026-10-09 (surprised frame added the same evening) as 3294x3546 PNGs. All frames share one source canvas; the importer keeps their relative placement. IDs are first_id + list position, so append new frames; never reorder; mark a removed frame \"retired\" instead of deleting it.",
   "frames": [
     {
       "source": "Idle1.png",
@@ -35,7 +35,9 @@
     },
     {
       "source": "Idle1.2.png",
-      "pose": "blink-2"
+      "pose": "blink-2",
+      "retired": true,
+      "note": "Removed 2026-10-10 at the user's request; kept so later IDs do not shift."
     },
     {
       "source": "Idle1.3.png",
