@@ -200,9 +200,11 @@
       state.bState = name;
     });
   }
-  function deleteState(name) {
+  /* Destructive edits ask through the shell's styled dialog; plain confirm() without the shell. */
+  const ask = (text, title, confirmLabel) => window.JelliShell?.confirm ? window.JelliShell.confirm(text, {title, confirmLabel, danger: true}) : Promise.resolve(confirm(text));
+  async function deleteState(name) {
     const users = (bwork.repertoires || []).flatMap(r => (r.reactions || []).filter(x => x.state === name).map(() => r.name));
-    if (!confirm(`Delete state ${name}${users.length ? ` and the ${users.length} reactions that enter it` : ''}?`)) return;
+    if (!await ask(`Delete state ${name}${users.length ? ` and the ${users.length} reactions that enter it` : ''}?`, `Delete state ${name}`, users.length ? `Delete state and ${users.length} reactions` : 'Delete state')) return;
     edit((b, c) => {
       b.states = b.states.filter(s => s.name !== name);
       for (const rep of b.repertoires) rep.reactions = (rep.reactions || []).filter(r => r.state !== name);
@@ -484,7 +486,10 @@
       state.bRep = bw.repertoires.length - 1;
     });
     if (!rep) return;
-    body.querySelector('#bv-del-rep').onclick = () => { if (confirm(`Delete repertoire ${rep.name}? Its forms will no longer react.`)) edit(bw => { bw.repertoires.splice(ri, 1); }); };
+    body.querySelector('#bv-del-rep').onclick = async () => {
+      const forms = (rep.forms || []).length, text = `Delete repertoire ${rep.name}? ${forms ? `Its ${forms} form${forms === 1 ? '' : 's'}` : 'Its forms'} will no longer react.`;
+      if (await ask(text, `Delete repertoire ${rep.name}`, 'Delete repertoire')) edit(bw => { bw.repertoires.splice(ri, 1); });
+    };
     body.querySelector('#bv-forms').onclick = e => {
       const f = e.target.closest('button')?.dataset.form; if (!f) return;
       edit(bw => { const r = bw.repertoires[ri], i = (r.forms ||= []).indexOf(f); if (i < 0) r.forms.push(f); else r.forms.splice(i, 1); });

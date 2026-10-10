@@ -19,7 +19,7 @@ the repository's pinned tools, and it only listens on your own computer.
 2. Choose the **Paint** tab at the top. The tools are pencil, eraser, fill,
    colour picker, line, rectangle, ellipse and select. **Filled** fills
    rectangles and ellipses; Shift while dragging snaps lines to 45° and makes
-   squares and circles. Right-click erases, Alt-click picks a colour, and
+   squares and circles. Right-click erases, Alt-click picks a colour and keeps your tool, and
    **Mirror** paints both halves of a symmetric sprite.
 3. Selection, transforms, nudges, colour replacement, guides and **Tidy
    outline** are under **More tools**, which stays open once you open it.

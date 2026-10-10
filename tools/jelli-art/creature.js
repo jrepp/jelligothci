@@ -298,8 +298,9 @@
     wireSaveBar(el);
   }
   function wireSaveBar(el) {
-    el.querySelector('#cr-revert-all').onclick = () => {
-      if (dirtyKeys().length && !confirm(`Discard unsaved edits to ${dirtyKeys().length} clips?`)) return;
+    el.querySelector('#cr-revert-all').onclick = async () => {
+      const n = dirtyKeys().length, clips = `${n} clip${n === 1 ? '' : 's'}`, text = `Discard unsaved edits to ${clips}?`;
+      if (n && !await (window.JelliShell?.confirm ? window.JelliShell.confirm(text, {title: 'Discard clip edits', confirmLabel: `Discard ${clips}`, danger: true}) : confirm(text))) return;
       for (const k of Object.keys(working)) delete working[k];
       restart(); renderEditor();
     };

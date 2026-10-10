@@ -149,6 +149,16 @@
   /* Colours of a buffer that the palette lacks. */
   const offPalette = (b, palette) => { const pal = new Set(palette.map(h => h.toLowerCase())); return colours(b).map(([h]) => h).filter(h => !pal.has(h)); };
 
+  /* What picking `hex` does. The Pick colour tool hands over to the pencil (or the eraser on a transparent
+   * pixel); Alt-click with any other tool only takes the colour and keeps that tool. Returns {tool, color},
+   * with color undefined when it stays the same, or {off: true} for a colour the palette lacks. */
+  function pickOutcome(hex, palette, tool) {
+    const held = tool !== 'picker';
+    if (!hex) return {tool: held ? tool : 'eraser'};
+    if (!palette.includes(hex)) return {off: true};
+    return {tool: held ? tool : 'pencil', color: hex};
+  }
+
   /* ---------- history: a bounded list of states with a cursor ---------- */
   /* Each entry is {label, data}; entries after `at` are redo steps until the next record. */
   function history(data, label = 'Opened', limit = 100) { return {limit, at: 0, entries: [{label, data: data.slice()}]}; }
@@ -165,7 +175,7 @@
   const current = h => h.entries[h.at].data;
 
   const api = {line, rect, ellipse, pixelPerfect, blank, copy, get, set, clip, whole, rectFrom, extract, clear, blit,
-    flipH, flipV, rotate, shift, replace, flood, colours, offPalette, history, record, jump, current};
+    flipH, flipV, rotate, shift, replace, flood, colours, offPalette, pickOutcome, history, record, jump, current};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.JelliPaint = api;
 })(typeof window !== 'undefined' ? window : globalThis);

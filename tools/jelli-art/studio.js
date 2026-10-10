@@ -295,11 +295,12 @@
     work(state.key).data.set(s.snap.data); state.sel = s.snap.sel; state.float = s.snap.float;
     draw(); renderReadout(); announce('Cancelled'); return true;
   }
+  /* Alt-click borrows the picker for one click and keeps the current tool (paint_tools.js pickOutcome). */
   function pick(x, y) {
-    const a = asset(), hex = pixel(work(state.key), x, y);
-    if (!hex) state.tool = 'eraser';
-    else if (paletteOf(a).includes(hex)) { state.color = hex; state.custom = false; state.tool = 'pencil'; }
-    else return status(`${hex} is not in ${paletteWhere(a)}; click its custom chip under Paint colours to paint with it`, 'warn', true);
+    const a = asset(), hex = pixel(work(state.key), x, y), out = T.pickOutcome(hex, paletteOf(a), state.tool);
+    if (out.off) return status(`${hex} is not in ${paletteWhere(a)}; click its custom chip under Paint colours to paint with it`, 'warn', true);
+    if (out.color) { state.color = out.color; state.custom = false; }
+    state.tool = out.tool;
     renderPalette(a); renderToolbarState(); renderReadout();
   }
 
@@ -683,7 +684,7 @@
   window.JelliShell?.registerShortcuts('Paint', [
     {keys: ['P', 'E', 'F', 'C'], description: 'Pencil, eraser, fill, pick colour'}, {keys: ['L', 'R', 'U'], description: 'Line, rectangle, ellipse'},
     {keys: ['V'], description: 'Select'}, {keys: ['Shift+F'], description: 'Filled shapes on/off'}, {keys: ['Shift+P'], description: 'Pixel-perfect pencil on/off'},
-    {keys: ['M'], description: 'Mirror left/right'}, {keys: ['Right-click'], description: 'Erase'}, {keys: ['Alt+Click'], description: 'Pick a colour'},
+    {keys: ['M'], description: 'Mirror left/right'}, {keys: ['Right-click'], description: 'Erase'}, {keys: ['Alt+Click'], description: 'Pick a colour and keep the current tool'},
     {keys: ['Shift+Drag'], description: 'Snap lines to 45°; square rectangles and circles'},
     {keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], description: 'Canvas focused: move the keyboard cursor'},
     {keys: ['Enter', 'Space'], description: 'Canvas focused: apply the tool; shapes and select take one press to start and one to finish'},
@@ -736,7 +737,9 @@
     if (color === old) return;
     if (Object.keys(edits).some(dirty)) return status('Save or revert your edits before changing the palette', 'warn', true);
     const users = D.assets.filter(x => x.after_metrics.colors[old]).length;
-    if (!confirm(`Change ${NAMES[index]} from ${old} to ${color} in every sprite?\n\n${users} assets use it. This rewrites their PNGs and the shared palette; git can undo it.`)) return S.renderPalette(document.getElementById('palette'), asset());
+    const text = `Change ${NAMES[index]} from ${old} to ${color} in every sprite?\n\n${users} assets use it. This rewrites their PNGs and the shared palette; git can undo it.`;
+    const ok = await (window.JelliShell?.confirm ? window.JelliShell.confirm(text, {title: `Change ${NAMES[index]} in ${users} assets`, confirmLabel: 'Change colour', danger: true}) : confirm(text));
+    if (!ok) return S.renderPalette(document.getElementById('palette'), asset());
     try {
       const res = await api('POST', '/api/palette', {index, color, artist: state.artist});
       if (state.color === old) state.color = color;
