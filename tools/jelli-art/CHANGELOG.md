@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.2.0...jelli-art-v0.3.0) (2026-10-10)
+
+
+### Features
+
+* add stimulus-driven creature behavior and cleanup ([#14](https://github.com/jrepp/jelligothci/issues/14)) ([375ea79](https://github.com/jrepp/jelligothci/commit/375ea79c4f290fe45b391d751d71830693b62ff5))
+
 ## [0.2.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.1.0...jelli-art-v0.2.0) (2026-10-10)
 
 
