@@ -25,7 +25,7 @@ HEADER = struct.Struct("<4sIII")
 RECORD = struct.Struct("<IHHHHHHBBBBI")
 # Mirrors tools/assets/build_slice.py: creatures may be 32x32 or 48x48.
 DIMENSIONS = {
-    "creatures": {(32, 32), (48, 48)}, "icons": {(16, 16)}, "props": {(24, 24)},
+    "creatures": {(32, 32), (48, 48)}, "icons": {(16, 16)}, "props": {(24, 24), (32, 32)},
     "font": {(128, 72)}, "menus": {(32, 32)}, "meters": {(32, 32)},
     "health": {(32, 32)}, "effects": {(16, 16)}, "backgrounds": {(64, 64)},
     "prizes": {(32, 32)},

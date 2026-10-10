@@ -1,3 +1,4 @@
+#include "jelli/potty.h"
 #include "jelli/creature.h"
 #include "jelli/wake.h"
 #include "pet_draw.h"
@@ -13,12 +14,16 @@ static uint8_t recovery_seconds(const JelliPet *pet)
     return ticks >= 300u ? 30u : (uint8_t)((ticks + 9u) / 10u);
 }
 
-static void activity_key(const JelliPet *pet, JelliPetRenderKey *key)
+static void activity_key(const JelliPet *pet, uint64_t time, JelliPetRenderKey *key)
 {
     key->health = (uint8_t)pet->health;
     key->care_seconds = recovery_seconds(pet);
     key->activity = (uint8_t)pet->activity;
     key->moment = pet->moment;
+    key->behavior = pet->behavior;
+    unsigned frames = jelli_potty_rules.mess_sprite_count;
+    if ((pet->behavior_flags & JELLI_PET_FLAG_MESS) && frames && jelli_potty_rules.mess_frame_ms)
+        key->mess = (uint8_t)(1u + time / jelli_potty_rules.mess_frame_ms % frames);
 }
 
 static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint64_t animation_ms,
@@ -90,7 +95,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.save_status = ui->save_status;
     key.form = pet->form;
     key.location = pet->location;
-    activity_key(pet, &key);
+    activity_key(pet, animation_ms, &key);
     key.stored_form = other->form;
     key.bedtime = (uint8_t)pet->bedtime;
     key.asleep = pet->asleep;
@@ -127,7 +132,7 @@ static bool same_tile_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b
 static bool same_actor_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
     return a->phase == b->phase && a->pose == b->pose && a->clip_frame == b->clip_frame &&
-           a->moment == b->moment;
+           a->moment == b->moment && a->behavior == b->behavior && a->mess == b->mess;
 }
 
 static bool same_frame_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)

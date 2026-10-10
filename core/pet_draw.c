@@ -1,3 +1,4 @@
+#include "pet_behavior_draw.h"
 #include "pet_draw.h"
 #include "jelli/collection.h"
 #include "jelli/activities.h"
@@ -113,7 +114,7 @@ static const char *status(const JelliPetRenderKey *v, char *buffer, size_t capac
         return "ENJOYING";
     if (v->activity == JELLI_GIVING)
         return "THANK YOU";
-    return "";
+    return jelli_pet_behavior_caption(v);
 }
 
 static void menu_button(Canvas *c, const JelliPetUi *ui)
@@ -285,6 +286,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
         if (view->activity == JELLI_EXERCISING)
             jelli_canvas_centered_sprite(&c, 6014u, 233, view->phase ? 205 : 229, 3u);
         moment_prop(&c, ui, view);
+        jelli_pet_draw_behavior(&c, ui, view);
         char message[24];
         jelli_canvas_caption(&c, status(view, message, sizeof(message)), 254, MINT);
         draw_tile(c, view);

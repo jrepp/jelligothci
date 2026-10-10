@@ -4,41 +4,190 @@
     {
       "name": "jelly",
       "pose_rules": [
-        {"when": "asleep", "pose": "asleep"},
-        {"when": "wake_groggy", "pose": "asleep"},
-        {"when": "wake_surprised", "pose": "curious"},
-        {"when": "wake_happy", "pose": "happy"},
-        {"when": "unwell", "pose": "unwell"},
-        {"when": "eating", "pose": "eating"},
-        {"when": "playing", "pose": "happy"},
-        {"when": "touch_happy", "pose": "happy"},
-        {"when": "touch_upset", "pose": "unwell"}
+        {
+          "when": "asleep",
+          "pose": "asleep"
+        },
+        {
+          "when": "wake_groggy",
+          "pose": "asleep"
+        },
+        {
+          "when": "wake_surprised",
+          "pose": "curious"
+        },
+        {
+          "when": "wake_happy",
+          "pose": "happy"
+        },
+        {
+          "when": "unwell",
+          "pose": "unwell"
+        },
+        {
+          "when": "eating",
+          "pose": "eating"
+        },
+        {
+          "when": "playing",
+          "pose": "happy"
+        },
+        {
+          "when": "touch_happy",
+          "pose": "happy"
+        },
+        {
+          "when": "touch_upset",
+          "pose": "unwell"
+        }
       ],
-      "idle_beats": ["idle", "idle-alt", "idle", "idle", "curious", "idle", "idle-alt", "idle-alt",
-                     "idle", "content", "content", "idle", "idle", "idle-alt", "idle", "idle"],
+      "idle_beats": [
+        "idle",
+        "idle-alt",
+        "idle",
+        "idle",
+        "curious",
+        "idle",
+        "idle-alt",
+        "idle-alt",
+        "idle",
+        "content",
+        "content",
+        "idle",
+        "idle",
+        "idle-alt",
+        "idle",
+        "idle"
+      ],
       "quiet_cycle": 3
     },
     {
       "name": "axolotl",
       "pose_rules": [
-        {"when": "asleep", "pose": "asleep"},
-        {"when": "wake_groggy", "pose": "asleep"},
-        {"when": "wake_surprised", "pose": "curious"},
-        {"when": "wake_happy", "pose": "happy"},
-        {"when": "unwell", "pose": "unwell"},
-        {"when": "eating", "pose": "eating"},
-        {"when": "playing", "pose": "happy"},
-        {"when": "touch_happy", "pose": "happy"},
-        {"when": "touch_upset", "pose": "unwell"}
+        {
+          "when": "asleep",
+          "pose": "asleep"
+        },
+        {
+          "when": "wake_groggy",
+          "pose": "asleep"
+        },
+        {
+          "when": "wake_surprised",
+          "pose": "curious"
+        },
+        {
+          "when": "wake_happy",
+          "pose": "happy"
+        },
+        {
+          "when": "unwell",
+          "pose": "unwell"
+        },
+        {
+          "when": "eating",
+          "pose": "eating"
+        },
+        {
+          "when": "playing",
+          "pose": "happy"
+        },
+        {
+          "when": "touch_happy",
+          "pose": "happy"
+        },
+        {
+          "when": "touch_upset",
+          "pose": "unwell"
+        }
       ],
-      "idle_beats": ["idle", "idle", "idle-alt", "idle", "idle", "curious", "idle", "idle",
-                     "idle-alt", "idle", "content", "content", "idle", "idle", "idle-alt", "idle"],
+      "idle_beats": [
+        "idle",
+        "idle",
+        "idle-alt",
+        "idle",
+        "idle",
+        "curious",
+        "idle",
+        "idle",
+        "idle-alt",
+        "idle",
+        "content",
+        "content",
+        "idle",
+        "idle",
+        "idle-alt",
+        "idle"
+      ],
       "quiet_cycle": 2
     }
   ],
   "profiles": [
-    {"art": "baby", "behavior": "jelly", "scale": 6, "icon_scale": 2, "portrait_scale": 4},
-    {"art": "grown", "behavior": "jelly", "scale": 6, "icon_scale": 2, "portrait_scale": 4},
-    {"art": "axolotl", "behavior": "axolotl", "scale": 5, "icon_scale": 2, "portrait_scale": 4}
+    {
+      "art": "baby",
+      "behavior": "jelly",
+      "scale": 6,
+      "icon_scale": 2,
+      "portrait_scale": 4
+    },
+    {
+      "art": "grown",
+      "behavior": "jelly",
+      "scale": 6,
+      "icon_scale": 2,
+      "portrait_scale": 4
+    },
+    {
+      "art": "axolotl",
+      "behavior": "axolotl",
+      "scale": 5,
+      "icon_scale": 2,
+      "portrait_scale": 4
+    }
+  ],
+  "state_presentation": [
+    {
+      "state": "curious",
+      "pose": "curious",
+      "caption": "OOH?",
+      "effect": "effects.idea"
+    },
+    {
+      "state": "delighted",
+      "pose": "happy",
+      "caption": "YAY!",
+      "effect": "effects.heart"
+    },
+    {
+      "state": "studying",
+      "pose": "study",
+      "caption": "STUDYING",
+      "effect": "effects.idea",
+      "prop": "props.book"
+    },
+    {
+      "state": "contemplating",
+      "pose": "ponder",
+      "caption": "HMM...",
+      "effect": "effects.orb"
+    },
+    {
+      "state": "asking_food",
+      "pose": "ask",
+      "caption": "HUNGRY?",
+      "effect": "menus.food"
+    },
+    {
+      "state": "asking_potty",
+      "pose": "potty",
+      "caption": "NEED TO GO!",
+      "effect": "health.potty"
+    },
+    {
+      "state": "asking_company",
+      "pose": "ask",
+      "caption": "PLAY WITH ME?",
+      "effect": "effects.heart"
+    }
   ]
 }

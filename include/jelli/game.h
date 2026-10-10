@@ -15,6 +15,9 @@
 #define JELLI_STACK_LIMIT 20u
 #define JELLI_DAY_TICKS 864000u
 #define JELLI_OFFLINE_CAP_MS 86400000u
+/* JelliPet.behavior_flags: bits 0..4 mark needs below the low threshold (edge detection). */
+#define JELLI_PET_FLAG_MESS 0x20u       /* A potty accident waits to be cleaned up. */
+#define JELLI_PET_FLAG_WAS_ASLEEP 0x80u /* Remembers sleep for the woke stimulus edge. */
 
 typedef enum {
     JELLI_SATIETY,
@@ -116,7 +119,7 @@ typedef struct {
     bool reward_pending, reward_claimed;
     /* RFC-005 behaviour timing in simulated seconds; these fill the struct's tail padding. */
     uint8_t cooldown_state; /* Most recent state + 1 while its cooldown runs, or 0. */
-    uint8_t low_needs;      /* Bit per JelliNeed below the low threshold (edge detection). */
+    uint8_t behavior_flags; /* JELLI_PET_FLAG_* plus one low-need bit per JelliNeed. */
     uint16_t behavior_left, cooldown_left;
 } JelliPet;
 

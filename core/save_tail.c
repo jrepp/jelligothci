@@ -12,7 +12,7 @@ void jelli_save_write_tail(Writer *writer, const JelliGame *game)
         put_u16(writer, pet->behavior_left);
         put_u8(writer, pet->cooldown_state);
         put_u16(writer, pet->cooldown_left);
-        put_u8(writer, pet->low_needs);
+        put_u8(writer, pet->behavior_flags);
     }
 }
 
@@ -32,6 +32,6 @@ void jelli_save_read_tail(Reader *reader, JelliGame *game)
         pet->behavior_left = get_u16(reader);
         pet->cooldown_state = get_u8(reader);
         pet->cooldown_left = get_u16(reader);
-        pet->low_needs = get_u8(reader);
+        pet->behavior_flags = get_u8(reader);
     }
 }

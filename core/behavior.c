@@ -1,12 +1,12 @@
 #include "jelli/behavior.h"
 #include "jelli/collection.h"
+#include "jelli/potty.h"
 #include "game_internal.h"
 
 #include <stddef.h>
 
 #define STIMULUS_QUEUE_CAPACITY                                                                    \
     (sizeof(((JelliGame *)0)->stimuli) / sizeof(((JelliGame *)0)->stimuli[0]))
-#define WAS_ASLEEP_BIT 0x80u /* low_needs bit 7 remembers sleep for the woke edge. */
 #define NEED_BITS ((1u << JELLI_NEED_COUNT) - 1u)
 #define NEED_MAX 1000
 
@@ -170,10 +170,18 @@ static void count_down(JelliGame *game, JelliPet *pet, uint64_t seconds)
         pet->cooldown_state = 0u;
     if (!pet->behavior)
         return;
-    if (pet->behavior_left > step && !pet->asleep)
+    if (pet->behavior_left > step && !pet->asleep) {
         pet->behavior_left = (uint16_t)(pet->behavior_left - step);
-    else
-        end_state(game, pet, false);
+        return;
+    }
+    const JelliBehaviorState *state = jelli_behavior_current(pet);
+    bool accident = state && state->on_timeout == JELLI_TIMEOUT_ACCIDENT && !pet->asleep;
+    end_state(game, pet, false);
+    if (accident) {
+        JelliEventSnapshot before = jelli_game_observe(game, pet);
+        jelli_potty_accident(pet);
+        jelli_game_emit(game, JELLI_EVENT_STATUS, JELLI_STATUS_ACCIDENT, JELLI_OK, 0u, pet, before);
+    }
 }
 
 /* Edges observed from state: night/morning, newly low needs, and waking. */
@@ -187,11 +195,12 @@ static void observe_edges(JelliGame *game, JelliPet *pet, uint64_t old_ticks)
     for (unsigned need = 0u; need < JELLI_NEED_COUNT; ++need)
         low |= pet->needs[need] < jelli_behavior_rules.need_low ? 1u << need : 0u;
     for (unsigned need = 0u; need < JELLI_NEED_COUNT; ++need)
-        if ((low & ~(unsigned)pet->low_needs) & (1u << need))
+        if ((low & ~(unsigned)pet->behavior_flags) & (1u << need))
             jelli_behavior_stimulus(game, JELLI_STIM_NEED_LOW, need);
-    if ((pet->low_needs & WAS_ASLEEP_BIT) && !pet->asleep)
+    if ((pet->behavior_flags & JELLI_PET_FLAG_WAS_ASLEEP) && !pet->asleep)
         jelli_behavior_stimulus(game, JELLI_STIM_WOKE, pet->wake_mood);
-    pet->low_needs = (uint8_t)(low | (pet->asleep ? WAS_ASLEEP_BIT : 0u));
+    pet->behavior_flags = (uint8_t)(low | (pet->behavior_flags & JELLI_PET_FLAG_MESS) |
+                                    (pet->asleep ? JELLI_PET_FLAG_WAS_ASLEEP : 0u));
 }
 
 void jelli_behavior_step(JelliGame *game, JelliPet *pet, uint64_t old_ticks, bool offline)
@@ -203,8 +212,8 @@ void jelli_behavior_step(JelliGame *game, JelliPet *pet, uint64_t old_ticks, boo
     if (offline) {
         /* Catch-up only expires states; it never starts new ones (RFC-005). */
         game->stimulus_count = 0u;
-        pet->low_needs =
-            (uint8_t)((pet->low_needs & NEED_BITS) | (pet->asleep ? WAS_ASLEEP_BIT : 0u));
+        pet->behavior_flags = (uint8_t)((pet->behavior_flags & (NEED_BITS | JELLI_PET_FLAG_MESS)) |
+                                        (pet->asleep ? JELLI_PET_FLAG_WAS_ASLEEP : 0u));
         return;
     }
     observe_edges(game, pet, old_ticks);

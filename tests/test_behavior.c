@@ -201,8 +201,59 @@ static void deterministic(void)
     }
 }
 
+static void ignored_potty_request_leaves_a_mess(void)
+{
+    JelliGame game;
+    bubble_game(&game, 0u);
+    JelliPet *pet = active(&game);
+    pet->behavior = (uint8_t)state_named("asking_potty");
+    pet->behavior_left = 2u;
+    pet->potty = 800u;
+    pet->needs[JELLI_HYGIENE] = 600u;
+    second(&game);
+    second(&game);
+    CHECK(pet->behavior != state_named("asking_potty"));
+    CHECK((pet->behavior_flags & JELLI_PET_FLAG_MESS) && pet->potty == 0u);
+    CHECK(pet->needs[JELLI_HYGIENE] <= 600u - jelli_potty_rules.accident_hygiene);
+    unsigned before = pet->needs[JELLI_HYGIENE];
+    for (unsigned s = 0u; s < 120u; ++s)
+        second(&game); /* The mess keeps costing hygiene each minute. */
+    CHECK(pet->needs[JELLI_HYGIENE] < before);
+    JelliSave save = {.game = game}, loaded;
+    uint8_t bytes[JELLI_SAVE_CAPACITY];
+    size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
+    CHECK(size && jelli_save_decode(&loaded, bytes, size));
+    CHECK(loaded.game.pets[loaded.game.active].behavior_flags & JELLI_PET_FLAG_MESS);
+    while (pet->activity != JELLI_IDLE || pet->behavior)
+        second(&game);
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_CLEAN, pet->id, 0u}) == JELLI_OK);
+    for (unsigned s = 0u; s < 20u; ++s) { /* Advance until the clean-up effect lands. */
+        second(&game);
+        if (active(&game)->activity == JELLI_IDLE)
+            break;
+    }
+    CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
+}
+
+static void answered_potty_request_leaves_no_mess(void)
+{
+    JelliGame game;
+    bubble_game(&game, 0u);
+    JelliPet *pet = active(&game);
+    pet->behavior = (uint8_t)state_named("asking_potty");
+    pet->behavior_left = 30u;
+    pet->potty = 800u;
+    CHECK(jelli_game_command(
+              &game, (JelliCommand){JELLI_CMD_HEALTH, pet->id, JELLI_HEALTH_POTTY}) == JELLI_OK);
+    for (unsigned s = 0u; s < 60u; ++s)
+        second(&game);
+    CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
+}
+
 int main(void)
 {
+    ignored_potty_request_leaves_a_mess();
+    answered_potty_request_leaves_no_mess();
     mint_has_no_repertoire();
     presents_make_bubble_curious();
     requests_are_answered();

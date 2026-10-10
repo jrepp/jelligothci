@@ -19,10 +19,20 @@ void jelli_potty_drink(JelliPet *pet)
     pet->digesting = add_capped(pet->digesting, jelli_potty_rules.per_drink);
 }
 
+static uint16_t drop(uint16_t value, uint64_t amount)
+{
+    return (uint16_t)(value > amount ? value - amount : 0u);
+}
+
 bool jelli_potty_advance(JelliPet *pet, uint64_t old_ticks)
 {
     uint64_t minutes = pet->ticks / POTTY_MINUTE_TICKS - old_ticks / POTTY_MINUTE_TICKS;
-    if (minutes == 0u || pet->digesting == 0u)
+    if (minutes == 0u)
+        return false;
+    if (pet->behavior_flags & JELLI_PET_FLAG_MESS)
+        pet->needs[JELLI_HYGIENE] =
+            drop(pet->needs[JELLI_HYGIENE], minutes * jelli_potty_rules.mess_hygiene_per_minute);
+    if (pet->digesting == 0u)
         return false;
     uint64_t moved = minutes * jelli_potty_rules.drain_per_minute;
     if (moved > pet->digesting)
@@ -32,6 +42,16 @@ bool jelli_potty_advance(JelliPet *pet, uint64_t old_ticks)
     pet->potty = add_capped(pet->potty, (unsigned)moved);
     return below && pet->potty >= jelli_potty_rules.urge_threshold;
 }
+
+void jelli_potty_accident(JelliPet *pet)
+{
+    pet->potty = 0u;
+    pet->digesting = 0u;
+    pet->behavior_flags |= JELLI_PET_FLAG_MESS;
+    pet->needs[JELLI_HYGIENE] = drop(pet->needs[JELLI_HYGIENE], jelli_potty_rules.accident_hygiene);
+}
+
+void jelli_potty_clean(JelliPet *pet) { pet->behavior_flags &= (uint8_t)~JELLI_PET_FLAG_MESS; }
 
 JelliResult jelli_potty_break(JelliPet *pet)
 {

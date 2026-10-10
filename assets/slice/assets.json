@@ -1995,6 +1995,44 @@
       "form": "axolotl",
       "pose": "potty-2",
       "palette": "axolotl"
+    },
+    {
+      "id": 3006,
+      "key": "props.poop-1",
+      "path": "props/poop-1.png",
+      "kind": "props",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        31
+      ],
+      "bounds": [
+        1,
+        0,
+        31,
+        31
+      ],
+      "palette": "poop"
+    },
+    {
+      "id": 3007,
+      "key": "props.poop-2",
+      "path": "props/poop-2.png",
+      "kind": "props",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        31
+      ],
+      "bounds": [
+        1,
+        0,
+        31,
+        31
+      ],
+      "palette": "poop"
     }
   ],
   "clips": [
@@ -2281,6 +2319,62 @@
         600
       ],
       "loop": true
+    },
+    {
+      "id": 5109,
+      "key": "axolotl.study",
+      "frames": [
+        "creatures.axolotl-blink-2",
+        "creatures.axolotl-blink-1",
+        "creatures.axolotl-blink-2",
+        "creatures.axolotl-idle-1"
+      ],
+      "durations_ms": [
+        900,
+        150,
+        700,
+        250
+      ],
+      "loop": true
+    },
+    {
+      "id": 5110,
+      "key": "axolotl.ponder",
+      "frames": [
+        "creatures.axolotl-blink-2",
+        "creatures.axolotl-idle-3"
+      ],
+      "durations_ms": [
+        1400,
+        500
+      ],
+      "loop": true
+    },
+    {
+      "id": 5111,
+      "key": "axolotl.ask",
+      "frames": [
+        "creatures.axolotl-surprised",
+        "creatures.axolotl-idle-1"
+      ],
+      "durations_ms": [
+        500,
+        500
+      ],
+      "loop": true
+    },
+    {
+      "id": 5112,
+      "key": "axolotl.potty",
+      "frames": [
+        "creatures.axolotl-potty-1",
+        "creatures.axolotl-potty-2"
+      ],
+      "durations_ms": [
+        300,
+        300
+      ],
+      "loop": true
     }
   ],
   "palettes": {
@@ -2295,6 +2389,12 @@
       "#83ebfb",
       "#1ec1d9",
       "#fde77e"
+    ],
+    "poop": [
+      "#b55838",
+      "#8f4329",
+      "#000000",
+      "#dfa08a"
     ]
   },
   "creature_poses": [
@@ -2306,5 +2406,23 @@
     "happy",
     "asleep",
     "unwell"
+  ],
+  "state_poses": [
+    {
+      "name": "study",
+      "fallback": "content"
+    },
+    {
+      "name": "ponder",
+      "fallback": "content"
+    },
+    {
+      "name": "ask",
+      "fallback": "curious"
+    },
+    {
+      "name": "potty",
+      "fallback": "unwell"
+    }
   ]
 }

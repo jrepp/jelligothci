@@ -46,16 +46,19 @@ typedef struct {
     uint8_t request_command; /* JelliCommandKind that answers the state, or NONE. */
     uint8_t request_value;   /* Required command value, or ANY. */
     uint16_t request_bond;   /* Bond gained when the request is answered. */
+    uint8_t on_timeout;      /* JelliBehaviorTimeout when the state expires unanswered. */
     const char *name;
 } JelliBehaviorState;
 
 typedef enum { JELLI_WHEN_ALWAYS, JELLI_WHEN_YES, JELLI_WHEN_NO } JelliTriState;
+typedef enum { JELLI_TIMEOUT_NOTHING, JELLI_TIMEOUT_ACCIDENT } JelliBehaviorTimeout;
 
 /* JELLI_EVENT_STATUS codes; value is the state index. 0 and 1 are health/sleep and evolution. */
 enum {
     JELLI_STATUS_BEHAVIOR_BEGAN = 2,
     JELLI_STATUS_BEHAVIOR_ENDED = 3,
-    JELLI_STATUS_BEHAVIOR_ANSWERED = 4
+    JELLI_STATUS_BEHAVIOR_ANSWERED = 4,
+    JELLI_STATUS_ACCIDENT = 5
 };
 
 typedef struct {

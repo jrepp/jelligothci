@@ -94,7 +94,7 @@ class CreatureClipTest(unittest.TestCase):
         warning = creatures.validate(manifest, manifest, self.source, fake)
         self.assertIn("Off-palette pixel", warning)
         missing = json.loads(json.dumps(manifest))
-        missing["clips"].pop()
+        missing["clips"] = [c for c in missing["clips"] if c["key"] != "axolotl.happy"]  # A base pose.
         with self.assertRaises(creatures.ClipError):
             creatures.validate(missing, manifest, self.source, fake)
 
@@ -218,7 +218,9 @@ class CreatureProfileTest(unittest.TestCase):
 def creatures_coverage_check(manifest):
     forms = {a["form"] for a in manifest["assets"] if a["kind"] == "creatures"}
     keys = {c["key"] for c in manifest["clips"]}
-    if keys != {f"{f}.{p}" for f in forms for p in manifest["creature_poses"]}:
+    base = {f"{f}.{p}" for f in forms for p in manifest["creature_poses"]}
+    optional = {f"{f}.{p['name']}" for f in forms for p in manifest.get("state_poses", [])}
+    if not base <= keys <= base | optional:  # State poses may fall back to a base pose.
         raise ValueError("Creature clip coverage mismatch")
 
 

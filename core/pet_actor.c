@@ -40,7 +40,10 @@ static unsigned creature_pose(const JelliCreatureProfile *profile, const JelliPe
     for (unsigned i = 0u; i < count; ++i)
         if (condition_holds(profile->rules[i].when, v))
             return profile->rules[i].pose;
-    /* Idle phases are the idle poses chosen by the profile's beat schedule. */
+    /* Then a behaviour state's pose (content/creatures.json), then the idle schedule. */
+    const JelliBehaviorLook *look = v->behavior ? jelli_behavior_look(v->behavior - 1u) : NULL;
+    if (look && look->pose < jelli_creature_pose_count)
+        return look->pose;
     return v->phase <= JELLI_POSE_CONTENT ? v->phase : JELLI_POSE_IDLE;
 }
 

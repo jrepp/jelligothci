@@ -61,6 +61,19 @@ typedef struct {
     bool loop;
 } JelliClip;
 
+/* How a behaviour state (content/behaviors.json) looks: a pose (base or state pose, see
+ * jelli_creature_pose_count), an optional caption, and effect/prop asset IDs (0 for none). */
+typedef struct {
+    uint8_t pose;
+    const char *caption;
+    uint32_t effect, prop;
+} JelliBehaviorLook;
+
+/* Base poses first (JELLI_POSE_COUNT), then assets.json "state_poses". */
+extern const unsigned jelli_creature_pose_count;
+/* NULL outside the behaviour state table. */
+const JelliBehaviorLook *jelli_behavior_look(unsigned state);
+
 /* Generated from assets/slice/assets.json clips and content/pets.json forms by
  * tools/assets/embed_slice.py. NULL for forms or poses outside the table. */
 const JelliClip *jelli_creature_clip(unsigned form, unsigned pose);

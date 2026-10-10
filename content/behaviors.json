@@ -15,7 +15,8 @@
     {"name": "asking_food", "duration_s": [30, 60], "cooldown_s": 60,
      "request": {"command": "feed", "bond": 20}, "ends_on": []},
     {"name": "asking_potty", "duration_s": [30, 60], "cooldown_s": 60,
-     "request": {"command": "health", "health": "potty", "bond": 20}, "ends_on": []},
+     "request": {"command": "health", "health": "potty", "bond": 20}, "on_timeout": "accident",
+     "ends_on": []},
     {"name": "asking_company", "duration_s": [20, 40], "cooldown_s": 120,
      "request": {"command": "touch", "bond": 10}, "ends_on": []}
   ],

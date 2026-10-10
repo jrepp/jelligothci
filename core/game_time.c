@@ -206,6 +206,7 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
         break;
     case JELLI_CLEANING:
         adjust_need(pet, JELLI_HYGIENE, 350);
+        jelli_potty_clean(pet);
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
         break;

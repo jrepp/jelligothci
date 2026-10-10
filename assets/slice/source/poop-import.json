@@ -1,0 +1,14 @@
+{
+  "kind": "props",
+  "name": "poop",
+  "first_id": 3006,
+  "source_cell": 72,
+  "canvas": [32, 32],
+  "pivot": [16, 31],
+  "palette": "poop",
+  "note": "Hand-drawn two-frame poop shimmer for a potty accident, delivered 2026-10-09 as 3294x3546 PNGs. IDs are first_id + list position, so append new frames; never reorder.",
+  "frames": [
+    {"source": "poop1.png", "pose": "1"},
+    {"source": "poop2.png", "pose": "2"}
+  ]
+}

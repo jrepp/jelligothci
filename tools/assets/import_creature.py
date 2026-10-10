@@ -3,7 +3,7 @@
 # requires-python = ">=3.12,<3.13"
 # dependencies = ["Pillow==12.0.0"]
 # ///
-"""Import upscaled pixel-art frames as one creature form.
+"""Import upscaled pixel-art frames as one creature form, or as another sprite kind.
 
 A spec JSON (see assets/slice/source/axolotl-import.json) names the source
 files, the source cell size, the target canvas, and each frame's pose. Every
@@ -70,17 +70,22 @@ def palette_of(frames):
     return [c for c, _ in colours.most_common()]
 
 
+def frame_name(spec, entry):
+    return f"{spec.get('form') or spec['name']}-{entry['pose']}"
+
+
 def upsert(manifest, spec, frames):
-    form = spec["form"]
+    kind = spec.get("kind", "creatures")
     manifest.setdefault("palettes", {})[spec["palette"]] = palette_of(frames)
     by_key = {asset["key"]: asset for asset in manifest["assets"]}
     for index, (entry, frame) in enumerate(zip(spec["frames"], frames)):
-        name = f"{form}-{entry['pose']}"
-        record = {"id": spec["first_id"] + index, "key": f"creatures.{name}",
-                  "path": f"creatures/{name}.png", "kind": "creatures",
+        name = frame_name(spec, entry)
+        record = {"id": spec["first_id"] + index, "key": f"{kind}.{name}",
+                  "path": f"{kind}/{name}.png", "kind": kind,
                   "width": frame.width, "height": frame.height, "pivot": list(spec["pivot"]),
-                  "bounds": list(frame.getchannel("A").getbbox()), "form": form,
-                  "pose": entry["pose"], "palette": spec["palette"]}
+                  "bounds": list(frame.getchannel("A").getbbox()), "palette": spec["palette"]}
+        if kind == "creatures":  # Creature frames carry their form and pose for clips.
+            record.update(form=spec["form"], pose=entry["pose"])
         if record["key"] in by_key:
             by_key[record["key"]].update(record)
         else:
@@ -97,12 +102,12 @@ def main():
     sources = [downsample(Image.open(args.source_dir / f["source"]).convert("RGBA"), cell) for f in spec["frames"]]
     frames = place(sources, spec["canvas"], spec["pivot"])
     for entry, frame in zip(spec["frames"], frames):
-        frame.save(SOURCE / "creatures" / f"{spec['form']}-{entry['pose']}.png", optimize=True)
+        frame.save(SOURCE / spec.get("kind", "creatures") / f"{frame_name(spec, entry)}.png", optimize=True)
     manifest_path = SOURCE / "assets.json"
     manifest = json.loads(manifest_path.read_text())
     upsert(manifest, spec, frames)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
-    print(f"Imported {len(frames)} {spec['form']} frames ({frames[0].width}x{frames[0].height})")
+    print(f"Imported {len(frames)} {spec.get('form') or spec['name']} frames ({frames[0].width}x{frames[0].height})")
 
 
 if __name__ == "__main__":

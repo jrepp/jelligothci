@@ -147,6 +147,8 @@ typedef struct {
     uint8_t form;
     uint8_t pose, clip_frame; /* JelliCreaturePose and its clip frame index. */
     uint8_t moment;           /* Running moment ID + 1, or 0. */
+    uint8_t behavior;         /* Behaviour state + 1, or 0 (RFC-005). */
+    uint8_t mess;             /* Mess sprite frame + 1 while a potty accident waits, or 0. */
     uint8_t location;
     uint8_t health, care_seconds;
     uint8_t activity;
