@@ -7,7 +7,7 @@ set(JELLI_BEHAVIOR_COMMANDS feed play clean care rest wake gift claim activate t
     health touch water exercise)
 set(JELLI_BEHAVIOR_HEALTH brush medicine shot wash stretch floss mouthwash spit cleanup potty)
 set(JELLI_BEHAVIOR_CARE eating playing cleaning caring giving exercising)
-set(JELLI_BEHAVIOR_LOCATIONS home garden)
+include("${CMAKE_CURRENT_LIST_DIR}/JelliLocations.cmake")
 
 # Optional JSON member: sets out to the value, or to fallback when absent.
 function(jelli_behavior_opt out fallback data)
@@ -288,6 +288,7 @@ endfunction()
 
 function(jelli_behaviors_data output)
   get_filename_component(root "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/.." ABSOLUTE)
+  jelli_location_names("${root}" JELLI_BEHAVIOR_LOCATIONS)
   foreach(file behaviors activities pets)
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${root}/content/${file}.json")
     file(READ "${root}/content/${file}.json" ${file})

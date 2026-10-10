@@ -169,6 +169,11 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
     unsigned finished = pet->moment ? JELLI_ACTIVITY_CODE_MOMENT + pet->moment - 1u
                                     : JELLI_ACTIVITY_CODE_CARE + activity;
     jelli_moment_complete(game, pet);
+    if (pet->moment) {
+        jelli_moment_reward(game, pet);
+        pet->activity = JELLI_IDLE;
+        pet->interaction_due = 0u;
+    }
     switch ((JelliActivity)pet->activity) {
     case JELLI_EATING:
         if (game->food > 0u) {
