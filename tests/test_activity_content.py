@@ -21,7 +21,7 @@ with tempfile.TemporaryDirectory(prefix='jelli-activity-refs-') as scratch:
     driver = work / 'check.cmake'
     driver.write_text('cmake_minimum_required(VERSION 3.21)\n'
                       'include("${CMAKE_CURRENT_LIST_DIR}/cmake/JelliActivities.cmake")\n'
-                      'jelli_activities_data(output)\n')
+                      'jelli_activities_data(output)\njelli_locations_data(locations)\n')
 
     def check(data, valid, label):
         (work / 'content/activities.json').write_text(json.dumps(data))
@@ -56,6 +56,14 @@ with tempfile.TemporaryDirectory(prefix='jelli-activity-refs-') as scratch:
         mutate(data)
         check(data, False, f'invalid reference/tuning {i}')
     places = json.loads((work / 'content/locations.json').read_text())
+    saved_places = copy.deepcopy(places)
+    for change in ({'background': 6001}, {'background': 99999}, {'outdoors': 1},
+                   {'key': 'home'}, {'name': 'UNSUPPORTED LONG NAME'}):
+        places = copy.deepcopy(saved_places)
+        places['locations'][2].update(change)
+        (work / 'content/locations.json').write_text(json.dumps(places))
+        check(original, False, f'invalid location {change}')
+    places = copy.deepcopy(saved_places)
     places['locations'][1]['id'] = 7
     (work / 'content/locations.json').write_text(json.dumps(places))
     check(original, False, 'renumbered saved location')

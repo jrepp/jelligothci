@@ -87,7 +87,8 @@
       ],
       "locations": [
         "home",
-        "garden"
+        "garden",
+        "park"
       ],
       "randomize_location": true
     },
@@ -132,9 +133,11 @@
         }
       ],
       "locations": [
-        "garden"
+        "garden",
+        "park",
+        "beach"
       ],
-      "randomize_location": false
+      "randomize_location": true
     },
     {
       "id": 3,
@@ -220,7 +223,8 @@
       ],
       "locations": [
         "home",
-        "garden"
+        "garden",
+        "library"
       ],
       "randomize_location": true
     },
@@ -264,7 +268,7 @@
       ],
       "locations": [
         "home",
-        "garden"
+        "park"
       ],
       "randomize_location": true
     },
@@ -397,7 +401,9 @@
       ],
       "locations": [
         "home",
-        "garden"
+        "garden",
+        "park",
+        "beach"
       ],
       "randomize_location": true
     },
@@ -442,9 +448,10 @@
         }
       ],
       "locations": [
-        "garden"
+        "park",
+        "beach"
       ],
-      "randomize_location": false
+      "randomize_location": true
     },
     {
       "id": 10,
@@ -490,7 +497,7 @@
         }
       ],
       "locations": [
-        "garden"
+        "pond"
       ],
       "randomize_location": false
     },
@@ -533,8 +540,10 @@
         }
       ],
       "locations": [
-        "home",
-        "garden"
+        "garden",
+        "park",
+        "pond",
+        "beach"
       ],
       "randomize_location": true
     },
@@ -576,9 +585,10 @@
         }
       ],
       "locations": [
-        "home"
+        "home",
+        "garden"
       ],
-      "randomize_location": false
+      "randomize_location": true
     },
     {
       "id": 13,
@@ -622,9 +632,11 @@
         }
       ],
       "locations": [
-        "home"
+        "home",
+        "park",
+        "library"
       ],
-      "randomize_location": false
+      "randomize_location": true
     },
     {
       "id": 14,
@@ -667,7 +679,10 @@
       ],
       "locations": [
         "home",
-        "garden"
+        "garden",
+        "park",
+        "beach",
+        "library"
       ],
       "randomize_location": true
     },
@@ -711,7 +726,9 @@
       ],
       "locations": [
         "home",
-        "garden"
+        "garden",
+        "pond",
+        "library"
       ],
       "randomize_location": true
     },
@@ -801,7 +818,7 @@
         }
       ],
       "locations": [
-        "garden"
+        "park"
       ],
       "randomize_location": false
     },
@@ -846,9 +863,10 @@
         }
       ],
       "locations": [
-        "garden"
+        "park",
+        "beach"
       ],
-      "randomize_location": false
+      "randomize_location": true
     },
     {
       "id": 19,
@@ -891,9 +909,10 @@
         }
       ],
       "locations": [
-        "garden"
+        "pond",
+        "beach"
       ],
-      "randomize_location": false
+      "randomize_location": true
     },
     {
       "id": 20,
@@ -936,7 +955,7 @@
         }
       ],
       "locations": [
-        "garden"
+        "park"
       ],
       "randomize_location": false
     },
@@ -981,9 +1000,11 @@
         }
       ],
       "locations": [
-        "garden"
+        "garden",
+        "park",
+        "pond"
       ],
-      "randomize_location": false
+      "randomize_location": true
     },
     {
       "id": 22,
@@ -1028,9 +1049,10 @@
         }
       ],
       "locations": [
-        "home"
+        "home",
+        "library"
       ],
-      "randomize_location": false
+      "randomize_location": true
     }
   ],
   "favorites": {

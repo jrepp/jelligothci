@@ -40,7 +40,7 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 | `health/` | Nine 32x32 clicker icons, including the dental sequence |
 | `effects/` | Eight 16x16 star, heart, orb, comet, fairy-wing, music, idea, and rainbow celebration sprites |
 | `prizes/` | Nine unique 32x32 keepsakes: butterfly, pearl tooth, breakfast sun, tea sprite, movie star, bubble gem, moon charm, rainbow seed, friendship bow |
-| `backgrounds/` | Two 64x64 neutral home/garden scenes with black vignettes |
+| `backgrounds/` | Six 64x64 neutral scenes: home, garden, park, pond, beach and library; black vignettes |
 | `props/` | Food bowl, closed/open gift, and bed; 24x24 pixels |
 | `font/` | 128x72 atlas: 16 columns by six rows of 8x12 cells, ASCII 32–127 |
 | `source/` | Original generated atlas, exact generation prompt, original pixel authoring recipe, polish recipe, and glyph patterns |
@@ -210,3 +210,18 @@ The two new 32×32 icons add 4352 bytes of RGB565 and masks. Raw pixels plus
 the retained 8192-byte definitions and 4096-byte indexes total 164128 bytes.
 The authored pack allowance is now 161 KiB (164864 bytes), leaving 736 bytes.
 This does not change framebuffer, core heap, or C source-size limits.
+
+
+Additional location scenes use the existing 16-gray pixel recipe. Reproduce only
+Park/Pond/Beach/Library (preserving other art) with:
+
+```sh
+./scripts/uv run --python 3.12 assets/slice/source/location_art.py
+```
+
+Their IDs are 10003–10006. `content/locations.json` binds stable saved location
+IDs to these background assets and specifies indoor/outdoor atmosphere. Add
+locations at the end of the catalog (up to eight), register a 64×64 background
+in the manifest, then choose allowed locations in Jelli Art's Activities view.
+Build checks reject unknown or non-background asset references. PNG hot reload
+updates artwork; catalog or activity-rule changes require a rebuild.

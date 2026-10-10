@@ -2050,6 +2050,154 @@
         16
       ],
       "purpose": "Broom sweeping a potty mess away; from source/broom_art.py"
+    },
+    {
+      "id": 10003,
+      "key": "backgrounds.park",
+      "path": "backgrounds/park.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "palette": [
+        "#000000",
+        "#0e0e0e",
+        "#1c1c1c",
+        "#2a2a2a",
+        "#383838",
+        "#464646",
+        "#545454",
+        "#626262",
+        "#707070",
+        "#7e7e7e",
+        "#8c8c8c",
+        "#9a9a9a",
+        "#a8a8a8",
+        "#b6b6b6",
+        "#c4c4c4",
+        "#d2d2d2"
+      ],
+      "purpose": "Quiet park scene with a black vignette"
+    },
+    {
+      "id": 10004,
+      "key": "backgrounds.pond",
+      "path": "backgrounds/pond.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "palette": [
+        "#000000",
+        "#0e0e0e",
+        "#1c1c1c",
+        "#2a2a2a",
+        "#383838",
+        "#464646",
+        "#545454",
+        "#626262",
+        "#707070",
+        "#7e7e7e",
+        "#8c8c8c",
+        "#9a9a9a",
+        "#a8a8a8",
+        "#b6b6b6",
+        "#c4c4c4",
+        "#d2d2d2"
+      ],
+      "purpose": "Quiet pond scene with a black vignette"
+    },
+    {
+      "id": 10005,
+      "key": "backgrounds.beach",
+      "path": "backgrounds/beach.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "palette": [
+        "#000000",
+        "#0e0e0e",
+        "#1c1c1c",
+        "#2a2a2a",
+        "#383838",
+        "#464646",
+        "#545454",
+        "#626262",
+        "#707070",
+        "#7e7e7e",
+        "#8c8c8c",
+        "#9a9a9a",
+        "#a8a8a8",
+        "#b6b6b6",
+        "#c4c4c4",
+        "#d2d2d2"
+      ],
+      "purpose": "Quiet beach scene with a black vignette"
+    },
+    {
+      "id": 10006,
+      "key": "backgrounds.library",
+      "path": "backgrounds/library.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "palette": [
+        "#000000",
+        "#0e0e0e",
+        "#1c1c1c",
+        "#2a2a2a",
+        "#383838",
+        "#464646",
+        "#545454",
+        "#626262",
+        "#707070",
+        "#7e7e7e",
+        "#8c8c8c",
+        "#9a9a9a",
+        "#a8a8a8",
+        "#b6b6b6",
+        "#c4c4c4",
+        "#d2d2d2"
+      ],
+      "purpose": "Quiet library scene with a black vignette"
     }
   ],
   "clips": [

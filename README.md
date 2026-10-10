@@ -81,7 +81,7 @@ Bounds, centroids, and creature ground anchors update with the image.
 open build/assets/preview.html    # macOS; otherwise open in your browser
 ```
 
-The preview includes all 95 assets, including nine distinct presents.
+The preview includes all 107 assets, including nine distinct presents.
 [Art inventory](assets/slice/README.md) · [live authoring guide](docs/artwork.md)
 
 ### Creatures are content data
@@ -113,7 +113,9 @@ Creature view.
 Activities pay their authored costs at start and reward completion. Rewards
 vary within a bounded range; bond grows in small increments. Mint spends more
 energy and grows into chess, science and fishing; Axolotl spends more hydration.
-Jelli Art previews each pet's gains, costs and allowed locations. See the
+Jelli Art previews each pet's gains, costs and allowed locations. Home, Garden,
+Park, Pond, Beach and Library have distinct backgrounds. TRAVEL cycles through
+them; activities choose from their authored allowed places. See the
 [activity balance audit](docs-cms/memos/memo-041-activity-balance-and-location-integrity.md)
 for the full meter table, initial tuning and save migration behavior.
 

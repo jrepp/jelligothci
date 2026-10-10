@@ -184,8 +184,10 @@ most ordinary meter gains are 10–40 points.
 
 Select one or more locations from `content/locations.json`, then enable random
 choice or let the pet stay where allowed. Random travel happens only after an
-activity is accepted. Home and Garden are the supported scenes. Adding a new
-scene requires game support; inventing an unknown location key fails validation.
+activity is accepted. Home, Garden, Park, Pond, Beach and Library are available.
+The game reads names, backgrounds and indoor/outdoor atmosphere from the same
+catalog. Append locations with unique keys/IDs and registered background assets
+(up to eight); unknown keys or non-background asset references fail validation.
 The same CMake validators run in core-only, desktop and firmware builds and
 reject broken asset, pet, location, activity and prerequisite references.
 The [balance audit](../../docs-cms/memos/memo-041-activity-balance-and-location-integrity.md)

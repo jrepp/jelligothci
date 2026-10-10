@@ -46,7 +46,7 @@ def validate(doc, repo, content, manifest):
         driver = work / 'check.cmake'
         driver.write_text('cmake_minimum_required(VERSION 3.21)\n'
                           'include("${CMAKE_CURRENT_LIST_DIR}/cmake/JelliActivities.cmake")\n'
-                          'jelli_activities_data(output)\n')
+                          'jelli_activities_data(output)\njelli_locations_data(locations)\n')
         result = subprocess.run(['cmake', '-P', str(driver)], cwd=work,
                                 capture_output=True, text=True, timeout=20, check=False)
     if result.returncode:
