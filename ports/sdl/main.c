@@ -134,7 +134,8 @@ static void run_frames(JelliEngine *shapes, JelliPetEngine *pet, Desktop *d,
 {
     for (unsigned long frame = 0; !options->max_frames || frame < options->max_frames; ++frame) {
         uint64_t start = SDL_GetTicks64();
-        bool frozen = d->pet && jelli_sdl_debug_poll(pet);
+        /* A socket can connect during startup; serve it only after a real frame exists. */
+        bool frozen = d->pet && pet->ui.rendered && jelli_sdl_debug_poll(pet);
         prepare_frame(d, pet, options, session, start, frame, frozen);
         bool running =
             d->pet ? (frozen ? pet->running : jelli_pet_frame(pet)) : jelli_frame(shapes);
