@@ -14,6 +14,8 @@ The served checkout's build_slice.load_assets() checks a scratch copy before
 anything is written.
 """
 import json
+
+import storage
 import re
 from pathlib import Path
 
@@ -41,11 +43,8 @@ def read_json(path, default):
 
 
 def write_json(path, value):
-    """Atomic replace so the live game watcher never sees a half-written file."""
-    path = Path(path)
-    temp = path.with_suffix(path.suffix + ".tmp")
-    temp.write_text(json.dumps(value, indent=2) + "\n")
-    temp.replace(path)
+    """Atomic, fsynced replace (storage.py), so neither the game watcher nor a crash sees half a file."""
+    storage.write_file(Path(path), storage.json_bytes(value))
 
 
 def ledger(source):
@@ -259,7 +258,7 @@ def add_frame(source, repo, request):
     except creatures.ClipError as error:
         raise FrameError(str(error)) from error
     target = Path(source) / asset["path"]
-    image.save(target)
+    storage.write_file(target, storage.png_bytes(image))
     write_json(manifest_path, manifest)
     written = [target, manifest_path, *mark_hand_painted(source, asset["key"], True)]
     origin = request.get("from")
