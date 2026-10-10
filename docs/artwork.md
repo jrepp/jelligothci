@@ -95,7 +95,9 @@ canvas and the preview, each frame's ground line (mint), its ground anchor
 where frame 1's eye height puts it. The eye is measured at its white
 catchlight, inside a face feature that does not touch the outline; a face with
 no catchlight, such as closed or happy eyes, uses the top of its highest
-feature.
+feature. Onion ghosts and the flip-book preview still line frames up by their
+manifest pivot (canvas coordinates); only these guides and warnings use the
+ground anchor.
 
 ### Behaviour and size
 

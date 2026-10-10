@@ -77,6 +77,7 @@
     const ctx = context(); if (!ctx || ctx.c.frames[ctx.index] !== a.key) return;
     const near = around(ctx, state.onionRange), here = decoded[a.key]?.after;
     const ghosts = [...near.prev.map((i, d) => ['prev', i, d]), ...near.next.map((i, d) => ['next', i, d])].sort((x, y) => y[2] - x[2]);
+    g.save();
     for (const [side, i, d] of ghosts) {  // farthest first, so the nearest frames sit on top
       const k = ctx.c.frames[i], p = decoded[k]?.after, other = byKey[k]; if (!p || k === a.key) continue;
       const dx = (a.pivot?.[0] ?? 0) - (other.pivot?.[0] ?? 0), dy = (a.pivot?.[1] ?? 0) - (other.pivot?.[1] ?? 0);
@@ -91,12 +92,12 @@
         /* Silhouette mode ghosts the whole shape. Over this frame's matching pixels only the ghost's
          * outline shows, faintly, so even ±3 stays readable. */
         if (same && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([ex, ey]) => pixel(p, x + ex, y + ey))) continue;
-        g.save(); if (same) g.globalAlpha = 0.35;
+        g.globalAlpha = same ? 0.35 : 1;
         g.fillRect((x + dx) * z, (y + dy) * z, z, z);
         if (z >= 6 && !same) g.strokeRect((x + dx) * z + 1.5, (y + dy) * z + 1.5, z - 3, z - 3);
-        g.restore();
       }
     }
+    g.restore();
   };
   function toggleOnion() {
     state.onionSkin = !state.onionSkin; store.set('onion-skin', state.onionSkin);
@@ -130,13 +131,13 @@
       if (k === fresh || !fb.measured.has(k)) fb.measured.set(k, measure(k));
       return fb.measured.get(k);
     });
-    const ref = ms[0], scale = cr.scaleFor?.(byKey[c.frames[0]]?.form) || 6;
+    const ref = ms[0], scale = cr.scaleFor?.(byKey[c.frames[0]]?.form) || null;  // the form's actor scale (content/creatures.json)
     const screenX = m => Math.round(m.ax * scale / 256);  // where core/pet_actor.c puts the frame, in panel pixels
     const off = ms.map((m, i) => {
       if (!i || !m || !ref) return [];
-      const out = [], slide = screenX(ref) - screenX(m);
+      const out = [], slide = scale ? screenX(ref) - screenX(m) : 0;
       // Under half a source pixel the slide is too small to see, so only larger ones count.
-      if (Math.abs(slide) * 2 >= scale) out.push(`slides ${Math.abs(slide)} px ${slide > 0 ? 'right' : 'left'}`);
+      if (scale && Math.abs(slide) * 2 >= scale) out.push(`slides ${Math.abs(slide)} px ${slide > 0 ? 'right' : 'left'}`);
       if (m.eyeAbove !== null && ref.eyeAbove !== null && m.eyeAbove !== ref.eyeAbove) {
         const d = m.eyeAbove - ref.eyeAbove;
         out.push(`eye ${Math.abs(d)} px ${d > 0 ? 'higher' : 'lower'}`);
@@ -161,8 +162,10 @@
     tick(m.ax, GUIDE.anchor);
     if (z >= 8) {
       g.font = '600 10px ui-monospace,monospace'; g.textBaseline = 'bottom';
-      g.fillStyle = GUIDE.ground; g.fillText('ground', ox + 3, floor - 3);
-      if (eye !== null) { g.fillStyle = GUIDE.eye; g.fillText('eye', ox + 3, oy + (eye + 0.5) * z - 3); }
+      g.lineWidth = 3; g.lineJoin = 'round'; g.strokeStyle = '#291b35';  // an ink outline keeps labels readable on light backdrops
+      const label = (text, colour, y) => { g.strokeText(text, ox + 3, y); g.fillStyle = colour; g.fillText(text, ox + 3, y); };
+      label('ground', GUIDE.ground, floor - 3);
+      if (eye !== null) label('eye', GUIDE.eye, oy + (eye + 0.5) * z - 3);
     }
     g.restore();
   }
@@ -174,7 +177,7 @@
   };
   function alignmentNote(c, al) {
     if (!al.ref) return '<span class="fb-align warn" role="note">First frame is empty, so nothing is compared</span>';
-    const eye = al.ref.eyeAbove === null ? 'no eye found' : `eye ${al.ref.eyeAbove} px above the ground`;
+    const eye = (al.ref.eyeAbove === null ? 'no eye found' : `eye ${al.ref.eyeAbove} px above the ground`) + (al.scale ? '' : ' · scale unknown, slides not checked');
     const bad = al.off.map((o, i) => (o.length ? `frame ${i + 1} ${o.join(', ')}` : '')).filter(Boolean);
     if (bad.length) return `<span class="fb-align warn" role="note">⚠ Against frame 1 (${eye}): ${bad.join('; ')}</span>`;
     return `<span class="fb-align" role="note">${c.frames.length > 1 ? '✓ Frames keep frame 1\'s ground anchor and' : 'Frame 1 sets the ground anchor and'} ${eye}</span>`;
