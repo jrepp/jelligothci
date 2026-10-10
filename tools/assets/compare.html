@@ -173,7 +173,9 @@ section.block{border-top-width:2px}.title h2{letter-spacing:.01em}
 'use strict';
 const BOOT = JSON.parse(document.getElementById('compare-data').textContent);
 let D = BOOT, byKey = {}, decoded = {};
-const NAMES = ['ink', 'plum', 'mauve', 'teal', 'sea', 'mint', 'foam', 'violet', 'lilac', 'haze', 'cream', 'white', 'rose', 'coral', 'gold', 'tan'];
+/* Colour names come from assets.json palette_names, keyed by palette ("shared" or a named one) and colour. */
+const colourName = (palette, hex) => D.palette_names?.[palette]?.[hex?.toLowerCase()];
+const slotLabel = i => colourName('shared', D.palette[i]) || `slot ${i + 1}`;
 /* scene is the wall grey behind the pet (sceneGrey() reads it from backgrounds.home at load); ring is the ring button; panel is the stat tile. */
 const BACKDROPS = {scene: '#b6b6b6', black: '#000000', ring: '#4a494a', panel: '#181c18', checker: null, paper: '#f5f1e7'};
 const CHECKER = ['#36363d', '#2b2b31'];
@@ -201,7 +203,8 @@ const assetPalette = a => a?.palette || D.palette;
 const label = (hex, a) => {
   const pal = assetPalette(a), i = pal.indexOf(hex);
   if (i < 0) return 'off-palette';
-  return pal === D.palette || !a.palette_name || a.palette_name === 'shared' ? NAMES[i] : `${a.palette_name} ${i + 1}`;
+  if (pal === D.palette || !a.palette_name || a.palette_name === 'shared') return slotLabel(i);
+  return colourName(a.palette_name, hex) || `${a.palette_name} ${i + 1}`;
 };
 const signature = a => { let h = 0; const s = a.after || ''; for (let i = 0; i < s.length; i += 7) h = (h * 31 + s.charCodeAt(i)) | 0; return String(h); };
 const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrops, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;

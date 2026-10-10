@@ -64,7 +64,8 @@ def creature_forms(manifest, pets_path):
 def creature_data(manifest, pets_path):
     return {"creature_poses": manifest.get("creature_poses", []), "clips": manifest.get("clips", []),
             "state_poses": manifest.get("state_poses", []),
-            "palettes": manifest.get("palettes", {}), "creature_forms": creature_forms(manifest, pets_path),
+            "palettes": manifest.get("palettes", {}), "palette_ramps": manifest.get("palette_ramps", {}),
+            "palette_names": manifest.get("palette_names", {}), "creature_forms": creature_forms(manifest, pets_path),
             "clip_frame_cap": FRAME_CAP, "clip_duration_max_ms": DURATION_MAX_MS}
 
 

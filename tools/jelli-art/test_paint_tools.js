@@ -135,6 +135,21 @@ test('the eye row is the catchlight row of a face feature that never touches tra
   assert.strictEqual(P.eyeRow(buf(['..', '..'])), null);
 });
 
+test('shade steps along the ramp and prefers the paint colour\'s ramp', () => {
+  const coral = ['#fff4cf', '#fa8c99', '#d84f70'], gold = ['#fff4cf', '#f5c764', '#ae7855'], ramps = [coral, gold];
+  assert.strictEqual(P.shade('#fa8c99', ramps, 1), '#d84f70');
+  assert.strictEqual(P.shade('#fa8c99', ramps, -1), '#fff4cf');
+  assert.strictEqual(P.shade('#d84f70', ramps, 1), null, 'the deepest colour stays put');
+  assert.strictEqual(P.shade('#fff4cf', ramps, -1), null, 'the lightest colour stays put');
+  assert.strictEqual(P.shade('#291b35', ramps, 1), null, 'colours outside every ramp are untouched');
+  assert.strictEqual(P.shade(null, ramps, 1), null, 'transparent is untouched');
+  assert.strictEqual(P.shade('#fff4cf', ramps, 1), '#fa8c99', 'a shared colour uses the first ramp listing it');
+  assert.strictEqual(P.shade('#fff4cf', ramps, 1, ['#f5c764']), '#f5c764', '...or the ramp holding the paint colour');
+  assert.strictEqual(P.shade('#fff4cf', ramps, 1, [gold, '#fa8c99']), '#f5c764', 'the chosen ramp row beats the paint colour');
+  assert.strictEqual(P.shade('#fa8c99', ramps, 1, [gold]), '#d84f70', 'a chosen row without the colour is skipped');
+  assert.strictEqual(P.rampOf('#ae7855', ramps), gold);
+});
+
 test('history is bounded, skips no-ops and truncates redo on a new action', () => {
   const data = new Uint8ClampedArray(4), h = P.history(data, 'Opened', 5);
   assert.strictEqual(P.record(h, 'nothing', data), false);

@@ -17,11 +17,18 @@ the repository's pinned tools, and it only listens on your own computer.
    image; when none do, **Show all** turns it off.
    Press **?** for the keyboard shortcuts.
 2. Choose the **Paint** tab at the top. The tools are pencil, eraser, fill,
-   colour picker, line, rectangle, ellipse and select. **Filled** fills
+   colour picker, shade, line, rectangle, ellipse and select. **Filled** fills
    rectangles and ellipses; Shift while dragging snaps lines to 45° and makes
-   squares and circles. Right-click erases. Alt-click (or Alt+Enter at the
-   keyboard cursor) picks a colour and keeps your tool, except with Select,
-   where Alt-drag copies. **Mirror** paints both halves of a symmetric sprite.
+   squares and circles. The left button paints the main colour and the right
+   button the secondary colour, which starts transparent, so right-click
+   erases until you choose one. With Fill, right-click fills with the
+   secondary colour, so by default it erases the whole touching area. X swaps
+   the two colours. Alt-click (or Alt+Enter at the keyboard cursor) picks the
+   main colour and keeps your tool, except with Select, where Alt-drag copies;
+   Alt+right-click picks the secondary colour with any tool. **Mirror** paints
+   both halves of a symmetric sprite. **Shade** (T) steps each pixel it
+   touches one colour lighter along its ramp; right-click or Shift steps
+   deeper. Colours outside every ramp, such as ink, are left alone.
 3. Selection, transforms, nudges, colour replacement, guides and **Tidy
    outline** are under **More tools**, which stays open once you open it.
    **Select** a rectangle to move it (drag inside it, or Alt+arrow keys), copy,
@@ -29,10 +36,15 @@ the repository's pinned tools, and it only listens on your own computer.
    a selection exists, painting stays inside it; Escape clears it. Without a
    selection, flip, rotate and Alt+arrows apply to the whole sprite. **Wrap**
    makes nudges come round the other side, for tiling patterns.
-4. Choose a colour under **Paint colours**, beside the canvas. Tools paint only the sprite's
-   palette colours until you choose **custom**, which paints any colour. The
-   ✎ on a palette colour changes that colour in every sprite at once; it asks
-   before doing so.
+4. Choose a colour under **Paint colours**, beside the canvas. Each row is a
+   ramp from `assets.json`, light to deep; colours in no ramp come last.
+   Click a colour for the main colour. For the secondary, right-click it,
+   press Shift+F10 or the menu key on it, or choose it and press X to swap it
+   in. Cream sits in two ramps, coral and gold; the Shade tool follows the row
+   you clicked it in. Tools paint only the sprite's palette colours until you
+   choose **custom**, which paints any colour. The ✎ on a palette colour
+   changes that colour in every sprite at once, ramps included; it asks before
+   doing so.
 5. **Tidy outline** shows the house outline and stray-pixel fixes side by side,
    with the changed pixels marked. Nothing changes until you choose **Apply**.
    The header says **lint pass** or which rules the sprite fails: specks, open
