@@ -51,7 +51,11 @@ void jelli_potty_accident(JelliPet *pet)
     pet->needs[JELLI_HYGIENE] = drop(pet->needs[JELLI_HYGIENE], jelli_potty_rules.accident_hygiene);
 }
 
-void jelli_potty_clean(JelliPet *pet) { pet->behavior_flags &= (uint8_t)~JELLI_PET_FLAG_MESS; }
+void jelli_potty_clean(JelliPet *pet)
+{
+    /* Mask with an in-range constant: MSVC rejects a cast that truncates ~FLAG (C4310). */
+    pet->behavior_flags = (uint8_t)(pet->behavior_flags & (0xffu ^ JELLI_PET_FLAG_MESS));
+}
 
 JelliResult jelli_potty_break(JelliPet *pet)
 {
