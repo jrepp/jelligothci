@@ -149,6 +149,7 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
     JelliPetRenderKey view = render_key(game, ui, time, paused);
     jelli_pet_actor_layout(ui, &view);
     jelli_pet_sleep_particles(ui, view.asleep, time);
+    jelli_pet_bubbles(ui, view.asleep, time);
     if (ui->rendered && same_render_key(&view, &ui->last_view)) {
         surface->damage = (JelliRect){0};
         jelli_pet_draw_particles(surface, game, ui);

@@ -255,8 +255,65 @@ static void test_health_cooldowns(void)
     CHECK(jelli_pet_health_ready(pet, 2u) && jelli_pet_health_ready(pet, 1u));
 }
 
+static unsigned bubble_count(const JelliPetUi *ui)
+{
+    unsigned count = 0u;
+    for (unsigned i = 0; i < JELLI_PARTICLE_CAPACITY; ++i)
+        if (ui->particles.items[i].life && (ui->particles.items[i].style & JELLI_PARTICLE_BUBBLE))
+            ++count;
+    return count;
+}
+
+static void test_routine_bubbles(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
+    ui.menu_open = true;
+    ui.page = JELLI_UI_BRUSH;
+    ui.clicker_pet = game.pets[0].id;
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(bubble_count(&ui) == 2u);
+    int mouth_y = ui.actor_y + (int)((ui.actor_frame->centroid_y_q8 * 6u + 128u) / 256u) -
+                  (int)ui.actor_bounds.height / 4;
+    CHECK(ui.particles.items[0].y / 16 == mouth_y && ui.particles.items[0].vy < 0);
+    jelli_pet_render(&surface, &game, &ui, 100u, false);
+    CHECK(bubble_count(&ui) == 2u);
+    jelli_pet_render(&surface, &game, &ui, 160u, false);
+    CHECK(bubble_count(&ui) == 4u);
+    ui.page = JELLI_UI_WASH;
+    jelli_pet_render(&surface, &game, &ui, 200u, false);
+    CHECK(bubble_count(&ui) == 4u);
+    for (unsigned i = 0; i < JELLI_PARTICLE_CAPACITY; ++i) {
+        const JelliParticle *particle = &ui.particles.items[i];
+        if (!particle->life)
+            continue;
+        CHECK(particle->y / 16 == (int)ui.actor_bounds.y && particle->vy > 0);
+        CHECK(particle->x / 16 >= (int)ui.actor_bounds.x);
+        CHECK(particle->x / 16 < (int)(ui.actor_bounds.x + ui.actor_bounds.width));
+    }
+    jelli_particles_advance(&ui.particles, 20u);
+    CHECK(ui.particles.items[4].y / 16 > (int)ui.actor_bounds.y);
+    jelli_pet_render(&surface, &game, &ui, 100000u, false);
+    CHECK(bubble_count(&ui) == 8u); /* A stall emits one batch, not a catch-up storm. */
+    CHECK(surface.damage.x + surface.damage.width <= JELLI_WIDTH);
+    CHECK(surface.damage.y + surface.damage.height <= JELLI_HEIGHT);
+    ui.clicker_done = true;
+    jelli_pet_render(&surface, &game, &ui, 100001u, false);
+    CHECK(bubble_count(&ui) == 0u);
+    ui.clicker_done = false;
+    jelli_pet_render(&surface, &game, &ui, 100002u, false);
+    CHECK(bubble_count(&ui) == 4u);
+    ui.menu_open = false;
+    jelli_pet_render(&surface, &game, &ui, 100003u, false);
+    CHECK(bubble_count(&ui) == 0u);
+}
+
 int main(void)
 {
+    test_routine_bubbles();
     test_activity_reaction_priority();
     test_health_cooldowns();
     test_idle_coos();

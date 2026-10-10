@@ -89,6 +89,26 @@ static void sleep_layer(JelliSurface *s, const JelliParticle *p, int offset, uin
     }
 }
 
+static void draw_bubble(JelliSurface *surface, const JelliParticle *particle)
+{
+    int radius = 3 + (int)(particle->style & 3u);
+    int x = particle->x / 16, y = particle->y / 16;
+    for (int dy = -radius; dy <= radius; ++dy) {
+        for (int dx = -radius; dx <= radius; ++dx) {
+            int distance = dx * dx + dy * dy;
+            int px = x + dx, py = y + dy;
+            if (distance > radius * radius || distance < (radius - 1) * (radius - 1) || px < 0 ||
+                py < 0 || px >= JELLI_WIDTH || py >= JELLI_HEIGHT)
+                continue;
+            int rx = 2 * px - 465, ry = 2 * py - 465;
+            if (rx * rx + ry * ry > 466 * 466)
+                continue;
+            uint16_t color = dx < 0 && dy < 0 ? 0xffffu : 0x8f5fu;
+            surface->pixels[(unsigned)py * surface->stride + (unsigned)px] = color;
+        }
+    }
+}
+
 static void draw_sleep(JelliSurface *s, const JelliParticle *p, const JelliAssetSet *assets)
 {
     sleep_layer(s, p, 2, 0x0841u, assets);
@@ -117,6 +137,8 @@ void jelli_pet_draw_particles(JelliSurface *surface, const JelliGame *game, Jell
                 draw_sleep(surface, &p->items[i], ui->assets);
             else if (p->items[i].style & 128u)
                 draw_magic(surface, &p->items[i], ui->assets);
+            else if (p->items[i].style & JELLI_PARTICLE_BUBBLE)
+                draw_bubble(surface, &p->items[i]);
             else
                 draw_particle(surface, &p->items[i]);
         }

@@ -178,6 +178,9 @@ typedef struct {
     bool sound_pending, sound_played;
     uint8_t night_from, night_target;
     bool atmosphere_ready, sleep_emitted;
+    uint64_t bubble_emit_ms;
+    uint8_t bubble_mode;
+    bool bubble_emitted;
     uint8_t routine_goals[6];
 } JelliPetUi;
 

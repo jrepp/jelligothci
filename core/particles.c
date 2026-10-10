@@ -45,7 +45,9 @@ static void tick(JelliParticles *p)
         --item->life;
         item->x = (int16_t)((int)item->x + item->vx);
         item->y = (int16_t)((int)item->y + item->vy);
-        if (!(item->style & 64u) && item->vy < 120)
+        bool rising_bubble =
+            (item->style & JELLI_PARTICLE_BUBBLE) && (item->style & JELLI_PARTICLE_RISE);
+        if (!(item->style & 64u) && !rising_bubble && item->vy < 120)
             item->vy = (int8_t)(item->vy + 3);
         p->changed = true;
     }
@@ -88,7 +90,7 @@ JelliRect jelli_particles_bounds(const JelliParticles *p)
         if (!item->life)
             continue;
         int x = item->x / 16, y = item->y / 16;
-        int radius = (item->style & 192u) ? 16 : 3;
+        int radius = (item->style & 192u) ? 16 : (item->style & JELLI_PARTICLE_BUBBLE) ? 6 : 3;
         if (x + radius < 0 || x - radius >= JELLI_WIDTH || y + radius < 0 ||
             y - radius >= JELLI_HEIGHT)
             continue;

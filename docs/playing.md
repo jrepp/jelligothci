@@ -437,3 +437,9 @@ voiced chirp. Swipe navigation follows the same direction distinction. Menu
 navigation, settings, and collection selection no longer create sprite sprays.
 Pet actions and celebrations retain them. Input audio remains limited to one
 cue per 120 ms, and the master volume controls all automatic sounds.
+
+
+During brushing, small bubbles rise near the mouth, one quarter of the visible
+pet height above its centroid. Bath bubbles fall from across the pet's top.
+Both use the fixed particle pool, stop on completion or exit, and emit at most
+one batch after a timing stall. They do not appear while the pet is asleep.
