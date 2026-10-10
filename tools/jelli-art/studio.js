@@ -380,7 +380,6 @@
     status(n ? `Replaced ${n} px of ${from} with ${to || 'transparent'}${r ? ' in the selection' : ''}` : `No ${from} pixels to replace`);
   }
   const toggle = (name, label) => { state[name] = !state[name]; savePaintPrefs(); renderToolbarState(); draw(); announce(`${label} ${state[name] ? 'on' : 'off'}`); };
-  S.toggleGuides = () => toggle('guides', 'Guides');
   /* Zoom to the drawn pixels plus a margin, and scroll them into view (a 48 px frame often has empty rows). */
   function fitContent() {
     if (!view) return;
@@ -402,7 +401,7 @@
     drawGrid(ctx, a.width, a.height, z);
     drawIssues(ctx, a.after_metrics, z);
     if (state.guides) drawGuides(ctx, a, z);
-    S.overlay?.(ctx, a, z);  // flipbook.js: a clip frame's eye row, ground row and pivot
+    S.overlay?.(ctx, a, z);  // flipbook.js: a clip frame's eye and ground guides
     if (state.mirror) { ctx.fillStyle = 'rgba(133,228,182,.8)'; ctx.fillRect(a.width * z / 2 - 1, 0, 2, a.height * z); }
     drawSelection(ctx, z);
     if (state.hover) {
@@ -595,7 +594,7 @@
       <div><div class="lbl">Nudge</div><div class="seg" role="group" aria-label="Nudge">${[['ArrowLeft', '←', 'left'], ['ArrowUp', '↑', 'up'], ['ArrowDown', '↓', 'down'], ['ArrowRight', '→', 'right']].map(([k, g, w]) =>
         btn(`nudge-${w}`, g, `Move the selection (or shift the sprite) 1 px ${w}`, `Alt+${k}`, ` aria-label="Nudge ${w}" data-nudge="${k}"`)).join('')}${btn('wrap', 'Wrap', 'Nudges wrap pixels round inside the selection or sprite', 'W')}</div></div>
       <div><div class="lbl"><label for="replace-from">Replace colour</label></div><div class="seg" role="group" aria-label="Replace colour"><select id="replace-from"></select>${btn('replace', '→ paint colour', 'Replace this colour with the paint colour (or transparent with the eraser), in the selection or the whole sprite', '')}</div></div>
-      <div><div class="lbl">View</div><div class="seg" role="group" aria-label="View">${btn('guides', 'Guides', 'Centre and tile-centre guides; on a clip frame also its eye row, ground row and pivot', '⇧G')}${btn('fit-content', 'Fit content', 'Zoom to the drawn pixels plus a 2 px margin', 'Z')}</div></div>
+      <div><div class="lbl">View</div><div class="seg" role="group" aria-label="View">${btn('guides', 'Guides', 'Centre and tile-centre guides', '⇧G')}${btn('fit-content', 'Fit content', 'Zoom to the drawn pixels plus a 2 px margin', 'Z')}</div></div>
       <div><div class="lbl">Clean up</div>${btn('tidy', 'Tidy outline', 'Closed 1px outline, remove specks, bottom shadow', '')}</div></div></details>`;
     extra.querySelector('#paint-more').ontoggle = e => store.set('paint-more', e.target.open);
     const on = (id, fn) => { extra.querySelector('#' + id).onclick = fn; };
@@ -711,7 +710,7 @@
     {keys: ['Shift+H', 'Shift+V'], description: 'Flip horizontally, vertically (selection or sprite)'}, {keys: ['Shift+R'], description: 'Rotate 90° clockwise'},
     {keys: ['[', ']', '0'], description: 'Zoom out, in, fit'}, {keys: ['Mod+Wheel'], description: 'Zoom at the pointer'}, {keys: ['Middle-drag'], description: 'Pan'},
     {keys: ['Z'], description: 'Fit content: zoom to the drawn pixels'},
-    {keys: ['G'], description: 'Pixel grid'}, {keys: ['Shift+G'], description: 'Centre and tile-centre guides (a clip frame adds its eye row, ground row and pivot)'},
+    {keys: ['G'], description: 'Pixel grid'}, {keys: ['Shift+G'], description: 'Centre and tile-centre guides'},
     {keys: ['Space'], description: 'Hold to peek at the before image (until the keyboard cursor is in use)'},
     {keys: ['Mod+Z'], description: 'Undo; the history list jumps to any of the last 100 steps'}, {keys: ['Mod+Shift+Z', 'Mod+Y'], description: 'Redo'},
     {keys: ['Mod+S'], description: 'Save the asset'}]);

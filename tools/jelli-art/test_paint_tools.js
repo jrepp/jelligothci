@@ -122,13 +122,15 @@ test('opaque bounds give the ground row; an empty buffer has none', () => {
   assert.strictEqual(P.bounds(buf(['..', '..'])), null);
 });
 
-test('the eye row is face ink inside the outline, preferring an open eye with a catchlight', () => {
-  const face = ['.aaaaaaaa.', 'abbbbbbbba', 'abbabbbbba', 'abbbbbdbba', 'abbbbbabba', 'abbbbbabba', 'abbbbbbbba', '.aaaaaaaa.'];
-  assert.strictEqual(P.eyeRow(buf(face)), 3, 'the seam at row 2 loses to the eye with a catchlight');
-  const closed = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbbbbbba', 'abbabbabba', 'abbbaabbba', 'abbbbbbbba', '.aaaaaaaa.'];
-  assert.strictEqual(P.eyeRow(buf(closed)), 3, 'without a catchlight the topmost face ink counts');
+test('the eye row is the catchlight row of a face feature that never touches transparency', () => {
+  const face = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbbbbbba', 'abbbbbdbba', 'abbbbbabba', 'abbbbbabba', 'abbbbbbbba', '.aaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(face)), 3, 'the eye is measured at its catchlight');
   const low = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbabbbba', 'abbbadbbba', 'abbbaabbba', 'abbbbbbbba', '.aaaaaaaa.'];
-  assert.strictEqual(P.eyeRow(buf(low)), 2, 'a catchlight below the top of the eye still gives the eye\'s top row');
+  assert.strictEqual(P.eyeRow(buf(low)), 3, 'a catchlight below the top of the eye still gives the catchlight row');
+  const seam = ['.aaaaaaaaa.', 'abbbbbbbbba', 'aaaabbbbbba', 'abbbbbbbbba', 'abbbbaabbba', 'abbbbbbbbba', '.aaaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(seam)), 4, 'a seam joined to the outline is never a face feature');
+  const closed = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbbbbbba', 'abbabbabba', 'abbbaabbba', 'abbbbbbbba', '.aaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(closed)), 3, 'without a catchlight the top of the topmost feature counts');
   assert.strictEqual(P.eyeRow(buf(['aaaa', 'abba', 'aaaa'])), null, 'outline ink is never a face');
   assert.strictEqual(P.eyeRow(buf(['..', '..'])), null);
 });

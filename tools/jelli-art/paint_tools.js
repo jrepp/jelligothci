@@ -153,31 +153,35 @@
     return x1 < 0 ? null : {x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1};
   }
   const luma = hex => parseInt(hex.slice(1, 3), 16) * 299 + parseInt(hex.slice(3, 5), 16) * 587 + parseInt(hex.slice(5, 7), 16) * 114;
-  /* The eye row of a face: the top of the eye, found from face ink in the middle half of the width.
-   * Face ink is the darkest colour (the outline ink) with every neighbour opaque, so the outline never
-   * counts. An eye is face ink touching a white catchlight; its row is the top of that 8-connected
-   * cluster of face ink and white, wherever the catchlight sits. Without one, the topmost face ink counts. */
+  /* The eye row of a face, measured at the catchlight. Face features are 8-connected groups of the darkest
+   * colour (the outline ink) that never touch transparency: eyes and mouths sit inside the body, while the
+   * outline and any seam joined to it reach the edge. The eye row is the topmost white pixel beside such a
+   * group in the middle half of the width. A face without a catchlight (closed or happy eyes) uses the top
+   * of its topmost feature. Null when there is no feature. */
   function eyeRow(b) {
     const ink = colours(b).map(([h]) => h).reduce((d, h) => (d === null || luma(h) < luma(d) ? h : d), null);
     if (!ink) return null;
     const near = (x, y) => { const out = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) out.push([x + dx, y + dy]); return out; };
-    const face = (x, y) => get(b, x, y) === ink && near(x, y).every(([nx, ny]) => get(b, nx, ny));
-    let first = null;
-    for (let y = 0; y < b.h; y++) for (let x = b.w >> 2; x < b.w - (b.w >> 2); x++) {
-      if (!face(x, y)) continue;
-      if (first === null) first = y;
-      if (!near(x, y).some(([nx, ny]) => get(b, nx, ny) === '#ffffff')) continue;
-      let top = y; const seen = new Set([x + ',' + y]), stack = [[x, y]];
+    const seen = new Uint8Array(b.w * b.h), lo = b.w >> 2, hi = b.w - (b.w >> 2);
+    let lit = null, top = null;
+    for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
+      if (seen[y * b.w + x] || get(b, x, y) !== ink) continue;
+      const group = [], stack = [[x, y]]; let inner = true; seen[y * b.w + x] = 1;
       while (stack.length) {
-        const [cx, cy] = stack.pop(); top = Math.min(top, cy);
+        const [cx, cy] = stack.pop(); group.push([cx, cy]);
         for (const [nx, ny] of near(cx, cy)) {
-          const k = nx + ',' + ny;
-          if (!seen.has(k) && (get(b, nx, ny) === '#ffffff' || face(nx, ny))) { seen.add(k); stack.push([nx, ny]); }
+          const hex = get(b, nx, ny);
+          if (!hex) inner = false;
+          else if (hex === ink && !seen[ny * b.w + nx]) { seen[ny * b.w + nx] = 1; stack.push([nx, ny]); }
         }
       }
-      return top;
+      if (!inner || !group.some(([gx]) => gx >= lo && gx < hi)) continue;
+      for (const [gx, gy] of group) {
+        if (top === null || gy < top) top = gy;
+        for (const [nx, ny] of near(gx, gy)) if (get(b, nx, ny) === '#ffffff' && (lit === null || ny < lit)) lit = ny;
+      }
     }
-    return first;
+    return lit ?? top;
   }
   /* Colours of a buffer that the palette lacks. */
   const offPalette = (b, palette) => { const pal = new Set(palette.map(h => h.toLowerCase())); return colours(b).map(([h]) => h).filter(h => !pal.has(h)); };

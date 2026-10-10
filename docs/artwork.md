@@ -84,14 +84,18 @@ this one; **Silhouette** ghosts their whole shape, to judge arcs and volume
 (Shift+O switches). **±1** to **±3** sets how many on each side, and **Ghost**
 sets their strength.
 
-With **Guides** on (Shift+G, or the button in the flip-book), the canvas and
-the preview also show the clip's **eye row** (coral), **ground row** (mint)
-and the frame's **pivot** (white cross). The first frame sets the rows. The
-flip-book says when another frame's eye or ground row moves, and marks that
-frame's thumbnail with ⚠, so a pose does not jitter. The ground row is the
-lowest opaque row. The eye row is the top of the eye found by its white
-catchlight; a face without one, such as closed or happy eyes, uses the topmost
-ink inside the outline, so treat its warning as a prompt to check.
+The flip-book compares every frame with frame 1 the way the game places it:
+each frame stands on its own **ground anchor** (its bottom edge, and the
+centre of its bottom three rows), as `core/pet_actor.c` does. It warns when a
+frame **slides** sideways by half a source pixel or more on the panel, or when
+its **eye** sits higher or lower above its bottom edge than frame 1's. The
+frame's thumbnail gets ⚠. **Eye & ground** in the flip-book draws, on the
+canvas and the preview, each frame's ground line (mint), its ground anchor
+(white tick, with frame 1's in mint when they differ), and the eye row (coral)
+where frame 1's eye height puts it. The eye is measured at its white
+catchlight, inside a face feature that does not touch the outline; a face with
+no catchlight, such as closed or happy eyes, uses the top of its highest
+feature.
 
 ### Behaviour and size
 
