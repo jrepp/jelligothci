@@ -255,3 +255,27 @@ final class Counter: @unchecked Sendable {
     private var count = 0
     func next() -> Int { lock.withLock { defer { count += 1 }; return count } }
 }
+
+extension OllamaRunnerTests {
+/// qwen3.8 told not to think still writes a draft, then "</think>", then its answer:
+/// only the answer is spoken and kept, so it is not said twice.
+@Test func aDraftBeforeThinkingEndsIsNeitherSpokenNorKept() async throws {
+    let draft = "It's about 59 degrees in Seattle. A light jacket should do."
+    let answer = "It's about 59 degrees in Seattle right now. A light jacket should do the trick."
+    #expect(OllamaRunner.answerOnly(draft + "\n</think>\n\n" + answer) == "\n\n" + answer)
+    #expect(OllamaRunner.answerOnly("<think>plan</think>Answer.") == "Answer.")
+    #expect(OllamaRunner.answerOnly("No thinking here.") == "No thinking here.")
+    #expect(OllamaRunner.answerOnly("a</think>b</think>c") == "c")
+    FakeLocal.handler = { request, _ in
+        if request.url!.path == "/api/show" { return .init(body: json(["capabilities": ["completion", "tools", "thinking"]])) }
+        return .init(body: json(["message": ["role": "assistant", "content": draft + "\n</think>\n\n" + answer]]))
+    }
+    let session = FakeLocal.session()
+    let runner = OllamaRunner(base: ollama, search: nil, session: session)
+    #expect(try await runner.answer("weather in Seattle", model: "qwen3.8:27b-mlx", conversation: "s1") { _ in } == answer)
+    _ = try await runner.answer("and tomorrow?", model: "qwen3.8:27b-mlx", conversation: "s1") { _ in }
+    let chats = FakeLocal.calls.filter { $0.path == "/api/chat" }.compactMap(\.body)
+    guard case .array(let messages)? = chats.last?["messages"] else { Issue.record("no messages"); return }
+    #expect(messages.filter { $0["role"]?.string == "assistant" }.map { $0["content"]?.string } == ["\n\n" + answer])
+}
+}

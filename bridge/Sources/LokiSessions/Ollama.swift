@@ -85,7 +85,7 @@ public actor OllamaRunner: LocalModels {
             messages.append(Self.kept(reply))
             guard !asked.isEmpty, !offered.isEmpty else {
                 conversations[conversation] = Self.trimmed(messages)
-                let said = Self.speakable(reply["content"]?.string ?? "")
+                let said = Self.speakable(Self.answerOnly(reply["content"]?.string ?? ""))
                 guard !said.isEmpty else { throw LocalHTTP.Failure("\(model) gave no answer") }
                 return said
             }
@@ -174,10 +174,19 @@ public actor OllamaRunner: LocalModels {
         .object(["role": .string(role), "content": .string(content)])
     }
 
+    /// The answer without the thinking some models put in it even when told not to
+    /// think (qwen3.8 writes a draft, then "</think>", then the answer): what follows
+    /// the last "</think>".
+    static func answerOnly(_ content: String) -> String {
+        guard let end = content.range(of: "</think>", options: .backwards) else { return content }
+        return String(content[end.upperBound...])
+    }
+
     /// The reply as the conversation keeps it: its thinking left out.
     static func kept(_ reply: JSONValue) -> JSONValue {
         guard case .object(var object) = reply else { return message("assistant", "") }
         object["thinking"] = nil
+        if let content = object["content"]?.string { object["content"] = .string(answerOnly(content)) }
         object["role"] = .string("assistant")
         return .object(object)
     }
