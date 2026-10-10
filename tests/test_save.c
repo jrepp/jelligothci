@@ -363,12 +363,12 @@ static void rolling_history_round_trip(void)
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 68u] = 2u; /* Owned bit nine is outside the nine prize slots. */
+    bytes[size - 69u] = 2u; /* Owned bit nine is outside the nine prize slots. */
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 29u] = JELLI_PRIZE_COUNT + 1u;
+    bytes[size - 30u] = JELLI_PRIZE_COUNT + 1u;
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));

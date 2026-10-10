@@ -109,3 +109,11 @@ size_t jelli_sound_render(JelliSynth *s, int16_t *output, size_t capacity)
         output[count++] = sample(s);
     return count;
 }
+
+unsigned jelli_sound_volume(unsigned cue, unsigned master)
+{
+    if (cue >= JELLI_SOUND_COUNT || master > 100u)
+        return 0u;
+    /* Master 50 preserves the old 25 tap / 18 coo levels; default 65 is +30%. */
+    return (master * (cue == 5u ? 25u : 18u) + 25u) / 50u;
+}

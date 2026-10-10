@@ -37,12 +37,18 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
                                    JELLI_CMD_HEALTH,
                                    JELLI_CMD_HEALTH,
                                    JELLI_CMD_WATER,
-                                   JELLI_CMD_EXERCISE};
+                                   JELLI_CMD_EXERCISE,
+                                   JELLI_CMD_VOLUME,
+                                   JELLI_CMD_VOLUME};
     if ((unsigned)action >= sizeof(kinds) / sizeof(kinds[0]) || kinds[action] < 0)
         return false;
     const JelliPet *pet = &game->pets[game->active];
     *command = (JelliCommand){(JelliCommandKind)kinds[action], pet->id, 0u};
-    if (command->kind == JELLI_CMD_REST)
+    if (command->kind == JELLI_CMD_VOLUME)
+        command->value = action == JELLI_UI_ACTION_VOLUME_UP
+                             ? (game->volume >= 90u ? 100u : game->volume + 10u)
+                             : (game->volume <= 10u ? 0u : game->volume - 10u);
+    else if (command->kind == JELLI_CMD_REST)
         command->kind = pet->asleep ? JELLI_CMD_WAKE : JELLI_CMD_REST;
 
     else if (command->kind == JELLI_CMD_TRAVEL)

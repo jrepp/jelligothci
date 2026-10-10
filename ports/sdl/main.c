@@ -1,3 +1,4 @@
+#include "jelli/sound.h"
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include "jelli/gesture.h"
@@ -112,8 +113,9 @@ static void play_feedback(JelliPetEngine *pet, uint64_t now, bool enabled)
     if (!enabled || pet->paused)
         return;
     unsigned cue = jelli_pet_ui_sound(&pet->ui, &pet->game.pets[pet->game.active], now);
-    if (cue)
-        (void)jelli_sdl_sound_request(NULL, cue - 1u, cue == 6u ? 25u : 18u);
+    if (cue && pet->game.volume)
+        (void)jelli_sdl_sound_request(NULL, cue - 1u,
+                                      jelli_sound_volume(cue - 1u, pet->game.volume));
 }
 
 static void prepare_frame(Desktop *d, JelliPetEngine *pet, const JelliOptions *options,

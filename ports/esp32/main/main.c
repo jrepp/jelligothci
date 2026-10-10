@@ -1,3 +1,4 @@
+#include "jelli/sound.h"
 #include "jelli/gesture.h"
 #include "jelli/pet_engine.h"
 #include "debug_wire.h"
@@ -94,8 +95,9 @@ static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSessi
             !frozen && !engine->paused
                 ? jelli_pet_ui_sound(&engine->ui, &engine->game.pets[engine->game.active], start)
                 : 0u;
-        if (cue)
-            (void)jelli_sound_output_request(NULL, cue - 1u, cue == 6u ? 25u : 18u);
+        if (cue && engine->game.volume)
+            (void)jelli_sound_output_request(NULL, cue - 1u,
+                                             jelli_sound_volume(cue - 1u, engine->game.volume));
         jelli_esp_session_update(session, engine, frozen);
         if (!frozen)
             ++frames;

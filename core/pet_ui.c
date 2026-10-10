@@ -30,7 +30,10 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
                                      {{0}},
                                      {{JELLI_UI_ACTION_BEDTIME, "BEDTIME +1H", NULL},
                                       {JELLI_UI_ACTION_SWITCH_PET, "PETS", NULL},
-                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"}},
+                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"},
+                                      {0},
+                                      {JELLI_UI_ACTION_VOLUME_DOWN, "VOL -", NULL},
+                                      {JELLI_UI_ACTION_VOLUME_UP, "VOL +", NULL}},
                                      {{JELLI_UI_ACTION_BREAKFAST, "BREAKFAST", NULL},
                                       {JELLI_UI_ACTION_TEA, "TEA", NULL},
                                       {JELLI_UI_ACTION_OUTING, "GOING OUT", NULL},
@@ -83,7 +86,8 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 
 static bool action_persists(JelliPetUiAction action)
 {
-    if (action == JELLI_UI_ACTION_WATER || action == JELLI_UI_ACTION_EXERCISE)
+    if (action == JELLI_UI_ACTION_WATER || action == JELLI_UI_ACTION_EXERCISE ||
+        action == JELLI_UI_ACTION_VOLUME_DOWN || action == JELLI_UI_ACTION_VOLUME_UP)
         return true;
     static const bool persists[] = {true,  false, true, false, false, false, true, true,
                                     true,  false, true, true,  true,  true,  true, true,
@@ -116,7 +120,8 @@ static void execute(JelliPetUi *ui, JelliGame *game, JelliPetUiAction action)
     ui->result = result;
     if (result == JELLI_OK &&
         (game->pets[game->active].activity != JELLI_IDLE || action == JELLI_UI_ACTION_WATER) &&
-        action != JELLI_UI_ACTION_SAVE) {
+        action != JELLI_UI_ACTION_SAVE && action != JELLI_UI_ACTION_VOLUME_DOWN &&
+        action != JELLI_UI_ACTION_VOLUME_UP) {
         ui->menu_open = false;
         ui->page = JELLI_UI_HOME;
     }

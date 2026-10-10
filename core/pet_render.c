@@ -54,6 +54,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
         key.needs[i] = pet->needs[i];
     key.bond = pet->bond;
     key.hydration = pet->hydration;
+    key.volume = game->volume;
     key.mood = (uint8_t)jelli_pet_mood(pet);
     key.reaction = pet->reaction;
     key.care_blocked = (uint8_t)((jelli_pet_health_ready(pet, 1u) ? 0u : 1u) |
@@ -132,8 +133,9 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->hydration == b->hydration && a->assets == b->assets && same_frame_key(a, b) &&
-           same_pet_key(a, b) && jelli_pet_gallery_same(a, b) && jelli_pet_collection_same(a, b);
+    return a->volume == b->volume && a->hydration == b->hydration && a->assets == b->assets &&
+           same_frame_key(a, b) && same_pet_key(a, b) && jelli_pet_gallery_same(a, b) &&
+           jelli_pet_collection_same(a, b);
 }
 
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,

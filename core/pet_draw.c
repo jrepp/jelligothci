@@ -184,6 +184,11 @@ static void page_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
         if (size > 0 && (size_t)size < sizeof(value))
             jelli_canvas_caption(c, value, 304, 0xffffu);
         label = JELLI_VERSION_LABEL;
+        if (!ui->clock_edit) {
+            int count = snprintf(value, sizeof(value), "VOLUME %u%%", (unsigned)game->volume);
+            if (count > 0 && (size_t)count < sizeof(value))
+                jelli_canvas_centered(c, game->volume ? value : "MUTED", 380, 1u, MINT);
+        }
     } else if (ui->page == JELLI_UI_MORE) {
         int size = snprintf(value, sizeof(value), "GIFTS %u", (unsigned)game->gifts);
         if (size > 0 && (size_t)size < sizeof(value))

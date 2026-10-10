@@ -215,6 +215,7 @@ static void write_game(Writer *writer, const JelliGame *game)
     }
     for (unsigned i = 0u; i < game->count; ++i)
         put_u8(writer, game->pets[i].food_type);
+    put_u8(writer, game->volume);
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -267,6 +268,7 @@ static bool read_game(Reader *reader, JelliGame *game)
     if (reader->version >= 6u)
         for (unsigned i = 0u; i < game->count; ++i)
             game->pets[i].food_type = get_u8(reader);
+    game->volume = reader->version >= 7u ? get_u8(reader) : JELLI_VOLUME_DEFAULT;
     return !reader->failed;
 }
 

@@ -33,7 +33,7 @@ void jelli_game_init(JelliGame *game)
 {
     if (game == NULL)
         return;
-    *game = (JelliGame){0};
+    *game = (JelliGame){.volume = JELLI_VOLUME_DEFAULT};
     game->count = 2u;
     game->food = 5u;
     game->gifts = 3u;
@@ -215,6 +215,8 @@ static bool prize_sources_valid(const JelliGame *game)
 
 bool jelli_game_valid(const JelliGame *game)
 {
+    if (game && game->volume > JELLI_VOLUME_MAX)
+        return false;
     return game_header_valid(game) && game_pets_valid(game) && prize_sources_valid(game) &&
            jelli_collection_valid(game);
 }

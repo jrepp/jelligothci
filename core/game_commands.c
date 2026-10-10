@@ -299,9 +299,22 @@ static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
     return JELLI_OK;
 }
 
+static JelliResult set_volume(JelliGame *game, uint32_t value)
+{
+    if (value > JELLI_VOLUME_MAX)
+        return JELLI_INVALID_TARGET;
+    if (value == game->volume)
+        return JELLI_FULL;
+    game->volume = (uint8_t)value;
+    ++game->revision;
+    return JELLI_OK;
+}
+
 static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliPet *pet)
 {
     switch (command.kind) {
+    case JELLI_CMD_VOLUME:
+        return set_volume(game, command.value);
     case JELLI_CMD_EXERCISE:
         return bedtime_pending(pet) ? JELLI_BUSY : jelli_start_exercise(pet);
     case JELLI_CMD_WATER:

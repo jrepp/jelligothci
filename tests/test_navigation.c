@@ -144,9 +144,41 @@ static void reversal_and_pause(void)
     CHECK(!ui.last_view.ring_moving && ui.last_view.ring_clock_edit);
 }
 
+static void volume_controls(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    ui.menu_open = true;
+    ui.page = JELLI_UI_SETTINGS;
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(ui.last_view.volume == 65u);
+    jelli_pet_ui_tap(&ui, &game, 356, 355);
+    CHECK(game.volume == 75u && ui.save_requested && ui.sound_pending);
+    CHECK(ui.menu_open && ui.page == JELLI_UI_SETTINGS);
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(ui.last_view.volume == 75u && surface.damage.width == JELLI_WIDTH);
+    for (unsigned i = 0u; i < 12u; ++i)
+        jelli_pet_ui_tap(&ui, &game, 110, 355);
+    CHECK(game.volume == 0u);
+    CHECK(jelli_pet_ui_available(&ui, &game, 5u) == JELLI_FULL);
+    CHECK(jelli_pet_ui_available(&ui, &game, 6u) == JELLI_OK);
+    jelli_pet_ui_tap(&ui, &game, 356, 355);
+    CHECK(game.volume == 10u);
+    ui.clock_edit = true;
+    jelli_pet_ui_tap(&ui, &game, 356, 355);
+    CHECK(game.volume == 10u && ui.clock_adjust == 1);
+    ui.clock_edit = false;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_PLAY, 1u, 0u}) == JELLI_OK);
+    jelli_pet_ui_tap(&ui, &game, 356, 355);
+    CHECK(game.volume == 20u && ui.page == JELLI_UI_SETTINGS && ui.menu_open);
+}
+
 int main(void)
 {
     navigation();
+    volume_controls();
     clock_controls();
     unavailable_actions();
     reversal_and_pause();

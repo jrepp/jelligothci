@@ -357,12 +357,12 @@ and compiles it for both hosts without a new runtime loader. Entry IDs 1–9 are
 stable slot bindings; do not renumber them. This slice supports the existing
 two-form evolution set; unsupported form/set references fail the build.
 
-Save codec v6 reads v1–v5 and preserves all legacy identities, active selection,
+Save codec v7 reads v1–v6 and preserves all legacy identities, active selection,
 and present provenance. Legacy records map in stored order to unique slots;
 only the current form is marked reached when earlier history is unavailable.
 Existing present discoveries can grant missing companions during migration.
-A full nine-pet checkpoint uses 3568 of the available 4096 bytes. Older firmware
-cannot read v6; keep a backup before downgrading.
+A full nine-pet checkpoint uses 3569 of the available 4096 bytes. Older firmware
+cannot read v7; keep a backup before downgrading.
 
 
 ## Food, water, and exercise
@@ -384,3 +384,18 @@ and effects live in [content/exercise.json](../content/exercise.json). CMake
 checks bounds and compiles both catalogs without a runtime parser. Keep food IDs
 stable because an unfinished meal stores its selected type. Older saves begin
 at 70 hydration and resume any unfinished meal as the original meal type.
+
+
+## Volume
+
+Settings has large VOL − and VOL + controls at the bottom left and right. Each
+tap changes the master level by 10 percentage points, clamped to 0–100. Zero
+shows MUTED and suppresses automatic coos and menu sounds. Raising it previews
+the new level with the normal menu tap. The setting persists across restarts and
+applies to every pet. It remains available during sleep and activities.
+
+The default is 65%: 30% above the previous gain settings, which correspond to
+50% on this scale. At default, menu taps use codec level 33 and coos 23 (rounded
+from the old 25 and 18). New and migrated saves use this louder default; v7 saves
+preserve the chosen level, including mute. The debug CLI's explicit `sound
+--volume` argument remains a raw 0–80 diagnostic override.

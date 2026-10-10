@@ -43,9 +43,9 @@ static void sound_task(void *unused)
         memset(pcm, 0, sizeof(pcm));
         if (ok)
             ok = esp_codec_dev_write(codec, pcm, sizeof(pcm)) == ESP_CODEC_DEV_OK;
-        ESP_LOGI("sound", "%s cue=%s samples=%u stack_free=%u", ok ? "submitted" : "failed",
-                 jelli_sound_name(request.cue), samples,
-                 (unsigned)uxTaskGetStackHighWaterMark(NULL));
+        ESP_LOGI("sound", "%s cue=%s volume=%u samples=%u stack_free=%u",
+                 ok ? "submitted" : "failed", jelli_sound_name(request.cue),
+                 (unsigned)request.volume, samples, (unsigned)uxTaskGetStackHighWaterMark(NULL));
     }
 }
 

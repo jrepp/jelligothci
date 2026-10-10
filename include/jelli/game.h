@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define JELLI_VOLUME_DEFAULT 65u
+#define JELLI_VOLUME_MAX 100u
 #define JELLI_PET_CAPACITY 9u
 #define JELLI_NEED_COUNT 5u
 #define JELLI_STACK_LIMIT 20u
@@ -47,7 +49,8 @@ typedef enum {
     JELLI_CMD_HEALTH,
     JELLI_CMD_TOUCH,
     JELLI_CMD_WATER,
-    JELLI_CMD_EXERCISE
+    JELLI_CMD_EXERCISE,
+    JELLI_CMD_VOLUME
 } JelliCommandKind;
 typedef enum {
     JELLI_OK,
@@ -90,7 +93,7 @@ typedef struct {
     uint32_t backlog_ms, revision;
     uint16_t food, gifts;
     uint16_t new_pets;
-    uint8_t count, active;
+    uint8_t count, active, volume;
     bool resuming;
     /* Optional borrowed sink; owner outlives commands/advance. Not saved. */
     JelliEventLog *events;
@@ -106,8 +109,8 @@ typedef struct {
 typedef struct {
     JelliCommandKind kind;
     uint32_t actor_id;
-    /* FEED: food catalog ID (0 is the legacy meal). ACTIVATE: stable ID; TRAVEL: 0/1; BEDTIME:
-     * 0..23. MOMENT: breakfast/tea/outing/movie 0..3. HEALTH:
+    /* VOLUME: 0..100 master level. FEED: food catalog ID (0 is the legacy meal). ACTIVATE: stable
+     * ID; TRAVEL: 0/1; BEDTIME: 0..23. MOMENT: breakfast/tea/outing/movie 0..3. HEALTH:
      * brush/medicine/shot/wash/stretch/floss/mouthwash/spit/cleanup 0..8. */
     uint32_t value;
 } JelliCommand;

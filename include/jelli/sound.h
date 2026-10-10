@@ -24,4 +24,6 @@ bool jelli_sound_start(JelliSynth *synth, unsigned cue);
  * heap, floating point or hidden state. Returns samples produced, zero at end.
  * Caller owns synth/output and must serialize access. */
 size_t jelli_sound_render(JelliSynth *synth, int16_t *output, size_t capacity);
+/* Map the 0..100 master control to codec gain, keeping coos quieter than taps. */
+unsigned jelli_sound_volume(unsigned cue, unsigned master);
 #endif
