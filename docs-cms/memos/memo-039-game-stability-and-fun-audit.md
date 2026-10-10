@@ -39,10 +39,11 @@ needs no new pending-state field or queue capacity.
 
 # Validation
 
-Run `make test`, `make core-test`, `make sanitize`, `make esp-build`, and
-`make hooks-check` for landing. Documentation uses `make docs-check` followed by
-`make docs-fix`, with repairs reviewed. CI must test the actual updated PR and
-release candidate, including Linux, macOS, Windows and packaged downloads.
+Local validation passed: `make test` (52/52), `make core-test` (25/25),
+`make sanitize` (52/52), `make esp-build`, and `make hooks-check`. Documentation
+passed `make docs-check` followed by `make docs-fix`; the sole repair sorted the
+new memo tags. CI must also test the actual updated PR and release candidate,
+including Linux, macOS, Windows and packaged downloads.
 Existing suites cover save corruption and migration, bounded elapsed-time
 catch-up, render damage and stride, scene interaction, asset reload rollback,
 and debug reconnect/capture. Compiled firmware does not verify physical
