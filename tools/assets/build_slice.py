@@ -24,8 +24,8 @@ CREATURE_SIZES = {(32, 32), (48, 48)}
 # Runtime pose order; must match JelliCreaturePose in include/jelli/creature.h.
 CREATURE_POSES = ("idle", "idle-alt", "curious", "content", "eating", "happy", "asleep", "unwell")
 CLIP_FRAME_CAP = 6
-PIXEL_BYTES = 215488
-PACK_CEILING = 229376
+PIXEL_BYTES = 220384
+PACK_CEILING = 237568
 
 
 def require(condition, message):
@@ -107,7 +107,7 @@ def load_assets():
         paths.add(path)
         counts[asset["kind"]] += 1
         images[key] = image
-    require(counts == {"creatures": 29, "icons": 12, "props": 4, "font": 1, "menus": 15, "meters": 5, "health": 9, "effects": 8, "backgrounds": 2, "prizes": 9}, "Incomplete slice inventory")
+    require(counts == {"creatures": 30, "icons": 12, "props": 4, "font": 1, "menus": 15, "meters": 5, "health": 9, "effects": 8, "backgrounds": 2, "prizes": 9}, "Incomplete slice inventory")
     prize_pixels = {image.tobytes() for key, image in images.items() if key.startswith("prizes.")}
     require(len(prize_pixels) == 9, "Collectible prizes must have nine distinct pixel designs")
     clip_keys = set()

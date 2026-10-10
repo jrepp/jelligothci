@@ -1875,6 +1875,27 @@
       "form": "axolotl",
       "pose": "unwell-2",
       "palette": "axolotl"
+    },
+    {
+      "id": 1114,
+      "key": "creatures.axolotl-surprised",
+      "path": "creatures/axolotl-surprised.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "surprised",
+      "palette": "axolotl"
     }
   ],
   "clips": [
@@ -2094,7 +2115,7 @@
       "id": 5103,
       "key": "axolotl.curious",
       "frames": [
-        "creatures.axolotl-idle-3"
+        "creatures.axolotl-surprised"
       ],
       "durations_ms": [
         900
@@ -2173,7 +2194,8 @@
       "#d9265d",
       "#ffffff",
       "#83ebfb",
-      "#1ec1d9"
+      "#1ec1d9",
+      "#fde77e"
     ]
   },
   "creature_poses": [
