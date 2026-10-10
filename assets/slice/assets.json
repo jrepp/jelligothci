@@ -1602,6 +1602,279 @@
         26
       ],
       "purpose": "Water action glass; generated artwork normalized to the existing binary-alpha pixel palette"
+    },
+    {
+      "id": 1101,
+      "key": "creatures.axolotl-idle-1",
+      "path": "creatures/axolotl-idle-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "idle-1",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1102,
+      "key": "creatures.axolotl-idle-2",
+      "path": "creatures/axolotl-idle-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "idle-2",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1103,
+      "key": "creatures.axolotl-idle-3",
+      "path": "creatures/axolotl-idle-3.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "idle-3",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1104,
+      "key": "creatures.axolotl-idle-4",
+      "path": "creatures/axolotl-idle-4.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "idle-4",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1105,
+      "key": "creatures.axolotl-blink-1",
+      "path": "creatures/axolotl-blink-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "blink-1",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1106,
+      "key": "creatures.axolotl-blink-2",
+      "path": "creatures/axolotl-blink-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "blink-2",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1107,
+      "key": "creatures.axolotl-happy",
+      "path": "creatures/axolotl-happy.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "happy",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1108,
+      "key": "creatures.axolotl-eating-1",
+      "path": "creatures/axolotl-eating-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "eating-1",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1109,
+      "key": "creatures.axolotl-eating-2",
+      "path": "creatures/axolotl-eating-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "eating-2",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1110,
+      "key": "creatures.axolotl-asleep-1",
+      "path": "creatures/axolotl-asleep-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        3,
+        25,
+        45,
+        45
+      ],
+      "form": "axolotl",
+      "pose": "asleep-1",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1111,
+      "key": "creatures.axolotl-asleep-2",
+      "path": "creatures/axolotl-asleep-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        3,
+        25,
+        45,
+        45
+      ],
+      "form": "axolotl",
+      "pose": "asleep-2",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1112,
+      "key": "creatures.axolotl-unwell-1",
+      "path": "creatures/axolotl-unwell-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "unwell-1",
+      "palette": "axolotl"
+    },
+    {
+      "id": 1113,
+      "key": "creatures.axolotl-unwell-2",
+      "path": "creatures/axolotl-unwell-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "form": "axolotl",
+      "pose": "unwell-2",
+      "palette": "axolotl"
     }
   ],
   "clips": [
@@ -1609,14 +1882,45 @@
       "id": 5001,
       "key": "baby.idle",
       "frames": [
-        "creatures.baby-idle-a",
+        "creatures.baby-idle-a"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5015,
+      "key": "baby.idle-alt",
+      "frames": [
         "creatures.baby-idle-b"
       ],
       "durations_ms": [
-        450,
         450
       ],
-      "loop": true
+      "loop": false
+    },
+    {
+      "id": 5011,
+      "key": "baby.curious",
+      "frames": [
+        "creatures.baby-curious"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5012,
+      "key": "baby.content",
+      "frames": [
+        "creatures.baby-content"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
     },
     {
       "id": 5002,
@@ -1666,14 +1970,45 @@
       "id": 5006,
       "key": "grown.idle",
       "frames": [
-        "creatures.grown-idle-a",
+        "creatures.grown-idle-a"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5016,
+      "key": "grown.idle-alt",
+      "frames": [
         "creatures.grown-idle-b"
       ],
       "durations_ms": [
-        450,
         450
       ],
-      "loop": true
+      "loop": false
+    },
+    {
+      "id": 5013,
+      "key": "grown.curious",
+      "frames": [
+        "creatures.grown-curious"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5014,
+      "key": "grown.content",
+      "frames": [
+        "creatures.grown-content"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
     },
     {
       "id": 5007,
@@ -1720,10 +2055,46 @@
       "loop": false
     },
     {
-      "id": 5011,
-      "key": "baby.curious",
+      "id": 5101,
+      "key": "axolotl.idle",
       "frames": [
-        "creatures.baby-curious"
+        "creatures.axolotl-idle-1",
+        "creatures.axolotl-idle-2",
+        "creatures.axolotl-idle-3",
+        "creatures.axolotl-idle-4"
+      ],
+      "durations_ms": [
+        450,
+        450,
+        450,
+        450
+      ],
+      "loop": true
+    },
+    {
+      "id": 5102,
+      "key": "axolotl.idle-alt",
+      "frames": [
+        "creatures.axolotl-idle-1",
+        "creatures.axolotl-blink-1",
+        "creatures.axolotl-blink-2",
+        "creatures.axolotl-blink-1",
+        "creatures.axolotl-idle-1"
+      ],
+      "durations_ms": [
+        90,
+        90,
+        90,
+        90,
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5103,
+      "key": "axolotl.curious",
+      "frames": [
+        "creatures.axolotl-idle-3"
       ],
       "durations_ms": [
         900
@@ -1731,10 +2102,10 @@
       "loop": false
     },
     {
-      "id": 5012,
-      "key": "baby.content",
+      "id": 5104,
+      "key": "axolotl.content",
       "frames": [
-        "creatures.baby-content"
+        "creatures.axolotl-blink-2"
       ],
       "durations_ms": [
         900
@@ -1742,26 +2113,77 @@
       "loop": false
     },
     {
-      "id": 5013,
-      "key": "grown.curious",
+      "id": 5105,
+      "key": "axolotl.eating",
       "frames": [
-        "creatures.grown-curious"
+        "creatures.axolotl-eating-1",
+        "creatures.axolotl-eating-2"
       ],
       "durations_ms": [
-        900
+        250,
+        250
+      ],
+      "loop": true
+    },
+    {
+      "id": 5106,
+      "key": "axolotl.happy",
+      "frames": [
+        "creatures.axolotl-happy"
+      ],
+      "durations_ms": [
+        450
       ],
       "loop": false
     },
     {
-      "id": 5014,
-      "key": "grown.content",
+      "id": 5107,
+      "key": "axolotl.asleep",
       "frames": [
-        "creatures.grown-content"
+        "creatures.axolotl-asleep-1",
+        "creatures.axolotl-asleep-2"
       ],
       "durations_ms": [
+        900,
         900
       ],
-      "loop": false
+      "loop": true
+    },
+    {
+      "id": 5108,
+      "key": "axolotl.unwell",
+      "frames": [
+        "creatures.axolotl-unwell-1",
+        "creatures.axolotl-unwell-2"
+      ],
+      "durations_ms": [
+        600,
+        600
+      ],
+      "loop": true
     }
+  ],
+  "palettes": {
+    "axolotl": [
+      "#ffcbdd",
+      "#000000",
+      "#ffadca",
+      "#ff5994",
+      "#ffe3ed",
+      "#d9265d",
+      "#ffffff",
+      "#83ebfb",
+      "#1ec1d9"
+    ]
+  },
+  "creature_poses": [
+    "idle",
+    "idle-alt",
+    "curious",
+    "content",
+    "eating",
+    "happy",
+    "asleep",
+    "unwell"
   ]
 }

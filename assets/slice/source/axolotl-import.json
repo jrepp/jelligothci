@@ -1,0 +1,24 @@
+{
+  "form": "axolotl",
+  "first_id": 1101,
+  "source_cell": 72,
+  "canvas": [48, 48],
+  "pivot": [24, 46],
+  "palette": "axolotl",
+  "note": "Hand-drawn axolotl frames, upscaled 72x per art pixel, delivered 2026-10-09 as 3294x3546 PNGs. All frames share one source canvas; the importer keeps their relative placement.",
+  "frames": [
+    {"source": "Idle1.png", "pose": "idle-1"},
+    {"source": "Idle2.png", "pose": "idle-2"},
+    {"source": "Idle3.png", "pose": "idle-3"},
+    {"source": "Idle4.png", "pose": "idle-4"},
+    {"source": "Idle1.1.png", "pose": "blink-1"},
+    {"source": "Idle1.2.png", "pose": "blink-2"},
+    {"source": "Idle1.3.png", "pose": "happy"},
+    {"source": "Eating 1.png", "pose": "eating-1"},
+    {"source": "Eating 2.png", "pose": "eating-2"},
+    {"source": "sleep1.png", "pose": "asleep-1"},
+    {"source": "sleep2.png", "pose": "asleep-2"},
+    {"source": "Idle1 Sad.png", "pose": "unwell-1"},
+    {"source": "Idle2 Sad.png", "pose": "unwell-2"}
+  ]
+}
