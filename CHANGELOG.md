@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.4.0](https://github.com/jrepp/jelligothci/compare/v0.3.0...v0.4.0) (2026-10-10)
+
+
+### Features
+
+* add creature content, Reading and potty routines ([#10](https://github.com/jrepp/jelligothci/issues/10)) ([fdcdbf7](https://github.com/jrepp/jelligothci/commit/fdcdbf79414713daf1b37773c492eae7e3f85bc1))
+* add data-driven Reading and potty routines ([fdcdbf7](https://github.com/jrepp/jelligothci/commit/fdcdbf79414713daf1b37773c492eae7e3f85bc1))
+* add localized brushing and bath bubbles ([588286b](https://github.com/jrepp/jelligothci/commit/588286bbe096a2424da32509feee9c3ba892e918))
+* add persistent volume controls and louder defaults ([3d9f6ea](https://github.com/jrepp/jelligothci/commit/3d9f6ea463f20d8a20e9ff130dd06aa151e68622))
+* add Reading and a natural potty cycle with activities as data ([428f697](https://github.com/jrepp/jelligothci/commit/428f6971c9ad5a55bc67a443e1862de49997175a))
+* add the axolotl species with data-driven evolution sets and clips ([15f590c](https://github.com/jrepp/jelligothci/commit/15f590c7b30ad94f4f4f55b471a3d5dff447d9bf))
+* **assets:** add placeholder book icon and prop for a Reading activity ([675fae3](https://github.com/jrepp/jelligothci/commit/675fae3529364f10d9d3af277418704b9616dc64))
+* **assets:** add the surprised axolotl frame as its curious pose ([d746eeb](https://github.com/jrepp/jelligothci/commit/d746eeb52ea5b5105c6081501ca7cc5ba97e73ea))
+* **assets:** import axolotl frames and author per-pose creature clips ([2cf2c6c](https://github.com/jrepp/jelligothci/commit/2cf2c6cbd04c372b91de85dfbca03b54afba7ea5))
+* diagnose ESP32 framebuffer and panel mismatches ([5aef895](https://github.com/jrepp/jelligothci/commit/5aef895c5a4ec397cc19d6b1e029c9bb0b663a0b))
+* distinguish menu and pet interaction feedback ([57aa67a](https://github.com/jrepp/jelligothci/commit/57aa67a5a66bba61affb841ad47bc152bc7484a6))
+* drive creature behaviour and render scale from content/creatures.json ([1dfcebf](https://github.com/jrepp/jelligothci/commit/1dfcebf040187049a18ce202e14cfcb550c1bfa0))
+* improve pet care and ESP32 display reliability ([#8](https://github.com/jrepp/jelligothci/issues/8)) ([1c9692c](https://github.com/jrepp/jelligothci/commit/1c9692cde70f3878447441a24a4bdc465bc3975c))
+* **jelli-art:** author and preview creature clips ([a9da182](https://github.com/jrepp/jelligothci/commit/a9da1821fa7e1e6fa63b22443e8874a3af2a0017))
+* **jelli-art:** author creature behaviour and render profiles ([b9c4fe0](https://github.com/jrepp/jelligothci/commit/b9c4fe062eb9a31123f8429747dde4b48ab8d80f))
+* share pet slots across selectable unlocked evolutions ([131bfc9](https://github.com/jrepp/jelligothci/commit/131bfc980934ae46aa3560f7e112be4d2ae8a662))
+* wake pets by touch with rest-based moods and bonding ([4b87655](https://github.com/jrepp/jelligothci/commit/4b8765569be3cfd34348f707e730d74f71850cbb))
+
+
+### Bug Fixes
+
+* **assets:** re-import the corrected surprised axolotl frame ([808dec6](https://github.com/jrepp/jelligothci/commit/808dec6c40ce72b1bfe9d18343ed43418aa81193))
+* declare CMake policy baseline in catalog script tests ([0cfaf7c](https://github.com/jrepp/jelligothci/commit/0cfaf7c9c8ffb74a9718669993eb8a93c2d5b364))
+* explain basic care and show recovery progress ([be776e1](https://github.com/jrepp/jelligothci/commit/be776e16234fb9ef62a63f8e34e6f3152f326548))
+* keep activity input assertions warning-clean on ESP32 ([dc81a99](https://github.com/jrepp/jelligothci/commit/dc81a99b6acb258522b33d7781f55b7cc7c9b801))
+* label menu actions and explain unavailable controls ([7de3d63](https://github.com/jrepp/jelligothci/commit/7de3d63394af4e8199e81efcdc8bc15d3c1cddd6))
+* make food readable and refillable from its menu ([b1c635a](https://github.com/jrepp/jelligothci/commit/b1c635afe36d0382ae7bb0629e54319468b7ce96))
+* normalize asset manifest paths on Windows ([e3c0c4e](https://github.com/jrepp/jelligothci/commit/e3c0c4e92b7fc3414b6032571110608468708155))
+* reserve DMA storage for ESP32 panel transfers ([7a87b3b](https://github.com/jrepp/jelligothci/commit/7a87b3b6653457eab3a75b036020caf0ff1b24ee))
+
+
+### Performance Improvements
+
+* clip rectangle fills once per scanline ([cd8f999](https://github.com/jrepp/jelligothci/commit/cd8f999f4471826a5df944f392d183683c2a38b4))
+* clip rectangle fills once per scanline ([a152e05](https://github.com/jrepp/jelligothci/commit/a152e05f2940d72d635d81ccc518750d20c9f592))
+* clip rectangle fills once per scanline ([#12](https://github.com/jrepp/jelligothci/issues/12)) ([cd8f999](https://github.com/jrepp/jelligothci/commit/cd8f999f4471826a5df944f392d183683c2a38b4))
+
 ## [0.3.0](https://github.com/jrepp/jelligothci/compare/v0.2.0...v0.3.0) (2026-10-10)
 
 
