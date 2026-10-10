@@ -89,7 +89,7 @@ static void adjust_need(JelliPet *pet, JelliNeed need, int32_t delta)
     pet->needs[need] = apply_need_delta(pet->needs[need], delta, floor);
 }
 
-void jelli_game_add_clock(JelliGame *game, JelliPet *pet, uint64_t ticks)
+static void add_clock(JelliPet *pet, uint64_t ticks)
 {
     uint64_t old_ticks = pet->ticks;
     pet->ticks = saturating_add(pet->ticks, ticks);
@@ -97,8 +97,7 @@ void jelli_game_add_clock(JelliGame *game, JelliPet *pet, uint64_t ticks)
     jelli_wake_advance(pet, pet->ticks - old_ticks);
     integrate_needs(pet, pet->ticks - old_ticks);
     jelli_hydration_advance(pet, pet->ticks - old_ticks);
-    if (jelli_potty_advance(pet, old_ticks))
-        jelli_behavior_stimulus(game, JELLI_STIM_POTTY_URGE, 0u);
+    (void)jelli_potty_advance(pet, old_ticks);
     jelli_habits_advance(&pet->habits, old_ticks, pet->ticks - old_ticks, pet->asleep,
                          pet->activity == JELLI_PLAYING);
     jelli_pet_touch_decay(pet, pet->ticks - old_ticks);
@@ -292,7 +291,7 @@ static void resolve_sleep(const JelliGame *game, JelliPet *pet)
 void jelli_game_endpoint(JelliGame *game, JelliPet *pet, uint64_t ticks, bool offline)
 {
     uint64_t previous_ticks = pet->ticks;
-    jelli_game_add_clock(game, pet, ticks);
+    add_clock(pet, ticks);
     if (pet->ticks == previous_ticks)
         return;
     if (pet->activity != JELLI_IDLE && pet->interaction_due <= pet->ticks)

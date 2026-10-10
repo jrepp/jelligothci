@@ -259,8 +259,72 @@ static void answered_potty_request_leaves_no_mess(void)
     CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
 }
 
+static void busy_potty_request_is_deferred(void)
+{
+    JelliGame game;
+    bubble_game(&game, 0u);
+    JelliPet *pet = active(&game);
+    pet->ticks = 590u;
+    pet->potty = (uint16_t)(jelli_potty_rules.urge_threshold - 1u);
+    pet->digesting = 1000u;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_MOMENT, pet->id, 4u}) == JELLI_OK);
+    second(&game);
+    CHECK(pet->potty >= jelli_potty_rules.urge_threshold);
+    CHECK(pet->activity != JELLI_IDLE && !pet->behavior);
+    for (unsigned s = 0u; s < 120u && pet->behavior != state_named("asking_potty"); ++s)
+        second(&game);
+    CHECK(pet->behavior == state_named("asking_potty"));
+    CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
+}
+
+static void offline_potty_request_waits_for_live_play(void)
+{
+    JelliGame game;
+    bubble_game(&game, 0u);
+    JelliPet *pet = active(&game);
+    pet->potty = (uint16_t)(jelli_potty_rules.urge_threshold - 1u);
+    pet->digesting = 1000u;
+    jelli_game_resume_begin(&game, 60000u);
+    while (!jelli_game_resume_step(&game)) {
+    }
+    CHECK(pet->potty >= jelli_potty_rules.urge_threshold && !pet->behavior);
+    CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
+    second(&game);
+    CHECK(pet->behavior == state_named("asking_potty"));
+    CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
+}
+
+static void potty_request_respects_sleep_cooldown_and_relief(void)
+{
+    JelliGame game;
+    bubble_game(&game, 0u);
+    JelliPet *pet = active(&game);
+    pet->potty = jelli_potty_rules.urge_threshold;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_REST, pet->id, 0u}) == JELLI_OK);
+    pet->cooldown_state = (uint8_t)state_named("asking_potty");
+    pet->cooldown_left = 3u;
+    second(&game);
+    CHECK(pet->asleep && !pet->behavior);
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_WAKE, pet->id, 0u}) == JELLI_OK);
+    second(&game);
+    CHECK(pet->behavior != state_named("asking_potty"));
+    for (unsigned s = 0u; s < 120u && pet->behavior != state_named("asking_potty"); ++s)
+        second(&game);
+    CHECK(pet->behavior == state_named("asking_potty"));
+    CHECK(jelli_game_command(
+              &game, (JelliCommand){JELLI_CMD_HEALTH, pet->id, JELLI_HEALTH_POTTY}) == JELLI_OK);
+    for (unsigned s = 0u; s < 70u; ++s) {
+        second(&game);
+        CHECK(pet->behavior != state_named("asking_potty"));
+    }
+    CHECK(!(pet->behavior_flags & JELLI_PET_FLAG_MESS));
+}
+
 int main(void)
 {
+    busy_potty_request_is_deferred();
+    offline_potty_request_waits_for_live_play();
+    potty_request_respects_sleep_cooldown_and_relief();
     ignored_potty_request_leaves_a_mess();
     answered_potty_request_leaves_no_mess();
     mint_has_no_repertoire();

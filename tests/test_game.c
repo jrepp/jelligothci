@@ -248,10 +248,11 @@ static void randomized_valid_commands_and_time(void)
     JelliGame game;
     uint32_t random_state = UINT32_C(0x51a7c0de);
     test_game_pair(&game);
-    for (uint16_t i = 0u; i < 500u; ++i) {
+    for (uint16_t i = 0u; i < 2000u; ++i) {
         uint32_t value = next_random(&random_state);
-        uint32_t command_value = value;
-        JelliCommandKind kind = (JelliCommandKind)(value % 11u);
+        /* Mix plausible menu values with rejected inputs across every public command. */
+        uint32_t command_value = (value & 1u) ? next_random(&random_state) % 24u : value;
+        JelliCommandKind kind = (JelliCommandKind)(value % ((unsigned)JELLI_CMD_FORM + 1u));
         if (kind == JELLI_CMD_ACTIVATE)
             command_value = UINT32_C(1) + next_random(&random_state) % 2u;
         (void)command(&game, kind, game.pets[game.active].id, command_value);

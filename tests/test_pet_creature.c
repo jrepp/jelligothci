@@ -185,6 +185,11 @@ static void mess_shimmers_on_the_floor(void)
     CHECK(mess.y + mess.height <= 256u + ui.actor_scale && mess.x >= ui.actor_bounds.x);
     jelli_pet_ui_tap(&ui, &game, (int)(mess.x + mess.width / 2u), (int)(mess.y + mess.height / 2u));
     CHECK(ui.result == JELLI_OK && pet->activity == JELLI_CLEANING);
+    CHECK(ui.sound_pending && ui.save_requested);
+    ui.sound_pending = ui.save_requested = false;
+    jelli_pet_ui_tap(&ui, &game, (int)(mess.x + mess.width / 2u), (int)(mess.y + mess.height / 2u));
+    CHECK(ui.result == JELLI_BUSY && pet->activity == JELLI_CLEANING);
+    CHECK(!ui.sound_pending && !ui.save_requested);
     (void)frame_at(&game, &ui, 1000u);
     unsigned first = ui.last_view.sweep;
     CHECK(first == 1u); /* The broom appears as the clean starts... */

@@ -54,9 +54,9 @@ bool jelli_pet_tap_mess(JelliPetUi *ui, JelliGame *game, int x, int y)
     /* Tapping the mess cleans it up: the same CLEAN command as Care > Clean. */
     const JelliPet *pet = &game->pets[game->active];
     ui->result = jelli_game_command(game, (JelliCommand){JELLI_CMD_CLEAN, pet->id, 0u});
-    ui->sound_pending = true;
-    ui->sound_cue = JELLI_SOUND_CONFIRM + 1u;
     if (ui->result == JELLI_OK) {
+        ui->sound_pending = true;
+        ui->sound_cue = JELLI_SOUND_CONFIRM + 1u;
         ui->save_requested = true;
         ui->save_status = JELLI_SAVE_PENDING;
     }

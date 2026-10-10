@@ -208,8 +208,32 @@ static void test_preferences(void)
     CHECK(jelli_pet_favorite(&favorite.pets[0], 540u) == 0u);
 }
 
+static void care_interrupts_moments_without_invalidating_the_game(void)
+{
+    for (unsigned choice = 0u; choice < jelli_moment_count; ++choice) {
+        if (jelli_moments[choice].kind != JELLI_MOMENT_PLAY)
+            continue;
+        JelliGame game;
+        ready(&game);
+        CHECK(command(&game, JELLI_CMD_MOMENT, choice) == JELLI_OK);
+        CHECK(game.pets[0].moment == choice + 1u);
+        CHECK(command(&game, JELLI_CMD_CARE, 0u) == JELLI_OK);
+        CHECK(game.pets[0].activity == JELLI_CARING && game.pets[0].moment == 0u);
+        CHECK(jelli_game_valid(&game));
+        JelliSave save = {.game = game}, loaded;
+        uint8_t bytes[JELLI_SAVE_CAPACITY];
+        size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
+        CHECK(size && jelli_save_decode(&loaded, bytes, size));
+        finish(&loaded.game);
+        CHECK(jelli_game_valid(&loaded.game));
+        CHECK(loaded.game.pets[0].activity == JELLI_IDLE);
+        CHECK(loaded.game.pets[0].health == JELLI_WELL);
+    }
+}
+
 int main(void)
 {
+    care_interrupts_moments_without_invalidating_the_game();
     test_touch_and_events();
     test_preferences();
     test_timed_effects();
