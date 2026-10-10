@@ -63,18 +63,30 @@ def creature_forms(manifest, pets_path):
 
 def creature_data(manifest, pets_path):
     return {"creature_poses": manifest.get("creature_poses", []), "clips": manifest.get("clips", []),
+            "state_poses": manifest.get("state_poses", []),
             "palettes": manifest.get("palettes", {}), "creature_forms": creature_forms(manifest, pets_path),
             "clip_frame_cap": FRAME_CAP, "clip_duration_max_ms": DURATION_MAX_MS}
 
 
+def optional_clip(manifest, key):
+    """True for "<form>.<state pose>": a clip a form may add or drop (its fallback base pose plays instead)."""
+    form, _, pose = key.partition(".")
+    forms = {a.get("form") for a in manifest["assets"] if a["kind"] == "creatures"}
+    return form in forms and pose in {p["name"] for p in manifest.get("state_poses", [])}
+
+
 def check_edit(manifest, edit, frame_cap):
-    """Readable per-clip errors before the full manifest validation runs."""
+    """Readable per-clip errors before the full manifest validation runs; returns the clip or None to create."""
     if not isinstance(edit, dict) or not isinstance(edit.get("key"), str):
         raise ClipError("Each clip edit needs a key")
     key = edit["key"]
     clip = next((c for c in manifest.get("clips", []) if c["key"] == key), None)
-    if clip is None:
+    if clip is None and not optional_clip(manifest, key):
         raise ClipError(f"Unknown clip: {key}")
+    if edit.get("remove") is True:
+        if not optional_clip(manifest, key):
+            raise ClipError(f"{key}: only state pose clips can be removed; base poses always need a clip")
+        return clip
     frames, durations, loop = edit.get("frames"), edit.get("durations_ms"), edit.get("loop")
     if not isinstance(frames, list) or not 0 < len(frames) <= frame_cap:
         raise ClipError(f"{key}: a clip needs 1 to {frame_cap} frames")
@@ -94,8 +106,23 @@ def check_edit(manifest, edit, frame_cap):
     return clip
 
 
+def new_clip_id(manifest, form):
+    """Next free ID after the form's existing clips, never reusing an asset or clip ID."""
+    used = {a["id"] for a in manifest["assets"]} | {c["id"] for c in manifest["clips"]}
+    mine = [c["id"] for c in manifest["clips"] if c["key"].split(".", 1)[0] == form]
+    ident = max(mine or [max(c["id"] for c in manifest["clips"])]) + 1
+    while ident in used:
+        ident += 1
+    return ident
+
+
 def apply_edits(manifest, edits, frame_cap=FRAME_CAP):
-    """Replace frames, durations and loop of the named clips in place; returns the changed keys."""
+    """Apply clip edits in place; returns the changed keys.
+
+    An edit replaces frames, durations and loop. For a state pose clip, an edit
+    of a missing clip creates it (after the form's other clips) and
+    {"key", "remove": true} deletes it so the fallback pose plays again.
+    """
     if not isinstance(edits, list) or not edits:
         raise ClipError("No clip edits to save")
     if len({e.get("key") for e in edits if isinstance(e, dict)}) != len(edits):
@@ -103,8 +130,19 @@ def apply_edits(manifest, edits, frame_cap=FRAME_CAP):
     changed = []
     for edit in edits:
         clip = check_edit(manifest, edit, frame_cap)
+        if edit.get("remove") is True:
+            if clip is not None:
+                manifest["clips"].remove(clip)
+                changed.append(edit["key"])
+            continue
         new = {"frames": list(edit["frames"]), "durations_ms": list(edit["durations_ms"]), "loop": edit["loop"]}
-        if any(clip[k] != v for k, v in new.items()):
+        if clip is None:
+            form = edit["key"].split(".", 1)[0]
+            clip = {"id": new_clip_id(manifest, form), "key": edit["key"], **new}
+            last = max((i for i, c in enumerate(manifest["clips"]) if c["key"].split(".", 1)[0] == form), default=-1)
+            manifest["clips"].insert(last + 1, clip)
+            changed.append(clip["key"])
+        elif any(clip[k] != v for k, v in new.items()):
             clip.update(new)
             changed.append(clip["key"])
     return changed

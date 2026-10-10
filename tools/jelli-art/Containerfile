@@ -13,8 +13,9 @@ LABEL org.opencontainers.image.title="Jelli Art" \
       org.opencontainers.image.version="${STUDIO_VERSION}" \
       org.opencontainers.image.revision="${SOURCE_REVISION}"
 
+# cmake runs the checkout's cmake/JelliBehaviors.cmake to validate behaviour edits.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git openssh-client \
+    && apt-get install -y --no-install-recommends git openssh-client cmake \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir Pillow==12.0.0 \
     && useradd --uid 10001 --create-home --home-dir /home/studio studio \

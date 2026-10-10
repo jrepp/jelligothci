@@ -2,12 +2,14 @@
 # requires-python = ">=3.12,<3.13"
 # dependencies = ["Pillow==12.0.0"]
 # ///
-"""Jelli Art creature edits: clips (build_slice decides) and creatures.json (creature_data decides).
+"""Jelli Art creature edits: clips (build_slice decides), creatures.json (creature_data decides),
+behaviors.json (cmake/JelliBehaviors.cmake decides) and the stimulus simulator (core/behavior.c).
 
 Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_creatures.py
 """
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import types
@@ -18,6 +20,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
+import behaviors  # noqa: E402
 import creatures  # noqa: E402
 import jelli_art  # noqa: E402
 import profiles  # noqa: E402
@@ -213,6 +216,139 @@ class CreatureProfileTest(unittest.TestCase):
         self.assertEqual(limits["max_actor_width"], module.MAX_ACTOR_WIDTH)
         self.assertEqual(data["creature_data"], self.data())
         self.assertEqual(module.CREATURES, REPO / "content/creatures.json")  # restored after validation
+
+
+class StatePoseClipTest(unittest.TestCase):
+    """State pose clips are optional: the studio may add one or remove it so the fallback plays."""
+
+    def setUp(self):
+        self.manifest = json.loads((REPO / "assets/slice/assets.json").read_text())
+
+    def test_remove_and_create_state_pose_clips(self):
+        manifest = json.loads(json.dumps(self.manifest))
+        self.assertEqual(creatures.apply_edits(manifest, [{"key": "axolotl.study", "remove": True}]), ["axolotl.study"])
+        self.assertNotIn("axolotl.study", {c["key"] for c in manifest["clips"]})
+        fallback = next(c for c in manifest["clips"] if c["key"] == "baby.content")
+        edit = {"key": "baby.study", "frames": list(fallback["frames"]), "durations_ms": [300], "loop": True}
+        self.assertEqual(creatures.apply_edits(manifest, [edit]), ["baby.study"])
+        made = next(c for c in manifest["clips"] if c["key"] == "baby.study")
+        ids = [a["id"] for a in manifest["assets"]] + [c["id"] for c in manifest["clips"]]
+        self.assertEqual(ids.count(made["id"]), 1)
+        keys = [c["key"] for c in manifest["clips"]]
+        self.assertEqual(keys.index("baby.study"), max(i for i, k in enumerate(keys) if k.startswith("baby.")))
+        validator = creatures.load_validator(REPO)
+        validator.check_creature_clips(manifest)
+
+    def test_base_poses_and_unknown_poses_are_refused(self):
+        for edit in ({"key": "axolotl.happy", "remove": True},
+                     {"key": "axolotl.dance", "frames": ["creatures.axolotl-idle-1"], "durations_ms": [90], "loop": True}):
+            with self.subTest(edit=edit), self.assertRaises(creatures.ClipError):
+                creatures.apply_edits(json.loads(json.dumps(self.manifest)), [edit])
+
+
+class BehaviourContentTest(unittest.TestCase):
+    """content/behaviors.json: cmake/JelliBehaviors.cmake validates, looks stay in step, both save together."""
+
+    def setUp(self):
+        self.scratch = tempfile.TemporaryDirectory()
+        self.content = Path(self.scratch.name) / "content"
+        shutil.copytree(REPO / "content", self.content)
+        self.saved = (jelli_art.CONTENT, jelli_art.PETS, jelli_art.CREATURE_DATA, jelli_art.CONTENT_WRITABLE, jelli_art.GIT)
+        jelli_art.CONTENT, jelli_art.PETS = self.content, self.content / "pets.json"
+        jelli_art.CREATURE_DATA, jelli_art.CONTENT_WRITABLE, jelli_art.GIT = self.content / "creatures.json", True, None
+        self.files = {name: self.content / f"{name}.json" for name in ("behaviors", "creatures")}
+
+    def tearDown(self):
+        (jelli_art.CONTENT, jelli_art.PETS, jelli_art.CREATURE_DATA, jelli_art.CONTENT_WRITABLE, jelli_art.GIT) = self.saved
+        self.scratch.cleanup()
+
+    def doc(self, name):
+        return json.loads(self.files[name].read_text())
+
+    def save(self, **docs):
+        return jelli_art.save_content(docs, {name: profiles.digest(self.files[name]) for name in docs})
+
+    def snapshot(self):
+        return {name: path.read_text() for name, path in self.files.items()}
+
+    def test_vocabulary_follows_the_engine(self):
+        vocab = behaviors.vocabulary(REPO, self.content)
+        cmake = (REPO / "cmake/JelliBehaviors.cmake").read_text()
+        self.assertIn(" ".join(vocab["lists"]["stimuli"][:3]), cmake)
+        self.assertEqual(list(vocab["numbers"]["stimuli"].values()), list(range(len(vocab["lists"]["stimuli"]))))
+        self.assertEqual(vocab["missing_numbers"], [])
+        self.assertEqual(vocab["numbers"]["activity_code"], {"moment": 0, "health": 32, "care": 64})
+        self.assertEqual(vocab["moments"], [m["name"] for m in json.loads((self.content / "activities.json").read_text())["moments"]])
+        self.assertIn("AXOLOTL", [f["name"] for f in vocab["forms"]])
+
+    def test_valid_behaviour_edit_writes_only_behaviors_json(self):
+        creatures_text = self.files["creatures"].read_text()
+        data = self.doc("behaviors")
+        data["states"][0]["cooldown_s"] = 45
+        data["repertoires"][0]["reactions"][3]["weight"] = 5
+        result = self.save(behaviors=data)
+        self.assertEqual(result["changed"], ["behaviors"])
+        self.assertEqual(self.files["behaviors"].read_text(), json.dumps(data, indent=2) + "\n")
+        self.assertEqual(self.files["creatures"].read_text(), creatures_text)
+
+    def test_renaming_a_state_needs_both_files(self):
+        before = self.snapshot()
+        data, looks = self.doc("behaviors"), self.doc("creatures")
+        data["states"][2]["name"] = "reading_hard"
+        for rep in data["repertoires"]:
+            for reaction in rep["reactions"]:
+                if reaction["state"] == "studying":
+                    reaction["state"] = "reading_hard"
+        with self.assertRaises(jelli_art.StudioError):  # creatures.json still describes "studying"
+            self.save(behaviors=data)
+        self.assertEqual(self.snapshot(), before)
+        for look in looks["state_presentation"]:
+            if look["state"] == "studying":
+                look["state"] = "reading_hard"
+        result = self.save(behaviors=data, creatures=looks)
+        self.assertEqual(result["changed"], ["behaviors", "creatures"])
+        self.assertEqual(self.doc("behaviors"), data)
+        self.assertEqual(self.doc("creatures"), looks)
+
+    def test_engine_rejections_leave_files_alone(self):
+        before = self.snapshot()
+        mutations = [
+            ("behaviors", lambda d: d["states"][0]["ends_on"].append("flying")),
+            ("behaviors", lambda d: d["repertoires"][0]["reactions"][0].update(weight=0)),
+            ("behaviors", lambda d: d["repertoires"][0]["reactions"][0].update(state="dancing")),
+            ("behaviors", lambda d: d["repertoires"].append(dict(d["repertoires"][0], name="twin"))),
+            ("behaviors", lambda d: d["states"][0].update(duration_s=[20, 10])),
+            ("behaviors", lambda d: d["states"][4]["request"].update(command="sing")),
+            ("creatures", lambda d: d["state_presentation"][0].update(caption="lower")),
+            ("creatures", lambda d: d["state_presentation"][0].update(pose="dancing")),
+            ("creatures", lambda d: d["state_presentation"][0].update(effect="effects.missing")),
+            ("creatures", lambda d: d["state_presentation"].pop()),
+        ]
+        for name, mutate in mutations:
+            data = self.doc(name)
+            mutate(data)
+            with self.subTest(name=name, data=data), self.assertRaises(jelli_art.StudioError):
+                self.save(**{name: data})
+        self.assertEqual(self.snapshot(), before)
+
+    def test_stale_saves_and_missing_cmake_are_refused(self):
+        data = self.doc("behaviors")
+        data["need_low"] = 300
+        with self.assertRaises(jelli_art.StudioError):
+            jelli_art.save_content({"behaviors": data}, {"behaviors": "0000000000000000"})
+        with mock.patch.object(behaviors.shutil, "which", return_value=None):
+            with self.assertRaises(behaviors.BehaviorError):
+                behaviors.validate(data, REPO, self.content)
+            self.assertFalse(jelli_art.behaviour_data()["behavior_editable"])
+        self.assertTrue(jelli_art.behaviour_data()["behavior_editable"])
+
+    def test_simulator_matches_recorded_engine_outcomes(self):
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node is not installed")
+        result = subprocess.run([node, str(HERE / "testdata/replay_engine_cases.js"), str(HERE / "simulator.js"),
+                                 str(HERE / "testdata/behavior_engine_cases.json")], capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 def creatures_coverage_check(manifest):

@@ -45,24 +45,27 @@
 
   /* ---------- data ---------- */
   const L = () => D.creature_limits || {};
-  const dirty = () => !!work && !!D.creature_data && JSON.stringify(work) !== JSON.stringify(D.creature_data);
+  /* Edits are measured against the document as loaded or last saved, not the latest one from disk,
+   * so a change made elsewhere marks the page stale instead of looking like an edit. */
+  let loaded = null;
+  const dirty = () => !!work && !!loaded && JSON.stringify(work) !== JSON.stringify(loaded);
   const baseClipsDirty = S.clipsDirty;
   S.clipsDirty = () => baseClipsDirty() || dirty();  // also guards the page against closing with edits
   function sync() {
     if (D.creature_data_sha === seen) return;
     seen = D.creature_data_sha;
-    if (!dirty() || !work) { work = D.creature_data ? clone(D.creature_data) : null; base = D.creature_data_sha; stale = false; }
+    if (!dirty() || !work) { work = D.creature_data ? clone(D.creature_data) : null; loaded = work && clone(work); base = D.creature_data_sha; stale = false; }
     else stale = true;
   }
   const profileOf = art => work?.profiles?.find(p => p.art === art);
   const behaviourOf = name => work?.behaviors?.find(b => b.name === name);
   const usersOf = name => (work?.profiles || []).filter(p => p.behavior === name).map(p => p.art);
-  const savedProfile = art => D.creature_data?.profiles?.find(p => p.art === art);
+  const savedProfile = art => loaded?.profiles?.find(p => p.art === art);
   cr.scaleFor = art => profileOf(art)?.scale;
   cr.formDirty = art => {
     const p = profileOf(art), s = savedProfile(art);
     if (JSON.stringify(p) !== JSON.stringify(s)) return true;
-    const b = p && behaviourOf(p.behavior), sb = p && D.creature_data?.behaviors?.find(x => x.name === p.behavior);
+    const b = p && behaviourOf(p.behavior), sb = p && loaded?.behaviors?.find(x => x.name === p.behavior);
     return JSON.stringify(b) !== JSON.stringify(sb);
   };
 
@@ -91,7 +94,7 @@
     if (!b.pose_rules.length || b.pose_rules.length > lim.rule_capacity) out.push(`${name}: use 1–${lim.rule_capacity} pose rules.`);
     for (const r of b.pose_rules) {
       if (!lim.conditions.includes(r.when)) out.push(`${name}: unknown condition ${r.when}.`);
-      if (!cr.poses().includes(r.pose)) out.push(`${name}: unknown pose ${r.pose}.`);
+      if (!(D.creature_poses || []).includes(r.pose)) out.push(`${name}: unknown pose ${r.pose}.`);
       if (seenWhen.has(r.when)) out.push(`${name}: ${r.when} is listed twice; only the first can ever match.`);
       seenWhen.add(r.when);
     }
@@ -233,7 +236,7 @@
     }
     const b = behaviourOf(p.behavior), size = sizeReport(art, p), users = usersOf(p.behavior), others = users.filter(u => u !== art);
     const ruleRows = b ? b.pose_rules.map((r, i) => `<li data-i="${i}"><span class="n">${i + 1}</span>
-        <select data-f="when" aria-label="Rule ${i + 1} condition" title="${esc(CONDITION_HELP[r.when] || '')}">${options(lim.conditions, r.when)}</select> → <select data-f="pose" aria-label="Rule ${i + 1} pose">${options(cr.poses(), r.pose)}</select>
+        <select data-f="when" aria-label="Rule ${i + 1} condition" title="${esc(CONDITION_HELP[r.when] || '')}">${options(lim.conditions, r.when)}</select> → <select data-f="pose" aria-label="Rule ${i + 1} pose">${options(D.creature_poses || [], r.pose)}</select>
         <button data-act="up" ${i ? '' : 'disabled'} title="Check earlier">↑</button><button data-act="down" ${i < b.pose_rules.length - 1 ? '' : 'disabled'} title="Check later">↓</button><button data-act="remove" title="Remove rule">✕</button></li>`).join('') : '';
     const beats = b ? b.idle_beats.map((pose, i) => `<select data-beat="${i}" aria-label="Idle beat ${i + 1}">${options(lim.idle_poses, pose)}</select>`).join('') : '';
     const issues = allIssues();
@@ -318,23 +321,30 @@
     };
     $('#bh-idle').onclick = () => { sim.conds.clear(); restartSim(); render(); };
     $('#bh-pet').oninput = e => { const v = Number(e.target.value); if (Number.isInteger(v) && v >= 0) { sim.petId = v; timeline?.cells.forEach(c => { c.drawn = null; }); cr.redraw(); } };
-    $('#bh-revert').onclick = () => { work = D.creature_data ? clone(D.creature_data) : null; base = D.creature_data_sha; stale = false; render(); cr.renderForms(); cr.redraw(); };
+    $('#bh-revert').onclick = () => { S.creatureDoc.revert(); render(); cr.renderForms(); cr.redraw(); };
     $('#bh-save').onclick = save;
   }
 
   /* ---------- save ---------- */
+  /* The working creatures.json is shared with the Behaviour view (state looks), which saves both files together. */
+  S.creatureDoc = {
+    get work() { sync(); return work; }, dirty, issues: () => allIssues(), base: () => base, stale: () => stale,
+    saved(sent, sha) { D.creature_data = sent; loaded = clone(sent); D.creature_data_sha = seen = base = sha; stale = false; },
+    revert() { work = D.creature_data ? clone(D.creature_data) : null; loaded = work && clone(work); base = seen = D.creature_data_sha; stale = false; },
+    refresh() { render(); cr.renderForms(); cr.redraw(); }};
   async function save() {
+    if (S.saveContent) return S.saveContent();  // one validated save for creatures.json and behaviors.json
     if (!dirty()) return;
     const issues = allIssues();
     if (issues.length) return S.status(`Fix the behaviour and size messages before saving: ${issues[0]}`, 'bad', true);
     if (stale) return S.status('content/creatures.json changed on disk; revert first', 'bad', true);
     try {
       const sent = clone(work), res = await S.api('POST', '/api/creatures', {data: sent, base, artist: state.artist});
-      D.creature_data = sent; D.creature_data_sha = seen = base = res.sha; D.version = res.version;
+      D.creature_data = sent; loaded = clone(sent); D.creature_data_sha = seen = base = res.sha; D.version = res.version;
       render(); cr.renderForms();
       if (res.git_error) S.status(`Saved creature data, but the commit failed: ${res.git_error}`, 'bad', true);
       else S.status(res.commit ? `Saved content/creatures.json (commit ${res.commit}).` : 'Saved content/creatures.json.');
     } catch (err) { S.status(`Behaviour save failed: ${err.message}`, 'bad', true); }
   }
-  cr.save = () => { if (dirty()) save(); };
+  cr.save = () => { save(); };
 })();
