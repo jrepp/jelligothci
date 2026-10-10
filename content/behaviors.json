@@ -1,47 +1,237 @@
 {
   "version": 1,
-  "night": {"start_minute": 1200, "end_minute": 360},
+  "night": {
+    "start_minute": 1200,
+    "end_minute": 360
+  },
   "need_low": 250,
-  "touch": {"load_per_tap": 220, "upset_load": 600, "overload_load": 900, "decay_per_tick": 10,
-            "reaction_ticks": 30, "happy_gain": 15, "upset_loss": 20, "bond_gain": 3},
+  "touch": {
+    "load_per_tap": 220,
+    "upset_load": 600,
+    "overload_load": 900,
+    "decay_per_tick": 10,
+    "reaction_ticks": 30,
+    "happy_gain": 15,
+    "upset_loss": 20,
+    "bond_gain": 3
+  },
   "states": [
-    {"name": "curious", "duration_s": [8, 15], "cooldown_s": 40,
-     "effects": {"amusement": 10}, "ends_on": ["touched", "activity_started"]},
-    {"name": "delighted", "duration_s": [5, 8], "cooldown_s": 20,
-     "effects": {"bond": 5}, "ends_on": ["activity_started"]},
-    {"name": "studying", "duration_s": [20, 40], "cooldown_s": 120,
-     "effects": {"amusement": 20, "energy": -10},
-     "ends_on": ["touched", "activity_started", "need_low", "potty_urge"]},
-    {"name": "contemplating", "duration_s": [15, 30], "cooldown_s": 90,
-     "effects": {"social": 5}, "ends_on": ["touched", "activity_started", "need_low", "potty_urge"]},
-    {"name": "asking_food", "duration_s": [30, 60], "cooldown_s": 60,
-     "request": {"command": "feed", "bond": 20}, "ends_on": []},
-    {"name": "asking_potty", "duration_s": [30, 60], "cooldown_s": 60,
-     "request": {"command": "health", "health": "potty", "bond": 20}, "on_timeout": "accident",
-     "ends_on": []},
-    {"name": "asking_company", "duration_s": [20, 40], "cooldown_s": 120,
-     "request": {"command": "touch", "bond": 10}, "ends_on": []}
+    {
+      "name": "curious",
+      "duration_s": [
+        8,
+        15
+      ],
+      "cooldown_s": 40,
+      "effects": {
+        "amusement": 10
+      },
+      "ends_on": [
+        "touched",
+        "activity_started"
+      ]
+    },
+    {
+      "name": "delighted",
+      "duration_s": [
+        5,
+        8
+      ],
+      "cooldown_s": 20,
+      "effects": {
+        "bond": 5
+      },
+      "ends_on": [
+        "activity_started"
+      ]
+    },
+    {
+      "name": "studying",
+      "duration_s": [
+        20,
+        40
+      ],
+      "cooldown_s": 120,
+      "effects": {
+        "amusement": 20,
+        "energy": -10
+      },
+      "ends_on": [
+        "touched",
+        "activity_started",
+        "need_low",
+        "potty_urge"
+      ]
+    },
+    {
+      "name": "contemplating",
+      "duration_s": [
+        15,
+        30
+      ],
+      "cooldown_s": 90,
+      "effects": {
+        "social": 5
+      },
+      "ends_on": [
+        "touched",
+        "activity_started",
+        "need_low",
+        "potty_urge"
+      ]
+    },
+    {
+      "name": "asking_food",
+      "duration_s": [
+        30,
+        60
+      ],
+      "cooldown_s": 60,
+      "request": {
+        "command": "feed",
+        "bond": 20
+      },
+      "ends_on": []
+    },
+    {
+      "name": "asking_potty",
+      "duration_s": [
+        30,
+        60
+      ],
+      "cooldown_s": 60,
+      "request": {
+        "command": "health",
+        "health": "potty",
+        "bond": 20
+      },
+      "on_timeout": "accident",
+      "ends_on": []
+    },
+    {
+      "name": "asking_company",
+      "duration_s": [
+        20,
+        40
+      ],
+      "cooldown_s": 120,
+      "request": {
+        "command": "touch",
+        "bond": 10
+      },
+      "ends_on": []
+    }
   ],
   "repertoires": [
-    {"name": "bubble", "forms": ["AXOLOTL"],
-     "affinities": [{"moment": "READING", "bonus_pct": 50}],
-     "reactions": [
-       {"on": "potty_urge", "state": "asking_potty"},
-       {"on": "need_low", "need": "satiety", "state": "asking_food"},
-       {"on": "need_low", "need": "social", "state": "asking_company", "chance_pct": 60},
-       {"on": "present_caught", "state": "curious", "weight": 3},
-       {"on": "present_caught", "state": "delighted", "weight": 1},
-       {"on": "present_offered", "state": "curious", "chance_pct": 70},
-       {"on": "present_given", "state": "delighted"},
-       {"on": "location", "location": "garden", "state": "curious", "chance_pct": 60},
-       {"on": "activity_finished", "moment": "READING", "state": "studying", "weight": 3, "chance_pct": 80},
-       {"on": "activity_finished", "moment": "READING", "state": "contemplating", "weight": 1, "chance_pct": 80},
-       {"on": "activity_finished", "moment": "MOVIE", "state": "contemplating", "chance_pct": 50},
-       {"on": "night", "state": "contemplating", "chance_pct": 40},
-       {"on": "woke", "state": "curious", "chance_pct": 30},
-       {"on": "idle", "state": "studying", "chance_pct": 2, "when": {"location": "home", "night": false, "mood_min": 40}},
-       {"on": "idle", "state": "contemplating", "chance_pct": 1, "when": {"night": true}},
-       {"on": "idle", "state": "curious", "chance_pct": 3, "when": {"location": "garden"}}
-     ]}
+    {
+      "name": "bubble",
+      "forms": [
+        "AXOLOTL"
+      ],
+      "affinities": [
+        {
+          "moment": "READING",
+          "bonus_pct": 50
+        }
+      ],
+      "reactions": [
+        {
+          "on": "potty_urge",
+          "state": "asking_potty"
+        },
+        {
+          "on": "need_low",
+          "need": "satiety",
+          "state": "asking_food"
+        },
+        {
+          "on": "need_low",
+          "need": "social",
+          "state": "asking_company",
+          "chance_pct": 60
+        },
+        {
+          "on": "present_caught",
+          "state": "curious",
+          "weight": 3
+        },
+        {
+          "on": "present_caught",
+          "state": "delighted",
+          "weight": 1
+        },
+        {
+          "on": "present_offered",
+          "state": "curious",
+          "chance_pct": 70
+        },
+        {
+          "on": "present_given",
+          "state": "delighted"
+        },
+        {
+          "on": "location",
+          "location": "garden",
+          "state": "curious",
+          "chance_pct": 60
+        },
+        {
+          "on": "activity_finished",
+          "moment": "READING",
+          "state": "studying",
+          "weight": 3,
+          "chance_pct": 80
+        },
+        {
+          "on": "activity_finished",
+          "moment": "READING",
+          "state": "contemplating",
+          "weight": 1,
+          "chance_pct": 80
+        },
+        {
+          "on": "activity_finished",
+          "moment": "MOVIE",
+          "state": "contemplating",
+          "chance_pct": 50
+        },
+        {
+          "on": "night",
+          "state": "contemplating",
+          "chance_pct": 40
+        },
+        {
+          "on": "woke",
+          "state": "curious",
+          "chance_pct": 30
+        },
+        {
+          "on": "idle",
+          "state": "studying",
+          "chance_pct": 2,
+          "when": {
+            "location": "home",
+            "night": false,
+            "mood_min": 40
+          }
+        },
+        {
+          "on": "idle",
+          "state": "contemplating",
+          "chance_pct": 1,
+          "when": {
+            "night": true
+          }
+        },
+        {
+          "on": "idle",
+          "state": "curious",
+          "chance_pct": 3,
+          "when": {
+            "location": "garden"
+          }
+        }
+      ]
+    }
   ]
 }
