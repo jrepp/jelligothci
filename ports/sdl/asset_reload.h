@@ -3,7 +3,8 @@
 
 #include "jelli/pet_engine.h"
 
-#define JELLI_ASSET_PACK_CAPACITY 262144u
+/* 288 KiB staging buffer covers one bank's payload plus record metadata. */
+#define JELLI_ASSET_PACK_CAPACITY 294912u
 #define JELLI_ASSET_PACK_COUNT 128u
 
 typedef struct {
