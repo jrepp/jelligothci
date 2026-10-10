@@ -216,8 +216,12 @@ static void write_game(Writer *writer, const JelliGame *game)
     for (unsigned i = 0u; i < game->count; ++i)
         put_u8(writer, game->pets[i].food_type);
     put_u8(writer, game->volume);
-    for (unsigned i = 0u; i < game->count; ++i)
+    for (unsigned i = 0u; i < game->count; ++i) {
         put_u32(writer, game->pets[i].rest_ticks);
+        put_u8(writer, game->pets[i].moment); /* Version 10: moments and potty cycle. */
+        put_u16(writer, game->pets[i].digesting);
+        put_u16(writer, game->pets[i].potty);
+    }
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -271,9 +275,14 @@ static bool read_game(Reader *reader, JelliGame *game)
         for (unsigned i = 0u; i < game->count; ++i)
             game->pets[i].food_type = get_u8(reader);
     game->volume = reader->version >= 7u ? get_u8(reader) : JELLI_VOLUME_DEFAULT;
-    if (reader->version >= 9u)
-        for (unsigned i = 0u; i < game->count; ++i)
-            game->pets[i].rest_ticks = get_u32(reader);
+    for (unsigned i = 0u; i < game->count && reader->version >= 9u; ++i) {
+        game->pets[i].rest_ticks = get_u32(reader);
+        if (reader->version < 10u)
+            continue;
+        game->pets[i].moment = get_u8(reader);
+        game->pets[i].digesting = get_u16(reader);
+        game->pets[i].potty = get_u16(reader);
+    }
     return !reader->failed;
 }
 
@@ -333,6 +342,7 @@ static bool migrate_game(JelliGame *game, unsigned version)
 {
     if (version < 8u) {
         jelli_collection_merge_starters(game);
+        jelli_collection_normalize(game);
         jelli_collection_unlock(game);
     }
     return jelli_game_valid(game);
@@ -363,6 +373,8 @@ bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t s
     if (get_u8(&reader) != SAVE_CONTENT_VERSION || get_u8(&reader) != 0u || get_u8(&reader) != 0u)
         reader.failed = true;
     (void)read_game(&reader, &candidate->game);
+    /* Catalog edits may move an entry to another evolution set (e.g. BUBBLE). */
+    jelli_collection_normalize(&candidate->game);
     if (reader.failed || reader.offset != reader.size || candidate->game.resuming ||
         candidate->game.resume_remaining_ms != 0u || candidate->game.backlog_ms >= 100u ||
         !jelli_game_valid(&candidate->game))

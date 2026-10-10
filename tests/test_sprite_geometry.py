@@ -53,7 +53,7 @@ class GroundAnchorTests(unittest.TestCase):
     def test_real_pose_metadata(self):
         manifest, images = load_assets()
         creatures = [a for a in manifest["assets"] if a["kind"] == "creatures"]
-        self.assertEqual(len(creatures), 16)
+        self.assertEqual(len(creatures), 30)  # Mint and Lilac 8 each, axolotl 14.
         for asset in creatures:
             x, y = asset["ground_anchor_q8"]
             self.assertEqual(y, asset["bounds"][3] * 256)

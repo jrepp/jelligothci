@@ -1,3 +1,4 @@
+#include "save_layout.h"
 #include "game_fixture.h"
 #include "jelli/collection.h"
 #include "jelli/save.h"
@@ -41,8 +42,11 @@ static void unlock_and_persist(void)
     uint64_t stored_ticks = game->pets[0].ticks;
     for (unsigned i = 0u; i < 75u; ++i)
         jelli_game_advance(game, 800u);
-    CHECK(game->pets[index].form == 1u && game->pets[index].reached_forms == 3u);
+    /* BUBBLE is the single-form axolotl set: it ages without evolving. */
+    CHECK(game->pets[index].form == 2u && game->pets[index].reached_forms == 4u);
     CHECK(game->pets[index].id == id && game->pets[index].collection_entry == 3u);
+    CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, id, 0u}) == JELLI_FULL);
+    CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, id, 1u}) == JELLI_INVALID_TARGET);
     CHECK(game->pets[0].ticks == stored_ticks);
     for (unsigned p = 1u; p <= 9u; ++p) {
         if (!(game->prizes.owned & (1u << (p - 1u))))
@@ -54,7 +58,7 @@ static void unlock_and_persist(void)
     CHECK(size > 0u && size <= 4096u && bytes[4] == JELLI_SAVE_VERSION);
     CHECK(jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.count == 9u && loaded.game.new_pets == game->new_pets);
-    CHECK(loaded.game.pets[index].id == id && loaded.game.pets[index].reached_forms == 3u);
+    CHECK(loaded.game.pets[index].id == id && loaded.game.pets[index].reached_forms == 4u);
     jelli_collection_unlock(&loaded.game);
     CHECK(loaded.game.count == 9u);
     printf("Nine-pet save: %zu bytes; game: %zu bytes; pet: %zu bytes\n", size, sizeof(JelliGame),
@@ -81,12 +85,7 @@ static void legacy_and_invalid_records(void)
 {
     JelliSave source = {0}, loaded;
     jelli_game_init(&source.game);
-    source.game.count = 8u;
-    for (unsigned i = 0u; i < 8u; ++i) {
-        source.game.pets[i] = source.game.pets[0];
-        source.game.pets[i].id = 100u + i;
-        source.game.pets[i].collection_entry = (uint8_t)(i + 1u);
-    }
+    test_game_fill(&source.game, 0u, 8u, 100u);
     source.game.active = 7u;
     source.game.pets[7].form = 1u;
     source.game.prizes.owned = source.game.prizes.discovered = 32u;
@@ -94,7 +93,7 @@ static void legacy_and_invalid_records(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&source, bytes, sizeof(bytes));
     CHECK(size != 0u);
-    size_t extension = 3u + source.game.count * 11u;
+    size_t extension = 3u + source.game.count * TEST_SAVE_V4_PET_BYTES;
     memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
     size -= extension;
     bytes[4] = 3u;
@@ -108,9 +107,9 @@ static void legacy_and_invalid_records(void)
     size = jelli_save_encode(&loaded, bytes, sizeof(bytes));
     CHECK(size != 0u);
     JelliSave before = loaded;
-    bytes[size - 8u - (1u + loaded.game.count * 11u)] =
+    bytes[size - 8u - (1u + loaded.game.count * TEST_SAVE_V4_PET_BYTES)] =
         9u; /* First entry now duplicates an invalid NEW mask below. */
-    bytes[size - 8u - (3u + loaded.game.count * 11u)] = 1u;
+    bytes[size - 8u - (3u + loaded.game.count * TEST_SAVE_V4_PET_BYTES)] = 1u;
     repair(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     uint8_t before_bytes[JELLI_SAVE_CAPACITY], after_bytes[JELLI_SAVE_CAPACITY];
@@ -118,7 +117,8 @@ static void legacy_and_invalid_records(void)
     CHECK(jelli_save_encode(&loaded, after_bytes, sizeof(after_bytes)) == before_size);
     CHECK(before_size != 0u && memcmp(before_bytes, after_bytes, before_size) == 0);
     size = jelli_save_encode(&source, bytes, sizeof(bytes));
-    bytes[size - 8u - (1u + source.game.count * 11u) + 2u] = 1u; /* Duplicate collection binding. */
+    bytes[size - 8u - (1u + source.game.count * TEST_SAVE_V4_PET_BYTES) + 2u] =
+        1u; /* Duplicate collection binding. */
     repair(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
 }
@@ -137,7 +137,7 @@ static void reversible_forms_and_merge(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size != 0u);
-    size_t extension = 4u * (size_t)save.game.count;
+    size_t extension = TEST_SAVE_TAIL_PET_BYTES * (size_t)save.game.count;
     memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
     size -= extension;
     bytes[4] = 7u;
@@ -151,7 +151,7 @@ static void reversible_forms_and_merge(void)
     CHECK(game->sleep_log.active && game->sleep_log.pet_id == 2u);
     CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, 2u, 0u}) == JELLI_OK);
     CHECK(game->pets[0].asleep && game->pets[0].bond == 777u);
-    game->pets[0].stage_ticks = jelli_collection_growth_ticks;
+    game->pets[0].stage_ticks = jelli_collection_set(1u)->growth_ticks;
     jelli_game_advance(game, 100u);
     CHECK(game->pets[0].form == 0u && game->pets[0].reached_forms == 3u);
     CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, 2u, 1u}) == JELLI_OK);
@@ -162,7 +162,7 @@ static void reversible_forms_and_merge(void)
     jelli_game_init(game);
     CHECK(game->count == 1u && game->pets[0].collection_entry == 1u);
     CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, 1u, 1u}) == JELLI_NOT_READY);
-    discover(game, 6u);
+    discover(game, 1u); /* GARDEN shares the Mint-to-Lilac set. */
     game->pets[1].reached_forms = 3u;
     uint32_t stored_id = game->pets[1].id;
     CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, stored_id, 1u}) == JELLI_OK);
@@ -170,8 +170,29 @@ static void reversible_forms_and_merge(void)
     CHECK(game->pets[0].form == 0u);
 }
 
+static void catalog_normalization(void)
+{
+    JelliGame game;
+    test_game_pair(&game);
+    game.pets[1].collection_entry = 3u; /* Saved before BUBBLE became an axolotl. */
+    game.pets[1].form = 1u;
+    game.pets[1].reached_forms = 3u;
+    CHECK(!jelli_game_valid(&game));
+    jelli_collection_normalize(&game);
+    CHECK(game.pets[1].form == 2u && game.pets[1].reached_forms == 4u && jelli_game_valid(&game));
+    CHECK(game.pets[0].form == 0u && game.pets[0].reached_forms == 1u);
+    game.pets[1].form = 7u; /* Not a catalog form: left for validation to reject. */
+    jelli_collection_normalize(&game);
+    CHECK(game.pets[1].form == 7u && !jelli_game_valid(&game));
+    game.pets[1].form = 2u;
+    game.pets[1].reached_forms = 0x84u;
+    jelli_collection_normalize(&game);
+    CHECK(game.pets[1].reached_forms == 0x84u && !jelli_game_valid(&game));
+}
+
 int main(void)
 {
+    catalog_normalization();
     unlock_and_persist();
     reversible_forms_and_merge();
     legacy_and_invalid_records();

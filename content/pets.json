@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "entries": [
     {
       "id": 1,
@@ -20,7 +20,7 @@
       "name": "BUBBLE",
       "unlock_prize": 6,
       "hint": "CATCH BUBBLE GEM",
-      "evolution_set": 1
+      "evolution_set": 2
     },
     {
       "id": 4,
@@ -69,12 +69,20 @@
     {
       "id": 0,
       "name": "MINT",
-      "portrait": 1001
+      "portrait": 1001,
+      "art": "baby"
     },
     {
       "id": 1,
       "name": "LILAC",
-      "portrait": 1007
+      "portrait": 1007,
+      "art": "grown"
+    },
+    {
+      "id": 2,
+      "name": "AXOLOTL",
+      "portrait": 1101,
+      "art": "axolotl"
     }
   ],
   "evolution_sets": [
@@ -85,6 +93,13 @@
         1
       ],
       "growth_ticks": 600
+    },
+    {
+      "id": 2,
+      "forms": [
+        2
+      ],
+      "growth_ticks": 0
     }
   ]
 }

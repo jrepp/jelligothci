@@ -2,6 +2,7 @@
 #include "jelli/game.h"
 #include "jelli/collection.h"
 #include "jelli/nutrition.h"
+#include "jelli/activities.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -38,9 +39,11 @@ void jelli_game_init(JelliGame *game)
     game->count = 1u;
     game->food = 5u;
     game->gifts = 3u;
+    uint8_t form = jelli_collection_set(1u)->forms[0];
     game->pets[0] = (JelliPet){.id = 1u,
                                .collection_entry = 1u,
-                               .reached_forms = 1u,
+                               .form = form,
+                               .reached_forms = (uint8_t)(1u << form),
                                .phase_offset = 324000u,
                                .bedtime = 22u,
                                .sleep_duration = 288000u,
@@ -54,18 +57,25 @@ void jelli_game_init(JelliGame *game)
     game->new_pets = 0u;
 }
 
+/* Running moment and potty cycle (save version 10). */
+static bool pet_routine_valid(const JelliPet *pet)
+{
+    return pet->moment <= jelli_moment_count && pet->digesting <= 1000u && pet->potty <= 1000u &&
+           (pet->moment == 0u || pet->activity == JELLI_PLAYING);
+}
+
 static bool pet_profile_valid(const JelliPet *pet)
 {
     if (pet->id == 0u || pet->bedtime >= 24u || pet->sleep_duration == 0u ||
         pet->sleep_duration > JELLI_DAY_TICKS - 600u || pet->sleep_duration < 600u ||
-        pet->phase_offset >= JELLI_DAY_TICKS || pet->random_state == 0u || pet->form > 1u ||
-        pet->food_type >= jelli_food_count || pet->hydration > 1000u ||
-        pet->hydration_remainder >= 2400u || pet->location > 1u || pet->bond > 1000u ||
-        pet->wake_mood > JELLI_WAKE_HAPPY || pet->rest_ticks > jelli_wake_rules.sleep_ticks ||
-        pet->touch_load > 1000u || pet->reaction > 3u || pet->reaction_ticks > 30u ||
-        !enum_values_valid(pet))
+        pet->phase_offset >= JELLI_DAY_TICKS || pet->random_state == 0u ||
+        pet->form >= jelli_collection_form_count || pet->food_type >= jelli_food_count ||
+        pet->hydration > 1000u || pet->hydration_remainder >= 2400u || pet->location > 1u ||
+        pet->bond > 1000u || pet->wake_mood > JELLI_WAKE_HAPPY ||
+        pet->rest_ticks > jelli_wake_rules.sleep_ticks || pet->touch_load > 1000u ||
+        pet->reaction > 3u || pet->reaction_ticks > 30u || !enum_values_valid(pet))
         return false;
-    return true;
+    return pet_routine_valid(pet);
 }
 
 static bool pet_needs_valid(const JelliPet *pet)
@@ -114,9 +124,7 @@ static bool pet_recovery_valid(const JelliPet *pet)
 
 static bool pet_lifecycle_valid(const JelliPet *pet)
 {
-    if ((pet->reward_pending && pet->reward_claimed) ||
-        (pet->form == 0u && !(pet->reached_forms & 2u) &&
-         pet->stage_ticks >= jelli_collection_growth_ticks) ||
+    if ((pet->reward_pending && pet->reward_claimed) || jelli_collection_growth_due(pet) ||
         (pet->hunger_counted && !pet->hunger_low) ||
         (!pet->hunger_low && (pet->hunger_counted || pet->hunger_due != 0u)))
         return false;

@@ -2,6 +2,8 @@
 #define JELLI_PET_DRAW_H
 #include "jelli/pet_ui.h"
 bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y);
+/* Choose the creature pose and its clip frame from injected time. */
+void jelli_pet_actor_clip(JelliPetUi *ui, JelliPetRenderKey *view, uint64_t time);
 void jelli_pet_actor_layout(JelliPetUi *ui, const JelliPetRenderKey *view);
 uint16_t jelli_pet_background(uint8_t location, unsigned x, unsigned y);
 uint16_t jelli_pet_night_color(uint16_t color, uint8_t night);

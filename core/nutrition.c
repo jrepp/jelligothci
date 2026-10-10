@@ -1,3 +1,4 @@
+#include "jelli/potty.h"
 #include "jelli/nutrition.h"
 
 void jelli_hydration_add(JelliPet *pet, unsigned amount)
@@ -29,6 +30,7 @@ JelliResult jelli_drink_water(JelliPet *pet)
     if (pet->hydration == 1000u)
         return JELLI_FULL;
     jelli_hydration_add(pet, 1000u);
+    jelli_potty_drink(pet);
     return JELLI_OK;
 }
 

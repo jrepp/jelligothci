@@ -92,7 +92,7 @@ bool jelli_pet_gallery_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
             ui->catch_seen = 0u;
             ui->menu_open = true;
             ui->page = JELLI_UI_COLLECTION;
-            jelli_game_emit(game, JELLI_EVENT_INPUT, 40u, JELLI_OK, offered,
+            jelli_game_emit(game, JELLI_EVENT_INPUT, JELLI_INPUT_CATCH_PRESENT, JELLI_OK, offered,
                             &game->pets[game->active],
                             jelli_game_observe(game, &game->pets[game->active]));
         }

@@ -1,4 +1,6 @@
 #include "pet_draw.h"
+#include "jelli/collection.h"
+#include "jelli/activities.h"
 #include "pet_canvas.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
@@ -172,9 +174,8 @@ static void page_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
             jelli_canvas_centered(c, value, 324, 2u, PALE);
         label = pet->reward_pending ? "CLAIM!" : "";
     } else if (ui->page == JELLI_UI_MOMENTS) {
-        static const char *const names[] = {"BREAKFAST", "TEA", "GOING OUT", "MOVIE"};
         jelli_canvas_centered(c, ui->clock_known ? "FOR NOW" : "PET TIME", 322, 1u, GOLD);
-        label = names[jelli_pet_suggested_moment(pet, ui)];
+        label = jelli_moments[jelli_pet_suggested_moment(pet, ui)].name;
     }
     if (ui->result != JELLI_OK && hint[0])
         label = hint;
@@ -220,13 +221,24 @@ static void activity(Canvas *c, const JelliPetUi *ui)
     jelli_canvas_caption(c, label, 82, PALE);
 }
 
+/* A running moment may show its authored prop (e.g. the book) in front of the pet. */
+static void moment_prop(Canvas *c, const JelliPetUi *ui, const JelliPetRenderKey *view)
+{
+    if (view->activity != JELLI_PLAYING || !view->moment || view->moment > jelli_moment_count)
+        return;
+    uint32_t prop = jelli_moments[view->moment - 1u].prop;
+    if (!prop || !ui->actor_bounds.height)
+        return;
+    int x = (int)(ui->actor_bounds.x + ui->actor_bounds.width / 2u);
+    int y = (int)(ui->actor_bounds.y + ui->actor_bounds.height * 2u / 3u);
+    jelli_canvas_centered_sprite(c, prop, x, y, 3u);
+}
+
 static void page_heading(Canvas *c, const JelliPetUi *ui, const JelliPetRenderKey *view)
 {
-    jelli_canvas_heading(c,
-                         ui->menu_open ? jelli_pet_menu_title(ui)
-                         : view->form  ? "LILAC"
-                                       : "MINT",
-                         16, ui->menu_open && ui->page == JELLI_UI_MOMENTS ? 2u : 3u);
+    jelli_canvas_heading(
+        c, ui->menu_open ? jelli_pet_menu_title(ui) : jelli_collection_forms[view->form].name, 16,
+        ui->menu_open && ui->page == JELLI_UI_MOMENTS ? 2u : 3u);
     jelli_canvas_heading(c, view->location ? "@ GARDEN" : "@ HOME", 57, 2u);
 }
 
@@ -262,9 +274,9 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS)
         settings_clock(&c, view);
     else if (ui->actor_frame)
-        jelli_canvas_sprite(&c, ui->actor_frame->id, ui->actor_x, ui->actor_y, 6u);
+        jelli_canvas_sprite(&c, ui->actor_frame->id, ui->actor_x, ui->actor_y, ui->actor_scale);
     c.icon_night = view->night;
-    if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH)) {
+    if (jelli_pet_page_is_routine(ui->page)) {
         activity(&c, ui);
     } else if (ui->menu_open) {
         if (!view->ring_moving)
@@ -272,6 +284,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     } else {
         if (view->activity == JELLI_EXERCISING)
             jelli_canvas_centered_sprite(&c, 6014u, 233, view->phase ? 205 : 229, 3u);
+        moment_prop(&c, ui, view);
         char message[24];
         jelli_canvas_caption(&c, status(view, message, sizeof(message)), 254, MINT);
         draw_tile(c, view);

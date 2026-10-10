@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "per_meal": 300,
+  "per_drink": 200,
+  "drain_per_minute": 25,
+  "urge_threshold": 700,
+  "minimum_to_go": 150,
+  "hygiene_gain": 60,
+  "bond_gain": 5
+}

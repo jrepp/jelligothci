@@ -1,4 +1,5 @@
 #include "jelli/pet_ui.h"
+#include "jelli/activities.h"
 #include "game_internal.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
@@ -40,12 +41,14 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
                                       {JELLI_UI_ACTION_TEA, "TEA", NULL},
                                       {JELLI_UI_ACTION_OUTING, "GOING OUT", NULL},
                                       {JELLI_UI_ACTION_MOVIE, "MOVIE", NULL},
-                                      {JELLI_UI_ACTION_EXERCISE, "EXERCISE", NULL}},
+                                      {JELLI_UI_ACTION_EXERCISE, "EXERCISE", NULL},
+                                      {JELLI_UI_ACTION_READING, "READING", NULL}},
                                      {{JELLI_UI_ACTION_BRUSH, "BRUSH TEETH", NULL},
                                       {JELLI_UI_ACTION_MEDICINE, "MEDICINE", NULL},
                                       {JELLI_UI_ACTION_SHOT, "SHOT", NULL},
                                       {JELLI_UI_ACTION_WASH, "WASH", NULL},
-                                      {JELLI_UI_ACTION_STRETCH, "STRETCH", NULL}}};
+                                      {JELLI_UI_ACTION_STRETCH, "STRETCH", NULL},
+                                      {JELLI_UI_ACTION_POTTY, "POTTY", NULL}}};
 
 void jelli_pet_ui_init(JelliPetUi *ui)
 {
@@ -60,6 +63,9 @@ JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep)
         return (JelliPetUiItem){"", JELLI_UI_ACTION_HOME};
     UiAction value = pages[page][item];
     const char *label = asleep && value.sleep_label != NULL ? value.sleep_label : value.label;
+    unsigned moment;
+    if (label && jelli_pet_moment_for_action(value.action, &moment))
+        label = jelli_moments[moment].name; /* Moment names are content data. */
     return (JelliPetUiItem){label ? label : "", value.action};
 }
 
@@ -89,7 +95,8 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 static bool action_persists(JelliPetUiAction action)
 {
     if (action == JELLI_UI_ACTION_WATER || action == JELLI_UI_ACTION_EXERCISE ||
-        action == JELLI_UI_ACTION_VOLUME_DOWN || action == JELLI_UI_ACTION_VOLUME_UP)
+        action == JELLI_UI_ACTION_READING || action == JELLI_UI_ACTION_VOLUME_DOWN ||
+        action == JELLI_UI_ACTION_VOLUME_UP)
         return true;
     static const bool persists[] = {true,  false, true, false, false, false, true, true,
                                     true,  false, true, true,  true,  true,  true, true,
@@ -136,13 +143,15 @@ static void execute(JelliPetUi *ui, JelliGame *game, JelliPetUiAction action)
 static unsigned input_code(const JelliPetUi *ui, unsigned slot, bool asleep)
 {
     if (!slot)
-        return !ui->menu_open ? 28u : ui->page == JELLI_UI_HOME ? 29u : 30u;
+        return !ui->menu_open              ? JELLI_INPUT_OPEN_MENU
+               : ui->page == JELLI_UI_HOME ? JELLI_INPUT_CLOSE_MENU
+                                           : JELLI_INPUT_BACK;
     if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u))
-        return ui->clock_edit ? 33u + slot : 33u;
+        return ui->clock_edit ? JELLI_INPUT_CLOCK + slot : JELLI_INPUT_CLOCK;
     if (ui->page >= JELLI_UI_PETS)
-        return 41u + slot;
-    if (ui->page >= JELLI_UI_BRUSH)
-        return JELLI_UI_ACTION_BRUSH + (unsigned)ui->page - JELLI_UI_BRUSH;
+        return JELLI_INPUT_COLLECTION + slot;
+    if (jelli_pet_page_is_routine(ui->page))
+        return jelli_pet_routine_action(ui->page);
     return (unsigned)jelli_pet_ui_item(ui->page, slot - 1u, asleep).action;
 }
 
@@ -179,7 +188,7 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
             ui->save_requested = true;
             ui->save_status = JELLI_SAVE_PENDING;
         }
-    } else if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH)) {
+    } else if (jelli_pet_page_is_routine(ui->page)) {
         jelli_pet_health_tap(ui, game);
     } else {
         JelliPetUiItem selected =
@@ -240,16 +249,16 @@ void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)
     unsigned code;
     if (dy < 0 && !ui->menu_open) {
         jelli_pet_ui_back(ui);
-        code = 28u;
+        code = JELLI_INPUT_OPEN_MENU;
     } else if (dy > 0 && ui->menu_open) {
-        code = ui->page == JELLI_UI_HOME ? 29u : 30u;
+        code = ui->page == JELLI_UI_HOME ? JELLI_INPUT_CLOSE_MENU : JELLI_INPUT_BACK;
         jelli_pet_ui_back(ui);
     } else if (dx && !dy && !ui->menu_open && !ui->last_view.ring_moving) {
         jelli_pet_rewards_cancel(&ui->rewards);
         ui->stat_offset = (uint8_t)((ui->stat_offset + (dx < 0 ? 1u : JELLI_PET_STAT_COUNT - 1u)) %
                                     JELLI_PET_STAT_COUNT);
         ui->tile_reset = true;
-        code = 31u;
+        code = JELLI_INPUT_VIEW_STAT;
     } else {
         return;
     }

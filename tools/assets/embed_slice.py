@@ -7,6 +7,7 @@
 import argparse
 from pathlib import Path
 
+import creature_data
 from build_slice import load_assets
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -73,6 +74,7 @@ def generate(output):
         else:
             chunks.append(f"    {{{ident}u, {width}u, {height}u, {name}_pixels, {name}_mask, {stride}u, {ground_x}u, {ground_y}u, {center_x}u, {center_y}u, {left}u, {top}u, {right}u, {bottom}u}},")
     chunks.extend(["};", "", "const JelliAsset *jelli_asset_find(uint32_t id)", "{", "    for (unsigned i = 0u; i < sizeof(assets) / sizeof(assets[0]); ++i) {", "        if (assets[i].id == id)", "            return &assets[i];", "    }", "    return 0;", "}", "", "const uint8_t *jelli_asset_glyph(uint8_t codepoint)", "{", "    if (codepoint < 32u || codepoint > 127u)", "        codepoint = (uint8_t)'?';", "    return &font_glyphs[(unsigned)(codepoint - 32u) * 12u];", "}", ""])
+    chunks.extend(creature_data.emit(manifest))
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n\n".join(chunks))
     if glyph_data is None:

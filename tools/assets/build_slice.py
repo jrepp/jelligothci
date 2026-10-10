@@ -17,6 +17,16 @@ REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "assets/slice"
 
 
+# Creature frames may be 32x32 or 48x48 (ADR-012); other kinds have one size.
+FIXED_SIZES = {"icons": (16, 16), "props": (24, 24), "font": (128, 72), "menus": (32, 32), "meters": (32, 32),
+               "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64), "prizes": (32, 32)}
+CREATURE_SIZES = {(32, 32), (48, 48)}
+# Runtime pose order; must match JelliCreaturePose in include/jelli/creature.h.
+CREATURE_POSES = ("idle", "idle-alt", "curious", "content", "eating", "happy", "asleep", "unwell")
+CLIP_FRAME_CAP = 6
+PACK_CEILING = 245760  # 240 KiB: axolotl (ADR-012), then Reading and POTTY icons (RFC-005).
+
+
 def require(condition, message):
     if not condition:
         raise ValueError(message)
@@ -36,6 +46,30 @@ def pack_mask(image):
     return bytes(data)
 
 
+def palette_colours(manifest, asset):
+    """An asset's palette: the shared one, an inline list, or a name in manifest["palettes"]."""
+    name = asset.get("palette")
+    if name is None:
+        return manifest["palette"]
+    if isinstance(name, list):
+        return name
+    palettes = manifest.get("palettes", {})
+    require(isinstance(name, str) and name in palettes, f"Unknown palette: {asset['key']}")
+    return palettes[name]
+
+
+def check_creature_clips(manifest):
+    """Every creature form needs one clip per runtime pose, keyed "<form>.<pose>"."""
+    require(tuple(manifest.get("creature_poses", ())) == CREATURE_POSES, "Creature pose list mismatch")
+    forms = {a["form"] for a in manifest["assets"] if a["kind"] == "creatures"}
+    keys = {clip["key"] for clip in manifest["clips"]}
+    require(keys == {f"{form}.{pose}" for form in forms for pose in CREATURE_POSES}, "Creature clip coverage mismatch")
+    for clip in manifest["clips"]:
+        form = clip["key"].split(".", 1)[0]
+        assets = {a["key"]: a for a in manifest["assets"]}
+        require(all(assets[k].get("form") == form for k in clip["frames"]), f"Clip mixes forms: {clip['key']}")
+
+
 def load_assets():
     manifest = json.loads((SOURCE / "assets.json").read_text())
     require(manifest["schema_version"] == 1, "Unknown manifest schema")
@@ -43,7 +77,8 @@ def load_assets():
     require(len(palette) <= 16, "Palette exceeds 16 opaque colors")
     images, ids, paths = {}, set(), set()
     counts = {"creatures": 0, "icons": 0, "props": 0, "font": 0, "menus": 0, "meters": 0, "health": 0, "effects": 0, "backgrounds": 0, "prizes": 0}
-    expected = {"creatures": (32, 32), "icons": (16, 16), "props": (24, 24), "font": (128, 72), "menus": (32, 32), "meters": (32, 32), "health": (32, 32), "effects": (16, 16), "backgrounds": (64, 64), "prizes": (32, 32)}
+    expected = {kind: {size} for kind, size in FIXED_SIZES.items()}
+    expected["creatures"] = CREATURE_SIZES
     for asset in manifest["assets"]:
         key, ident, path = asset["key"], asset["id"], asset["path"]
         require(key not in images and ident not in ids and path not in paths, f"Duplicate asset: {key}")
@@ -51,10 +86,10 @@ def load_assets():
         full = (SOURCE / path).resolve()
         require(SOURCE.resolve() in full.parents, f"Path escapes source root: {path}")
         image = Image.open(full).convert("RGBA")
-        require(image.size == expected[asset["kind"]], f"Wrong dimensions: {key}")
+        require(image.size in expected[asset["kind"]], f"Wrong dimensions: {key}")
         require(image.size == (asset["width"], asset["height"]), f"Manifest dimensions: {key}")
         require(set(image.getchannel("A").getdata()) <= {0, 255}, f"Nonbinary alpha: {key}")
-        asset_palette = {tuple(bytes.fromhex(c[1:])) for c in asset.get("palette", manifest["palette"])}
+        asset_palette = {tuple(bytes.fromhex(c[1:])) for c in palette_colours(manifest, asset)}
         require(len(asset_palette) <= 16, f"Palette exceeds 16 colors: {key}")
         require(all((r, g, b) in asset_palette for r, g, b, a in image.getdata() if a), f"Off-palette pixel: {key}")
         require(list(image.getchannel("A").getbbox()) == asset["bounds"], f"Bounds mismatch: {key}")
@@ -71,7 +106,9 @@ def load_assets():
         paths.add(path)
         counts[asset["kind"]] += 1
         images[key] = image
-    require(counts == {"creatures": 16, "icons": 12, "props": 4, "font": 1, "menus": 15, "meters": 5, "health": 9, "effects": 8, "backgrounds": 2, "prizes": 9}, "Incomplete slice inventory")
+    on_disk = {png.relative_to(SOURCE).as_posix() for kind in counts for png in (SOURCE / kind).glob("*.png")}
+    require(on_disk == paths, f"Manifest and PNGs disagree: {sorted(on_disk ^ paths)}")
+    require(all(counts.values()), f"Every asset kind needs art: {counts}")
     prize_pixels = {image.tobytes() for key, image in images.items() if key.startswith("prizes.")}
     require(len(prize_pixels) == 9, "Collectible prizes must have nine distinct pixel designs")
     clip_keys = set()
@@ -79,10 +116,12 @@ def load_assets():
         require(clip["id"] not in ids and clip["key"] not in clip_keys, "Duplicate clip")
         ids.add(clip["id"])
         clip_keys.add(clip["key"])
-        require(0 < len(clip["frames"]) <= 6, "Clip frame cap")
+        require(0 < len(clip["frames"]) <= CLIP_FRAME_CAP, "Clip frame cap")
         require(len(clip["frames"]) == len(clip["durations_ms"]), "Clip timing mismatch")
         require(all(k in images for k in clip["frames"]), "Missing clip frame")
         require(all(isinstance(n, int) and 0 < n <= 10000 for n in clip["durations_ms"]), "Clip duration out of bounds")
+        require(isinstance(clip.get("loop"), bool), f"Clip loop flag: {clip['key']}")
+    check_creature_clips(manifest)
     return manifest, images
 
 
@@ -110,10 +149,9 @@ def export_pixels(output, manifest, images):
                         **({"ground_anchor_q8": asset["ground_anchor_q8"]} if asset["kind"] == "creatures" else {}),
                         "files": {k: {"bytes": len(v), "sha256": hashlib.sha256(v).hexdigest()} for k, v in payloads.items()}})
     total = sum(r["bytes"] for r in records)
-    require(total == 151840, f"Unexpected pixel payload: {total}")
-    require(total + 8192 + 4096 <= 164864, "Art exceeds 161 KiB planned pack budget")
+    require(total + 8192 + 4096 <= PACK_CEILING, "Art exceeds the planned pack budget")
     report = {"pixel_bytes": total, "definition_allowance": 8192, "metadata_allowance": 4096,
-              "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": 164864,
+              "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": PACK_CEILING,
               "note": "Raw pixels are real exports; definitions, metadata and pack assembly remain allowances, not a compiled game pack.", "assets": records}
     (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     return report

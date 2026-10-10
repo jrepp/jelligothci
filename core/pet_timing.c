@@ -1,3 +1,4 @@
+#include "jelli/creature.h"
 #include "pet_draw.h"
 
 static void ring_phase(const JelliPetUi *ui, JelliPetRenderKey *view, uint64_t elapsed,
@@ -76,12 +77,10 @@ void jelli_pet_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliP
     uint32_t idle = jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_IDLE_MS);
     uint32_t scale =
         jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_ANIMATION_SCALE);
-    /* Uneven holds and occasional posture changes; no frame-count RNG or catch-up. */
-    static const uint8_t poses[] = {0, 1, 0, 0, 2, 0, 1, 1, 0, 3, 3, 0, 0, 1, 0, 0};
+    /* Uneven holds and occasional postures from the form's creature profile; no RNG or
+     * frame-count catch-up. */
     uint64_t beat = (time - ui->idle_anchor_ms) / idle;
-    unsigned pose = poses[beat % 16u];
-    if (pose >= 2u && ((beat / 16u + pet->id) % 3u) == 0u)
-        pose = 0u; /* Some cycles stay quiet instead of repeating every gesture. */
+    unsigned pose = jelli_creature_idle_pose(jelli_creature_profile(pet->form), beat, pet->id);
     view->phase = pet->activity == JELLI_IDLE && !pet->asleep ? pose : 0u;
     if (pet->activity == JELLI_EXERCISING)
         view->phase = (unsigned)(time / 500u % 2u);

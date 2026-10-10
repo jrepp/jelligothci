@@ -25,6 +25,7 @@ typedef enum {
     JELLI_UI_SHOT,
     JELLI_UI_WASH,
     JELLI_UI_STRETCH,
+    JELLI_UI_POTTY, /* Last health routine page; see jelli_pet_page_is_routine. */
     JELLI_UI_PETS,
     JELLI_UI_PET_DETAIL,
     JELLI_UI_EVOLUTIONS,
@@ -72,8 +73,27 @@ typedef enum {
     JELLI_UI_ACTION_WATER,
     JELLI_UI_ACTION_EXERCISE,
     JELLI_UI_ACTION_VOLUME_DOWN,
-    JELLI_UI_ACTION_VOLUME_UP
+    JELLI_UI_ACTION_VOLUME_UP,
+    /* Appended so earlier action IDs stay stable for debug clients. */
+    JELLI_UI_ACTION_READING,
+    JELLI_UI_ACTION_POTTY,
+    JELLI_UI_ACTION_COUNT
 } JelliPetUiAction;
+
+/* Event-log input codes that are not menu actions. They start above every
+ * JelliPetUiAction so logs and debug clients never confuse the two. */
+enum {
+    JELLI_INPUT_FIRST = 64,
+    JELLI_INPUT_OPEN_MENU = JELLI_INPUT_FIRST,
+    JELLI_INPUT_CLOSE_MENU,
+    JELLI_INPUT_BACK,
+    JELLI_INPUT_VIEW_STAT,
+    JELLI_INPUT_CATCH_PRESENT,
+    JELLI_INPUT_CLOCK = 72,      /* + clock slot 0..6 */
+    JELLI_INPUT_COLLECTION = 80, /* + collection slot 1..9 */
+};
+_Static_assert((int)JELLI_UI_ACTION_COUNT <= (int)JELLI_INPUT_FIRST,
+               "Input codes overlap UI actions");
 
 typedef struct {
     const char *label;
@@ -125,6 +145,8 @@ typedef struct {
     uint8_t page;
     uint8_t save_status;
     uint8_t form;
+    uint8_t pose, clip_frame; /* JelliCreaturePose and its clip frame index. */
+    uint8_t moment;           /* Running moment ID + 1, or 0. */
     uint8_t location;
     uint8_t health, care_seconds;
     uint8_t activity;
@@ -156,6 +178,7 @@ typedef struct {
     JelliTunables tunables;
     JelliPetPage page;
     int actor_x, actor_y;
+    uint8_t actor_scale; /* Pixel multiplier from the active form's creature profile. */
     uint32_t clicker_pet, routine_random, tuning_revision, tuning_pet;
     JelliResult result;
     uint8_t attempted_slot;
@@ -169,6 +192,10 @@ typedef struct {
     uint8_t clicker_hits, clicker_goal, clicker_stage;
     bool clicker_done;
     uint8_t tuning_form;
+    uint64_t clip_anchor_ms;
+    uint32_t clip_pet;
+    uint8_t clip_pose, clip_form;
+    bool clip_started;
     bool tile_reset;
     uint8_t last_page, ring_from_page, ring_from_visible;
     bool ring_from_open, ring_started, clock_edit, ring_from_clock_edit;
@@ -198,6 +225,15 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
                           JelliPetUiButton *button);
 bool jelli_pet_health_select(JelliPetUi *ui, const JelliGame *game, JelliPetUiAction action);
 unsigned jelli_pet_health_action(const JelliPetUi *ui);
+/* Health routine pages run tap-to-finish activities (brush through potty). */
+bool jelli_pet_page_is_routine(unsigned page);
+/* Routine page and health activity for a routine action; false for other actions. */
+bool jelli_pet_routine_for_action(JelliPetUiAction action, JelliPetPage *page, unsigned *activity);
+JelliPetUiAction jelli_pet_routine_action(unsigned page);
+/* Icon asset for a JelliHealthActivity; 0 when out of range. */
+uint32_t jelli_pet_health_icon(unsigned activity);
+/* Moment ID (content/activities.json) for a moment action; false for other actions. */
+bool jelli_pet_moment_for_action(JelliPetUiAction action, unsigned *moment);
 void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game);
 void jelli_pet_ui_back(JelliPetUi *ui);
 /* Consume one cosmetic cue; rapid taps coalesce and never delay input. */

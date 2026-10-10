@@ -1,31 +1,69 @@
 #include "jelli/wake.h"
 #include "jelli/sound.h"
+#include "jelli/creature.h"
 #include "pet_draw.h"
+
+/* Code defines what each condition means; content data orders them into poses. */
+static bool condition_holds(unsigned when, const JelliPetRenderKey *v)
+{
+    switch ((JelliCreatureCondition)when) {
+    case JELLI_WHEN_ASLEEP:
+        return v->asleep;
+    case JELLI_WHEN_WAKE_GROGGY:
+        return v->reaction == 4u;
+    case JELLI_WHEN_WAKE_SURPRISED:
+        return v->reaction == 5u && v->phase == 2u;
+    case JELLI_WHEN_WAKE_HAPPY:
+        return v->reaction == 5u;
+    case JELLI_WHEN_UNWELL:
+        return v->health == JELLI_UNWELL || v->health == JELLI_RECOVERING;
+    case JELLI_WHEN_EATING:
+        return v->activity == JELLI_EATING;
+    case JELLI_WHEN_PLAYING:
+        return v->activity == JELLI_PLAYING || v->activity == JELLI_GIVING ||
+               v->activity == JELLI_EXERCISING;
+    case JELLI_WHEN_TOUCH_HAPPY:
+        return v->reaction == 1u;
+    case JELLI_WHEN_TOUCH_UPSET:
+        return v->reaction == 2u || v->reaction == 3u;
+    case JELLI_WHEN_COUNT:
+        break;
+    }
+    return false;
+}
+
+static unsigned creature_pose(const JelliCreatureProfile *profile, const JelliPetRenderKey *v)
+{
+    unsigned count = profile->rule_count < JELLI_POSE_RULE_CAPACITY ? profile->rule_count
+                                                                    : JELLI_POSE_RULE_CAPACITY;
+    for (unsigned i = 0u; i < count; ++i)
+        if (condition_holds(profile->rules[i].when, v))
+            return profile->rules[i].pose;
+    /* Idle phases are the idle poses chosen by the profile's beat schedule. */
+    return v->phase <= JELLI_POSE_CONTENT ? v->phase : JELLI_POSE_IDLE;
+}
+
+void jelli_pet_actor_clip(JelliPetUi *ui, JelliPetRenderKey *view, uint64_t time)
+{
+    unsigned pose = creature_pose(jelli_creature_profile(view->form), view);
+    if (!ui->clip_started || ui->clip_pose != pose || ui->clip_form != view->form ||
+        ui->clip_pet != view->active_id || time < ui->clip_anchor_ms) {
+        ui->clip_anchor_ms = time; /* Each pose change restarts its clip. */
+        ui->clip_pose = (uint8_t)pose;
+        ui->clip_form = view->form;
+        ui->clip_pet = view->active_id;
+        ui->clip_started = true;
+    }
+    /* Clip holds are authored milliseconds, like pet.idle_frame_ms; UI scale does not apply. */
+    view->pose = (uint8_t)pose;
+    view->clip_frame =
+        (uint8_t)jelli_clip_frame(jelli_creature_clip(view->form, pose), time - ui->clip_anchor_ms);
+}
 
 static uint32_t frame_id(const JelliPetRenderKey *v)
 {
-    uint32_t base = v->form == 0u ? 1000u : 1006u;
-    if (v->asleep)
-        return base + 5u;
-    if (v->reaction == 4u)
-        return base + 5u;
-    if (v->reaction == 5u)
-        return v->phase == 2u ? 1021u + (v->form ? 2u : 0u) : base + 4u;
-    if (v->health == JELLI_UNWELL || v->health == JELLI_RECOVERING)
-        return base + 6u;
-    /* Keep care feedback visible even when a recent touch reaction is active. */
-    if (v->activity == JELLI_EATING)
-        return base + 3u;
-    if (v->activity == JELLI_PLAYING || v->activity == JELLI_GIVING ||
-        v->activity == JELLI_EXERCISING)
-        return base + 4u;
-    if (v->reaction >= 2u)
-        return base + 6u;
-    if (v->reaction == 1u)
-        return base + 4u;
-    if (v->phase >= 2u)
-        return 1021u + (v->form ? 2u : 0u) + (v->phase == 3u ? 1u : 0u);
-    return base + 1u + v->phase;
+    const JelliClip *clip = jelli_creature_clip(v->form, v->pose);
+    return clip && v->clip_frame < clip->count ? clip->frames[v->clip_frame] : 0u;
 }
 
 void jelli_pet_actor_layout(JelliPetUi *ui, const JelliPetRenderKey *view)
@@ -41,11 +79,14 @@ void jelli_pet_actor_layout(JelliPetUi *ui, const JelliPetRenderKey *view)
     unsigned anchor_x = ring ? a->centroid_x_q8 : a->ground_x_q8;
     unsigned anchor_y = ring ? a->centroid_y_q8 : a->ground_y_q8;
     int floor = view->page >= JELLI_UI_BRUSH ? 350 : 256;
-    ui->actor_x = 233 - (int)((anchor_x * 6u + 128u) / 256u);
-    ui->actor_y = (ring ? 233 : floor) - (int)((anchor_y * 6u + 128u) / 256u);
-    ui->actor_bounds = (JelliRect){
-        (unsigned)(ui->actor_x + (int)a->left * 6), (unsigned)(ui->actor_y + (int)a->top * 6),
-        (unsigned)(a->right - a->left) * 6u, (unsigned)(a->bottom - a->top) * 6u};
+    unsigned scale = jelli_creature_profile(view->form)->scale;
+    ui->actor_scale = (uint8_t)scale;
+    ui->actor_x = 233 - (int)((anchor_x * scale + 128u) / 256u);
+    ui->actor_y = (ring ? 233 : floor) - (int)((anchor_y * scale + 128u) / 256u);
+    ui->actor_bounds =
+        (JelliRect){(unsigned)(ui->actor_x + (int)(a->left * scale)),
+                    (unsigned)(ui->actor_y + (int)(a->top * scale)),
+                    (unsigned)(a->right - a->left) * scale, (unsigned)(a->bottom - a->top) * scale};
 }
 
 uint16_t jelli_pet_background(uint8_t location, unsigned x, unsigned y)
@@ -61,13 +102,14 @@ uint16_t jelli_pet_background(uint8_t location, unsigned x, unsigned y)
 bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
 {
     const JelliPet *pet = &game->pets[game->active];
-    bool activity_view = ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH;
+    bool activity_view = jelli_pet_page_is_routine(ui->page);
     if ((ui->menu_open && (!activity_view || !pet->asleep)) || !ui->actor_frame ||
         x < ui->actor_x || y < ui->actor_y)
         return false;
     const JelliAsset *a = ui->actor_frame;
-    unsigned column = (unsigned)(x - ui->actor_x) / 6u;
-    unsigned row = (unsigned)(y - ui->actor_y) / 6u;
+    unsigned scale = ui->actor_scale ? ui->actor_scale : 1u;
+    unsigned column = (unsigned)(x - ui->actor_x) / scale;
+    unsigned row = (unsigned)(y - ui->actor_y) / scale;
     if (column >= a->width || row >= a->height ||
         !(a->mask[row * a->mask_stride + column / 8u] & (1u << (7u - column % 8u))))
         return false;

@@ -8,6 +8,10 @@ Listens on 127.0.0.1 by default (the container passes --host 0.0.0.0 behind its
 port mapping). Every write goes to a PNG named by the manifest, so the studio can
 never touch an arbitrary path. Saved art is recorded in
 assets/slice/source/hand-painted.json, which the polish recipe leaves alone.
+Creature clip edits change only the "clips" entries of assets.json and are
+validated by the checkout's tools/assets/build_slice.py before they are written.
+Creature behaviour and render profiles are written to content/creatures.json
+after the checkout's tools/assets/creature_data.py accepts them.
 With --git-branch, each save is also committed (and with --git-push, pushed).
 """
 import argparse
@@ -27,6 +31,8 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "assets"))
 from compare_slice import REPO, SOURCE, collect  # noqa: E402
+import creatures  # noqa: E402
+import profiles  # noqa: E402
 from git_sync import GitSync  # noqa: E402
 
 # Art recipes come from the served checkout so tidy matches that checkout's palette.
@@ -39,8 +45,13 @@ except ImportError:  # an older checkout without the polish recipe: tidy is unav
 
 MANIFEST = SOURCE / "assets.json"
 HAND_PAINTED = SOURCE / "source/hand-painted.json"
+CONTENT = REPO / "content"
+PETS, CREATURE_DATA = CONTENT / "pets.json", CONTENT / "creatures.json"
+CONTENT_WRITABLE = True  # False for --assets trials without --content, so a trial never edits the checkout
 TEMPLATE = HERE.parent / "assets/compare.html"
 STUDIO_JS = HERE / "studio.js"
+CREATURE_JS = HERE / "creature.js"
+BEHAVIOUR_JS = HERE / "behaviour.js"
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
 MAX_BODY = 1 << 20
@@ -63,9 +74,9 @@ def write_json(path, value):
 
 
 def version():
-    """Changes whenever the manifest or any PNG changes on disk."""
+    """Changes whenever the manifest, creature content or any PNG changes on disk."""
     digest = hashlib.sha1()
-    for path in [MANIFEST, *sorted(SOURCE.glob("*/*.png"))]:
+    for path in [MANIFEST, *[p for p in (PETS, CREATURE_DATA) if p.exists()], *sorted(SOURCE.glob("*/*.png"))]:
         stat = path.stat()
         digest.update(f"{path.name}{stat.st_mtime_ns}{stat.st_size}".encode())
     return digest.hexdigest()[:16]
@@ -78,11 +89,20 @@ def hand_painted():
 def payload(before):
     manifest, records = collect(before, SOURCE)
     painted = set(hand_painted())
+    details = creatures.asset_details(manifest)
     for record in records:
         record["hand_painted"] = record["key"] in painted
+        record.update(details[record["key"]])
     return {"live": True, "before_label": before, "after_label": "working tree", "version": version(),
             "studio_version": STUDIO_VERSION, "palette": manifest["palette"], "assets": records,
+            **creatures.creature_data(manifest, PETS), **creature_profiles(),
             "git": GIT.status() if GIT else {"enabled": False}}
+
+
+def creature_profiles():
+    data = profiles.profile_data(CREATURE_DATA, creatures.load_checkout_module(REPO, "creature_data"))
+    data["creature_data_editable"] = data["creature_data_editable"] and CONTENT_WRITABLE
+    return data
 
 
 def refs():
@@ -155,8 +175,49 @@ def tidy(key, pixels):
     if reink is None:
         raise StudioError("This checkout has no polish recipe, so Tidy is unavailable")
     asset = find_asset(read_manifest(), key)
+    if "palette" in asset:
+        raise StudioError("Tidy inks with the shared palette; this sprite has its own palette")
     sprite = reink(image_from_pixels(asset, pixels))
     return {"pixels": pixels_from_image(to_image(sprite, (asset["width"], asset["height"])))}
+
+
+def save_clips(edits, artist=""):
+    """Change frames, durations and loop of existing creature clips; nothing else in the manifest moves."""
+    with LOCK:
+        original = read_manifest()
+        manifest = json.loads(json.dumps(original))
+        validator = creatures.load_validator(REPO)
+        cap = getattr(validator, "CLIP_FRAME_CAP", creatures.FRAME_CAP)
+        try:
+            changed = creatures.apply_edits(manifest, edits, cap)
+            if not changed:
+                return {"ok": True, "changed": [], "version": version()}
+            warning = creatures.validate(manifest, original, SOURCE, validator)
+        except creatures.ClipError as error:
+            raise StudioError(str(error)) from error
+        write_json(MANIFEST, manifest)
+        names = ", ".join(changed) if len(changed) <= 3 else f"{len(changed)} creature"
+        git = record([MANIFEST], f"chore(art): edit {names} clips in Jelli Art", artist)
+    return {"ok": True, "changed": changed, "version": version(), **({"warning": warning} if warning else {}), **git}
+
+
+def save_creature_data(data, base, artist=""):
+    """Replace content/creatures.json once creature_data.load accepts it; base is the hash the page edited."""
+    with LOCK:
+        if not CONTENT_WRITABLE:
+            raise StudioError("This trial serves copied assets; pass --content with a copy of content/ to edit creature data")
+        if base != profiles.digest(CREATURE_DATA):
+            raise StudioError("content/creatures.json changed since you loaded it; revert to load the new version")
+        current = json.loads(CREATURE_DATA.read_text()) if CREATURE_DATA.exists() else None
+        if data == current:
+            return {"ok": True, "changed": False, "version": version(), "sha": base}
+        try:
+            profiles.validate(data, read_manifest(), creatures.load_checkout_module(REPO, "creature_data"), PETS)
+        except profiles.ProfileError as error:
+            raise StudioError(str(error)) from error
+        write_json(CREATURE_DATA, data)
+        git = record([CREATURE_DATA], "chore(art): edit creature behaviour and profiles in Jelli Art", artist)
+    return {"ok": True, "changed": True, "version": version(), "sha": profiles.digest(CREATURE_DATA), **git}
 
 
 def set_palette_slot(index, color, artist=""):
@@ -212,7 +273,7 @@ class Handler(BaseHTTPRequestHandler):
         query = parse_qs(url.query)
         if method == "GET" and url.path == "/":
             page = TEMPLATE.read_text().replace("__COMPARE_DATA__", json.dumps({"live": True}))
-            page = page.replace("/*__STUDIO_JS__*/", STUDIO_JS.read_text())
+            page = page.replace("/*__STUDIO_JS__*/", "\n".join(p.read_text() for p in (STUDIO_JS, CREATURE_JS, BEHAVIOUR_JS)))
             return self.send(HTTPStatus.OK, page.encode(), "text/html; charset=utf-8")
         if method == "GET" and url.path == "/api/data":
             return self.send(HTTPStatus.OK, payload(query.get("before", ["HEAD"])[0]))
@@ -230,6 +291,16 @@ class Handler(BaseHTTPRequestHandler):
         if method == "POST" and url.path == "/api/tidy":
             body = self.body()
             return self.send(HTTPStatus.OK, tidy(body["key"], body["pixels"]))
+        if method == "GET" and url.path == "/api/clips":
+            return self.send(HTTPStatus.OK, creatures.creature_data(read_manifest(), PETS))
+        if method == "POST" and url.path == "/api/clips":
+            body = self.body()
+            return self.send(HTTPStatus.OK, save_clips(body["clips"], str(body.get("artist", ""))))
+        if method == "GET" and url.path == "/api/creatures":
+            return self.send(HTTPStatus.OK, creature_profiles())
+        if method == "POST" and url.path == "/api/creatures":
+            body = self.body()
+            return self.send(HTTPStatus.OK, save_creature_data(body["data"], body.get("base"), str(body.get("artist", ""))))
         if method == "POST" and url.path == "/api/palette":
             body = self.body()
             return self.send(HTTPStatus.OK, set_palette_slot(int(body["index"]), str(body["color"]), str(body.get("artist", ""))))
@@ -258,6 +329,7 @@ def main():
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--no-open", action="store_true", help="do not open a browser tab")
     parser.add_argument("--assets", type=Path, help="serve a copy laid out like assets/slice (for trials)")
+    parser.add_argument("--content", type=Path, help="read and write a copy laid out like content/ (for trials)")
     parser.add_argument("--git-branch", help="commit every save to this branch of the checkout")
     parser.add_argument("--git-push", action="store_true", help="push --git-branch to origin after commits")
     args = parser.parse_args()
@@ -267,6 +339,14 @@ def main():
         global SOURCE, MANIFEST, HAND_PAINTED
         SOURCE = args.assets.resolve()
         MANIFEST, HAND_PAINTED = SOURCE / "assets.json", SOURCE / "source/hand-painted.json"
+    global CONTENT, PETS, CREATURE_DATA, CONTENT_WRITABLE
+    if args.content:
+        if args.git_branch:
+            parser.error("--content trials cannot be combined with --git-branch")
+        CONTENT = args.content.resolve()
+        PETS, CREATURE_DATA = CONTENT / "pets.json", CONTENT / "creatures.json"
+    elif args.assets:
+        CONTENT_WRITABLE = False  # a trial on copied art must not write the checkout's content/
     if args.git_branch:
         global GIT
         GIT = GitSync(REPO, args.git_branch, push=args.git_push)

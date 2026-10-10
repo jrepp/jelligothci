@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "moments": [
+    {"id": 0, "name": "BREAKFAST", "kind": "feed", "suggest_hour": 5, "location": "stay",
+     "gains": {}, "icon": 6009, "prop": 0},
+    {"id": 1, "name": "TEA", "kind": "play", "suggest_hour": 11, "location": "stay",
+     "gains": {"social": 60, "energy": 100}, "icon": 6010, "prop": 0},
+    {"id": 2, "name": "GOING OUT", "kind": "play", "suggest_hour": 15, "location": "garden",
+     "gains": {}, "icon": 6011, "prop": 0},
+    {"id": 3, "name": "MOVIE", "kind": "play", "suggest_hour": 19, "location": "stay",
+     "gains": {"social": 100}, "icon": 6012, "prop": 0},
+    {"id": 4, "name": "READING", "kind": "play", "suggest_hour": -1, "location": "stay",
+     "gains": {"amusement": 60, "social": 30}, "icon": 6016, "prop": 3005}
+  ]
+}

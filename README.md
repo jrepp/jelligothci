@@ -71,8 +71,24 @@ Bounds, centroids, and creature ground anchors update with the image.
 open build/assets/preview.html    # macOS; otherwise open in your browser
 ```
 
-The preview includes all 81 assets, including nine distinct presents.
+The preview includes all 95 assets, including nine distinct presents.
 [Art inventory](assets/slice/README.md) · [live authoring guide](docs/artwork.md)
+
+### Creatures are content data
+
+Species, animation and behaviour come from data and are generated into C at
+build time ([ADR-012](docs-cms/adr/adr-012-data-driven-creature-species-and-presentation.md)):
+
+| File | Defines |
+| --- | --- |
+| `content/pets.json` | Collection entries, forms (`art` name, portrait), evolution sets and growth |
+| `assets/slice/assets.json` `clips` | Frames, holds and looping for each form's eight runtime poses |
+| `content/creatures.json` | Per-form actor/icon/portrait scale and behaviour: pose rules, idle beats, quiet cycle |
+
+Mint grows into Lilac; catching the Bubble Gem adds BUBBLE, a single-form
+axolotl. Import upscaled frame art with `tools/assets/import_creature.py SPEC DIR`
+(see `assets/slice/source/axolotl-import.json`), then edit clips in Jelli Art's
+Creature view.
 
 ## Hardware bring-up
 
