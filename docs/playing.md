@@ -59,8 +59,9 @@ screenshots, and reconnect behavior are tested against the actual SDL app.
 The ESP32 build includes a small debug interface on its existing USB Serial/JTAG
 console. Build with `make esp-build`; when ready to deploy, discover the port
 with `./scripts/esp ports` and use the separate `make esp-flash PORT=...` command.
-Close `esp-monitor` and other serial clients before using the CLI. Firmware startup after flashing is verified; this feature has host test coverage,
-but live debug commands and screenshot transfer have not yet been exercised.
+Close `esp-monitor` and other serial clients before using the CLI. Device state,
+commands, and framebuffer screenshots have been exercised over USB. A screenshot
+reads the engine buffer; it cannot verify the pixels shown by the physical panel.
 
 ```sh
 ./scripts/jelli-debug ports
@@ -74,6 +75,23 @@ export JELLI_DEBUG_PORT=/dev/cu.usbmodem...  # Linux typically /dev/ttyACM...
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" tap 114 332
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" screenshot build/pet-live.png
 ```
+
+For an ESP32 display mismatch, `display` reports the latest five-second sample of
+engine/canvas equality, boundary guards, heap integrity, and minimum remaining
+engine-task stack bytes. `checks: 0` means no sample yet. `mismatches` counts
+unequal samples, not frames. These checks do not read panel memory.
+
+```sh
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" display
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" display refresh
+```
+
+`display refresh` queues a full retransmission of the existing LVGL canvas on
+the next uncaptured frame. It does not reset the device, change pet state, or
+repair a differing canvas. Capture the screenshot and diagnostics before using
+it, then compare the physical panel. The two full PSRAM frames have 32-byte
+boundary guards on each end; invalid copy bounds or damaged guards stop the
+firmware with an error instead of continuing an unsafe copy.
 
 The CLI runs through repository-local uv, Python 3.12, and pinned pyserial 3.5.
 `state` reports the last rendered view and visible buttons. `press` accepts a

@@ -217,6 +217,8 @@ def main():
     tune.add_argument("--creature", type=int, default=0, help="Stable pet ID; default is global")
     network = commands.add_parser("network", help="ESP32 network status or persist/apply staged settings")
     network.add_argument("action", nargs="?", choices=("apply",))
+    display = commands.add_parser("display", help="ESP32 buffer diagnostics or explicit panel refresh")
+    display.add_argument("action", nargs="?", choices=("refresh",))
     ota = commands.add_parser("ota", help="ESP32 HTTPS update: inspect, download/stage, then save/reboot")
     ota.add_argument("action", nargs="?", choices=("start", "reboot"))
     events = commands.add_parser("events", help="Read discrete action/state events")
@@ -299,7 +301,7 @@ def main():
             result = client.state()["buttons"]
         elif args.command == "press":
             result = client.press(args.button)
-        elif args.command in ("network", "ota"):
+        elif args.command in ("network", "ota", "display"):
             result = client.request(args.command + (f" {args.action}" if args.action else ""))
         elif args.command == "tunables":
             scope = "device" if args.device else args.creature
