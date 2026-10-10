@@ -8,7 +8,7 @@
   const LOCKED = new Set(['font', 'backgrounds']);
   const TOOLS = [['pencil', 'Pencil', 'P'], ['eraser', 'Eraser', 'E'], ['fill', 'Fill', 'F'], ['picker', 'Pick colour', 'C']];
   const edits = {};  // key -> {saved, undo: [], redo: []}; the working buffer is decoded[key].after
-  let stroke = null, view = null, statusTimer = null;
+  let stroke = null, view = null, statusTimer = null, queued = 0;
   Object.assign(state, {tool: 'pencil', color: '#291b35', mirror: false, before: store.get('before', 'HEAD'), artist: store.get('artist', '')});
   MODES.push('paint');
   document.getElementById('modes').insertAdjacentHTML('beforeend', '<button data-mode="paint">Paint</button>');
@@ -35,7 +35,7 @@
   async function api(method, url, body) {
     const res = await fetch(url, {method, headers: body ? {'Content-Type': 'application/json'} : {}, body: body ? JSON.stringify(body) : undefined});
     const data = await res.json().catch(() => ({error: res.statusText}));
-    if (!res.ok) throw new Error(data.error || res.statusText);
+    if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), {status: res.status, body: data});
     return data;
   }
   function status(text, cls = '', sticky = false) {
@@ -52,14 +52,30 @@
       if (decoded[a.key].after) a.after_metrics = measure(decoded[a.key].after, a);
       if (decoded[a.key].before) a.before_metrics = measure(decoded[a.key].before, a);
     }
+    const kept = new Set(keep.map(([key]) => key));
     for (const key of Object.keys(edits)) {
       if (!decoded[key]?.after) { delete edits[key]; continue; }
       edits[key].saved = decoded[key].after.data.slice();
+      if (!kept.has(key)) edits[key].base = byKey[key].sha;  // dirty edits keep the base they started from
     }
     for (const [key, data] of keep) if (decoded[key]?.after) { decoded[key].after.data.set(data); refresh(key); }
   }
+  /* Unsaved paint from a previous visit (drafts.js); a stale one saves only after a confirm (409). */
+  function restoreDrafts() {
+    const back = [];
+    for (const {key} of window.JelliDrafts?.list('paint') || []) {
+      const p = work(key), d = JelliDrafts.restore('paint', key, byKey[key]?.sha), data = d && JelliDrafts.decodeBytes(d.data);
+      if (!p || !data || data.length !== p.data.length) { JelliDrafts.drop('paint', key); continue; }
+      ensure(key).base = d.base; p.data.set(data); refresh(key); back.push(key + (d.stale ? ' (changed on disk since)' : ''));
+    }
+    if (!back.length) return;
+    const text = `Restored unsaved edits from your last visit: ${back.join(', ')}`;
+    status(text, 'warn', true);
+    window.JelliShell?.notify(text, {tone: 'warn', id: 'drafts', hint: 'Save to keep them, or Revert to discard them.'});
+  }
   S.boot = async () => {
     await reload();
+    restoreDrafts();
     const refs = await api('GET', '/api/refs').catch(() => ({tags: [], commits: []}));
     const select = document.getElementById('before-ref');
     const options = [['HEAD', 'HEAD (last commit)'], ...refs.tags.map(t => [t, `tag ${t}`]), ...refs.commits.map(c => [c.ref, `${c.ref} ${c.subject}`.slice(0, 60)])];
@@ -81,6 +97,12 @@
     el.textContent = `⎇ ${git.branch} · ${push.ok === false ? 'push failing, will retry' : git.push ? pending : 'commits only'}`;
     el.className = 'studio-status' + (push.ok === false ? ' bad' : '');
     el.title = push.error || `Every save is committed to ${git.branch}${git.push ? ' and pushed to GitHub for review' : ''}.`;
+    if (git.pending_commits) {  // commits that failed are queued server-side and retried (git_sync.py)
+      el.textContent += ` · ${git.pending_commits} commit(s) queued`; el.className = 'studio-status bad'; el.title = git.last_commit_error;
+      if (queued !== git.pending_commits) window.JelliShell?.notify(`${git.pending_commits} commit(s) are queued and will be retried: ${git.last_commit_error}`,
+        {tone: 'warn', id: 'git-queue', sticky: true, hint: 'Your saves are on disk; the studio retries the commit (POST /api/git/retry retries now).'});
+    } else if (queued) window.JelliShell?.dismiss?.('git-queue');
+    queued = git.pending_commits || 0;
   }
   async function poll() {
     if (document.hidden || stroke) return;
@@ -95,7 +117,7 @@
   /* ---------- pixel buffer helpers ---------- */
   const work = key => decoded[key]?.after;
   const dirty = key => { const e = edits[key], p = work(key); if (!e || !p) return false; for (let i = 0; i < p.data.length; i++) if (p.data[i] !== e.saved[i]) return true; return false; };
-  const ensure = key => (edits[key] ||= {saved: work(key).data.slice(), undo: [], redo: []});
+  const ensure = key => (edits[key] ||= {saved: work(key).data.slice(), undo: [], redo: [], base: byKey[key]?.sha});
   function setPixel(p, x, y, hex) {
     if (x < 0 || y < 0 || x >= p.w || y >= p.h) return;
     const i = (y * p.w + x) * 4;
@@ -130,8 +152,13 @@
     a.after = p.img.toDataURL('image/png');
     if (before) { let n = 0; for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) if (pixel(before, x, y) !== pixel(p, x, y)) n++; a.changed = n; }
   }
+  function draft(key) {
+    if (!window.JelliDrafts) return;
+    if (!dirty(key)) return JelliDrafts.drop('paint', key);
+    JelliDrafts.later('paint', key, edits[key].base, () => JelliDrafts.encodeBytes(work(key).data));
+  }
   function commit() {
-    const a = asset(); refresh(a.key);
+    const a = asset(); refresh(a.key); draft(a.key);
     renderHeader(a); renderPalette(a); renderContext(a); renderTotals(); renderList(); draw(); renderToolbarState();
   }
   function begin() { const e = ensure(state.key); e.undo.push(work(state.key).data.slice()); if (e.undo.length > 200) e.undo.shift(); e.redo = []; }
@@ -297,8 +324,13 @@
     if (!p.data.some((v, i) => i % 4 === 3 && v)) return status('An asset needs at least one pixel', 'bad');
     const pixels = []; for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) pixels.push(pixel(p, x, y));
     try {
-      const res = await api('POST', '/api/save', {key: a.key, pixels, artist: state.artist});
-      edits[a.key].saved = p.data.slice(); a.hand_painted = true; D.version = res.version;
+      const e = edits[a.key], send = base => api('POST', '/api/save', {key: a.key, pixels, artist: state.artist, base});
+      const res = await send(e.base ?? a.sha).catch(err => {
+        if (err.status !== 409 || !confirm(`${a.key} changed on disk since you started editing it.\n\nOverwrite it with your version?`)) throw err;
+        return send(err.body.current);  // the 409 names the hash now on disk
+      });
+      e.saved = p.data.slice(); e.base = a.sha = res.sha; a.hand_painted = true; D.version = res.version;
+      window.JelliDrafts?.drop('paint', a.key);
       renderHeader(a); renderToolbarState(); renderList();
       if (res.git_error) status(`Saved ${a.key}, but the commit failed: ${res.git_error}`, 'bad', true);
       else status(res.commit ? `Saved ${a.key} (commit ${res.commit}).` : `Saved ${a.key}. With make run-live, the game shows it now.`);
