@@ -41,7 +41,7 @@ shared palette only.
 | Endpoint | Purpose |
 | --- | --- |
 | `GET /api/clips` | Poses, clips, named palettes, forms, frame cap |
-| `POST /api/clips` | `{"clips": [{"key", "frames", "durations_ms", "loop"}], "artist"}` |
+| `POST /api/clips` | `{"clips": [{"key", "frames", "durations_ms", "loop"}], "bases"?: {key: clip_shas[key]}, "artist"}` |
 | `GET /api/creatures` | `content/creatures.json`, its hash, validator limits, editability |
 | `POST /api/creatures` | `{"data": <whole document>, "base": <hash>, "artist"}` |
 | `GET /api/behaviour` | `content/behaviors.json`, its hash, vocabulary, `potty.json`, creature data |
@@ -100,6 +100,101 @@ Both files are written in one commit. The container image installs `cmake`.
 `core/behavior.c`; the tests replay them through `simulator.js` when `node` is
 installed.
 
+## Saving safely
+
+All saves run one at a time, including across two studio processes serving
+the same files (`storage.WriteLock`). Each file is written to a temporary file
+in the same directory, synced, then renamed into place. A save that changes
+several files writes every temporary file before renaming any of them. Writes
+stay inside `assets/slice` or `content/`, and the studio refuses to write
+through a symlink.
+
+Every save checks that the file has not changed since the page loaded it:
+
+| Save | Base it sends | Where the page gets it |
+| --- | --- | --- |
+| `POST /api/save` | `"base"`: the PNG hash | `assets[].sha` in `/api/data`; the reply returns the new `sha` |
+| `POST /api/clips` | `"bases"`: `{clip key: hash}` (`null` for a new clip) | `clip_shas` in `/api/data` |
+| `POST /api/palette` | `"base"`: the slot's current colour | `palette` |
+| `POST /api/creatures`, `/api/content` | `"base"` / `"bases"` (required) | `creature_data_sha`, `behavior_data_sha` |
+
+If the base does not match, the reply is `409` with
+`{"error", "stale": true, "current"}`. The page can ask the artist and save
+again with `current` as the base. Saves that leave out the base are still
+accepted, so older pages keep working. Other errors use these statuses:
+
+- `400`: a missing or wrongly typed field, invalid JSON, or a validator
+  rejecting the edit.
+- `411`, `413`, `415`: no `Content-Length`, a body over 1 MiB, or a body that
+  is not `application/json`. Plain cross-site form posts get `415`.
+- `405`: the wrong method.
+- `503` (`"retry": true`): another save held the lock for 60 s.
+- `500`: an internal error. The server log has the traceback, and the server
+  keeps running.
+
+On start, the studio deletes temporary files left by an interrupted save and
+reports JSON files it cannot parse in `GET /healthz` under `problems`.
+`/healthz` also reports `capabilities` (`cmake`, `git`, `node`, `tidy`). If
+`cmake` is missing, the Behaviour view is read-only and
+`behavior_readonly_reason` gives the reason.
+
+With `--git-branch`, each save is committed with `git commit -- <its files>`,
+so changes someone else staged stay out of the commit. If a commit fails (for
+example, a held `index.lock`), the save stays on disk and the commit is
+queued. The queue is retried before the next commit and in the background.
+`GET /api/git` shows `pending_commits`, `last_commit_error`, `last_push`
+(`ok`, `kind`: `network`, `auth`, `rejected` or `error`) and `next_retry_at`.
+`POST /api/git/retry` retries now. The page shows queued commits in the
+header and as a `JelliShell` toast.
+
+Failed pushes back off from 15 s to 10 minutes. A rejected push is repaired
+when that is safe:
+
+- If the remote branch's studio files already match the base branch (merged
+  or squashed), the remote branch is replaced with `--force-with-lease`.
+- If the remote has new commits, the studio rebases onto them, and aborts if
+  they conflict.
+
+On start, studio files a crash left uncommitted are committed
+(`recover studio edits left uncommitted`).
+
+## Drafts
+
+`drafts.js` (`window.JelliDrafts`) keeps unsaved edits in this browser's
+`localStorage`, one per `(kind, key)`, together with the base hash the edit
+started from. Paint uses it: each stroke is stored after a short pause and on
+`pagehide`, saving or reverting drops the draft, and reloading restores it with
+a notice. If the file changed since the draft was made, restoring still works.
+Saving the restored draft then gets a `409`, and the page asks before
+overwriting. Other editors can call `put`, `restore`, `drop`, `list`, `later`
+and `flush`; the header comment of `drafts.js` documents each call and
+suggests keys.
+
+## Tests
+
+```sh
+./scripts/uv run --python 3.12 tools/jelli-art/test_server.py   # HTTP end to end, no browser
+tools/jelli-art/browser_smoke.sh [port]                        # optional, needs agent-browser
+```
+
+`test_server.py` starts real servers on scratch copies and a scratch git
+checkout with a bare origin. It covers:
+
+- paint, clip, behaviour, creature and palette saves, with stale refusals
+- malformed requests and concurrent saves
+- orphan cleanup and corrupt JSON at start
+- a host without `cmake`
+- commits that leave unrelated staged files alone, queued commit retries and
+  crash recovery
+- pushes, push failure and retry, push repair by rebase and by replacing landed
+  work
+- `entrypoint.sh` keeping unlanded `content/` commits and starting offline
+- the drafts API (with `node`)
+
+`browser_smoke.sh` drives the real page. It paints a stroke, checks the draft
+survives a reload, saves, and checks that saving over a file changed on disk
+asks first (Cancel keeps the newer file; OK overwrites it).
+
 ## Container
 
 ```sh
@@ -120,8 +215,13 @@ podman run --rm -p 127.0.0.1:8765:8765 -v "$PWD:/work/jelligotchi:ro" jelli-art
 | `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL` | Commit identity (default `Jelli Art`) |
 
 The container listens on 8765 and answers `GET /healthz`; `healthcheck.py` is
-the probe. On start, the studio branch resets to the base branch once its art
-has landed there, whether by merge or squash. Unmerged art is kept.
+the probe. On start, the studio branch resets to the base branch once its
+work has landed there, whether by merge or squash. The check covers both
+`assets/slice` and `content/`. Unmerged work and uncommitted or new studio
+files are kept. A stale `.git/index.lock` or an interrupted rebase is cleared
+first. If the fetch fails (offline), the studio starts from the local checkout
+and retries pushes later. `JELLI_HOST` overrides the bind address (default
+`0.0.0.0`), and `JELLI_APP` the code directory.
 
 ## Versioning and releases
 
