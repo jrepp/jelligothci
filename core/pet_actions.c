@@ -1,45 +1,85 @@
 #include "jelli/pet_ui.h"
+#include "jelli/activities.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
 #include "pet_food.h"
 
 _Static_assert(sizeof(JelliGame) <= 4096u, "Action preflight workspace exceeds budget");
 
+bool jelli_pet_moment_for_action(JelliPetUiAction action, unsigned *moment)
+{
+    /* Ring actions name moments by ID in content/activities.json. */
+    static const struct {
+        JelliPetUiAction action;
+        uint8_t moment;
+    } moments[] = {{JELLI_UI_ACTION_BREAKFAST, 0u},
+                   {JELLI_UI_ACTION_TEA, 1u},
+                   {JELLI_UI_ACTION_OUTING, 2u},
+                   {JELLI_UI_ACTION_MOVIE, 3u},
+                   {JELLI_UI_ACTION_READING, 4u}};
+    for (unsigned i = 0u; i < sizeof(moments) / sizeof(moments[0]); ++i)
+        if (moments[i].action == action && moments[i].moment < jelli_moment_count) {
+            *moment = moments[i].moment;
+            return true;
+        }
+    return false;
+}
+
+static unsigned activity_value(const JelliPetUi *ui, const JelliPet *pet, JelliPetUiAction action,
+                               JelliCommandKind kind)
+{
+    unsigned value = 0u;
+    if (kind == JELLI_CMD_MOMENT && action == JELLI_UI_ACTION_SUGGEST)
+        return jelli_pet_suggested_moment(pet, ui);
+    if (kind == JELLI_CMD_MOMENT)
+        (void)jelli_pet_moment_for_action(action, &value);
+    else if (jelli_pet_page_is_routine(ui->page))
+        value = jelli_pet_health_action(ui);
+    else
+        (void)jelli_pet_routine_for_action(action, NULL, &value);
+    return value;
+}
+
 bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetUiAction action,
                           JelliCommand *command)
 {
-    static const int8_t kinds[] = {-1,
-                                   -1,
-                                   JELLI_CMD_REST,
-                                   -1,
-                                   -1,
-                                   -1,
-                                   JELLI_CMD_CARE,
-                                   JELLI_CMD_PLAY,
-                                   JELLI_CMD_CLEAN,
-                                   -1,
-                                   JELLI_CMD_GIFT,
-                                   JELLI_CMD_CLAIM,
-                                   JELLI_CMD_TRAVEL,
-                                   -1,
-                                   JELLI_CMD_BEDTIME,
-                                   -1,
-                                   -1,
-                                   JELLI_CMD_MOMENT,
-                                   JELLI_CMD_MOMENT,
-                                   JELLI_CMD_MOMENT,
-                                   JELLI_CMD_MOMENT,
-                                   JELLI_CMD_MOMENT,
-                                   -1,
-                                   JELLI_CMD_HEALTH,
-                                   JELLI_CMD_HEALTH,
-                                   JELLI_CMD_HEALTH,
-                                   JELLI_CMD_HEALTH,
-                                   JELLI_CMD_HEALTH,
-                                   JELLI_CMD_WATER,
-                                   JELLI_CMD_EXERCISE,
-                                   JELLI_CMD_VOLUME,
-                                   JELLI_CMD_VOLUME};
+    /* Command per action; -1 for actions that navigate or are handled by their page. */
+    static const int8_t kinds[JELLI_UI_ACTION_COUNT] = {
+        [JELLI_UI_ACTION_FEED] = -1,
+        [JELLI_UI_ACTION_CARE] = -1,
+        [JELLI_UI_ACTION_REST_WAKE] = JELLI_CMD_REST,
+        [JELLI_UI_ACTION_COLLECTION] = -1,
+        [JELLI_UI_ACTION_MORE] = -1,
+        [JELLI_UI_ACTION_SETTINGS] = -1,
+        [JELLI_UI_ACTION_BASIC_CARE] = JELLI_CMD_CARE,
+        [JELLI_UI_ACTION_PLAY] = JELLI_CMD_PLAY,
+        [JELLI_UI_ACTION_CLEAN_WAKE] = JELLI_CMD_CLEAN,
+        [JELLI_UI_ACTION_HOME] = -1,
+        [JELLI_UI_ACTION_GIFT] = JELLI_CMD_GIFT,
+        [JELLI_UI_ACTION_CLAIM] = JELLI_CMD_CLAIM,
+        [JELLI_UI_ACTION_TRAVEL] = JELLI_CMD_TRAVEL,
+        [JELLI_UI_ACTION_SWITCH_PET] = -1,
+        [JELLI_UI_ACTION_BEDTIME] = JELLI_CMD_BEDTIME,
+        [JELLI_UI_ACTION_SAVE] = -1,
+        [JELLI_UI_ACTION_MOMENTS] = -1,
+        [JELLI_UI_ACTION_BREAKFAST] = JELLI_CMD_MOMENT,
+        [JELLI_UI_ACTION_TEA] = JELLI_CMD_MOMENT,
+        [JELLI_UI_ACTION_OUTING] = JELLI_CMD_MOMENT,
+        [JELLI_UI_ACTION_MOVIE] = JELLI_CMD_MOMENT,
+        [JELLI_UI_ACTION_SUGGEST] = JELLI_CMD_MOMENT,
+        [JELLI_UI_ACTION_HEALTH] = -1,
+        [JELLI_UI_ACTION_BRUSH] = JELLI_CMD_HEALTH,
+        [JELLI_UI_ACTION_MEDICINE] = JELLI_CMD_HEALTH,
+        [JELLI_UI_ACTION_SHOT] = JELLI_CMD_HEALTH,
+        [JELLI_UI_ACTION_WASH] = JELLI_CMD_HEALTH,
+        [JELLI_UI_ACTION_STRETCH] = JELLI_CMD_HEALTH,
+        [JELLI_UI_ACTION_WATER] = JELLI_CMD_WATER,
+        [JELLI_UI_ACTION_EXERCISE] = JELLI_CMD_EXERCISE,
+        [JELLI_UI_ACTION_VOLUME_DOWN] = JELLI_CMD_VOLUME,
+        [JELLI_UI_ACTION_VOLUME_UP] = JELLI_CMD_VOLUME,
+        [JELLI_UI_ACTION_READING] = JELLI_CMD_MOMENT,
+        [JELLI_UI_ACTION_POTTY] = JELLI_CMD_HEALTH,
+    };
     if ((unsigned)action >= sizeof(kinds) / sizeof(kinds[0]) || kinds[action] < 0)
         return false;
     const JelliPet *pet = &game->pets[game->active];
@@ -55,14 +95,8 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
         command->value = pet->location ? 0u : 1u;
     else if (command->kind == JELLI_CMD_BEDTIME)
         command->value = (pet->bedtime + 1u) % 24u;
-    else if (command->kind == JELLI_CMD_MOMENT)
-        command->value = action == JELLI_UI_ACTION_SUGGEST
-                             ? jelli_pet_suggested_moment(pet, ui)
-                             : (unsigned)action - JELLI_UI_ACTION_BREAKFAST;
-    else if (command->kind == JELLI_CMD_HEALTH)
-        command->value = (ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH)
-                             ? jelli_pet_health_action(ui)
-                             : (unsigned)action - JELLI_UI_ACTION_BRUSH;
+    else if (command->kind == JELLI_CMD_MOMENT || command->kind == JELLI_CMD_HEALTH)
+        command->value = activity_value(ui, pet, action, command->kind);
     return true;
 }
 
@@ -76,10 +110,10 @@ static JelliResult menu_available(JelliPetUi *ui, const JelliGame *game, unsigne
             return JELLI_NOT_READY;
         return JELLI_OK;
     }
-    if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH) && ui->clicker_done)
+    if (jelli_pet_page_is_routine(ui->page) && ui->clicker_done)
         return JELLI_NOT_READY;
     JelliPetUiAction action =
-        (ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH)
+        jelli_pet_page_is_routine(ui->page)
             ? JELLI_UI_ACTION_BRUSH
             : jelli_pet_ui_item(ui->page, slot - 1u, game->pets[game->active].asleep).action;
     JelliCommand command;

@@ -28,7 +28,7 @@ void jelli_pet_feedback(JelliPetUi *ui, const JelliGame *game, JelliEventSnapsho
                               1u);
     if (!action)
         return;
-    bool routine = ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH;
+    bool routine = jelli_pet_page_is_routine(ui->page);
     if (routine && !ui->clicker_done && (ui->page == JELLI_UI_BRUSH || ui->page == JELLI_UI_WASH))
         return; /* These routines use localized bubbles instead of sprite sprays. */
     unsigned amount = jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_BURST_COUNT);

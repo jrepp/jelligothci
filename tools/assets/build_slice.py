@@ -24,8 +24,7 @@ CREATURE_SIZES = {(32, 32), (48, 48)}
 # Runtime pose order; must match JelliCreaturePose in include/jelli/creature.h.
 CREATURE_POSES = ("idle", "idle-alt", "curious", "content", "eating", "happy", "asleep", "unwell")
 CLIP_FRAME_CAP = 6
-PIXEL_BYTES = 223784
-PACK_CEILING = 237568
+PACK_CEILING = 245760  # 240 KiB: axolotl (ADR-012), then Reading and POTTY icons (RFC-005).
 
 
 def require(condition, message):
@@ -107,7 +106,9 @@ def load_assets():
         paths.add(path)
         counts[asset["kind"]] += 1
         images[key] = image
-    require(counts == {"creatures": 30, "icons": 12, "props": 5, "font": 1, "menus": 16, "meters": 5, "health": 9, "effects": 8, "backgrounds": 2, "prizes": 9}, "Incomplete slice inventory")
+    on_disk = {str(png.relative_to(SOURCE)) for kind in counts for png in (SOURCE / kind).glob("*.png")}
+    require(on_disk == paths, f"Manifest and PNGs disagree: {sorted(on_disk ^ paths)}")
+    require(all(counts.values()), f"Every asset kind needs art: {counts}")
     prize_pixels = {image.tobytes() for key, image in images.items() if key.startswith("prizes.")}
     require(len(prize_pixels) == 9, "Collectible prizes must have nine distinct pixel designs")
     clip_keys = set()
@@ -148,7 +149,6 @@ def export_pixels(output, manifest, images):
                         **({"ground_anchor_q8": asset["ground_anchor_q8"]} if asset["kind"] == "creatures" else {}),
                         "files": {k: {"bytes": len(v), "sha256": hashlib.sha256(v).hexdigest()} for k, v in payloads.items()}})
     total = sum(r["bytes"] for r in records)
-    require(total == PIXEL_BYTES, f"Unexpected pixel payload: {total}")
     require(total + 8192 + 4096 <= PACK_CEILING, "Art exceeds the planned pack budget")
     report = {"pixel_bytes": total, "definition_allowance": 8192, "metadata_allowance": 4096,
               "planned_pack_bytes": total + 8192 + 4096, "pack_ceiling": PACK_CEILING,

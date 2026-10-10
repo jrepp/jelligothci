@@ -3,6 +3,66 @@
 #include "pet_collection.h"
 #include "pet_food.h"
 
+/* One row per routine page, in page order; dental stages share the brush page. */
+typedef struct {
+    JelliPetUiAction action;
+    JelliPetPage page;
+    uint8_t activity; /* JelliHealthActivity shown when the routine starts. */
+} Routine;
+static const Routine routines[] = {
+    {JELLI_UI_ACTION_BRUSH, JELLI_UI_BRUSH, JELLI_HEALTH_BRUSH},
+    {JELLI_UI_ACTION_MEDICINE, JELLI_UI_MEDICINE, JELLI_HEALTH_MEDICINE},
+    {JELLI_UI_ACTION_SHOT, JELLI_UI_SHOT, JELLI_HEALTH_SHOT},
+    {JELLI_UI_ACTION_WASH, JELLI_UI_WASH, JELLI_HEALTH_WASH},
+    {JELLI_UI_ACTION_STRETCH, JELLI_UI_STRETCH, JELLI_HEALTH_STRETCH},
+    {JELLI_UI_ACTION_POTTY, JELLI_UI_POTTY, JELLI_HEALTH_POTTY},
+};
+#define ROUTINE_COUNT (sizeof(routines) / sizeof(routines[0]))
+_Static_assert(JELLI_UI_POTTY - JELLI_UI_BRUSH + 1 == ROUTINE_COUNT,
+               "Routine pages are contiguous");
+
+/* Label and icon per JelliHealthActivity. */
+static const struct {
+    const char *label;
+    uint32_t icon;
+} health_items[JELLI_HEALTH_COUNT] = {
+    [JELLI_HEALTH_BRUSH] = {"BRUSH TEETH", 8001u},   [JELLI_HEALTH_MEDICINE] = {"MEDICINE", 8002u},
+    [JELLI_HEALTH_SHOT] = {"SHOT", 8003u},           [JELLI_HEALTH_WASH] = {"WASH", 8004u},
+    [JELLI_HEALTH_STRETCH] = {"STRETCH", 8005u},     [JELLI_HEALTH_FLOSS] = {"FLOSS", 8006u},
+    [JELLI_HEALTH_MOUTHWASH] = {"MOUTHWASH", 8007u}, [JELLI_HEALTH_SPIT] = {"SPIT", 8008u},
+    [JELLI_HEALTH_CLEANUP] = {"CLEAN UP", 8009u},    [JELLI_HEALTH_POTTY] = {"POTTY", 8010u},
+};
+
+bool jelli_pet_page_is_routine(unsigned page)
+{
+    return page >= JELLI_UI_BRUSH && page <= JELLI_UI_POTTY;
+}
+
+bool jelli_pet_routine_for_action(JelliPetUiAction action, JelliPetPage *page, unsigned *activity)
+{
+    for (unsigned i = 0u; i < ROUTINE_COUNT; ++i) {
+        if (routines[i].action != action)
+            continue;
+        if (page)
+            *page = routines[i].page;
+        if (activity)
+            *activity = routines[i].activity;
+        return true;
+    }
+    return false;
+}
+
+JelliPetUiAction jelli_pet_routine_action(unsigned page)
+{
+    return jelli_pet_page_is_routine(page) ? routines[page - JELLI_UI_BRUSH].action
+                                           : JELLI_UI_ACTION_HOME;
+}
+
+uint32_t jelli_pet_health_icon(unsigned activity)
+{
+    return activity < JELLI_HEALTH_COUNT ? health_items[activity].icon : 0u;
+}
+
 bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
                           JelliPetUiButton *button)
 {
@@ -16,16 +76,12 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
         return true;
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot && (ui->clock_edit || slot == 4u))
         return jelli_pet_clock_button(ui->clock_edit, slot, button);
-    if ((ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH) && slot == 1u &&
-        ui->menu_open) {
-        static const char *const labels[] = {"BRUSH TEETH", "MEDICINE", "SHOT",
-                                             "WASH",        "STRETCH",  "FLOSS",
-                                             "MOUTHWASH",   "SPIT",     "CLEAN UP"};
+    if (jelli_pet_page_is_routine(ui->page) && slot == 1u && ui->menu_open) {
         unsigned activity = jelli_pet_health_action(ui);
         unsigned top = ui->actor_bounds.y > 196u ? ui->actor_bounds.y - 104u : 92u;
         *button = (JelliPetUiButton){.bounds = {185u, top, 96u, 96u},
-                                     .label = labels[activity],
-                                     .icon = 8001u + activity,
+                                     .label = health_items[activity].label,
+                                     .icon = health_items[activity].icon,
                                      .scale = 3u,
                                      .circular = true};
         return true;
@@ -35,10 +91,14 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
 
 unsigned jelli_pet_health_action(const JelliPetUi *ui)
 {
-    static const unsigned dental[] = {0u, 5u, 0u, 6u, 7u, 8u};
+    static const uint8_t dental[] = {JELLI_HEALTH_BRUSH, JELLI_HEALTH_FLOSS,
+                                     JELLI_HEALTH_BRUSH, JELLI_HEALTH_MOUTHWASH,
+                                     JELLI_HEALTH_SPIT,  JELLI_HEALTH_CLEANUP};
+    unsigned last = sizeof(dental) / sizeof(dental[0]) - 1u;
     if (ui->page == JELLI_UI_BRUSH)
-        return dental[ui->clicker_stage < 6u ? ui->clicker_stage : 5u];
-    return (unsigned)ui->page - JELLI_UI_BRUSH;
+        return dental[ui->clicker_stage < last ? ui->clicker_stage : last];
+    return jelli_pet_page_is_routine(ui->page) ? routines[ui->page - JELLI_UI_BRUSH].activity
+                                               : JELLI_HEALTH_BRUSH;
 }
 
 static uint8_t choose_taps(JelliPetUi *ui, const JelliPet *pet, JelliTunable low, JelliTunable high)
@@ -62,8 +122,8 @@ static void start_round(JelliPetUi *ui, const JelliPet *pet)
     ui->clicker_pet = pet->id;
     ui->clicker_goal =
         (uint8_t)jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_ACTIVITY_TAPS);
-    if (ui->page == JELLI_UI_MEDICINE)
-        ui->clicker_goal = 1u;
+    if (ui->page == JELLI_UI_MEDICINE || ui->page == JELLI_UI_POTTY)
+        ui->clicker_goal = 1u; /* Single-effect routines finish on one tap. */
     if (ui->page == JELLI_UI_SHOT) {
         ui->clicker_goal = (uint8_t)jelli_pet_shot_goal(pet);
         ui->clicker_hits = pet->shot_until > pet->ticks ? pet->shot_hits : 0u;
@@ -84,14 +144,15 @@ bool jelli_pet_health_select(JelliPetUi *ui, const JelliGame *game, JelliPetUiAc
         ui->page = JELLI_UI_HEALTH;
         return true;
     }
-    if (action < JELLI_UI_ACTION_BRUSH || action > JELLI_UI_ACTION_STRETCH)
+    JelliPetPage page;
+    unsigned activity;
+    if (!jelli_pet_routine_for_action(action, &page, &activity))
         return false;
-    if (!jelli_pet_health_ready(&game->pets[game->active],
-                                (unsigned)action - JELLI_UI_ACTION_BRUSH)) {
+    if (!jelli_pet_health_ready(&game->pets[game->active], activity)) {
         ui->result = JELLI_NOT_READY;
         return true;
     }
-    ui->page = (JelliPetPage)(JELLI_UI_BRUSH + (action - JELLI_UI_ACTION_BRUSH));
+    ui->page = page;
     start_round(ui, &game->pets[game->active]);
     return true;
 }
@@ -156,7 +217,7 @@ void jelli_pet_ui_back(JelliPetUi *ui)
         ui->clock_edit = false;
         return;
     }
-    if (ui->menu_open && (ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH))
+    if (ui->menu_open && jelli_pet_page_is_routine(ui->page))
         ui->page = JELLI_UI_HEALTH;
     else if (ui->menu_open && ui->page == JELLI_UI_HEALTH)
         ui->page = JELLI_UI_CARE;

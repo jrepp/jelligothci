@@ -1,3 +1,4 @@
+#include "jelli/activities.h"
 #include "game_fixture.h"
 #include "jelli/game.h"
 #include "jelli/save.h"
@@ -157,8 +158,8 @@ static void test_rejections(void)
     before = g;
     CHECK(command(&g, JELLI_CMD_HEALTH, 0u) == JELLI_BUSY);
     CHECK(command(&g, JELLI_CMD_MOMENT, 3u) == JELLI_BUSY);
-    CHECK(command(&g, JELLI_CMD_HEALTH, 9u) == JELLI_INVALID_TARGET);
-    CHECK(command(&g, JELLI_CMD_MOMENT, 4u) == JELLI_INVALID_TARGET);
+    CHECK(command(&g, JELLI_CMD_HEALTH, JELLI_HEALTH_COUNT) == JELLI_INVALID_TARGET);
+    CHECK(command(&g, JELLI_CMD_MOMENT, jelli_moment_count) == JELLI_INVALID_TARGET);
     check_unchanged(&before, &g);
 }
 

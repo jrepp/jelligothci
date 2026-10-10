@@ -24,6 +24,20 @@ typedef enum {
     JELLI_SOCIAL
 } JelliNeed;
 typedef enum { JELLI_WELL, JELLI_UNWELL, JELLI_RECOVERING } JelliHealth;
+/* JELLI_CMD_HEALTH values. Brush, floss, mouthwash, spit and clean-up form the dental routine. */
+typedef enum {
+    JELLI_HEALTH_BRUSH,
+    JELLI_HEALTH_MEDICINE,
+    JELLI_HEALTH_SHOT,
+    JELLI_HEALTH_WASH,
+    JELLI_HEALTH_STRETCH,
+    JELLI_HEALTH_FLOSS,
+    JELLI_HEALTH_MOUTHWASH,
+    JELLI_HEALTH_SPIT,
+    JELLI_HEALTH_CLEANUP,
+    JELLI_HEALTH_POTTY,
+    JELLI_HEALTH_COUNT
+} JelliHealthActivity;
 typedef enum {
     JELLI_IDLE,
     JELLI_EATING,
@@ -79,6 +93,9 @@ typedef struct {
     uint16_t hydration, hydration_remainder;
     uint8_t form, location, shot_goal, shot_hits;
     uint8_t collection_entry, reached_forms, food_type;
+    uint8_t moment;     /* Running moment ID + 1 while its activity lasts; 0 otherwise. */
+    uint16_t digesting; /* Meals and drinks not yet felt as potty urge (0..1000). */
+    uint16_t potty;     /* Potty urge (0..1000); a potty break clears it. */
     /* Brief session-only touch memory; care changes still persist. */
     uint16_t touch_load;
     uint8_t reaction, reaction_ticks, wake_mood;
@@ -114,8 +131,7 @@ typedef struct {
     uint32_t actor_id;
     /* FORM: unlocked 0/1 for actor_id (active or stored). VOLUME: 0..100 master level. FEED: food
      * catalog ID (0 is the legacy meal). ACTIVATE: stable ID; TRAVEL: 0/1; BEDTIME: 0..23. MOMENT:
-     * breakfast/tea/outing/movie 0..3. HEALTH:
-     * brush/medicine/shot/wash/stretch/floss/mouthwash/spit/cleanup 0..8. */
+     * moment ID from content/activities.json. HEALTH: JelliHealthActivity. */
     uint32_t value;
 } JelliCommand;
 

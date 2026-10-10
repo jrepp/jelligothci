@@ -1,14 +1,31 @@
 #include "jelli/pet_ui.h"
+#include "jelli/activities.h"
 
 static uint32_t action_icon(JelliPetUiAction action, bool asleep)
 {
-    static const uint32_t icons[] = {6001u, 6002u, 6003u, 6004u, 6008u, 6006u, 2001u, 2003u,
-                                     2004u, 2011u, 2008u, 2009u, 6011u, 6004u, 2005u, 2012u,
-                                     6007u, 6009u, 6010u, 6011u, 6012u, 6007u, 8002u, 8001u,
-                                     8002u, 8003u, 8004u, 8005u, 6015u, 6014u, 0u,    0u};
+    /* Moment and health-routine icons come from their own tables. */
+    static const uint32_t icons[JELLI_UI_ACTION_COUNT] = {
+        [JELLI_UI_ACTION_FEED] = 6001u,       [JELLI_UI_ACTION_CARE] = 6002u,
+        [JELLI_UI_ACTION_REST_WAKE] = 6003u,  [JELLI_UI_ACTION_COLLECTION] = 6004u,
+        [JELLI_UI_ACTION_MORE] = 6008u,       [JELLI_UI_ACTION_SETTINGS] = 6006u,
+        [JELLI_UI_ACTION_BASIC_CARE] = 2001u, [JELLI_UI_ACTION_PLAY] = 2003u,
+        [JELLI_UI_ACTION_CLEAN_WAKE] = 2004u, [JELLI_UI_ACTION_HOME] = 2011u,
+        [JELLI_UI_ACTION_GIFT] = 2008u,       [JELLI_UI_ACTION_CLAIM] = 2009u,
+        [JELLI_UI_ACTION_TRAVEL] = 6011u,     [JELLI_UI_ACTION_SWITCH_PET] = 6004u,
+        [JELLI_UI_ACTION_BEDTIME] = 2005u,    [JELLI_UI_ACTION_SAVE] = 2012u,
+        [JELLI_UI_ACTION_MOMENTS] = 6007u,    [JELLI_UI_ACTION_SUGGEST] = 6007u,
+        [JELLI_UI_ACTION_HEALTH] = 8002u,     [JELLI_UI_ACTION_WATER] = 6015u,
+        [JELLI_UI_ACTION_EXERCISE] = 6014u,   [JELLI_UI_ACTION_VOLUME_DOWN] = 0u,
+        [JELLI_UI_ACTION_VOLUME_UP] = 0u,
+    };
+    unsigned moment = 0u, activity = 0u;
     if (asleep && action == JELLI_UI_ACTION_REST_WAKE)
         return 2006u;
-    return (unsigned)action < sizeof(icons) / sizeof(icons[0]) ? icons[action] : 6005u;
+    if (jelli_pet_moment_for_action(action, &moment))
+        return jelli_moments[moment].icon;
+    if (jelli_pet_routine_for_action(action, NULL, &activity))
+        return jelli_pet_health_icon(activity);
+    return (unsigned)action < JELLI_UI_ACTION_COUNT ? icons[action] : 6005u; /* 0: label only. */
 }
 
 bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool menu_open,
@@ -42,26 +59,15 @@ bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool men
     return true;
 }
 
-static unsigned moment_hour(unsigned hour)
-{
-    if (hour >= 5u && hour < 11u)
-        return 0u;
-    if (hour >= 11u && hour < 15u)
-        return 1u;
-    if (hour >= 15u && hour < 19u)
-        return 2u;
-    return 3u;
-}
-
 unsigned jelli_pet_moment(const JelliPet *pet)
 {
     uint64_t phase = (pet->ticks % JELLI_DAY_TICKS + pet->phase_offset) % JELLI_DAY_TICKS;
-    return moment_hour((unsigned)(phase / 36000u));
+    return jelli_moment_suggested((unsigned)(phase / 36000u));
 }
 
 unsigned jelli_pet_suggested_moment(const JelliPet *pet, const JelliPetUi *ui)
 {
-    return moment_hour(jelli_pet_clock_minute(ui, pet) / 60u);
+    return jelli_moment_suggested(jelli_pet_clock_minute(ui, pet) / 60u);
 }
 
 unsigned jelli_pet_stat_score(uint16_t value)

@@ -60,8 +60,8 @@ static void rewards(JelliPetEngine *engine)
 {
     JelliPetUi *ui = &engine->ui;
     uint32_t completed = ui->rewards.completed;
-    bool routine = ui->menu_open && (ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH) &&
-                   ui->page < JELLI_UI_PAGE_COUNT;
+    bool routine =
+        ui->menu_open && jelli_pet_page_is_routine(ui->page) && ui->page < JELLI_UI_PAGE_COUNT;
     if (jelli_pet_rewards_process(&ui->rewards, &engine->game, routine, ui->clicker_done,
                                   ui->clicker_pet)) {
         ui->menu_open = false;

@@ -1934,6 +1934,25 @@
         23
       ],
       "purpose": "Book held during Reading; placeholder from source/book_art.py"
+    },
+    {
+      "id": 8010,
+      "key": "health.potty",
+      "path": "health/potty.png",
+      "kind": "health",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        3,
+        3,
+        30,
+        30
+      ],
+      "purpose": "POTTY routine icon; placeholder from source/potty_art.py"
     }
   ],
   "clips": [

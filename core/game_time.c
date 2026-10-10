@@ -1,3 +1,4 @@
+#include "jelli/potty.h"
 #include "jelli/wake.h"
 #include "game_internal.h"
 #include "jelli/collection.h"
@@ -96,6 +97,8 @@ void jelli_game_add_clock(JelliGame *game, JelliPet *pet, uint64_t ticks)
     jelli_wake_advance(pet, pet->ticks - old_ticks);
     integrate_needs(pet, pet->ticks - old_ticks);
     jelli_hydration_advance(pet, pet->ticks - old_ticks);
+    (void)jelli_potty_advance(pet,
+                              old_ticks); /* RFC-005: urge stimulus joins the behaviour engine. */
     jelli_habits_advance(&pet->habits, old_ticks, pet->ticks - old_ticks, pet->asleep,
                          pet->activity == JELLI_PLAYING);
     jelli_pet_touch_decay(pet, pet->ticks - old_ticks);
@@ -171,8 +174,11 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
             jelli_habits_record_meal(&pet->habits, pet->ticks);
             const JelliFood *food = &jelli_foods[pet->food_type];
             adjust_need(pet, JELLI_SATIETY, food->fullness);
-            if (food->hydration)
+            jelli_potty_eat(pet);
+            if (food->hydration) {
                 jelli_hydration_add(pet, food->hydration);
+                jelli_potty_drink(pet);
+            }
             adjust_need(pet, JELLI_HYGIENE, -10);
             if (useful && !pet->reward_claimed) {
                 pet->reward_pending = true;
@@ -189,6 +195,7 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
         adjust_need(pet, JELLI_HYGIENE, -20);
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
+        pet->moment = 0u;
         break;
     case JELLI_EXERCISING:
         adjust_need(pet, JELLI_AMUSEMENT, jelli_exercise.amusement_gain);

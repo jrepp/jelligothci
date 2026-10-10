@@ -2,6 +2,7 @@
 #include "jelli/game.h"
 #include "jelli/collection.h"
 #include "jelli/nutrition.h"
+#include "jelli/activities.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -56,6 +57,13 @@ void jelli_game_init(JelliGame *game)
     game->new_pets = 0u;
 }
 
+/* Running moment and potty cycle (save version 10). */
+static bool pet_routine_valid(const JelliPet *pet)
+{
+    return pet->moment <= jelli_moment_count && pet->digesting <= 1000u && pet->potty <= 1000u &&
+           (pet->moment == 0u || pet->activity == JELLI_PLAYING);
+}
+
 static bool pet_profile_valid(const JelliPet *pet)
 {
     if (pet->id == 0u || pet->bedtime >= 24u || pet->sleep_duration == 0u ||
@@ -67,7 +75,7 @@ static bool pet_profile_valid(const JelliPet *pet)
         pet->rest_ticks > jelli_wake_rules.sleep_ticks || pet->touch_load > 1000u ||
         pet->reaction > 3u || pet->reaction_ticks > 30u || !enum_values_valid(pet))
         return false;
-    return true;
+    return pet_routine_valid(pet);
 }
 
 static bool pet_needs_valid(const JelliPet *pet)

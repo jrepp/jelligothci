@@ -55,16 +55,32 @@ static size_t collection(char *out, size_t capacity, const JelliPetRenderKey *v)
 void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id)
 {
     const JelliPetRenderKey *v = &engine->ui.last_view;
-    static const char *const pages[] = {
-        "home",   "care",       "more",       "collection",     "settings", "moments",
-        "health", "brush",      "medicine",   "shot",           "wash",     "stretch",
-        "pets",   "pet_detail", "evolutions", "present_action", "food"};
+    static const char *const pages[JELLI_UI_PAGE_COUNT] = {[JELLI_UI_HOME] = "home",
+                                                           [JELLI_UI_CARE] = "care",
+                                                           [JELLI_UI_MORE] = "more",
+                                                           [JELLI_UI_COLLECTION] = "collection",
+                                                           [JELLI_UI_SETTINGS] = "settings",
+                                                           [JELLI_UI_MOMENTS] = "moments",
+                                                           [JELLI_UI_HEALTH] = "health",
+                                                           [JELLI_UI_BRUSH] = "brush",
+                                                           [JELLI_UI_MEDICINE] = "medicine",
+                                                           [JELLI_UI_SHOT] = "shot",
+                                                           [JELLI_UI_WASH] = "wash",
+                                                           [JELLI_UI_STRETCH] = "stretch",
+                                                           [JELLI_UI_POTTY] = "potty",
+                                                           [JELLI_UI_PETS] = "pets",
+                                                           [JELLI_UI_PET_DETAIL] = "pet_detail",
+                                                           [JELLI_UI_EVOLUTIONS] = "evolutions",
+                                                           [JELLI_UI_PRESENT_ACTION] =
+                                                               "present_action",
+                                                           [JELLI_UI_FOOD] = "food"};
     const char *page = v->page < JELLI_UI_PAGE_COUNT ? pages[v->page] : "unknown";
     int size = snprintf(
         debug->reply, sizeof(debug->reply),
         "\n@J1 %" PRIu32 " {\"ok\":true,\"version\":1,\"width\":466,\"height\":466,"
         "\"capture\":%" PRIu32 ",\"rendered\":%s,\"transitioning\":%s,\"ticks\":%" PRIu64 ","
-        "\"visual\":{\"page\":\"%s\",\"pet_id\":%" PRIu32 ",\"form\":%u,\"location\":%u,"
+        "\"visual\":{\"page\":\"%s\",\"page_id\":%u,\"pet_id\":%" PRIu32
+        ",\"form\":%u,\"location\":%u,"
         "\"clicker_hits\":%u,\"clicker_goal\":%u,\"clicker_stage\":%u,\"clicker_done\":%s,"
         "\"health\":%u,\"activity\":%u,\"asleep\":%s,\"animation_phase\":"
         "%" PRIu32 ","
@@ -80,20 +96,21 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
         "\"active_slot\":%u,\"pet_count\":%u,\"stored_id\":%" PRIu32
         ",\"stored_form\":%u,\"stored_asleep\":%s,\"mood\":%u,\"reaction\":%u,\"night\":%u",
         id, debug->captured ? debug->capture_id : 0u, truth(engine->ui.rendered),
-        truth(v->ring_moving), engine->game.ticks, page, v->active_id, (unsigned)v->form,
-        (unsigned)v->location, (unsigned)v->clicker_hits, (unsigned)v->clicker_goal,
-        (unsigned)v->clicker_stage, truth(v->clicker_done), (unsigned)v->health,
-        (unsigned)v->activity, truth(v->asleep), v->phase, truth(v->clock_edit),
-        (int)v->timezone_minutes, truth(v->clock_known), (unsigned)v->clock_minute,
-        truth(v->menu_open), (unsigned)v->stat_index, stat_score(v), truth(v->reward_active),
-        (unsigned)v->reward_index, (unsigned)v->tile_phase, truth(v->paused), truth(v->resuming),
-        truth(v->time_unavailable), (unsigned)v->save_status, jelli_game_result_name(v->result),
-        v->day, v->minute, (unsigned)v->needs[0], (unsigned)v->needs[1], (unsigned)v->needs[2],
-        (unsigned)v->needs[3], (unsigned)v->needs[4], (unsigned)v->bond, (unsigned)v->hydration,
-        (unsigned)v->volume, (unsigned)v->food, (unsigned)v->gifts, truth(v->reward_pending),
-        truth(v->reward_claimed), (unsigned)v->bedtime, (unsigned)v->active, (unsigned)v->count,
-        v->stored_id, (unsigned)v->stored_form, truth(v->stored_asleep), (unsigned)v->mood,
-        (unsigned)v->reaction, (unsigned)v->night);
+        truth(v->ring_moving), engine->game.ticks, page, (unsigned)v->page, v->active_id,
+        (unsigned)v->form, (unsigned)v->location, (unsigned)v->clicker_hits,
+        (unsigned)v->clicker_goal, (unsigned)v->clicker_stage, truth(v->clicker_done),
+        (unsigned)v->health, (unsigned)v->activity, truth(v->asleep), v->phase,
+        truth(v->clock_edit), (int)v->timezone_minutes, truth(v->clock_known),
+        (unsigned)v->clock_minute, truth(v->menu_open), (unsigned)v->stat_index, stat_score(v),
+        truth(v->reward_active), (unsigned)v->reward_index, (unsigned)v->tile_phase,
+        truth(v->paused), truth(v->resuming), truth(v->time_unavailable), (unsigned)v->save_status,
+        jelli_game_result_name(v->result), v->day, v->minute, (unsigned)v->needs[0],
+        (unsigned)v->needs[1], (unsigned)v->needs[2], (unsigned)v->needs[3], (unsigned)v->needs[4],
+        (unsigned)v->bond, (unsigned)v->hydration, (unsigned)v->volume, (unsigned)v->food,
+        (unsigned)v->gifts, truth(v->reward_pending), truth(v->reward_claimed),
+        (unsigned)v->bedtime, (unsigned)v->active, (unsigned)v->count, v->stored_id,
+        (unsigned)v->stored_form, truth(v->stored_asleep), (unsigned)v->mood, (unsigned)v->reaction,
+        (unsigned)v->night);
     if (size < 0 || (size_t)size >= sizeof(debug->reply))
         return;
     size_t used = (size_t)size;

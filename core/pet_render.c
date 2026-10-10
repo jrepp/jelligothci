@@ -11,6 +11,14 @@ static uint8_t recovery_seconds(const JelliPet *pet)
     return ticks >= 300u ? 30u : (uint8_t)((ticks + 9u) / 10u);
 }
 
+static void activity_key(const JelliPet *pet, JelliPetRenderKey *key)
+{
+    key->health = (uint8_t)pet->health;
+    key->care_seconds = recovery_seconds(pet);
+    key->activity = (uint8_t)pet->activity;
+    key->moment = pet->moment;
+}
+
 static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint64_t animation_ms,
                                     bool paused)
 {
@@ -78,9 +86,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.save_status = ui->save_status;
     key.form = pet->form;
     key.location = pet->location;
-    key.health = (uint8_t)pet->health;
-    key.care_seconds = recovery_seconds(pet);
-    key.activity = (uint8_t)pet->activity;
+    activity_key(pet, &key);
     key.stored_form = other->form;
     key.bedtime = (uint8_t)pet->bedtime;
     key.asleep = pet->asleep;
@@ -116,7 +122,8 @@ static bool same_tile_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b
 
 static bool same_actor_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->phase == b->phase && a->pose == b->pose && a->clip_frame == b->clip_frame;
+    return a->phase == b->phase && a->pose == b->pose && a->clip_frame == b->clip_frame &&
+           a->moment == b->moment;
 }
 
 static bool same_frame_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)

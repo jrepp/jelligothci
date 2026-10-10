@@ -102,7 +102,7 @@ uint16_t jelli_pet_background(uint8_t location, unsigned x, unsigned y)
 bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
 {
     const JelliPet *pet = &game->pets[game->active];
-    bool activity_view = ui->page >= JELLI_UI_BRUSH && ui->page <= JELLI_UI_STRETCH;
+    bool activity_view = jelli_pet_page_is_routine(ui->page);
     if ((ui->menu_open && (!activity_view || !pet->asleep)) || !ui->actor_frame ||
         x < ui->actor_x || y < ui->actor_y)
         return false;

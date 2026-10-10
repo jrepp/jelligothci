@@ -1,6 +1,8 @@
+#include "jelli/potty.h"
 #include "jelli/wake.h"
 #include "jelli/collection.h"
 #include "game_internal.h"
+#include "jelli/activities.h"
 #include "jelli/nutrition.h"
 
 #include <limits.h>
@@ -232,19 +234,19 @@ unsigned jelli_pet_shot_goal(const JelliPet *pet)
 
 bool jelli_pet_health_ready(const JelliPet *pet, unsigned activity)
 {
-    if (activity == 1u)
+    if (activity == JELLI_HEALTH_MEDICINE)
         return pet->ticks >= pet->medicine_until;
-    if (activity == 2u)
+    if (activity == JELLI_HEALTH_SHOT)
         return pet->ticks >= pet->shot_until || pet->shot_hits < pet->shot_goal;
-    return activity <= 8u;
+    return activity < JELLI_HEALTH_COUNT;
 }
 
 static void remember_health(JelliPet *pet, unsigned activity)
 {
     uint64_t due = UINT64_MAX - pet->ticks < 36000u ? UINT64_MAX : pet->ticks + 36000u;
-    if (activity == 1u)
+    if (activity == JELLI_HEALTH_MEDICINE)
         pet->medicine_until = due;
-    if (activity != 2u)
+    if (activity != JELLI_HEALTH_SHOT)
         return;
     if (pet->ticks >= pet->shot_until) {
         pet->shot_goal = (uint8_t)jelli_pet_shot_goal(pet);
@@ -255,18 +257,31 @@ static void remember_health(JelliPet *pet, unsigned activity)
     ++pet->shot_hits;
 }
 
+static unsigned health_gain(uint32_t activity)
+{
+    if (activity == JELLI_HEALTH_MEDICINE)
+        return 10u;
+    if (activity == JELLI_HEALTH_WASH)
+        return 70u;
+    return activity >= JELLI_HEALTH_FLOSS ? 20u : 40u; /* Dental steps are small. */
+}
+
 static JelliResult healthy_click(JelliPet *pet, uint32_t activity)
 {
-    if (activity > 8u)
+    if (activity >= JELLI_HEALTH_COUNT)
         return JELLI_INVALID_TARGET;
     if (pet->asleep)
         return JELLI_ASLEEP;
+    if (activity == JELLI_HEALTH_POTTY)
+        return pet->activity == JELLI_IDLE ? jelli_potty_break(pet) : JELLI_BUSY;
     if (!jelli_pet_health_ready(pet, activity))
         return JELLI_NOT_READY;
-    bool recovery = activity == 1u || activity == 2u;
+    bool recovery = activity == JELLI_HEALTH_MEDICINE || activity == JELLI_HEALTH_SHOT;
     if (pet->activity != JELLI_IDLE && !(recovery && pet->activity == JELLI_CARING))
         return JELLI_BUSY;
-    JelliNeed need = activity == 4u ? JELLI_ENERGY : recovery ? JELLI_SOCIAL : JELLI_HYGIENE;
+    JelliNeed need = activity == JELLI_HEALTH_STRETCH ? JELLI_ENERGY
+                     : recovery                       ? JELLI_SOCIAL
+                                                      : JELLI_HYGIENE;
     bool healing = recovery && pet->health == JELLI_UNWELL;
     if (!healing && pet->needs[need] == 1000u && pet->bond == 1000u)
         return JELLI_FULL;
@@ -276,32 +291,27 @@ static JelliResult healthy_click(JelliPet *pet, uint32_t activity)
             return result;
     }
     remember_health(pet, activity);
-    (void)boost_need(pet, need,
-                     activity == 1u   ? 10u
-                     : activity == 3u ? 70u
-                     : activity >= 5u ? 20u
-                                      : 40u);
+    (void)boost_need(pet, need, health_gain(activity));
     pet->bond = pet->bond > 995u ? 1000u : (uint16_t)(pet->bond + 5u);
     return JELLI_OK;
 }
 
 static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
 {
-    if (choice > 3u)
+    if (choice >= jelli_moment_count || choice >= JELLI_MOMENT_CAPACITY)
         return JELLI_INVALID_TARGET;
-    if (!choice)
+    const JelliMoment *m = &jelli_moments[choice];
+    if (m->kind == JELLI_MOMENT_FEED)
         return start_feed(game, pet, 0u);
     JelliResult result = start_play(pet);
     if (result != JELLI_OK)
         return result;
-    if (choice == 1u) {
-        (void)boost_need(pet, JELLI_SOCIAL, 60u);
-        (void)boost_need(pet, JELLI_ENERGY, 100u);
-    } else if (choice == 2u) {
-        pet->location = 1u;
-    } else {
-        (void)boost_need(pet, JELLI_SOCIAL, 100u);
-    }
+    for (unsigned need = 0u; need < JELLI_NEED_COUNT; ++need)
+        if (m->gains[need])
+            (void)boost_need(pet, (JelliNeed)need, m->gains[need]);
+    if (m->location != JELLI_MOMENT_STAY)
+        pet->location = m->location == JELLI_MOMENT_GARDEN ? 1u : 0u;
+    pet->moment = (uint8_t)(choice + 1u);
     return JELLI_OK;
 }
 
