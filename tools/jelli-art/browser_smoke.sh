@@ -47,8 +47,13 @@ ab wait --fn "typeof D !== 'undefined' && D.assets && D.assets.length > 0 && win
 ab eval "localStorage.clear()" >/dev/null
 
 # One pencil stroke across the middle of the canvas, in a colour the sprite does not use.
-ab eval "state.color = '#00ff7f'" >/dev/null
-centre=$(js "(() => { const r = document.querySelector('canvas[style*=crosshair]').getBoundingClientRect(); return Math.round(r.x + r.width / 2) + ' ' + Math.round(r.y + r.height / 2); })()")
+ab eval "state.custom = true; state.color = '#00ff7f'" >/dev/null  # off-palette needs custom
+# The paint canvas's centre in the viewport. Scroll it into view first: the shell's
+# first-run guide (and narrow windows) can push it below the fold.
+centre() {
+    js "(() => { const c = document.querySelector('canvas[style*=crosshair]'); c.scrollIntoView({block: 'center'}); const r = c.getBoundingClientRect(); return Math.round(r.x + r.width / 2) + ' ' + Math.round(r.y + r.height / 2); })()" | tr -d '\r'
+}
+centre=$(centre)
 # shellcheck disable=SC2086 # split "x y" into two arguments
 set -- $centre
 ab mouse move "$1" "$2" >/dev/null
@@ -64,13 +69,18 @@ ab wait --text "Restored unsaved edits" >/dev/null || fail "no restore notice"
 echo "ok: the draft comes back after a reload"
 
 before=$(shasum "$png")
-ab eval "document.getElementById('save') && document.getElementById('save').click()" >/dev/null
+# The restored draft enables Save a moment after the restore notice; wait for it.
+ab wait --fn "!document.getElementById('save').disabled" >/dev/null || fail "Save stayed disabled after the restore"
+ab eval "document.getElementById('save').click()" >/dev/null
 ab wait --fn "JelliDrafts.list('paint').length === 0 && !Studio.paintDirty('$key')" >/dev/null || fail "save did not clear the draft"
 [ "$(shasum "$png")" != "$before" ] || fail "save did not change the PNG"
 echo "ok: saving writes the PNG and drops the draft"
 
 # Change the file behind the page, then save an edit made from the old version.
-ab eval "state.color = '#7f00ff'" >/dev/null
+ab eval "state.custom = true; state.color = '#7f00ff'" >/dev/null
+centre=$(centre)  # The reload reset the scroll position.
+# shellcheck disable=SC2086 # split "x y" into two arguments
+set -- $centre
 ab mouse move "$(($1 - 30))" "$(($2 + 40))" >/dev/null
 ab mouse down >/dev/null
 ab mouse up >/dev/null
@@ -81,14 +91,26 @@ im = Image.open(sys.argv[1]).convert('RGBA'); w, h = im.size
 x, y = next((x, y) for y in range(h) for x in range(w) if im.getpixel((x, y))[3])
 im.putpixel((x, y), (1, 2, 3, 255)); im.save(sys.argv[1])" "$png"
 changed=$(shasum "$png")
-click_save() { ab eval "setTimeout(() => document.getElementById('save').click(), 0)" >/dev/null; sleep 1; }
+# The studio asks through the page shell's <dialog> (JelliShell.confirm), or a native
+# confirm() when the shell is absent; answer whichever appears.
+answer() {
+    # The save's stale check is a round trip, so wait for the question rather than racing it.
+    ab wait --fn "!!document.querySelector('dialog[open]')" >/dev/null 2>&1 || true
+    if [ "$(js "!!document.querySelector('dialog[open] [value=$1]')")" = true ]; then
+        ab eval "document.querySelector('dialog[open] [value=$1]').click()" >/dev/null
+    elif [ "$1" = ok ]; then ab dialog accept >/dev/null; else ab dialog dismiss >/dev/null; fi
+}
+click_save() {
+    ab wait --fn "!document.getElementById('save').disabled && !document.querySelector('dialog[open]')" >/dev/null || fail "Save is not ready"
+    ab eval "setTimeout(() => document.getElementById('save').click(), 0)" >/dev/null
+}
 click_save
-ab dialog dismiss >/dev/null || fail "no overwrite question for a file changed on disk"
+answer cancel || fail "no overwrite question for a file changed on disk"
 ab wait --text "changed on disk" >/dev/null || fail "stale save was not reported"
 [ "$(shasum "$png")" = "$changed" ] || fail "stale save overwrote the newer file"
 echo "ok: a save over a file changed on disk asks first; Cancel keeps the newer file"
 click_save
-ab dialog accept >/dev/null || fail "no overwrite question the second time"
+answer ok || fail "no overwrite question the second time"
 ab wait --fn "!Studio.paintDirty('$key')" >/dev/null || fail "accepted overwrite did not save"
 [ "$(shasum "$png")" != "$changed" ] || fail "accepted overwrite did not write the PNG"
 echo "ok: OK overwrites it"

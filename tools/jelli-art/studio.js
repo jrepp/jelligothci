@@ -41,7 +41,8 @@
     .paint-chip{display:grid;grid-template-columns:auto;justify-items:center;gap:3px;background:var(--raised);border:2px solid transparent;border-radius:8px;padding:6px;cursor:pointer;min-width:62px;font:10px ui-monospace,monospace;color:var(--muted);position:relative}
     .paint-chip .sw{width:34px;height:34px;border-radius:6px;border:1px solid #fff3}
     .paint-chip[aria-pressed=true]{border-color:var(--ink);color:var(--ink)}
-    .paint-chip .edit{position:absolute;top:2px;right:2px;padding:0 4px;font-size:11px;line-height:16px;border-radius:4px;background:var(--panel)}
+    .paint-slot{position:relative;display:grid}
+    .paint-slot .edit{position:absolute;top:2px;right:2px;padding:0 4px;font-size:11px;line-height:16px;border-radius:4px;background:var(--panel)}
     .paint-chip.off .sw{outline:2px solid var(--bad);outline-offset:1px}
     .eraser-sw{background:repeating-conic-gradient(#555 0 25%,#2b2b31 0 50%) 0 0/10px 10px}
     .studio-note{font-size:12px;color:var(--muted);max-width:760px;margin:6px 0}
@@ -606,7 +607,6 @@
       b.setAttribute('aria-pressed', String(active)); b.setAttribute('role', 'button'); b.setAttribute('aria-label', title);
       b.innerHTML = `<span class="sw ${hex ? '' : 'eraser-sw'}" style="${hex ? `background:${hex}` : ''}"></span><span>${title.split(' · ')[0]}</span><span>${sub}</span>`;
       b.onclick = e => {
-        if (e.target.closest('.edit')) return;
         if (e.shiftKey && hex) { state.isolate = state.isolate === hex ? null : hex; return draw(); }
         if (hex === null) state.tool = 'eraser';
         else { state.color = hex; state.custom = custom; if (['eraser', 'picker', 'select'].includes(state.tool)) state.tool = 'pencil'; }
@@ -619,8 +619,10 @@
       pal.forEach((hex, i) => {
         const b = chip(hex, `${slotName(a, i)} · ${hex} · used by ${usage(hex)} assets`, counts[hex] ? `${counts[hex]} px` : '—');
         if (own) return;  // only the shared palette is editable here; a named palette is edited in assets.json
-        b.insertAdjacentHTML('beforeend', `<button class="edit" title="Change ${NAMES[i]} everywhere" aria-label="Change ${NAMES[i]} in every sprite">✎</button><input type="color" value="${hex}" hidden>`);
-        const input = b.querySelector('input'); b.querySelector('.edit').onclick = e => { e.stopPropagation(); input.click(); };
+        // The ✎ button is the chip's sibling: a button inside a role=button chip is nested-interactive.
+        const slot = document.createElement('div'); slot.className = 'paint-slot'; b.replaceWith(slot); slot.append(b);
+        slot.insertAdjacentHTML('beforeend', `<button class="edit" title="Change ${NAMES[i]} everywhere" aria-label="Change ${NAMES[i]} in every sprite">✎</button><input type="color" value="${hex}" hidden>`);
+        const input = slot.querySelector('input'); slot.querySelector('.edit').onclick = e => { e.stopPropagation(); input.click(); };
         input.onchange = e => editSlot(i, e.target.value);
       });
       chip(null, 'eraser · transparent', 'right-click');
