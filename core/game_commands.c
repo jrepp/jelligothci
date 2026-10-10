@@ -1,3 +1,4 @@
+#include "jelli/wake.h"
 #include "jelli/collection.h"
 #include "game_internal.h"
 #include "jelli/nutrition.h"
@@ -150,6 +151,7 @@ static JelliResult rest(JelliGame *game, JelliPet *pet)
     session->bed_energy = pet->needs[JELLI_ENERGY];
     session->bed_sleep_score = jelli_habits_sleep_score(&pet->habits);
     session->flags |= JELLI_SLEEP_STATS_KNOWN;
+    pet->rest_ticks = 0u;
     pet->asleep = true;
     pet->scheduled_sleep = false;
     pet->nap_due = UINT64_MAX;
@@ -167,6 +169,7 @@ static JelliResult wake(JelliGame *game, JelliPet *pet)
     uint64_t remaining = 0u;
     if (jelli_game_window(pet, &remaining))
         pet->wake_override_until = deadline_after(pet, remaining);
+    jelli_wake_react(pet);
     pet->asleep = false;
     pet->scheduled_sleep = false;
     pet->nap_due = 0u;

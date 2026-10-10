@@ -1,3 +1,4 @@
+#include "jelli/wake.h"
 #include "game_internal.h"
 #include "jelli/collection.h"
 #include "jelli/nutrition.h"
@@ -92,6 +93,7 @@ void jelli_game_add_clock(JelliGame *game, JelliPet *pet, uint64_t ticks)
     uint64_t old_ticks = pet->ticks;
     pet->ticks = saturating_add(pet->ticks, ticks);
     pet->stage_ticks = saturating_add(pet->stage_ticks, ticks);
+    jelli_wake_advance(pet, pet->ticks - old_ticks);
     integrate_needs(pet, pet->ticks - old_ticks);
     jelli_hydration_advance(pet, pet->ticks - old_ticks);
     jelli_habits_advance(&pet->habits, old_ticks, pet->ticks - old_ticks, pet->asleep,
@@ -240,6 +242,7 @@ static void resolve_sleep(const JelliGame *game, JelliPet *pet)
 {
     if (game->sleep_log.active && game->sleep_log.pet_id == pet->id) {
         if (!pet->asleep && pet->activity == JELLI_IDLE) {
+            pet->rest_ticks = 0u;
             pet->asleep = true;
             pet->scheduled_sleep = false;
             pet->nap_due = UINT64_MAX;
@@ -253,6 +256,7 @@ static void resolve_sleep(const JelliGame *game, JelliPet *pet)
                          ? !in_window
                          : (pet->ticks >= pet->nap_due || pet->needs[JELLI_ENERGY] >= 800u);
         if (ended) {
+            jelli_wake_react(pet);
             pet->asleep = false;
             pet->scheduled_sleep = false;
             pet->nap_due = 0u;
@@ -260,11 +264,13 @@ static void resolve_sleep(const JelliGame *game, JelliPet *pet)
             reset_hunger_grace(pet);
         }
     } else if (in_window && pet->ticks >= pet->wake_override_until && pet->activity == JELLI_IDLE) {
+        pet->rest_ticks = 0u;
         pet->asleep = true;
         pet->scheduled_sleep = true;
         pet->nap_due = 0u;
     } else if (!in_window && pet->needs[JELLI_ENERGY] <= 150u && pet->ticks >= pet->awake_until &&
                pet->activity == JELLI_IDLE) {
+        pet->rest_ticks = 0u;
         pet->asleep = true;
         pet->scheduled_sleep = false;
         pet->nap_due = saturating_add(pet->ticks, MINUTE_TICKS * 60u);

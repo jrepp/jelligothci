@@ -1,3 +1,4 @@
+#include "jelli/wake.h"
 #include "jelli/game.h"
 #include "jelli/collection.h"
 #include "jelli/nutrition.h"
@@ -60,6 +61,7 @@ static bool pet_profile_valid(const JelliPet *pet)
         pet->phase_offset >= JELLI_DAY_TICKS || pet->random_state == 0u || pet->form > 1u ||
         pet->food_type >= jelli_food_count || pet->hydration > 1000u ||
         pet->hydration_remainder >= 2400u || pet->location > 1u || pet->bond > 1000u ||
+        pet->wake_mood > JELLI_WAKE_HAPPY || pet->rest_ticks > jelli_wake_rules.sleep_ticks ||
         pet->touch_load > 1000u || pet->reaction > 3u || pet->reaction_ticks > 30u ||
         !enum_values_valid(pet))
         return false;

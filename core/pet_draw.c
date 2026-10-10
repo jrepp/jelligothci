@@ -86,6 +86,10 @@ static const char *status(const JelliPetRenderKey *v)
         return result_status(v->result);
     if (v->asleep)
         return "ASLEEP";
+    if (v->reaction == 4u)
+        return "GROGGY...";
+    if (v->reaction == 5u)
+        return "HAPPY";
     if (v->reaction == 1u)
         return "THAT IS NICE";
     if (v->reaction == 2u)
@@ -230,7 +234,9 @@ static void activity(Canvas *c, const JelliPetUi *ui)
         jelli_canvas_disk(
             c, 233 - (int)(ui->clicker_goal ? ui->clicker_goal - 1u : 0u) * 10 + (int)i * 20, 366,
             5, i < ui->clicker_hits ? GOLD : INK);
-    if (ui->result == JELLI_OK && !ui->clicker_done)
+    if (ui->last_view.reaction >= 4u)
+        jelli_canvas_caption(c, status(&ui->last_view), 82, PALE);
+    else if (ui->result == JELLI_OK && !ui->clicker_done)
         jelli_canvas_heading(c, b.label, 82, 1u);
     if (ui->result != JELLI_OK)
         jelli_canvas_heading(c, status(&ui->last_view), 82, 1u);

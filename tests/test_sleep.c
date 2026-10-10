@@ -1,3 +1,4 @@
+#include "jelli/wake.h"
 #include "jelli/game.h"
 #include "jelli/save.h"
 
@@ -58,7 +59,7 @@ static void night_restores_without_feeding(void)
     CHECK(pet->needs[JELLI_HYGIENE] == 840u);
     CHECK(pet->needs[JELLI_AMUSEMENT] == 900u);
     CHECK(pet->needs[JELLI_SOCIAL] == 900u);
-    CHECK(game.food == 5u && game.gifts == 3u && pet->bond == 100u);
+    CHECK(game.food == 5u && game.gifts == 3u && pet->bond == 100u + jelli_wake_rules.bond_gain);
 }
 
 static void unresolved_needs_prevent_sleep_healing(void)

@@ -56,7 +56,9 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     key.hydration = pet->hydration;
     key.volume = game->volume;
     key.mood = (uint8_t)jelli_pet_mood(pet);
-    key.reaction = pet->reaction;
+    key.reaction = pet->wake_mood ? (uint8_t)(3u + pet->wake_mood) : pet->reaction;
+    if (pet->wake_mood == 2u)
+        key.phase = pet->reaction_ticks > 20u ? 2u : 0u;
     key.care_blocked = (uint8_t)((jelli_pet_health_ready(pet, 1u) ? 0u : 1u) |
                                  (jelli_pet_health_ready(pet, 2u) ? 0u : 2u));
     key.food = game->food;

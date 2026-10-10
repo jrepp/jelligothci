@@ -72,6 +72,7 @@ typedef struct {
     uint64_t wake_override_until, hunger_due;
     uint64_t shot_until, medicine_until;
     uint32_t phase_offset, bedtime, sleep_duration, random_state;
+    uint32_t rest_ticks; /* Admitted sleep since the last wake; persisted. */
     uint16_t needs[JELLI_NEED_COUNT];
     uint16_t need_remainders[JELLI_NEED_COUNT];
     uint16_t bond, feeds, neglect;
@@ -80,7 +81,7 @@ typedef struct {
     uint8_t collection_entry, reached_forms, food_type;
     /* Brief session-only touch memory; care changes still persist. */
     uint16_t touch_load;
-    uint8_t reaction, reaction_ticks;
+    uint8_t reaction, reaction_ticks, wake_mood;
     JelliHealth health;
     JelliActivity activity;
     bool asleep, scheduled_sleep, hunger_low, hunger_counted;

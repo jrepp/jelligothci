@@ -382,15 +382,15 @@ and compiles it for both hosts without a new runtime loader. Entry IDs 1–9 are
 stable slot bindings; do not renumber them. This slice supports the existing
 two-form evolution set; unsupported form/set references fail the build.
 
-Save codec v8 reads v1–v7. The two legacy starter records merge into one Jelli
+Save codec v9 reads v1–v8. The two legacy starter records merge into one Jelli
 slot: the active starter keeps its identity and full care state (otherwise the
 first starter is retained), and their reached forms are combined. Present
 origins and the linked sleep journal follow the retained identity. Other family
 records keep their state. A legacy Lilac also unlocks its Mint ancestor. The
 inactive duplicate starter's separate care history is not retained.
 Existing present discoveries can grant missing companions during migration.
-A full nine-pet checkpoint uses 3569 of the available 4096 bytes. Older firmware
-cannot read v8; keep a backup before downgrading.
+A full nine-pet checkpoint uses 3605 of the available 4096 bytes. Older firmware
+cannot read v9; keep a backup before downgrading.
 
 
 ## Food, water, and exercise
@@ -443,3 +443,18 @@ During brushing, small bubbles rise near the mouth, one quarter of the visible
 pet height above its centroid. Bath bubbles fall from across the pet's top.
 Both use the fixed particle pool, stop on completion or exit, and emit at most
 one batch after a timing stall. They do not appear while the pet is asleep.
+
+
+## Waking by touch
+
+Touch the sleeping pet on the main scene or in a care activity to wake it.
+A short rest says GROGGY... without a bonding reward. A good rest shows a brief
+surprised pose, then HAPPY, and grants one bonding point (capped at 100).
+Settings → Wake and automatic wake-ups use the same rule. Current thresholds
+are authored in [content/wake.json](../content/wake.json): 30 minutes of admitted
+sleep for a nap, or six hours for scheduled sleep.
+
+Elapsed sleep is saved across restarts, and waking consumes that duration so
+it cannot award another bonus after a save/reload. Old saves have no trustworthy
+rest-duration field and start it at zero. The brief expression itself is not
+saved. Touching an awake pet retains its ordinary petting behavior.

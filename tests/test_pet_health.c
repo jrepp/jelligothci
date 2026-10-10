@@ -1,6 +1,7 @@
 #include "game_fixture.h"
 #include "jelli/pet_ui.h"
 #include "jelli/save.h"
+#include "jelli/wake.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -311,8 +312,41 @@ static void test_routine_bubbles(void)
     CHECK(bubble_count(&ui) == 0u);
 }
 
+static void test_touch_wakes_in_activity(void)
+{
+    for (unsigned good = 0u; good < 2u; ++good) {
+        JelliGame game;
+        JelliPetUi ui;
+        jelli_game_init(&game);
+        jelli_pet_ui_init(&ui);
+        CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_REST, 1u, 0u}) == JELLI_OK);
+        game.pets[0].rest_ticks = good ? jelli_wake_rules.nap_ticks : 0u;
+        ui.menu_open = true;
+        ui.page = JELLI_UI_BRUSH;
+        ui.clicker_pet = 1u;
+        JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
+        jelli_pet_render(&surface, &game, &ui, 0u, false);
+        int x = ui.actor_x + (int)((ui.actor_frame->centroid_x_q8 * 6u + 128u) / 256u);
+        int y = ui.actor_y + (int)((ui.actor_frame->centroid_y_q8 * 6u + 128u) / 256u);
+        jelli_pet_ui_tap(&ui, &game, x, y);
+        CHECK(ui.result == JELLI_OK && !game.pets[0].asleep && ui.save_requested);
+        CHECK(game.pets[0].bond == 100u + (good ? jelli_wake_rules.bond_gain : 0u));
+        CHECK(ui.page == JELLI_UI_BRUSH && ui.menu_open);
+        jelli_pet_render(&surface, &game, &ui, 100u, false);
+        CHECK(ui.last_view.reaction == (good ? 5u : 4u));
+        if (good) {
+            CHECK(ui.actor_frame->id == 1021u); /* Surprise first. */
+            jelli_game_advance(&game, 800u);
+            jelli_game_advance(&game, 300u);
+            jelli_pet_render(&surface, &game, &ui, 1200u, false);
+            CHECK(ui.actor_frame->id == 1004u); /* Then happy. */
+        }
+    }
+}
+
 int main(void)
 {
+    test_touch_wakes_in_activity();
     test_routine_bubbles();
     test_activity_reaction_priority();
     test_health_cooldowns();
