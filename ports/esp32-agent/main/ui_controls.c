@@ -1,7 +1,9 @@
 #include "ui_controls.h"
+#include "ui_controls_internal.h"
 #include "input.h"
 #include "prefs_wifi.h"
 #include "screen.h"
+#include "voice.h"
 #include "wifi.h"
 #include "jelli/agent_draw.h"
 #include "jelli/agent_prefs.h"
@@ -14,14 +16,13 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Touches, presses, and screen changes the console asks for, as the UI task's input. */
-typedef enum { ASK_TAP, ASK_DRAG, ASK_BUTTON, ASK_SLEEP, ASK_WAKE } AskKind;
-typedef struct {
-    uint8_t kind;
-    int x, y;
-} Ask;
-
-enum { ASKS = 8 };
+enum {
+    ASKS = 8,
+    PET_PATH = 120,   /* Pixels a stroke travels to count as petting (ADR-017). */
+    LOST_READS = 3,   /* Failed touch reads in a row that end a hold (about 120 ms). */
+    REFUSED_MS = 900, /* The refusal's two blinks. */
+    BLINK_MS = 225
+};
 
 static const char *TAG = "agent_controls";
 static QueueHandle_t asks;
@@ -36,7 +37,12 @@ static JelliAgentTouch touch;
 static JelliPrefs prefs;
 static JelliPrefsJoin join;      /* A join Settings asked for, until handed over. */
 static JelliPrefsAction pending; /* A scan or join still to hand over (errand busy). */
-static bool fresh_unicorn;
+static bool fresh_unicorn, petted, refused;
+/* Whether the press under way began on the unicorn's lit screen, the only place a press
+ * may become a hold (ADR-017); decided when the finger lands, kept until it lifts. */
+static bool press_may_hold;
+static unsigned lost_reads;
+static uint64_t refused_at;
 
 static void wipe_join(void)
 {
@@ -56,8 +62,11 @@ bool jelli_agent_ui_controls_start(void)
     return asks && input && errands;
 }
 
+/* Settings and a dark screen show no listening ring, so an utterance ends with either
+ * (ADR-017): speech never reaches the bridge unseen. */
 static void open_settings(uint64_t now_ms)
 {
+    jelli_agent_voice_end();
     uint8_t ssid[JELLI_PREFS_SSID_MAX];
     size_t size = 0u;
     bool secured = false, connected = false;
@@ -122,6 +131,41 @@ static void drag(int dy, uint64_t now_ms)
     jelli_prefs_drag(&prefs, dy);
 }
 
+/* A hold on the unicorn sends what is said to the bridge until it lifts (ADR-017). */
+static void hold(uint64_t now_ms)
+{
+    if (power.asleep || prefs.screen != JELLI_PREFS_CLOSED)
+        return;
+    jelli_pet_screen_activity(&power, now_ms);
+    if (jelli_agent_voice_begin()) {
+        ESP_LOGI(TAG, "Listening while held");
+        return;
+    }
+    refused = true;
+    refused_at = now_ms;
+    ESP_LOGI(TAG, "Not listening: the bridge is offline, or a reply is still open");
+}
+
+/* However the hold ended, whatever the screen shows now. */
+static void release(uint64_t now_ms)
+{
+    if (!power.asleep)
+        jelli_pet_screen_activity(&power, now_ms);
+    jelli_agent_voice_end();
+}
+
+/* A stroke long enough, over the unicorn, pets it. */
+static void stroke(uint32_t path, uint64_t now_ms)
+{
+    if (power.asleep) {
+        jelli_pet_screen_cancel_tap(&power);
+        return;
+    }
+    jelli_pet_screen_activity(&power, now_ms);
+    if (prefs.screen == JELLI_PREFS_CLOSED && path >= PET_PATH)
+        petted = true;
+}
+
 /* The side button wakes a dark screen, else opens or closes Settings. */
 static void button(uint64_t now_ms)
 {
@@ -154,6 +198,15 @@ static void apply(const Ask *ask, uint64_t now_ms)
     case ASK_WAKE:
         wake(now_ms);
         break;
+    case ASK_HOLD:
+        hold(now_ms);
+        break;
+    case ASK_RELEASE:
+        release(now_ms);
+        break;
+    case ASK_PET:
+        stroke(PET_PATH, now_ms);
+        break;
     }
 }
 
@@ -163,14 +216,39 @@ static void read_input(uint64_t now_ms)
         button(now_ms);
     bool pressed = false;
     int x = 0, y = 0;
-    if (jelli_agent_input_touch(&pressed, &x, &y)) {
+    bool read = jelli_agent_input_touch(&pressed, &x, &y);
+    lost_reads = read ? 0u : lost_reads + (lost_reads < LOST_READS);
+    /* A controller that stops answering mid-hold must not keep the microphone open:
+     * after a few failed reads the finger counts as lifted. */
+    if (read || (touch.holding && lost_reads >= LOST_READS)) {
         if (pressed && !power.asleep)
             jelli_pet_screen_activity(&power, now_ms); /* A finger on the glass keeps it lit. */
+        /* Holds only on the unicorn: Settings keeps its slow taps, and a press that began
+         * in Settings or on a dark screen never becomes one when the view changes. */
+        bool unicorn = !power.asleep && prefs.screen == JELLI_PREFS_CLOSED;
+        if (!touch.down)
+            press_may_hold = unicorn;
+        jelli_agent_touch_holds(&touch, unicorn && press_may_hold);
         JelliAgentTouchEvent event = jelli_agent_touch_sample(&touch, pressed, x, y, now_ms);
-        if (event.kind == JELLI_AGENT_TOUCH_TAP)
+        switch (event.kind) {
+        case JELLI_AGENT_TOUCH_TAP:
             tap(event.x, event.y, now_ms);
-        else if (event.kind == JELLI_AGENT_TOUCH_DRAG)
+            break;
+        case JELLI_AGENT_TOUCH_DRAG:
             drag(event.dy, now_ms);
+            break;
+        case JELLI_AGENT_TOUCH_HOLD:
+            hold(now_ms);
+            break;
+        case JELLI_AGENT_TOUCH_RELEASE:
+            release(now_ms);
+            break;
+        case JELLI_AGENT_TOUCH_STROKE:
+            stroke(event.path, now_ms);
+            break;
+        case JELLI_AGENT_TOUCH_NONE:
+            break;
+        }
     }
     Ask ask;
     while (asks && xQueueReceive(asks, &ask, 0) == pdTRUE)
@@ -183,6 +261,7 @@ static void read_input(uint64_t now_ms)
  * so no password waits on a dark screen. */
 static void go_dark(JelliSurface *canvas)
 {
+    jelli_agent_voice_end();
     if (prefs.screen != JELLI_PREFS_CLOSED)
         close_settings();
     jelli_agent_fill(canvas, 0, 0, (int)canvas->width, (int)canvas->height, 0u);
@@ -230,6 +309,24 @@ JelliUiView jelli_agent_ui_controls_tick(JelliSurface *canvas, uint64_t now_ms, 
     return JELLI_UI_UNICORN;
 }
 
+JelliListenCue jelli_agent_ui_controls_cue(uint64_t now_ms)
+{
+    if (jelli_agent_voice_holding())
+        return JELLI_CUE_LISTENING;
+    if (!refused || now_ms < refused_at || now_ms - refused_at >= REFUSED_MS) {
+        refused = false;
+        return JELLI_CUE_NONE;
+    }
+    return (now_ms - refused_at) / BLINK_MS % 2u == 0u ? JELLI_CUE_REFUSED : JELLI_CUE_NONE;
+}
+
+bool jelli_agent_ui_controls_petted(void)
+{
+    bool was = petted;
+    petted = false;
+    return was;
+}
+
 void jelli_agent_ui_controls_state(JelliLokiState state)
 {
     if (state == JELLI_LOKI_STATE_LISTENING || state == JELLI_LOKI_STATE_ASKING ||
@@ -237,57 +334,16 @@ void jelli_agent_ui_controls_state(JelliLokiState state)
         atomic_store(&wake_asked, true);
 }
 
-static bool send(AskKind kind, int x, int y)
+bool jelli_agent_ui_controls_ask(AskKind kind, int x, int y)
 {
     Ask ask = {(uint8_t)kind, x, y};
     return atomic_load(&started) && xQueueSend(asks, &ask, 0) == pdTRUE;
 }
 
-static const char *view_name(int view)
+bool jelli_agent_ui_controls_status(bool *dark, int *view, int *networks)
 {
-    static const char *const names[] = {"closed",   "menu",    "searching", "networks",
-                                        "password", "joining", "result"};
-    return view >= 0 && view < (int)(sizeof(names) / sizeof(names[0])) ? names[view] : "closed";
-}
-
-static bool screen_command(const JelliAgentRequest *request, char *out, size_t capacity)
-{
-    const char *what = request->count == 2u ? request->words[1] : "";
-    bool ok = !strcmp(what, "status") || (!strcmp(what, "sleep") && send(ASK_SLEEP, 0, 0)) ||
-              (!strcmp(what, "wake") && send(ASK_WAKE, 0, 0));
-    if (!ok)
-        (void)snprintf(out, capacity, "{\"ok\":false,\"error\":\"%s\"}",
-                       atomic_load(&started) ? "syntax" : "unavailable");
-    else
-        (void)snprintf(out, capacity,
-                       "{\"ok\":true,\"asleep\":%s,\"settings\":\"%s\",\"networks\":%d,"
-                       "\"idle_ms\":%u}",
-                       atomic_load(&dark_now) ? "true" : "false", view_name(atomic_load(&view_now)),
-                       atomic_load(&networks_now), (unsigned)JELLI_AGENT_SCREEN_IDLE_MS);
-    return true;
-}
-
-bool jelli_agent_command_controls(const JelliAgentRequest *request, char *out, size_t capacity)
-{
-    const char *verb = request->words[0], *what = request->count >= 2u ? request->words[1] : "";
-    if (!strcmp(verb, "screen"))
-        return screen_command(request, out, capacity);
-    if (strcmp(verb, "ui") != 0)
-        return false;
-    uint32_t x = 0u, y = 0u;
-    bool sent;
-    if (request->count == 2u && !strcmp(what, "button"))
-        sent = send(ASK_BUTTON, 0, 0);
-    else if (request->count == 4u && !strcmp(what, "tap") &&
-             jelli_agent_number(request->words[2], &x) &&
-             jelli_agent_number(request->words[3], &y) && x < 466u && y < 466u)
-        sent = send(ASK_TAP, (int)x, (int)y);
-    else if (request->count == 4u && !strcmp(what, "drag") &&
-             jelli_agent_number(request->words[3], &y) && y <= 466u &&
-             (!strcmp(request->words[2], "up") || !strcmp(request->words[2], "down")))
-        sent = send(ASK_DRAG, 0, !strcmp(request->words[2], "up") ? -(int)y : (int)y);
-    else
-        return false; /* Other "ui" verbs: the unicorn's own commands. */
-    (void)snprintf(out, capacity, sent ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"busy\"}");
-    return true;
+    *dark = atomic_load(&dark_now);
+    *view = atomic_load(&view_now);
+    *networks = atomic_load(&networks_now);
+    return atomic_load(&started);
 }

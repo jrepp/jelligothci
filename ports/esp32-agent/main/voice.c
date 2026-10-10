@@ -6,6 +6,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include <stdatomic.h>
 #include <string.h>
@@ -25,6 +26,11 @@ typedef struct {
 static const char *TAG = "agent_voice";
 static QueueHandle_t queue;
 static TaskHandle_t capture_task;
+/* Held while an utterance starts: the screen's hold (UI task) and the console's "loki
+ * ptt" never interleave, so one cannot slip in between another's claim and its
+ * open_stream. */
+static SemaphoreHandle_t starting;
+static StaticSemaphore_t starting_control;
 /* The utterance being held, 0 when none; stream numbers only rise. open is the
  * utterance whose ptt_end has not gone yet: a new one waits for it, since the bridge
  * allows one open stream at a time. */
@@ -36,7 +42,7 @@ static Frame captured;
 bool jelli_agent_voice_holding(void) { return atomic_load(&holding) != 0u; }
 
 /* Holding is set before the player stops, so no reply can begin in between. */
-bool jelli_agent_voice_begin(void)
+static bool begin(void)
 {
     unsigned none = 0u;
     if (jelli_agent_voice_holding() || atomic_load(&open_stream) || !jelli_agent_link_online())
@@ -54,6 +60,15 @@ bool jelli_agent_voice_begin(void)
     atomic_store(&dropped, 0u);
     xTaskNotifyGive(capture_task);
     return true;
+}
+
+bool jelli_agent_voice_begin(void)
+{
+    if (!starting || xSemaphoreTake(starting, portMAX_DELAY) != pdTRUE)
+        return false;
+    bool begun = begin();
+    xSemaphoreGive(starting);
+    return begun;
 }
 
 void jelli_agent_voice_end(void) { atomic_store(&holding, 0u); }
@@ -129,7 +144,8 @@ static void sender(void *unused)
                             .frames = sent,
                             .dropped = atomic_load(&dropped)};
         (void)jelli_agent_link_send(&end);
-        atomic_store(&open_stream, 0u);
+        unsigned ended = next.seq; /* Only this utterance: never one that began since. */
+        (void)atomic_compare_exchange_strong(&open_stream, &ended, 0u);
         ESP_LOGI(TAG, "Utterance %u: %u frames sent, %u dropped", (unsigned)next.seq,
                  (unsigned)sent, (unsigned)end.dropped);
         have_held = false;
@@ -147,7 +163,10 @@ bool jelli_agent_voice_start(void)
         return false;
     capture_task = xTaskCreateStaticPinnedToCore(capture, "agent_mic", sizeof(capture_stack), NULL,
                                                  7u, capture_stack, &capture_control, 1);
-    return capture_task &&
-           xTaskCreateStaticPinnedToCore(sender, "agent_send", sizeof(sender_stack), NULL, 5u,
-                                         sender_stack, &sender_control, 0) != NULL;
+    if (!capture_task || !xTaskCreateStaticPinnedToCore(sender, "agent_send", sizeof(sender_stack),
+                                                        NULL, 5u, sender_stack, &sender_control, 0))
+        return false;
+    /* Last: an utterance may begin only once its queue and both tasks exist. */
+    starting = xSemaphoreCreateMutexStatic(&starting_control);
+    return starting != NULL;
 }

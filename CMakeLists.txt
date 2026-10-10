@@ -126,7 +126,8 @@ if(BUILD_TESTING)
   target_link_libraries(jelli_agent_present_tests PRIVATE jelli_agent_core)
   add_test(NAME agent_present COMMAND jelli_agent_present_tests)
   # Loki Agent's Settings and touches (ADR-016): logic only, no art needed.
-  foreach(suite prefs prefs_fuzz prefs_props prefs_flow prefs_alike touch touch_props)
+  foreach(suite prefs prefs_fuzz prefs_props prefs_flow prefs_alike touch touch_props
+    touch_holds touch_bounds)
     add_executable(jelli_agent_${suite}_tests tests/test_agent_${suite}.c)
     target_link_libraries(jelli_agent_${suite}_tests PRIVATE jelli_agent_core)
     add_test(NAME agent_${suite} COMMAND jelli_agent_${suite}_tests)

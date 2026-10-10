@@ -29,6 +29,7 @@ typedef enum {
 typedef enum {
     JELLI_PRANCE_WANDER,    /* Now and then while idle: across the screen and back. */
     JELLI_PRANCE_CELEBRATE, /* When a task succeeds: rears, hops, rears again. */
+    JELLI_PRANCE_FROLIC,    /* When petted (ADR-017): leaps to and fro across the screen. */
 } JelliPranceRoutine;
 
 typedef struct {

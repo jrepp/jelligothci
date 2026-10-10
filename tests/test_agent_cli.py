@@ -208,11 +208,15 @@ class CommandLineTests(unittest.TestCase):
     def test_ui_drives_settings_and_the_unicorn(self):
         self.assertEqual(agent.command_line(self.ui("prance", "wander")), ("ui prance wander", 0.0))
         self.assertEqual(agent.command_line(self.ui("button")), ("ui button", 0.0))
+        self.assertEqual(agent.command_line(self.ui("hold", "start")), ("ui hold start", 0.0))
+        self.assertEqual(agent.command_line(self.ui("hold", "stop")), ("ui hold stop", 0.0))
+        self.assertEqual(agent.command_line(self.ui("pet")), ("ui pet", 0.0))
         self.assertEqual(agent.command_line(self.ui("tap", "0", "465")), ("ui tap 0 465", 0.0))
         self.assertEqual(agent.command_line(self.ui("drag", "up", "48")), ("ui drag up 48", 0.0))
         self.assertEqual(agent.command_line(argparse.Namespace(command="screen", action="sleep")),
                          ("screen sleep", 0.0))
-        bad = (("prance",), ("prance", "jump"), ("button", "now"), ("tap", "1"), ("tap", "466", "2"),
+        bad = (("prance",), ("prance", "jump"), ("button", "now"), ("hold",), ("hold", "now"),
+               ("hold", "start", "stop"), ("pet", "softly"), ("tap", "1"), ("tap", "466", "2"),
                ("tap", "-1", "2"), ("tap", "a", "b"), ("drag", "left", "5"), ("drag", "up", "0"),
                ("drag", "down", "467"), ("drag", "up"), ("tap", "\u00b2", "1"), ("drag", "up", "\u0663"))
         for values in bad:
@@ -338,7 +342,7 @@ class CommandLineTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, 2)
 
     def test_ui_prance_names_a_routine(self):
-        for routine in ("wander", "celebrate"):
+        for routine in ("wander", "celebrate", "frolic"):
             with self.subTest(routine=routine):
                 args = self.args(command="ui", action="prance", values=[routine])
                 self.assertEqual(agent.command_line(args), (f"ui prance {routine}", 0.0))
@@ -586,6 +590,26 @@ class UiCommandTests(unittest.TestCase):
                 self.assertEqual(code, 0)
                 self.assertRegex(written, rb"^@A1 [1-9]\d* ui prance " + routine.encode() + rb"\n$")
                 self.assertEqual(json.loads(out), {"ok": True, "ms": ms})
+
+    def test_hold_pet_and_frolic_are_one_request_each(self):
+        # ADR-017: the console's stand-ins for a held finger and a stroke on the unicorn.
+        for arguments in (["ui", "hold", "start"], ["ui", "hold", "stop"], ["ui", "pet"],
+                          ["ui", "prance", "frolic"]):
+            with self.subTest(arguments=arguments):
+                code, written, out, _ = self.run_main(arguments, b'{"ok":true}')
+                self.assertEqual(code, 0)
+                line = " ".join(arguments).encode()
+                self.assertRegex(written, rb"^@A1 [1-9]\d* " + line + rb"\n$")
+                self.assertEqual(json.loads(out), {"ok": True})
+
+    def test_hold_and_pet_with_the_wrong_words_fail_before_any_request(self):
+        for arguments in (["ui", "hold"], ["ui", "hold", "START"], ["ui", "hold", "start", "now"],
+                          ["ui", "hold", "start;boot"], ["ui", "pet", "softly"],
+                          ["ui", "prance", "Frolic"]):
+            with self.subTest(arguments=arguments):
+                code, written, out, err = self.run_main(arguments, b'{"ok":true}')
+                self.assertEqual((code, written, out), (1, b"", ""))
+                self.assertIn("loki-agent: ui ", err)
 
     def test_the_devices_refusals_fail_the_command(self):
         # ui.c: "unavailable" when the unicorn's art or PSRAM is missing, "syntax" otherwise.

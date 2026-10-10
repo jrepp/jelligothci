@@ -14,7 +14,7 @@ idf_component_register(
     SRCS "agent_main.c" "boot.c" "commands.c" "console_wire.c" "probe.c" "screen.c"
          "audio.c" "commands_setup.c" "render_bench.c" "settings.c" "wifi.c"
          "identity.c" "pairing.c" "loki_link.c" "loki_link_rx.c" "loki_peer.c" "loki_commands.c"
-         "player.c" "voice.c" "ui.c" "ui_art.c" "ui_controls.c" "input.c" "prefs_wifi.c" "wifi_scan.c" "wifi_status.c"
+         "player.c" "voice.c" "ui.c" "ui_art.c" "ui_controls.c" "ui_controls_console.c" "input.c" "prefs_wifi.c" "wifi_scan.c" "wifi_status.c"
          "../../../core/agent/args.c" "../../../core/agent/console.c" "../../../core/agent/pcm.c"
          "../../../core/agent/loki.c" "../../../core/agent/loki_canonical.c"
          "../../../core/agent/loki_json.c" "../../../core/agent/loki_out.c"

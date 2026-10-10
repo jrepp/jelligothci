@@ -218,9 +218,10 @@ static void the_prancing_frames_fit_their_frame(const UiArt *ui)
 /* Every pose of every routine, every millisecond (each distinct pose once). */
 static void every_pose_stays_on_the_panel(const UiArt *ui)
 {
-    static const JelliPranceRoutine routines[] = {JELLI_PRANCE_WANDER, JELLI_PRANCE_CELEBRATE};
+    static const JelliPranceRoutine routines[] = {JELLI_PRANCE_WANDER, JELLI_PRANCE_CELEBRATE,
+                                                  JELLI_PRANCE_FROLIC};
     Worst worst = {1e9, 1e9, 0u};
-    for (unsigned r = 0u; r < 2u; ++r) {
+    for (unsigned r = 0u; r < sizeof(routines) / sizeof(routines[0]); ++r) {
         JelliPrancePose pose, last = {JELLI_PRANCE_FRAMES, 0, 0, false};
         for (uint32_t ms = 0u; ms <= jelli_agent_prance_length(routines[r]); ++ms) {
             (void)jelli_agent_prance_at(routines[r], ms, &pose);

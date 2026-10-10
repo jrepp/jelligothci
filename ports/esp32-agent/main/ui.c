@@ -2,6 +2,8 @@
 #include "screen.h"
 #include "ui_art.h"
 #include "ui_controls.h"
+#include "voice.h"
+#include "jelli/agent_draw.h"
 #include "jelli/agent_scene.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -23,6 +25,8 @@ enum {
     FIRST_WANDER_S = 60, /* After start-up. */
     WANDER_S = 150,      /* Between wanders, plus up to WANDER_JITTER_S. */
     WANDER_JITTER_S = 60,
+    RING_INSET = 2, /* The listening ring, just inside the round panel's edge. */
+    RING_PX = 8,
     NONE = -1
 };
 
@@ -34,6 +38,7 @@ static uint16_t *canvas;
 static JelliUiArt art;
 static bool prepared;
 static atomic_bool started; /* The UI task runs, so requests are read. */
+static TaskHandle_t ui_handle;
 
 /* What is on the panel: the unicorn at home (pose, float) or prancing (pose). */
 typedef struct {
@@ -65,9 +70,21 @@ static const JelliAgentSprite *placed(const Shown *shown, int *x, int *y)
     return &art.prance[pose->frame];
 }
 
-/* Draws now over what was shown, and presents the rectangle both cover; the whole
- * screen when all is set. */
-static void show(const Shown *now, const Shown *was, bool all)
+/* The edge ring (ADR-017): lilac while listening, grey for a refusal. Drawn after the
+ * unicorn, so whatever part of it is presented is whole. */
+static void ring(JelliSurface *s, JelliListenCue cue)
+{
+    if (cue == JELLI_CUE_NONE)
+        return;
+    uint16_t color = cue == JELLI_CUE_LISTENING ? jelli_agent_rgb(196u, 150u, 255u)
+                                                : jelli_agent_rgb(128u, 128u, 136u);
+    int side = SIDE - 2 * RING_INSET;
+    jelli_agent_round_outline(s, RING_INSET, RING_INSET, side, side, side / 2, RING_PX, color);
+}
+
+/* Draws now over what was shown, with the cue's ring, and presents the rectangle both
+ * cover; the whole screen when all is set. */
+static void show(const Shown *now, const Shown *was, bool all, JelliListenCue cue)
 {
     JelliSurface s = surface();
     int x = 0, y = 0, old_x = 0, old_y = 0;
@@ -77,6 +94,7 @@ static void show(const Shown *now, const Shown *was, bool all)
                            : jelli_agent_rect_union(jelli_agent_sprite_area(&s, old, old_x, old_y),
                                                     jelli_agent_sprite_area(&s, sprite, x, y));
     jelli_agent_sprite_draw(&s, sprite, x, y, now->prancing && now->prance.mirror, damage);
+    ring(&s, cue);
     if (!jelli_agent_screen_present(&s, damage))
         ESP_LOGW(TAG, "The panel did not take a frame");
 }
@@ -112,20 +130,30 @@ static void ui_task(void *unused)
     int64_t now = esp_timer_get_time(), wander_at = now + (int64_t)FIRST_WANDER_S * 1000000;
     int64_t began = 0;
     JelliPranceRoutine routine = JELLI_PRANCE_WANDER;
+    JelliListenCue cue = JELLI_CUE_NONE;
     Shown shown = at_home(now), next;
-    show(&shown, &shown, true);
+    show(&shown, &shown, true, cue);
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(TICK_MS));
-        if (atomic_load(&held))
+        /* The render bench owns the panel: no ring shows and no lift is read, so an
+         * utterance ends here, on this task, rather than run on unseen. */
+        if (atomic_load(&held)) {
+            jelli_agent_voice_end();
             continue;
+        }
         now = esp_timer_get_time();
         JelliSurface s = surface();
         bool covered = false;
         /* Settings or a dark screen: the unicorn waits, and is redrawn whole after. */
         if (jelli_agent_ui_controls_tick(&s, (uint64_t)now / 1000u, &covered) != JELLI_UI_UNICORN)
             continue;
-        bool all = atomic_exchange(&redraw, false) || covered;
+        JelliListenCue was_cue = cue;
+        cue = jelli_agent_ui_controls_cue((uint64_t)now / 1000u);
+        /* The ring goes on or off across the whole edge. */
+        bool all = atomic_exchange(&redraw, false) || covered || cue != was_cue;
         int asked = atomic_exchange(&requested, NONE);
+        if (jelli_agent_ui_controls_petted())
+            asked = JELLI_PRANCE_FROLIC;
         if (asked != NONE || (!shown.prancing && now >= wander_at)) {
             routine = asked != NONE ? (JelliPranceRoutine)asked : JELLI_PRANCE_WANDER;
             began = now;
@@ -139,7 +167,7 @@ static void ui_task(void *unused)
             all = all || !next.prancing; /* Back to full size. */
         }
         if (all || !same(&next, &shown)) {
-            show(&next, &shown, all);
+            show(&next, &shown, all, cue);
             shown = next;
         }
     }
@@ -165,11 +193,17 @@ bool jelli_agent_ui_start(void)
     if (!prepared)
         return false;
     static StaticTask_t task_control;
-    static StackType_t task_stack[4096u / sizeof(StackType_t)];
-    atomic_store(&started,
-                 xTaskCreateStaticPinnedToCore(ui_task, "agent_ui", sizeof(task_stack), NULL, 3u,
-                                               task_stack, &task_control, 1) != NULL);
+    /* 6 KB: a hold starts an utterance from this task, and that sends on the link. */
+    static StackType_t task_stack[6144u / sizeof(StackType_t)];
+    ui_handle = xTaskCreateStaticPinnedToCore(ui_task, "agent_ui", sizeof(task_stack), NULL, 3u,
+                                              task_stack, &task_control, 1);
+    atomic_store(&started, ui_handle != NULL);
     return atomic_load(&started);
+}
+
+unsigned jelli_agent_ui_stack_free(void)
+{
+    return atomic_load(&started) ? (unsigned)uxTaskGetStackHighWaterMark(ui_handle) : 0u;
 }
 
 void jelli_agent_ui_hold(bool hold)
@@ -194,6 +228,7 @@ bool jelli_agent_command_ui(const JelliAgentRequest *request, char *out, size_t 
     const char *which = prance ? request->words[2] : "";
     int routine = !strcmp(which, "wander")      ? JELLI_PRANCE_WANDER
                   : !strcmp(which, "celebrate") ? JELLI_PRANCE_CELEBRATE
+                  : !strcmp(which, "frolic")    ? JELLI_PRANCE_FROLIC
                                                 : NONE;
     if (routine == NONE)
         (void)snprintf(out, capacity, "{\"ok\":false,\"error\":\"syntax\"}");

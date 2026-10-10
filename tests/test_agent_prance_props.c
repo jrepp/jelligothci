@@ -23,7 +23,8 @@
         }                                                                                          \
     } while (0)
 
-static const JelliPranceRoutine routines[] = {JELLI_PRANCE_WANDER, JELLI_PRANCE_CELEBRATE};
+static const JelliPranceRoutine routines[] = {JELLI_PRANCE_WANDER, JELLI_PRANCE_CELEBRATE,
+                                              JELLI_PRANCE_FROLIC};
 enum { ROUTINES = sizeof(routines) / sizeof(routines[0]) };
 
 static bool same(const JelliPrancePose *a, const JelliPrancePose *b)

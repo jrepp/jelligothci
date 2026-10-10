@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define CHECK(expr)                                                                                \
     do {                                                                                           \
@@ -11,14 +12,15 @@
         }                                                                                          \
     } while (0)
 
-static const JelliPranceRoutine routines[] = {JELLI_PRANCE_WANDER, JELLI_PRANCE_CELEBRATE};
+static const JelliPranceRoutine routines[] = {JELLI_PRANCE_WANDER, JELLI_PRANCE_CELEBRATE,
+                                              JELLI_PRANCE_FROLIC};
 
 /* Every pose, every millisecond: a known frame, a frame that stays inside the round
  * panel (its corners may leave, but not its middle band where the unicorn is), and
  * no jump of more than a few pixels between consecutive milliseconds. */
 static void every_moment_is_on_screen_and_continuous(void)
 {
-    for (unsigned r = 0u; r < 2u; ++r) {
+    for (unsigned r = 0u; r < sizeof(routines) / sizeof(routines[0]); ++r) {
         uint32_t length = jelli_agent_prance_length(routines[r]);
         CHECK(length > 3000u && length < 20000u);
         JelliPrancePose last;
@@ -85,11 +87,108 @@ static void celebrating_rears_and_hops(void)
     CHECK(reared && hopped);
 }
 
+/* Petted, it leaps both ways across the screen, reaches both sides, and rears. */
+static void frolicking_leaps_both_ways_and_rears(void)
+{
+    uint32_t length = jelli_agent_prance_length(JELLI_PRANCE_FROLIC);
+    int rightmost = 0, leftmost = 0;
+    unsigned leaps = 0u, rears = 0u;
+    bool leapt_left = false, leapt_right = false;
+    JelliPrancePose last = {JELLI_PRANCE_FRAMES, 0, 0, false}; /* So the first pose counts. */
+    for (uint32_t ms = 0u; ms < length; ++ms) {
+        JelliPrancePose pose;
+        (void)jelli_agent_prance_at(JELLI_PRANCE_FROLIC, ms, &pose);
+        rightmost = pose.x > rightmost ? pose.x : rightmost;
+        leftmost = pose.x < leftmost ? pose.x : leftmost;
+        leaps += pose.frame == JELLI_PRANCE_LEAP && last.frame != JELLI_PRANCE_LEAP;
+        rears += pose.frame == JELLI_PRANCE_REAR && last.frame != JELLI_PRANCE_REAR;
+        if (pose.frame == JELLI_PRANCE_LEAP) {
+            leapt_left |= pose.x < last.x;
+            leapt_right |= pose.x > last.x;
+        }
+        last = pose;
+    }
+    CHECK(rightmost >= 90 && leftmost <= -90);
+    CHECK(leaps >= 4u && rears >= 3u && leapt_left && leapt_right);
+    CHECK(length < jelli_agent_prance_length(JELLI_PRANCE_WANDER)); /* Quick, and joyful. */
+}
+
+static char gait(JelliPranceFrame frame)
+{
+    if (frame == JELLI_PRANCE_LEAP)
+        return 'L';
+    return frame <= JELLI_PRANCE_PASS_B ? 'T' : 0; /* The four trot frames come first. */
+}
+
+/* Appends what begins at this moment: a rear (R), a turn (|), or a leap or trot (L, T)
+ * and, once it ends, the way it went (+ right, - left). */
+static void narrate(const JelliPrancePose *last, const JelliPrancePose *pose, int *from,
+                    char *story, size_t *n)
+{
+    if (gait(last->frame) && gait(pose->frame) != gait(last->frame))
+        story[(*n)++] = pose->x > *from ? '+' : '-';
+    if (pose->mirror != last->mirror)
+        story[(*n)++] = '|';
+    if (pose->frame == JELLI_PRANCE_REAR && last->frame != JELLI_PRANCE_REAR)
+        story[(*n)++] = 'R';
+    if (gait(pose->frame) && gait(pose->frame) != gait(last->frame)) {
+        story[(*n)++] = gait(pose->frame);
+        *from = last->x;
+    }
+}
+
+/* Rears stand still; a leap rises well clear of the ground and lands on a landing
+ * frame. peak is the highest point of the leap so far, or the ground. */
+static void the_body_moves_well(const JelliPrancePose *last, const JelliPrancePose *pose,
+                                int ground, int *peak)
+{
+    if (pose->frame == JELLI_PRANCE_REAR && last->frame == JELLI_PRANCE_REAR)
+        CHECK(pose->x == last->x && pose->y == ground); /* Rearing on the spot. */
+    if (last->frame == JELLI_PRANCE_LEAP && pose->frame != JELLI_PRANCE_LEAP) {
+        CHECK(pose->frame == JELLI_PRANCE_LAND && pose->y == ground);
+        CHECK(*peak <= ground - 50); /* A real leap, not a shuffle. */
+    }
+    *peak = pose->frame == JELLI_PRANCE_LEAP ? (pose->y < *peak ? pose->y : *peak) : ground;
+}
+
+/* The frolic in ADR-017's order, 5.45 s long: rears, leaps right twice, turns, leaps
+ * back across twice, trots to the far side and rears there, turns, leaps and trots
+ * home, and rears again; its turns are at either edge. */
+static void the_frolic_tells_its_story(void)
+{
+    uint32_t length = jelli_agent_prance_length(JELLI_PRANCE_FROLIC);
+    CHECK(length == 5450u);
+    char story[64] = {0};
+    size_t n = 0u;
+    int from = 0, ground = 0, rears[4] = {0}, turns[4] = {0}, peak = 0;
+    unsigned reared = 0u, turned = 0u;
+    JelliPrancePose last = {JELLI_PRANCE_STAND, 0, 0, false}, pose;
+    (void)jelli_agent_prance_at(JELLI_PRANCE_FROLIC, 0u, &pose);
+    ground = pose.y;
+    for (uint32_t ms = 0u; ms <= length && n < sizeof(story) - 2u; ++ms, last = pose) {
+        (void)jelli_agent_prance_at(JELLI_PRANCE_FROLIC, ms, &pose);
+        narrate(&last, &pose, &from, story, &n);
+        the_body_moves_well(&last, &pose, ground, &peak);
+        if (pose.mirror != last.mirror && turned < 4u)
+            turns[turned++] = pose.x;
+        if (pose.frame == JELLI_PRANCE_REAR && last.frame != JELLI_PRANCE_REAR && reared < 4u)
+            rears[reared++] = pose.x;
+    }
+    if (strcmp(story, "RL+L+|L-L-T-R|L+T+R") != 0) {
+        fprintf(stderr, "frolic story: %s\n", story);
+        CHECK(false);
+    }
+    CHECK(reared == 3u && rears[0] == 0 && rears[1] <= -90 && rears[2] == 0);
+    CHECK(turned == 2u && turns[0] >= 90 && turns[1] <= -90);
+}
+
 int main(void)
 {
     every_moment_is_on_screen_and_continuous();
     the_wander_goes_out_turns_and_leaps();
     celebrating_rears_and_hops();
+    frolicking_leaps_both_ways_and_rears();
+    the_frolic_tells_its_story();
     puts("Agent prance checks passed");
     return 0;
 }

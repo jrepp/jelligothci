@@ -31,8 +31,9 @@ static uint32_t next(void)
 
 typedef struct {
     bool down, beyond;
-    int start_x, start_y;
+    int start_x, start_y, last_x, last_y;
     long long moved; /* Sum of the drags' dy. */
+    long long path;  /* Distance travelled once dragging, across plus down. */
     uint64_t start_ms;
 } Press;
 
@@ -45,8 +46,15 @@ static bool outside_slop(const Press *press, int x, int y)
 
 static void lifted(Press *press, JelliAgentTouchEvent event, uint64_t now)
 {
-    bool tap = press->down && !press->beyond && now >= press->start_ms &&
-               now - press->start_ms <= JELLI_AGENT_TAP_MAX_MS;
+    if (press->down && press->beyond) { /* A drag ends as a stroke from where it began. */
+        CHECK(event.kind == JELLI_AGENT_TOUCH_STROKE);
+        CHECK(event.x == press->start_x && event.y == press->start_y);
+        CHECK((long long)event.path == press->path);
+        press->down = false;
+        return;
+    }
+    bool tap =
+        press->down && now >= press->start_ms && now - press->start_ms <= JELLI_AGENT_TAP_MAX_MS;
     CHECK(event.kind == (tap ? JELLI_AGENT_TOUCH_TAP : JELLI_AGENT_TOUCH_NONE));
     if (tap) {
         CHECK(event.x == press->start_x && event.y == press->start_y);
@@ -58,11 +66,16 @@ static void lifted(Press *press, JelliAgentTouchEvent event, uint64_t now)
 static void pressed(Press *press, JelliAgentTouchEvent event, int x, int y, uint64_t now)
 {
     if (!press->down) { /* A new press: nothing yet. */
-        *press = (Press){true, false, x, y, 0, now};
+        *press = (Press){true, false, x, y, x, y, 0, 0, now};
         CHECK(event.kind == JELLI_AGENT_TOUCH_NONE);
         return;
     }
     press->beyond = press->beyond || outside_slop(press, x, y);
+    if (press->beyond) {
+        press->path += llabs((long long)x - press->last_x) + llabs((long long)y - press->last_y);
+        press->last_x = x;
+        press->last_y = y;
+    }
     CHECK(event.kind == (press->beyond ? JELLI_AGENT_TOUCH_DRAG : JELLI_AGENT_TOUCH_NONE));
     if (event.kind == JELLI_AGENT_TOUCH_DRAG) {
         press->moved += event.dy;
@@ -75,7 +88,7 @@ static void pressed(Press *press, JelliAgentTouchEvent event, int x, int y, uint
 static void run(void)
 {
     JelliAgentTouch touch;
-    Press press = {false, false, 0, 0, 0, 0u};
+    Press press = {false, false, 0, 0, 0, 0, 0, 0, 0u};
     int x = 233, y = 233;
     uint64_t now = 5000u;
     state = 0x3c6ef372u ^ (seed * 2654435761u) ^ 1u;

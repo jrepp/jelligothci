@@ -202,6 +202,20 @@ console:
 ./scripts/loki-agent --port <port> ui tap 233 188        # a tap on the panel (here, Settings' Wi-Fi)
 ./scripts/loki-agent --port <port> ui drag up 48         # scroll the network list a row
 ```
+
+To talk to Loki Bridge, press and hold the unicorn's screen
+([ADR-017](../docs-cms/adr/adr-017-hold-to-talk-and-petting-the-unicorn.md)): after
+400 ms a lilac ring lines the screen's edge, and the board sends what you say until you
+lift your finger (at most 30 seconds). A grey ring that blinks twice means it cannot
+listen now, because the bridge is not connected or the last request is still being
+sent. Stroke the unicorn and it frolics across the screen. Over the console:
+
+```sh
+./scripts/loki-agent --port <port> ui hold start         # as if a finger held the screen
+./scripts/loki-agent --port <port> ui hold stop          # and lifted
+./scripts/loki-agent --port <port> ui pet                # a stroke that pets the unicorn
+./scripts/loki-agent --port <port> ui prance frolic      # the frolic alone
+```
 Wi-Fi keeps its driver state in RAM and calibrates at each start
 (`CONFIG_ESP_WIFI_NVS_ENABLED` and `CONFIG_ESP_PHY_CALIBRATION_AND_DATA_STORAGE`
 off; `wifi.c` refuses to build otherwise), so the agent never opens the pet's `nvs`.

@@ -99,16 +99,21 @@ def loki_line(args):
 
 
 def ui_line(args):
-    """The unicorn's routines, and Settings' side button, taps, and drags (ADR-016)."""
+    """The unicorn's routines, a hold to talk and a pet (ADR-017), and Settings' side
+    button, taps, and drags (ADR-016)."""
     values = list(args.values)
     if args.action == "prance":
-        if values not in (["wander"], ["celebrate"]):
-            raise AgentError("ui prance takes wander or celebrate")
+        if values not in (["wander"], ["celebrate"], ["frolic"]):
+            raise AgentError("ui prance takes wander, celebrate, or frolic")
         return f"ui prance {values[0]}"
-    if args.action == "button":
+    if args.action == "hold":
+        if values not in (["start"], ["stop"]):
+            raise AgentError("ui hold takes start or stop")
+        return f"ui hold {values[0]}"
+    if args.action in ("button", "pet"):
         if values:
-            raise AgentError("ui button takes no more words")
-        return "ui button"
+            raise AgentError(f"ui {args.action} takes no more words")
+        return f"ui {args.action}"
     if args.action == "tap":
         if len(values) != 2 or not all(v.isascii() and v.isdigit() and int(v) < 466 for v in values):
             raise AgentError("ui tap takes X and Y, each 0..465")
@@ -169,10 +174,12 @@ def main():
     loki = commands.add_parser("loki", help="The link to Loki Bridge")
     loki.add_argument("action", choices=("status", "inbox", "answer", "ptt", "cancel"))
     loki.add_argument("value", nargs="?", help="ptt: start or stop; answer: the option, 0 to 3")
-    ui = commands.add_parser("ui", help="Prance now; or press the side button, tap X Y, or drag "
+    ui = commands.add_parser("ui", help="Prance now; hold the screen to talk or let go; pet the "
+                                        "unicorn; or press the side button, tap X Y, or drag "
                                         "up|down PX on the screen")
-    ui.add_argument("action", choices=("prance", "button", "tap", "drag"))
-    ui.add_argument("values", nargs="*", help="prance: wander|celebrate; tap: X Y; drag: up|down PX")
+    ui.add_argument("action", choices=("prance", "hold", "pet", "button", "tap", "drag"))
+    ui.add_argument("values", nargs="*", help="prance: wander|celebrate|frolic; hold: start|stop; "
+                                              "tap: X Y; drag: up|down PX")
     screen = commands.add_parser("screen", help="Screen sleep: status, or sleep or wake it now")
     screen.add_argument("action", choices=("status", "sleep", "wake"))
     render = commands.add_parser("render", help="Time the 384 px unicorn animation (it stays on screen)")

@@ -23,7 +23,10 @@ void jelli_agent_ui_hold(bool held);
 /* The bridge's state for the unicorn (the link's state hook); never blocks. */
 void jelli_agent_ui_state(JelliLokiState state);
 
-/* Handles "ui prance wander|celebrate"; false for other verbs. Console task. */
+/* Any task: the least stack the UI task has had free, in bytes; 0 before it starts. */
+unsigned jelli_agent_ui_stack_free(void);
+
+/* Handles "ui prance wander|celebrate|frolic"; false for other verbs. Console task. */
 bool jelli_agent_command_ui(const JelliAgentRequest *request, char *out, size_t capacity);
 
 #endif

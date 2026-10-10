@@ -54,11 +54,38 @@ static const Step celebrate[] = {
     HOLD_AT(JELLI_PRANCE_STAND, 0, 400, false),
 };
 
+/* Petted: rears with delight, bounds right in two leaps, turns, leaps back across,
+ * trots to the far side, rears there, and leaps home for a last rear. */
+static const Step frolic[] = {
+    HOLD_AT(JELLI_PRANCE_REAR, 0, 450, false),
+    LEAP_TO(0, 60, 450, false),
+    HOLD_AT(JELLI_PRANCE_LAND, 60, 120, false),
+    LEAP_TO(60, 95, 400, false),
+    HOLD_AT(JELLI_PRANCE_LAND, 95, 120, false),
+    HOLD_AT(JELLI_PRANCE_STAND, 95, 150, true),
+    LEAP_TO(95, 20, 500, true),
+    HOLD_AT(JELLI_PRANCE_LAND, 20, 120, true),
+    LEAP_TO(20, -60, 500, true),
+    HOLD_AT(JELLI_PRANCE_LAND, -60, 120, true),
+    TROT_TO(-60, -95, 300, true),
+    HOLD_AT(JELLI_PRANCE_REAR, -95, 450, true),
+    HOLD_AT(JELLI_PRANCE_STAND, -95, 150, false),
+    LEAP_TO(-95, -20, 500, false),
+    HOLD_AT(JELLI_PRANCE_LAND, -20, 120, false),
+    TROT_TO(-20, 0, 250, false),
+    HOLD_AT(JELLI_PRANCE_REAR, 0, 450, false),
+    HOLD_AT(JELLI_PRANCE_STAND, 0, 300, false),
+};
+
 static const Step *steps(JelliPranceRoutine routine, size_t *count)
 {
     if (routine == JELLI_PRANCE_CELEBRATE) {
         *count = sizeof(celebrate) / sizeof(celebrate[0]);
         return celebrate;
+    }
+    if (routine == JELLI_PRANCE_FROLIC) {
+        *count = sizeof(frolic) / sizeof(frolic[0]);
+        return frolic;
     }
     *count = sizeof(wander) / sizeof(wander[0]);
     return wander;
