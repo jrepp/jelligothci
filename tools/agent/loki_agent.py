@@ -110,6 +110,8 @@ def command_line(args):
         return loki_line(args)
     if args.command == "render":
         return f"render bench {args.mode} {args.seconds}", float(args.seconds)
+    if args.command == "ui":
+        return f"ui prance {args.routine}", 0.0
     if args.what in ("pwr", "te"):
         if args.ms is None:
             raise AgentError(f"probe {args.what} needs a duration in milliseconds")
@@ -143,6 +145,9 @@ def main():
     loki = commands.add_parser("loki", help="The link to Loki Bridge")
     loki.add_argument("action", choices=("status", "inbox", "answer", "ptt", "cancel"))
     loki.add_argument("value", nargs="?", help="ptt: start or stop; answer: the option, 0 to 3")
+    ui = commands.add_parser("ui", help="The unicorn: prance now (it also does now and then)")
+    ui.add_argument("action", choices=("prance",))
+    ui.add_argument("routine", choices=("wander", "celebrate"))
     render = commands.add_parser("render", help="Time the 384 px unicorn animation (it stays on screen)")
     render.add_argument("action", choices=("bench",))
     render.add_argument("mode", choices=("full", "bob", "patch"))

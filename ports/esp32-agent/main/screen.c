@@ -16,14 +16,15 @@ _Static_assert(STRIPE % 2 == 0 && STRIPE >= 2 && HEIGHT % 2 == 0 && WIDTH % 2 ==
                "CO5300 windows; a stripe holds two rows of any window");
 
 static const char *TAG = "agent_screen";
-static SemaphoreHandle_t transferred;
-static StaticSemaphore_t transferred_storage;
+static SemaphoreHandle_t transferred, presenting;
+static StaticSemaphore_t transferred_storage, presenting_storage;
 /* One stripe of internal DMA memory (14,912 bytes), owned by the DMA from each draw
  * until its completion callback; static so a timed-out transfer never touches freed
  * memory. */
 static DMA_ATTR uint16_t stripe[WIDTH * STRIPE];
 /* Set once the panel is up. A transfer that timed out may still own the stripe, so
- * from then on nothing is drawn (stalled). Console task only after start-up. */
+ * from then on nothing is drawn (stalled). Both are read and written only with
+ * presenting held once start-up has finished. */
 static esp_lcd_panel_handle_t panel;
 static bool stalled;
 
@@ -83,6 +84,7 @@ static bool draw_identity(void)
 bool jelli_agent_screen_start(void)
 {
     transferred = xSemaphoreCreateBinaryStatic(&transferred_storage);
+    presenting = xSemaphoreCreateMutexStatic(&presenting_storage);
     const bsp_display_config_t config = {.max_transfer_sz = sizeof(stripe)};
     esp_lcd_panel_io_handle_t io = NULL;
     esp_lcd_panel_io_callbacks_t callbacks = {.on_color_trans_done = transfer_done};
@@ -95,10 +97,22 @@ bool jelli_agent_screen_start(void)
     return ok;
 }
 
+static bool present(const JelliSurface *surface, JelliRect rect);
+
+/* The UI task and the console's render bench both present; one at a time. */
 bool jelli_agent_screen_present(const JelliSurface *surface, JelliRect rect)
 {
-    if (!panel || stalled || surface->width != WIDTH || surface->height != HEIGHT)
+    if (!presenting || surface->width != WIDTH || surface->height != HEIGHT)
         return false;
+    xSemaphoreTake(presenting, portMAX_DELAY);
+    /* Checked under the lock: another task's transfer may have stalled meanwhile. */
+    bool ok = panel && !stalled && present(surface, rect);
+    xSemaphoreGive(presenting);
+    return ok;
+}
+
+static bool present(const JelliSurface *surface, JelliRect rect)
+{
     /* Widened to even starts and even exclusive ends, the panel's window rule. */
     JelliAgentWindow window;
     if (!jelli_agent_present_window(rect, WIDTH, HEIGHT, sizeof(stripe) / sizeof(stripe[0]),

@@ -22,7 +22,7 @@ import time
 import zlib
 
 from PIL import Image
-from build_slice import (DRAW_SCALES, LOGICAL_SIZES as DIMENSIONS, MAX_DENSITY, is_hires,
+from build_slice import (AGENT_ONLY, DRAW_SCALES, LOGICAL_SIZES as DIMENSIONS, MAX_DENSITY, is_hires,
                          little_endian, pack_mask, runtime_planes)
 from sprite_geometry import OPAQUE_ALPHA, ground_anchor_q8, logical_bounds, opaque_centroid_q8
 
@@ -87,7 +87,8 @@ def build_pack(source):
     manifest = json.loads((source / "assets.json").read_text())
     require(isinstance(manifest, dict), "Manifest must be an object")
     require(manifest.get("schema_version") == 1, "Unknown manifest schema")
-    assets = manifest["assets"]
+    # The pet's live pack: Loki Agent's own art is not the pet's.
+    assets = [asset for asset in manifest["assets"] if asset.get("kind") not in AGENT_ONLY]
     require(0 < len(assets) <= MAX_ASSETS, "Asset count exceeds pack bounds")
     ids, paths = set(), set()
     body = bytearray()

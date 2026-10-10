@@ -8,14 +8,17 @@ enum { MESSAGE_MAX = JELLI_LOKI_AUDIO_HEADER + JELLI_LOKI_AUDIO_MAX };
 enum { TEXT = 0x1, BINARY = 0x2, CONTINUATION = 0x0 };
 
 static const char *TAG = "loki_link";
-/* WebSocket task only. */
+/* WebSocket task only, set before it starts. */
 static JelliAgentPlayerHooks player;
+static void (*state_hook)(JelliLokiState state);
 static uint8_t inbound[MESSAGE_MAX];
 static size_t inbound_size;
 static uint8_t inbound_opcode;
 static bool assembling, welcomed;
 static uint32_t rx_seq;
 static JelliLokiMessage decoded;
+
+void jelli_agent_link_on_state(void (*hook)(JelliLokiState state)) { state_hook = hook; }
 
 void jelli_agent_link_rx_hooks(const JelliAgentPlayerHooks *hooks)
 {
@@ -52,6 +55,10 @@ static void route(void)
             player.stop_audio();
         break;
     case JELLI_LOKI_STATE:
+        if (state_hook)
+            state_hook(decoded.state);
+        (void)jelli_agent_link_deliver(&decoded);
+        break;
     case JELLI_LOKI_CAPTION:
     case JELLI_LOKI_ASK:
     case JELLI_LOKI_ASK_CANCEL:

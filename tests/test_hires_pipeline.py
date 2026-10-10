@@ -57,7 +57,8 @@ class HiresPipelineTest(unittest.TestCase):
     def test_logical_metadata_matches_legacy(self):
         manifest, images = build_slice.load_assets(self.source)
         legacy = {a["id"]: a for a in self.legacy["assets"]}
-        hires = [a for a in manifest["assets"] if "density" in a]
+        # The pet's art: Loki Agent's own frames have no legacy counterpart.
+        hires = [a for a in manifest["assets"] if "density" in a and a["kind"] not in build_slice.AGENT_ONLY]
         self.assertEqual(len(hires), HIRES_ASSETS)
         for asset in hires:
             original = legacy[asset["id"]]
@@ -175,17 +176,23 @@ class HiresPipelineTest(unittest.TestCase):
             self.assertNotIn("asset_1001_pixels", text)
             with self.assertRaisesRegex(ValueError, "No asset key starts with"):
                 embed_slice.generate(Path(folder) / "none.c", self.source, ("no.such.prefix",))
-            # Without prefixes everything is embedded, as for the pet.
+            # Without prefixes everything but Loki Agent's own art is embedded, as for the pet.
             everything = Path(folder) / "all.c"
             embed_slice.generate(everything, self.source, ())
             self.assertIn("asset_1001_pixels", everything.read_text())
+            self.assertNotIn("asset_13001_pixels", everything.read_text())
+            agent = Path(folder) / "agent.c"
+            embed_slice.generate(agent, self.source, ("creatures.unicorn-", "agent.unicorn-"))
+            self.assertIn("asset_13001_pixels", agent.read_text())
+            self.assertNotIn("asset_1001_pixels", agent.read_text())
 
     def test_live_pack_records_density_and_alpha(self):
         data = live_assets.build_pack(self.source)
         magic, version, count, _ = live_assets.HEADER.unpack_from(data)
         self.assertEqual((magic, version, count), (b"JLAP", 2, 102))
         manifest, _ = build_slice.load_assets(self.source)
-        expected = {a["id"]: a for a in manifest["assets"]}
+        # The pet's live pack: Loki Agent's own frames are not in it.
+        expected = {a["id"]: a for a in manifest["assets"] if a["kind"] not in build_slice.AGENT_ONLY}
         at = live_assets.HEADER.size
         while at < len(data):
             ident, width, height, gx, gy, cx, cy, left, top, right, bottom, length, density = \

@@ -26,6 +26,10 @@ typedef struct {
 /* Starts the link task; hooks may be NULL until a player exists. */
 bool jelli_agent_link_start(const JelliAgentPlayerHooks *hooks);
 
+/* Called with each state the bridge sends, on the WebSocket task (the message also
+ * goes to the app's inbox); must not block. Set before jelli_agent_link_start. */
+void jelli_agent_link_on_state(void (*hook)(JelliLokiState state));
+
 /* True between the bridge's welcome and the end of that connection. */
 bool jelli_agent_link_online(void);
 

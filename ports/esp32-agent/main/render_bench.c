@@ -1,5 +1,6 @@
 #include "render_bench.h"
 #include "screen.h"
+#include "ui.h"
 #include "jelli/agent_scene.h"
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
@@ -124,7 +125,10 @@ bool jelli_agent_command_render(const JelliAgentRequest *request, char *out, siz
         (void)snprintf(out, capacity, "{\"ok\":false,\"error\":\"syntax\"}");
     else if (!ready())
         (void)snprintf(out, capacity, "{\"ok\":false,\"error\":\"unavailable\"}");
-    else
+    else {
+        jelli_agent_ui_hold(true);
         bench(mode, seconds, out, capacity);
+        jelli_agent_ui_hold(false);
+    }
     return true;
 }

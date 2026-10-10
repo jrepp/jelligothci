@@ -39,7 +39,7 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 
 | Directory | Contents |
 | --- | --- |
-| `hires/` | The shipped high-resolution art, one directory per kind (creatures, icons, menus, meters, health, effects, prizes, battery); sizes in the density table below |
+| `hires/` | The shipped high-resolution art, one directory per kind (creatures, icons, menus, meters, health, effects, prizes, battery, and `agent` for Loki Agent's own frames); sizes in the density table below |
 | `creatures/` | Legacy Mint, Lilac, and ninja forms, each with idle A/B, eating, happy, asleep, unwell, curious, and content; 32x32 pixels. Ninja IDs 1031–1038 in that order. The unicorn (IDs 1041–1048) exists only under `hires/creatures/` |
 | `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
 | `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
@@ -315,3 +315,23 @@ the builder's measurements of these PNGs. The unicorn (form 3, IDs 1041–1048) 
 only high-resolution art; its clips 5022–5028 mirror the ninja's. No uploaded
 reference images or external character designs were supplied. The sheets are
 generated review candidates; physical AMOLED readability has not been checked.
+
+### Loki Agent's prancing unicorn
+
+Kind `agent` (IDs 13001–13008, keys `agent.unicorn-<pose>`) is the unicorn of
+Loki Agent ([RFC-003](../../docs-cms/rfcs/rfc-003-voice-agent-companion.md)) in side
+view, facing right: a four-frame trot (`prance-a`, `pass-a`, `prance-b`, `pass-b`),
+`leap`, `land`, a celebratory `rear`, and `stand`. The sheet,
+`source/hires/pets/unicorn-prance-sheet.jpg`, was made with the same Gemini model
+from the pet unicorn's sheet as its reference, so it is the same character; its
+prompt record is beside it. `extract_prance.py` keys it with the pet pipeline and
+places the frames for animation rather than as stills (one scale for all, the body's
+centroid on x = 96, the leap kept above the ground):
+
+```sh
+./scripts/uv run --python 3.12 assets/slice/source/hires/pets/extract_prance.py   # 8 agent frames
+./scripts/uv run --python 3.12 assets/slice/source/hires/pets/extract_prance.py --check
+```
+
+Only the agent embeds them (`KEYS ... agent.unicorn-`): the pet's embedded set, its
+live pack, and its pack budget leave kind `agent` out.

@@ -24,6 +24,11 @@ static JelliRect intersect(JelliRect r, int64_t x0, int64_t y0, int64_t x1, int6
     return out;
 }
 
+JelliRect jelli_agent_rect_intersect(JelliRect a, JelliRect b)
+{
+    return intersect(a, b.x, b.y, (int64_t)b.x + b.width, (int64_t)b.y + b.height);
+}
+
 static JelliRect to_surface(const JelliSurface *s, JelliRect r)
 {
     return intersect(r, 0, 0, s->width, s->height);

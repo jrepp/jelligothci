@@ -18,6 +18,9 @@ JelliRect jelli_agent_sprite_rect(const JelliSurface *surface, const JelliAsset 
 /* The smallest rectangle covering both; an empty rectangle adds nothing. */
 JelliRect jelli_agent_rect_union(JelliRect a, JelliRect b);
 
+/* The overlap of both; empty (all zero) when they do not overlap. */
+JelliRect jelli_agent_rect_intersect(JelliRect a, JelliRect b);
+
 /* Clears clip (intersected with the surface) to black, then alpha-blends the part of
  * the sprite at (x, y) and scale that falls inside it. Drawing a frame as several
  * clips gives the same pixels as drawing it whole. Returns false when the asset

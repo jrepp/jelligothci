@@ -30,14 +30,16 @@ REPO = Path(__file__).resolve().parents[2]
 SOURCE = REPO / "assets/slice"
 LOGICAL_SIZES = {"creatures": (32, 32), "icons": (16, 16), "props": (24, 24), "font": (128, 72),
                  "menus": (32, 32), "meters": (32, 32), "health": (32, 32), "effects": (16, 16),
-                 "backgrounds": (64, 64), "prizes": (32, 32), "battery": (16, 16)}
+                 "backgrounds": (64, 64), "prizes": (32, 32), "battery": (16, 16), "agent": (32, 32)}
 INVENTORY = {"creatures": 32, "icons": 12, "props": 4, "font": 1, "menus": 13, "meters": 5,
-             "health": 9, "effects": 8, "backgrounds": 2, "prizes": 9, "battery": 7}
+             "health": 9, "effects": 8, "backgrounds": 2, "prizes": 9, "battery": 7, "agent": 8}
+# Art only Loki Agent embeds (RFC-003): kept out of the pet's firmware and its pack.
+AGENT_ONLY = {"agent"}
 # Every logical scale the renderer draws each kind at (core/pet_*.c). A density D is
 # drawable at scale s when s % D == 0 (1:1 or nearest upscale) or D % s == 0 (box
 # downscale). Kinds absent here (props, backgrounds, font) stay legacy-only.
 DRAW_SCALES = {"creatures": (6,), "menus": (3, 1), "icons": (6, 2), "meters": (2,),
-               "health": (3,), "effects": (1, 2, 3), "prizes": (2,), "battery": (2, 4)}
+               "health": (3,), "effects": (1, 2, 3), "prizes": (2,), "battery": (2, 4), "agent": (6,)}
 MAX_DENSITY = 8
 # Flash budget for embedded art (bytes). The full high-resolution set is about
 # 1.65 M stored pixels x 3 bytes (RGB565 + alpha) = 4.96 MB; 6 MiB leaves room for
@@ -213,10 +215,12 @@ def export_pixels(output, manifest, images):
                         **({"ground_anchor_q8": asset["ground_anchor_q8"]} if asset["kind"] == "creatures" else {}),
                         "files": {k: {"bytes": len(v), "sha256": hashlib.sha256(v).hexdigest(), "runtime": k in runtime}
                                   for k, v in {**runtime, **derived}.items()}})
-    total = sum(r["bytes"] for r in records)
+    pet = [r for r, asset in zip(records, manifest["assets"]) if asset["kind"] not in AGENT_ONLY]
+    total = sum(r["bytes"] for r in pet)
     planned = total + DEFINITION_ALLOWANCE + METADATA_ALLOWANCE
     require(planned <= PACK_CEILING, f"Art exceeds the 6 MiB planned pack budget: {planned:,} bytes")
-    report = {"pixel_bytes": total, "hires_assets": sum(1 for r in records if r["density"] > 1),
+    report = {"pixel_bytes": total, "hires_assets": sum(1 for r in pet if r["density"] > 1),
+              "agent_pixel_bytes": sum(r["bytes"] for r in records) - total,
               "definition_allowance": DEFINITION_ALLOWANCE, "metadata_allowance": METADATA_ALLOWANCE,
               "planned_pack_bytes": planned, "pack_ceiling": PACK_CEILING,
               "note": "Raw pixels are real runtime exports (RGB565 + mask, or RGB565 + 8-bit alpha for high-resolution art); derived masks of high-resolution art are inspection-only. Definitions and metadata remain allowances.", "assets": records}

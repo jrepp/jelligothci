@@ -2112,6 +2112,182 @@
       ],
       "form": "unicorn",
       "pose": "content"
+    },
+    {
+      "id": 13001,
+      "key": "agent.unicorn-prance-a",
+      "path": "hires/agent/unicorn-prance-a.png",
+      "kind": "agent",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        6,
+        25,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "prance-a",
+      "purpose": "Loki Agent's prancing unicorn, side view facing right: near front leg raised"
+    },
+    {
+      "id": 13002,
+      "key": "agent.unicorn-pass-a",
+      "path": "hires/agent/unicorn-pass-a.png",
+      "kind": "agent",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        7,
+        25,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "pass-a",
+      "purpose": "Loki Agent's prancing unicorn: hooves passing under the body"
+    },
+    {
+      "id": 13003,
+      "key": "agent.unicorn-prance-b",
+      "path": "hires/agent/unicorn-prance-b.png",
+      "kind": "agent",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        6,
+        25,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "prance-b",
+      "purpose": "Loki Agent's prancing unicorn: far front leg raised"
+    },
+    {
+      "id": 13004,
+      "key": "agent.unicorn-pass-b",
+      "path": "hires/agent/unicorn-pass-b.png",
+      "kind": "agent",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        7,
+        25,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "pass-b",
+      "purpose": "Loki Agent's prancing unicorn: hooves passing, second step"
+    },
+    {
+      "id": 13005,
+      "key": "agent.unicorn-leap",
+      "path": "hires/agent/unicorn-leap.png",
+      "kind": "agent",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        3,
+        6,
+        25,
+        28
+      ],
+      "form": "unicorn",
+      "pose": "leap",
+      "purpose": "Loki Agent's prancing unicorn: mid-leap, all hooves off the ground"
+    },
+    {
+      "id": 13006,
+      "key": "agent.unicorn-land",
+      "path": "hires/agent/unicorn-land.png",
+      "kind": "agent",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        3,
+        9,
+        25,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "land",
+      "purpose": "Loki Agent's prancing unicorn: landing, front hooves down"
+    },
+    {
+      "id": 13007,
+      "key": "agent.unicorn-rear",
+      "path": "hires/agent/unicorn-rear.png",
+      "kind": "agent",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        6,
+        4,
+        25,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "rear",
+      "purpose": "Loki Agent's unicorn celebrating: rearing on its hind legs"
+    },
+    {
+      "id": 13008,
+      "key": "agent.unicorn-stand",
+      "path": "hires/agent/unicorn-stand.png",
+      "kind": "agent",
+      "width": 32,
+      "height": 32,
+      "density": 6,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        5,
+        6,
+        25,
+        30
+      ],
+      "form": "unicorn",
+      "pose": "stand",
+      "purpose": "Loki Agent's unicorn standing in side view, between moves"
     }
   ],
   "clips": [

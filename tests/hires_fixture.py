@@ -29,12 +29,12 @@ from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools/assets"))
-from build_slice import INVENTORY, SOURCE  # noqa: E402
+from build_slice import AGENT_ONLY, INVENTORY, SOURCE  # noqa: E402
 from sprite_geometry import logical_bounds  # noqa: E402
 
 # Production densities (assets/slice/README.md).
 DENSITIES = {"creatures": 6, "menus": 3, "icons": 6, "meters": 2, "health": 3, "effects": 6,
-             "prizes": 2, "battery": 4}
+             "prizes": 2, "battery": 4, "agent": 6}
 INK = (0x29, 0x1b, 0x35)
 
 
@@ -78,6 +78,9 @@ def legacy_manifest():
     """
     manifest = json.loads((SOURCE / "assets.json").read_text())
     for asset in manifest["assets"]:
+        if asset["kind"] in AGENT_ONLY:  # High-resolution only: kept exactly as shipped.
+            asset["source_path"] = asset["path"]
+            continue
         source_path = legacy_file(asset)
         asset.pop("density", None)
         asset["source_path"] = source_path
@@ -100,6 +103,11 @@ def make_source(destination, legacy=False, densities=None):
     manifest = legacy_manifest()
     for asset in manifest["assets"]:
         original = SOURCE / asset.pop("source_path")
+        if asset["kind"] in AGENT_ONLY:
+            target = destination / asset["path"]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(original, target)
+            continue
         density = densities.get(asset["kind"])
         if density is not None:
             asset["path"] = f"hires/{asset['kind']}/{Path(asset['path']).name}"

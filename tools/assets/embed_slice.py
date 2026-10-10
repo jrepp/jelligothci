@@ -12,7 +12,7 @@ RGB565 + 8-bit straight alpha, their density, and no mask.
 import argparse
 from pathlib import Path
 
-from build_slice import SOURCE, density_of, is_hires, load_assets, pack_mask, runtime_planes
+from build_slice import AGENT_ONLY, SOURCE, density_of, is_hires, load_assets, pack_mask, runtime_planes
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -46,9 +46,12 @@ def descriptor(asset, pixels, mask, stride, alpha):
 
 
 def selected(asset, keys):
-    """Whether an asset is embedded: all of them without key prefixes, else only
-    matching keys. The font always is, because jelli_asset_glyph reads it."""
-    return not keys or asset["kind"] == "font" or any(asset["key"].startswith(key) for key in keys)
+    """Whether an asset is embedded: without key prefixes every asset but the agent's
+    own art (the pet's set), else only matching keys. The font always is, because
+    jelli_asset_glyph reads it."""
+    if not keys:
+        return asset["kind"] not in AGENT_ONLY
+    return asset["kind"] == "font" or any(asset["key"].startswith(key) for key in keys)
 
 
 def generate(output, source=SOURCE, keys=()):

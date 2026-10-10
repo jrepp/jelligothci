@@ -42,7 +42,9 @@ with tempfile.TemporaryDirectory() as folder:
         assert result.returncode == 0, (name, result.stderr)
         decoded = [tuple(map(int, line.split())) for line in result.stdout.splitlines()]
         manifest = json.loads((source / "assets.json").read_text())
-        expected = sorted((a["id"], a.get("density", 1), int("density" in a)) for a in manifest["assets"])
+        # The pet's live pack leaves out Loki Agent's own art.
+        expected = sorted((a["id"], a.get("density", 1), int("density" in a)) for a in manifest["assets"]
+                          if a["kind"] not in live_assets.AGENT_ONLY)
         assert decoded == expected, name
         # Stale metadata: nudge the first record's (1001) centroid by 1/256 pixel.
         tampered = bytearray(data)
@@ -88,8 +90,10 @@ def mutate_image(image, rng, hires):
 def mutated_pack(folder, seed):
     rng = random.Random(seed)
     manifest = json.loads((SLICE / "assets.json").read_text())
-    hires = [a for a in manifest["assets"] if "density" in a]
-    legacy = [a for a in manifest["assets"] if "density" not in a and a["kind"] != "font"]
+    # The pet's pack: Loki Agent's own art never goes in it.
+    pet = [a for a in manifest["assets"] if a["kind"] not in live_assets.AGENT_ONLY]
+    hires = [a for a in pet if "density" in a]
+    legacy = [a for a in pet if "density" not in a and a["kind"] != "font"]
     chosen = rng.sample(hires, 6) + rng.sample(legacy, 1)
     source = folder / f"mutated-{seed}"
     for asset in chosen:

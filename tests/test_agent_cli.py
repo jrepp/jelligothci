@@ -295,6 +295,20 @@ class CommandLineTests(unittest.TestCase):
             agent.main()
         self.assertEqual(raised.exception.code, 2)
 
+    def test_ui_prance_names_a_routine(self):
+        for routine in ("wander", "celebrate"):
+            with self.subTest(routine=routine):
+                args = self.args(command="ui", action="prance", routine=routine)
+                self.assertEqual(agent.command_line(args), (f"ui prance {routine}", 0.0))
+        for arguments in (["ui", "prance", "dance"], ["ui", "spin", "wander"], ["ui", "prance"],
+                          ["ui", "prance", "wander;boot"]):
+            with self.subTest(arguments=arguments):
+                argv = ["loki-agent", "--port", "/dev/null", *arguments]
+                with unittest.mock.patch.object(sys, "argv", argv), \
+                        contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+                    agent.main()
+                self.assertEqual(raised.exception.code, 2)
+
     def test_render_bench_waits_for_its_duration(self):
         for mode in ("full", "bob", "patch"):
             with self.subTest(mode=mode):
@@ -442,6 +456,7 @@ class SetupCommandTests(unittest.TestCase):
                 self.assertAlmostEqual(agent.command_line(self.args(**values))[1], extra)
 
 
+
 class LinkCommandTests(unittest.TestCase):
     """Pairing state and the link commands for trying the bridge without the interface."""
 
@@ -470,6 +485,65 @@ class LinkCommandTests(unittest.TestCase):
             with self.subTest(action=action, value=value):
                 with self.assertRaises(agent.AgentError):
                     agent.command_line(self.args(command="loki", action=action, value=value))
+
+
+class UiCommandTests(unittest.TestCase):
+    """`ui prance` end to end through main(): the exact request on the wire, the
+    device's answer printed, and its refusals reported as failures."""
+
+    def run_main(self, arguments, reply):
+        class FakeSerial:
+            written = b""
+
+            def __init__(self, **_):
+                self.pending = b""
+
+            def open(self):
+                pass
+
+            def close(self):
+                pass
+
+            def write(self, data):
+                FakeSerial.written += data
+                self.pending += b"\n" + data[:data.index(b" ", 4) + 1] + reply + b"\n"
+                return len(data)
+
+            @property
+            def in_waiting(self):
+                return len(self.pending)
+
+            def read(self, size):
+                data, self.pending = self.pending[:size], self.pending[size:]
+                return data
+
+        fake = type(sys)("serial")
+        fake.Serial, fake.SerialException = FakeSerial, OSError
+        argv = ["loki-agent", "--port", "/dev/null", "--timeout", "1", *arguments]
+        with unittest.mock.patch.dict(sys.modules, {"serial": fake}), \
+                unittest.mock.patch.object(sys, "argv", argv), \
+                contextlib.redirect_stdout(io.StringIO()) as out, \
+                contextlib.redirect_stderr(io.StringIO()) as err:
+            code = agent.main()
+        return code, FakeSerial.written, out.getvalue(), err.getvalue()
+
+    def test_a_routine_is_one_request_and_its_length_is_printed(self):
+        for routine, ms in (("wander", 6400), ("celebrate", 3850)):
+            with self.subTest(routine=routine):
+                reply = ('{"ok":true,"ms":%d}' % ms).encode()
+                code, written, out, _ = self.run_main(["ui", "prance", routine], reply)
+                self.assertEqual(code, 0)
+                self.assertRegex(written, rb"^@A1 [1-9]\d* ui prance " + routine.encode() + rb"\n$")
+                self.assertEqual(json.loads(out), {"ok": True, "ms": ms})
+
+    def test_the_devices_refusals_fail_the_command(self):
+        # ui.c: "unavailable" when the unicorn's art or PSRAM is missing, "syntax" otherwise.
+        for error in ("unavailable", "syntax"):
+            with self.subTest(error=error):
+                reply = ('{"ok":false,"error":"%s"}' % error).encode()
+                code, _, out, err = self.run_main(["ui", "prance", "wander"], reply)
+                self.assertEqual((code, out), (1, ""))
+                self.assertIn(error, err)
 
 
 if __name__ == "__main__":
