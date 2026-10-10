@@ -16,6 +16,43 @@ Local runs only write PNGs, `assets.json` bounds and `clips`,
 Commit the changes yourself. Behaviour saves need `cmake` on the path. For trials, `--assets` and `--content` serve copies of `assets/slice`
 and `content/`. A run with `--assets` but no `--content` cannot edit creature data.
 
+## Page shell
+
+`shell.js` loads before the other page scripts, both in Jelli Art and in the
+static page that `tools/assets/compare_slice.py` writes. It provides:
+
+- Landmarks (header, mode `nav`, the asset `aside`, `main`) and a skip link.
+- Mode tabs (Review, Paint, Creature, Behaviour and any other `#views`
+  button). Arrow keys, Home and End move between tabs.
+- Deep links: `#paint`, `#creature`, `#behaviour`, `#review`, or
+  `#view=sheet&key=icons.feed&mode=diff&zoom=8`.
+- One polite live region and toasts for save results, errors, stale files,
+  git push problems and a lost server connection.
+- An unsaved changes button that lists edits and opens their mode. The page
+  warns before closing with unsaved edits.
+- System, dark, light and high-contrast themes. The page follows
+  `prefers-color-scheme`, `prefers-contrast` and `prefers-reduced-motion`.
+- A **?** overlay listing shortcuts, and a dismissible **Getting started**
+  guide. The **Guide** button shows it again.
+
+Panels use `window.JelliShell`, which exists when their script loads:
+
+| Call | Effect |
+| --- | --- |
+| `registerShortcuts(section, [{keys: ['Mod+S'], description}])` | Lists shortcuts in the ? overlay. Registering a section again replaces it. `keys` lists alternatives, `+` joins a chord and `Mod` is ⌘ or Ctrl. Key handling stays in the panel. |
+| `notify(text, {tone, sticky, hint, id})` | Shows a toast and announces it. Tones are `info`, `ok`, `warn` and `bad`; `bad` stays until dismissed. Reusing an `id` replaces that toast. `Studio.status()` calls this. |
+| `announce(text)` | Speaks text through the live region without a toast. |
+| `dialog({title, body, actions: [{label, value, primary, danger}], onOpen})` | Opens a modal `<dialog>`. Resolves with the chosen `value`, or `null` for Escape. Focus returns to the opener. |
+| `confirm(message, {title, confirmLabel, danger})` | Resolves `true` or `false`. |
+| `registerDirty(id, {label, mode, check})` | Adds unsaved state: `check()` returns a count or boolean. |
+| `registerMode({id, label, view})` | Adds a tab that shows `state.view === view`. A button added to `#views` gets a tab automatically. |
+| `activateMode(id)`, `openHelp()`, `setTheme('auto'\|'dark'\|'light'\|'contrast')`, `showGuide(bool)` | Switch mode, open the overlay, change the theme, show or hide the guide. |
+
+Space or Enter on a button reached with the keyboard activates it. After a
+click, holding Space still peeks at the before image. An element with
+`role="button"` that has no `onkeydown` handler also gets Enter and Space. For
+browser automation, `localStorage['jelli-shell:guide'] = 'false'` hides the guide.
+
 ## Creature clips
 
 The **Creature** view edits the per-pose clips in `assets.json` (`clips`, keyed
