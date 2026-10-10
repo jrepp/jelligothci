@@ -14,4 +14,5 @@ bool jelli_game_window(const JelliPet *pet, uint64_t *remaining_ticks);
 JelliEventSnapshot jelli_game_observe(const JelliGame *game, const JelliPet *pet);
 void jelli_game_emit(JelliGame *game, JelliEventKind kind, unsigned code, JelliResult result,
                      uint32_t value, const JelliPet *pet, JelliEventSnapshot before);
+JelliResult jelli_game_command_impl(JelliGame *game, JelliCommand command);
 #endif

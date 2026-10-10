@@ -324,6 +324,15 @@ static bool header_valid(const uint8_t *bytes, size_t size)
            bytes[6] == SAVE_HEADER_SIZE && bytes[7] == 0u;
 }
 
+static bool migrate_game(JelliGame *game, unsigned version)
+{
+    if (version < 8u) {
+        jelli_collection_merge_starters(game);
+        jelli_collection_unlock(game);
+    }
+    return jelli_game_valid(game);
+}
+
 bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t size,
                                  JelliSave *candidate)
 {
@@ -353,8 +362,8 @@ bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t s
         candidate->game.resume_remaining_ms != 0u || candidate->game.backlog_ms >= 100u ||
         !jelli_game_valid(&candidate->game))
         return false;
-    if (reader.version < 4u)
-        jelli_collection_unlock(&candidate->game);
+    if (!migrate_game(&candidate->game, reader.version))
+        return false;
     *save = *candidate;
     return true;
 }

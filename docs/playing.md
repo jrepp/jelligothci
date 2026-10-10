@@ -361,9 +361,14 @@ pet details. Bring out activates that pet; browsing and viewing Evolutions do
 not switch pets. Back returns to the previous collection view. Linked sleep and
 unfinished activities block activation, with a reason shown in the detail view.
 
-Both existing companions remain owned. The testing catalog adds Bubble, Garden,
-Pearl, Sunny, Tea, Movie, and Moon companions, unlocked by discovering their named
-present. They currently share the same Mint → Lilac artwork and 60-second prototype
+Mint and Lilac occupy one Jelli family slot. A new game starts with Mint;
+growth unlocks Lilac. In Evolutions, tap either unlocked form to select it,
+even while sleeping or busy. The selected form persists without losing care
+state or immediately evolving back. Locked forms cannot be selected.
+
+The testing catalog adds Friend, Bubble, Garden, Pearl, Sunny, Tea, Movie, and
+Moon families, unlocked by discovering their named present. Friend uses the
+Friendship Bow unlock. They currently share the same Mint → Lilac artwork and 60-second prototype
 growth rule. Evolution preserves identity and the collection slot. Stored pets
 remain frozen. NEW marks a newly acquired companion until its details are viewed.
 
@@ -377,12 +382,15 @@ and compiles it for both hosts without a new runtime loader. Entry IDs 1–9 are
 stable slot bindings; do not renumber them. This slice supports the existing
 two-form evolution set; unsupported form/set references fail the build.
 
-Save codec v7 reads v1–v6 and preserves all legacy identities, active selection,
-and present provenance. Legacy records map in stored order to unique slots;
-only the current form is marked reached when earlier history is unavailable.
+Save codec v8 reads v1–v7. The two legacy starter records merge into one Jelli
+slot: the active starter keeps its identity and full care state (otherwise the
+first starter is retained), and their reached forms are combined. Present
+origins and the linked sleep journal follow the retained identity. Other family
+records keep their state. A legacy Lilac also unlocks its Mint ancestor. The
+inactive duplicate starter's separate care history is not retained.
 Existing present discoveries can grant missing companions during migration.
 A full nine-pet checkpoint uses 3569 of the available 4096 bytes. Older firmware
-cannot read v7; keep a backup before downgrading.
+cannot read v8; keep a backup before downgrading.
 
 
 ## Food, water, and exercise

@@ -28,8 +28,8 @@ include(cmake/JelliFood.cmake)
 jelli_food_data(food_data)
 include(cmake/JelliExercise.cmake)
 jelli_exercise_data(exercise_data)
-add_library(jelli_core STATIC ${exercise_data} ${food_data} ${collection_data} core/collection.c core/nutrition.c core/engine.c core/gesture.c core/render.c core/animation.c
-  core/prizes.c core/habits.c core/sleep_log.c core/tunables.c core/sound.c core/particles.c core/game.c core/events.c core/personality.c core/game_events.c core/game_commands.c core/game_time.c core/game_advance.c core/save.c)
+add_library(jelli_core STATIC ${exercise_data} ${food_data} ${collection_data} core/collection_migrate.c core/collection.c core/nutrition.c core/engine.c core/gesture.c core/render.c core/animation.c
+  core/prizes.c core/habits.c core/sleep_log.c core/tunables.c core/sound.c core/particles.c core/game.c core/events.c core/personality.c core/game_events.c core/game_api.c core/game_commands.c core/game_time.c core/game_advance.c core/save.c)
 target_include_directories(jelli_core PUBLIC include)
 add_executable(jelli_sound_export tools/audio/export.c)
 target_link_libraries(jelli_sound_export PRIVATE jelli_core)

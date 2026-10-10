@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/pet_ui.h"
 #include "jelli/save.h"
 #include <stdio.h>
@@ -34,7 +35,7 @@ static void test_clicker(void)
     for (unsigned kind = 0; kind < 5u; ++kind) {
         JelliGame g;
         JelliPetUi ui;
-        jelli_game_init(&g);
+        test_game_pair(&g);
         jelli_pet_ui_init(&ui);
         JelliSurface s = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
         press(&ui, &g, 0u);
@@ -82,7 +83,7 @@ static void test_cached_centroid(void)
 {
     JelliGame g;
     JelliPetUi ui;
-    jelli_game_init(&g);
+    test_game_pair(&g);
     jelli_pet_ui_init(&ui);
     JelliSurface s = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
     ui.menu_open = true;
@@ -112,7 +113,7 @@ static void test_activity_reaction_priority(void)
 {
     JelliGame game;
     JelliPetUi ui;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     jelli_pet_ui_init(&ui);
     JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
     JelliPet *pet = &game.pets[0];
@@ -141,7 +142,7 @@ static void test_atmosphere_and_sound(void)
 {
     JelliGame g;
     JelliPetUi ui;
-    jelli_game_init(&g);
+    test_game_pair(&g);
     jelli_pet_ui_init(&ui);
     JelliSurface s = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
     ui.clock_known = true;
@@ -183,7 +184,7 @@ static void test_routine_tuning(void)
 {
     JelliGame g;
     JelliPetUi ui;
-    jelli_game_init(&g);
+    test_game_pair(&g);
     jelli_pet_ui_init(&ui);
     CHECK(jelli_tunable_set(&ui.tunables, 0u, JELLI_TUNE_BRUSH_MIN, 3u));
     CHECK(jelli_tunable_set(&ui.tunables, 0u, JELLI_TUNE_BRUSH_MAX, 3u));
@@ -204,7 +205,7 @@ static void test_idle_coos(void)
 {
     JelliGame game;
     JelliPetUi ui;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     jelli_pet_ui_init(&ui);
     JelliPet *pet = &game.pets[0];
     CHECK(jelli_pet_ui_sound(&ui, pet, 0u) == 0u);
@@ -230,7 +231,7 @@ static void test_idle_coos(void)
 static void test_health_cooldowns(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     JelliPet *pet = &game.pets[0];
     JelliCommand shot = {JELLI_CMD_HEALTH, pet->id, 2u};
     unsigned goal = jelli_pet_shot_goal(pet);

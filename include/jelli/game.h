@@ -51,7 +51,8 @@ typedef enum {
     JELLI_CMD_WATER,
     JELLI_CMD_EXERCISE,
     JELLI_CMD_VOLUME,
-    JELLI_CMD_REFILL_FOOD
+    JELLI_CMD_REFILL_FOOD,
+    JELLI_CMD_FORM
 } JelliCommandKind;
 typedef enum {
     JELLI_OK,
@@ -110,8 +111,9 @@ typedef struct {
 typedef struct {
     JelliCommandKind kind;
     uint32_t actor_id;
-    /* VOLUME: 0..100 master level. FEED: food catalog ID (0 is the legacy meal). ACTIVATE: stable
-     * ID; TRAVEL: 0/1; BEDTIME: 0..23. MOMENT: breakfast/tea/outing/movie 0..3. HEALTH:
+    /* FORM: unlocked 0/1 for actor_id (active or stored). VOLUME: 0..100 master level. FEED: food
+     * catalog ID (0 is the legacy meal). ACTIVATE: stable ID; TRAVEL: 0/1; BEDTIME: 0..23. MOMENT:
+     * breakfast/tea/outing/movie 0..3. HEALTH:
      * brush/medicine/shot/wash/stretch/floss/mouthwash/spit/cleanup 0..8. */
     uint32_t value;
 } JelliCommand;

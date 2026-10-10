@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/game.h"
 
 #include <stdio.h>
@@ -29,7 +30,7 @@ static void advance_ms(JelliGame *game, uint64_t milliseconds)
 static void initialization_and_validation(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     CHECK(jelli_game_valid(&game));
     CHECK(game.count == 2u && game.active == 0u && game.food == 5u && game.gifts == 3u);
     CHECK(game.pets[0].id == 1u && game.pets[1].id == 2u);
@@ -49,7 +50,7 @@ static void initialization_and_validation(void)
 static void feed_reward_and_full_claim(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.food = JELLI_STACK_LIMIT;
     CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_OK);
     CHECK(game.food == JELLI_STACK_LIMIT);
@@ -76,7 +77,7 @@ static void feed_reward_and_full_claim(void)
 static void other_care_effects(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     uint16_t amusement = game.pets[0].needs[JELLI_AMUSEMENT];
     CHECK(command(&game, JELLI_CMD_PLAY, 1u, 0u) == JELLI_OK);
     advance_ms(&game, 8000u);
@@ -95,7 +96,7 @@ static void other_care_effects(void)
 static void zero_inventory_recovery(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.food = 0u;
     game.gifts = 0u;
     for (size_t i = 0u; i < JELLI_NEED_COUNT; ++i)
@@ -119,7 +120,7 @@ static void zero_inventory_recovery(void)
 static void care_cancels_and_wakes_without_cost(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.pets[0].needs[JELLI_SATIETY] = 100u;
     CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_OK);
     CHECK(command(&game, JELLI_CMD_CARE, 1u, 0u) == JELLI_OK);
@@ -138,7 +139,7 @@ static void care_cancels_and_wakes_without_cost(void)
 static void rate_remainders_and_sleep_transition(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     advance_ms(&game, 30000u);
     CHECK(game.pets[0].needs[JELLI_SATIETY] == 500u);
     CHECK(game.pets[0].needs[JELLI_ENERGY] == 698u);
@@ -155,7 +156,7 @@ static void rate_remainders_and_sleep_transition(void)
 static void energy_remainder_survives_direction_change(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     advance_ms(&game, 29900u);
     CHECK(game.pets[0].needs[JELLI_ENERGY] == 699u);
     CHECK(game.pets[0].need_remainders[JELLI_ENERGY] == 596u);
@@ -169,7 +170,7 @@ static void energy_remainder_survives_direction_change(void)
 static void neglect_survives_nap_and_wake_grace(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.pets[0].needs[JELLI_SATIETY] = 100u;
     game.pets[0].hunger_low = true;
     game.pets[0].hunger_counted = true;
@@ -198,7 +199,7 @@ static void neglect_survives_nap_and_wake_grace(void)
 static void bedtime_blocks_optional_actions(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.pets[0].ticks = UINT64_C(13) * 36000u;
     CHECK(jelli_game_valid(&game));
     CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_BUSY);
@@ -209,7 +210,7 @@ static void bedtime_blocks_optional_actions(void)
 static void manual_wake_overrides_bedtime_window(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.pets[0].ticks = UINT64_C(13) * 36000u;
     CHECK(command(&game, JELLI_CMD_REST, 1u, 0u) == JELLI_OK);
     CHECK(game.pets[0].asleep && !game.pets[0].scheduled_sleep);
@@ -221,7 +222,7 @@ static void manual_wake_overrides_bedtime_window(void)
 static void clock_saturation_is_safe(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.pets[0].ticks = UINT64_MAX;
     game.pets[0].phase_offset =
         (uint32_t)((JELLI_DAY_TICKS + UINT32_C(324000) - (uint32_t)(UINT64_MAX % JELLI_DAY_TICKS)) %
@@ -246,7 +247,7 @@ static void randomized_valid_commands_and_time(void)
 {
     JelliGame game;
     uint32_t random_state = UINT32_C(0x51a7c0de);
-    jelli_game_init(&game);
+    test_game_pair(&game);
     for (uint16_t i = 0u; i < 500u; ++i) {
         uint32_t value = next_random(&random_state);
         uint32_t command_value = value;
@@ -270,7 +271,7 @@ static void randomized_valid_commands_and_time(void)
 static void sleep_and_stored_freeze(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     game.pets[0].ticks = UINT64_C(13) * 36000u - 1u;
     game.pets[0].awake_until = 0u;
     advance_ms(&game, 100u);
@@ -294,7 +295,7 @@ static void evolution_and_live_bounds(void)
 {
     JelliGame fast;
     JelliGame slow;
-    jelli_game_init(&fast);
+    test_game_pair(&fast);
     slow = fast;
     advance_ms(&fast, 60000u);
     for (uint16_t i = 0u; i < 600u; ++i)
@@ -309,7 +310,7 @@ static void evolution_and_live_bounds(void)
 static void capped_resume_and_command_lock(void)
 {
     JelliGame game;
-    jelli_game_init(&game);
+    test_game_pair(&game);
     uint64_t original = game.pets[0].ticks;
     jelli_game_resume_begin(&game, JELLI_OFFLINE_CAP_MS + 1000u);
     CHECK(game.resuming && game.resume_remaining_ms == JELLI_OFFLINE_CAP_MS);

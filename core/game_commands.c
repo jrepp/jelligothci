@@ -1,3 +1,4 @@
+#include "jelli/collection.h"
 #include "game_internal.h"
 #include "jelli/nutrition.h"
 
@@ -320,6 +321,8 @@ static JelliResult start_exercise(JelliPet *pet)
 static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliPet *pet)
 {
     switch (command.kind) {
+    case JELLI_CMD_FORM:
+        return jelli_collection_set_form(game, command.actor_id, command.value);
     case JELLI_CMD_EXERCISE:
         return start_exercise(pet);
     case JELLI_CMD_WATER:
@@ -360,36 +363,14 @@ static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliP
     return JELLI_INVALID_TARGET;
 }
 
-static JelliResult command_impl(JelliGame *game, JelliCommand command)
+JelliResult jelli_game_command_impl(JelliGame *game, JelliCommand command)
 {
     if (!jelli_game_valid(game))
         return JELLI_INVALID_TARGET;
     if (game->resuming)
         return JELLI_BUSY;
     JelliPet *pet = &game->pets[game->active];
-    if (pet->id != command.actor_id)
+    if (pet->id != command.actor_id && command.kind != JELLI_CMD_FORM)
         return JELLI_INVALID_TARGET;
     return dispatch_action(game, command, pet);
-}
-
-JelliResult jelli_game_command(JelliGame *game, JelliCommand command)
-{
-    if (!jelli_game_valid(game))
-        return JELLI_INVALID_TARGET;
-    JelliEventSnapshot before = jelli_game_observe(game, &game->pets[game->active]);
-    JelliResult result = command_impl(game, command);
-    if (result == JELLI_OK)
-        jelli_game_preference(game, command);
-    jelli_game_emit(game, JELLI_EVENT_COMMAND, (unsigned)command.kind, result, command.value,
-                    &game->pets[game->active], before);
-    return result;
-}
-
-JelliResult jelli_game_check(const JelliGame *game, JelliCommand command, JelliGame *scratch)
-{
-    if (!game || !scratch || game == scratch)
-        return JELLI_INVALID_TARGET;
-    *scratch = *game;
-    scratch->events = NULL;
-    return command_impl(scratch, command);
 }

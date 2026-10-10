@@ -17,5 +17,7 @@ extern const uint32_t jelli_collection_growth_ticks;
 int jelli_collection_find(const JelliGame *game, unsigned entry);
 void jelli_collection_unlock(JelliGame *game);
 void jelli_collection_migrate(JelliGame *game);
+void jelli_collection_merge_starters(JelliGame *game);
+JelliResult jelli_collection_set_form(JelliGame *game, uint32_t id, uint32_t form);
 bool jelli_collection_valid(const JelliGame *game);
 #endif

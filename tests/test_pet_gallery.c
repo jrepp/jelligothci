@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/pet_engine.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +41,7 @@ static void reset(void)
     now = 0u;
     CHECK(jelli_pet_init(&engine, (JelliPlatform){.now_ms = clock_ms, .present = present},
                          (JelliSurface){pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}}));
+    test_game_pair(&engine.game);
     frame();
 }
 
@@ -168,7 +170,7 @@ static void put_away_and_browse(void)
     press(2u);
     CHECK(engine.ui.page == JELLI_UI_EVOLUTIONS);
     press(2u);
-    CHECK(engine.ui.selected_form == 1u && engine.game.active == 0u);
+    CHECK(engine.ui.result == JELLI_NOT_READY && engine.game.active == 0u);
     press(0u);
     press(0u);
     press(2u);
@@ -226,8 +228,26 @@ static void snapshot_grid(void)
     snapshot("present-action.ppm");
 }
 
+static void select_unlocked_forms(void)
+{
+    reset();
+    engine.game.pets[0].form = 1u;
+    engine.game.pets[0].reached_forms = 3u;
+    CHECK(jelli_game_command(&engine.game, (JelliCommand){JELLI_CMD_REST, 1u, 0u}) == JELLI_OK);
+    engine.ui.menu_open = true;
+    engine.ui.page = JELLI_UI_EVOLUTIONS;
+    engine.ui.selected_pet = 1u;
+    frame();
+    press(1u);
+    CHECK(engine.game.pets[0].form == 0u && engine.game.pets[0].asleep);
+    CHECK(engine.ui.save_requested && engine.ui.page == JELLI_UI_EVOLUTIONS);
+    press(2u);
+    CHECK(engine.game.pets[0].form == 1u && engine.game.pets[0].reached_forms == 3u);
+}
+
 int main(void)
 {
+    select_unlocked_forms();
     put_away_and_browse();
     gifts_open_all_nine_slots();
     catch_hold_switch_and_give();

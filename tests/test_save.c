@@ -1,3 +1,4 @@
+#include "game_fixture.h"
 #include "jelli/save.h"
 
 #include <stdio.h>
@@ -51,7 +52,7 @@ static JelliSave fixture(void)
     JelliSave save = {.sequence = UINT64_C(0x123456789abcdef0),
                       .anchor_ms = UINT64_C(0x1020304050607080),
                       .anchor_valid = true};
-    jelli_game_init(&save.game);
+    test_game_pair(&save.game);
     save.game.ticks = 12000u;
     save.game.discarded_ms = 1800u;
     save.game.backlog_ms = 50u;

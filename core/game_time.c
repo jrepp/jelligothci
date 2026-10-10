@@ -220,7 +220,8 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
 
 static void evolve_if_due(JelliPet *pet)
 {
-    if (pet->form == 0u && pet->stage_ticks >= jelli_collection_growth_ticks) {
+    if (pet->form == 0u && !(pet->reached_forms & 2u) &&
+        pet->stage_ticks >= jelli_collection_growth_ticks) {
         pet->stage_ticks -= jelli_collection_growth_ticks;
         pet->form = 1u;
         pet->reached_forms |= 3u;

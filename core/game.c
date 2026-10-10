@@ -34,7 +34,7 @@ void jelli_game_init(JelliGame *game)
     if (game == NULL)
         return;
     *game = (JelliGame){.volume = JELLI_VOLUME_DEFAULT};
-    game->count = 2u;
+    game->count = 1u;
     game->food = 5u;
     game->gifts = 3u;
     game->pets[0] = (JelliPet){.id = 1u,
@@ -44,18 +44,6 @@ void jelli_game_init(JelliGame *game)
                                .bedtime = 22u,
                                .sleep_duration = 288000u,
                                .random_state = 1u,
-                               .needs = {500u, 700u, 700u, 500u, 500u},
-                               .bond = 100u,
-                               .hydration = 700u,
-                               .health = JELLI_WELL,
-                               .activity = JELLI_IDLE};
-    game->pets[1] = (JelliPet){.id = 2u,
-                               .collection_entry = 2u,
-                               .reached_forms = 1u,
-                               .phase_offset = 324000u,
-                               .bedtime = 22u,
-                               .sleep_duration = 288000u,
-                               .random_state = 2u,
                                .needs = {500u, 700u, 700u, 500u, 500u},
                                .bond = 100u,
                                .hydration = 700u,
@@ -125,7 +113,8 @@ static bool pet_recovery_valid(const JelliPet *pet)
 static bool pet_lifecycle_valid(const JelliPet *pet)
 {
     if ((pet->reward_pending && pet->reward_claimed) ||
-        (pet->form == 0u && pet->stage_ticks >= jelli_collection_growth_ticks) ||
+        (pet->form == 0u && !(pet->reached_forms & 2u) &&
+         pet->stage_ticks >= jelli_collection_growth_ticks) ||
         (pet->hunger_counted && !pet->hunger_low) ||
         (!pet->hunger_low && (pet->hunger_counted || pet->hunger_due != 0u)))
         return false;
@@ -145,7 +134,7 @@ static bool pet_valid(const JelliPet *pet)
 static bool game_header_valid(const JelliGame *game)
 {
     return game != NULL && jelli_sleep_log_valid(&game->sleep_log) &&
-           jelli_prizes_valid(&game->prizes) && game->count >= 2u &&
+           jelli_prizes_valid(&game->prizes) && game->count >= 1u &&
            game->count <= JELLI_PET_CAPACITY && game->active < game->count &&
            game->food <= JELLI_STACK_LIMIT && game->gifts <= JELLI_STACK_LIMIT &&
            game->backlog_ms <= 2000u && game->resume_remaining_ms <= JELLI_OFFLINE_CAP_MS &&
