@@ -8,6 +8,7 @@ so art changes never move a baseline. The server gets an empty PATH, so capabili
 sets: the linux/amd64 Playwright image is the reference renderer. JELLI_UI_UPDATE=1 rewrites the
 aria and axe baselines instead of comparing.
 """
+import fcntl
 import io
 import json
 import os
@@ -35,6 +36,7 @@ VIEWS = FIXTURE["views"]
 VIEWPORTS = FIXTURE["viewports"]
 CASES = [(view, viewport) for view in VIEWS for viewport in VIEWPORTS]
 BUDGET = {}  # "view@viewport" -> share of the viewport given to the view's primary surface
+NOTES = []  # printed after the run, such as baselines that can be lowered
 
 # Header items that change with the checkout (commit list, version, git state) stay out of baselines.
 VOLATILE = ["#before-ref", "#live-badge", "#git-status", "#studio-status", "#shell-toasts"]
@@ -75,6 +77,13 @@ def browser_type_launch_args(browser_type_launch_args):
 @pytest.fixture(scope="session")
 def studio():
     """URL of a jelli_art.py process serving the pinned data, with a copy of it as the before image."""
+    # DATA is a fixed path, so concurrent runs on one machine take turns.
+    lock = open(f"{DATA}.lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print(f"Waiting for another UI test run to release {DATA}.lock", file=sys.stderr)
+        fcntl.flock(lock, fcntl.LOCK_EX)
     shutil.rmtree(DATA, ignore_errors=True)
     extract_data(DATA)
     shutil.copytree(DATA / "assets/slice", DATA / "before")
@@ -104,6 +113,7 @@ def studio():
     proc.terminate()
     proc.wait(timeout=10)
     log.close()
+    lock.close()
 
 
 @pytest.fixture
@@ -144,6 +154,10 @@ def open_view(studio, browser):
 
 
 def pytest_terminal_summary(terminalreporter):
+    if NOTES:
+        terminalreporter.section("Notes")
+        for note in NOTES:
+            terminalreporter.write_line(note)
     if not BUDGET:
         return
     OUT.mkdir(parents=True, exist_ok=True)

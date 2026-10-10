@@ -26,6 +26,10 @@ if [[ "${JELLI_UI_CONTAINER:-}" == 1 ]]; then
 fi
 
 if [[ "${JELLI_UI_LOCAL:-}" == 1 ]]; then
+    if [[ "${JELLI_UI_UPDATE:-}" == 1 ]]; then
+        echo "Baselines come from the pinned image: run JELLI_UI_UPDATE=1 without JELLI_UI_LOCAL" >&2
+        exit 2
+    fi
     # Browsers go in the repository's .tools/, not a global cache.
     export PLAYWRIGHT_BROWSERS_PATH="$repo_dir/.tools/ms-playwright"
     cd "$repo_dir"
