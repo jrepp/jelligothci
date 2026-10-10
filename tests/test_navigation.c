@@ -175,9 +175,36 @@ static void volume_controls(void)
     CHECK(game.volume == 20u && ui.page == JELLI_UI_SETTINGS && ui.menu_open);
 }
 
+static void refill_food(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    game.food = 0u;
+    ui.menu_open = true;
+    ui.page = JELLI_UI_FOOD;
+    CHECK(jelli_pet_ui_available(&ui, &game, 1u) == JELLI_NO_ITEM);
+    CHECK(jelli_pet_ui_available(&ui, &game, 9u) == JELLI_OK);
+    CHECK(game.food == 0u);
+    jelli_pet_ui_tap(&ui, &game, 329, 322);
+    CHECK(game.food == 5u && ui.save_requested);
+    CHECK(ui.page == JELLI_UI_FOOD && ui.menu_open);
+    CHECK(jelli_pet_ui_available(&ui, &game, 9u) == JELLI_FULL);
+    jelli_pet_ui_tap(&ui, &game, 329, 322);
+    CHECK(game.food == 5u);
+    CHECK(jelli_pet_ui_available(&ui, &game, 1u) == JELLI_OK);
+    jelli_pet_ui_tap(&ui, &game, 137, 130);
+    CHECK(game.pets[0].activity == JELLI_EATING && !ui.menu_open);
+    for (unsigned i = 0u; i < 10u; ++i)
+        jelli_game_advance(&game, 500u);
+    CHECK(game.food == 4u);
+}
+
 int main(void)
 {
     navigation();
+    refill_food();
     volume_controls();
     clock_controls();
     unavailable_actions();

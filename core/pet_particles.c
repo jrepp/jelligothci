@@ -98,6 +98,12 @@ static void draw_sleep(JelliSurface *s, const JelliParticle *p, const JelliAsset
 void jelli_pet_draw_particles(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui)
 {
     JelliParticles *p = &ui->particles;
+    if (ui->menu_open && ui->page == JELLI_UI_FOOD) {
+        /* Entering/leaving this page repaints fully; keep its text unobscured. */
+        p->previous = (JelliRect){0};
+        p->changed = false;
+        return;
+    }
     JelliRect current = jelli_particles_bounds(p);
     JelliRect region = joined(p->previous, current);
     if (!region.width || (!p->changed && !surface->damage.width))

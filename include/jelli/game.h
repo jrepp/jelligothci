@@ -50,7 +50,8 @@ typedef enum {
     JELLI_CMD_TOUCH,
     JELLI_CMD_WATER,
     JELLI_CMD_EXERCISE,
-    JELLI_CMD_VOLUME
+    JELLI_CMD_VOLUME,
+    JELLI_CMD_REFILL_FOOD
 } JelliCommandKind;
 typedef enum {
     JELLI_OK,
