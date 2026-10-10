@@ -574,6 +574,7 @@ class GitTest(unittest.TestCase):
         self.addCleanup(server.stop)
         return server
 
+    @unittest.skipIf(os.name == "nt", "entrypoint.sh is the container's POSIX start script")
     def test_entrypoint_keeps_unlanded_content_and_starts_offline(self):
         content = self.work / "content/creatures.json"
         content.write_text(json.dumps(json.loads(content.read_text()), indent=2) + "\n\n")
@@ -587,6 +588,7 @@ class GitTest(unittest.TestCase):
         self.assertFalse((self.work / ".git/index.lock").exists())
         self.assertTrue(server.get("/api/git")["enabled"])
 
+    @unittest.skipIf(os.name == "nt", "entrypoint.sh is the container's POSIX start script")
     def test_entrypoint_follows_new_base_art_when_studio_has_none(self):
         other = self.other_clone()  # main gains art the idle studio branch never saw
         git(other, "checkout", "--quiet", "main")

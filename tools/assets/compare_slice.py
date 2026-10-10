@@ -37,13 +37,17 @@ def read_before(spec, relative):
     if folder.is_dir():
         path = folder / relative
         return path.read_bytes() if path.exists() else None
-    return git_blob(resolve(spec), relative)
+    commit = resolve(spec)
+    return git_blob(commit, relative) if commit else None
 
 
 def resolve(spec):
-    """Commit SHA for a revision, so cached blobs stay correct when HEAD moves."""
-    result = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--verify", f"{spec}^{{commit}}"],
-                            capture_output=True, text=True, check=False)
+    """Commit SHA for a revision, so cached blobs stay correct when HEAD moves; None without git."""
+    try:
+        result = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--verify", f"{spec}^{{commit}}"],
+                                capture_output=True, text=True, check=False)
+    except OSError:  # git is not installed: there is no history to compare with
+        return None
     if result.returncode:
         raise ValueError(f"Unknown revision: {spec}")
     return result.stdout.strip()

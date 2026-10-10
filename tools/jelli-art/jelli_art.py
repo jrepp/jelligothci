@@ -180,7 +180,10 @@ def creature_profiles():
 
 def refs():
     def git(*args):
-        result = subprocess.run(["git", "-C", str(REPO), *args], capture_output=True, text=True, check=False)
+        try:
+            result = subprocess.run(["git", "-C", str(REPO), *args], capture_output=True, text=True, check=False)
+        except OSError:  # git is not installed
+            return []
         return result.stdout.split("\n") if result.returncode == 0 else []
     commits = [line.split(" ", 1) for line in git("log", "-12", "--format=%h %s") if line]
     return {"tags": [t for t in git("tag", "--sort=-creatordate") if t][:8],

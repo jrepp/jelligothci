@@ -205,10 +205,14 @@ def run_bounded(cmd, cwd, timeout, env=None):
     try:
         out, _ = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
-        try:
-            os.killpg(proc.pid, signal.SIGKILL)
-        except (ProcessLookupError, PermissionError):
-            proc.kill()
+        if os.name == "nt":  # no process groups: end the whole tree by parent
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True, check=False)
+        else:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+        proc.kill()
         proc.communicate()
         return None, f"timed out after {timeout} s"
     return proc.returncode, out
@@ -216,7 +220,9 @@ def run_bounded(cmd, cwd, timeout, env=None):
 
 def build_messages(output, root):
     """(stage, messages) from cmake/generator/compiler output, without call stacks or paths."""
-    text = output.replace(str(root) + os.sep, "")
+    text = output
+    for prefix in {str(root) + os.sep, Path(root).as_posix() + "/"}:  # compilers on Windows print either
+        text = text.replace(prefix, "")
     if "No CMAKE_C_COMPILER could be found" in text or "CMAKE_C_COMPILER not set" in text:
         return "tools", ["No C compiler is installed here, so the engine cannot be built for a preview."]
     if "CMake Error" in text:
