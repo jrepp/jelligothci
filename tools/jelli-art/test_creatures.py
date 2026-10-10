@@ -374,10 +374,15 @@ class ActivityContentTest(unittest.TestCase):
         before = self.snapshot()
         for change in ({'start_minute': 1500}, {'end_minute': 0}, {'duration_s': 0},
                        {'forms': [99]}, {'animation': 'unknown'}, {'requires': 4},
-                       {'icon': 999999}, {'random_weight': 101}, {'name': 'RENAMED'}):
+                       {'icon': 999999}, {'random_weight': 101}, {'name': 'RENAMED'},
+                       {'jitter_pct': 26}, {'costs': {'energy': -1}},
+                       {'gains': {'typo': 10}}, {'locations': ['ocean']}, {'locations': []},
+                       {'locations': ['home', 'home']}, {'randomize_location': 1},
+                       {'bonuses': [{'form': 99, 'percent': 30}]}):
             doc = self.doc('activities')
+            doc['moments'][4]['duration_s'] += 1
             doc['moments'][4].update(change)
-            with self.assertRaises(jelli_art.StudioError):
+            with self.assertRaises(jelli_art.StudioError, msg=repr(change)):
                 self.save(activities=doc)
             self.assertEqual(before, self.snapshot())
 

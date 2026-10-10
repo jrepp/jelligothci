@@ -119,6 +119,7 @@ def behaviour_data():
     return {"activity_data": behaviors.read_json(CONTENT / "activities.json"),
             "activity_sha": profiles.digest(CONTENT / "activities.json"),
             "activity_animations": activities.ANIMATIONS,
+            "activity_locations": (behaviors.read_json(CONTENT / "locations.json") or {}).get("locations", []),
             "behavior_data": behaviors.read_json(path), "behavior_data_sha": profiles.digest(path),
             "behavior_vocab": vocab, "behavior_editable": editable,
             "potty": behaviors.read_json(CONTENT / "potty.json")}

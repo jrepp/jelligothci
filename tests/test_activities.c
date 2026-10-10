@@ -32,33 +32,15 @@ static void finish_activity(JelliGame *game)
     CHECK(game->pets[0].activity == JELLI_IDLE);
 }
 
-/* The former hard-coded moments, now content data, keep their exact effects. */
-static void legacy_moments_unchanged(void)
+static void meals_charge_once(void)
 {
-    static const struct {
-        unsigned id;
-        int need, gain, location;
-    } legacy[] = {{1u, JELLI_SOCIAL, 60, -1},
-                  {1u, JELLI_ENERGY, 100, -1},
-                  {2u, -1, 0, 1},
-                  {3u, JELLI_SOCIAL, 100, -1}};
-    for (unsigned i = 0u; i < sizeof(legacy) / sizeof(legacy[0]); ++i) {
-        JelliGame game, base;
-        jelli_game_init(&game);
-        game.pets[0].needs[JELLI_SOCIAL] = game.pets[0].needs[JELLI_ENERGY] = 300u;
-        base = game;
-        CHECK(moment(&game, legacy[i].id) == JELLI_OK);
-        CHECK(game.pets[0].activity == JELLI_PLAYING && game.pets[0].moment == legacy[i].id + 1u);
-        if (legacy[i].need >= 0)
-            CHECK(game.pets[0].needs[legacy[i].need] >=
-                  base.pets[0].needs[legacy[i].need] + legacy[i].gain);
-        if (legacy[i].location >= 0)
-            CHECK(game.pets[0].location == (uint8_t)legacy[i].location);
-    }
     JelliGame game;
     jelli_game_init(&game);
+    unsigned food = game.food;
     CHECK(moment(&game, 0u) == JELLI_OK && game.pets[0].activity == JELLI_EATING);
-    CHECK(game.pets[0].moment == 1u); /* Meals retain their authored identity until completion. */
+    CHECK(game.food == food - 1u && game.pets[0].moment == 1u);
+    finish_activity(&game);
+    CHECK(game.food == food - 1u && game.pets[0].digesting > 0u);
 }
 
 static void reading_moment(void)
@@ -68,10 +50,11 @@ static void reading_moment(void)
     game.pets[0].needs[JELLI_AMUSEMENT] = game.pets[0].needs[JELLI_SOCIAL] = 200u;
     CHECK(strcmp(jelli_moments[4].name, "READING") == 0 && jelli_moments[4].prop != 0u);
     CHECK(moment(&game, 4u) == JELLI_OK && game.pets[0].moment == 5u);
-    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] > 200u && game.pets[0].needs[JELLI_SOCIAL] > 200u);
+    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] == 200u && game.pets[0].needs[JELLI_SOCIAL] == 200u);
     CHECK(moment(&game, 4u) == JELLI_BUSY);
     finish_activity(&game);
     CHECK(game.pets[0].moment == 0u && jelli_game_valid(&game));
+    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] > 350u && game.pets[0].needs[JELLI_SOCIAL] > 250u);
     CHECK(moment(&game, jelli_moment_count) == JELLI_INVALID_TARGET);
 }
 
@@ -179,6 +162,7 @@ static void random_offers_are_stable(void)
     JelliGame game;
     jelli_game_init(&game);
     game.clock_known = true;
+    game.pets[0].form = 1u; /* All activities are age-appropriate for Lilac. */
     uint32_t seen = 0u;
     for (unsigned hour = 0u; hour < 168u; ++hour) {
         game.clock_minute = (uint16_t)(hour % 24u * 60u);
@@ -255,9 +239,10 @@ int main(void)
     timed_unlocks_and_dessert();
     random_offers_are_stable();
     favorites_match_legacy();
-    legacy_moments_unchanged();
+    meals_charge_once();
     reading_moment();
     potty_cycle();
-    puts("PASS: data-driven moments keep legacy effects; reading and the potty cycle work");
+    puts("PASS: authored moments charge once and reward completion; reading and the potty cycle "
+         "work");
     return 0;
 }

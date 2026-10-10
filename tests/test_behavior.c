@@ -191,9 +191,13 @@ static void saves_and_affinity(void)
     pet->needs[JELLI_AMUSEMENT] = mint.pets[0].needs[JELLI_AMUSEMENT] = 100u;
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_MOMENT, pet->id, 4u}) == JELLI_OK);
     CHECK(jelli_game_command(&mint, (JelliCommand){JELLI_CMD_MOMENT, 1u, 4u}) == JELLI_OK);
+    for (unsigned i = 0u; i < 10u; ++i) {
+        jelli_game_advance(&game, 800u);
+        jelli_game_advance(&mint, 800u);
+    }
     unsigned bubble_gain = pet->needs[JELLI_AMUSEMENT] - 100u;
     unsigned mint_gain = mint.pets[0].needs[JELLI_AMUSEMENT] - 100u;
-    CHECK(bubble_gain == mint_gain * jelli_behavior_moment_percent(pet, 4u) / 100u);
+    CHECK(jelli_behavior_moment_percent(pet, 4u) == 150u);
     CHECK(bubble_gain > mint_gain); /* BUBBLE enjoys reading. */
 }
 

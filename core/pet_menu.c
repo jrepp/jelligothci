@@ -83,9 +83,11 @@ static const char *exercise_hint(const JelliPet *pet)
 {
     if (pet->needs[JELLI_SATIETY] < jelli_exercise.fullness_cost)
         return "CARE > FEED FIRST";
-    if (pet->hydration < jelli_exercise.hydration_cost)
+    if (pet->hydration <
+        jelli_activity_cost(pet, JELLI_ACTIVITY_HYDRATION, jelli_exercise.hydration_cost))
         return "CARE > WATER FIRST";
-    if (pet->needs[JELLI_ENERGY] < jelli_exercise.energy_cost)
+    if (pet->needs[JELLI_ENERGY] <
+        jelli_activity_cost(pet, JELLI_ENERGY, jelli_exercise.energy_cost))
         return "REST FOR ENERGY";
     return "TRY AGAIN LATER";
 }

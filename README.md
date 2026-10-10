@@ -95,7 +95,8 @@ build time ([ADR-012](docs-cms/adr/adr-012-data-driven-creature-species-and-pres
 | `assets/slice/assets.json` `clips` | Frames, holds and looping for each form's eight runtime poses |
 | `content/creatures.json` | Per-form actor/icon/portrait scale, pose rules, idle beats, and how each behaviour state looks |
 | `content/behaviors.json` | Behaviour states (curious, studying, asking for help…), their effects and requests, and each species' stimulus reactions |
-| `content/activities.json` | Activity recipes: pet eligibility, timed unlocks, prerequisites, random weights, duration, effects, shared icons and animations |
+| `content/activities.json` | Activity recipes: pet eligibility, timed unlocks, prerequisites, random weights, duration, gains/costs, pet cost/reward modifiers, jitter, locations, shared icons and animations |
+| `content/locations.json` | Stable supported locations shared by activities and behavior; builds reject broken references |
 | `content/potty.json` | The potty cycle from meals and drinks, accidents, and the mess animation |
 
 Mint grows into Lilac; catching the Bubble Gem adds BUBBLE, a single-form
@@ -108,6 +109,13 @@ a request or creates an unseen accident. Care can interrupt a moment and still
 save and resume normally. Import upscaled frame art with `tools/assets/import_creature.py SPEC DIR`
 (see `assets/slice/source/axolotl-import.json`), then edit clips in Jelli Art's
 Creature view.
+
+Activities pay their authored costs at start and reward completion. Rewards
+vary within a bounded range; bond grows in small increments. Mint spends more
+energy and grows into chess, science and fishing; Axolotl spends more hydration.
+Jelli Art previews each pet's gains, costs and allowed locations. See the
+[activity balance audit](docs-cms/memos/memo-041-activity-balance-and-location-integrity.md)
+for the full meter table, initial tuning and save migration behavior.
 
 ## Hardware bring-up
 
