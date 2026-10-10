@@ -28,18 +28,63 @@ static uint32_t frame_at(const JelliGame *game, JelliPetUi *ui, uint64_t ms)
     return ui->actor_frame->id;
 }
 
-/* BUBBLE (entry 3) is the axolotl; make it the active pet. */
-static void axolotl_game(JelliGame *game)
+/* BUBBLE (entry 3) hatches as the baby axolotl (form 3); make it the active pet. */
+static void baby_axolotl_game(JelliGame *game)
 {
     jelli_game_init(game);
     game->prizes.offered = 6u;
     game->prizes.offered_pet = game->pets[0].id;
     CHECK(jelli_prize_catch(game) == JELLI_OK);
     int index = jelli_collection_find(game, 3u);
-    CHECK(index > 0 && game->pets[index].form == 2u);
+    CHECK(index > 0 && game->pets[index].form == 3u && game->pets[index].reached_forms == 8u);
     CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_ACTIVATE, game->pets[0].id,
                                                   game->pets[index].id}) == JELLI_OK);
     CHECK(game->pets[game->active].collection_entry == 3u);
+}
+
+/* BUBBLE grown into the axolotl (form 2), as growth leaves it. */
+static void axolotl_game(JelliGame *game)
+{
+    baby_axolotl_game(game);
+    game->pets[game->active].form = 2u;
+    game->pets[game->active].reached_forms = 12u;
+    CHECK(jelli_game_valid(game));
+}
+
+static void baby_axolotl_idles_then_grows(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    baby_axolotl_game(&game);
+    jelli_pet_ui_init(&ui);
+    CHECK(frame_at(&game, &ui, 0u) == 1201u); /* Baby idle: a two-frame loop. */
+    CHECK(frame_at(&game, &ui, 450u) == 1202u);
+    CHECK(ui.actor_scale == jelli_creature_profile(3u)->scale);
+    CHECK(jelli_creature_profile(3u)->scale < jelli_creature_profile(2u)->scale);
+    for (unsigned i = 0u; i < 75u; ++i)
+        jelli_game_advance(&game, 800u);
+    CHECK(game.pets[game.active].form == 2u && game.pets[game.active].reached_forms == 12u);
+}
+
+/* A happy touch plays the axolotl's hug once and holds it; the baby has no hug clip yet. */
+static void axolotl_hugs_on_a_happy_touch(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    axolotl_game(&game);
+    jelli_pet_ui_init(&ui);
+    uint32_t id = game.pets[game.active].id;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_TOUCH, id, 0u}) == JELLI_OK);
+    CHECK(game.pets[game.active].reaction == JELLI_REACTION_TOUCH_HAPPY);
+    CHECK(frame_at(&game, &ui, 1000u) == 1117u);
+    CHECK(frame_at(&game, &ui, 1250u) == 1118u);
+    CHECK(frame_at(&game, &ui, 1550u) == 1119u);
+    CHECK(frame_at(&game, &ui, 3000u) == 1119u);
+    baby_axolotl_game(&game);
+    jelli_pet_ui_init(&ui);
+    id = game.pets[game.active].id;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_TOUCH, id, 0u}) == JELLI_OK);
+    CHECK(frame_at(&game, &ui, 1000u) == 1203u); /* hug falls back to happy. */
 }
 
 static void every_form_has_grounded_clips(void)
@@ -213,6 +258,8 @@ int main(void)
     axolotl_idles_and_blinks();
     axolotl_sleep_breathes_and_frame_changes_redraw();
     axolotl_actor_sits_on_the_floor();
+    baby_axolotl_idles_then_grows();
+    axolotl_hugs_on_a_happy_touch();
     puts("PASS: data-driven creature clips animate, redraw, pause, and ground every form");
     return 0;
 }

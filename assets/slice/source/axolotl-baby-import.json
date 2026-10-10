@@ -1,0 +1,29 @@
+{
+  "form": "axolotl-baby",
+  "first_id": 1201,
+  "source_cell": 72,
+  "canvas": [
+    48,
+    48
+  ],
+  "pivot": [
+    24,
+    46
+  ],
+  "palette": "axolotl",
+  "note": "Baby axolotl frames (BUBBLE starts as this form and grows into the axolotl), delivered 2026-10-10 as 3294x3546 PNGs on the same 72x source canvas as axolotl-import.json. Shares the axolotl palette. IDs are first_id + list position, so append new frames; never reorder; mark a removed frame \"retired\" instead of deleting it.",
+  "frames": [
+    {
+      "source": "Axolotl Baby Idle 1.png",
+      "pose": "idle-1"
+    },
+    {
+      "source": "Axolotl Baby Idle 2.png",
+      "pose": "idle-2"
+    },
+    {
+      "source": "Axolotl Baby Idle 3.png",
+      "pose": "idle-3"
+    }
+  ]
+}

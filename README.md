@@ -93,8 +93,9 @@ build time ([ADR-012](docs-cms/adr/adr-012-data-driven-creature-species-and-pres
 | `content/activities.json` | Activities ring moments (including READING): gains, location, suggestion hour, icon, prop |
 | `content/potty.json` | The potty cycle from meals and drinks, accidents, and the mess animation |
 
-Mint grows into Lilac; catching the Bubble Gem adds BUBBLE, a single-form
-axolotl. BUBBLE reacts to presents, the garden, night, reading and her needs:
+Mint grows into Lilac; catching the Bubble Gem adds BUBBLE, who hatches as
+BABY AXO and grows into the axolotl the same way. A happy touch makes the axolotl
+hug. BUBBLE reacts to presents, the garden, night, reading and her needs:
 she studies, contemplates, and asks for food, company or the potty (POTTY in the
 Health ring). Ignore the potty request and she has an accident that CLEAN fixes
 ([RFC-005](docs-cms/rfcs/rfc-005-stimulus-driven-creature-behaviour.md)). An outstanding

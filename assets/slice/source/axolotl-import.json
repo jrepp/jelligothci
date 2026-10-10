@@ -30,8 +30,9 @@
       "pose": "idle-4"
     },
     {
-      "source": "Idle1.1.png",
-      "pose": "blink-1"
+      "source": "Idle1.1_new.png",
+      "pose": "blink-1",
+      "note": "Redrawn 2026-10-10 (Idle1.1_new.png): arm and tail pixels fixed; same ID and key."
     },
     {
       "source": "Idle1.2.png",
@@ -78,6 +79,18 @@
     {
       "source": "Pee2.png",
       "pose": "potty-2"
+    },
+    {
+      "source": "Hug1.png",
+      "pose": "hug-1"
+    },
+    {
+      "source": "Hug2.png",
+      "pose": "hug-2"
+    },
+    {
+      "source": "Hug3.png",
+      "pose": "hug-3"
     }
   ]
 }

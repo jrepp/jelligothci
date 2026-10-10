@@ -2,7 +2,7 @@
 
 The review set contains 95 PNG files: 30 creature frames, 12 small icons, 15 ring icons,
 five meter pictograms, nine health icons, eight celebration sprites, nine collectible prizes, two backgrounds, four props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
-form; the axolotl is a separate single-form species (BUBBLE). The SDL and ESP32 pet builds embed these assets using
+form; BUBBLE is a separate species that grows from the baby axolotl into the axolotl. The SDL and ESP32 pet builds embed these assets using
 `tools/assets/embed_slice.py`. Physical board appearance remains unverified.
 
 ## Preview and validate
@@ -33,7 +33,7 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 
 | Directory | Contents |
 | --- | --- |
-| `creatures/` | Mint and Lilac: idle A/B, eating, happy, asleep, unwell, curious, content at 32x32. Axolotl: 14 frames at 48x48 (idle bob, blink, happy, surprised, chew, sleep breath, sad) in its own palette |
+| `creatures/` | Mint and Lilac: idle A/B, eating, happy, asleep, unwell, curious, content at 32x32. Axolotl: 18 frames at 48x48 (idle bob, blink, happy, surprised, chew, sleep breath, sad, potty, hug) and the baby axolotl's 3 idle frames, both in the axolotl palette |
 | `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
 | `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
 | `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
@@ -74,9 +74,11 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw pixel payload is 220,384 bytes (ADR-012 raised the pack ceiling to 237,568 bytes for the axolotl). The RFC's 8,192-byte definition and
-4,096-byte metadata allowances bring the planned pack to 232,672 bytes; those
-allowances are not a completed game pack or a linked firmware measurement.
+Actual raw payload (RGB565, masks and font bits) is 262,408 bytes. The RFC's 8,192-byte
+definition and 4,096-byte metadata allowances bring the planned pack to 274,696 bytes,
+under the 294,912-byte ceiling (`JELLI_ASSET_PACK_CAPACITY` in
+`ports/sdl/asset_reload.h`, sized for a full SDL live-reload bank); those allowances
+are not a completed game pack or a linked firmware measurement.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 

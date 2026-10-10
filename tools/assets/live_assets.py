@@ -19,7 +19,7 @@ from build_slice import pack_mask
 from sprite_geometry import ground_anchor_q8, opaque_centroid_q8
 
 ROOT = Path(__file__).resolve().parents[2]
-MAX_PACK_BYTES = 262144
+MAX_PACK_BYTES = 294912  # JELLI_ASSET_PACK_CAPACITY in ports/sdl/asset_reload.h
 MAX_ASSETS = 128
 HEADER = struct.Struct("<4sIII")
 RECORD = struct.Struct("<IHHHHHHBBBBI")
@@ -92,7 +92,7 @@ def build_pack(source):
         body.extend(RECORD.pack(ident, image.width, image.height, *ground, *center,
                                 *bounds, len(data)))
         body.extend(data)
-        require(HEADER.size + len(body) <= MAX_PACK_BYTES, "Asset pack exceeds 256 KiB")
+        require(HEADER.size + len(body) <= MAX_PACK_BYTES, "Asset pack exceeds 288 KiB")
     return HEADER.pack(b"JLAP", 1, len(assets), zlib.crc32(body)) + body
 
 

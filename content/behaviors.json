@@ -23,7 +23,7 @@
      "request": {"command": "touch", "bond": 10}, "ends_on": []}
   ],
   "repertoires": [
-    {"name": "bubble", "forms": ["AXOLOTL"],
+    {"name": "bubble", "forms": ["AXOLOTL", "BABY AXO"],
      "affinities": [{"moment": "READING", "bonus_pct": 50}],
      "reactions": [
        {"on": "potty_urge", "state": "asking_potty"},

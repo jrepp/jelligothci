@@ -151,13 +151,13 @@ class LiveAssetsTest(unittest.TestCase):
         original = self.destination.read_bytes()
         background = Image.new("RGBA", (64, 64), (100, 150, 200, 255))
         self.manifest["assets"] = []
-        for index in range(31):
+        for index in range(35):  # 35 x (8192 pixel + 512 mask bytes) passes the 288 KiB pack
             name = f"background-{index}.png"
             background.save(self.source / name)
             self.manifest["assets"].append({"id": 10000 + index, "kind": "backgrounds",
                                              "width": 64, "height": 64, "path": name})
         self.write_manifest()
-        with self.assertRaisesRegex(ValueError, "256 KiB"):
+        with self.assertRaisesRegex(ValueError, "288 KiB"):
             live_assets.publish_pack(self.source, self.destination)
         self.assertEqual(original, self.destination.read_bytes())
 

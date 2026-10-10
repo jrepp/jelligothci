@@ -39,10 +39,13 @@ with tempfile.TemporaryDirectory(prefix="jelli-content-") as directory:
         invalid = copy.deepcopy(catalog)
         invalid["evolution_sets"][0]["forms"] = forms
         check(invalid, False)
-    for index, growth in ((0, 0), (0, 864001), (1, 5)):
+    for index, growth in ((0, 0), (0, 864001), (1, 0)):
         invalid = copy.deepcopy(catalog)
         invalid["evolution_sets"][index]["growth_ticks"] = growth
         check(invalid, False)
+    invalid = copy.deepcopy(catalog)  # A single-form set cannot grow.
+    invalid["evolution_sets"][1]["forms"], invalid["evolution_sets"][1]["growth_ticks"] = [2], 5
+    check(invalid, False)
     invalid = copy.deepcopy(catalog)
     invalid["evolution_sets"][1]["forms"] = [0]  # A form belongs to one set.
     check(invalid, False)
