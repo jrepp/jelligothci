@@ -22,7 +22,7 @@ static bool begin_activity(JelliPet *pet, JelliActivity activity, uint64_t durat
 {
     if (UINT64_MAX - pet->ticks < duration)
         return false;
-    pet->activity = activity;
+    pet->activity = (uint8_t)activity; /* All callers pass a JelliActivity enumerator. */
     pet->moment = 0u; /* A replacement activity must not retain a cancelled moment. */
     pet->interaction_due = pet->ticks + duration;
     return true;
@@ -300,14 +300,17 @@ static JelliResult healthy_click(JelliPet *pet, uint32_t activity)
 
 static JelliResult moment(const JelliGame *game, JelliPet *pet, uint32_t choice)
 {
-    if (choice >= jelli_moment_count || choice >= JELLI_MOMENT_CAPACITY)
-        return JELLI_INVALID_TARGET;
+    JelliResult available = jelli_moment_available(game, pet, choice);
+    if (available != JELLI_OK)
+        return available;
     const JelliMoment *m = &jelli_moments[choice];
-    if (m->kind == JELLI_MOMENT_FEED)
-        return start_feed(game, pet, 0u);
-    JelliResult result = start_play(pet);
+    uint64_t duration = (uint64_t)m->duration_s * 10u;
+    if (UINT64_MAX - pet->ticks < duration)
+        return JELLI_NOT_READY;
+    JelliResult result = m->kind == JELLI_MOMENT_FEED ? start_feed(game, pet, 0u) : start_play(pet);
     if (result != JELLI_OK)
         return result;
+    pet->interaction_due = pet->ticks + duration;
     unsigned percent = jelli_behavior_moment_percent(pet, choice); /* Species affinity. */
     for (unsigned need = 0u; need < JELLI_NEED_COUNT; ++need)
         if (m->gains[need])

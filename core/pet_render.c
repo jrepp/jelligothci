@@ -77,6 +77,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     if (!ui->menu_open && ui->latched_prize && !game->prizes.offered &&
         jelli_pet_gallery_available(ui, game, 1u) != JELLI_OK)
         key.unavailable |= 2u;
+    key.activity_page = ui->activity_page;
     key.clicker_hits = ui->clicker_hits;
     key.clicker_goal = ui->clicker_goal;
     key.clicker_stage = ui->clicker_stage;
@@ -129,10 +130,11 @@ static bool same_activity_key(const JelliPetRenderKey *a, const JelliPetRenderKe
 
 static bool same_ring_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->unavailable == b->unavailable && a->ring_page == b->ring_page &&
-           a->ring_visible == b->ring_visible && a->clock_edit == b->clock_edit &&
-           a->ring_clock_edit == b->ring_clock_edit && a->timezone_minutes == b->timezone_minutes &&
-           a->ring_moving == b->ring_moving && a->care_blocked == b->care_blocked;
+    return a->activity_page == b->activity_page && a->unavailable == b->unavailable &&
+           a->ring_page == b->ring_page && a->ring_visible == b->ring_visible &&
+           a->clock_edit == b->clock_edit && a->ring_clock_edit == b->ring_clock_edit &&
+           a->timezone_minutes == b->timezone_minutes && a->ring_moving == b->ring_moving &&
+           a->care_blocked == b->care_blocked;
 }
 
 static bool same_tile_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)

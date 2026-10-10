@@ -160,14 +160,14 @@ static void test_ring_moments_and_meter(void)
     CHECK(jelli_pet_moment(&game.pets[0]) == 0u);
     ui.clock_known = true;
     ui.clock_minute = 20u * 60u;
-    CHECK(jelli_pet_suggested_moment(&game.pets[0], &ui) == 3u);
+    CHECK(jelli_pet_suggested_moment(&game.pets[0], &ui) == 6u);
     ui.clock_known = false;
     game.pets[0].phase_offset = 11u * 36000u;
-    CHECK(jelli_pet_moment(&game.pets[0]) == 1u);
+    CHECK(jelli_pet_moment(&game.pets[0]) == 5u);
     game.pets[0].phase_offset = 15u * 36000u;
     CHECK(jelli_pet_moment(&game.pets[0]) == 2u);
     game.pets[0].phase_offset = 19u * 36000u;
-    CHECK(jelli_pet_moment(&game.pets[0]) == 3u);
+    CHECK(jelli_pet_moment(&game.pets[0]) == 6u);
     tap_item(&ui, &game, 2u);
     CHECK(game.pets[0].location == 1u);
     CHECK(game.pets[0].activity == JELLI_PLAYING);
@@ -175,7 +175,7 @@ static void test_ring_moments_and_meter(void)
         jelli_game_advance(&game, 800u);
     CHECK(!ui.menu_open && ui.page == JELLI_UI_HOME);
     tap_item(&ui, &game, 1u); /* Reopen Moments after the outing. */
-    tap_item(&ui, &game, 3u);
+    tap_item(&ui, &game, 4u); /* Reading is always available. */
     CHECK(game.pets[0].activity == JELLI_PLAYING);
     jelli_pet_ui_tap(&ui, &game, 233, 420);
     CHECK(ui.menu_open && ui.page == JELLI_UI_HOME);

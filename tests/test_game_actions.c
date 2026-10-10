@@ -100,6 +100,13 @@ static void test_moments(void)
         ready(&g);
         if (i == 2u)
             g.pets[0].location = 1u; /* An outing still matters in the garden. */
+        g.clock_known = true;
+        for (unsigned minute = 0u; minute < 1440u * 14u; ++minute) {
+            g.pets[0].ticks = (uint64_t)(minute / 1440u) * JELLI_DAY_TICKS;
+            g.clock_minute = (uint16_t)(minute % 1440u);
+            if (jelli_moment_available(&g, &g.pets[0], i) == JELLI_OK)
+                break;
+        }
         CHECK(command(&g, JELLI_CMD_MOMENT, i) == JELLI_OK);
         CHECK(g.pets[0].activity == (i ? JELLI_PLAYING : JELLI_EATING));
         finish(&g);
@@ -196,13 +203,13 @@ static void test_preferences(void)
     ready(&favorite);
     ready(&ordinary);
     favorite.clock_known = ordinary.clock_known = true;
-    favorite.clock_minute = 540u;
-    ordinary.clock_minute = 1200u;
+    favorite.clock_minute = 840u;
+    ordinary.clock_minute = 900u;
     CHECK(jelli_pet_favorite(&favorite.pets[0], 540u) == 0u);
     CHECK(jelli_pet_favorite(&favorite.pets[1], 1200u) == 3u);
-    CHECK(command(&favorite, JELLI_CMD_MOMENT, 0u) == JELLI_OK);
-    CHECK(command(&ordinary, JELLI_CMD_MOMENT, 0u) == JELLI_OK);
-    CHECK(favorite.pets[0].bond > ordinary.pets[0].bond);
+    CHECK(command(&favorite, JELLI_CMD_MOMENT, 1u) == JELLI_OK);
+    CHECK(command(&ordinary, JELLI_CMD_MOMENT, 1u) == JELLI_OK);
+    CHECK(favorite.pets[0].bond == ordinary.pets[0].bond);
     CHECK(jelli_pet_mood(&favorite.pets[0]) > jelli_pet_mood(&ordinary.pets[0]));
     favorite.pets[0].form = 1u;
     CHECK(jelli_pet_favorite(&favorite.pets[0], 540u) == 0u);
@@ -215,6 +222,13 @@ static void care_interrupts_moments_without_invalidating_the_game(void)
             continue;
         JelliGame game;
         ready(&game);
+        game.clock_known = true;
+        for (unsigned minute = 0u; minute < 1440u * 7u; ++minute) {
+            game.pets[0].ticks = (uint64_t)(minute / 1440u) * JELLI_DAY_TICKS;
+            game.clock_minute = (uint16_t)(minute % 1440u);
+            if (jelli_moment_available(&game, &game.pets[0], choice) == JELLI_OK)
+                break;
+        }
         CHECK(command(&game, JELLI_CMD_MOMENT, choice) == JELLI_OK);
         CHECK(game.pets[0].moment == choice + 1u);
         CHECK(command(&game, JELLI_CMD_CARE, 0u) == JELLI_OK);

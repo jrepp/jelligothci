@@ -136,6 +136,7 @@ typedef struct {
     uint32_t stored_id;
     uint64_t day;
     JelliResult result;
+    uint8_t activity_page;
     uint8_t attempted_slot;
     uint16_t needs[JELLI_NEED_COUNT];
     uint16_t bond, hydration;
@@ -186,6 +187,7 @@ typedef struct {
     uint8_t actor_scale; /* Pixel multiplier from the active form's creature profile. */
     uint32_t clicker_pet, routine_random, tuning_revision, tuning_pet;
     JelliResult result;
+    uint8_t activity_page;
     uint8_t attempted_slot;
     uint32_t result_until_ms, last_revision, coo_pet;
     JelliRect actor_bounds;
@@ -238,6 +240,8 @@ JelliPetUiAction jelli_pet_routine_action(unsigned page);
 /* Icon asset for a JelliHealthActivity; 0 when out of range. */
 uint32_t jelli_pet_health_icon(unsigned activity);
 /* Moment ID (content/activities.json) for a moment action; false for other actions. */
+bool jelli_pet_activity_button(unsigned page, unsigned slot, bool asleep, JelliPetUiButton *button);
+unsigned jelli_pet_activity_choice(const JelliPetUi *ui, unsigned slot);
 bool jelli_pet_moment_for_action(JelliPetUiAction action, unsigned *moment);
 void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game);
 void jelli_pet_ui_back(JelliPetUi *ui);

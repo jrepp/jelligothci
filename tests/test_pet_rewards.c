@@ -42,6 +42,8 @@ static void advance(unsigned milliseconds)
 static void timed_completion_excludes_unrelated_changes(void)
 {
     reset();
+    game.clock_known = true;
+    game.clock_minute = 780u;
     command(JELLI_CMD_MOMENT, 1u);
     process();
     CHECK(rewards.pending && !rewards.count);

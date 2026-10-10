@@ -48,7 +48,7 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
                                       {JELLI_UI_ACTION_MEDICINE, "MEDICINE", NULL},
                                       {JELLI_UI_ACTION_SHOT, "SHOT", NULL},
                                       {JELLI_UI_ACTION_WASH, "WASH", NULL},
-                                      {JELLI_UI_ACTION_STRETCH, "STRETCH", NULL},
+                                      {JELLI_UI_ACTION_STRETCH, "YOGA", NULL},
                                       {JELLI_UI_ACTION_POTTY, "POTTY", NULL}}};
 
 void jelli_pet_ui_init(JelliPetUi *ui)
@@ -95,9 +95,9 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 
 static bool action_persists(JelliPetUiAction action)
 {
-    if (action == JELLI_UI_ACTION_WATER || action == JELLI_UI_ACTION_EXERCISE ||
-        action == JELLI_UI_ACTION_READING || action == JELLI_UI_ACTION_VOLUME_DOWN ||
-        action == JELLI_UI_ACTION_VOLUME_UP)
+    if (action == JELLI_UI_ACTION_STRETCH || action == JELLI_UI_ACTION_WATER ||
+        action == JELLI_UI_ACTION_EXERCISE || action == JELLI_UI_ACTION_READING ||
+        action == JELLI_UI_ACTION_VOLUME_DOWN || action == JELLI_UI_ACTION_VOLUME_UP)
         return true;
     static const bool persists[] = {true,  false, true, false, false, false, true, true,
                                     true,  false, true, true,  true,  true,  true, true,
@@ -149,6 +149,8 @@ static unsigned input_code(const JelliPetUi *ui, unsigned slot, bool asleep)
                                            : JELLI_INPUT_BACK;
     if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u))
         return ui->clock_edit ? JELLI_INPUT_CLOCK + slot : JELLI_INPUT_CLOCK;
+    if (ui->page == JELLI_UI_MOMENTS)
+        return JELLI_UI_ACTION_SUGGEST;
     if (ui->page >= JELLI_UI_PETS)
         return JELLI_INPUT_COLLECTION + slot;
     if (jelli_pet_page_is_routine(ui->page))
@@ -171,6 +173,24 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
     if (slot == 0u) {
         jelli_pet_ui_back(ui);
         ui->result = JELLI_OK;
+    } else if (ui->page == JELLI_UI_MOMENTS) {
+        if (slot == 6u) {
+            ui->activity_page =
+                (uint8_t)((ui->activity_page + 1u) % ((jelli_moment_count + 5u) / 5u));
+            ui->result = JELLI_OK;
+            return;
+        }
+        unsigned choice = jelli_pet_activity_choice(ui, slot);
+        JelliCommand command = {
+            choice == jelli_moment_count ? JELLI_CMD_EXERCISE : JELLI_CMD_MOMENT,
+            game->pets[game->active].id, choice == jelli_moment_count ? 0u : choice};
+        ui->result = jelli_game_command(game, command);
+        if (ui->result == JELLI_OK) {
+            ui->menu_open = false;
+            ui->page = JELLI_UI_HOME;
+            ui->save_requested = true;
+            ui->save_status = JELLI_SAVE_PENDING;
+        }
     } else if (ui->page == JELLI_UI_FOOD) {
         jelli_pet_food_select(ui, game, slot);
     } else if (ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS) {

@@ -5,8 +5,10 @@
 #define TEST_SAVE_V10_PET_BYTES 5u /* moment, digesting, potty */
 #define TEST_SAVE_V11_PET_BYTES                                                                    \
     7u /* behavior, behavior_left, cooldown_state/left, behavior_flags */
+#define TEST_SAVE_V12_PET_BYTES 6u /* activity_day, completed_moments */
 #define TEST_SAVE_TAIL_PET_BYTES                                                                   \
-    (TEST_SAVE_V9_PET_BYTES + TEST_SAVE_V10_PET_BYTES + TEST_SAVE_V11_PET_BYTES)
+    (TEST_SAVE_V9_PET_BYTES + TEST_SAVE_V10_PET_BYTES + TEST_SAVE_V11_PET_BYTES +                  \
+     TEST_SAVE_V12_PET_BYTES)
 /* From version 4: collection binding 2, hydration 4, food type 1, then the tail above. */
 #define TEST_SAVE_V4_PET_BYTES (7u + TEST_SAVE_TAIL_PET_BYTES)
 #endif

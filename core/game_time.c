@@ -1,3 +1,4 @@
+#include "jelli/activities.h"
 #include "jelli/behavior.h"
 #include "jelli/potty.h"
 #include "jelli/wake.h"
@@ -167,7 +168,8 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
     unsigned activity = (unsigned)pet->activity;
     unsigned finished = pet->moment ? JELLI_ACTIVITY_CODE_MOMENT + pet->moment - 1u
                                     : JELLI_ACTIVITY_CODE_CARE + activity;
-    switch (pet->activity) {
+    jelli_moment_complete(game, pet);
+    switch ((JelliActivity)pet->activity) {
     case JELLI_EATING:
         if (game->food > 0u) {
             bool useful = pet->needs[JELLI_SATIETY] < 700u;
@@ -225,6 +227,7 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
     case JELLI_IDLE:
         break;
     }
+    pet->moment = 0u;
     if (activity != JELLI_IDLE) {
         jelli_game_emit(game, JELLI_EVENT_EFFECT, activity, JELLI_OK, 0u, pet, before);
         jelli_behavior_stimulus(game, JELLI_STIM_ACTIVITY_FINISHED, finished);
