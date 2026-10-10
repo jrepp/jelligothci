@@ -61,8 +61,13 @@ browser automation, `localStorage['jelli-shell:guide'] = 'false'` hides the guid
 `studio.js` is the Paint mode UI; `paint_tools.js` holds its pixel logic as pure
 functions (`window.JelliPaint`): Bresenham lines, rectangles, ellipses inscribed
 in a pixel box, pixel-perfect strokes, flips, quarter turns, wrapped or clipped
-shifts, colour replace, bounded flood fill, and a 100-step history with a
-cursor. Tools paint only the asset's resolved palette (shared, a named palette
+shifts, colour replace, bounded flood fill, ramp shading, and a 100-step
+history with a cursor. The palette panel draws `palette_ramps` from
+`assets.json` (light to deep, per palette; `build_slice.py` validates them) as
+rows, names a named palette's colours from `palette_names`, and the Shade tool
+(T) steps pixels along those ramps. The left button paints the main colour and
+the right button the secondary (transparent by default, so it erases); X swaps
+them. ✎ on a shared slot rewrites that colour in the ramps too. Tools paint only the asset's resolved palette (shared, a named palette
 or an inline list) until the artist picks **custom**; paste refuses pixels
 outside the target palette on the same terms. A selection is a rect, plus
 floating pixels while it is moved or transformed, so moving it over other art

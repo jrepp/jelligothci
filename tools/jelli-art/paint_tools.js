@@ -196,6 +196,24 @@
     return {tool: held ? tool : 'pencil', color: hex};
   }
 
+  /* ---------- shading along a palette ramp ---------- */
+  /* ramps: [[light, ..., deep], ...] of lowercase hex. A colour may sit in several ramps (cream in coral and
+   * gold). `prefer` lists hints in order: a ramp (the row the artist chose a colour from) wins when it holds
+   * the colour; a colour (the paint colour) picks the first ramp holding both; else the first ramp listing it. */
+  function rampOf(hex, ramps, prefer = []) {
+    const holding = hex ? ramps.filter(r => r.includes(hex)) : [];
+    for (const hint of prefer) {
+      const r = Array.isArray(hint) ? holding.find(h => h === hint) : hint && holding.find(h => h.includes(hint));
+      if (r) return r;
+    }
+    return holding[0] || null;
+  }
+  /* One step lighter (dir -1) or deeper (dir 1) within the colour's ramp; null at the ramp's end or off-ramp. */
+  function shade(hex, ramps, dir, prefer = []) {
+    const r = rampOf(hex, ramps, prefer); if (!r) return null;
+    return r[r.indexOf(hex) + dir] || null;
+  }
+
   /* ---------- history: a bounded list of states with a cursor ---------- */
   /* Each entry is {label, data}; entries after `at` are redo steps until the next record. */
   function history(data, label = 'Opened', limit = 100) { return {limit, at: 0, entries: [{label, data: data.slice()}]}; }
@@ -212,7 +230,7 @@
   const current = h => h.entries[h.at].data;
 
   const api = {line, rect, ellipse, pixelPerfect, blank, copy, get, set, clip, whole, rectFrom, extract, clear, blit,
-    flipH, flipV, rotate, shift, replace, flood, colours, offPalette, pickOutcome, bounds, eyeRow, history, record, jump, current};
+    flipH, flipV, rotate, shift, replace, flood, colours, offPalette, pickOutcome, bounds, eyeRow, rampOf, shade, history, record, jump, current};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.JelliPaint = api;
 })(typeof window !== 'undefined' ? window : globalThis);

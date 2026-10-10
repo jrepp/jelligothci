@@ -109,6 +109,35 @@ class CreatureClipTest(unittest.TestCase):
         self.assertEqual(details["creatures.baby-idle-a"]["palette"], manifest["palette"])
         self.assertEqual(details["backgrounds.home"]["palette_name"], "inline")
 
+    def test_palette_ramps_are_validated(self):
+        manifest = json.loads(self.manifest_path.read_text())
+        validator = creatures.load_validator(REPO)
+        validator.check_palette_ramps(manifest)  # the shipped ramps and names pass
+        self.assertIn("palette_ramps", creatures.creature_data(manifest, REPO / "content/pets.json"))
+        bad = {
+            "ramp colour outside its palette": ("palette_ramps", "shared", [{"name": "x", "colours": ["#291b35", "#123456"]}]),
+            "one-colour ramp": ("palette_ramps", "shared", [{"name": "x", "colours": ["#291b35"]}]),
+            "repeated colour": ("palette_ramps", "shared", [{"name": "x", "colours": ["#291b35", "#291b35"]}]),
+            "duplicate ramp names": ("palette_ramps", "shared", [{"name": "x", "colours": ["#291b35", "#49334f"]}] * 2),
+            "unknown palette": ("palette_ramps", "nope", [{"name": "x", "colours": ["#291b35", "#49334f"]}]),
+            "too few names": ("palette_names", "axolotl", ["body"]),
+        }
+        for why, (field, key, value) in bad.items():
+            broken = json.loads(json.dumps(manifest))
+            broken[field][key] = value
+            with self.subTest(why), self.assertRaises(ValueError):
+                validator.check_palette_ramps(broken)
+
+    def test_palette_slot_change_moves_the_ramp_colour(self):
+        manifest = json.loads(self.manifest_path.read_text())
+        old = manifest["palette"][5]  # mint, in the mint jelly ramp
+        jelli_art.set_palette_slot(5, "#80e0b0", base=old)
+        after = json.loads(self.manifest_path.read_text())
+        mint = next(r for r in after["palette_ramps"]["shared"] if r["name"] == "mint jelly")
+        self.assertIn("#80e0b0", mint["colours"])
+        self.assertNotIn(old, mint["colours"])
+        creatures.load_validator(REPO).check_palette_ramps(after)
+
     def test_form_names_come_from_pets_art_when_present(self):
         manifest = json.loads(self.manifest_path.read_text())
         pets = Path(self.scratch.name) / "pets.json"

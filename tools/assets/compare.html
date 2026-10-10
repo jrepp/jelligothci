@@ -201,7 +201,8 @@ const assetPalette = a => a?.palette || D.palette;
 const label = (hex, a) => {
   const pal = assetPalette(a), i = pal.indexOf(hex);
   if (i < 0) return 'off-palette';
-  return pal === D.palette || !a.palette_name || a.palette_name === 'shared' ? NAMES[i] : `${a.palette_name} ${i + 1}`;
+  if (pal === D.palette || !a.palette_name || a.palette_name === 'shared') return NAMES[i];
+  return D.palette_names?.[a.palette_name]?.[i] || `${a.palette_name} ${i + 1}`;  // names come from assets.json palette_names
 };
 const signature = a => { let h = 0; const s = a.after || ''; for (let i = 0; i < s.length; i += 7) h = (h * 31 + s.charCodeAt(i)) | 0; return String(h); };
 const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrops, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;

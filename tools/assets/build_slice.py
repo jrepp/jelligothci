@@ -63,6 +63,28 @@ def palette_colours(manifest, asset):
     return palettes[name]
 
 
+def check_palette_ramps(manifest):
+    """Shading ramps (light to deep) and colour names, keyed "shared" or a name in manifest["palettes"]."""
+    palettes = {"shared": manifest["palette"], **manifest.get("palettes", {})}
+    ramps, names = manifest.get("palette_ramps", {}), manifest.get("palette_names", {})
+    require(isinstance(ramps, dict) and isinstance(names, dict), "Palette ramps and names must be objects")
+    for key, entries in ramps.items():
+        require(key in palettes, f"Ramps for unknown palette: {key}")
+        colours = {c.lower() for c in palettes[key]}
+        require(isinstance(entries, list), f"Ramps must be a list: {key}")
+        labels = [e.get("name") if isinstance(e, dict) else None for e in entries]
+        require(all(isinstance(n, str) and n for n in labels) and len(labels) == len(set(labels)), f"Ramp names must be unique: {key}")
+        for entry in entries:
+            ramp = entry.get("colours")
+            require(isinstance(ramp, list) and len(ramp) >= 2, f"A ramp needs two or more colours: {key} {entry['name']}")
+            require(all(isinstance(c, str) and c.lower() in colours for c in ramp), f"Ramp colour not in its palette: {key} {entry['name']}")
+            require(len({c.lower() for c in ramp}) == len(ramp), f"Ramp repeats a colour: {key} {entry['name']}")
+    for key, labels in names.items():
+        require(key in palettes, f"Names for unknown palette: {key}")
+        require(isinstance(labels, list) and len(labels) == len(palettes[key]), f"One name per colour: {key}")
+        require(all(isinstance(n, str) and n for n in labels) and len(labels) == len(set(labels)), f"Colour names must be unique: {key}")
+
+
 def check_creature_clips(manifest):
     """Every creature form needs one clip per runtime pose, keyed "<form>.<pose>"."""
     require(tuple(manifest.get("creature_poses", ())) == CREATURE_POSES, "Creature pose list mismatch")
@@ -136,6 +158,7 @@ def load_assets():
         require(all(isinstance(n, int) and 0 < n <= 10000 for n in clip["durations_ms"]), "Clip duration out of bounds")
         require(isinstance(clip.get("loop"), bool), f"Clip loop flag: {clip['key']}")
     check_creature_clips(manifest)
+    check_palette_ramps(manifest)
     return manifest, images
 
 

@@ -50,6 +50,12 @@ and **deep**.
 | Gold | cream | gold `#f5c764` | tan `#ae7855` | tan |
 | Sea / teal | mint | sea | teal | teal |
 
+The ramps live in `palette_ramps` in `assets/slice/assets.json`, light to deep,
+for the shared palette and each named palette (`palette_names` names a named
+palette's colours). Jelli Art draws its colours as one row per ramp, and its
+**Shade** tool steps a pixel one colour lighter or deeper along its ramp.
+`build_slice.py` checks that every ramp colour is in its palette.
+
 - **Ink `#291b35`** is reserved for outlines and facial features. It is never a
   fill.
 - **White** is for catchlights and glints. **Cream** is a material colour (paper,

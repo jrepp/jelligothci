@@ -435,7 +435,10 @@ def set_palette_slot(index, color, artist="", base=None):
                 image.putdata(data)
                 files.append((path, storage.png_bytes(image)))
                 changed.append(asset["key"])
+        was = palette[index].lower()
         palette[index] = color
+        for ramp in manifest.get("palette_ramps", {}).get("shared", []):  # ramps name colours, so follow the slot
+            ramp["colours"] = [color if c.lower() == was else c for c in ramp["colours"]]
         files.append((MANIFEST, storage.json_bytes(manifest)))
         storage.write_files(files)
         paths = [path for path, _ in files]

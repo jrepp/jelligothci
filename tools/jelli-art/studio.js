@@ -9,10 +9,11 @@
   const SHAPES = new Set(['line', 'rect', 'ellipse']);
   /* [id, name, key, what it does] */
   const TOOLS = [
-    ['pencil', 'Pencil', 'P', 'Draw pixels. Shift+arrows draw with the keyboard cursor'],
-    ['eraser', 'Eraser', 'E', 'Make pixels transparent (right-click erases with any tool)'],
-    ['fill', 'Fill', 'F', 'Fill the touching area of one colour'],
-    ['picker', 'Pick colour', 'C', 'Take a palette colour from the sprite (Alt-click with any tool except Select picks without switching)'],
+    ['pencil', 'Pencil', 'P', 'Draw pixels; right-click draws the secondary colour. Shift+arrows draw with the keyboard cursor'],
+    ['eraser', 'Eraser', 'E', 'Make pixels transparent'],
+    ['fill', 'Fill', 'F', 'Fill the touching area of one colour; right-click fills with the secondary colour, which erases the area while it is transparent'],
+    ['picker', 'Pick colour', 'C', 'Take a palette colour from the sprite (Alt-click with any tool except Select picks without switching); right-click takes the secondary colour'],
+    ['shade', 'Shade', 'T', 'Step pixels one colour lighter along their ramp; right-click or Shift steps deeper'],
     ['line', 'Line', 'L', 'Drag from end to end; Shift snaps to 45°'],
     ['rect', 'Rectangle', 'R', 'Drag corner to corner; Shift makes a square'],
     ['ellipse', 'Ellipse', 'U', 'Drag the bounding box; Shift makes a circle'],
@@ -22,7 +23,8 @@
   const edits = {};  // key -> {saved, hist}; the working buffer is decoded[key].after
   let pointing = false, stroke = null, view = null, statusTimer = null, clipboard = null, selKey = null, pan = null, anchor = null, wheel = 0, queued = 0;
   const prefs = Object.assign({filled: false, perfect: false, wrap: false, guides: false}, store.get('paint', {}));
-  Object.assign(state, {tool: 'pencil', color: '#291b35', custom: false, mirror: false, before: store.get('before', 'HEAD'), artist: store.get('artist', ''),
+  /* color is the main colour (left button), color2 the secondary (right button); null is transparent. */
+  Object.assign(state, {tool: 'pencil', color: '#291b35', custom: false, color2: null, custom2: false, mirror: false, before: store.get('before', 'HEAD'), artist: store.get('artist', ''),
     sel: null, float: null, cursor: [0, 0], kbd: false}, prefs);
   const savePaintPrefs = () => store.set('paint', {filled: state.filled, perfect: state.perfect, wrap: state.wrap, guides: state.guides});
   MODES.push('paint');
@@ -43,6 +45,12 @@
     .paint-slot{position:relative;display:grid}
     .paint-slot .edit{position:absolute;top:2px;right:2px;padding:0 4px;font-size:11px;line-height:16px;border-radius:4px;background:var(--panel)}
     .paint-chip.off .sw{outline:2px solid var(--bad);outline-offset:1px}
+    .paint-chip.second{border-style:dashed;border-color:var(--muted)}
+    .paint-ramp{display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex-basis:100%}
+    .paint-ramp .ramp-name{font:10px ui-monospace,monospace;color:var(--muted);min-width:64px;text-transform:lowercase}
+    .paint-pair{display:flex;gap:8px;align-items:center;flex-basis:100%;flex-wrap:wrap}.paint-pair .studio-note{margin:0}
+    .pair-sw{position:relative;width:40px;height:34px;flex:none}.pair-sw .sw{position:absolute;width:24px;height:24px;border-radius:5px;border:1px solid #fff6;box-shadow:0 0 0 1px #0008}
+    .pair-sw .sw:first-child{left:0;top:0;z-index:1}.pair-sw .sw:last-child{left:14px;top:10px}
     .paint-chip.faint .sw{outline:2px dashed var(--ink);outline-offset:2px}
     .eraser-sw{background:repeating-conic-gradient(#555 0 25%,#2b2b31 0 50%) 0 0/10px 10px}
     .studio-note{font-size:12px;color:var(--muted);max-width:760px;margin:6px 0}
@@ -165,7 +173,9 @@
   const paletteWhere = a => ownPalette(a) ? `the ${a.palette_name} palette` : 'the shared palette';
   /* The outline colour: shared ink, or the darkest colour of the asset's own palette (lint.js; the server agrees). */
   const inkOf = a => window.JelliLint.outlineInk(ownPalette(a) ? paletteOf(a) : null);
-  const slotName = (a, i) => ownPalette(a) ? `${a.palette_name} ${i + 1}` : NAMES[i];
+  const slotName = (a, i) => ownPalette(a) ? D.palette_names?.[a.palette_name]?.[i] || `${a.palette_name} ${i + 1}` : NAMES[i];
+  /* Shading ramps (light to deep) for the asset's palette, from assets.json palette_ramps. */
+  const rampsOf = a => (D.palette_ramps?.[ownPalette(a) ? a.palette_name : 'shared'] || []).map(r => ({name: r.name, colours: r.colours.map(h => h.toLowerCase())}));
   S.ownPalette = ownPalette;
   const measure = (p, a) => window.JelliLint.measure(p, a.kind, inkOf(a));  // lint.js: compare_slice.py's rules
   /* Push the working buffer to its canvas, metrics, thumbnail and change count. */
@@ -197,12 +207,19 @@
   const redo = () => { const e = edits[state.key]; if (e) restore(e.hist.at + 1); };
 
   /* ---------- painting ---------- */
-  /* The colour tools may paint: a colour of the asset's palette, or any colour once "custom" is chosen. */
-  function paintHex() {
-    const a = asset();
-    if (paletteOf(a).includes(state.color) || state.custom) return state.color;
-    status(`${state.color} is not in ${paletteWhere(a)}; pick a palette colour, or choose it under custom`, 'warn', true);
+  /* The colour tools may paint: a colour of the asset's palette, transparent, or any colour once "custom" is chosen.
+   * secondary picks the right-button colour. Returns undefined (and warns) when the colour may not be painted. */
+  function paintHex(secondary = false) {
+    const a = asset(), hex = secondary ? state.color2 : state.color;
+    if (hex === null || paletteOf(a).includes(hex) || (secondary ? state.custom2 : state.custom)) return hex;
+    status(`${hex} is not in ${paletteWhere(a)}; pick a palette colour, or choose it under custom`, 'warn', true);
     return undefined;
+  }
+  /* X: swap the main and secondary colours. */
+  function swapColours() {
+    [state.color, state.color2, state.custom, state.custom2] = [state.color2, state.color, state.custom2, state.custom];
+    const a = asset(); renderPalette(a); renderToolbarState(); draw();
+    announce(`Main colour ${state.color ? label(state.color, a) : 'transparent'}, secondary ${state.color2 ? label(state.color2, a) : 'transparent'}`);
   }
   const selRect = () => state.sel && T.clip(work(state.key), state.sel);
   const inRect = (r, x, y) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
@@ -219,21 +236,35 @@
     return [x0 + sx * d, y0 + sy * d];
   }
   function strokePoints(s) {
-    if (s.kind === 'free') return state.perfect && s.hex ? T.pixelPerfect(s.pts) : s.pts;
+    if (s.kind === 'free') return state.perfect && (s.hex || s.tool === 'shade') ? T.pixelPerfect(s.pts) : s.pts;
     const [[x0, y0], [x1, y1]] = [s.from, s.to];
     if (s.tool === 'line') return T.line(x0, y0, x1, y1);
     return (s.tool === 'rect' ? T.rect : T.ellipse)(x0, y0, x1, y1, state.filled);
   }
   function paintStroke() {
     const p = work(state.key); p.data.set(stroke.base);
+    if (stroke.tool === 'shade') return shadeStroke(p);
     for (const [x, y] of strokePoints(stroke)) plot(p, x, y, stroke.hex, stroke.mask);
   }
+  /* Shade: each pixel the stroke covers (and its mirror twin) steps once along its ramp, read from the stroke's start. */
+  function shadeStroke(p) {
+    const s = stroke, base = {w: p.w, h: p.h, data: s.base}, seen = new Set();
+    const step = (x, y) => {
+      if (seen.has(y * p.w + x) || (s.mask && !inRect(s.mask, x, y))) return;
+      seen.add(y * p.w + x);
+      const hex = T.shade(T.get(base, x, y), s.ramps, s.dir, state.color); if (hex) T.set(p, x, y, hex);
+    };
+    for (const [x, y] of strokePoints(s)) { step(x, y); if (state.mirror) step(p.w - 1 - x, y); }
+  }
   const snapshot = () => ({data: work(state.key).data.slice(), sel: state.sel && {...state.sel}, float: state.float && {...state.float}});
-  /* Start the tool at a pixel. pointer: false for the keyboard cursor. */
-  function press(x, y, tool, {erase = false, alt = false, pointer = true, held = false} = {}) {
-    if (tool === 'picker') return pick(x, y);
+  /* Start the tool at a pixel. pointer: false for the keyboard cursor. secondary: the right button (secondary colour,
+   * or a deeper shade); deeper: Shift with the shade tool. */
+  function press(x, y, tool, {secondary = false, deeper = false, alt = false, pointer = true, held = false} = {}) {
+    if (tool === 'picker') return pick(x, y, secondary);
+    if (tool === 'select' && secondary) tool = 'pencil';  // right-click with Select paints the secondary colour, as before it erased
     if (tool === 'select') return pressSelect(x, y, alt, pointer);
-    const hex = tool === 'eraser' || erase ? null : paintHex(); if (hex === undefined) return;
+    if (tool === 'shade') return pressShade(x, y, secondary || deeper, pointer, held);
+    const hex = tool === 'eraser' ? null : paintHex(secondary); if (hex === undefined) return;
     const p = work(state.key), mask = selRect(); state.float = null;  // painting drops a floating selection where it is
     if (tool === 'fill') {
       if (mask && !inRect(mask, x, y)) return status('Fill inside the selection, or press Escape to clear it', 'warn');
@@ -242,6 +273,14 @@
     }
     const label = SHAPES.has(tool) ? TOOLS.find(t => t[0] === tool)[1] + (tool !== 'line' && state.filled ? ' (filled)' : '') : hex ? 'Pencil' : 'Eraser';
     stroke = {kind: SHAPES.has(tool) ? 'shape' : 'free', tool, hex, pointer, held, mask, label, base: p.data.slice(), from: [x, y], to: [x, y], pts: [[x, y]], snap: snapshot()};
+    paintStroke(); draw();
+  }
+  function pressShade(x, y, deeper, pointer, held) {
+    const a = asset(), ramps = rampsOf(a).map(r => r.colours);
+    if (!ramps.length) return status(`${paletteWhere(a)} has no ramps yet; add them under palette_ramps in assets.json`, 'warn', true);
+    const p = work(state.key); state.float = null;
+    stroke = {kind: 'free', tool: 'shade', dir: deeper ? 1 : -1, ramps, pointer, held, mask: selRect(), label: deeper ? 'Shade deeper' : 'Shade lighter',
+      base: p.data.slice(), from: [x, y], to: [x, y], pts: [[x, y]], snap: snapshot()};
     paintStroke(); draw();
   }
   function pressSelect(x, y, alt, pointer) {
@@ -280,12 +319,20 @@
     work(state.key).data.set(s.snap.data); state.sel = s.snap.sel; state.float = s.snap.float;
     draw(); renderReadout(); announce('Cancelled'); return true;
   }
-  /* Alt-click borrows the picker for one click and keeps the current tool (paint_tools.js pickOutcome). */
-  function pick(x, y) {
-    const a = asset(), hex = pixel(work(state.key), x, y), out = T.pickOutcome(hex, paletteOf(a), state.tool);
-    if (out.off) return status(`${hex} is not in ${paletteWhere(a)}; click its custom chip under Paint colours to paint with it`, 'warn', true);
-    if (out.color) { state.color = out.color; state.custom = false; }
-    state.tool = out.tool;
+  /* Alt-click borrows the picker for one click and keeps the current tool (paint_tools.js pickOutcome).
+   * secondary (the right button) sets the secondary colour, transparent included, and always keeps the tool. */
+  function pick(x, y, secondary = false) {
+    const a = asset(), hex = pixel(work(state.key), x, y);
+    if (secondary) {
+      if (hex && !paletteOf(a).includes(hex)) return status(`${hex} is not in ${paletteWhere(a)}; the secondary colour takes palette colours`, 'warn', true);
+      state.color2 = hex; state.custom2 = false;
+      announce(`Secondary colour ${hex ? label(hex, a) : 'transparent'}`);
+    } else {
+      const out = T.pickOutcome(hex, paletteOf(a), state.tool);
+      if (out.off) return status(`${hex} is not in ${paletteWhere(a)}; click its custom chip under Paint colours to paint with it`, 'warn', true);
+      if (out.color) { state.color = out.color; state.custom = false; state.ramp = null; }
+      state.tool = out.tool;
+    }
     renderPalette(a); renderToolbarState(); renderReadout();
   }
 
@@ -431,18 +478,19 @@
   function moveCursor(dx, dy, e) {
     const a = view.a, [x0, y0] = state.cursor, x = Math.max(0, Math.min(a.width - 1, x0 + dx)), y = Math.max(0, Math.min(a.height - 1, y0 + dy));
     state.kbd = true;
-    if (e.shiftKey && !stroke && (state.tool === 'pencil' || state.tool === 'eraser')) press(x0, y0, state.tool, {pointer: false, held: true});
+    if (e.shiftKey && !stroke && ['pencil', 'eraser', 'shade'].includes(state.tool)) press(x0, y0, state.tool, {pointer: false, held: true});
     state.cursor = [x, y]; state.hover = [x, y];
     if (stroke && !stroke.pointer) drag(x, y);
     scrollToCursor(); draw(); renderInspector(a); renderReadout();
     const hex = pixel(work(a.key), x, y); announce(`${x}, ${y} ${hex ? label(hex, a) : 'transparent'}`);
   }
   /* Enter (or Space once the keyboard cursor is in use) applies the tool at the cursor. */
-  function applyAtCursor() {
+  /* Shift+Enter applies the secondary colour (or a deeper shade). */
+  function applyAtCursor(secondary = false) {
     const [x, y] = state.cursor; state.kbd = true; state.hover = [x, y];
     if (stroke?.pointer) return;
     if (stroke) return release();
-    press(x, y, state.tool, {pointer: false});
+    press(x, y, state.tool, {pointer: false, secondary});
     if (stroke?.kind === 'free') release();
     else if (stroke) announce(`${stroke.kind === 'move' ? 'Moving' : 'Started'} at ${x}, ${y}; arrows to move, Enter to finish, Escape to cancel`);
     draw(); renderReadout();
@@ -454,7 +502,7 @@
     else if (dir && !mod && !e.shiftKey && !state.kbd && !stroke && dir[0] && S.stepFrame?.(dir[0])) { /* changed frame */ }
     else if (dir && !mod) moveCursor(...dir, e);
     else if (e.key === 'Enter' && e.altKey && !stroke && state.tool !== 'select') { if (!e.repeat) pick(...state.cursor); }  // Alt+Enter picks without switching
-    else if (e.key === 'Enter' || (e.key === ' ' && !e.shiftKey && (state.kbd || stroke))) { if (!e.repeat) applyAtCursor(); }
+    else if (e.key === 'Enter' || (e.key === ' ' && !e.shiftKey && (state.kbd || stroke))) { if (!e.repeat) applyAtCursor(e.key === 'Enter' && e.shiftKey); }
     else if (e.key === 'Escape' && (stroke || state.sel)) { if (!cancel()) deselect(); }
     else if (e.key === 'Escape' && state.kbd) { state.kbd = false; draw(); renderReadout(); announce(S.stepFrame ? 'Keyboard cursor hidden; Left and Right change frame' : 'Keyboard cursor hidden'); }
     else return;
@@ -481,7 +529,7 @@
     Object.assign(c, {tabIndex: 0}); c.setAttribute('role', 'application'); c.setAttribute('aria-roledescription', 'pixel canvas');
     c.setAttribute('aria-label', `${a.key}, ${a.width} by ${a.height} pixels`); c.setAttribute('aria-describedby', 'paint-hint');
     scroller.append(c); pane.append(scroller);
-    pane.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">Right-click erases · Alt-click picks · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
+    pane.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">Right-click paints the secondary colour (transparent until you set one) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
       Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. <kbd>?</kbd> lists every shortcut.</p><div id="paint-live" class="vh" aria-live="polite"></div>`);
     const side = document.createElement('div'); side.className = 'paint-side';
     work.append(pane, side); stage.append(work);
@@ -515,10 +563,10 @@
       try { c.setPointerCapture(e.pointerId); } catch { /* synthetic or already-released pointers cannot be captured */ }
       if (e.button === 1) { pan = {x: e.clientX, y: e.clientY, l: scroller.scrollLeft, t: scroller.scrollTop}; return; }
       if (stroke) return;
-      const [x, y] = cell(e), erase = e.button === 2;
-      const tool = erase && !SHAPES.has(state.tool) ? 'eraser' : e.altKey && state.tool !== 'select' ? 'picker' : state.tool;
+      const [x, y] = cell(e), secondary = e.button === 2;
+      const tool = e.altKey && state.tool !== 'select' ? 'picker' : state.tool;
       state.kbd = false; state.cursor = [x, y];
-      press(x, y, tool, {erase, alt: e.altKey});
+      press(x, y, tool, {secondary, deeper: e.shiftKey, alt: e.altKey});
     };
     c.onpointermove = e => {
       if (pan) { scroller.scrollLeft = pan.l - (e.clientX - pan.x); scroller.scrollTop = pan.t - (e.clientY - pan.y); return; }
@@ -632,58 +680,87 @@
       : 'Paint colours <span class="lbl">· click to paint · ✎ edits the shared palette</span>';
     const peers = D.assets.filter(x => own ? x.palette_name === a.palette_name : !ownPalette(x));
     const counts = a.after_metrics.colors, usage = hex => peers.filter(x => x.after_metrics.colors[hex]).length;
-    const chip = (hex, title, sub, extra = '', custom = false) => {
+    if (state.color2 && !pal.includes(state.color2) && !state.custom2) state.color2 = null;  // the secondary keeps to this palette too
+    /* Right-click (or Alt+Enter) on a chip sets the secondary colour; null is transparent. */
+    const setSecondary = (hex, custom) => { state.color2 = hex; state.custom2 = custom; S.renderPalette(el, a); draw(); announce(`Secondary colour ${hex ? label(hex, a) : 'transparent'}`); };
+    const chip = (hex, title, sub, extra = '', custom = false, parent = el) => {
       const b = document.createElement('div'); b.className = 'paint-chip' + extra; b.tabIndex = 0; b.title = title; b.dataset.chip = hex || 'eraser';
       const active = hex === null ? state.tool === 'eraser' : state.tool !== 'eraser' && state.color === hex;
       if (active && hex && lowContrast(hex, a)) { b.classList.add('faint'); title += ` · hard to see on the ${backdropFor(a)} backdrop`; b.title = title; }
+      if (state.color2 === hex) { b.classList.add('second'); title += ' · secondary colour'; b.title = title; }
       b.setAttribute('aria-pressed', String(active)); b.setAttribute('role', 'button'); b.setAttribute('aria-label', title);
       b.innerHTML = `<span class="sw ${hex ? '' : 'eraser-sw'}" style="${hex ? `background:${hex}` : ''}"></span><span>${title.split(' · ')[0]}</span><span>${sub}</span>`;
       b.onclick = e => {
         if (e.shiftKey && hex) { state.isolate = state.isolate === hex ? null : hex; return draw(); }
+        if (e.altKey) return setSecondary(hex, custom);
         if (hex === null) state.tool = 'eraser';
         else { state.color = hex; state.custom = custom; if (['eraser', 'picker', 'select'].includes(state.tool)) state.tool = 'pencil'; }
         S.renderPalette(el, a); renderToolbarState(); draw();
       };
-      activate(b); el.append(b); return b;
+      b.oncontextmenu = e => { e.preventDefault(); setSecondary(hex, custom); };
+      activate(b);
+      const enter = b.onkeydown; b.onkeydown = e => { if (e.altKey && e.key === 'Enter' && e.target === b) { e.preventDefault(); e.stopPropagation(); return setSecondary(hex, custom); } enter(e); };
+      parent.append(b); return b;
     };
+    /* A labelled row of chips: one per ramp (light to deep), then the palette colours in no ramp, then the extras. */
+    const row = name => {
+      const r = document.createElement('div'); r.className = 'paint-ramp'; r.setAttribute('role', 'group'); r.setAttribute('aria-label', name);
+      const n = document.createElement('span'); n.className = 'ramp-name'; n.textContent = name; r.append(n); el.append(r); return r;
+    };
+    const swatch = hex => `<span class="sw ${hex ? '' : 'eraser-sw'}" style="${hex ? `background:${hex}` : ''}"></span>`;
     keepFocus(el, 'data-chip', () => {
       el.textContent = '';
-      pal.forEach((hex, i) => {
-        const b = chip(hex, `${slotName(a, i)} · ${hex} · used by ${usage(hex)} assets`, counts[hex] ? `${counts[hex]} px` : '—');
-        if (own) return;  // only the shared palette is editable here; a named palette is edited in assets.json
-        // The ✎ button is the chip's sibling: a button inside a role=button chip is nested-interactive.
-        const slot = document.createElement('div'); slot.className = 'paint-slot'; b.replaceWith(slot); slot.append(b);
-        slot.insertAdjacentHTML('beforeend', `<button class="edit" title="Change ${NAMES[i]} everywhere" aria-label="Change ${NAMES[i]} in every sprite">✎</button><input type="color" value="${hex}" hidden>`);
-        const input = slot.querySelector('input'); slot.querySelector('.edit').onclick = e => { e.stopPropagation(); input.click(); };
-        input.onchange = e => editSlot(i, e.target.value);
-      });
-      chip(null, 'eraser · transparent', 'right-click');
+      const pair = document.createElement('div'); pair.className = 'paint-pair'; pair.setAttribute('role', 'group'); pair.setAttribute('aria-label', 'Main and secondary colours');
+      pair.innerHTML = `<span class="pair-sw">${swatch(state.color)}${swatch(state.color2)}</span><span class="studio-note">main ${state.color ? `${label(state.color, a)} ${state.color}` : 'transparent'}
+        · secondary (right-click) ${state.color2 ? `${label(state.color2, a)} ${state.color2}` : 'transparent'}</span>${btn('swap-colours', '⇄ Swap', 'Swap the main and secondary colours', 'X', ' data-chip="swap"')}`;
+      pair.querySelector('#swap-colours').onclick = swapColours; el.append(pair);
+      const ramps = rampsOf(a), ramped = new Set(ramps.flatMap(r => r.colours)), rest = pal.filter(h => !ramped.has(h));
+      const lines = [...ramps.map(r => [r.name, r.colours.filter(h => pal.includes(h))]), ...(rest.length ? [[ramps.length ? 'other' : 'palette', rest]] : [])];
+      lines.forEach(([name, colours]) => { const r = row(name); colours.forEach(hex => slotChip(hex, pal.indexOf(hex), r)); });
+      const extras = row('more');
+      chip(null, 'eraser · transparent', state.color2 === null ? 'right-click' : 'eraser', '', false, extras);
       for (const hex of Object.keys(counts).filter(h => !pal.includes(h)))
-        chip(hex, `custom · ${hex} · not in ${where}; release builds reject it until a slot uses this colour`, `${counts[hex]} px`, ' off', true);
+        chip(hex, `custom · ${hex} · not in ${where}; release builds reject it until a slot uses this colour`, `${counts[hex]} px`, ' off', true, extras);
       if (!pal.includes(state.color) && state.color && !counts[state.color])
-        chip(state.color, `custom · ${state.color} · not in ${where}`, state.color.slice(1), ' off', true);
+        chip(state.color, `custom · ${state.color} · not in ${where}`, state.color.slice(1), ' off', true, extras);
       const custom = document.createElement('div'); custom.className = 'paint-chip'; custom.title = 'Paint with any colour, outside the palette';
       custom.tabIndex = 0; custom.setAttribute('role', 'button'); custom.setAttribute('aria-label', 'Choose a custom colour'); custom.dataset.chip = 'custom';
       custom.innerHTML = `<span class="sw" style="background:conic-gradient(#fa8c99,#f5c764,#85e4b6,#a47bdb,#fa8c99)"></span><span>custom</span><span>pick…</span><input type="color" value="${state.color || '#ffffff'}" hidden>`;
       const input = custom.querySelector('input'); custom.onclick = e => { if (e.target !== input) input.click(); };
       input.onchange = e => { state.color = e.target.value.toLowerCase(); state.custom = true; state.tool = 'pencil'; S.renderPalette(el, a); renderToolbarState(); draw(); };
-      activate(custom); el.append(custom);
+      activate(custom); extras.append(custom);
       const note = document.createElement('p'); note.className = 'studio-note';
       note.textContent = own
-        ? `Click a colour to paint with it. This sprite uses ${where} from assets.json, so the shared palette and its ✎ do not apply. Tools paint only these colours until you choose custom; custom colours work in the live game only. Shift-click isolates a colour.`
-        : 'Click a colour to paint with it. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.';
+        ? `Click a colour to paint with it; right-click (or Alt+Enter) makes it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. This sprite uses ${where}, so the shared palette and its ✎ do not apply. Tools paint only these colours until you choose custom; custom colours work in the live game only. Shift-click isolates a colour.`
+        : 'Click a colour to paint with it; right-click (or Alt+Enter) makes it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.';
       el.append(note);
     });
+    /* One palette slot's chip; the shared palette also gets its ✎. */
+    function slotChip(hex, i, parent) {
+      const b = chip(hex, `${slotName(a, i)} · ${hex} · used by ${usage(hex)} assets`, counts[hex] ? `${counts[hex]} px` : '—', '', false, parent);
+      if (own) return;  // only the shared palette is editable here; a named palette is edited in assets.json
+      // The ✎ button is the chip's sibling: a button inside a role=button chip is nested-interactive.
+      const slot = document.createElement('div'); slot.className = 'paint-slot'; b.replaceWith(slot); slot.append(b);
+      slot.insertAdjacentHTML('beforeend', `<button class="edit" title="Change ${NAMES[i]} everywhere" aria-label="Change ${NAMES[i]} in every sprite">✎</button><input type="color" value="${hex}" hidden>`);
+      const input = slot.querySelector('input'); slot.querySelector('.edit').onclick = e => { e.stopPropagation(); input.click(); };
+      input.onchange = e => editSlot(i, e.target.value);
+    }
   };
 
   /* ---------- shortcut docs: the shell's ? overlay lists them; the handlers are S.keydown and canvasKey ---------- */
   window.JelliShell?.registerShortcuts('Paint', [
     {keys: ['P', 'E', 'F', 'C'], description: 'Pencil, eraser, fill, pick colour'}, {keys: ['L', 'R', 'U'], description: 'Line, rectangle, ellipse'},
+    {keys: ['T'], description: 'Shade: step pixels lighter along their ramp (right-click or Shift+drag: deeper)'},
     {keys: ['V'], description: 'Select'}, {keys: ['Shift+F'], description: 'Filled shapes on/off'}, {keys: ['Shift+P'], description: 'Pixel-perfect pencil on/off (1 px strokes, no doubled corners)'},
-    {keys: ['M'], description: 'Mirror left/right'}, {keys: ['Right-click'], description: 'Erase'}, {keys: ['Alt+Click', 'Alt+Enter'], description: 'Pick a colour and keep the current tool (any tool except Select)'},
+    {keys: ['M'], description: 'Mirror left/right'}, {keys: ['X'], description: 'Swap the main and secondary colours'},
+    {keys: ['Right-click'], description: 'Paint with the secondary colour (transparent by default, so it erases; with Fill it erases the touching area). On a palette colour: make it the secondary'},
+    {keys: ['Shift+F10'], description: 'On a focused palette colour: make it the secondary colour (the context-menu key works too)'},
+    {keys: ['Alt+Click', 'Alt+Enter'], description: 'Pick a colour and keep the current tool (any tool except Select)'},
+    {keys: ['Alt+Right-click'], description: 'Pick the secondary colour, with any tool'},
     {keys: ['Shift+Drag'], description: 'Snap lines to 45°; square rectangles and circles'},
     {keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'], description: 'Canvas focused: move the keyboard cursor'},
     {keys: ['Enter', 'Space'], description: 'Canvas focused: apply the tool; shapes and select take one press to start and one to finish'},
+    {keys: ['Shift+Enter'], description: 'Canvas focused: apply the tool with the secondary colour, or shade deeper'},
     {keys: ['Shift+ArrowRight'], description: 'Draw with the pencil or eraser while moving the cursor'},
     {keys: ['Escape'], description: 'Cancel the shape, then clear the selection'},
     {keys: ['Mod+A'], description: 'Select all'}, {keys: ['Mod+C', 'Mod+X', 'Mod+V'], description: 'Copy, cut, paste (paste floats; palette-checked)'},
@@ -773,8 +850,9 @@
     if (e.key === 'Escape') return cancel() || (state.sel ? (deselect(), true) : false);
     if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); return deleteSel(); }
     if (e.shiftKey) { if (SHIFTED[k]) { SHIFTED[k](); return true; } return false; }
-    const tool = {p: 'pencil', e: 'eraser', f: 'fill', c: 'picker', l: 'line', r: 'rect', u: 'ellipse', v: 'select'}[k];
+    const tool = {p: 'pencil', e: 'eraser', f: 'fill', c: 'picker', t: 'shade', l: 'line', r: 'rect', u: 'ellipse', v: 'select'}[k];
     if (tool) { setTool(tool); return true; }
+    if (k === 'x') { swapColours(); return true; }  // Paint only: Review keeps X for "needs work"
     if (k === 'm') { toggle('mirror', 'Mirror'); return true; }
     if (k === 'w') { toggle('wrap', 'Wrap'); return true; }
     if (k === 'z') { fitContent(); return true; }

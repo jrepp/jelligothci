@@ -2411,6 +2411,102 @@
       "#c9d6a3"
     ]
   },
+  "palette_ramps": {
+    "shared": [
+      {
+        "name": "mint jelly",
+        "colours": [
+          "#cff5cf",
+          "#85e4b6",
+          "#43bca2",
+          "#187b79"
+        ]
+      },
+      {
+        "name": "lilac jelly",
+        "colours": [
+          "#ffffff",
+          "#d2b8f3",
+          "#a47bdb",
+          "#7655a3"
+        ]
+      },
+      {
+        "name": "coral",
+        "colours": [
+          "#fff4cf",
+          "#fa8c99",
+          "#d84f70"
+        ]
+      },
+      {
+        "name": "gold",
+        "colours": [
+          "#fff4cf",
+          "#f5c764",
+          "#ae7855"
+        ]
+      },
+      {
+        "name": "recess",
+        "colours": [
+          "#72516b",
+          "#49334f"
+        ]
+      }
+    ],
+    "axolotl": [
+      {
+        "name": "body",
+        "colours": [
+          "#ffffff",
+          "#ffe3ed",
+          "#ffcbdd",
+          "#ffadca",
+          "#ff5994",
+          "#d9265d"
+        ]
+      },
+      {
+        "name": "aqua",
+        "colours": [
+          "#83ebfb",
+          "#1ec1d9"
+        ]
+      }
+    ],
+    "poop": [
+      {
+        "name": "brown",
+        "colours": [
+          "#dfa08a",
+          "#b55838",
+          "#8f4329"
+        ]
+      }
+    ]
+  },
+  "palette_names": {
+    "axolotl": [
+      "body",
+      "outline",
+      "body shadow",
+      "gill",
+      "body light",
+      "gill deep",
+      "white",
+      "aqua",
+      "deep aqua",
+      "butter"
+    ],
+    "poop": [
+      "outline",
+      "brown",
+      "dark brown",
+      "light brown",
+      "stink green"
+    ]
+  },
   "creature_poses": [
     "idle",
     "idle-alt",
