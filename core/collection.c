@@ -14,7 +14,7 @@ void jelli_collection_migrate(JelliGame *game)
     for (unsigned i = 0u; i < game->count; ++i) {
         game->pets[i].collection_entry = (uint8_t)(i + 1u);
         game->pets[i].reached_forms =
-            game->pets[i].form <= 1u ? (uint8_t)(1u << game->pets[i].form) : 0u;
+            (uint8_t)(game->pets[i].form <= 1u ? 1u << game->pets[i].form : 0u);
     }
 }
 

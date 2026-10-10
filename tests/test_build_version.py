@@ -13,7 +13,9 @@ class BuildVersionTest(unittest.TestCase):
             source = Path(directory) / "source"
             build = Path(directory) / "build"
             source.mkdir()
-            for name in ("core", "include", "tests", "tools"):
+            # Everything the core configure step reads: sources plus the content
+            # data and the CMake modules that generate code from it.
+            for name in ("cmake", "content", "core", "include", "tests", "tools"):
                 shutil.copytree(repository / name, source / name)
             shutil.copy(repository / "CMakeLists.txt", source / "CMakeLists.txt")
             version = source / "VERSION"
