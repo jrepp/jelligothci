@@ -13,3 +13,12 @@ release:
   workflow: .github/workflows/release.yml
   artifacts: [macos-game-zip, windows-game-zip, source-art-zip, preview-html, preview-zip, source-archive, sha256-checksums]
   hardware_flash: false
+components:
+  jelli-art:
+    path: tools/jelli-art
+    version_file: tools/jelli-art/VERSION
+    tag_pattern: jelli-art-vX.Y.Z
+    workflow: .github/workflows/jelli-art.yml
+    artifacts: [container-image]
+    image: ghcr.io/jrepp/jelli-art
+    image_tags: [X.Y.Z, X.Y, X, sha-SHORT]

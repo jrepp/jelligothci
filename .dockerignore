@@ -1,0 +1,7 @@
+# Container builds (tools/jelli-art/Containerfile) only need Jelli Art and the
+# shared review page. Everything else stays out of the build context.
+*
+!tools/assets/compare.html
+!tools/assets/compare_slice.py
+!tools/jelli-art/
+tools/jelli-art/__pycache__/

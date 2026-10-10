@@ -95,6 +95,7 @@ the port/BSP.
 ```sh
 make run          # pet care UI with desktop saves; Space pauses, Escape exits
 make run-shapes   # original input/color/motion diagnostic
+make jelli-art   # local browser pixel editor (tools/jelli-art/jelli_art.py)
 make test         # core tests and headless SDL smoke test
 make core-test    # verify the core builds without SDL
 make sanitize     # address and undefined behavior sanitizers

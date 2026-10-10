@@ -18,6 +18,8 @@ jobs:
     outputs:
       created: ${{ steps.release.outputs.release_created }}
       tag: ${{ steps.release.outputs.tag_name }}
+      studio_created: ${{ steps.release.outputs['tools/jelli-art--release_created'] }}
+      studio_tag: ${{ steps.release.outputs['tools/jelli-art--tag_name'] }}
     steps:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
@@ -34,10 +36,21 @@ jobs:
         run: |
           branch=$(printf '%s' "$RELEASE_PR" | jq -r '.headBranchName')
           gh workflow run release.yml --ref main -f ref="$branch"
+          gh workflow run jelli-art.yml --ref main -f ref="$branch"
   release:
     needs: prepare
     if: needs.prepare.outputs.created == 'true'
     uses: ./.github/workflows/release.yml
     with:
       ref: ${{ needs.prepare.outputs.tag }}
+      publish: true
+  jelli-art:
+    needs: prepare
+    if: needs.prepare.outputs.studio_created == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/jelli-art.yml
+    with:
+      ref: ${{ needs.prepare.outputs.studio_tag }}
       publish: true

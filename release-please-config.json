@@ -8,6 +8,20 @@
       "include-component-in-tag": false,
       "bump-minor-pre-major": false,
       "bump-patch-for-minor-pre-major": false,
+      "initial-version": "0.1.0",
+      "exclude-paths": [
+        "tools/jelli-art"
+      ]
+    },
+    "tools/jelli-art": {
+      "release-type": "simple",
+      "package-name": "jelli-art",
+      "component": "jelli-art",
+      "changelog-path": "CHANGELOG.md",
+      "version-file": "VERSION",
+      "include-component-in-tag": true,
+      "bump-minor-pre-major": false,
+      "bump-patch-for-minor-pre-major": false,
       "initial-version": "0.1.0"
     }
   }

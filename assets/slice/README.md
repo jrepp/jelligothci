@@ -43,7 +43,7 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 | `backgrounds/` | Two 64x64 neutral home/garden scenes with black vignettes |
 | `props/` | Food bowl, closed/open gift, and bed; 24x24 pixels |
 | `font/` | 128x72 atlas: 16 columns by six rows of 8x12 cells, ASCII 32–127 |
-| `source/` | Original generated atlas, exact generation prompt, original pixel authoring recipe, and glyph patterns |
+| `source/` | Original generated atlas, exact generation prompt, original pixel authoring recipe, polish recipe, and glyph patterns |
 
 `assets.json` assigns explicit IDs, paths, frame sizes, bounds, pivots, palette,
 and clip timings. PNGs in the asset directories are the editable runtime
@@ -90,6 +90,34 @@ rounded quarter-grid boundaries from the actual source size, resizes using neare
 neighbor, thresholds alpha at 128, and selects the nearest shared palette color.
 Do not assume the image generator honored the requested dimensions. It returned
 1254x1254 for this atlas; see the validation record in memo-007.
+
+## Polish pass and before/after review
+
+The original recipes above are now followed by a second stage,
+`source/polish.py`. It redraws the creatures, props, butterfly, friendship bow,
+rainbow seed, and rainbow effect from a shared kit (`pixel_kit.py`,
+`creature_art.py`, `prop_art.py`, `keepsake_art.py`). It also re-inks every
+other icon, menu, meter, health, effect, and prize sprite (`icon_polish.py`)
+with one closed 1px outline and no stray specks. The original generator recipe no
+longer reproduces the shipped creature and prop PNGs; `polish.py` does.
+
+```sh
+./scripts/uv run --python 3.12 assets/slice/source/polish.py          # candidates in build/assets/polish
+./scripts/uv run --python 3.12 tools/assets/compare_slice.py --before assets/slice --after build/assets/polish
+./scripts/uv run --python 3.12 assets/slice/source/polish.py --apply  # write owned PNGs + manifest bounds
+```
+
+Assets saved from Jelli Art (`make jelli-art`) are recorded in
+`source/hand-painted.json`; `polish.py` skips them.
+
+`compare_slice.py` defaults to `--before HEAD` and the working tree. It writes
+`build/assets/compare.html`, a self-contained pixel review page with these tools:
+side-by-side, swipe, flip, onion, and diff modes; zoom up to 32× with a pixel grid;
+speck and open-edge overlays; per-colour isolation; a hover inspector shared by
+both panes; device-scale panel previews with a physical-size mode; a sheet of every
+asset that flips to "before" while Space is held; and per-asset review marks that
+export as Markdown. The style rules are in the
+[pixel art authoring guide](../../docs/pixel-art-guide.md).
 
 ## Provenance
 

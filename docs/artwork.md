@@ -2,6 +2,35 @@
 
 Run commands from the repository root unless stated otherwise.
 
+## Paint in Jelli Art
+
+```sh
+make jelli-art    # opens http://127.0.0.1:8765/ in your browser
+make run-live      # optional, in a second terminal: see saves in the game
+```
+
+The studio is the review page with painting turned on. It needs no setup beyond
+the repository's pinned tools, and it only listens on your own computer.
+
+1. Pick a sprite in the left list, or use **Sheet** to browse them all.
+2. Choose **Paint** under Mode. Use the pencil, eraser, fill, and colour picker.
+   Right-click erases, Alt-click picks a colour, and **Mirror** paints both halves
+   of a symmetric sprite.
+3. Choose a colour under **Paint colours**. **custom** paints any colour. The
+   ✎ on a palette colour changes that colour in every sprite at once; it asks
+   before doing so.
+4. **Tidy outline** applies the house outline and removes stray pixels. Turn on
+   **Issues** to see what still needs attention. Undo with ⌘Z / Ctrl+Z.
+5. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
+   shows it straight away. "Compare with" picks what the before image is: the
+   last commit, a release tag, or a recent commit.
+
+Saved sprites are listed in `assets/slice/source/hand-painted.json`. The polish
+recipe never overwrites them. Custom colours work in the live game, but release
+builds accept only the 16 palette colours. To ship a new colour, put it in a
+palette slot with ✎. The font atlas and backgrounds are not paintable yet.
+Follow the [pixel art authoring guide](pixel-art-guide.md) for the house style.
+
 ## Edit in the running game
 
 ```sh
@@ -65,3 +94,16 @@ The inventory includes sixteen creature frames, care and ring icons, health
 activities, stat pictograms, celebration sprites, backgrounds, props, font, and
 nine unique presents. See [the source inventory](../assets/slice/README.md) for
 stable IDs, provenance, reproduction, and byte budgets.
+
+## Style rules and before/after review
+
+New or revised art follows the [pixel art authoring guide](pixel-art-guide.md):
+palette ramps, a closed 1px outline, top-left light, the shared face kit, and the
+review checklist. To compare art pixel by pixel against a git revision or another
+asset directory:
+
+```sh
+./scripts/uv run --python 3.12 tools/assets/compare_slice.py              # HEAD vs working tree
+./scripts/uv run --python 3.12 tools/assets/compare_slice.py --before v0.2.0
+open build/assets/compare.html
+```

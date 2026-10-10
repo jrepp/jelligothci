@@ -1,0 +1,103 @@
+name: Jelli Art image
+on:
+  pull_request:
+    paths:
+      - tools/jelli-art/**
+      - tools/assets/compare.html
+      - tools/assets/compare_slice.py
+      - .github/workflows/jelli-art.yml
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build (defaults to this commit)
+        type: string
+        required: false
+      publish:
+        description: Push the image to GHCR (only for jelli-art-vX.Y.Z tags)
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
+      publish:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: jelli-art-${{ inputs.ref || github.ref }}
+  cancel-in-progress: false
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REF: ${{ inputs.ref || github.sha }}
+      PUBLISH: ${{ inputs.publish && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
+      - name: Resolve version and image name
+        id: meta
+        run: |
+          version=$(tr -d '[:space:]' < tools/jelli-art/VERSION)
+          if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "tools/jelli-art/VERSION must be MAJOR.MINOR.PATCH, got '$version'" >&2; exit 1
+          fi
+          if [[ "$PUBLISH" == "true" && "$REF" != "jelli-art-v$version" ]]; then
+            echo "publishing requires ref jelli-art-v$version, got '$REF'" >&2; exit 1
+          fi
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          {
+            echo "version=$version"
+            echo "image=ghcr.io/$owner/jelli-art"
+            echo "revision=$(git rev-parse HEAD)"
+            echo "short=$(git rev-parse --short=12 HEAD)"
+          } >> "$GITHUB_OUTPUT"
+      - name: Build image
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          REVISION: ${{ steps.meta.outputs.revision }}
+        run: |
+          docker build -f tools/jelli-art/Containerfile \
+            --build-arg STUDIO_VERSION="$VERSION" --build-arg SOURCE_REVISION="$REVISION" \
+            -t jelli-art:ci .
+      - name: Smoke test against this checkout
+        run: |
+          docker run -d --name jelli-art -p 127.0.0.1:8765:8765 \
+            -v "$PWD:/work/jelligotchi:ro" jelli-art:ci
+          for _ in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8765/healthz && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8765/healthz
+          curl -fsS http://127.0.0.1:8765/ | grep -q 'window.Studio = {}'
+          curl -fsS 'http://127.0.0.1:8765/api/data?before=HEAD' \
+            | python3 -c 'import json, sys; d = json.load(sys.stdin); assert len(d["assets"]) > 50, len(d["assets"]); print(len(d["assets"]), "assets,", d["studio_version"])'
+      - name: Container logs
+        if: always()
+        run: docker logs jelli-art 2>&1 | tail -50 || true
+      - name: Publish semver tags to GHCR
+        if: env.PUBLISH == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE: ${{ steps.meta.outputs.image }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          SHORT: ${{ steps.meta.outputs.short }}
+        run: |
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          major=${VERSION%%.*}
+          minor=${VERSION%.*}
+          for tag in "$VERSION" "$minor" "$major" "sha-$SHORT"; do
+            docker tag jelli-art:ci "$IMAGE:$tag"
+            docker push --quiet "$IMAGE:$tag"
+          done
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$VERSION")
+          echo "Published $IMAGE:$VERSION ($digest); channels $minor, $major" >> "$GITHUB_STEP_SUMMARY"
