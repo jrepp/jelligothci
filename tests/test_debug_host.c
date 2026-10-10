@@ -44,7 +44,8 @@ int main(void)
     char text[JELLI_DEBUG_LINE + 32u];
     memcpy(text, "@J1 43 host ", 12u);
     memset(text + 12u, 'a', 382u);
-    memcpy(text + 394u, "\n", 2u);
+    text[394] = '\n';
+    text[395] = '\0';
     feed(&debug, &engine, text);
     CHECK(calls == 2u && length == 382u);
     memset(text + 12u, 'a', JELLI_DEBUG_LINE);
