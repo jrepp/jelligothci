@@ -20,7 +20,8 @@
   const A = window.JelliAnimation = {clipFrame};
   const S = window.Studio, cr = S?.cr;
   if (!cr) return;
-  const anim = {overview: null, focus: null, drag: null, paintClip: null};
+  const anim = {overview: null, focus: null, drag: null, paintClip: null, fine: false};
+  const touch = () => window.JelliTouch;
   const esc = cr.esc;
 
   document.head.insertAdjacentHTML('beforeend', `<style>
@@ -48,6 +49,18 @@
     .an-lib .row{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}.an-lib .row button{padding:1px 6px;min-width:24px;min-height:24px}
     .an-lib.unused{border-style:dashed}
     .an-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+    .an-dur{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}.an-dur .lbl{margin:0}
+    .an-track{user-select:none;-webkit-user-select:none;touch-action:pan-y}
+    @media (any-pointer: coarse){
+      /* A 44 px handle centred on the boundary it moves; the grip keeps its 24 px look. */
+      .an-track{height:var(--tap);overflow:visible;margin-right:calc(var(--tap) / 2)}
+      .an-seg{min-width:92px}.an-seg:first-child{border-radius:6px 0 0 6px}.an-seg:last-child{border-radius:0 6px 6px 0}
+      .an-seg+.an-seg button.body{padding-left:26px}
+      .an-handle{width:var(--tap);right:calc(var(--tap) / -2);z-index:1;touch-action:none;background-size:24px 100%;background-position:center;background-repeat:no-repeat}
+      .an-card .row button,.an-lib .row button{min-height:var(--tap);min-width:var(--tap);padding:3px 6px}
+      .an-card,.an-lib{gap:var(--tap-gap)}.an-strip,.an-libs,.an-new{gap:var(--tap-gap)}
+      .an-new label.lbl:has(input[type=checkbox]){display:inline-flex;align-items:center;gap:8px;min-height:var(--tap)}
+    }
     @media (prefers-reduced-motion: reduce){.an-card,.an-handle{transition:none}}
   </style>`);
   document.body.insertAdjacentHTML('beforeend', '<div id="an-live" class="an-sr" role="status" aria-live="polite"></div>');
@@ -93,11 +106,13 @@
 
   /* ---------- timeline ---------- */
   cr.renderTimeline = (el, lib, key, c) => {
-    const total = cr.totalOf(c), mine = cr.clipDirty(key);
+    const total = cr.totalOf(c), mine = cr.clipDirty(key), coarse = !!touch()?.coarse();
     el.innerHTML = `<div class="lbl" style="margin-top:12px" id="an-strip-label">Timeline · ${c.frames.length} frame${c.frames.length === 1 ? '' : 's'} (max ${cr.cap()}) · ${total} ms ${c.loop ? 'per loop' : 'once'}</div>
       <ol class="an-strip" id="an-strip" aria-labelledby="an-strip-label" aria-describedby="an-strip-help"></ol>
-      <p class="an-sr" id="an-strip-help">Drag a frame, or focus it and press Alt+Left or Alt+Right, to reorder.</p>
-      <div class="lbl">Durations · drag a handle, or focus it and use the arrow keys (Shift: 100 ms)</div>
+      <p class="an-sr" id="an-strip-help">Drag a frame, or focus it and press Alt+Left or Alt+Right, to reorder.${coarse ? ' Its Move buttons reorder it without dragging.' : ''}</p>
+      <div class="an-dur"><span class="lbl" id="an-dur-label">Durations · drag a handle, or focus it and use the arrow keys (Shift: 100 ms)</span>
+        ${coarse ? `<button type="button" id="an-fine" aria-pressed="${anim.fine}" title="Fine: handles and arrow keys change a duration by 1 ms instead of 10 ms (holding Shift while dragging does the same)">Fine (1 ms)</button>
+        ${touch().info('Drag a handle to set how long a frame lasts, 10 ms at a time; turn Fine on for 1 ms steps. Drag along the track to scrub through the frames, or tap one to show it. The number on each card sets an exact value.', 'About durations')}` : ''}</div>
       <div class="an-track" id="an-track" role="group" aria-label="Frame durations"></div>
       <div class="an-new" role="group" aria-label="New frame">
         <label class="lbl" style="text-transform:none">New frame name<br><input type="text" id="an-name" placeholder="automatic" autocomplete="off" spellcheck="false" aria-describedby="an-new-help"></label>
@@ -106,6 +121,7 @@
       </div>
       <p class="studio-note" id="an-new-help"></p>`;
     renderCards(el.querySelector('#an-strip'), key, c);
+    const fine = el.querySelector('#an-fine'); if (fine) fine.onclick = e => { anim.fine = !anim.fine; e.currentTarget.setAttribute('aria-pressed', String(anim.fine)); announce(`Fine durations ${anim.fine ? 'on: 1 ms steps' : 'off: 10 ms steps'}`); };
     renderTrack(el.querySelector('#an-track'), c);
     renderNewHelp(key, mine);
     el.querySelector('#an-dup').onclick = () => addFrame(true);
@@ -189,6 +205,7 @@
       <div class="an-handle" data-index="${i}" role="slider" tabindex="0" aria-label="Frame ${i + 1} duration" aria-valuemin="1" aria-valuemax="${cr.maxMs()}" aria-valuenow="${c.durations_ms[i]}" aria-valuetext="${c.durations_ms[i]} milliseconds"></div></div>`).join('')
       + '<div class="an-playhead" id="an-playhead" aria-hidden="true"></div>';
     track.querySelectorAll('.an-seg button.body').forEach((b, i) => { b.onclick = () => cr.seek(i); });
+    wireScrub(track);
     track.querySelectorAll('.an-handle').forEach(h => wireHandle(h, Number(h.dataset.index)));
   }
   function updateTrack() {
@@ -199,9 +216,28 @@
     });
     document.querySelectorAll('.an-card input').forEach((input, i) => { if (document.activeElement !== input) input.value = c.durations_ms[i]; });
   }
+  /* Pressing a segment shows its frame; dragging along the track keeps seeking the frame under the pointer
+   * (finger, Pencil or mouse). Handles keep their own drag, so a press on one never scrubs. */
+  function wireScrub(track) {
+    let id = null, last = -1, moved = false;
+    const frameAt = x => {
+      const segs = [...track.querySelectorAll('.an-seg')], i = segs.findIndex(s => x < s.getBoundingClientRect().right);
+      return i < 0 ? segs.length - 1 : i;
+    };
+    const seekTo = x => { const i = frameAt(x); if (i !== last) { if (last >= 0) moved = true; last = i; cr.seek(i); } };
+    track.onpointerdown = e => {
+      if (e.button || !e.target.closest('button.body')) return;
+      id = e.pointerId; last = -1; moved = false; track.setPointerCapture(id); seekTo(e.clientX);
+    };
+    track.onpointermove = e => { if (e.pointerId === id) seekTo(e.clientX); };
+    track.onpointerup = track.onpointercancel = e => {
+      if (e.pointerId !== id) return;
+      id = null; if (moved) announce(`Showing frame ${last + 1}`);
+    };
+  }
   function wireHandle(h, i) {
     h.onkeydown = e => {
-      const c = cr.current(cr.selectedKey()), now = c.durations_ms[i] || 1, big = e.shiftKey ? 100 : 10;
+      const c = cr.current(cr.selectedKey()), now = c.durations_ms[i] || 1, big = e.shiftKey ? 100 : anim.fine ? 1 : 10;
       const next = {ArrowRight: now + big, ArrowUp: now + big, ArrowLeft: now - big, ArrowDown: now - big,
         PageUp: now + 100, PageDown: now - 100, Home: 1, End: cr.maxMs()}[e.key];
       if (next === undefined) return;
@@ -214,7 +250,7 @@
       const c = cr.current(cr.selectedKey()), track = document.getElementById('an-track');
       const start = {x: e.clientX, ms: c.durations_ms[i] || 1, perMs: track.clientWidth / cr.totalOf(c)};
       h.onpointermove = m => {
-        const step = m.shiftKey ? 1 : 10, raw = start.ms + (m.clientX - start.x) / start.perMs;
+        const step = m.shiftKey || anim.fine ? 1 : 10, raw = start.ms + (m.clientX - start.x) / start.perMs;
         setDuration(i, Math.round(raw / step) * step || 1, false); updateTrack();
       };
       h.onpointerup = h.onpointercancel = () => { h.onpointermove = null; anim.focus = {handle: i}; cr.renderEditor(); };
@@ -317,8 +353,12 @@
   shell()?.registerShortcuts?.('Creature', [{keys: ['Space'], description: 'Play or pause'}, {keys: [',', 'ArrowLeft'], description: 'Previous frame'},
     {keys: ['.', 'ArrowRight'], description: 'Next frame'}, {keys: ['J', 'ArrowDown'], description: 'Next pose'}, {keys: ['K', 'ArrowUp'], description: 'Previous pose'},
     {keys: ['1 … 9'], description: 'Choose a pose'}, {keys: ['Alt+ArrowLeft', 'Alt+ArrowRight'], description: 'Move the focused timeline frame'},
-    {keys: ['ArrowLeft', 'ArrowRight'], description: 'On a duration handle: 10 ms shorter or longer'},
+    {keys: ['ArrowLeft', 'ArrowRight'], description: 'On a duration handle: 10 ms shorter or longer (1 ms with Fine on)'},
     {keys: ['Shift+ArrowLeft', 'Shift+ArrowRight', 'PageDown', 'PageUp'], description: 'On a duration handle: 100 ms'},
     {keys: ['Mod+S'], description: 'Save clips and behaviour & size'}]);
+  touch()?.registerGestures([
+    {gesture: 'Drag a duration handle', description: 'Change a frame\'s duration in 10 ms steps (1 ms with Fine on)'},
+    {gesture: 'Drag along the timeline track', description: 'Scrub: show the frame under your finger or Pencil'},
+    {gesture: 'Tap a frame', description: 'Show it on the panel; use its Move buttons to reorder'}]);
   Object.assign(A, {paintContext, loadOverview, backToTimeline, setPaintClip: p => { anim.paintClip = p; }});
 })();
