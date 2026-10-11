@@ -51,3 +51,16 @@ Use the checks for the changed layer described in
 [CONTRIBUTING.md](CONTRIBUTING.md#make-and-review-a-change). Keep architecture,
 ownership, and platform details in [docs/development.md](docs/development.md)
 and the project skills rather than duplicating their full contracts here.
+
+## Progress notifications
+
+When a planned stage of multi-step work completes (a design approved, a PR
+merged, a release deployed) or is blocked waiting on the owner, post a short
+notice to the owner's [ntfy](https://ntfy.sh) topic:
+
+```bash
+curl -s -H "Title: <stage> done" -d "<what landed, links, what's next>" \
+  https://ntfy.sh/jelli-roll-call
+```
+
+The topic is public, so never include secrets, tokens, or private host details.
