@@ -110,7 +110,9 @@
     - img "Preview of the behaviour look on the round panel"
     - paragraph: At axolotl's profile scale, as the game places pose, prop, effect and caption.
     - list:
-      - listitem: No unsaved behaviour edits.
+      - listitem: "bubble reaction 8: unknown location."
+      - listitem: "bubble reaction 14: unknown condition location."
+      - listitem: "bubble reaction 16: unknown condition location."
     - button "Revert" [disabled]
     - button "Saved" [disabled]
     - button "Play previews"
