@@ -19,31 +19,31 @@ static bool scope(const JelliGame *game, uint32_t id, uint8_t *form)
 static void list(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id, uint32_t pet,
                  uint8_t form)
 {
-    int size = snprintf(debug->reply, sizeof(debug->reply),
+    int size = snprintf(debug->protocol.reply, sizeof(debug->protocol.reply),
                         "\n@J1 %" PRIu32 " {\"ok\":true,\"creature\":%" PRIu32
                         ",\"session_only\":true,\"tunables\":[",
                         id, pet);
-    if (size < 0 || (size_t)size >= sizeof(debug->reply))
+    if (size < 0 || (size_t)size >= sizeof(debug->protocol.reply))
         return;
     size_t used = (size_t)size;
     for (unsigned i = 0; i < JELLI_TUNE_COUNT; ++i) {
         JelliTunable key = (JelliTunable)i;
         const JelliTunableDefinition *d = jelli_tunable_definition(key);
         size =
-            snprintf(debug->reply + used, sizeof(debug->reply) - used,
+            snprintf(debug->protocol.reply + used, sizeof(debug->protocol.reply) - used,
                      "%s{\"name\":\"%s\",\"value\":%" PRIu32 ",\"default\":%" PRIu32
                      ",\"min\":%" PRIu32 ",\"max\":%" PRIu32 ",\"unit\":\"%s\",\"source\":\"%s\"}",
                      i ? "," : "", d->name, jelli_tunable_get(&engine->ui.tunables, pet, form, key),
                      d->initial, d->minimum, d->maximum, d->unit,
                      jelli_tunable_source(&engine->ui.tunables, pet, form, key));
-        if (size < 0 || (size_t)size >= sizeof(debug->reply) - used)
+        if (size < 0 || (size_t)size >= sizeof(debug->protocol.reply) - used)
             return;
         used += (size_t)size;
     }
-    if (used + 4u > sizeof(debug->reply))
+    if (used + 4u > sizeof(debug->protocol.reply))
         return;
-    memcpy(debug->reply + used, "]}\n", 4u);
-    debug->reply_size = used + 3u;
+    memcpy(debug->protocol.reply + used, "]}\n", 4u);
+    debug->protocol.reply_size = used + 3u;
 }
 
 void jelli_debug_tunables(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,

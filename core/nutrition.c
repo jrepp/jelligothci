@@ -1,4 +1,5 @@
 #include "jelli/potty.h"
+#include "jelli/activities.h"
 #include "jelli/nutrition.h"
 
 void jelli_hydration_add(JelliPet *pet, unsigned amount)
@@ -40,14 +41,16 @@ JelliResult jelli_start_exercise(JelliPet *pet)
         return JELLI_ASLEEP;
     if (pet->activity != JELLI_IDLE)
         return JELLI_BUSY;
+    unsigned energy = jelli_activity_cost(pet, JELLI_ENERGY, jelli_exercise.energy_cost);
+    unsigned hydration =
+        jelli_activity_cost(pet, JELLI_ACTIVITY_HYDRATION, jelli_exercise.hydration_cost);
     if (pet->needs[JELLI_SATIETY] < jelli_exercise.fullness_cost ||
-        pet->needs[JELLI_ENERGY] < jelli_exercise.energy_cost ||
-        pet->hydration < jelli_exercise.hydration_cost ||
+        pet->needs[JELLI_ENERGY] < energy || pet->hydration < hydration ||
         UINT64_MAX - pet->ticks < jelli_exercise.duration_ticks)
         return JELLI_NOT_READY;
     pet->needs[JELLI_SATIETY] -= jelli_exercise.fullness_cost;
-    pet->needs[JELLI_ENERGY] -= jelli_exercise.energy_cost;
-    pet->hydration -= jelli_exercise.hydration_cost;
+    pet->needs[JELLI_ENERGY] -= (uint16_t)energy;
+    pet->hydration -= (uint16_t)hydration;
     pet->activity = JELLI_EXERCISING;
     pet->interaction_due = pet->ticks + jelli_exercise.duration_ticks;
     return JELLI_OK;

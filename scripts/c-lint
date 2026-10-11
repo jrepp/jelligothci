@@ -43,7 +43,7 @@ analyze() {
     fi
     local files=()
     while IFS= read -r -d '' file; do files+=("$file"); done < <(
-        git ls-files -z -- 'core/*.c' 'tests/*.c'
+        git ls-files -z -- 'core/*.c' 'drivers/*.c' 'tests/*.c'
     )
     "$repo_dir/scripts/uvx" --from "clang-tidy==$JELLI_CLANG_TIDY_VERSION" \
         clang-tidy "${files[@]}" -- -std=c11 -Iinclude -Iports/sdl "${extra[@]}"

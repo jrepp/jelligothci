@@ -243,7 +243,8 @@ open build/audio/preview.html
 ```
 
 See [sound sources and audition exports](../assets/sound/README.md). ESP32 initialization
-uses the pinned BSP's ES8311 codec path. Its codec/driver allocate at startup;
+uses the pinned ES8311 driver with the BSP's pins and gain settings, and a
+playback-only I2S channel. Its codec/driver allocate at startup;
 steady-state synthesis uses fixed buffers and a four-request queue.
 
 ### Readable event companion and activity routines

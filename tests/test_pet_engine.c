@@ -1,4 +1,5 @@
 #include "jelli/pet_engine.h"
+#include "jelli/motion.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -90,10 +91,35 @@ static void resume_blocks_final_batch(JelliSurface surface)
     CHECK(engine.game.pets[0].activity == JELLI_EATING);
 }
 
+static void motion_devices(JelliSurface surface)
+{
+    Fake fake = {.now = 100};
+    JelliPlatform platform = {&fake, now_ms, poll, present, NULL};
+    JelliPetEngine engine;
+    CHECK(jelli_pet_init(&engine, platform, surface));
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(engine.motion_result == JELLI_DEVICE_UNAVAILABLE && !engine.motion.detected);
+    JelliMotionMailbox box = {0};
+    jelli_pet_bind_devices(&engine, (JelliMotionDriver){&box, jelli_motion_poll},
+                           (JelliDisplayDriver){0});
+    jelli_motion_publish(&box, JELLI_DEVICE_OK, (JelliMotionSample){100, true});
+    CHECK(jelli_pet_frame(&engine) && engine.motion.detected);
+    CHECK(engine.motion.observed_ms == 100 && engine.motion_result == JELLI_DEVICE_OK);
+    CHECK(jelli_pet_frame(&engine) && !engine.motion.detected);
+    jelli_motion_publish(&box, JELLI_DEVICE_OK, (JelliMotionSample){101, true});
+    CHECK(jelli_pet_frame(&engine) && !engine.motion.detected);
+    CHECK(engine.motion_result == JELLI_DEVICE_RESPONSE);
+    jelli_motion_publish(&box, JELLI_DEVICE_TIMEOUT, (JelliMotionSample){0});
+    CHECK(jelli_pet_frame(&engine) && engine.motion_result == JELLI_DEVICE_TIMEOUT);
+    jelli_pet_bind_devices(&engine, (JelliMotionDriver){0}, (JelliDisplayDriver){0});
+    CHECK(jelli_pet_frame(&engine) && engine.motion_result == JELLI_DEVICE_UNAVAILABLE);
+}
+
 int main(void)
 {
     static uint16_t pixels[JELLI_WIDTH * JELLI_HEIGHT];
     JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
+    motion_devices(surface);
     clock_pause_and_input(surface);
     resume_blocks_final_batch(surface);
     printf("Pet engine checks passed; game=%zu, pet-engine=%zu bytes\n", sizeof(JelliGame),

@@ -21,8 +21,8 @@
       - button "checker"
       - button "paper"
     - text: Hold Space to flip every card to before. Click a card to inspect it.
-    - heading "creatures · 31" [level=3]
-    - text: baby-idle-a = baby-idle-b = baby-eating = baby-happy = baby-asleep = baby-unwell = grown-idle-a = grown-idle-b = grown-eating = grown-happy = grown-asleep = grown-unwell = baby-curious = baby-content = grown-curious = grown-content = axolotl-idle-1 = axolotl-idle-2 = axolotl-idle-3 = axolotl-idle-4 = axolotl-blink-1 = axolotl-happy = axolotl-eating-1 = axolotl-eating-2 = axolotl-asleep-1 = axolotl-asleep-2 = axolotl-unwell-1 = axolotl-unwell-2 = axolotl-surprised = axolotl-potty-1 = axolotl-potty-2 =
+    - heading "creatures · 38" [level=3]
+    - text: baby-idle-a = baby-idle-b = baby-eating = baby-happy = baby-asleep = baby-unwell = grown-idle-a = grown-idle-b = grown-eating = grown-happy = grown-asleep = grown-unwell = baby-curious = baby-content = grown-curious = grown-content = axolotl-idle-1 = axolotl-idle-2 = axolotl-idle-3 = axolotl-idle-4 = axolotl-blink-1 = axolotl-happy = axolotl-eating-1 = axolotl-eating-2 = axolotl-asleep-1 = axolotl-asleep-2 = axolotl-unwell-1 = axolotl-unwell-2 = axolotl-surprised = axolotl-potty-1 = axolotl-potty-2 = axolotl-hug-1 = axolotl-hug-2 = axolotl-hug-3 = axolotl-baby-idle-1 = axolotl-baby-idle-2 = axolotl-baby-idle-3 = axolotl-baby-surprised =
     - heading "props · 9" [level=3]
     - text: food-bowl = gift-closed = gift-open = bed = book = poop-1 = poop-2 = broom-1 = broom-2 =
     - heading "icons · 12" [level=3]
@@ -37,7 +37,7 @@
     - text: brush = medicine = shot = wash = stretch = floss = mouthwash = spit = cleanup = potty =
     - heading "effects · 8" [level=3]
     - text: star = heart = orb = comet = wings = music = idea = rainbow =
-    - heading "backgrounds · 2" [level=3]
-    - text: home = garden =
+    - heading "backgrounds · 6" [level=3]
+    - text: home = garden = park = pond = beach = library =
     - heading "prizes · 9" [level=3]
     - text: butterfly = pearl-tooth = breakfast-sun = tea-sprite = movie-star = bubble-gem = moon-charm = rainbow-seed = friendship-bow =

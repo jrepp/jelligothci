@@ -1,4 +1,5 @@
 #include "network_internal.h"
+#include "validation/experiments.h"
 #include "esp_event.h"
 #include "esp_heap_caps.h"
 #include "esp_netif.h"
@@ -12,7 +13,6 @@
 enum { CONNECTED = 1u };
 /* SDK callback shares only RTOS mailboxes, never engine or worker-owned config. */
 static QueueHandle_t time_queue;
-
 /* esp_sntp_time_cb_t requires a mutable timeval pointer; this callback only reads it. */
 // cppcheck-suppress constParameterCallback
 static void time_received(struct timeval *tv)
@@ -136,10 +136,12 @@ void jelli_network_worker(void *ctx)
     for (;;) {
         publish(worker);
         JelliNetworkRequest req;
-        if (xQueueReceive(worker->requests, &req, pdMS_TO_TICKS(250)) == pdTRUE) {
+        TickType_t wait = worker->state.active.enabled ? pdMS_TO_TICKS(250) : portMAX_DELAY;
+        if (xQueueReceive(worker->requests, &req, wait) == pdTRUE) {
             request(worker, &req);
             memset(&req, 0, sizeof(req));
         }
+        jelli_experiments_network_wake();
         bool connected = (xEventGroupGetBits(worker->events) & CONNECTED) != 0;
         if (connected && !worker->sntp_ready) {
             esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG(worker->state.active.ntp);

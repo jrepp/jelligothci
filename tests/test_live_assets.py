@@ -151,7 +151,7 @@ class LiveAssetsTest(unittest.TestCase):
         original = self.destination.read_bytes()
         background = Image.new("RGBA", (64, 64), (100, 150, 200, 255))
         self.manifest["assets"] = []
-        for index in range(33):
+        for index in range(live_assets.LIVE_PIXEL_CAPACITY // (64 * 64) + 1):
             name = f"background-{index}.png"
             background.save(self.source / name)
             self.manifest["assets"].append({"id": 10000 + index, "kind": "backgrounds",

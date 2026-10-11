@@ -58,20 +58,21 @@
       - button "⇄ Swap"
     - group "body":
       - text: body
-      - 'button "white · #ffffff · used by 12 assets"': white 2 px
-      - 'button "body light · #ffe3ed · used by 15 assets"': body light 17 px
-      - 'button "body · #ffcbdd · used by 15 assets"': body 346 px
-      - 'button "body shadow · #ffadca · used by 15 assets"': body shadow 92 px
-      - 'button "gill · #ff5994 · used by 15 assets"': gill 43 px
-      - 'button "gill deep · #d9265d · used by 15 assets"': gill deep 4 px
+      - 'button "white · #ffffff · used by 19 assets"': white 2 px
+      - 'button "body light · #ffe3ed · used by 22 assets"': body light 17 px
+      - 'button "body · #ffcbdd · used by 22 assets"': body 346 px
+      - 'button "body shadow · #ffadca · used by 22 assets"': body shadow 92 px
+      - 'button "gill · #ff5994 · used by 22 assets"': gill 43 px
+      - 'button "gill deep · #d9265d · used by 22 assets"': gill deep 4 px
     - group "aqua":
       - text: aqua
       - 'button "aqua · #83ebfb · used by 2 assets"': aqua —
       - 'button "deep aqua · #1ec1d9 · used by 2 assets"': deep aqua —
     - group "other":
       - text: other
-      - 'button "outline · #000000 · used by 15 assets" [pressed]': outline 148 px
+      - 'button "outline · #000000 · used by 22 assets" [pressed]': outline 148 px
       - 'button "butter · #fde77e · used by 1 assets"': butter —
+      - 'button "cream · #fff3cb · used by 1 assets"': cream —
     - group "more":
       - text: more
       - button "eraser · transparent · secondary colour": eraser right-click

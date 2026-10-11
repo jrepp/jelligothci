@@ -1,6 +1,6 @@
 {
   "note": "Art and content revision the UI tests serve, so art and content changes do not move the baselines. Bump it deliberately (with JELLI_UI_UPDATE=1) when the studio needs newer data.",
-  "data_ref": "4eab889d03138891bec52023c325c72cbefb8bda",
+  "data_ref": "3d6bd0876972c47542e8ecfac9e589de5bee847c",
   "viewports": {
     "desktop": [1440, 900],
     "tablet": [820, 1180],

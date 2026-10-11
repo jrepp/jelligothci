@@ -2,6 +2,7 @@
 #include "display_copy.h"
 #include "render_benchmark.h"
 #include "network.h"
+#include "validation/experiments.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -135,6 +136,24 @@ bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEn
                                   uint32_t id, char **words, unsigned count)
 {
     JelliDisplayOutput *output = ctx;
+    if (count == 3u && !strcmp(words[2], "capabilities")) {
+#ifdef CONFIG_JELLI_POWER_EXPERIMENTS
+        jelli_debug_response(
+            debug, id,
+            "{\"ok\":true,\"protocol\":1,\"profile\":\"power\","
+            "\"board\":\"waveshare-31261\",\"commands\":[" JELLI_DEBUG_GAME_COMMANDS_JSON
+            ",\"display\",\"network\",\"ota\",\"power\"]}");
+#else
+        jelli_debug_response(
+            debug, id,
+            "{\"ok\":true,\"protocol\":1,\"profile\":\"game\","
+            "\"board\":\"waveshare-31261\",\"commands\":[" JELLI_DEBUG_GAME_COMMANDS_JSON
+            ",\"display\",\"network\",\"ota\"]}");
+#endif
+        return true;
+    }
+    if (jelli_experiments_command(ctx, debug, id, words, count))
+        return true;
     if (count < 3u || strcmp(words[2], "display"))
         return jelli_network_command(NULL, debug, engine, id, words, count);
     if (count == 4u && !strcmp(words[3], "benchmark-rect")) {

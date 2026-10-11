@@ -1,8 +1,8 @@
 - complementary "Assets":
   - searchbox "Filter assets"
   - group "Asset kind":
-    - button "all 103" [pressed]
-    - button "creatures 31"
+    - button "all 114" [pressed]
+    - button "creatures 38"
     - button "props 9"
     - button "icons 12"
     - button "font 1"
@@ -10,7 +10,7 @@
     - button "menus 16"
     - button "health 10"
     - button "effects 8"
-    - button "backgrounds 2"
+    - button "backgrounds 6"
     - button "prizes 9"
   - button "Changed only"
   - button "Copy review notes"
@@ -100,7 +100,7 @@
     - option "axolotl-idle-2 creatures · 0 px · 15→15 specks · ✗ specks, open edges"
     - option "axolotl-idle-3 creatures · 0 px · 13→13 specks · ✗ specks, open edges"
     - option "axolotl-idle-4 creatures · 0 px · 12→12 specks · ✗ specks, open edges"
-    - option "axolotl-blink-1 creatures · 0 px · 13→13 specks · ✗ specks, open edges"
+    - option "axolotl-blink-1 creatures · 0 px · 15→15 specks · ✗ specks, open edges"
     - option "axolotl-happy creatures · 0 px · 13→13 specks · ✗ specks, open edges"
     - option "axolotl-eating-1 creatures · 0 px · 13→13 specks · ✗ specks, open edges"
     - option "axolotl-eating-2 creatures · 0 px · 12→12 specks · ✗ specks, open edges"
@@ -118,3 +118,14 @@
     - option "poop-2 props · 0 px · 3→3 specks · ✗ specks, open edges"
     - option "broom-1 props · 0 px · 0→0 specks · ✗ open edges"
     - option "broom-2 props · 0 px · 0→0 specks · ✗ open edges"
+    - option "axolotl-hug-1 creatures · 0 px · 13→13 specks · ✗ specks, open edges"
+    - option "axolotl-hug-2 creatures · 0 px · 15→15 specks · ✗ specks, open edges"
+    - option "axolotl-hug-3 creatures · 0 px · 15→15 specks · ✗ specks, open edges"
+    - option "axolotl-baby-idle-1 creatures · 0 px · 16→16 specks · ✗ specks, open edges"
+    - option "axolotl-baby-idle-2 creatures · 0 px · 18→18 specks · ✗ specks, open edges"
+    - option "axolotl-baby-idle-3 creatures · 0 px · 18→18 specks · ✗ specks, open edges"
+    - option "axolotl-baby-surprised creatures · 0 px · 18→18 specks · ✗ specks, open edges"
+    - option "park backgrounds · 0 px · 0→0 specks · ✓"
+    - option "pond backgrounds · 0 px · 0→0 specks · ✓"
+    - option "beach backgrounds · 0 px · 0→0 specks · ✓"
+    - option "library backgrounds · 0 px · 0→0 specks · ✓"

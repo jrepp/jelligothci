@@ -38,6 +38,9 @@ class Pipe:
 wire = Pipe(sys.argv[1])
 try:
     debug = client.Client(wire)
+    capabilities = debug.request("capabilities")
+    assert capabilities["protocol"] == 1 and "state" in capabilities["commands"]
+    assert "factory" not in capabilities["commands"]
     assert debug.state()["visual"]["page"] == "home"
     debug.press("MENU")
     debug.press("CARE")

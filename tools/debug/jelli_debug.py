@@ -21,6 +21,35 @@ class DebugError(Exception):
     pass
 
 
+def open_serial(port, timeout=3.0):
+    import serial
+    wire = serial.Serial(port=None, baudrate=115200, timeout=.05, write_timeout=timeout)
+    # Keep both lines asserted: deassertion resets native USB on macOS.
+    wire.dtr = wire.rts = True
+    wire.port = port
+    wire.open()
+    return wire
+
+
+class RecordedWire:
+    """Retain raw device bytes without changing Client framing or transport semantics."""
+    def __init__(self, wire, log):
+        self.wire, self.log = wire, log
+
+    @property
+    def in_waiting(self):
+        return self.wire.in_waiting
+
+    def write(self, data):
+        return self.wire.write(data)
+
+    def read(self, size):
+        data = self.wire.read(size)
+        self.log.write(data)
+        self.log.flush()
+        return data
+
+
 class Client:
     def __init__(self, wire, timeout=3.0):
         self.wire = wire
@@ -194,8 +223,14 @@ def main():
     transport.add_argument("--socket", help="Local SDL Unix socket; defaults to build/jelli-debug.sock")
     parser.add_argument("--timeout", type=float, default=3.0)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("ports", "state", "buttons", "habits", "sleep-log"):
+    for name in ("ports", "state", "buttons", "habits", "sleep-log", "capabilities"):
         commands.add_parser(name)
+    factory = commands.add_parser("factory", help="Factory capabilities, state and retained results")
+    factory.add_argument("action", choices=("status", "tests", "run", "result"))
+    factory.add_argument("arguments", nargs="*")
+    power = commands.add_parser("power", help="ESP32 reversible power diagnostics")
+    power.add_argument("action", nargs="?", choices=("result", "locks", "run"))
+    power.add_argument("mode", nargs="?", choices=("delay", "blank", "pause", "off", "panel", "audio", "reset50", "reset100", "light", "touch", "auto"))
     clock = commands.add_parser("clock", help="Read clock, or explicitly sync/set UTC time")
     clock.add_argument("action", nargs="?", choices=("sync", "set"))
     clock.add_argument("seconds", nargs="?", type=int, help="UTC Unix seconds for set")
@@ -272,18 +307,27 @@ def main():
     wire = None
     try:
         if args.port:
-            wire = serial.Serial(port=None, baudrate=115200, timeout=0.05, write_timeout=args.timeout)
-            # Native ESP32 USB Serial/JTAG: keep both lines asserted.
-            # Deasserting them on macOS caused a reset on every CLI open.
-            wire.dtr = True
-            wire.rts = True
-            wire.port = args.port
-            wire.open()
+            wire = open_serial(args.port, args.timeout)
         else:
             wire = SocketWire(args.socket or str(Path(__file__).resolve().parents[2] / "build/jelli-debug.sock"),
                               args.timeout)
         client = Client(wire, args.timeout)
-        if args.command == "cheat":
+        if args.command == "factory":
+            tokens = args.arguments
+            valid = ((args.action in ("status", "tests") and not tokens)
+                     or (args.action == "run" and len(tokens) <= 1)
+                     or (args.action == "result" and len(tokens) == 2
+                         and tokens[0].isascii() and tokens[0].isdecimal()
+                         and 0 < int(tokens[0]) <= 0xFFFFFFFF))
+            if not valid or any(not t.isascii() or not all(c.isalnum() or c in "._-" for c in t) for t in tokens):
+                parser.error("factory: status/tests; run [TEST]; result RUN TEST")
+            result = client.request(" ".join(("factory", args.action, *tokens)))
+        elif args.command == "power":
+            if (args.action == "run") != (args.mode is not None):
+                parser.error("power run requires a mode; other power commands do not accept one")
+            result = client.request("power" + (f" {args.action}" if args.action else "") +
+                                    (f" {args.mode}" if args.mode else ""))
+        elif args.command == "cheat":
             result = client.request("cheat " + args.name + ("" if args.name == "heal" else f" {args.value}"))
         elif args.command == "clock":
             if args.action == "sync":
@@ -293,7 +337,7 @@ def main():
                 result = client.set_clock(args.seconds, args.offset)
             else:
                 result = client.request("clock")
-        elif args.command in ("habits", "sleep-log"):
+        elif args.command in ("habits", "sleep-log", "capabilities"):
             result = client.request(args.command)
         elif args.command == "state":
             result = client.state()

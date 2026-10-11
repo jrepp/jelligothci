@@ -20,7 +20,6 @@ JelliResult jelli_game_command(JelliGame *game, JelliCommand command)
     unsigned location = active->location, activity = (unsigned)active->activity;
     JelliResult result = jelli_game_command_impl(game, command);
     if (result == JELLI_OK) {
-        jelli_game_preference(game, command);
         jelli_behavior_command(game, command, location, activity);
     }
     jelli_game_emit(game, JELLI_EVENT_COMMAND, (unsigned)command.kind, result, command.value,

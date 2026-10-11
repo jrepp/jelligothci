@@ -1,4 +1,6 @@
+#include "jelli/locations.h"
 #include "jelli_asset_ids.h"
+#include "jelli/activities.h"
 #include "jelli/wake.h"
 #include "jelli/sound.h"
 #include "jelli/creature.h"
@@ -36,6 +38,15 @@ static bool condition_holds(unsigned when, const JelliPetRenderKey *v)
 
 static unsigned creature_pose(const JelliCreatureProfile *profile, const JelliPetRenderKey *v)
 {
+    if (v->moment && v->moment <= jelli_moment_count && !v->asleep) {
+        unsigned animation = jelli_moments[v->moment - 1u].animation;
+        if (animation == JELLI_ANIM_REST)
+            return JELLI_POSE_ASLEEP;
+        if (animation == JELLI_ANIM_THINK || animation == JELLI_ANIM_WATCH)
+            return JELLI_POSE_CURIOUS;
+        if (animation == JELLI_ANIM_BREATHE || animation == JELLI_ANIM_DREAM)
+            return JELLI_POSE_CONTENT;
+    }
     unsigned count = profile->rule_count < JELLI_POSE_RULE_CAPACITY ? profile->rule_count
                                                                     : JELLI_POSE_RULE_CAPACITY;
     for (unsigned i = 0u; i < count; ++i)
@@ -96,8 +107,8 @@ void jelli_pet_actor_layout(JelliPetUi *ui, const JelliPetRenderKey *view)
 
 uint16_t jelli_pet_background(uint8_t location, unsigned x, unsigned y)
 {
-    const JelliAsset *a =
-        jelli_asset_find(location ? JELLI_ASSET_BACKGROUNDS_GARDEN : JELLI_ASSET_BACKGROUNDS_HOME);
+    const JelliAsset *a = jelli_asset_find(
+        jelli_locations[location < jelli_location_count ? location : 0u].background);
     if (!a || x >= JELLI_WIDTH || y >= JELLI_HEIGHT)
         return 0u;
     unsigned column = x * a->width / JELLI_WIDTH;

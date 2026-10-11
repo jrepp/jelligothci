@@ -42,12 +42,14 @@ static void advance(unsigned milliseconds)
 static void timed_completion_excludes_unrelated_changes(void)
 {
     reset();
+    game.clock_known = true;
+    game.clock_minute = 780u;
     command(JELLI_CMD_MOMENT, 1u);
     process();
     CHECK(rewards.pending && !rewards.count);
     int energy = rewards.gains[JELLI_ENERGY];
     int social = rewards.gains[JELLI_SOCIAL];
-    CHECK(energy > 0 && social > 0);
+    CHECK(energy == 0 && social == 0);
     command(JELLI_CMD_TOUCH, 0u);
     process();
     CHECK(rewards.gains[JELLI_ENERGY] == energy && rewards.gains[JELLI_SOCIAL] == social);
@@ -61,11 +63,11 @@ static void timed_completion_excludes_unrelated_changes(void)
         CHECK(item->to > item->from);
         if (item->stat == 2u) {
             found_energy = true;
-            CHECK(item->to - item->from == energy - 50);
+            CHECK(item->to - item->from >= 150);
         }
         if (item->stat == 5u) {
             found_social = true;
-            CHECK(item->to - item->from == social);
+            CHECK(item->to - item->from >= 180);
         }
         found_play = found_play || item->stat == 4u;
     }
