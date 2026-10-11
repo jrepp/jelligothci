@@ -95,7 +95,7 @@
     if (!b.pose_rules.length || b.pose_rules.length > lim.rule_capacity) out.push(`${name}: use 1–${lim.rule_capacity} pose rules.`);
     for (const r of b.pose_rules) {
       if (!lim.conditions.includes(r.when)) out.push(`${name}: unknown condition ${r.when}.`);
-      if (!(D.creature_poses || []).includes(r.pose)) out.push(`${name}: unknown pose ${r.pose}.`);
+      if (!cr.poses().includes(r.pose)) out.push(`${name}: unknown pose ${r.pose}.`);
       if (seenWhen.has(r.when)) out.push(`${name}: ${r.when} is listed twice; only the first can ever match.`);
       seenWhen.add(r.when);
     }
@@ -147,7 +147,9 @@
       clipStart = first * beatMs;
       info = `idle beat ${beat % count + 1}/${count} · cycle ${Math.floor(beat / count) + 1} · ${pose}${picked.quiet ? ' (quiet cycle)' : ''}`;
     }
-    const clip = cr.current(`${art}.${pose}`), i = clip ? cr.frameAt(clip, elapsed - clipStart, false) : -1;
+    // A state pose the form has no clip for plays its fallback base pose (tools/assets/creature_data.py clip_rows).
+    const clip = cr.current(`${art}.${pose}`) || cr.current(`${art}.${cr.fallbackOf(pose)}`);
+    const i = clip ? cr.frameAt(clip, elapsed - clipStart, false) : -1;
     return {pose, info, hit, key: i >= 0 ? clip.frames[i] : null, frame: i, frames: clip?.frames.length || 0};
   }
   cr.panelSource = now => {
@@ -237,7 +239,7 @@
     }
     const b = behaviourOf(p.behavior), size = sizeReport(art, p), users = usersOf(p.behavior), others = users.filter(u => u !== art);
     const ruleRows = b ? b.pose_rules.map((r, i) => `<li data-i="${i}"><span class="n">${i + 1}</span>
-        <select data-f="when" aria-label="Rule ${i + 1} condition" title="${esc(CONDITION_HELP[r.when] || '')}">${options(lim.conditions, r.when)}</select> → <select data-f="pose" aria-label="Rule ${i + 1} pose">${options(D.creature_poses || [], r.pose)}</select>
+        <select data-f="when" aria-label="Rule ${i + 1} condition" title="${esc(CONDITION_HELP[r.when] || '')}">${options(lim.conditions, r.when)}</select> → <select data-f="pose" aria-label="Rule ${i + 1} pose" title="Base poses, then state poses (a form without that clip plays its fallback)">${options(cr.poses(), r.pose)}</select>
         <button data-act="up" ${i ? '' : 'disabled'} title="Check earlier">↑</button><button data-act="down" ${i < b.pose_rules.length - 1 ? '' : 'disabled'} title="Check later">↓</button><button data-act="remove" title="Remove rule">✕</button></li>`).join('') : '';
     const beats = b ? b.idle_beats.map((pose, i) => `<select data-beat="${i}" aria-label="Idle beat ${i + 1}">${options(lim.idle_poses, pose)}</select>`).join('') : '';
     const issues = allIssues();

@@ -1,8 +1,8 @@
 # Jelligotchi slice artwork
 
-The review set contains 95 PNG files: 30 creature frames, 12 small icons, 15 ring icons,
-five meter pictograms, nine health icons, eight celebration sprites, nine collectible prizes, two backgrounds, four props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
-form; the axolotl is a separate single-form species (BUBBLE). The SDL and ESP32 pet builds embed these assets using
+The review set contains 110 PNG files: 38 creature frames, 12 small icons, 16 ring icons,
+five meter pictograms, 10 health icons, eight celebration sprites, nine collectible prizes, two backgrounds, nine props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
+form; BUBBLE is a separate species that grows from the baby axolotl into the axolotl. The SDL and ESP32 pet builds embed these assets using
 `tools/assets/embed_slice.py`. Physical board appearance remains unverified.
 
 ## Preview and validate
@@ -33,7 +33,7 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 
 | Directory | Contents |
 | --- | --- |
-| `creatures/` | Mint and Lilac: idle A/B, eating, happy, asleep, unwell, curious, content at 32x32. Axolotl: 14 frames at 48x48 (idle bob, blink, happy, surprised, chew, sleep breath, sad) in its own palette |
+| `creatures/` | Mint and Lilac: idle A/B, eating, happy, asleep, unwell, curious, content at 32x32. Axolotl: 18 frames at 48x48 (idle bob, blink, happy, surprised, chew, sleep breath, sad, potty, hug) and the baby axolotl's 4 frames (3 idle, surprised), both in the axolotl palette |
 | `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
 | `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
 | `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
@@ -50,7 +50,7 @@ and clip timings. PNGs in the asset directories are the editable runtime
 art sources. The large generated atlas is retained for provenance and reproduction;
 it is not part of the runtime payload. Keep IDs stable when revising art.
 
-Sprites use 16 shared opaque colors plus transparent pixels, unless they name a palette in `palettes` (the axolotl uses its own 9 colours); backgrounds use a separate 16-gray palette. Alpha is
+Sprites use 16 shared opaque colors plus transparent pixels, unless they name a palette in `palettes` (the axolotl uses its own 11 colours); backgrounds use a separate 16-gray palette. Alpha is
 binary. The font deliberately uses small-cap forms for lowercase letters; slot
 127 is a fallback glyph, not a printable ASCII character. The font is cream on
 transparent; preview it against a dark surface. Recovery reuses the unwell pose
@@ -74,11 +74,13 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw pixel payload is 233,032 bytes. The RFC's 8,192-byte definition and
-4,096-byte metadata allowances bring the planned pack to 245,320 bytes. The SDL
-live pack is 235,520 bytes, within its 288 KiB staging buffer. Its 109,120 pixels
-and 13,640 mask bytes fit the existing 131,072-pixel and 16,384-byte banks.
-These are desktop authoring limits, not a linked firmware memory measurement.
+Actual raw payload (RGB565, masks, font) is 267,304 bytes. The RFC's 8,192-byte definition
+and 4,096-byte metadata allowances bring the planned pack to 279,592 bytes. The SDL
+live pack is 269,960 bytes, within its 288 KiB staging buffer. Its 125,248 pixels
+and 15,656 mask bytes fit the existing 131,072-pixel and 16,384-byte banks, leaving
+5,824 pixels and 728 mask bytes: room for two more 48x48 frames (2,304 pixels and
+288 mask bytes each), with both banks running out together. These are desktop
+authoring limits, not a linked firmware memory measurement.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 

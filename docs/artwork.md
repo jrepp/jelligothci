@@ -125,7 +125,9 @@ by their pivot.
 `content/creatures.json`. The actor scale sets the preview size; the panel
 shows the result against the 300×176 px actor and 96 px icon limits. Choose the
 form's behaviour, or **Copy as new** to change one form without the others.
-Order the pose rules; the first rule whose condition holds wins. With no match,
+Order the pose rules; the first rule whose condition holds wins. A rule may pick
+a state pose, such as the axolotl's `hug` on `touch_happy`; a form without that
+clip plays the state pose's fallback. With no match,
 the idle schedule plays one pose per 900 ms beat. The quiet cycle holds curious
 and content beats as idle every Nth cycle, offset by pet ID.
 

@@ -60,6 +60,15 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
    the heading (more than 300x176 on-panel pixels), and icons wider than a grid
    cell. The `jelly` behaviour reproduces the former tables exactly; a test
    compares them beat for beat.
+
+   *Amended 2026-10-10 (PR #37):* a rule may also name a state pose from
+   `assets.json` `state_poses` (RFC-005), such as the axolotl's `touch_happy` →
+   `hug`. A form without a clip for that state pose plays its fallback base
+   pose; fallbacks are one level deep, because every fallback is a base pose.
+   `tools/assets/creature_data.py` validates rule poses against the base and
+   state pose list and resolves the fallback in the clip table. Jelli Art's
+   Behaviour & size editor offers and simulates the same list, and
+   `jelli_creature_clip` returns no clip for a pose index outside the table.
 5. **Art size and palette are per asset.** Creature frames may be 32x32 or 48x48.
    An asset may name a palette in `manifest.palettes` (at most 16 colours), and
    binary alpha is unchanged. `tools/assets/import_creature.py` converts upscaled
@@ -92,9 +101,11 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
 - A multi-frame clip redraws the full panel on each frame change, as idle phase
   changes already did. On ESP32 this costs one full frame every 250–900 ms while
   such a clip plays. It is not measured on hardware yet.
-- The art pack is larger: 233,032 raw pixel bytes as of 2026-10-10, using
-  109,120 of 131,072 live pixels and 13,640 of 16,384 mask bytes. The firmware
-  app still has 58% of its partition free.
+- The art pack is larger: with PR #37's baby axolotl, hug and surprised frames,
+  the raw payload (RGB565, masks, font) is 267,304 bytes. It uses 125,248 of
+  131,072 live pixels and 15,656 of 16,384 mask bytes, leaving room for two more
+  48x48 frames. The firmware app is 1,778,608 bytes, leaving 58% of its 4 MiB
+  partition free (measured 2026-10-10 at 41350aa); static D/IRAM is unchanged.
 - `make run-live` reloads frame pixels but not clip or profile edits; those need
   a rebuild.
 

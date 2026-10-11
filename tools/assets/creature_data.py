@@ -30,14 +30,15 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def check_behavior(behavior):
+def check_behavior(behavior, poses):
+    """poses: base poses then state poses; a rule may pick either (a state pose falls back per form)."""
     name = behavior["name"]
     rules = behavior["pose_rules"]
     require(0 < len(rules) <= RULE_CAPACITY, f"Behaviour {name}: 1..{RULE_CAPACITY} pose rules")
     seen = set()
     for rule in rules:
         require(rule["when"] in CREATURE_CONDITIONS, f"Behaviour {name}: unknown condition {rule['when']}")
-        require(rule["pose"] in CREATURE_POSES, f"Behaviour {name}: unknown pose {rule['pose']}")
+        require(rule["pose"] in poses, f"Behaviour {name}: unknown pose {rule['pose']}")
         require(rule["when"] not in seen, f"Behaviour {name}: {rule['when']} listed twice")
         seen.add(rule["when"])
     beats = behavior["idle_beats"]
@@ -69,7 +70,7 @@ def load(manifest):
             {"version", "behaviors", "profiles", "state_presentation"}, "Unknown creature data schema")
     behaviors = {}
     for behavior in data["behaviors"]:
-        check_behavior(behavior)
+        check_behavior(behavior, pose_names(manifest))
         require(behavior["name"] not in behaviors, f"Duplicate behaviour {behavior['name']}")
         behaviors[behavior["name"]] = behavior
     profiles = {}
@@ -125,8 +126,8 @@ def clip_rows(forms, manifest):
     return rows
 
 
-def profile_row(form, profile, behavior):
-    rules = ", ".join(f"{{{CREATURE_CONDITIONS.index(r['when'])}u, {CREATURE_POSES.index(r['pose'])}u}}"
+def profile_row(form, profile, behavior, poses):
+    rules = ", ".join(f"{{{CREATURE_CONDITIONS.index(r['when'])}u, {poses.index(r['pose'])}u}}"
                       for r in behavior["pose_rules"])
     beats = ", ".join(f"{IDLE_POSES.index(b)}u" for b in behavior["idle_beats"])
     return (f"    {{{{{rules}}}, {len(behavior['pose_rules'])}u, {{{beats}}}, {len(behavior['idle_beats'])}u, "
@@ -139,9 +140,9 @@ def emit(manifest):
     forms, profiles, behaviors = load(manifest)
     rows = clip_rows(forms, manifest)
     count = len(forms)
-    profile_rows = [profile_row(f, profiles[f["art"]], behaviors[profiles[f["art"]]["behavior"]]) for f in forms]
-    looks, keys = load_looks(manifest)
     poses = pose_names(manifest)
+    profile_rows = [profile_row(f, profiles[f["art"]], behaviors[profiles[f["art"]]["behavior"]], poses) for f in forms]
+    looks, keys = load_looks(manifest)
     look_rows = [f"    {{{poses.index(l['pose'])}u, \"{l.get('caption', '')}\", "
                  f"{keys[l['effect']]['id'] if l.get('effect') else 0}u, "
                  f"{keys[l['prop']]['id'] if l.get('prop') else 0}u}}, /* {l['state']} */" for l in looks] or ["    {0}, /* no states */"]

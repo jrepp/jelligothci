@@ -49,7 +49,7 @@ class ScenarioTest(unittest.TestCase):
         self.assertFalse(pages["collection"]["ring"])
         self.assertFalse(pages["brush"]["ring"])
         bubble = next(e for e in CAT["entries"] if e["name"] == "BUBBLE")
-        self.assertEqual([f["name"] for f in bubble["forms"]], ["AXOLOTL"])
+        self.assertEqual([f["name"] for f in bubble["forms"]], ["BABY AXO", "AXOLOTL"])
         self.assertIn("asking_potty", CAT["states"])
 
     def test_defaults_render_the_starting_pet(self):
@@ -65,12 +65,14 @@ class ScenarioTest(unittest.TestCase):
         argv, summary = gp.parse_scenario(raw, CAT)
         args = dict(zip(argv[::2], argv[1::2]))
         self.assertEqual(args["--entry"], "3")
-        self.assertEqual(args["--form"], "2")
+        self.assertEqual(args["--form"], "3")  # BUBBLE starts as the baby axolotl
         self.assertEqual(args["--behavior"], str(CAT["states"].index("asking_potty") + 1))
         self.assertEqual(args["--moment"], str(CAT["moments"].index("TEA") + 1))
         self.assertEqual(args["--needs"], "100,700,700,700,700")
         self.assertEqual((args["--menu"], args["--mess"], args["--asleep"]), ("1", "1", "0"))
-        self.assertEqual(summary["form"], "AXOLOTL")
+        self.assertEqual(summary["form"], "BABY AXO")
+        argv, summary = gp.parse_scenario({**raw, "form": "AXOLOTL"}, CAT)
+        self.assertEqual((dict(zip(argv[::2], argv[1::2]))["--form"], summary["form"]), ("2", "AXOLOTL"))
 
     def test_rejections_name_the_field(self):
         self.assertEqual(self.fields({"pet": "NOPE"}), {"pet"})
@@ -85,7 +87,7 @@ class ScenarioTest(unittest.TestCase):
         self.assertEqual(self.fields([]), {"scenario"})
 
     def test_alt_text_describes_the_scenario(self):
-        _, summary = gp.parse_scenario({"pet": "BUBBLE", "behavior": "studying", "mess": True, "asleep": True,
+        _, summary = gp.parse_scenario({"pet": "BUBBLE", "form": "AXOLOTL", "behavior": "studying", "mess": True, "asleep": True,
                                         "minute": 61, "frames": 4, "step_ms": 250}, CAT)
         text = gp.alt_text(summary, 2)
         for part in ("frame 3 of 4 at 500 ms", "BUBBLE as AXOLOTL", "home page", "behaviour studying", "asleep",
@@ -218,7 +220,7 @@ class RealEngineTest(unittest.TestCase):
         cls.scratch.cleanup()
 
     def test_1_renders_engine_frames_and_reports_state(self):
-        result = self.service.render({"pet": "BUBBLE", "behavior": "studying", "mess": True, "potty": 800,
+        result = self.service.render({"pet": "BUBBLE", "form": "AXOLOTL", "behavior": "studying", "mess": True, "potty": 800,
                                       "frames": 3, "step_ms": 300})
         self.assertTrue(result["ok"])
         self.assertEqual(len(result["frames"]), 3)

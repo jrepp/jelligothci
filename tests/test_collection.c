@@ -42,11 +42,11 @@ static void unlock_and_persist(void)
     uint64_t stored_ticks = game->pets[0].ticks;
     for (unsigned i = 0u; i < 75u; ++i)
         jelli_game_advance(game, 800u);
-    /* BUBBLE is the single-form axolotl set: it ages without evolving. */
-    CHECK(game->pets[index].form == 2u && game->pets[index].reached_forms == 4u);
+    /* BUBBLE hatches as the baby axolotl (form 3) and grows into the axolotl (form 2). */
+    CHECK(game->pets[index].form == 2u && game->pets[index].reached_forms == 12u);
     CHECK(game->pets[index].id == id && game->pets[index].collection_entry == 3u);
-    CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, id, 0u}) == JELLI_FULL);
-    CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, id, 1u}) == JELLI_INVALID_TARGET);
+    CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, id, 1u}) == JELLI_FULL);
+    CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_FORM, id, 2u}) == JELLI_INVALID_TARGET);
     CHECK(game->pets[0].ticks == stored_ticks);
     for (unsigned p = 1u; p <= 9u; ++p) {
         if (!(game->prizes.owned & (1u << (p - 1u))))
@@ -58,7 +58,7 @@ static void unlock_and_persist(void)
     CHECK(size > 0u && size <= 4096u && bytes[4] == JELLI_SAVE_VERSION);
     CHECK(jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.count == 9u && loaded.game.new_pets == game->new_pets);
-    CHECK(loaded.game.pets[index].id == id && loaded.game.pets[index].reached_forms == 4u);
+    CHECK(loaded.game.pets[index].id == id && loaded.game.pets[index].reached_forms == 12u);
     jelli_collection_unlock(&loaded.game);
     CHECK(loaded.game.count == 9u);
     printf("Nine-pet save: %zu bytes; game: %zu bytes; pet: %zu bytes\n", size, sizeof(JelliGame),
@@ -179,15 +179,21 @@ static void catalog_normalization(void)
     game.pets[1].reached_forms = 3u;
     CHECK(!jelli_game_valid(&game));
     jelli_collection_normalize(&game);
-    CHECK(game.pets[1].form == 2u && game.pets[1].reached_forms == 4u && jelli_game_valid(&game));
+    /* A form outside BUBBLE's set restarts as the set's first form, the baby axolotl. */
+    CHECK(game.pets[1].form == 3u && game.pets[1].reached_forms == 8u && jelli_game_valid(&game));
     CHECK(game.pets[0].form == 0u && game.pets[0].reached_forms == 1u);
+    /* An adult axolotl saved before the baby form existed stays grown and gains the baby. */
+    game.pets[1].form = 2u;
+    game.pets[1].reached_forms = 4u;
+    jelli_collection_normalize(&game);
+    CHECK(game.pets[1].form == 2u && game.pets[1].reached_forms == 12u && jelli_game_valid(&game));
     game.pets[1].form = 7u; /* Not a catalog form: left for validation to reject. */
     jelli_collection_normalize(&game);
     CHECK(game.pets[1].form == 7u && !jelli_game_valid(&game));
     game.pets[1].form = 2u;
     game.pets[1].reached_forms = 0x84u;
     jelli_collection_normalize(&game);
-    CHECK(game.pets[1].reached_forms == 0x84u && !jelli_game_valid(&game));
+    CHECK(game.pets[1].reached_forms == 0x8cu && !jelli_game_valid(&game));
 }
 
 int main(void)

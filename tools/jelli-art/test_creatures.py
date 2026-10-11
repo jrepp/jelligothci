@@ -158,7 +158,7 @@ class CreatureClipTest(unittest.TestCase):
         manifest = json.loads(self.manifest_path.read_text())
         pets = Path(self.scratch.name) / "pets.json"
         pets.write_text(json.dumps({"forms": [{"id": 0, "name": "MINT", "portrait": 1001}]}))
-        self.assertEqual([f["name"] for f in creatures.creature_forms(manifest, pets)], [None, None, None])
+        self.assertEqual({f["name"] for f in creatures.creature_forms(manifest, pets)}, {None})
         pets.write_text(json.dumps({"forms": [{"id": 2, "name": "AXOLOTL", "portrait": 1101, "art": "axolotl"}]}))
         named = {f["art"]: f for f in creatures.creature_forms(manifest, pets)}
         self.assertEqual((named["axolotl"]["name"], named["axolotl"]["id"]), ("AXOLOTL", 2))

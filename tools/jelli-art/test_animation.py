@@ -213,9 +213,11 @@ class FrameTest(unittest.TestCase):
         spec = json.loads((self.source / "source/axolotl-import.json").read_text())
         spec["frames"].append({"pose": "wave", "studio": True})
         spec["frames"].append({"source": "x.png", "pose": "late"})
-        manifest = {"assets": [], "palettes": {}}
+        # An unused slot (as ramps and names may refer to) and a used one, then a new colour.
+        manifest = {"assets": [], "palettes": {"axolotl": ["#fde77e", "#010203"]}}
         imported = [f for f in spec["frames"] if not f.get("studio")]
         frames = [Image.new("RGBA", (48, 48), (1, 2, 3, 255)) for _ in imported]
+        frames[0].putpixel((0, 0), (4, 5, 6, 255))
         saved = import_creature.SOURCE
         import_creature.SOURCE = self.source
         try:
@@ -225,6 +227,8 @@ class FrameTest(unittest.TestCase):
         ids = {a["key"]: a["id"] for a in manifest["assets"]}
         self.assertNotIn("creatures.axolotl-wave", ids)
         self.assertEqual(ids["creatures.axolotl-late"], spec["first_id"] + len(spec["frames"]) - 1)
+        # Existing colours keep their order, used or not; new colours are appended.
+        self.assertEqual(manifest["palettes"]["axolotl"], ["#fde77e", "#010203", "#040506"])
 
 
 class ClipTimingTest(unittest.TestCase):
