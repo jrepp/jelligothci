@@ -385,9 +385,16 @@ even while sleeping or busy. The selected form persists without losing care
 state or immediately evolving back. Locked forms cannot be selected.
 
 The testing catalog adds companion families, unlocked by discovering their
-named present. They currently share the same Mint → Lilac artwork and a
-prototype growth rule. Evolution preserves identity and the collection slot. Stored pets
+named present. Most share the Mint → Lilac artwork and a prototype growth rule.
+BUBBLE, unlocked by the Bubble Gem, hatches as BABY AXO and grows into the
+axolotl. Evolution preserves identity and the collection slot. Stored pets
 remain frozen. NEW marks a newly acquired companion until its details are viewed.
+
+BABY AXO has its own SNUGGLE activity at home. The first snuggle each local day
+costs energy, gives rewards, and offers the TEDDY BEAR present, which can be
+given to another pet like any present. Later snuggles that day replay the hug
+for free, with no costs or rewards; the limit survives save and reload
+([memo-057](../docs-cms/memos/memo-057-baby-axolotl-teddy-snuggle.md)).
 
 Tap a held present on the main scene, or its selected cell in Presents, to open
 Give / Put away. Put away only deselects it; Back retains the selection. Give
