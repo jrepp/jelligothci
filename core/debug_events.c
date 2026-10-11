@@ -53,11 +53,11 @@ void jelli_debug_events(JelliDebug *debug, const JelliPetEngine *engine, uint32_
     bool dropped = !reset && after && first && after < first->sequence - 1u;
     if (reset)
         after = 0u;
-    int size = snprintf(debug->reply, sizeof(debug->reply),
+    int size = snprintf(debug->protocol.reply, sizeof(debug->protocol.reply),
                         "\n@J1 %" PRIu32 " {\"ok\":true,\"latest\":%" PRIu32
                         ",\"reset\":%s,\"dropped\":%s,\"events\":[",
                         id, log->sequence, reset ? "true" : "false", dropped ? "true" : "false");
-    if (size < 0 || (size_t)size >= sizeof(debug->reply))
+    if (size < 0 || (size_t)size >= sizeof(debug->protocol.reply))
         return;
     size_t used = (size_t)size;
     unsigned emitted = 0;
@@ -66,8 +66,8 @@ void jelli_debug_events(JelliDebug *debug, const JelliPetEngine *engine, uint32_
         const JelliEvent *e = jelli_events_at(log, i);
         if (!e || e->sequence <= after)
             continue;
-        size_t added =
-            event_json(debug->reply + used, sizeof(debug->reply) - used, e, emitted > 0u);
+        size_t added = event_json(debug->protocol.reply + used,
+                                  sizeof(debug->protocol.reply) - used, e, emitted > 0u);
         if (!added) {
             jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"event_capacity\"}");
             return;
@@ -76,9 +76,9 @@ void jelli_debug_events(JelliDebug *debug, const JelliPetEngine *engine, uint32_
         next = e->sequence;
         ++emitted;
     }
-    size = snprintf(debug->reply + used, sizeof(debug->reply) - used,
+    size = snprintf(debug->protocol.reply + used, sizeof(debug->protocol.reply) - used,
                     "],\"next\":%" PRIu32 ",\"more\":%s}\n", next,
                     next < log->sequence ? "true" : "false");
-    if (size > 0 && (size_t)size < sizeof(debug->reply) - used)
-        debug->reply_size = used + (size_t)size;
+    if (size > 0 && (size_t)size < sizeof(debug->protocol.reply) - used)
+        debug->protocol.reply_size = used + (size_t)size;
 }

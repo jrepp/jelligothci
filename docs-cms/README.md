@@ -8,6 +8,16 @@ status](memos/memo-001-shapes-mvp-foundation.md) and
 Wi-Fi/time/OTA foundation: [memo-019](memos/memo-019-wifi-time-and-ota-foundation.md).
 Planned AP setup and optional Wi-Fi debug: [RFC-003](rfcs/rfc-003-wifi-provisioning-and-network-debug.md).
 
+Shared game/factory debug path and retained factory state: [memo-046](memos/memo-046-shared-factory-debug-path.md).
+
+Maintained validation profiles and standalone factory smoke: [memo-045](memos/memo-045-validation-and-factory-firmware.md).
+
+Proposed reusable board validation and factory boundary: [ADR-013](adr/adr-013-board-validation-profiles.md).
+
+Device power experiments and measured driver gaps: [memo-044](memos/memo-044-device-power-experiments.md).
+
+Device sleep and driver capability audit: [memo-043](memos/memo-043-device-power-and-driver-audit.md).
+
 Current sleep, habits, and collectibles: [memo-018](memos/memo-018-sleep-habits-and-collectible-presents.md).
 
 Latest release and expressive slice: [memo-017](memos/memo-017-release-downloads-and-expressive-slice.md).

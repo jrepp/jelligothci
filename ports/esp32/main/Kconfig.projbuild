@@ -1,0 +1,14 @@
+menu "Jelligotchi validation"
+config JELLI_FACTORY_FIRMWARE
+    bool "Build standalone factory validation firmware"
+    default n
+    help
+        Non-destructive serial smoke suite; no pet, saves or provisioning.
+config JELLI_POWER_EXPERIMENTS
+    bool "Enable board power experiments"
+    default n
+    depends on !JELLI_FACTORY_FIRMWARE && PM_ENABLE && PM_PROFILING && FREERTOS_USE_TICKLESS_IDLE
+    help
+        Explicit debug-port experiments for Waveshare SKU 31261. May reset
+        touch and interrupt USB. Use the power validation build profile.
+endmenu

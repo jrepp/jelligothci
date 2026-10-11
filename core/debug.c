@@ -7,27 +7,9 @@
 _Static_assert(sizeof(JelliDebug) <= JELLI_DEBUG_LINE + JELLI_DEBUG_REPLY + 128u,
                "Debug state exceeds budget");
 
-bool jelli_debug_number(const char *text, uint32_t *out)
-{
-    uint32_t value = 0;
-    if (!text || !*text)
-        return false;
-    for (size_t i = 0; text[i]; ++i) {
-        if (text[i] < '0' || text[i] > '9')
-            return false;
-        uint32_t digit = (uint32_t)(text[i] - '0');
-        if (value > (UINT32_MAX - digit) / 10u)
-            return false;
-        value = value * 10u + digit;
-    }
-    *out = value;
-    return true;
-}
-
 void jelli_debug_response(JelliDebug *debug, uint32_t id, const char *body)
 {
-    int size = snprintf(debug->reply, sizeof(debug->reply), "\n@J1 %" PRIu32 " %s\n", id, body);
-    debug->reply_size = size > 0 && (size_t)size < sizeof(debug->reply) ? (size_t)size : 0u;
+    jelli_debug_protocol_response(&debug->protocol, id, body);
 }
 
 bool jelli_debug_frozen(JelliDebug *debug, JelliPetEngine *engine, uint64_t now)
@@ -49,11 +31,11 @@ static void pixels(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id,
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"range\"}");
         return;
     }
-    int size = snprintf(debug->reply, sizeof(debug->reply),
+    int size = snprintf(debug->protocol.reply, sizeof(debug->protocol.reply),
                         "\n@J1 %" PRIu32 " {\"ok\":true,\"capture\":%" PRIu32 ",\"offset\":%" PRIu32
                         ",\"rgb565\":\"",
                         id, debug->capture_id, offset);
-    if (size < 0 || (size_t)size + (size_t)count * 4u + 4u >= sizeof(debug->reply))
+    if (size < 0 || (size_t)size + (size_t)count * 4u + 4u >= sizeof(debug->protocol.reply))
         return;
     size_t used = (size_t)size;
     static const char hex[] = "0123456789abcdef";
@@ -63,10 +45,10 @@ static void pixels(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id,
             engine->surface
                 .pixels[(pixel / JELLI_WIDTH) * engine->surface.stride + pixel % JELLI_WIDTH];
         for (unsigned shift = 16; shift > 0; shift -= 4)
-            debug->reply[used++] = hex[((uint32_t)color >> (shift - 4u)) & 15u];
+            debug->protocol.reply[used++] = hex[((uint32_t)color >> (shift - 4u)) & 15u];
     }
-    memcpy(debug->reply + used, "\"}\n", 4u);
-    debug->reply_size = used + 3u;
+    memcpy(debug->protocol.reply + used, "\"}\n", 4u);
+    debug->protocol.reply_size = used + 3u;
 }
 
 static void capture_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
@@ -179,6 +161,12 @@ static bool history_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t 
 static void dispatch_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
                              unsigned count, uint64_t now)
 {
+    if (count == 3u && !strcmp(words[2], "capabilities")) {
+        jelli_debug_response(debug, id,
+                             "{\"ok\":true,\"protocol\":1,\"profile\":\"game\",\"commands\":"
+                             "[" JELLI_DEBUG_GAME_COMMANDS_JSON "]}");
+        return;
+    }
     if (history_command(debug, engine, id, words, count))
         return;
     if (!strcmp(words[2], "state") && count == 3u) {
@@ -211,52 +199,26 @@ static void dispatch_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t
     }
 }
 
-static void dispatch(JelliDebug *debug, JelliPetEngine *engine, char **words, unsigned count,
-                     uint64_t now)
-{
-    uint32_t id = 0;
-    if (count < 3u || strcmp(words[0], "@J1") != 0 || !jelli_debug_number(words[1], &id))
-        return;
-    if (debug->command && debug->command(debug->command_ctx, debug, engine, id, words, count))
-        return;
-    dispatch_command(debug, engine, id, words, count, now);
-}
+typedef struct {
+    JelliDebug *debug;
+    JelliPetEngine *engine;
+    uint64_t now;
+} DispatchContext;
 
-static void line(JelliDebug *debug, JelliPetEngine *engine, uint64_t now)
+static void dispatch(void *ctx, uint32_t id, char **words, unsigned count)
 {
-    char *words[7];
-    unsigned count = 0;
-    bool start = true;
-    for (size_t i = 0; i < debug->used; ++i) {
-        if (debug->line[i] == ' ' || debug->line[i] == '\r') {
-            debug->line[i] = '\0';
-            start = true;
-        } else if (start) {
-            if (count == 7u)
-                return;
-            words[count++] = &debug->line[i];
-            start = false;
-        }
-    }
-    dispatch(debug, engine, words, count, now);
+    DispatchContext *c = ctx;
+    if (c->debug->command &&
+        c->debug->command(c->debug->command_ctx, c->debug, c->engine, id, words, count))
+        return;
+    dispatch_command(c->debug, c->engine, id, words, count, c->now);
 }
 
 void jelli_debug_feed(JelliDebug *debug, JelliPetEngine *engine, char byte, uint64_t now)
 {
-    if (debug->reply_size)
+    if (debug->protocol.reply_size)
         return;
     (void)jelli_debug_frozen(debug, engine, now);
-    if (byte == '\n') {
-        debug->line[debug->used] = '\0';
-        if (!debug->discard)
-            line(debug, engine, now);
-        memset(debug->line, 0, sizeof(debug->line)); /* Host settings may contain secrets. */
-        debug->used = 0;
-        debug->discard = false;
-    } else if (debug->used + 1u >= sizeof(debug->line) || byte < ' ' || byte > '~') {
-        if (byte != '\r')
-            debug->discard = true;
-    } else if (!debug->discard) {
-        debug->line[debug->used++] = byte;
-    }
+    DispatchContext context = {debug, engine, now};
+    jelli_debug_protocol_feed(&debug->protocol, byte, dispatch, &context);
 }

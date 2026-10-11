@@ -1,10 +1,12 @@
 #ifndef JELLI_DISPLAY_TRANSFER_H
 #define JELLI_DISPLAY_TRANSFER_H
 #include "lvgl.h"
+#include "esp_lcd_panel_ops.h"
 #include <stdint.h>
 
 typedef struct {
     void *pixels;
+    esp_lcd_panel_handle_t panel;
     uint32_t submitted, failed;
 } JelliDisplayTransfer;
 
