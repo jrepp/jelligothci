@@ -42,6 +42,10 @@
     .fb .link{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;justify-self:start;font-size:12px}
     .fb input[type=range]{width:110px}
     .fb-align{font-size:11px;color:var(--muted)}.fb-align.warn{color:var(--warn);font-weight:600}
+    @media (any-pointer: coarse){
+      .fb,.fb-controls,.fb-strip,.fb-onion,.fb-body,.fb .seg{gap:var(--tap-gap)}
+      .fb-strip button{min-width:var(--tap);min-height:var(--tap)}.fb .link{min-height:var(--tap)}
+    }
     .fb-strip button.off{border-color:var(--warn)}.fb-strip button.off span:first-of-type::before{content:'⚠ '}
   </style>`);
 
@@ -274,6 +278,7 @@
         <div class="seg" role="group" aria-label="Frames each side">${[1, 2, 3].map(r => `<button data-range="${r}" aria-pressed="${state.onionRange === r}" title="Ghost ${r} frame${r > 1 ? 's' : ''} each side" ${many && state.onionSkin ? '' : 'disabled'}>±${r}</button>`).join('')}</div>
         <label class="lbl">Ghost <input type="range" id="fb-alpha" min="0.15" max="0.9" step="0.05" value="${state.onionAlpha}" aria-label="Onion skin opacity" ${many && state.onionSkin ? '' : 'disabled'}></label>
         ${state.onionSkin && many ? `<span class="fb-legend">${near.prev.length ? `<span><i style="background:rgb(${GHOST.prev})"></i>before: ${names(near.prev)}</span>` : ''}${near.next.length ? `<span><i style="background:rgb(${GHOST.next})"></i>after: ${names(near.next)}</span>` : ''}</span>` : ''}</div>
+      ${window.JelliTouch?.coarse() ? `<div class="fb-onion">${window.JelliTouch.info('Onion skin ghosts the neighbouring frames: Changes shows only the pixels that differ, Silhouette shows every pixel. Frames each side sets how many frames to ghost. Eye & ground draws each frame\'s ground line and anchor, and where frame 1\'s eye height puts the eye.', 'About onion skin and guides')}<span class="studio-note" style="margin:0">What the onion and guide buttons do</span></div>` : ''}
       <button class="link" id="fb-timeline" title="Switch to the Creature tab with this clip's timeline">Edit order and timing in the Creature tab ↗</button>`;
     side.append(box);
     const b = frameBox(c), preview = box.querySelector('#fb-preview'), [sized] = makeCanvas(b.w * b.s, b.h * b.s);

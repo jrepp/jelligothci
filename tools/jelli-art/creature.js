@@ -30,8 +30,11 @@
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="creature" aria-pressed="false">Creature</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="creature" class="hidden"></div>');
   document.head.insertAdjacentHTML('beforeend', `<style>
+    #creature{container:creature / inline-size}
     .cr-layout{display:grid;grid-template-columns:auto minmax(320px,1fr);gap:20px;align-items:start}
-    @media(max-width:1100px){.cr-layout{grid-template-columns:1fr}}
+    @container creature (max-width:899px){.cr-layout{grid-template-columns:minmax(0,1fr)}}
+    .cr-info{display:inline-flex;align-items:center;gap:4px}
+    @media (any-pointer: coarse){.cr-panel,.cr-strip,#cr-transport,#cr-transport .seg{gap:var(--tap-gap)}#cr-transport{flex-wrap:wrap}.cr-cell{min-width:var(--tap);min-height:var(--tap)}}
     .cr-panel{display:grid;gap:8px;justify-items:start}.cr-panel canvas{border-radius:50%}
     .cr-readout{font:12px ui-monospace,monospace;color:var(--muted);min-height:18px}
     .cr-msgs{margin:6px 0;padding:0;list-style:none;font-size:12px}.cr-msgs li{color:var(--bad)}.cr-msgs li.ok{color:var(--muted)}
@@ -206,7 +209,7 @@
     if (!list.length || !poses().length) { el.innerHTML = '<p class="studio-note">This manifest has no creature forms or clips.</p>'; panelView = null; return; }
     if (!list.some(f => f.art === state.cForm)) state.cForm = list[0].art;
     if (!poses().includes(state.cPose)) state.cPose = poses()[0];
-    const css = Math.min(PANEL, Math.max(240, window.innerWidth - 360));
+    const width = el.clientWidth || window.innerWidth, css = Math.min(PANEL, Math.max(240, width - (width < 900 ? 32 : 360)));  // stacked below 900 px: the panel may take the width
     el.innerHTML = `<div class="title"><h2>Creature</h2><div class="seg" id="cr-forms" role="group" aria-label="Creature form"></div></div>
       <div class="cr-layout">
         <div class="cr-panel"><div class="lbl"><span>On the panel · <span id="cr-scale">${scaleOf(state.cForm)}×</span> · ground at (${CENTER}, ${FLOOR})</span></div><div id="cr-canvas"></div>
@@ -241,6 +244,7 @@
     el.innerHTML = `<div class="seg cr-keys"><button id="cr-play" aria-keyshortcuts="Space">${play.on ? 'Pause' : 'Play'}<kbd>Space</kbd></button><button id="cr-prev" title="Previous frame" aria-keyshortcuts="ArrowLeft ,">◀ Step<kbd>←</kbd></button><button id="cr-next" title="Next frame" aria-keyshortcuts="ArrowRight .">Step ▶<kbd>→</kbd></button><button id="cr-restart" title="Play from the first frame">Restart</button></div>
       <div class="seg"><button id="cr-repeat" aria-pressed="${state.cRepeat}" title="The game plays a one-shot clip once and holds its last frame; this replays it after a pause">Replay one-shots</button><button id="cr-bg" aria-pressed="${state.cBackground}">Home background</button><button id="cr-guides" aria-pressed="${state.cGuides}" title="Ground line and centre">Guides</button></div>
       <label class="lbl" for="cr-speed">Speed</label><select id="cr-speed" title="Playback speed; the game always plays at 1×">${SPEEDS.map(s => `<option value="${s}"${s === play.speed ? ' selected' : ''}>${s}×</option>`).join('')}</select>
+      ${window.JelliTouch?.coarse() ? window.JelliTouch.info('Replay one-shots: the game plays a one-shot clip once and holds its last frame; this replays it after a pause. Home background shows the clip on the home screen. Guides draw the ground line and centre. Speed only changes this preview; the game always plays at 1x.', 'About the preview options') : ''}
       ${reduced?.matches ? '<span class="studio-note">Reduced motion is on, so the preview starts paused. Step through frames or press Play.</span>' : ''}`;
     el.querySelector('#cr-play').onclick = () => setPlaying(!play.on);
     el.querySelector('#cr-prev').onclick = () => stepFrame(-1);

@@ -170,7 +170,11 @@ thumbnail, its duration and labelled buttons: **Paint ✎**, **◀ Move**,
 **Move ▶**, **Duplicate** and **Remove**.
 Drag a card, or press Alt+←/→ on it, to reorder. The duration track below sizes
 each frame by its time and shows the playhead. Drag a handle, or focus it and
-use the arrow keys (Shift or Page Up/Down for 100 ms), to retime a frame.
+use the arrow keys (Shift or Page Up/Down for 100 ms), to retime a frame; the
+handle is a 44 px target on coarse pointers. On touch screens, **Fine (1 ms)** next to
+**Durations** makes drags and arrow keys change 1 ms at a time (Shift while
+dragging still does). Dragging along the track scrubs frames, and tapping a
+segment or thumbnail shows that frame.
 **Speed** (0.25× to 2×) only changes the preview. Playback follows elapsed
 milliseconds, as `core/creature.c` `jelli_clip_frame` does.
 
@@ -462,7 +466,10 @@ helpers in `ui_tests/touch.py` (`pen_stroke`, `touch_start`, `tap`,
 `fixture.json`'s `touch_viewports`, which have touch enabled at device scale 2.
 It checks the recogniser at each `JelliTouch.T` threshold, the Pencil only
 switch, 44 px shell controls, the List drawer, keyboard hints, the long-press
-popover, ⓘ help, toasts and the Touch and Pencil help section. Chromium
+popover, ⓘ help, toasts and the Touch and Pencil help section.
+`test_touch_animation.py` covers the Creature timeline and flip-book: handle
+drags (coarse and Fine), scrubbing, tapping, the Move buttons, play and onion
+controls, 44 px targets and no sideways scroll at both iPad sizes. Chromium
 emulation is not iPadOS Safari, so physical behaviour still needs the iPad
 checklist in RFC-007.
 

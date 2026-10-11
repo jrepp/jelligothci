@@ -103,6 +103,16 @@ plays or pauses; ← and → (or `,` and `.`) step frames. **Save clips** (⌘S 
 Ctrl+S) checks the whole manifest and writes only the edited clips to
 `assets.json`.
 
+On an iPad, drag a duration handle (a 44 px target) with a finger or the Pencil
+to change a frame's milliseconds in steps of 10. On a touch screen, turn on **Fine (1 ms)**, next
+to **Durations**, for single milliseconds; it also sets the arrow-key step on a
+handle, and Shift while dragging still does the same. Drag along the track to
+scrub through the frames, or tap a segment or thumbnail to show that frame. A
+frame card's **◀ Move** and **Move ▶** buttons reorder frames without
+dragging. The ⓘ buttons explain the controls that otherwise have only a
+tooltip. The Creature view stacks into one column when its own width is under
+900 px. ([RFC-007](../docs-cms/rfcs/rfc-007-jelli-art-touch-and-pen.md))
+
 **Paint ✎** on a frame card opens that frame in Paint with the **Flip-book**
 beside the canvas. It plays the clip at its real timing, including strokes you
 have not saved (**Play**, Shift+Space). Click a thumbnail, or press ← and →,
@@ -112,6 +122,8 @@ before (amber) and after (blue). **Changes** ghosts only where they differ from
 this one; **Silhouette** ghosts their whole shape, to judge arcs and volume
 (Shift+O switches). **±1** to **±3** sets how many on each side, and **Ghost**
 sets their strength.
+The flip-book's Play, Frame, Onion skin, Changes/Silhouette and range buttons
+are the touch equivalents of Shift+Space, ←/→, O and Shift+O, sized for fingers.
 
 The flip-book compares every frame with frame 1 the way the game places it,
 on its own ground anchor. It marks a frame ⚠ when it **slides** sideways by
