@@ -39,6 +39,7 @@ sys.path.insert(0, str(HERE.parent / "assets"))
 from compare_slice import DEVICE_SCALE, REPO, SOURCE, collect  # noqa: E402
 import animation  # noqa: E402
 import behaviors  # noqa: E402
+import activities  # noqa: E402
 import creatures  # noqa: E402
 import game_preview  # noqa: E402
 import lint_rules  # noqa: E402
@@ -67,8 +68,8 @@ CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
 PAGE_SCRIPTS = (SHELL_JS, HERE / "lint.js", HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
-                HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js")
-EDITABLE_CONTENT = ("behaviors", "creatures")
+                HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js")
+EDITABLE_CONTENT = ("behaviors", "creatures", "activities")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
 MAX_BODY = 1 << 20
@@ -198,7 +199,7 @@ def set_waiver(key, rules, reason, artist="", base=None):
 
 def content_paths():
     """The content files the studio may write, by name."""
-    return {"behaviors": CONTENT / "behaviors.json", "creatures": CREATURE_DATA}
+    return {"behaviors": CONTENT / "behaviors.json", "creatures": CREATURE_DATA, "activities": CONTENT / "activities.json"}
 
 
 def behaviour_data():
@@ -209,7 +210,11 @@ def behaviour_data():
         (vocab is None, "the checkout has no cmake/JelliBehaviors.cmake"),
         (not path.exists(), "content/behaviors.json is missing"),
         (shutil.which("cmake") is None, "cmake is not installed, so edits cannot be validated")) if missing]
-    return {"behavior_data": behaviors.read_json(path), "behavior_data_sha": profiles.digest(path),
+    return {"activity_data": behaviors.read_json(CONTENT / "activities.json"),
+            "activity_sha": profiles.digest(CONTENT / "activities.json"),
+            "activity_animations": activities.ANIMATIONS,
+            "activity_locations": (behaviors.read_json(CONTENT / "locations.json") or {}).get("locations", []),
+            "behavior_data": behaviors.read_json(path), "behavior_data_sha": profiles.digest(path),
             "behavior_vocab": vocab, "behavior_editable": not reasons,
             "behavior_readonly_reason": "; ".join(reasons),
             "potty": behaviors.read_json(CONTENT / "potty.json")}
@@ -385,6 +390,8 @@ def save_content(docs, bases, artist=""):
         if changed:
             candidate = {**current, **changed}
             try:
+                if "activities" in changed:
+                    activities.validate(candidate["activities"], REPO, CONTENT, read_manifest())
                 if "behaviors" in changed:
                     behaviors.validate(candidate["behaviors"], REPO, CONTENT)
                 module = creatures.load_checkout_module(REPO, "creature_data")

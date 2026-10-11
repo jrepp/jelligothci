@@ -17,6 +17,11 @@ class BuildVersionTest(unittest.TestCase):
             # data and the CMake modules that generate code from it.
             for name in ("cmake", "content", "core", "include", "tests", "tools"):
                 shutil.copytree(repository / name, source / name)
+            # Core configuration validates activity/location asset references;
+            # it needs the catalog, but does not load the PNG payloads.
+            manifest = Path("assets/slice/assets.json")
+            (source / manifest).parent.mkdir(parents=True)
+            shutil.copy(repository / manifest, source / manifest)
             shutil.copy(repository / "CMakeLists.txt", source / "CMakeLists.txt")
             version = source / "VERSION"
             version.write_text("1.2.3\n")

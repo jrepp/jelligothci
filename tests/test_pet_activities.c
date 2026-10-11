@@ -112,8 +112,32 @@ static void ring_icon_scale_follows_width(void)
     CHECK(checked > 20u);
 }
 
+static void health_yoga_uses_the_authored_activity(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    game.clock_known = ui.clock_known = true;
+    for (unsigned minute = 0u; minute < 1440u * 7u; ++minute) {
+        game.pets[0].ticks = (uint64_t)(minute / 1440u) * JELLI_DAY_TICKS;
+        game.clock_minute = ui.clock_minute = (uint16_t)(minute % 1440u);
+        if (jelli_moment_available(&game, &game.pets[0], 8u) == JELLI_OK)
+            break;
+    }
+    ui.page = JELLI_UI_HEALTH;
+    ui.menu_open = true;
+    render(&game, &ui, 0u);
+    render(&game, &ui, 2000u);
+    tap(&ui, &game, 5u);
+    CHECK(ui.result == JELLI_OK && game.pets[0].moment == 9u);
+    CHECK(game.pets[0].activity == JELLI_PLAYING && !ui.menu_open);
+    CHECK(ui.save_requested);
+}
+
 int main(void)
 {
+    health_yoga_uses_the_authored_activity();
     ring_icon_scale_follows_width();
     ring_items_come_from_data();
     potty_routine_from_the_ring();

@@ -78,7 +78,11 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
    16,384 mask bytes. *Amended 2026-10-10 (owner-approved):* the desktop
    live-reload staging buffer is 294,912 bytes (288 KiB) and is the pack
    ceiling the build checks; the SDL decoder bounds pixels by the bank's real
-   capacity instead of a stale 98,304-pixel limit.
+   capacity instead of a stale 98,304-pixel limit. *Amended again 2026-10-10
+   (owner-approved):* the location backgrounds and the baby axolotl frames
+   together needed 141,632 pixels, so the SDL banks grow to 196,608 pixels,
+   24,576 mask bytes and 192 assets, and the staging buffer to 458,752 bytes
+   (448 KiB). These are desktop limits; firmware memory is not measured here.
 6. **Jelli Art authors the data.** Its Creature view edits clips with an animated
    preview at game placement. Profile and behaviour editing follows the same
    validate-then-commit path.
@@ -101,10 +105,10 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
 - A multi-frame clip redraws the full panel on each frame change, as idle phase
   changes already did. On ESP32 this costs one full frame every 250–900 ms while
   such a clip plays. It is not measured on hardware yet.
-- The art pack is larger: with PR #37's baby axolotl, hug and surprised frames,
-  the raw payload (RGB565, masks, font) is 267,304 bytes. It uses 125,248 of
-  131,072 live pixels and 15,656 of 16,384 mask bytes, leaving room for two more
-  48x48 frames. The firmware app is 1,778,608 bytes, leaving 58% of its 4 MiB
+- The art pack is larger: with PR #37's baby axolotl, hug and surprised frames
+  and PR #22's four location backgrounds, the raw payload (RGB565, masks, font)
+  is 302,120 bytes. It uses 141,632 of 196,608 live pixels and 17,704 of 24,576
+  mask bytes, leaving room for about 23 more 48x48 frames. The firmware app is 1,778,608 bytes, leaving 58% of its 4 MiB
   partition free (measured 2026-10-10 at 41350aa); static D/IRAM is unchanged.
 - `make run-live` reloads frame pixels but not clip or profile edits; those need
   a rebuild.

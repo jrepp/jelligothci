@@ -1,26 +1,1211 @@
 {
   "version": 1,
   "moments": [
-    {"id": 0, "name": "BREAKFAST", "kind": "feed", "suggest_hour": 5, "location": "stay",
-     "gains": {}, "icon": 6009, "prop": 0},
-    {"id": 1, "name": "TEA", "kind": "play", "suggest_hour": 11, "location": "stay",
-     "gains": {"social": 60, "energy": 100}, "icon": 6010, "prop": 0},
-    {"id": 2, "name": "GOING OUT", "kind": "play", "suggest_hour": 15, "location": "garden",
-     "gains": {}, "icon": 6011, "prop": 0},
-    {"id": 3, "name": "MOVIE", "kind": "play", "suggest_hour": 19, "location": "stay",
-     "gains": {"social": 100}, "icon": 6012, "prop": 0},
-    {"id": 4, "name": "READING", "kind": "play", "suggest_hour": -1, "location": "stay",
-     "gains": {"amusement": 60, "social": 30}, "icon": 6016, "prop": 3005}
+    {
+      "id": 0,
+      "name": "BREAKFAST",
+      "kind": "feed",
+      "suggest_hour": 6,
+      "gains": {
+        "satiety": 350,
+        "energy": 100,
+        "hydration": 120,
+        "bond": 1
+      },
+      "icon": 6009,
+      "prop": 0,
+      "duration_s": 5,
+      "start_minute": 360,
+      "end_minute": 660,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "hold",
+      "costs": {
+        "hygiene": 20
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "garden"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 1,
+      "name": "TEA",
+      "kind": "play",
+      "suggest_hour": 13,
+      "gains": {
+        "energy": 180,
+        "amusement": 80,
+        "social": 220,
+        "hydration": 250,
+        "bond": 2
+      },
+      "icon": 6010,
+      "prop": 6010,
+      "duration_s": 8,
+      "start_minute": 780,
+      "end_minute": 960,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "sip",
+      "costs": {
+        "satiety": 30,
+        "hygiene": 10
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 1,
+          "percent": 30
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "garden",
+        "park"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 2,
+      "name": "GOING OUT",
+      "kind": "play",
+      "suggest_hour": 15,
+      "gains": {
+        "amusement": 260,
+        "social": 180,
+        "bond": 2
+      },
+      "icon": 6011,
+      "prop": 0,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "hold",
+      "costs": {
+        "satiety": 60,
+        "energy": 100,
+        "hygiene": 60,
+        "hydration": 80
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 25
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "garden",
+        "park",
+        "beach"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 3,
+      "name": "MOVIE",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 300,
+        "social": 180,
+        "bond": 2
+      },
+      "icon": 6012,
+      "prop": 6012,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "watch",
+      "costs": {
+        "satiety": 40,
+        "energy": 40,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 1,
+          "percent": 30
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home"
+      ],
+      "randomize_location": false
+    },
+    {
+      "id": 4,
+      "name": "READING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 220,
+        "social": 80,
+        "bond": 2
+      },
+      "icon": 6016,
+      "prop": 3005,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "hold",
+      "costs": {
+        "energy": 60,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 2,
+          "percent": 50
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "garden",
+        "library"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 5,
+      "name": "LUNCH",
+      "kind": "feed",
+      "suggest_hour": 11,
+      "gains": {
+        "satiety": 400,
+        "energy": 100,
+        "hydration": 150,
+        "bond": 1
+      },
+      "icon": 6009,
+      "prop": 6009,
+      "duration_s": 5,
+      "start_minute": 660,
+      "end_minute": 840,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "sip",
+      "costs": {
+        "hygiene": 20
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "park"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 6,
+      "name": "DINNER",
+      "kind": "feed",
+      "suggest_hour": 16,
+      "gains": {
+        "satiety": 450,
+        "energy": 120,
+        "social": 80,
+        "hydration": 150,
+        "bond": 2
+      },
+      "icon": 6009,
+      "prop": 6009,
+      "duration_s": 5,
+      "start_minute": 960,
+      "end_minute": 1260,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "sip",
+      "costs": {
+        "hygiene": 30
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "garden"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 7,
+      "name": "DESSERT",
+      "kind": "feed",
+      "suggest_hour": -1,
+      "gains": {
+        "satiety": 120,
+        "amusement": 180,
+        "bond": 1
+      },
+      "icon": 6009,
+      "prop": 6009,
+      "duration_s": 5,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 0,
+      "requires": 6,
+      "animation": "sip",
+      "costs": {
+        "hygiene": 40
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "garden"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 8,
+      "name": "YOGA",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "energy": 220,
+        "amusement": 120,
+        "social": 60,
+        "bond": 1
+      },
+      "icon": 8005,
+      "prop": 8005,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "breathe",
+      "costs": {
+        "satiety": 30,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 1,
+          "percent": 30
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "garden",
+        "park",
+        "beach"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 9,
+      "name": "JOGGING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 300,
+        "social": 80,
+        "bond": 2
+      },
+      "icon": 6011,
+      "prop": 6011,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "jog",
+      "costs": {
+        "satiety": 100,
+        "energy": 160,
+        "hygiene": 100,
+        "hydration": 160
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 35
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "park",
+        "beach"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 10,
+      "name": "FISHING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 260,
+        "social": 100,
+        "bond": 2
+      },
+      "icon": 6011,
+      "prop": 6011,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [
+        1,
+        2
+      ],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "cast",
+      "costs": {
+        "satiety": 60,
+        "energy": 80,
+        "hygiene": 60,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 2,
+          "percent": 30
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "pond"
+      ],
+      "randomize_location": false
+    },
+    {
+      "id": 11,
+      "name": "DAY DREAMING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "energy": 120,
+        "amusement": 180,
+        "bond": 1
+      },
+      "icon": 9007,
+      "prop": 9007,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "dream",
+      "costs": {
+        "satiety": 20,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 1,
+          "percent": 25
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "garden",
+        "park",
+        "pond",
+        "beach"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 12,
+      "name": "NAP",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "energy": 350,
+        "amusement": 60
+      },
+      "icon": 6003,
+      "prop": 3004,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "rest",
+      "costs": {
+        "satiety": 40,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "garden"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 13,
+      "name": "CHESS",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 280,
+        "social": 160,
+        "bond": 2
+      },
+      "icon": 3005,
+      "prop": 3005,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [
+        1,
+        2
+      ],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "think",
+      "costs": {
+        "energy": 90,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 2,
+          "percent": 35
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "park",
+        "library"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 14,
+      "name": "DRAWING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 280,
+        "social": 100,
+        "bond": 2
+      },
+      "icon": 8001,
+      "prop": 8001,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "sketch",
+      "costs": {
+        "energy": 60,
+        "hygiene": 30,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 1,
+          "percent": 35
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "garden",
+        "park",
+        "beach",
+        "library"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 15,
+      "name": "THINKING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 220,
+        "social": 60,
+        "bond": 2
+      },
+      "icon": 9007,
+      "prop": 9007,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "think",
+      "costs": {
+        "energy": 60,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 2,
+          "percent": 35
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "garden",
+        "pond",
+        "library"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 16,
+      "name": "GARDENING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 260,
+        "social": 100,
+        "bond": 2
+      },
+      "icon": 6011,
+      "prop": 6011,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "dig",
+      "costs": {
+        "satiety": 60,
+        "energy": 100,
+        "hygiene": 160,
+        "hydration": 100
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 30
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "garden"
+      ],
+      "randomize_location": false
+    },
+    {
+      "id": 17,
+      "name": "SOCCER",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 320,
+        "social": 180,
+        "bond": 2
+      },
+      "icon": 9003,
+      "prop": 9003,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "kick",
+      "costs": {
+        "satiety": 100,
+        "energy": 160,
+        "hygiene": 120,
+        "hydration": 160
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 35
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "park"
+      ],
+      "randomize_location": false
+    },
+    {
+      "id": 18,
+      "name": "VOLLEYBALL",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 260,
+        "social": 260,
+        "bond": 2
+      },
+      "icon": 9003,
+      "prop": 9003,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "volley",
+      "costs": {
+        "satiety": 80,
+        "energy": 140,
+        "hygiene": 80,
+        "hydration": 140
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 1,
+          "percent": 30
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "park",
+        "beach"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 19,
+      "name": "SWIMMING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 320,
+        "social": 120,
+        "hygiene": 80,
+        "bond": 2
+      },
+      "icon": 6015,
+      "prop": 6015,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "swim",
+      "costs": {
+        "satiety": 100,
+        "energy": 180,
+        "hydration": 180
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 2,
+          "percent": 40
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "pond",
+        "beach"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 20,
+      "name": "BASEBALL",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 300,
+        "social": 200,
+        "bond": 2
+      },
+      "icon": 9003,
+      "prop": 9003,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "swing",
+      "costs": {
+        "satiety": 100,
+        "energy": 150,
+        "hygiene": 100,
+        "hydration": 150
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 30
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "park"
+      ],
+      "randomize_location": false
+    },
+    {
+      "id": 21,
+      "name": "BUG CATCHING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 280,
+        "social": 100,
+        "bond": 2
+      },
+      "icon": 11001,
+      "prop": 11001,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "catch",
+      "costs": {
+        "satiety": 60,
+        "energy": 100,
+        "hygiene": 100,
+        "hydration": 80
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 35
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "garden",
+        "park",
+        "pond"
+      ],
+      "randomize_location": true
+    },
+    {
+      "id": 22,
+      "name": "SCIENCE",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 300,
+        "social": 120,
+        "bond": 2
+      },
+      "icon": 6010,
+      "prop": 6010,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [
+        1,
+        2
+      ],
+      "random_weight": 1,
+      "requires": -1,
+      "animation": "mix",
+      "costs": {
+        "energy": 100,
+        "hygiene": 70,
+        "hydration": 60
+      },
+      "jitter_pct": 15,
+      "bonuses": [
+        {
+          "form": 2,
+          "percent": 40
+        },
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home",
+        "library"
+      ],
+      "randomize_location": true
+    }
   ],
   "favorites": {
-    "bond": 10,
+    "bond": 1,
     "profiles": [
-      {"name": "evening", "windows": [{"until_minute": 1140, "moment": "GOING OUT"},
-                                      {"until_minute": 1440, "moment": "MOVIE"}],
-       "strong_from_minute": 900, "strong_until_minute": 1440, "strong_bonus": 60, "bonus": 30},
-      {"name": "morning", "windows": [{"until_minute": 660, "moment": "BREAKFAST"},
-                                      {"until_minute": 1440, "moment": "TEA"}],
-       "strong_from_minute": 0, "strong_until_minute": 900, "strong_bonus": 60, "bonus": 30}
+      {
+        "name": "evening",
+        "windows": [
+          {
+            "until_minute": 1140,
+            "moment": "GOING OUT"
+          },
+          {
+            "until_minute": 1440,
+            "moment": "MOVIE"
+          }
+        ],
+        "strong_from_minute": 900,
+        "strong_until_minute": 1440,
+        "strong_bonus": 60,
+        "bonus": 30
+      },
+      {
+        "name": "morning",
+        "windows": [
+          {
+            "until_minute": 660,
+            "moment": "BREAKFAST"
+          },
+          {
+            "until_minute": 1440,
+            "moment": "TEA"
+          }
+        ],
+        "strong_from_minute": 0,
+        "strong_until_minute": 900,
+        "strong_bonus": 60,
+        "bonus": 30
+      }
     ]
-  }
+  },
+  "pet_costs": [
+    {
+      "form": 0,
+      "energy_pct": 130,
+      "hydration_pct": 100
+    },
+    {
+      "form": 1,
+      "energy_pct": 100,
+      "hydration_pct": 100
+    },
+    {
+      "form": 2,
+      "energy_pct": 100,
+      "hydration_pct": 150
+    },
+    {
+      "form": 3,
+      "energy_pct": 100,
+      "hydration_pct": 150
+    }
+  ]
 }

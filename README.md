@@ -68,6 +68,11 @@ before running this diagnostic, which briefly pauses rendering.
 Paint in the browser with `make jelli-art`, or edit PNGs under `assets/slice/`
 in any editor, while `make run-live` runs. Valid edits refresh
 without restarting the pet; bad or incomplete files retain the last valid art.
+The **Activities** view authors shared recipes and previews their props on each pet.
+Breakfast opens 6–11am, lunch 11am–2pm, tea 1–4pm, and dinner 4–9pm.
+Finishing dinner unlocks dessert for that pet until midnight. One random fun
+activity is offered each hour; use MORE in the game’s Activities ring to browse.
+Yoga replaces Stretch and shares the same authored recipe from Health.
 Style rules are in the [pixel art guide](docs/pixel-art-guide.md).
 Bounds, centroids, and creature ground anchors update with the image.
 
@@ -76,7 +81,7 @@ Bounds, centroids, and creature ground anchors update with the image.
 open build/assets/preview.html    # macOS; otherwise open in your browser
 ```
 
-The preview includes all 95 assets, including nine distinct presents.
+The preview includes all 107 assets, including nine distinct presents.
 [Art inventory](assets/slice/README.md) · [live authoring guide](docs/artwork.md)
 
 ### Creatures are content data
@@ -90,7 +95,8 @@ build time ([ADR-012](docs-cms/adr/adr-012-data-driven-creature-species-and-pres
 | `assets/slice/assets.json` `clips` | Frames, holds and looping for each form's eight runtime poses |
 | `content/creatures.json` | Per-form actor/icon/portrait scale, pose rules, idle beats, and how each behaviour state looks |
 | `content/behaviors.json` | Behaviour states (curious, studying, asking for help…), their effects and requests, and each species' stimulus reactions |
-| `content/activities.json` | Activities ring moments (including READING): gains, location, suggestion hour, icon, prop |
+| `content/activities.json` | Activity recipes: pet eligibility, timed unlocks, prerequisites, random weights, duration, gains/costs, pet cost/reward modifiers, jitter, locations, shared icons and animations |
+| `content/locations.json` | Stable supported locations shared by activities and behavior; builds reject broken references |
 | `content/potty.json` | The potty cycle from meals and drinks, accidents, and the mess animation |
 
 Mint grows into Lilac; catching the Bubble Gem adds BUBBLE, who hatches as
@@ -106,6 +112,15 @@ save and resume normally. Import upscaled frame art with `tools/assets/import_cr
 Creature view. Jelli Art's **Test in game** view renders a chosen scenario with
 the real engine (`tools/game-preview/preview.c`, built with
 `-DJELLI_BUILD_SDL=OFF -DJELLI_BUILD_PET=ON`) from the art and content on disk.
+
+Activities pay their authored costs at start and reward completion. Rewards
+vary within a bounded range; bond grows in small increments. Mint spends more
+energy and grows into chess, science and fishing; Axolotl spends more hydration.
+Jelli Art previews each pet's gains, costs and allowed locations. Home, Garden,
+Park, Pond, Beach and Library have distinct backgrounds. TRAVEL cycles through
+them; activities choose from their authored allowed places. See the
+[activity balance audit](docs-cms/memos/memo-041-activity-balance-and-location-integrity.md)
+for the full meter table, initial tuning and save migration behavior.
 
 ## Hardware bring-up
 

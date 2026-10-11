@@ -471,3 +471,61 @@ Release Please opens the release PR. When it merges,
 
 `jelli-art.home.jrepp.com` on nuc, over Tailscale, is defined in t1-hosting
 (memo-039, `jelli-art/` and `scripts/jelli-art-deploy`).
+
+
+## Activities
+
+The catalog includes meals, tea, dessert, going out, movie, reading, Yoga,
+jogging, fishing, day dreaming, nap, chess, drawing, thinking, gardening,
+soccer, volleyball, swimming, baseball, bug catching and science.
+
+The Activities view edits `content/activities.json`. Set eligible pet forms
+(no selection means all), opening and closing times, duration, meter
+gains/costs, allowed locations, an earlier activity to complete that day, and a random
+weight. A positive weight joins the hourly optional activity pool; zero makes
+an activity available whenever its other rules allow it. One weighted choice
+is stable for the hour and across reloads. Activities never start themselves.
+
+Choose an existing icon and prop, then a reusable motion: hold, sip, watch,
+breathe, jog, cast, dream, rest, think, lift, sketch, dig, kick, volley,
+swim, swing, catch, or mix. The preview pet selector uses
+the shared sprite library; the runtime anchors props to the current pet.
+These are shared prop motions and existing poses, not unique animation sheets
+for each species. The new recipes reuse existing icons; artists can replace
+those choices with more specific sprites later. Nap is a short energy-restoring
+activity with a sleeping pose, separate from the sleep journal.
+
+Time windows use local time when the host supplies a clock and pet time as a
+fallback. Opening times are inclusive, closing times exclusive. Closing at
+midnight means the end of the day. Dessert requires a completed dinner that
+same day; interruption does not unlock it. Daily completion survives saving.
+Offline catch-up does not award new prerequisite completions.
+
+The editor validates recipes through the engine's CMake generator, checks
+sprite and form references, and rejects stale saves. Existing names/IDs remain
+fixed because behavior references and saved progress use them; append new
+recipes (up to 32) instead of deleting or reordering existing ones. Content
+changes reach the game through a rebuild; PNG hot reload alone does not reload
+activity rules.
+
+
+Activity effects use meter points (0–100) in the editor and tenths (0–1000) in
+JSON. Costs are paid on acceptance and rewards on completion; interrupting keeps
+the costs and gives no reward. Meals consume one food when started. Set reward
+jitter (0–25%), per-form reward bonuses (0–100%), and each form's energy/hydration
+cost multipliers (0–300%, shared across recipes and Exercise). A blank bonus
+inherits behavior affinity; explicit zero disables it. The preview shows the
+selected pet's cost and reward range before passive decay, sleep-habit modifiers,
+favorite-time extras and saturation. Bond defaults to slow 0.1–0.2-point gains;
+most ordinary meter gains are 10–40 points.
+
+Select one or more locations from `content/locations.json`, then enable random
+choice or let the pet stay where allowed. Random travel happens only after an
+activity is accepted. Home, Garden, Park, Pond, Beach and Library are available.
+The game reads names, backgrounds and indoor/outdoor atmosphere from the same
+catalog. Append locations with unique keys/IDs and registered background assets
+(up to eight); unknown keys or non-background asset references fail validation.
+The same CMake validators run in core-only, desktop and firmware builds and
+reject broken asset, pet, location, activity and prerequisite references.
+The [balance audit](../../docs-cms/memos/memo-041-activity-balance-and-location-integrity.md)
+records the full recipe table and initial pet tuning.

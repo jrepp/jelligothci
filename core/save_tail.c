@@ -13,6 +13,8 @@ void jelli_save_write_tail(Writer *writer, const JelliGame *game)
         put_u8(writer, pet->cooldown_state);
         put_u16(writer, pet->cooldown_left);
         put_u8(writer, pet->behavior_flags);
+        put_u16(writer, pet->activity_day);
+        put_u32(writer, pet->completed_moments);
     }
 }
 
@@ -33,5 +35,19 @@ void jelli_save_read_tail(Reader *reader, JelliGame *game)
         pet->cooldown_state = get_u8(reader);
         pet->cooldown_left = get_u16(reader);
         pet->behavior_flags = get_u8(reader);
+        if (reader->version >= 12u) {
+            pet->activity_day = get_u16(reader);
+            pet->completed_moments = get_u32(reader);
+        }
+    }
+    /* v13 pays recipe costs at start and rewards at completion. Old in-flight
+     * recipes may already have granted rewards; retire them without replay. */
+    for (unsigned i = 0u; i < game->count && reader->version < 13u; ++i) {
+        JelliPet *pet = &game->pets[i];
+        if (pet->moment && (pet->activity == JELLI_EATING || pet->activity == JELLI_PLAYING)) {
+            pet->moment = 0u;
+            pet->activity = JELLI_IDLE;
+            pet->interaction_due = 0u;
+        }
     }
 }

@@ -40,7 +40,7 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 | `health/` | Nine 32x32 clicker icons, including the dental sequence |
 | `effects/` | Eight 16x16 star, heart, orb, comet, fairy-wing, music, idea, and rainbow celebration sprites |
 | `prizes/` | Nine unique 32x32 keepsakes: butterfly, pearl tooth, breakfast sun, tea sprite, movie star, bubble gem, moon charm, rainbow seed, friendship bow |
-| `backgrounds/` | Two 64x64 neutral home/garden scenes with black vignettes |
+| `backgrounds/` | Six 64x64 neutral scenes: home, garden, park, pond, beach and library; black vignettes |
 | `props/` | Food bowl, closed/open gift, and bed; 24x24 pixels |
 | `font/` | 128x72 atlas: 16 columns by six rows of 8x12 cells, ASCII 32–127 |
 | `source/` | Original generated atlas, exact generation prompt, original pixel authoring recipe, polish recipe, and glyph patterns |
@@ -74,13 +74,12 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-Actual raw payload (RGB565, masks, font) is 267,304 bytes. The RFC's 8,192-byte definition
-and 4,096-byte metadata allowances bring the planned pack to 279,592 bytes. The SDL
-live pack is 269,960 bytes, within its 288 KiB staging buffer. Its 125,248 pixels
-and 15,656 mask bytes fit the existing 131,072-pixel and 16,384-byte banks, leaving
-5,824 pixels and 728 mask bytes: room for two more 48x48 frames (2,304 pixels and
-288 mask bytes each), with both banks running out together. These are desktop
-authoring limits, not a linked firmware memory measurement.
+Actual raw payload (RGB565, masks, font) is 302,120 bytes. The RFC's 8,192-byte definition
+and 4,096-byte metadata allowances bring the planned pack to 314,408 bytes. The SDL
+live pack is 304,872 bytes, within its 448 KiB staging buffer. Its 141,632 pixels
+and 17,704 mask bytes fit the 196,608-pixel and 24,576-byte banks (ADR-012), leaving
+54,976 pixels and 6,872 mask bytes for new frames. These are desktop authoring
+limits, not a linked firmware memory measurement.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 
@@ -214,3 +213,18 @@ The two new 32×32 icons add 4352 bytes of RGB565 and masks. Raw pixels plus
 the retained 8192-byte definitions and 4096-byte indexes total 164128 bytes.
 The authored pack allowance is now 161 KiB (164864 bytes), leaving 736 bytes.
 This does not change framebuffer, core heap, or C source-size limits.
+
+
+Additional location scenes use the existing 16-gray pixel recipe. Reproduce only
+Park/Pond/Beach/Library (preserving other art) with:
+
+```sh
+./scripts/uv run --python 3.12 assets/slice/source/location_art.py
+```
+
+Their IDs are 10003–10006. `content/locations.json` binds stable saved location
+IDs to these background assets and specifies indoor/outdoor atmosphere. Add
+locations at the end of the catalog (up to eight), register a 64×64 background
+in the manifest, then choose allowed locations in Jelli Art's Activities view.
+Build checks reject unknown or non-background asset references. PNG hot reload
+updates artwork; catalog or activity-rule changes require a rebuild.
