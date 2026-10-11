@@ -101,8 +101,9 @@ build time ([ADR-012](docs-cms/adr/adr-012-data-driven-creature-species-and-pres
 
 Mint grows into Lilac; catching the Bubble Gem adds BUBBLE, who hatches as
 BABY AXO and grows into the axolotl the same way. A happy touch makes the axolotl
-hug. BABY AXO's own SNUGGLE activity hugs a teddy bear and offers the TEDDY BEAR
-present, which, like every present, can be given to another pet. BUBBLE reacts to presents, the garden, night, reading and her needs:
+hug. BABY AXO's own SNUGGLE activity hugs a teddy bear; the first snuggle each
+day offers the TEDDY BEAR present, which, like every present, can be given to
+another pet. Later snuggles that day are free and give no rewards. BUBBLE reacts to presents, the garden, night, reading and her needs:
 she studies, contemplates, and asks for food, company or the potty (POTTY in the
 Health ring). Ignore the potty request and she has an accident that CLEAN fixes
 ([RFC-005](docs-cms/rfcs/rfc-005-stimulus-driven-creature-behaviour.md)). An outstanding

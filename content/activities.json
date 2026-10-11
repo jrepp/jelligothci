@@ -1102,7 +1102,8 @@
       ],
       "randomize_location": false,
       "pose": "snuggle",
-      "prize": "teddy-bear"
+      "prize": "teddy-bear",
+      "daily_reward": true
     }
   ],
   "favorites": {

@@ -48,6 +48,7 @@ with tempfile.TemporaryDirectory(prefix='jelli-activity-refs-') as scratch:
         lambda d: d['moments'][4].update(jitter_pct=26),
         lambda d: d['moments'][4].update(pose='moonwalk'),
         lambda d: d['moments'][4].update(prize='unicorn'),
+        lambda d: d['moments'][4].update(daily_reward='yes'),
         lambda d: d['pet_costs'][0].update(form=99),
         lambda d: d['pet_costs'][0].update(form=1),
         lambda d: d['pet_costs'][0].update(hydration_pct=301),

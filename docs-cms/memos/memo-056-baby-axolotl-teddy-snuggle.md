@@ -52,8 +52,17 @@ axolotl's holds. A new `snuggle` state pose (fallback `happy`) has the clip
   existing present system without new rules. The pet catches it, the gallery
   holds it, and **GIVE** hands it to any pet other than the one that earned it.
   Giving it removes it and grants social and bond, like any other present, and
-  offers the friendship bow. Snuggling again can re-offer it once it is no
-  longer held.
+  offers the friendship bow. Only the day's rewarded SNUGGLE can offer it
+  again (see below).
+- **One rewarded snuggle per pet per day.** A moment with `"daily_reward": true`
+  pays costs and gives rewards and its prize only on its first run each local
+  day. The reward is claimed when the costs are paid (the moment's
+  `completed_moments` bit), so interruption, offline completion and save/reload
+  cannot pay twice. Later runs that day play the animation for free: no cost
+  check, no costs, no rewards and no teddy. `JELLI_PET_FLAG_FREE_PLAY` in the
+  saved `behavior_flags` marks such a run, so a reload mid-run stays unpaid.
+  Because the claim sets the completion bit at acceptance, a recipe that
+  `requires` a daily-reward moment unlocks once that moment is accepted.
 - **Presents gallery** lays out ten slots in rows of 3, 4 and 3; the wider
   middle row fits the round panel (checked in a rendered preview).
 - **Save version 14.** The original blocks keep their nine prize slots, so
@@ -61,18 +70,25 @@ axolotl's holds. A new `snuggle` state pose (fallback `happy`) has the clip
   per-pet tail. Per-pet prize progress is still saved for the nine original
   slots only; the teddy needs none.
 
+# Owner decisions (2026-10-10)
+
+The owner reviewed PR #44 and chose:
+
+- **One rewarded snuggle per pet per in-game day.** Further snuggles replay the
+  animation without costs, rewards or another teddy, and the limit persists
+  across save/reload. This closes the snuggle, give, snuggle farming loop.
+- **Keep the SNUGGLE rewards and energy cost** as initial playtest tuning:
+  amusement 120, social 250, bond 3; energy 30 (scaled by the baby's 100% energy
+  profile); duration 8 s; jitter 10%; home only; available 0:00–24:00, not in
+  the hourly random rotation.
+- **Keep the 18×22 teddy** inside its 32×32 cell, smaller than the other
+  presents (about 24–30 px); no redraw before landing.
+
 # Unapproved defaults
 
-These are proposals for the owner to tune, not decisions:
-
-- SNUGGLE gains: amusement 120, social 250, bond 3; cost: energy 30 (scaled by
-  the baby's 100% energy profile); duration 8 s; jitter 10%; home only; always
-  available (0:00–24:00, not in the hourly random rotation).
-- Teddy offer: every completed SNUGGLE offers it when it is not already held
+- Teddy offer: the day's rewarded SNUGGLE offers it when it is not already held
   or pending. No random odds.
 - Clip holds: snuggle 700/700 ms, crying 600/600 ms, sleep 900/900 ms.
-- Teddy prize size: 18×22 inside the 32×32 cell, smaller than the other
-  presents, which fill about 24–30 px.
 
 # Budget
 
@@ -84,18 +100,25 @@ measured.
 # Verification
 
 Compiled and tested on desktop (macOS): `make test`, `make core-test`,
-`make sanitize`, and `make hooks-check`. Jelli Art's Python suites and the
-paint-tools JS test pass. New tests cover these cases:
+`make sanitize`, and `make hooks-check`. Jelli Art's Python suites, JSDoc type
+check, paint-tools JS test and Playwright UI tests pass. New tests cover these
+cases:
 
 - the SNUGGLE completion offer and the teddy gift (`tests/test_pet_rewards.c`);
+- the daily limit: after gifting the teddy away, and across save/reload between
+  and during runs, a same-day snuggle pays nothing, rewards nothing and offers
+  no teddy. A free replay needs no energy, and the next day is rewarded again.
+  Disabling the limit makes this test fail;
 - the teddy's v14 save round trip;
 - snuggle, crying and sleep frame selection (`tests/test_pet_creature.c`);
 - prize award bounds (`tests/test_prizes.c`);
-- generator rejection of unknown poses and prizes.
+- generator rejection of unknown poses and prizes and of a non-boolean
+  `daily_reward`.
 
-The SNUGGLE scene and the ten-slot gallery were inspected in
-`jelli_game_preview` renders. Not run: Jelli Art's Playwright UI tests, which
-need their container, and hardware.
+`make esp-build` compiles the firmware: the app is 1,846,096 bytes, leaving 56%
+of its 4 MiB partition free. The SNUGGLE scene and the ten-slot gallery were
+inspected in `jelli_game_preview` renders. **Not verified on hardware:** the
+physical display, touch and gameplay remain unverified on the device.
 
 # References
 

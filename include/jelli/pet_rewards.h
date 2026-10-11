@@ -19,6 +19,7 @@ typedef struct {
     uint32_t cursor, pet_id, command_value, completed;
     uint8_t count, index, activity, command, health_kind;
     bool pending, health, visible, burst;
+    bool free_play; /* The observed moment replays a spent daily reward: no prize. */
 } JelliPetRewards;
 
 void jelli_pet_rewards_cancel(JelliPetRewards *rewards);

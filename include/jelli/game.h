@@ -18,6 +18,7 @@
 #define JELLI_CLEAN_TICKS 50u /* One clean-up; a mess is swept away over this time. */
 /* JelliPet.behavior_flags: bits 0..4 mark needs below the low threshold (edge detection). */
 #define JELLI_PET_FLAG_MESS 0x20u       /* A potty accident waits to be cleaned up. */
+#define JELLI_PET_FLAG_FREE_PLAY 0x40u  /* The running moment replays a used daily reward. */
 #define JELLI_PET_FLAG_WAS_ASLEEP 0x80u /* Remembers sleep for the woke stimulus edge. */
 
 typedef enum {

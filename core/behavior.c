@@ -206,8 +206,9 @@ static void observe_edges(JelliGame *game, JelliPet *pet, uint64_t old_ticks)
             jelli_behavior_stimulus(game, JELLI_STIM_NEED_LOW, need);
     if ((pet->behavior_flags & JELLI_PET_FLAG_WAS_ASLEEP) && !pet->asleep)
         jelli_behavior_stimulus(game, JELLI_STIM_WOKE, pet->wake_mood);
-    pet->behavior_flags = (uint8_t)(low | (pet->behavior_flags & JELLI_PET_FLAG_MESS) |
-                                    (pet->asleep ? JELLI_PET_FLAG_WAS_ASLEEP : 0u));
+    pet->behavior_flags =
+        (uint8_t)(low | (pet->behavior_flags & (JELLI_PET_FLAG_MESS | JELLI_PET_FLAG_FREE_PLAY)) |
+                  (pet->asleep ? JELLI_PET_FLAG_WAS_ASLEEP : 0u));
 }
 
 void jelli_behavior_step(JelliGame *game, JelliPet *pet, uint64_t old_ticks, bool offline)
@@ -219,7 +220,8 @@ void jelli_behavior_step(JelliGame *game, JelliPet *pet, uint64_t old_ticks, boo
     if (offline) {
         /* Catch-up only expires states; it never starts new ones (RFC-005). */
         game->stimulus_count = 0u;
-        pet->behavior_flags = (uint8_t)((pet->behavior_flags & (NEED_BITS | JELLI_PET_FLAG_MESS)) |
+        pet->behavior_flags = (uint8_t)((pet->behavior_flags & (NEED_BITS | JELLI_PET_FLAG_MESS |
+                                                                JELLI_PET_FLAG_FREE_PLAY)) |
                                         (pet->asleep ? JELLI_PET_FLAG_WAS_ASLEEP : 0u));
         return;
     }
