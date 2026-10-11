@@ -33,14 +33,32 @@
         control.setAttribute('aria-label', label.textContent.trim());
     }
   };
+  const {words: W, help} = /** @type {any} */ (window).JelliDesign;
+  /** @type {any} */ (window).JelliDesign.watch(document.getElementById('behaviour'));
+  const REACT_HELP = `Each reaction answers one stimulus. Weight is its share among the reactions that fit; chance is the roll after it is picked. "when" limits it by place, day or night, mood range and a minimum bond. Earlier and Later change the order.`;
+  const LOOK_HELP = `Effect is a sprite drawn above the head, scaled to about 40 px. Prop is a sprite drawn at 3x over the lower body. The caption is upper case, up to 16 characters.`;
+  const BAR_HELP = `Save behaviour validates with the engine and saves both files (also Cmd or Ctrl S). Play previews animates the previews from elapsed time. Potty mess shows the mess beside the pet.`;
   for (const id of ['behaviour', 'bv-picker']) {
     const root = document.getElementById(id);
     new MutationObserver(() => labelControls(root)).observe(root, {childList: true, subtree: true});
   }
   document.head.insertAdjacentHTML('beforeend', `<style>
+    #behaviour{container:bv/inline-size}
     .bv-grid{display:grid;grid-template-columns:220px minmax(0,1fr) auto;gap:20px;align-items:start}
-    @media(max-width:1300px){.bv-grid{grid-template-columns:200px minmax(0,1fr)}.bv-preview{grid-column:1/-1}}
-    @media(max-width:800px){.bv-grid{grid-template-columns:1fr}}
+    .bv-grid.rp{grid-template-columns:220px minmax(0,1fr)}.bv-grid.sm{grid-template-columns:minmax(0,1fr) auto}
+    /* The view's own width decides, not the window's (RFC-007): list beside the inspector with the preview above it,
+     * and under 800 px one column with the preview pinned on top. */
+    @container bv (max-width:1300px){
+      .bv-grid.st{grid-template-columns:220px minmax(0,1fr);grid-template-areas:"lst prev" "lst ins"}
+      .bv-grid.st>:nth-child(1){grid-area:lst}.bv-grid.st>:nth-child(2){grid-area:ins}.bv-grid.st>:nth-child(3){grid-area:prev}
+      .bv-grid .bv-preview canvas{width:min(100%,240px)!important;height:auto!important}
+    }
+    @container bv (max-width:800px){
+      .bv-grid,.bv-grid.rp,.bv-grid.sm,.bv-grid.st{display:flex;flex-direction:column;align-items:stretch;gap:16px}
+      .bv-grid>*{min-width:0}
+      .bv-preview{order:-1;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0}
+      .bv-grid .bv-preview canvas{width:min(100%,180px)!important}
+    }
     .bv-list{display:grid;gap:4px}.bv-list button{text-align:left;display:flex;justify-content:space-between;gap:8px}
     .bv-list button .sub{font:10px ui-monospace,monospace;color:inherit}
     .bv-field{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:5px 0}
@@ -374,7 +392,7 @@
       <ul class="cr-msgs">${issues.slice(0, 12).map(m => `<li>${esc(m)}</li>`).join('') || `<li class="ok">${anyDirty() ? 'Unsaved behaviour edits.' : 'No unsaved behaviour edits.'}</li>`}${issues.length > 12 ? `<li>…and ${issues.length - 12} more.</li>` : ''}</ul>
       <div class="bar"><div class="seg"><button id="bv-revert" ${anyDirty() || bstale ? '' : 'disabled'}>Revert</button><button id="bv-save" class="primary" ${anyDirty() && !issues.length && editable ? '' : 'disabled'} title="Validate with the engine and save (⌘S)">${anyDirty() ? 'Save behaviour' : 'Saved'}</button></div>
         <button id="bv-animate" aria-pressed="${state.bAnimate}" title="Play preview clips from elapsed time">${state.bAnimate ? 'Pause previews' : 'Play previews'}</button>
-        <button id="bv-mess" aria-pressed="${state.bMess}" title="Show the potty mess beside the pet (content/potty.json)">Potty mess</button></div>`;
+        <button id="bv-mess" aria-pressed="${state.bMess}" title="Show the potty mess beside the pet (content/potty.json)">Potty mess</button> ${help(BAR_HELP, 'About these buttons')}</div>`;
     const body = el.querySelector('#bv-body');
     if (state.bTab === 'repertoires') renderRepertoires(body); else if (state.bTab === 'simulator') renderSimulator(body); else renderStates(body);
     el.querySelector('#bv-tabs').onclick = e => { const t = e.target.closest('button')?.dataset.tab; if (t) { state.bTab = t; store.set('behaviour-tab', t); render(); } };
@@ -387,7 +405,7 @@
     el.querySelector('#bv-mess').onclick = () => { state.bMess = !state.bMess; render(); };
     if (!editable) {  // the simulator and preview pickers still work on read-only content
       body.querySelectorAll('input, select, textarea, button').forEach(x => {
-        if (!x.matches('[data-sim], [data-sim-step], [data-readonly-ok], [data-state], [data-rep]')) x.disabled = true;
+        if (!x.matches('[data-sim], [data-sim-step], [data-readonly-ok], [data-state], [data-rep], .jt-info')) x.disabled = true;
       });
     }
     wireBindings(body);
@@ -408,7 +426,7 @@
     if (!stateNames().includes(state.bState)) state.bState = stateNames()[0] || null;
     const si = b.states.findIndex(s => s.name === state.bState), s = b.states[si];
     const list = b.states.map(x => `<button data-state="${esc(x.name)}" aria-pressed="${x.name === state.bState}"><span>${esc(x.name)}</span><span class="sub">${esc(lookOf(x.name)?.caption || '')}</span></button>`).join('');
-    body.innerHTML = `<div class="bv-grid"><div><div class="bv-k">States · ${b.states.length}/${L().states}</div><div class="bv-list" id="bv-states">${list}</div>
+    body.innerHTML = `<div class="bv-grid st"><div><div class="bv-k">States · ${b.states.length}/${L().states}</div><div class="bv-list" id="bv-states">${list}</div>
         <button id="bv-add-state" style="margin-top:6px" ${b.states.length >= L().states ? 'disabled' : ''}>Add state</button>
         <div class="bv-k" style="margin-top:16px">Rules</div>
         <div class="bv-field"><label>Night from</label>${num('night.start_minute', b.night?.start_minute, 0, 1439)}<span class="bv-note">${minuteText(b.night?.start_minute)}</span></div>
@@ -451,7 +469,7 @@
         ${s.request ? `<label>Bond reward</label>${num(`${p}.request.bond`, s.request.bond ?? 0, 0, lim.request_bond, 'opt-int')}` : ''}
         <label>On timeout</label><select data-b="${p}.on_timeout" data-t="opt-str">${opt(lim.timeouts.slice(1), s.on_timeout, 'nothing')}</select></div>
       <p class="studio-note">${s.request ? 'Answering the request ends the state with the bond reward; ignoring it times out.' : 'No request: the state just plays out.'} ${s.on_timeout === 'accident' ? 'Timing out causes a potty accident (the mess).' : ''}</p>
-      <div class="bv-k" style="margin-top:12px">Look · content/creatures.json</div>
+      <div class="bv-k" style="margin-top:12px">Look · content/creatures.json ${help(LOOK_HELP, 'About the look')}</div>
       ${look ? `<div class="bv-field"><label>Pose</label><select data-c="state_presentation.${li}.pose">${poseOpts}</select></div>
         <div class="bv-field"><label>Caption</label><input type="text" data-c="state_presentation.${li}.caption" data-t="caption" maxlength="16" value="${esc(look.caption || '')}" style="text-transform:uppercase" aria-label="Caption, upper case, at most 16"></div>
         <div class="bv-field"><label>Effect</label>${pickButton('data-pick="effect" title="Sprite drawn above the head, scaled to about 40 px"', look.effect)}
@@ -475,7 +493,7 @@
     const b = bwork, v = V(), lists = v.lists;
     state.bRep = Math.min(state.bRep, Math.max(0, b.repertoires.length - 1));
     const rep = b.repertoires[state.bRep], ri = state.bRep;
-    body.innerHTML = `<div class="bv-grid" style="grid-template-columns:220px minmax(0,1fr)"><div><div class="bv-k">Repertoires · ${b.repertoires.length}/${L().repertoires}</div>
+    body.innerHTML = `<div class="bv-grid rp"><div><div class="bv-k">Repertoires · ${b.repertoires.length}/${L().repertoires}</div>
         <div class="bv-list" id="bv-reps">${b.repertoires.map((r, i) => `<button data-rep="${i}" aria-pressed="${i === ri}"><span>${esc(r.name)}</span><span class="sub">${esc((r.forms || []).join(', '))}</span></button>`).join('')}</div>
         <button id="bv-add-rep" style="margin-top:6px" ${b.repertoires.length >= L().repertoires ? 'disabled' : ''}>Add repertoire</button>
         <p class="studio-note">Forms without a repertoire never enter behaviour states.</p></div>
@@ -519,12 +537,12 @@
     const formChips = v.forms.map(f => { const other = repertoireOf(f.name); const taken = other && other !== rep;
       return `<button data-form="${esc(f.name)}" aria-pressed="${(rep.forms || []).includes(f.name)}" ${taken ? `disabled title="In ${esc(other.name)}"` : ''}>${esc(f.name)}</button>`; }).join('');
     const affs = (rep.affinities || []).map((a, i) => `<div class="bv-card"><select data-b="${p}.affinities.${i}.moment" aria-label="Moment">${opt(v.moments, a.moment)}</select>
-      +${num(`${p}.affinities.${i}.bonus_pct`, a.bonus_pct, 0, 200)}<span class="bv-note">% gains</span><button data-del-aff="${i}" title="Remove">✕</button></div>`).join('');
+      +${num(`${p}.affinities.${i}.bonus_pct`, a.bonus_pct, 0, 200)}<span class="bv-note">% gains</span><button data-del-aff="${i}" title="Remove">${W('✕', 'Remove')}</button></div>`).join('');
     const rows = (rep.reactions || []).map((r, i) => reactionRow(r, i, `${p}.reactions.${i}`, lists, v, names, (rep.reactions || []).length)).join('');
     return `<div class="bv-field"><label>Name</label><input type="text" data-b="${p}.name" value="${esc(rep.name)}"><button id="bv-del-rep">Delete repertoire</button></div>
       <div class="bv-k">Forms</div><div class="bv-chips" id="bv-forms">${formChips}</div>
       <div class="bv-k" style="margin-top:10px">Affinities · moments this species enjoys more</div><div id="bv-affs">${affs}</div><button id="bv-add-aff">Add affinity</button>
-      <div class="bv-k" style="margin-top:12px">Reactions · ${(rep.reactions || []).length} · weighted pick among those that fit, then the chance roll</div>
+      <div class="bv-k" style="margin-top:12px">Reactions · ${(rep.reactions || []).length} · weighted pick among those that fit, then the chance roll ${help(REACT_HELP, 'About reactions')}</div>
       <div id="bv-reactions">${rows}</div><button id="bv-add-reaction">Add reaction</button>`;
   }
   function valueControls(r, p, lists, v) {
@@ -551,7 +569,7 @@
       <select data-b="${p}.when.night" data-t="tri" aria-label="Condition night"><option value=""${w.night === undefined ? ' selected' : ''}>day or night</option><option value="true"${w.night === true ? ' selected' : ''}>night</option><option value="false"${w.night === false ? ' selected' : ''}>day</option></select>
       <label class="bv-note">mood</label>${num(`${p}.when.mood_min`, w.mood_min, 0, 100, 'opt-int', 'placeholder="0"')}–${num(`${p}.when.mood_max`, w.mood_max, 0, 100, 'opt-int', 'placeholder="100"')}
       <label class="bv-note">bond ≥</label>${num(`${p}.when.bond_min`, w.bond_min, 0, 1000, 'opt-int', 'placeholder="0"')}
-      <button data-act="up" ${i ? '' : 'disabled'} title="Earlier">↑</button><button data-act="down" ${i < count - 1 ? '' : 'disabled'} title="Later">↓</button><button data-act="copy" title="Duplicate">⧉</button><button data-act="remove" title="Remove">✕</button></div>`;
+      <button data-act="up" ${i ? '' : 'disabled'} title="Earlier">${W('↑', 'Earlier')}</button><button data-act="down" ${i < count - 1 ? '' : 'disabled'} title="Later">${W('↓', 'Later')}</button><button data-act="copy" title="Duplicate">${W('⧉', 'Duplicate')}</button><button data-act="remove" title="Remove">${W('✕', 'Remove')}</button></div>`;
   }
 
   /* ---------- stimulus simulator ---------- */
@@ -605,7 +623,7 @@
     }).join('') || '';
     const entered = r?.entered ? bwork.states[r.entered.index] : null, shown = o.kept || r?.entered?.name || null;
     const tally = odds(pet, 600), total = 600;
-    body.innerHTML = `<div class="bv-grid" style="grid-template-columns:minmax(0,1fr) auto"><div>
+    body.innerHTML = `<div class="bv-grid sm"><div>
       <div class="bv-field"><label>Form</label><select data-sim="form">${opt(v.forms.map(f => f.name), sim.form)}</select>
         <span class="bv-note">${rep ? `repertoire ${esc(rep.name)} · ${(rep.reactions || []).length} reactions` : 'no repertoire: never reacts'}</span></div>
       <div class="bv-field"><label>Stimulus</label><select data-sim="stimulus">${opt(lists.stimuli, sim.stimulus)}</select>${stimValue}<span class="bv-note">value ${o.value}${o.value === Sim.ANY ? ' (any)' : ''}</span></div>

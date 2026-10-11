@@ -8,6 +8,8 @@
   const S = window.Studio;
   if (!S) return;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
+  const {help} = /** @type {any} */ (window).JelliDesign;
+  const GAME_HELP = `Render in engine builds the real C engine from the working copy and draws the frames (also Enter in a field, or Cmd or Ctrl Enter). ◀ Frame and Frame ▶ step through them, like the , and . keys. Save other views first: unsaved edits are not included.`;
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const STAGES = {scenario: 'Scenario', content: 'Content check (cmake/JelliBehaviors and friends)', configure: 'CMake configure',
     art: 'Art check (build_slice / embed_slice)', compile: 'C compile', build: 'Build', render: 'Render', timeout: 'Timed out',
@@ -23,10 +25,19 @@
 
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="game" aria-pressed="false">Test in game</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="game" class="hidden"><p id="gp-status" class="studio-status" role="status" aria-live="polite"></p><div id="gp-body"></div></div>');
+  /** @type {any} */ (window).JelliDesign.watch(document.getElementById('game'));
   document.head.insertAdjacentHTML('beforeend', `<style>
+    #game{container:gp/inline-size}
     .gp-grid{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:22px;align-items:start}
     #gp-status{min-height:18px;margin:0 0 4px}
-    @media(max-width:900px){.gp-grid{grid-template-columns:1fr}}
+    /* The view's own width decides (RFC-007): under 800 px one column, with the rendered frame and its controls
+     * pinned on top and the form below them. .gp-out dissolves so its parts order against the form. */
+    @container gp (max-width:800px){
+      .gp-grid{display:flex;flex-direction:column;align-items:stretch;gap:12px}.gp-grid>*{min-width:0}
+      .gp-out{display:contents}.gp-out>*{order:0}.gp-grid>div:first-child{order:-1}.gp-out>.gp-lead{order:-2}
+      .gp-out>.gp-pin{order:-3;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0}
+      .gp-pin .gp-big{width:min(100%,200px);min-width:0;margin:0 auto}
+    }
     .gp-form fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 10px;padding:8px 10px}
     .gp-form legend{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 4px}
     .gp-row{display:grid;grid-template-columns:110px 1fr;gap:6px;align-items:center;margin:4px 0}
@@ -138,16 +149,17 @@
     const fields = result.errors || [];
     const items = fields.length ? fields.map(e => `<li><b>${esc(e.field)}</b>: ${esc(e.message)}</li>`) : (result.messages || [result.error]).map(m => `<li>${esc(m)}</li>`);
     const log = result.log?.length ? `<details><summary>Build log (last ${result.log.length} lines)</summary><pre>${esc(result.log.join('\n'))}</pre></details>` : '';
-    return `<div class="gp-errors" role="alert"><h3>${esc(STAGES[result.stage] || 'Render')} failed</h3><ul>${items.join('')}</ul>${log}
+    return `<div class="gp-errors gp-lead" role="alert"><h3>${esc(STAGES[result.stage] || 'Render')} failed</h3><ul>${items.join('')}</ul>${log}
       <div class="gp-note">${result.stage === 'scenario' ? 'Fix the highlighted fields.' : 'This is what a real build of your working copy reports; fix the data and render again.'}</div></div>`;
   }
   function output() {
     if (!result?.ok) return `<p class="gp-note">${cat.available ? 'Pick a scenario and press <b>Render in engine</b> (or Enter in any field).' : ''}</p>`;
     const f = result.frames, e = result.engine;
-    return `<img class="gp-big" id="gp-big" src="${f[frame]}" alt="${esc(result.alt[frame])}" title="${esc(result.alt[frame])}">
-      <div class="gp-actions">${f.length > 1 ? `<button type="button" id="gp-play" aria-pressed="${playing}">${playing ? 'Pause' : 'Play'}</button>
+    return `<div class="gp-pin"><img class="gp-big" id="gp-big" src="${f[frame]}" alt="${esc(result.alt[frame])}" title="${esc(result.alt[frame])}">
+      <div class="gp-actions">${f.length > 1 ? `<button type="button" id="gp-prev" class="jd-c" title="Previous frame (, or ←)">◀ Frame</button><button type="button" id="gp-next" class="jd-c" title="Next frame (. or →)">Frame ▶</button>
+        <button type="button" id="gp-play" aria-pressed="${playing}">${playing ? 'Pause' : 'Play'}</button>
         <label class="lbl" for="gp-frame">Frame</label><input type="range" id="gp-frame" min="0" max="${f.length - 1}" value="${frame}" aria-valuetext="Frame ${frame + 1} of ${f.length}, ${result.times_ms[frame]} ms">` : ''}
-        <span class="lbl" id="gp-frame-label">${frame + 1}/${f.length} · ${result.times_ms[frame]} ms</span></div>
+        <span class="lbl" id="gp-frame-label">${frame + 1}/${f.length} · ${result.times_ms[frame]} ms</span></div></div>
       <div class="gp-strip" role="group" aria-label="Rendered frames">${f.map((src, i) => `<button type="button" data-frame="${i}" aria-current="${i === frame}" aria-label="Show frame ${i + 1} at ${result.times_ms[i]} ms"><img src="${src}" alt=""></button>`).join('')}</div>
       <div class="gp-report" aria-label="What the engine accepted">engine: <span>pet <b>${esc(e.form_name)}</b></span><span>pose <b>${esc(poseName(e.pose))}</b></span>
         <span>behaviour <b>${esc(e.behavior || 'none')}</b></span><span>asleep <b>${e.asleep}</b></span><span>activity <b>${esc(e.activity)}</b></span><span>moment <b>${e.moment ? esc(cat.moments[e.moment - 1] || e.moment) : 'none'}</b></span>
@@ -158,9 +170,9 @@
     const el = document.getElementById('gp-body');
     if (!cat) { el.innerHTML = '<p class="gp-note">Loading…</p>'; return; }
     const focused = document.activeElement?.id;
-    el.innerHTML = `<div class="title"><h2>Test in game</h2><span class="lbl">the real C engine, from the working copy</span></div>
+    el.innerHTML = `<div class="title"><h2>Test in game</h2><span class="lbl">the real C engine, from the working copy</span> ${help(GAME_HELP, 'About Test in game')}</div>
       ${cat.available ? '' : `<div class="gp-errors" role="alert"><h3>Test in game is unavailable here</h3><p>${esc(cat.reason)}</p><p class="gp-note">Install cmake and a C compiler (cc, gcc or clang) on the studio host to enable it.</p></div>`}
-      <div class="gp-grid"><div>${form()}</div><div class="gp-out">${stale ? '<p class="gp-note" role="status">Art or content changed since this render.</p>' : ''}${errors()}${output()}</div></div>`;
+      <div class="gp-grid"><div>${form()}</div><div class="gp-out">${stale ? '<p class="gp-note gp-lead" role="status">Art or content changed since this render.</p>' : ''}${errors()}${output()}</div></div>`;
     wire();
     for (const e of result?.errors || []) {
       const id = e.field.startsWith('needs.') ? `gp-need-${e.field.slice(6)}` : e.field === 'form' ? 'gp-form-pick' : `gp-${e.field}`;
@@ -200,6 +212,8 @@
       if (['pet', 'page', 'asleep', 'clock'].includes(k)) paint();
     };
     document.getElementById('gp-reset').onclick = () => { Object.assign(sc, structuredClone(defaults)); persist(); result = null; paint(); };
+    for (const [id, step] of /** @type {[string, number][]} */ ([['gp-prev', -1], ['gp-next', 1]]))  // the on-screen form of the , and . keys
+      document.getElementById(id)?.addEventListener('click', () => { stop(); show(frame + step); document.getElementById('gp-play')?.setAttribute('aria-pressed', 'false'); });
     document.getElementById('gp-play')?.addEventListener('click', () => { playing = !playing; paint(); play(); });
     document.getElementById('gp-frame')?.addEventListener('input', e => { stop(); document.getElementById('gp-play')?.setAttribute('aria-pressed', 'false'); show(Number(e.target.value)); });
     document.querySelector('.gp-strip')?.addEventListener('click', e => { const b = e.target.closest('button'); if (b) { stop(); show(Number(b.dataset.frame)); document.getElementById('gp-play')?.setAttribute('aria-pressed', 'false'); } });

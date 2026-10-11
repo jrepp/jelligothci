@@ -89,6 +89,21 @@ that land during a pen stroke stay inert after the pen lifts (RFC-007 would let
 them join a gesture). The long-press popover opens inside an open dialog and
 skips form fields.
 
+### Touch in the design views
+
+Behaviour & size, Behaviour, Activities and Test in game
+([RFC-007](../../docs-cms/rfcs/rfc-007-jelli-art-touch-and-pen.md) T3) share
+`window.JelliDesign` (defined at the top of [`behaviour.js`](behaviour.js)).
+On coarse pointers, glyph-only row buttons show a word (`words`: ↑ Earlier,
+↓ Later, ⧉ Duplicate, ✕ Remove), group help that lived only in `title` is also
+a tap-to-reveal ⓘ (`help`, built on `JelliTouch.info`), and every number field
+gets − and + buttons (`watch`) that step by the field's own `step`. Test in game
+also has ◀ Frame and Frame ▶ buttons for the `,` and `.` keys. Each view sets its
+columns from its own width with a container query on its root, not the window:
+two columns (list beside the inspector, preview above it) in landscape, and one
+column under 800 px with the preview pinned on top. Mouse and keyboard pages
+look as they did.
+
 ## Paint tools
 
 `studio.js` is the Paint mode UI; `paint_tools.js` holds its pixel logic as pure
@@ -465,6 +480,11 @@ switch, 44 px shell controls, the List drawer, keyboard hints, the long-press
 popover, ⓘ help, toasts and the Touch and Pencil help section. Chromium
 emulation is not iPadOS Safari, so physical behaviour still needs the iPad
 checklist in RFC-007.
+`test_touch_design.py` covers the four design views at iPad portrait, landscape
+and mini (744×1133): 44 px controls (disabled ones too, because the fixture
+serves read-only content), no sideways scrolling, words on glyph buttons, ⓘ
+help, steppers, the column switch and the pinned preview. It stubs the engine
+API to test the frame buttons, since the fixture host has no cmake.
 
 `JELLI_UI_LOCAL=1 tools/jelli-art/ui_tests/run.sh` runs without a container
 (Chromium goes in `.tools/`), but fonts differ, so a few aria and axe results
@@ -474,7 +494,7 @@ directory `/tmp/jelli-ui-tests`.
 
 Known gaps: 10 of the 21 view and size cases have screenshots; the keyboard
 tests cover only the two paths above; touch tests cover the shared recogniser
-and shell, not yet the Paint, Animation and design views; and the viewport
+and shell and the design views, not yet Paint and Animation; and the viewport
 shares are reported, not checked.
 
 ## Container
