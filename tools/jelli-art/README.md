@@ -89,6 +89,18 @@ that land during a pen stroke stay inert after the pen lifts (RFC-007 would let
 them join a gesture). The long-press popover opens inside an open dialog and
 skips form fields.
 
+Paint (`studio.js`) routes canvas pointers through `gestures()`: the Pencil and,
+with Pencil only off, one finger paint; two fingers pan, and pinch is previewed
+with a CSS scale and committed once, as a whole-number zoom anchored at the
+pinch point, when the fingers lift; two- and three-finger taps undo and redo; a
+held finger picks a colour. The quick bar (`#paint-qbar`) holds Undo, Redo, Pick
+or Copy, 2nd, Constrain, Peek, Swap, a selection row and Pencil only. A held
+modifier applies while held and a tap latches it. The bar shows on coarse
+pointers, or with the **Quick bar** setting under More tools, and **Left-handed**
+moves it right. Long-pressing a palette colour opens a menu (Use as secondary,
+Isolate, Edit slot). `ui_tests/test_touch_paint.py` covers all of it with
+emulated input.
+
 ### Touch in the design views
 
 Behaviour & size, Behaviour, Activities and Test in game

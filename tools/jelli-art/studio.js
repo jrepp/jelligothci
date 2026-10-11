@@ -4,7 +4,7 @@
  * The pixel logic (rasterisers, selection transforms, history) is paint_tools.js (window.JelliPaint). */
 'use strict';
 (() => {
-  const S = window.Studio = {}, T = window.JelliPaint;
+  const S = window.Studio = {}, T = window.JelliPaint, JT = window.JelliTouch;
   const LOCKED = new Set(['font', 'backgrounds']);
   const SHAPES = new Set(['line', 'rect', 'ellipse']);
   /* [id, name, key, what it does] */
@@ -22,13 +22,13 @@
   ];
   const ARROWS = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]};
   const edits = {};  // key -> {saved, hist}; the working buffer is decoded[key].after
-  let pointing = false, stroke = null, view = null, statusTimer = null, clipboard = null, selKey = null, pan = null, anchor = null, wheel = 0, queued = 0;
-  const prefs = Object.assign({filled: false, perfect: false, wrap: false, guides: false, tiled: false}, store.get('paint', {}));
+  let pointing = false, stroke = null, view = null, statusTimer = null, clipboard = null, selKey = null, pan = null, anchor = null, wheel = 0, queued = 0, rec = null, detachCanvas = null, gs = null, menu = null, chipHold = null, chipNoClick = false, later = null;
+  const prefs = Object.assign({filled: false, perfect: false, wrap: false, guides: false, tiled: false, quickbar: false, lefty: false}, store.get('paint', {}));
   const axes = store.get('mirror-axes', {});  // per asset: {x2, y2} mirror axes in half pixels
   /* color is the main colour (left button), color2 the secondary (right button); null is transparent. */
   Object.assign(state, {tool: 'pencil', color: '#291b35', custom: false, color2: null, custom2: false, ramp: null, mirror: false, before: store.get('before', 'HEAD'), artist: store.get('artist', ''),
     sel: null, selMask: null, float: null, cursor: [0, 0], kbd: false, mirrorV: false}, prefs);
-  const savePaintPrefs = () => store.set('paint', {filled: state.filled, perfect: state.perfect, wrap: state.wrap, guides: state.guides, tiled: state.tiled});
+  const savePaintPrefs = () => store.set('paint', {filled: state.filled, perfect: state.perfect, wrap: state.wrap, guides: state.guides, tiled: state.tiled, quickbar: state.quickbar, lefty: state.lefty});
   MODES.push('paint');
   document.getElementById('modes').insertAdjacentHTML('beforeend', '<button data-mode="paint" title="Paint (6)">Paint</button>');
   document.querySelector('header .refs').insertAdjacentHTML('afterend',
@@ -46,6 +46,7 @@
     .paint-chip[aria-pressed=true]{border-color:var(--ink);color:var(--ink)}
     .paint-slot{position:relative;display:grid}
     .paint-slot .edit{position:absolute;top:2px;right:2px;padding:0 4px;font-size:11px;line-height:16px;border-radius:4px;background:var(--panel)}
+    @media (any-pointer: coarse){.paint-slot .edit{display:none}}  /* a 44 px pencil would cover the whole chip; long-press the chip for Edit slot */
     .paint-chip.off .sw{outline:2px solid var(--bad);outline-offset:1px}
     .paint-chip.second{border-style:dashed;border-color:var(--muted)}
     .paint-ramp{display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex-basis:100%}
@@ -72,6 +73,18 @@
     .paint-more{margin-top:8px}.paint-more>summary{cursor:pointer;font-weight:600;font-size:12px;width:fit-content;padding:2px 0}.paint-more>summary .lbl{font-weight:400;margin-left:6px}
     .paint-more>.paint-tools{margin-top:6px}
     @media(max-width:1100px){.paint-work{flex-wrap:wrap}.paint-side{max-width:none}}
+    .paint-qbar{display:flex;flex-wrap:wrap;gap:var(--tap-gap,8px);align-items:stretch;flex:1 1 100%;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+    .paint-qbar[hidden]{display:none}.paint-qbar .qb-group{display:flex;gap:var(--tap-gap,8px);flex-wrap:wrap}.paint-qbar .qb-group[hidden]{display:none}
+    .paint-qbar button{min-width:var(--tap,44px);min-height:var(--tap,44px);padding:2px 4px;font-size:11px;line-height:1.15;touch-action:none}
+    .paint-qbar button[aria-pressed=true]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+    .paint-qbar .qb-sep{width:1px;background:var(--line);align-self:stretch}
+    .paint-work.lefty .paint-qbar{justify-content:flex-end}
+    @media(min-width:1101px){.paint-qbar{order:-1;flex:0 0 68px;flex-direction:column;flex-wrap:nowrap;position:sticky;top:8px;align-self:flex-start;max-height:calc(100vh - 16px);overflow-y:auto;overflow-x:hidden}
+      .paint-qbar .qb-group{flex-direction:column;flex-wrap:nowrap}.paint-qbar .qb-sep{width:auto;height:1px;align-self:stretch}.paint-qbar button{width:100%}
+      .paint-work.lefty .paint-qbar{order:3}}
+    .paint-menu{position:fixed;z-index:60;display:grid;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:4px;box-shadow:0 6px 24px var(--shadow)}
+    .paint-menu button{text-align:left;min-height:var(--tap,44px);border:0;background:none}
+
     .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
     @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important}}
   </style>`);
@@ -162,7 +175,7 @@
     queued = git.pending_commits || 0;
   }
   async function poll() {
-    if (document.hidden || stroke || document.querySelector('dialog[open]')) return;  // no reload under an open dialog
+    if (document.hidden || stroke || rec?.busy() || document.querySelector('dialog[open]')) return;  // no reload under an open dialog
     if (D.git?.enabled) api('GET', '/api/git').then(g => { D.git = g; renderGit(g); }).catch(() => {});
     const {version} = await api('GET', '/api/version').catch(() => ({}));
     if (!version || version === D.version) return;
@@ -342,10 +355,10 @@
     }
     done(s.label);
   }
-  function cancel() {
+  function cancel(quiet = false) {
     const s = stroke; if (!s) return false; stroke = null;
     work(state.key).data.set(s.snap.data); state.sel = s.snap.sel; state.selMask = s.snap.selMask; state.float = s.snap.float;
-    draw(); renderReadout(); announce('Cancelled'); return true;
+    draw(); renderReadout(); if (!quiet) announce('Cancelled'); return true;
   }
   /* Alt-click borrows the picker for one click and keeps the current tool (paint_tools.js pickOutcome).
    * secondary (the right button) sets the secondary colour, transparent included, and always keeps the tool. */
@@ -587,7 +600,7 @@
     e.preventDefault(); e.stopPropagation();
   }
   S.renderStage = (a, z) => {
-    const stage = document.getElementById('stage'), old = view;
+    const stage = document.getElementById('stage'), old = view; closeMenu();
     const hadFocus = old && document.activeElement === old.c, scroll = old && old.a.key === a.key ? [old.scroller.scrollLeft, old.scroller.scrollTop] : null;
     stage.textContent = '';
     document.getElementById('zoom-label').textContent = `· ${z}×`;
@@ -607,10 +620,9 @@
     Object.assign(c, {tabIndex: 0}); c.setAttribute('role', 'application'); c.setAttribute('aria-roledescription', 'pixel canvas');
     c.setAttribute('aria-label', `${a.key}, ${a.width} by ${a.height} pixels`); c.setAttribute('aria-describedby', 'paint-hint');
     scroller.append(c); pane.append(scroller);
-    pane.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
-      Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. <kbd>?</kbd> lists every shortcut.</p><div id="paint-live" class="vh" aria-live="polite"></div>`);
+    pane.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">${hintHtml()}</p><div id="paint-live" class="vh" aria-live="polite"></div>`);
     const side = document.createElement('div'); side.className = 'paint-side';
-    work.append(pane, side); stage.append(work);
+    work.append(pane, quickBar(), side); stage.append(work);
     view = {c, ctx, a, z, scroller};
     const colours = document.getElementById('palette-block'); if (colours) side.append(colours);
     S.renderSide?.(side, a);  // flipbook.js: the clip's flip-book and onion skin
@@ -632,32 +644,105 @@
     if (anchor) { scroller.scrollLeft = anchor.px * z - anchor.ox; scroller.scrollTop = anchor.py * z - anchor.oy; anchor = null; }
     else if (scroll) [scroller.scrollLeft, scroller.scrollTop] = scroll;
     if (hadFocus) { pointing = true; c.focus({preventScroll: true}); pointing = false; }  // a rebuild keeps the cursor as it was
-    draw(); renderReadout(); renderHistory();
+    renderQuick(); draw(); renderReadout(); renderHistory();
   };
+  const DESKTOP_HINT = `Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
+      Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. <kbd>?</kbd> lists every shortcut.`;
+  /* Touch wording replaces the mouse wording on coarse pointers (RFC-007); the keyboard sentence stays for a keyboard-attached iPad. */
+  const KEYBOARD_HINT = DESKTOP_HINT.slice(DESKTOP_HINT.indexOf('Keyboard:'));
+  function hintHtml() {
+    if (!JT.coarse()) return DESKTOP_HINT;
+    const lead = JT.pencilOnly() ? 'Pencil only is on: the Pencil paints; one finger pans and tapping it shows that pixel; two fingers pan and pinch to zoom.' : 'The Pencil and one finger paint; two fingers pan and pinch to zoom.';
+    return `${lead} Two-finger tap undoes, three-finger tap redoes. Hold a finger still to pick a colour and keep the tool. The quick bar stands in for right-click and the modifier keys: hold a button while you draw, or tap it to keep it on. The secondary colour is transparent until you set one, so 2nd erases.
+      ${KEYBOARD_HINT}`;
+  }
+  const renderHint = () => { const el = document.getElementById('paint-hint'); if (el) el.innerHTML = hintHtml(); };
+  /* Canvas input goes through JelliTouch.gestures (touch.js): the mouse, the Pencil and (unless Pencil only is on) one finger
+   * paint; two fingers pan and pinch; a two-finger tap undoes, three fingers redo; a held finger picks a colour.
+   * The quick bar's modifiers (mods) join the mouse buttons and keys: 2nd is the right button, Pick is Alt, Constrain is Shift. */
+  /* A quick bar button: a finger or the Pencil acts when it lifts on the button (a tap's click is hit-tested again after the lift, and
+   * a page that reflows then aims it at another control), the mouse and keyboard on click. */
+  function onTap(b, fn) {
+    let armed = false, fired = -1e9;
+    b.addEventListener('pointerdown', e => { armed = JT.kind(e) !== 'mouse' && !b.disabled; });
+    b.addEventListener('pointerup', e => {
+      const r = b.getBoundingClientRect();
+      if (!armed || e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+      armed = false; fired = performance.now(); fn();
+    });
+    b.addEventListener('click', () => { if (performance.now() - fired > 1000) fn(); });
+  }
+  const clampN = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
   function wireCanvas(c, scroller, a) {
-    c.oncontextmenu = e => e.preventDefault();
-    c.onpointerdown = e => {
-      e.preventDefault(); pointing = true; c.focus({preventScroll: true}); pointing = false;
-      try { c.setPointerCapture(e.pointerId); } catch { /* synthetic or already-released pointers cannot be captured */ }
-      if (e.button === 1) { pan = {x: e.clientX, y: e.clientY, l: scroller.scrollLeft, t: scroller.scrollTop}; return; }
-      if (stroke) return;
-      const [x, y] = cell(e), secondary = e.button === 2;
-      // Alt-click picks except with Select (Alt-drag copies there); Alt+right-click picks the secondary with any tool.
-      const tool = e.altKey && (state.tool !== 'select' || secondary) ? 'picker' : state.tool;
-      state.kbd = false; state.cursor = [x, y];
-      press(x, y, tool, {secondary, deeper: e.shiftKey, alt: e.altKey, shift: e.shiftKey});
-    };
-    c.onpointermove = e => {
-      if (pan) { scroller.scrollLeft = pan.l - (e.clientX - pan.x); scroller.scrollTop = pan.t - (e.clientY - pan.y); return; }
-      const [x, y] = cell(e);
+    detachCanvas?.(); gs = null; later = null; const z = view.z;
+    /* The pixel under a client point; measured from the canvas box, so a pinch preview does not matter. */
+    const at = e => { const r = c.getBoundingClientRect(), k = (r.width / (a.width * z)) || 1; return [Math.floor((e.clientX - r.left) / k / z), Math.floor((e.clientY - r.top) / k / z)]; };
+    const track = e => {
+      const [x, y] = at(e);
       if (state.hover?.[0] === x && state.hover?.[1] === y && !stroke) return;
-      state.hover = [x, y]; state.kbd = false; state.cursor = [Math.max(0, Math.min(a.width - 1, x)), Math.max(0, Math.min(a.height - 1, y))];
-      if (stroke?.pointer) drag(x, y, e.shiftKey); else draw();
+      state.hover = [x, y]; state.kbd = false; state.cursor = [clampN(x, 0, a.width - 1), clampN(y, 0, a.height - 1)];
+      if (stroke?.pointer) drag(x, y, e.shiftKey || modOn('constrain')); else draw();
       renderInspector(a); renderReadout();
     };
-    const finish = () => { if (pan) { pan = null; return; } if (stroke?.pointer) release(); };
-    c.onpointerup = finish; c.onpointercancel = () => { pan = null; if (stroke?.pointer) cancel(); };
-    c.onpointerleave = () => { if (!stroke && !state.kbd) { state.hover = null; draw(); renderReadout(); } };
+    const begin = () => { gs ||= {rect: c.getBoundingClientRect(), z, ox: null, oy: null}; return gs; };
+    const showPixel = e => {
+      const [x, y] = at(e); state.hover = [x, y]; state.kbd = false; state.cursor = [clampN(x, 0, a.width - 1), clampN(y, 0, a.height - 1)];
+      draw(); renderReadout(); const hex = pixel(work(a.key), x, y); announce(`${x}, ${y} ${hex ? label(hex, a) : 'transparent'}`);
+    };
+    const history = (dir) => { const e = edits[state.key]; if (!e || !(dir < 0 ? e.hist.at > 0 : e.hist.at < e.hist.entries.length - 1)) return announce(dir < 0 ? 'Nothing to undo' : 'Nothing to redo'); dir < 0 ? undo() : redo(); };
+    rec = JT.gestures({
+      stroke: {
+        start(e) {
+          if (JT.kind(e) === 'mouse' && e.button === 1) { pan = {x: e.clientX, y: e.clientY, l: scroller.scrollLeft, t: scroller.scrollTop}; return; }
+          later = null; if (stroke) return;
+          for (const k in mods) if (mods[k].held) mods[k].used = true;  // a modifier held for a stroke is a hold, however short
+          const [x, y] = at(e), secondary = e.button === 2 || modOn('second'), alt = e.altKey || modOn('pick'), shift = e.shiftKey || modOn('constrain');
+          // Alt-click picks except with Select (Alt-drag copies there); Alt+right-click picks the secondary with any tool.
+          const tool = alt && (state.tool !== 'select' || secondary) ? 'picker' : state.tool;
+          state.kbd = false; state.cursor = [x, y]; state.hover = [x, y];
+          const go = () => press(x, y, tool, {secondary, deeper: shift, alt, shift});
+          // Fill, Wand and Pick finish at once, so a finger runs them when it lifts: a second finger or a long press that
+          // turns the touch into a gesture then leaves nothing to undo.
+          if (JT.kind(e) === 'touch' && (tool === 'fill' || tool === 'picker' || tool === 'wand')) { later = go; draw(); return; }
+          go();
+        },
+        move(e) { if (pan) { scroller.scrollLeft = pan.l - (e.clientX - pan.x); scroller.scrollTop = pan.t - (e.clientY - pan.y); return; } track(e); },
+        end(e) {
+          const go = later; later = null; if (pan) { pan = null; return; }
+          if (go) return go();
+          if (stroke?.pointer) { const [x, y] = at(e); drag(x, y, e.shiftKey || modOn('constrain')); release(); }  // the lift point counts even if its move was coalesced
+        },
+        cancel(e, reason) {
+          if (pan) { pan = null; return; }
+          const quiet = ['second-finger', 'long-press', 'pen'].includes(reason);
+          later = null; if (stroke?.pointer) cancel(quiet);
+        }},
+      pan(dx, dy) { begin(); scroller.scrollLeft -= dx; scroller.scrollTop -= dy; },
+      pinch(g) {  // a CSS preview about the pinch point; the whole-number zoom is committed once, in gestureEnd
+        const s = begin(); if (s.ox === null) { s.ox = g.x0 - s.rect.left; s.oy = g.y0 - s.rect.top; }
+        s.cx = g.cx; s.cy = g.cy;  // the fingers' midpoint while both are down: lifting one finger first moves the final midpoint
+        c.style.transformOrigin = `${s.ox}px ${s.oy}px`; c.style.transform = `scale(${clampN(g.scale, 1 / z, 32 / z)})`;
+      },
+      gestureEnd(g) {
+        const s = gs; gs = null; if (!s) return;
+        c.style.transform = ''; c.style.transformOrigin = '';
+        const next = clampN(Math.round(s.z * g.scale), 1, 32); if (s.ox === null || next === s.z || !c.isConnected) return;
+        const r = scroller.getBoundingClientRect();
+        anchor = {px: s.ox / s.z, py: s.oy / s.z, ox: (s.cx ?? g.cx) - r.left, oy: (s.cy ?? g.cy) - r.top};  // the pinched pixel stays under the fingers
+        setZoom(next); announce(`Zoom ${next}×`);
+      },
+      tap(fingers) { history(fingers === 2 ? -1 : 1); },
+      point: showPixel,
+      longPress(e) {
+        const [x, y] = at(e); if (x < 0 || y < 0 || x >= a.width || y >= a.height) return;
+        const hex = pixel(work(a.key), x, y); pick(x, y, modOn('second'));
+        announce(`Picked ${hex ? label(hex, a) : 'transparent'}`);
+      }}, {offerPencilOnly: true});
+    detachCanvas = rec.attach(c);
+    c.oncontextmenu = e => e.preventDefault();
+        c.onpointerdown = e => { e.preventDefault(); pointing = true; c.focus({preventScroll: true}); pointing = false; };
+    c.onpointermove = e => { if (JT.kind(e) !== 'touch' && !rec.busy()) track(e); };  // hover: a mouse or a Pencil above the glass
+    c.onpointerleave = e => { if (JT.kind(e) !== 'touch' && !stroke && !state.kbd) { state.hover = null; draw(); renderReadout(); } };  // a finger leaves its last pixel in the readout
     c.onkeydown = canvasKey;
     c.onfocus = () => { if (!pointing && !state.kbd) { state.kbd = true; state.hover = [...state.cursor]; draw(); renderReadout(); } };
     c.onkeyup = e => { if (e.key === 'Shift' && stroke?.held) release(); };
@@ -671,6 +756,94 @@
       setZoom(next);
     }, {passive: false});
   }
+  /* ---------- quick bar (RFC-007): the touch and Pencil form of right-click, modifier keys, Space and X ---------- */
+  /* Each modifier is {latched, held}: holding a button applies it while held (a thumb on the bar, the Pencil on the canvas);
+   * a short tap latches it until tapped again. */
+  const mods = {pick: {}, second: {}, constrain: {}, peek: {}};
+  const MOD_NAMES = {pick: 'Pick', second: 'Secondary colour', constrain: 'Constrain', peek: 'Peek at before'};
+  const CONSTRAIN = {line: 'Snap', rect: 'Square', ellipse: 'Circle', shade: 'Deeper', wand: 'Everywhere'};
+  const modOn = k => !!(mods[k].latched || mods[k].held);
+  function applyPeek() {
+    const on = modOn('peek'); if (!!state.peek === on) return;
+    state.peek = on; document.body.classList.toggle('peeking', on); draw();
+  }
+  function wireMod(b, k) {
+    let t0 = 0, was = false;
+    const changed = latch => { renderQuick(); if (k === 'peek') applyPeek(); if (latch) announce(`${MOD_NAMES[k]} ${mods[k].latched ? 'on' : 'off'}`); };
+    b.addEventListener('pointerdown', e => {
+      if (e.button) return; e.preventDefault();
+      try { b.setPointerCapture(e.pointerId); } catch { /* synthetic pointer */ }
+      t0 = performance.now(); was = !!mods[k].latched; mods[k].held = true; mods[k].used = false; changed(false);
+    });
+    const up = e => {
+      if (!mods[k].held) return; mods[k].held = false;
+      const tap = e.type === 'pointerup' && !mods[k].used && performance.now() - t0 < JT.T.TAP_UP_MS;
+      if (tap) mods[k].latched = !was;
+      changed(tap);
+    };
+    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+    b.addEventListener('click', e => { if (e.detail === 0) { mods[k].latched = !mods[k].latched; changed(true); } });  // the keyboard
+  }
+  function quickBar() {
+    const bar = document.createElement('div'); bar.className = 'paint-qbar'; bar.id = 'paint-qbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Quick bar');
+    const q = (id, text, title, label = '') => `<button type="button" id="qb-${id}" title="${title}"${label ? ` aria-label="${label}"` : ''}>${text}</button>`;
+    const nudges = [['left', '←', 'ArrowLeft'], ['up', '↑', 'ArrowUp'], ['down', '↓', 'ArrowDown'], ['right', '→', 'ArrowRight']];
+    bar.innerHTML = `<div class="qb-group" role="group" aria-label="History">${q('undo', 'Undo', 'Undo the last step (two-finger tap)')}${q('redo', 'Redo', 'Redo (three-finger tap)')}</div><span class="qb-sep"></span>
+      <div class="qb-group" role="group" aria-label="Hold while you draw, or tap to keep on">${q('pick', 'Pick', 'Touch the canvas to pick a colour and keep the tool. Hold it, or tap to keep it on')}${q('second', '2nd', 'Paint with the secondary colour, like right-click. Hold it, or tap to keep it on', '2nd colour')}${q('constrain', 'Constrain', 'Constrain the shape, like Shift. Hold it, or tap to keep it on')}${q('peek', 'Peek', 'Show the before image while held, like Space. Tap to keep it on')}${q('swap', 'Swap', 'Swap the main and secondary colours (X)')}</div><span class="qb-sep"></span>
+      <div class="qb-group" id="qb-sel" role="group" aria-label="Selection">${nudges.map(([w, g]) => q(`nudge-${w}`, g, `Move the selection 1 px ${w}`, `Nudge ${w}`)).join('')}${q('deselect', 'Deselect', 'Drop the selection (Escape)')}</div>
+      <div class="qb-group" role="group" aria-label="Input">${q('pencil', 'Pencil only', 'Pencil only: fingers pan, zoom and pick instead of painting; the Pencil paints', 'Pencil only: fingers pan, zoom and pick instead of painting')}</div>`;
+    const el = id => /** @type {HTMLButtonElement} */ (bar.querySelector('#qb-' + id));
+    onTap(el('undo'), () => { const e = edits[state.key]; if (e && e.hist.at > 0) undo(); });
+    onTap(el('redo'), () => { const e = edits[state.key]; if (e && e.hist.at < e.hist.entries.length - 1) redo(); });
+    onTap(el('swap'), swapColours); onTap(el('deselect'), deselect); onTap(el('pencil'), () => JT.setPencilOnly(!JT.pencilOnly()));
+    for (const [w, , key] of nudges) onTap(el(`nudge-${w}`), () => nudge(...ARROWS[key]));
+    for (const k of Object.keys(mods)) wireMod(el(k), k);
+    return bar;
+  }
+  /* Show or hide the bar, and bring every button's label and state up to date. */
+  function renderQuick() {
+    const bar = document.getElementById('paint-qbar'); if (!bar) return;
+    bar.hidden = !(JT.coarse() || state.quickbar);
+    // A hidden bar cannot show or clear a latched modifier, so a mouse user would keep painting with 2nd or Pick on.
+    if (bar.hidden) { for (const k in mods) mods[k].latched = mods[k].held = false; applyPeek(); }
+    bar.closest('.paint-work')?.classList.toggle('lefty', !!state.lefty);
+    const q = id => /** @type {HTMLButtonElement} */ (bar.querySelector('#qb-' + id)), pressed = (id, on) => q(id).setAttribute('aria-pressed', String(!!on)), e = edits[state.key];
+    q('undo').disabled = !(e && e.hist.at > 0); q('redo').disabled = !(e && e.hist.at < e.hist.entries.length - 1);
+    const sel = state.tool === 'select', word = CONSTRAIN[state.tool];
+    q('pick').textContent = sel ? 'Copy' : 'Pick'; q('pick').setAttribute('aria-label', sel ? 'Copy: drag the selection to copy it' : 'Pick colour');
+    q('constrain').textContent = word || 'Constrain'; q('constrain').disabled = !word; q('constrain').setAttribute('aria-label', `Constrain${word ? `: ${word}` : ''}`);
+    for (const k of Object.keys(mods)) pressed(k, modOn(k));
+    pressed('pencil', JT.pencilOnly());
+    /** @type {HTMLElement} */ (bar.querySelector('#qb-sel')).hidden = !(view && state.sel);
+  }
+  JT.onPencilOnly(() => { renderQuick(); renderHint(); });
+  window.matchMedia?.('(any-pointer: coarse)').addEventListener?.('change', () => { renderQuick(); renderHint(); });
+  JT.registerGestures([
+    {gesture: 'Pencil', description: 'Paint with the current tool (a finger paints too unless Pencil only is on)'},
+    {gesture: 'Two-finger drag', description: 'Paint: pan the canvas (one finger with Pencil only)'},
+    {gesture: 'Pinch', description: 'Paint: zoom at the pinch point'},
+    {gesture: 'Two-finger tap', description: 'Paint: undo'}, {gesture: 'Three-finger tap', description: 'Paint: redo'},
+    {gesture: 'Long press the canvas', description: 'Paint: pick a colour and keep the tool (a finger only)'},
+    {gesture: 'Long press a colour', description: 'Paint: menu to use it as secondary, isolate it or edit its slot'},
+    {gesture: 'Quick bar: hold', description: 'Paint: Pick, 2nd, Constrain and Peek apply while held; tap one to keep it on'}]);
+
+  /* Long-pressing a palette colour (a finger or the Pencil) opens this menu in place of right-click and Shift-click. */
+  function closeMenu() { menu?.remove(); menu = null; }
+  function openMenu(anchorEl, items) {
+    closeMenu();
+    const m = document.createElement('div'); m.className = 'paint-menu'; m.setAttribute('role', 'menu'); m.setAttribute('aria-label', 'Colour actions');
+    for (const [text, fn] of items) {
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.textContent = text;
+      b.onclick = () => { closeMenu(); fn(); }; m.append(b);
+    }
+    m.onkeydown = e => { if (e.key === 'Escape') { e.stopPropagation(); closeMenu(); anchorEl.focus(); } };
+    document.body.append(m); menu = m;
+    const r = anchorEl.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+    m.style.left = `${clampN(r.left, 8, innerWidth - w - 8)}px`; m.style.top = `${r.bottom + 4 + h < innerHeight ? r.bottom + 4 : Math.max(8, r.top - h - 4)}px`;
+    announce('Colour menu'); m.querySelector('button').focus({preventScroll: true});
+  }
+  document.addEventListener('pointerdown', e => { if (menu && !menu.contains(/** @type {Node} */ (e.target))) closeMenu(); }, true);
+
   /* Rebuild a list while keeping keyboard focus on the matching control. */
   function keepFocus(el, attr, build, want) {
     const had = el.contains(document.activeElement) ? document.activeElement.getAttribute(attr) : null;
@@ -709,6 +882,7 @@
           ['axis-up', '▲', 'Move the top/bottom axis half a pixel up', 0, -1], ['axis-down', '▼', 'Move the top/bottom axis half a pixel down', 0, 1]].map(([id, g, t, dx, dy]) =>
           btn(id, g, t, '', ` aria-label="${t}" data-axis="${dx},${dy}"`)).join('')}${btn('axis-centre', 'Centre', 'Put the mirror axes back in the middle', '')}</div></div>
       <div><div class="lbl">View</div><div class="seg" role="group" aria-label="View">${btn('guides', 'Guides', 'Centre and tile-centre guides', '⇧G')}${btn('fit-content', 'Fit content', 'Zoom to the drawn pixels plus a 2 px margin', 'Z')}${btn('tiled', 'Tile 3×3', 'Show the sprite repeated 3×3 beside the canvas, to check Wrap seams', '⇧T')}</div></div>
+      <div><div class="lbl">Touch</div><div class="seg" role="group" aria-label="Touch">${btn('quickbar', 'Quick bar', 'Show the quick bar with a mouse too; touch screens always show it', '')}${btn('lefty', 'Left-handed', 'Put the quick bar on the right', '')}</div></div>
       <div><div class="lbl">Clean up</div>${btn('tidy', 'Tidy outline', 'Closed 1px outline, remove specks, bottom shadow', '')}</div></div></details>`;
     extra.querySelector('#paint-more').ontoggle = e => store.set('paint-more', e.target.open);
     const on = (id, fn) => { extra.querySelector('#' + id).onclick = fn; };
@@ -719,7 +893,7 @@
     on('rot-cw', () => transform('Rotate clockwise', r => T.rotate(r, true))); on('rot-ccw', () => transform('Rotate anticlockwise', r => T.rotate(r, false)));
     extra.querySelectorAll('[data-nudge]').forEach(b => { b.onclick = () => nudge(...ARROWS[b.dataset.nudge]); });
     on('wrap', () => toggle('wrap', 'Wrap')); on('replace', replaceColour); on('guides', () => toggle('guides', 'Guides')); on('fit-content', fitContent); on('tiled', () => toggle('tiled', 'Tile preview'));
-    on('mirror-v', () => toggle('mirrorV', 'Mirror top/bottom')); on('axis-centre', () => moveAxis(0, 0, true));
+    on('quickbar', () => toggle('quickbar', 'Quick bar')); on('lefty', () => toggle('lefty', 'Left-handed')); on('mirror-v', () => toggle('mirrorV', 'Mirror top/bottom')); on('axis-centre', () => moveAxis(0, 0, true));
     extra.querySelectorAll('[data-axis]').forEach(b => { b.onclick = () => moveAxis(...b.dataset.axis.split(',').map(Number)); });
     on('undo', undo); on('redo', redo);
     const tidyButton = extra.querySelector('#tidy');
@@ -748,7 +922,7 @@
   }
   function renderToolbarState() {
     document.querySelectorAll('#tools button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool)));
-    for (const id of ['mirror', 'filled', 'perfect', 'wrap', 'guides', 'tiled']) document.getElementById(id)?.setAttribute('aria-pressed', String(!!state[id]));
+    for (const id of ['mirror', 'filled', 'perfect', 'wrap', 'guides', 'tiled', 'quickbar', 'lefty']) document.getElementById(id)?.setAttribute('aria-pressed', String(!!state[id]));
     document.getElementById('mirror-v')?.setAttribute('aria-pressed', String(!!state.mirrorV));
     const axisEl = document.getElementById('mirror-axis'), ax = view && axisOf(view.a);
     if (axisEl && ax) axisEl.textContent = `x ${ax.x2 / 2} · y ${ax.y2 / 2}`;
@@ -759,6 +933,7 @@
     const p = work(state.key), sel = view && selRect();
     for (const id of ['sel-cut', 'sel-delete', 'sel-none']) able(id, !!sel);
     able('sel-paste', !!clipboard); able('rot-cw', sel || p?.w === p?.h); able('rot-ccw', sel || p?.w === p?.h);
+    renderQuick();
     const from = document.getElementById('replace-from'); if (!from || !p) return;
     const a = asset(), keep = from.value, list = sel ? T.colours(p, state.selMask ? state.sel : sel, state.selMask) : T.colours(p);
     from.innerHTML = list.map(([hex, n]) => `<option value="${hex}">${label(hex, a)} ${hex} · ${n} px</option>`).join('') || '<option value="">no colours</option>';
@@ -771,6 +946,7 @@
   };
   const activate = el => { el.onkeydown = e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === el) { e.preventDefault(); e.stopPropagation(); el.click(); } }; };
   S.renderPalette = (el, a) => {
+    closeMenu();
     const own = ownPalette(a), pal = paletteOf(a), where = paletteWhere(a);
     // Arriving at a sprite: keep a custom colour the artist chose, otherwise start from one of its palette colours.
     if (S.paletteKey !== a.key) { S.paletteKey = a.key; if (state.color && !pal.includes(state.color) && !state.custom) state.color = inkOf(a); }
@@ -796,13 +972,32 @@
       b.setAttribute('aria-pressed', String(active)); b.setAttribute('role', 'button'); b.setAttribute('aria-label', title);
       b.innerHTML = `<span class="sw ${hex ? '' : 'eraser-sw'}" style="${hex ? `background:${hex}` : ''}"></span><span>${title.split(' · ')[0]}</span><span>${sub}</span>`;
       b.onclick = e => {
+        if (chipNoClick) { chipNoClick = false; return; }  // the click that ends a long press
         if (e.shiftKey && hex) { state.isolate = state.isolate === hex ? null : hex; return draw(); }
         if (e.altKey) return setSecondary(hex, custom);
         if (hex === null) state.tool = 'eraser';
         else { state.color = hex; state.custom = custom; state.ramp = ramp; if (['eraser', 'picker', 'select', 'wand'].includes(state.tool)) state.tool = 'pencil'; }
         S.renderPalette(el, a); renderToolbarState(); draw();
       };
-      b.oncontextmenu = e => { e.preventDefault(); setSecondary(hex, custom); };
+      /* A long press (a finger or the Pencil) opens the colour menu; where the browser sends a touch contextmenu instead, that does the same. */
+      const menuFor = () => {
+        const input = /** @type {HTMLInputElement | null | undefined} */ (b.closest('.paint-slot')?.querySelector('input[type=color]'));
+        openMenu(b, [['Use as secondary', () => setSecondary(hex, custom)],
+          ...(hex ? [[state.isolate === hex ? 'Show all colours' : 'Isolate', () => { state.isolate = state.isolate === hex ? null : hex; draw(); }]] : []),
+          ...(input ? [['Edit slot', () => input.click()]] : [])]);
+      };
+      b.dataset.touchSurface = '';
+      b.addEventListener('pointerdown', e => {
+        chipNoClick = false; clearTimeout(chipHold); if (e.pointerType === 'mouse') return;
+        const x0 = e.clientX, y0 = e.clientY;
+        const stop = ev => {
+          if (ev.type === 'pointermove' && Math.hypot(ev.clientX - x0, ev.clientY - y0) <= JT.T.LONG_PRESS_MOVE_PX) return;
+          clearTimeout(chipHold); for (const t of ['pointermove', 'pointerup', 'pointercancel']) b.removeEventListener(t, stop);
+        };
+        for (const t of ['pointermove', 'pointerup', 'pointercancel']) b.addEventListener(t, stop);
+        chipHold = setTimeout(() => { chipNoClick = true; menuFor(); }, JT.T.LONG_PRESS_MS);
+      });
+      b.oncontextmenu = e => { e.preventDefault(); if (e.pointerType === 'touch' || e.pointerType === 'pen') { chipNoClick = true; if (!menu) menuFor(); return; } setSecondary(hex, custom); };
       activate(b);
       // Keyboard right-click: Shift+F10 or the menu key (macOS fires no contextmenu for them, so handle them here).
       const enter = b.onkeydown;

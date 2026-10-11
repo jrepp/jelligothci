@@ -78,6 +78,19 @@ the repository's pinned tools, and it only listens on your own computer.
    Without a mouse, Tab to the canvas to show the keyboard cursor: the arrow
    keys move it, Enter or Space applies the tool, Shift with the arrows draws,
    and Escape hides it.
+   On an iPad the Pencil paints, and so does one finger unless **Pencil only**
+   (on the quick bar) is on; then one finger pans and a tap shows that pixel.
+   Two fingers pan and pinch to zoom, a two-finger tap undoes and a
+   three-finger tap redoes. Hold a finger still on the canvas to pick a colour
+   and keep the tool. The **quick bar** stands in for right-click and the
+   modifier keys: **Pick** (**Copy** with Select), **2nd** (the secondary
+   colour), **Constrain** (Snap, Square, Circle, Deeper or Everywhere,
+   whichever the tool uses), **Peek**, **Swap**, **Undo**, **Redo**, and nudge
+   and **Deselect** buttons while a selection exists. Hold a button while you
+   draw, or tap it to keep it on. Long-press a palette colour for a menu to use
+   it as the secondary colour, isolate it, or edit its slot. The bar shows
+   with touch only; **Quick bar** and **Left-handed** under **More tools** show
+   it with a mouse or move it to the right.
 7. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
    shows it straight away. "Compare with" picks what the before image is: your
    last save, the art in the game now (`main`), a game release, or a recent
