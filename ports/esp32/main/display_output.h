@@ -25,4 +25,5 @@ void jelli_display_output_present(JelliDisplayOutput *output, const JelliSurface
                                   uint64_t now);
 bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEngine *engine,
                                   uint32_t id, char **words, unsigned count);
+void jelli_staging_benchmark(JelliDisplayOutput *output, JelliDebug *debug, uint32_t id);
 #endif

@@ -36,7 +36,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/../../../cmake/JelliWake.cmake")
 jelli_wake_data(wake_data)
 set(experiment_sources)
 if(CONFIG_JELLI_POWER_EXPERIMENTS)
-    list(APPEND experiment_sources "validation/power/power_diag.c"
+    list(APPEND experiment_sources "pipeline_profile.c" "staging_benchmark.c" "validation/power/power_diag.c"
         "validation/power/touch_trial.c" "validation/power/panel_trial.c"
         "../../../drivers/qmi8658.c" "validation/power/imu_trial.c" "validation/boards/qmi_probe.c"
         "validation/boards/pmic_probe.c" "validation/boards/waveshare_31261.c" "validation/network_probe.c")
@@ -59,4 +59,6 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE JELLI_VERSION_LABEL="v${PROJ
 if(CONFIG_JELLI_POWER_EXPERIMENTS)
     include("${CMAKE_CURRENT_LIST_DIR}/../cmake/PanelSleepTrial.cmake")
     jelli_panel_sleep_trial()
+    include("${CMAKE_CURRENT_LIST_DIR}/../cmake/PipelineProfile.cmake")
+    jelli_pipeline_profile()
 endif()

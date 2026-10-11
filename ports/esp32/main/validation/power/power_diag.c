@@ -4,6 +4,7 @@
 #include "panel_trial.h"
 #include "imu_trial.h"
 #include "sound_output.h"
+#include "pipeline_profile.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_lv_adapter.h"
 #include "esp_sleep.h"
@@ -64,8 +65,13 @@ static bool reject_busy_run(JelliDebug *debug, uint32_t id, char **words, unsign
 {
     bool run_command = count >= 4 && !strcmp(words[2], "power") &&
                        (!strcmp(words[3], "run") || (count >= 5 && !strcmp(words[4], "run")));
-    if (run_command && (pending || jelli_touch_trial_busy() || jelli_panel_trial_busy() ||
-                        jelli_imu_trial_busy())) {
+    bool display_trial =
+        count >= 4 && !strcmp(words[2], "display") &&
+        (!strncmp(words[3], "benchmark-", 10u) ||
+         (count == 5 && !strcmp(words[3], "profile") && !strcmp(words[4], "start")));
+    bool busy = pending || jelli_touch_trial_busy() || jelli_panel_trial_busy() ||
+                jelli_imu_trial_busy() || jelli_profile_active();
+    if ((run_command || display_trial) && (busy || debug->captured)) {
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"busy\"}");
         return true;
     }

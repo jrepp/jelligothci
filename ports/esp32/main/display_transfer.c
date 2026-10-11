@@ -1,4 +1,5 @@
 #include "display_transfer.h"
+#include "pipeline_profile.h"
 #include "jelli/engine.h"
 #include "esp_lv_adapter_display.h"
 #include "esp_lcd_panel_ops.h"
@@ -39,12 +40,17 @@ static esp_err_t draw_bitmap(lv_display_t *display, esp_lcd_panel_handle_t panel
      * waits for the previous flush before calling us, even with two draw
      * buffers. The BSP's existing DMA-complete ISR releases this flush;
      * never signal completion here or reuse the strip before that callback. */
+    uint64_t start = jelli_profile_now();
     memcpy(transfer->pixels, pixels, bytes);
+    jelli_profile_record(JELLI_PROFILE_STAGE, start, (uint32_t)bytes);
+    jelli_profile_submit();
     esp_err_t result = esp_lcd_panel_draw_bitmap(panel, left, top, right, bottom, transfer->pixels);
     if (result == ESP_OK)
         ++transfer->submitted;
-    else
+    else {
+        jelli_profile_submit_failed();
         ++transfer->failed;
+    }
     return result;
 }
 

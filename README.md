@@ -62,6 +62,8 @@ On ESP32, `display benchmark-copy` compares full-frame row and bulk copies in
 PSRAM; `display benchmark-rect` compares the original and current rectangle fills.
 See the [benchmark command and timing limits](docs/playing.md#debug-cli)
 before running this diagnostic, which briefly pauses rendering.
+The power validation profile also offers bounded [pipeline timing and staging
+experiments](docs/device-validation-passes.md#pipeline-and-staging-pass).
 
 ## Art workflow
 

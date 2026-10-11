@@ -32,6 +32,8 @@ def main():
                                 'validation/boards/inventory.c', 'debug_usb.c'}
     assert any(name.endswith('/drivers/qmi8658.c') for name in sources) == enabled, 'Active IMU driver leaked across profiles'
     assert any(name.endswith('/drivers/pcf85063.c') for name in sources) == (not factory), 'RTC session driver isolation'
+    for suffix in ('/pipeline_profile.c', '/staging_benchmark.c', '/lvgl_pipeline_profile.c'):
+        assert any(s.endswith(suffix) for s in sources) == enabled, suffix
     generated = [s for s in sources if s.endswith('/co5300_sleep_trial.c')]
     assert bool(generated) == enabled, 'Panel policy seam leaked across profiles'
     if enabled:

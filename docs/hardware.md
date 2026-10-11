@@ -316,3 +316,13 @@ assets, saves, or networking. Follow the [factory validation contract](factory-v
 for flashing, automated capture, exit codes and adding board-specific checks.
 This is a non-destructive development foundation; required physical checks are
 skipped and it cannot grant manufacturing acceptance.
+
+
+### Startup panel readiness
+
+The checked brightness provider obtains its panel handle from the custom draw
+callback. Startup must run the first canvas refresh under the LVGL mutex before
+requesting brightness. A detected USB port does not establish that this sequence
+completed. If startup aborts, retain the serial trace and resolve the failing
+condition; do not infer a panel wiring fault from the generic ESP error label.
+See [the startup race and recovery record](../docs-cms/memos/memo-056-hardware-optimization-continuation.md).
