@@ -47,12 +47,13 @@
     .bv-grid{display:grid;grid-template-columns:220px minmax(0,1fr) auto;gap:20px;align-items:start}
     .bv-grid.rp{grid-template-columns:220px minmax(0,1fr)}.bv-grid.sm{grid-template-columns:minmax(0,1fr) auto}
     /* The view's own width decides, not the window's (RFC-007): list beside the inspector with the preview above it,
-     * and under 800 px one column with the preview pinned on top. */
-    @container bv (max-width:1300px){
+     * and under 800 px one column with the preview pinned on top. The mid tier is touch-only: a mouse and keyboard
+     * desktop keeps the original three-column layout at its container width (the pages look exactly as before). */
+    @media(any-pointer:coarse){@container bv (max-width:1300px){
       .bv-grid.st{grid-template-columns:220px minmax(0,1fr);grid-template-areas:"lst prev" "lst ins"}
       .bv-grid.st>:nth-child(1){grid-area:lst}.bv-grid.st>:nth-child(2){grid-area:ins}.bv-grid.st>:nth-child(3){grid-area:prev}
       .bv-grid .bv-preview canvas{width:min(100%,240px)!important;height:auto!important}
-    }
+    }}
     @container bv (max-width:800px){
       .bv-grid,.bv-grid.rp,.bv-grid.sm,.bv-grid.st{display:flex;flex-direction:column;align-items:stretch;gap:16px}
       .bv-grid>*{min-width:0}
