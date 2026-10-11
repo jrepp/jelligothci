@@ -48,6 +48,9 @@ Debug interface (host-tested; flashed startup verified in memo-010):
 [proposed ADR-010](adr/adr-010-bounded-usb-serial-debug-interface.md).
 Initial bring-up: [memo-003: First USB deployment](memos/memo-003-first-usb-deployment.md).
 
+Jelli Art Studio proposals: [RFC-006: Workspaces and UI foundation](rfcs/rfc-006-jelli-art-workspaces-and-ui-foundation.md)
+(draft) and [RFC-007: iPad touch and Apple Pencil](rfcs/rfc-007-jelli-art-touch-and-pen.md) (accepted).
+
 Process guidance: [memo-004: Learnings and context remediation](memos/memo-004-process-learnings-and-context-remediation.md).
 
 Contributor entry point: [CONTRIBUTING.md](../CONTRIBUTING.md).
