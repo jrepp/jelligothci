@@ -581,6 +581,18 @@ class GitTest(unittest.TestCase):
                                           "artist": "Ada"})
         return asset["key"], reply
 
+    def test_refs_offer_game_art_only(self):
+        git(self.work, "tag", "v0.1.0")
+        git(self.work, "tag", "v0.10.0")
+        git(self.work, "tag", "jelli-art-v0.1.0")
+        (self.work / "notes.txt").write_text("not art\n")
+        git(self.work, "add", "notes.txt")
+        git(self.work, "commit", "--quiet", "-m", "not art")
+        refs = self.start().get("/api/refs")
+        self.assertEqual(refs["base"], "origin/main")
+        self.assertEqual(refs["releases"], ["v0.10.0", "v0.1.0"])
+        self.assertEqual([c["subject"] for c in refs["commits"]], ["initial"])
+
     def test_save_commits_only_its_files_with_trailer(self):
         server = self.start()
         (self.work / "unrelated.txt").write_text("staged by someone else\n")

@@ -79,8 +79,9 @@ the repository's pinned tools, and it only listens on your own computer.
    keys move it, Enter or Space applies the tool, Shift with the arrows draws,
    and Escape hides it.
 7. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
-   shows it straight away. "Compare with" picks what the before image is: the
-   last commit, a release tag, or a recent commit.
+   shows it straight away. "Compare with" picks what the before image is: your
+   last save, the art in the game now (`main`), a game release, or a recent
+   commit that changed art.
 
 Saved sprites are listed in `assets/slice/source/hand-painted.json`. The polish
 recipe never overwrites them. Custom colours work in the live game, but release
