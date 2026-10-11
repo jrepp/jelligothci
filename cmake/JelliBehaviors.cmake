@@ -121,7 +121,7 @@ function(jelli_behavior_value data r i on moments out)
   elseif(on MATCHES "^present_")
     jelli_behavior_opt(prize "" "${data}" repertoires ${r} reactions ${i} prize)
     if(NOT prize STREQUAL "")
-      jelli_behavior_bounded("${prize}" 0 8 "reaction prize index")
+      jelli_behavior_bounded("${prize}" 0 9 "reaction prize index")  # JELLI_PRIZE_COUNT - 1
       set(value "${prize}u")
     endif()
   endif()

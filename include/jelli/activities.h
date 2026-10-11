@@ -52,6 +52,11 @@ typedef struct {
         requires,
     animation;           /* requires: ID + 1, zero means none. */
     uint32_t icon, prop; /* Asset IDs; prop 0 means none. */
+    /* pose: creature pose index + 1 shown while it runs; prize: collection slot (1-based)
+     * offered on completion. Zero means none for either. */
+    uint8_t pose, prize;
+    /* Only the first run each local day pays costs and gives rewards and its prize. */
+    bool daily_reward;
 } JelliMoment;
 
 typedef struct {
@@ -90,6 +95,10 @@ unsigned jelli_moment_cost(const JelliPet *pet, unsigned id, unsigned index);
 unsigned jelli_moment_location(const JelliPet *pet, unsigned id);
 const char *jelli_moment_cost_hint(const JelliPet *pet, unsigned id);
 void jelli_moment_charge(JelliGame *game, JelliPet *pet, unsigned id);
+/* True when a daily_reward moment already paid out today: it may replay for free. */
+bool jelli_moment_free_play(const JelliGame *game, const JelliPet *pet, unsigned id);
+/* Spends today's daily reward for id (no-op for other moments). */
+void jelli_moment_claim(const JelliGame *game, JelliPet *pet, unsigned id);
 void jelli_moment_reward(const JelliGame *game, JelliPet *pet);
 unsigned jelli_moment_bonus_percent(const JelliPet *pet, unsigned id);
 unsigned jelli_moment_jitter_percent(const JelliPet *pet, unsigned id);

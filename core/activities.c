@@ -101,20 +101,40 @@ JelliResult jelli_moment_available(const JelliGame *game, const JelliPet *pet, u
     if (!unlocked(game, pet, id) ||
         (jelli_moments[id].random_weight && random_choice(game, pet) != id))
         return JELLI_NOT_READY;
-    if (jelli_moment_cost_hint(pet, id)[0])
+    if (!jelli_moment_free_play(game, pet, id) && jelli_moment_cost_hint(pet, id)[0])
         return JELLI_NOT_READY;
     return JELLI_OK;
+}
+
+static void mark_done(const JelliGame *game, JelliPet *pet, unsigned id)
+{
+    uint16_t day = jelli_activity_day(game, pet);
+    if (pet->activity_day != day)
+        pet->completed_moments = 0u;
+    pet->activity_day = day;
+    pet->completed_moments |= UINT32_C(1) << id;
+}
+
+bool jelli_moment_free_play(const JelliGame *game, const JelliPet *pet, unsigned id)
+{
+    return id < jelli_moment_count && jelli_moments[id].daily_reward &&
+           pet->activity_day == jelli_activity_day(game, pet) &&
+           (pet->completed_moments & (UINT32_C(1) << id));
+}
+
+void jelli_moment_claim(const JelliGame *game, JelliPet *pet, unsigned id)
+{
+    /* A daily reward is spent when its costs are paid, so offline completion, interruption
+     * and save/reload cannot pay it out twice in one day. */
+    if (id < jelli_moment_count && jelli_moments[id].daily_reward)
+        mark_done(game, pet, id);
 }
 
 void jelli_moment_complete(const JelliGame *game, JelliPet *pet)
 {
     if (game->resuming || !pet->moment || pet->moment > jelli_moment_count)
         return;
-    uint16_t day = jelli_activity_day(game, pet);
-    if (pet->activity_day != day)
-        pet->completed_moments = 0u;
-    pet->activity_day = day;
-    pet->completed_moments |= UINT32_C(1) << (pet->moment - 1u);
+    mark_done(game, pet, pet->moment - 1u);
 }
 
 const char *jelli_moment_hint(const JelliGame *game, const JelliPet *pet, unsigned id)
@@ -130,7 +150,7 @@ const char *jelli_moment_hint(const JelliGame *game, const JelliPet *pet, unsign
     if (m->requires && (pet->activity_day != jelli_activity_day(game, pet) ||
                         !(pet->completed_moments & (UINT32_C(1) << (m->requires - 1u)))))
         return m->prerequisite_hint;
-    const char *cost = jelli_moment_cost_hint(pet, id);
+    const char *cost = jelli_moment_free_play(game, pet, id) ? "" : jelli_moment_cost_hint(pet, id);
     if (cost[0])
         return cost;
     return m->random_weight ? "CHANGES EACH HOUR" : "TRY AGAIN LATER";

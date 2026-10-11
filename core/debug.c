@@ -112,7 +112,8 @@ static void press(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char *
 {
     uint32_t page = 0, item = 0;
     if (count != 5u || !jelli_debug_number(words[3], &page) ||
-        !jelli_debug_number(words[4], &item) || page >= JELLI_UI_PAGE_COUNT || item > 9u) {
+        !jelli_debug_number(words[4], &item) || page >= JELLI_UI_PAGE_COUNT ||
+        item > JELLI_PRIZE_COUNT) {
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"range\"}");
         return;
     }

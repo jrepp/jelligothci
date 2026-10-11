@@ -40,16 +40,18 @@ static size_t collection(char *out, size_t capacity, const JelliPetRenderKey *v)
     for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
         if (v->prize_owned & (1u << i))
             ++owned;
+    _Static_assert(JELLI_PRIZE_COUNT == 10u, "origin_pet lists every prize");
     const uint32_t *origins = v->prize_origins;
-    int size = snprintf(
-        out, capacity,
-        ",\"collection\":{\"owned_count\":%u,\"owned_mask\":%u,\"discovered_mask\":%u,"
-        "\"offered\":%u,\"held\":%u,\"highlighted\":%u,\"origin_pet\":["
-        "%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ","
-        "%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 "]}},\"buttons\":[",
-        owned, (unsigned)v->prize_owned, (unsigned)v->prize_discovered, (unsigned)v->offered_prize,
-        (unsigned)v->latched_prize, (unsigned)v->highlighted_prize, origins[0], origins[1],
-        origins[2], origins[3], origins[4], origins[5], origins[6], origins[7], origins[8]);
+    int size =
+        snprintf(out, capacity,
+                 ",\"collection\":{\"owned_count\":%u,\"owned_mask\":%u,\"discovered_mask\":%u,"
+                 "\"offered\":%u,\"held\":%u,\"highlighted\":%u,\"origin_pet\":["
+                 "%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ","
+                 "%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%" PRIu32 "]}},\"buttons\":[",
+                 owned, (unsigned)v->prize_owned, (unsigned)v->prize_discovered,
+                 (unsigned)v->offered_prize, (unsigned)v->latched_prize,
+                 (unsigned)v->highlighted_prize, origins[0], origins[1], origins[2], origins[3],
+                 origins[4], origins[5], origins[6], origins[7], origins[8], origins[9]);
     return size < 0 || (size_t)size >= capacity ? 0u : (size_t)size;
 }
 

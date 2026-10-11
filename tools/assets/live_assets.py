@@ -20,7 +20,7 @@ from sprite_geometry import ground_anchor_q8, opaque_centroid_q8
 
 ROOT = Path(__file__).resolve().parents[2]
 MAX_PACK_BYTES = PACK_CEILING
-MAX_ASSETS = 128
+MAX_ASSETS = 192
 HEADER = struct.Struct("<4sIII")
 RECORD = struct.Struct("<IHHHHHHBBBBI")
 # Mirrors tools/assets/build_slice.py: creatures may be 32x32 or 48x48.

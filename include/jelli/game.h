@@ -18,6 +18,7 @@
 #define JELLI_CLEAN_TICKS 50u /* One clean-up; a mess is swept away over this time. */
 /* JelliPet.behavior_flags: bits 0..4 mark needs below the low threshold (edge detection). */
 #define JELLI_PET_FLAG_MESS 0x20u       /* A potty accident waits to be cleaned up. */
+#define JELLI_PET_FLAG_FREE_PLAY 0x40u  /* The running moment replays a used daily reward. */
 #define JELLI_PET_FLAG_WAS_ASLEEP 0x80u /* Remembers sleep for the woke stimulus edge. */
 
 typedef enum {
@@ -169,6 +170,8 @@ unsigned jelli_pet_favorite(const JelliPet *pet, unsigned minute);
 /* Completion triggers are submitted once by the activity/event owner. SLEEP
  * means a qualified >= six-hour rest; GIFT means a real cross-pet collection gift. */
 void jelli_prize_complete(JelliGame *game, unsigned trigger);
+/* Offers prize index (0-based) to the active pet, as a moment's authored "prize" does. */
+void jelli_prize_award(JelliGame *game, unsigned index);
 JelliResult jelli_prize_catch(JelliGame *game);
 JelliResult jelli_prize_gift(JelliGame *game, unsigned index);
 bool jelli_game_valid(const JelliGame *game);

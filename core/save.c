@@ -78,7 +78,7 @@ static void write_pet(Writer *writer, const JelliPet *pet)
     put_u8(writer, pet->shot_goal);
     put_u8(writer, pet->shot_hits);
     write_habits(writer, &pet->habits);
-    for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+    for (unsigned i = 0u; i < JELLI_PRIZE_LEGACY_COUNT; ++i)
         put_u16(writer, pet->prize_progress.counts[i]);
     put_u64(writer, pet->prize_progress.last_breakfast_day);
     put_u8(writer, pet->prize_progress.breakfast_day_known ? 1u : 0u);
@@ -135,7 +135,7 @@ static void read_pet(Reader *reader, JelliPet *pet)
     }
     if (reader->version >= 3u) {
         read_habits(reader, &pet->habits);
-        for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+        for (unsigned i = 0u; i < JELLI_PRIZE_LEGACY_COUNT; ++i)
             pet->prize_progress.counts[i] = get_u16(reader);
         pet->prize_progress.last_breakfast_day = get_u64(reader);
         (void)read_bool(reader, &pet->prize_progress.breakfast_day_known);
@@ -201,7 +201,7 @@ static void write_game(Writer *writer, const JelliGame *game)
     put_u16(writer, (uint16_t)game->clock_adjust);
     put_u16(writer, game->prizes.owned);
     put_u16(writer, game->prizes.discovered);
-    for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+    for (unsigned i = 0u; i < JELLI_PRIZE_LEGACY_COUNT; ++i)
         put_u32(writer, game->prizes.origin_pet[i]);
     put_u8(writer, game->prizes.offered);
     put_u32(writer, game->prizes.offered_pet);
@@ -244,7 +244,7 @@ static bool read_game(Reader *reader, JelliGame *game)
         game->clock_adjust = get_i16(reader);
         game->prizes.owned = get_u16(reader);
         game->prizes.discovered = get_u16(reader);
-        for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+        for (unsigned i = 0u; i < JELLI_PRIZE_LEGACY_COUNT; ++i)
             game->prizes.origin_pet[i] = get_u32(reader);
         game->prizes.offered = get_u8(reader);
         game->prizes.offered_pet = get_u32(reader);

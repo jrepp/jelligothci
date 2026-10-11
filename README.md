@@ -5,7 +5,7 @@ with a native SDL desktop version. Both run the same C11 game and renderer.
 
 Care for your pet through meals, fruit, soup, water, play, and healthy routines.
 Barbell workouts spend fullness, hydration, and energy.
-Collect nine keepsakes and gift them to another pet. Sleep can track your own
+Collect ten keepsakes and gift them to another pet. Sleep can track your own
 bedtime and wake-up alongside the pet, with a rolling sleep score and a short
 journal. This is a playable prototype; balance and artwork are still evolving.
 
@@ -83,7 +83,7 @@ Bounds, centroids, and creature ground anchors update with the image.
 open build/assets/preview.html    # macOS; otherwise open in your browser
 ```
 
-The preview includes all 107 assets, including nine distinct presents.
+The preview includes all 121 assets, including ten distinct presents.
 [Art inventory](assets/slice/README.md) · [live authoring guide](docs/artwork.md)
 
 ### Creatures are content data
@@ -103,7 +103,9 @@ build time ([ADR-012](docs-cms/adr/adr-012-data-driven-creature-species-and-pres
 
 Mint grows into Lilac; catching the Bubble Gem adds BUBBLE, who hatches as
 BABY AXO and grows into the axolotl the same way. A happy touch makes the axolotl
-hug. BUBBLE reacts to presents, the garden, night, reading and her needs:
+hug. BABY AXO's own SNUGGLE activity hugs a teddy bear; the first snuggle each
+day offers the TEDDY BEAR present, which, like every present, can be given to
+another pet. Later snuggles that day are free and give no rewards. BUBBLE reacts to presents, the garden, night, reading and her needs:
 she studies, contemplates, and asks for food, company or the potty (POTTY in the
 Health ring). Ignore the potty request and she has an accident that CLEAN fixes
 ([RFC-005](docs-cms/rfcs/rfc-005-stimulus-driven-creature-behaviour.md)). An outstanding

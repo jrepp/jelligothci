@@ -312,7 +312,13 @@ static JelliResult moment(JelliGame *game, JelliPet *pet, uint32_t choice)
     if (result != JELLI_OK)
         return result;
     pet->interaction_due = pet->ticks + duration;
-    jelli_moment_charge(game, pet, choice);
+    bool free_play = jelli_moment_free_play(game, pet, choice);
+    pet->behavior_flags = (uint8_t)(free_play ? pet->behavior_flags | JELLI_PET_FLAG_FREE_PLAY
+                                              : pet->behavior_flags & ~JELLI_PET_FLAG_FREE_PLAY);
+    if (!free_play) {
+        jelli_moment_charge(game, pet, choice);
+        jelli_moment_claim(game, pet, choice);
+    }
     pet->location = (uint8_t)jelli_moment_location(pet, choice);
     pet->moment = (uint8_t)(choice + 1u);
     return JELLI_OK;

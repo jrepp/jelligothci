@@ -20,7 +20,7 @@ ANY = 255  # JELLI_BEHAVIOR_ANY
 LIMITS = {"states": 16, "repertoires": 8, "reactions_total": 64, "affinities_total": 16,
           "duration_max_s": 3600, "cooldown_max_s": 36000, "effect": 100, "request_bond": 100,
           "weight_max": 100, "chance_max": 100, "mood_max": 100, "bond_max": 1000, "bonus_max": 200,
-          "prize_max": 8, "minute_max": 1439, "need_low_max": 999, "timeouts": ["nothing", "accident"]}
+          "prize_max": 9, "minute_max": 1439, "need_low_max": 999, "timeouts": ["nothing", "accident"]}
 HEADERS = ("include/jelli/game.h", "include/jelli/behavior.h")
 
 

@@ -66,7 +66,7 @@ static void gifts_open_all_nine_slots(void)
         CHECK(jelli_pet_ui_control(&engine.ui, slot, false, &button));
         CHECK(button.icon == 11000u + slot);
         CHECK(jelli_asset_find(button.icon) != NULL);
-        CHECK(button.bounds.x >= 95u && button.bounds.y >= 88u);
+        CHECK(button.bounds.x >= 47u && button.bounds.x + 84u <= 419u && button.bounds.y >= 88u);
         CHECK(engine.ui.last_view.unavailable & (1u << slot));
     }
     press(9u);

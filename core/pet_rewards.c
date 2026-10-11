@@ -1,4 +1,5 @@
 #include "jelli/pet_rewards.h"
+#include "jelli/activities.h"
 #include <string.h>
 
 uint16_t jelli_pet_reward_stat(const JelliPet *pet, unsigned stat)
@@ -82,6 +83,9 @@ static void prize(const JelliPetRewards *r, JelliGame *game)
                                             JELLI_PRIZE_OUTING, JELLI_PRIZE_MOVIE};
         if (r->command_value < 4u)
             jelli_prize_complete(game, triggers[r->command_value]);
+        else if (r->command_value < jelli_moment_count && jelli_moments[r->command_value].prize &&
+                 !r->free_play)
+            jelli_prize_award(game, jelli_moments[r->command_value].prize - 1u);
     } else if (r->command == JELLI_CMD_TRAVEL)
         jelli_prize_complete(game, JELLI_PRIZE_TRAVEL);
     else if (r->command == JELLI_CMD_CARE)
@@ -160,6 +164,8 @@ static void consume(JelliPetRewards *r, JelliGame *game, const JelliEvent *event
     if (!activity_command(event->code))
         return;
     begin(r, event, false);
+    r->free_play =
+        event->code == JELLI_CMD_MOMENT && (pet->behavior_flags & JELLI_PET_FLAG_FREE_PLAY);
     add_gains(r, event);
     if (event->after.activity == JELLI_IDLE) {
         prize(r, game);

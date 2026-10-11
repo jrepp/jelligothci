@@ -170,7 +170,8 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
                                     : JELLI_ACTIVITY_CODE_CARE + activity;
     jelli_moment_complete(game, pet);
     if (pet->moment) {
-        jelli_moment_reward(game, pet);
+        if (!(pet->behavior_flags & JELLI_PET_FLAG_FREE_PLAY))
+            jelli_moment_reward(game, pet);
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
     }

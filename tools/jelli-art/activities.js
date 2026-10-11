@@ -80,7 +80,8 @@
     /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-form]')).forEach(el=>el.onchange=()=>{m.forms=Array.from(/** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-form]:checked')),x=>Number(x.dataset.form));render();});
     /** @type {HTMLButtonElement} */ (root.querySelector('#ac-save')).onclick=save;
     /** @type {HTMLButtonElement} */ (root.querySelector('#ac-revert')).onclick=()=>{work=null;base=null;render();};
-    /** @type {HTMLButtonElement} */ (root.querySelector('#ac-add')).onclick=()=>{work.moments.push({...clone(m),id:work.moments.length,name:`ACTIVITY ${work.moments.length}`,suggest_hour:-1,requires:-1});selected=work.moments.length-1;render();};
+    /** @type {HTMLButtonElement} */ (root.querySelector('#ac-add')).onclick=()=>{const {pose, prize, ...copy}=clone(m);  // a copy must not become a second prize source
+      work.moments.push({...copy,id:work.moments.length,name:`ACTIVITY ${work.moments.length}`,suggest_hour:-1,requires:-1});selected=work.moments.length-1;render();};
     effectPreview(m, forms);
     preview();
   }
@@ -105,7 +106,7 @@
     const ctx=canvas.getContext('2d'), m=work.moments[selected];
     ctx.clearRect(0,0,220,220);
     const form=D.behavior_vocab.forms.find(f=>f.id===previewForm);
-    const pose=m.animation==='rest'?'asleep':['think','watch'].includes(m.animation)?'curious':['breathe','dream'].includes(m.animation)?'content':'happy';
+    const pose=m.pose||(m.animation==='rest'?'asleep':['think','watch'].includes(m.animation)?'curious':['breathe','dream'].includes(m.animation)?'content':'happy');
     const actor=D.assets.find(a=>a.form===form?.art&&a.pose===pose)||D.assets.find(a=>a.form===form?.art);
     const actorPixels=actor&&decoded[actor.key]?.after;
     if(actorPixels){const off=document.createElement('canvas');off.width=actorPixels.w;off.height=actorPixels.h;off.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(actorPixels.data),actorPixels.w,actorPixels.h),0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(off,46,55,128,128);}

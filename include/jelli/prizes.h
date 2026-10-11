@@ -2,8 +2,10 @@
 #define JELLI_PRIZES_H
 #include <stdbool.h>
 #include <stdint.h>
-#define JELLI_PRIZE_COUNT 9u
-#define JELLI_PRIZE_MASK 511u
+#define JELLI_PRIZE_COUNT 10u
+#define JELLI_PRIZE_MASK 1023u
+/* Prizes saved in the original blocks; later prizes are saved in the version 14 tail. */
+#define JELLI_PRIZE_LEGACY_COUNT 9u
 typedef enum {
     JELLI_PRIZE_BRUSH,
     JELLI_PRIZE_WASH,
