@@ -104,7 +104,12 @@ button and canvas types fix the type errors without expanding the error baseline
 The UI fixture now pins the signed integration at 3d6bd08, including its required
 location catalog. Accessibility snapshots are refreshed in the pinned Playwright
 image and reviewed; screenshot references require the CI linux/amd64 renderer.
-These Studio changes do not change the firmware already flashed.
+The second CI run passed Studio types and image build; four screenshot references
+needed the refreshed palette, creature selector and behaviour provenance. The
+reviewed references come from run 38105921504's linux/amd64 artifact. The local
+UI rerun passed 30/30 without new accessibility violations. Comparison thresholds
+and the type-error baseline remain unchanged. These Studio changes do not change
+the firmware already flashed.
 
 # References
 
