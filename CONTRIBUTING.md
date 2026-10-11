@@ -51,8 +51,9 @@ Distribution packages may supply a newer unsupported Python. Check its version;
 set `JELLI_PYTHON` to a compatible executable for ESP-IDF. Package-manager tools
 and host compilers are prerequisites, not artifacts managed by this repository.
 Pinned Python utilities and ESP-IDF tools are managed locally by the wrappers.
-Rendered builds also fetch Python 3.12 and Pillow 12.0.0 through uv to embed the
-tracked PNG assets. Core-only builds do not run the asset generator.
+Rendered builds fetch the Python and Pillow versions declared in the
+[asset generator](tools/assets/build_slice.py) through uv to embed the tracked
+PNGs. Core-only builds do not run the asset generator.
 
 ```sh
 make hooks-install
@@ -110,6 +111,19 @@ Docs-cms holds decisions and evidence; copy an appropriate template and use the
 next ID plus a new UUID. Preserve historical records. Reusable agent skills are
 versioned under `.agents/skills`, but ordinary development does not require an
 agent or installing personal skills.
+
+## Keep documentation grounded in source
+
+Explain behavior, intent, ownership, and how to use or validate a feature.
+Link to the owning code, content, or configuration for current limits, tuning,
+catalogs, dependency pins, and test inventories instead of copying their values
+or enumerating their entries. Prefer descriptive symbols and validation in the
+implementation so a routine content change does not require a prose update.
+
+Keep numbers when they define a requirement, a hardware or protocol contract,
+an executable example, or a measured result. Record measurements with their
+revision and context; preserve dated findings and accepted decisions as history.
+Use generated output when readers need a complete current inventory.
 
 ## Optional firmware and hardware work
 

@@ -58,7 +58,7 @@ Next increment: [RFC-002: Pet memory and persistent activities](rfcs/rfc-002-pet
 ## Proposed game architecture
 
 [RFC-004: Pet collection and evolution data](rfcs/rfc-004-pet-collection-and-evolution-data.md)
-describes nine pet slots, unlocks, evolution sets, and touch controls for putting
+describes pet slots, unlocks, evolution sets, and touch controls for putting
 away a selected present. [Memo-020](memos/memo-020-pet-collection-and-present-controls.md)
 records the implemented testing catalog and validation.
 
@@ -117,6 +117,11 @@ docs-cms/
 4. Replace the sample prose and links with content relevant to the project.
 5. Run validation and review the diff before committing.
 
+Follow the contributor guide's
+[source-grounded documentation rules](../CONTRIBUTING.md#keep-documentation-grounded-in-source).
+Use source links for current implementation values; preserve dated evidence and
+the rationale behind decisions.
+
 Use `Proposed` for a new ADR and `Draft` for a new RFC or PRD. Memos do not need
 status. Record approval only when it has actually happened. Keep the UUID and
 created date stable; later updates can be found in Git history.
@@ -135,7 +140,7 @@ make docs-guide
 From this directory, use `../scripts/docs validate --dry-run --skip-build`.
 The wrapper finds the repository root regardless of your current directory.
 
-The [toolchain pins](../toolchain.env) select uv 0.12.23 and Docuchango 1.19.0.
+The [toolchain pins](../toolchain.env) select the uv and Docuchango versions.
 The [docs wrapper](../scripts/docs) uses the local uvx wrapper to run the pinned
 package. Downloaded binaries, Python tool environments, and caches stay under
 ignored `.tools/`. No global Python package installation is needed.
@@ -156,6 +161,6 @@ folders. Its [JSON schema](docs-project.schema.json) supports editor validation.
 Keep new durable findings here and update the [root README](../README.md) when
 setup or user commands change.
 
-- [Docuchango on PyPI](https://pypi.org/project/docuchango/1.19.0/)
+- [Docuchango on PyPI](https://pypi.org/project/docuchango/)
 - [Docuchango source](https://github.com/jrepp/docuchango)
 - [uv tool execution](https://docs.astral.sh/uv/concepts/tools/)

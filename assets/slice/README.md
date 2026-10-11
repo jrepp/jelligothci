@@ -1,9 +1,12 @@
 # Jelligotchi slice artwork
 
-The review set contains 110 PNG files: 38 creature frames, 12 small icons, 16 ring icons,
-five meter pictograms, 10 health icons, eight celebration sprites, ten collectible prizes, two backgrounds, nine props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
-form; BUBBLE is a separate species that grows from the baby axolotl into the axolotl. The SDL and ESP32 pet builds embed these assets using
-`tools/assets/embed_slice.py`. Physical board appearance remains unverified.
+This directory contains the editable PNG sources for the game's creatures,
+controls, effects, keepsakes, scenes, props, and bitmap font. The current asset
+set and runtime metadata are defined by [`assets.json`](assets.json). Mint is
+the baby form; Lilac is the grown form; BUBBLE is a separate species that grows
+from the baby axolotl into the axolotl. SDL and ESP32 pet builds embed these
+assets using `tools/assets/embed_slice.py`. Physical board appearance remains
+unverified.
 
 ## Preview and validate
 
@@ -33,17 +36,13 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 
 | Directory | Contents |
 | --- | --- |
-| `creatures/` | Mint and Lilac: idle A/B, eating, happy, asleep, unwell, curious, content at 32x32. Axolotl: 18 frames at 48x48 (idle bob, blink, happy, surprised, chew, sleep breath, sad, potty, hug) and the baby axolotl's 10 frames (3 idle, surprised, teddy snuggle, cry, sleep), both in the axolotl palette (with the teddy's browns) |
-| `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
-| `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
-| `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
-| `health/` | Nine 32x32 clicker icons, including the dental sequence |
-| `effects/` | Eight 16x16 star, heart, orb, comet, fairy-wing, music, idea, and rainbow celebration sprites |
-| `prizes/` | Ten unique 32x32 keepsakes: butterfly, pearl tooth, breakfast sun, tea sprite, movie star, bubble gem, moon charm, rainbow seed, friendship bow, teddy bear (imported by `source/teddy-import.json`) |
-| `backgrounds/` | Six 64x64 neutral scenes: home, garden, park, pond, beach and library; black vignettes |
-| `props/` | Food bowl, closed/open gift, and bed; 24x24 pixels |
-| `font/` | 128x72 atlas: 16 columns by six rows of 8x12 cells, ASCII 32–127 |
-| `source/` | Original generated atlas, exact generation prompt, original pixel authoring recipe, polish recipe, and glyph patterns |
+| `creatures/` | Creature forms and their animation frames |
+| `icons/`, `menus/`, `meters/`, `health/` | Care, navigation, status, and activity controls |
+| `effects/` | Celebration and interaction effects |
+| `prizes/` | Keepsakes that can be collected and gifted |
+| `backgrounds/`, `props/` | Scenes and objects used by the game |
+| `font/` | Bitmap font source |
+| `source/` | Import specifications, art recipes, and provenance |
 
 `assets.json` assigns explicit IDs, paths, frame sizes, bounds, pivots, palette,
 and clip timings. PNGs in the asset directories are the editable runtime
@@ -74,13 +73,13 @@ Transparent RGB is zero; coverage, not a color key, controls transparency. A hos
 must decode byte order before writing a native-endian surface. No C structs or
 finished content-pack headers are emitted.
 
-The generated manifest reports raw RGB565, mask and font payload sizes. The SDL
-live pack uses fixed staging and decoded banks; the builder rejects artwork
-that exceeds those bounds. These are desktop authoring limits, not a linked
-firmware memory measurement. With the baby axolotl snuggle, cry and sleep frames
-and the teddy present, the art needs 156,480 pixels and 19,560 mask bytes. The
-desktop banks hold 196,608 pixels and 24,576 mask bytes; staging holds 448 KiB
-(ADR-012). Raw payload is 333,672 bytes.
+The generated manifest reports raw RGB565, mask, and font payload sizes. The SDL
+live pack uses fixed staging and decoded banks; runtime bounds are in
+[`asset_reload.h`](../../ports/sdl/asset_reload.h), and authoring limits are
+defined by [`build_slice.py`](../../tools/assets/build_slice.py) and used by
+[`live_assets.py`](../../tools/assets/live_assets.py). These desktop authoring
+bounds are not a linked firmware memory measurement. See [ADR-012](../../docs-cms/adr/adr-012-data-driven-creature-species-and-presentation.md)
+for the asset pipeline design.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 
@@ -142,8 +141,8 @@ captions use Pillow's built-in font and are not part of the shipped game assets.
 
 ## Readability and celebration pass
 
-Creature frames now occupy 192x192 physical pixels (6x); ring icons occupy
-96x96. The bottom control shows MENU when closed, an X for closing, or an arrow for going back.
+The bottom control shows MENU when closed, an X for closing, or an arrow for
+going back.
 Care and social hearts use rounded lobes and a soft tip; cups, toast, and the
 social heart include small expressions. These changes retain the shared palette,
 binary transparency, stable IDs, and exact native dimensions.
@@ -155,17 +154,12 @@ heart art, and Sleep reuses the crescent.
 The clean circular crescent replaces both rest icons. Night scenery uses a
 procedural crescent and a slow gray fade; sleeping Zs reuse the bitmap font in
 medium blue rather than adding another PNG. Dental overlays add floss, mouthwash,
-spit, and a folded cleanup cloth (8006–8009). The preview demonstrates the six-step
-routine and varied 1–3 tap counts for the first brush and floss phases.
+spit, and a folded cleanup cloth. The preview demonstrates the dental routine;
+its sequence and tap behavior are implemented in [`core/pet_health.c`](../../core/pet_health.c)
+and [`core/tunables.c`](../../core/tunables.c).
 
-Celebrations use tiny masked star, heart, orb, comet, and wing sprites, with integer
-RGB565 fades. Eight particles acknowledge accepted presses; a completed multi-stage
-healthy activity uses up to 24. Rejected presses use three quiet square/cross marks.
-Celebration particles last at most 1.74 seconds at the default 300 percent UI duration scale.
-Each particle remains eight bytes; the 24-slot pool fits within 224 bytes, with
-no extra framebuffer or runtime allocation. Particle type and scale are packed
-into the style byte. The art budget is now 160 KiB; actual raw pixels plus existing
-allowances use 159,776 bytes. Physical readability and touch feel still need review.
+Celebrations use masked sprites with integer RGB565 fades. Physical readability
+and touch feel still need review.
 
 Menu plates use a thin neutral edge and plain gray fill, supporting the icon
 rather than competing with it. The movie screen/clapper is squared off and loose
@@ -210,10 +204,8 @@ prompt requested a teal glass and droplet, no steam/text/face, plum outlines,
 cream highlights, and the same transparent pixel grid. Full generation prompts
 are in the implementation session; neither image uses a fallback API tool.
 
-The two new 32×32 icons add 4352 bytes of RGB565 and masks. Raw pixels plus
-the retained 8192-byte definitions and 4096-byte indexes total 164128 bytes.
-The authored pack allowance is now 161 KiB (164864 bytes), leaving 736 bytes.
-This does not change framebuffer, core heap, or C source-size limits.
+The generated manifest and asset builder report payload sizes and enforce the
+current authored pack allowance.
 
 
 Additional location scenes use the existing 16-gray pixel recipe. Reproduce only
@@ -225,7 +217,7 @@ Park/Pond/Beach/Library (preserving other art) with:
 
 Their IDs are 10003–10006. `content/locations.json` binds stable saved location
 IDs to these background assets and specifies indoor/outdoor atmosphere. Add
-locations at the end of the catalog (up to eight), register a 64×64 background
+locations at the end of the catalog, register a background
 in the manifest, then choose allowed locations in Jelli Art's Activities view.
 Build checks reject unknown or non-background asset references. PNG hot reload
 updates artwork; catalog or activity-rule changes require a rebuild.

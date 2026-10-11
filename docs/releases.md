@@ -16,8 +16,8 @@ release workflow validates metadata, builds/tests the core on all three desktop
 platforms, runs SDL sanitizers and C/docs checks, then packages macOS and Windows x64 game ZIPs with bundled SDL, all authored PNGs, manifest, preview page, and hot-reload
 tools. It also publishes an editable source-art ZIP, standalone
 preview HTML (also zipped), source archive, and `SHA256SUMS`. Game archives name
-the actual build architecture. Packaging verifies each source PNG byte-for-byte
-and requires all nine unique present images before publishing. Builds are ad-hoc signed, not Apple notarized;
+the actual build architecture. Packaging verifies that bundled PNGs match the
+authored sources byte-for-byte. Builds are ad-hoc signed, not Apple notarized;
 macOS may require approval in Privacy & Security. Releases never flash hardware.
 Opening the app starts an unsaved session; use the bundled CLI with `--save` for persistence.
 

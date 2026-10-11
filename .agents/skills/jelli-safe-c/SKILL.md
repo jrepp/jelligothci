@@ -66,9 +66,8 @@ and tests; Cppcheck also checks both adapters without requiring their SDKs.
 That header-independent analysis does not validate every vendor API contract.
 Use firmware compilation and targeted tests for those boundaries.
 
-The authoritative limits live in [.c-size-limits.json](../../../.c-size-limits.json):
-80 nonblank, noncomment lines per function, 400 physical lines per C/header
-file, and cyclomatic complexity 20. Split by responsibility when a limit is
+The authoritative function, file, and complexity limits live in
+[.c-size-limits.json](../../../.c-size-limits.json). Split by responsibility when a limit is
 exceeded. Do not compress statements, hide work in macros, or raise a limit
 just to pass. Explain a necessary exception rather than silently weakening
 checks. A diagnostic suppression must be narrow and explain the specific
