@@ -159,6 +159,7 @@
       const k = kind(e);
       if (stroke?.id === e.pointerId || (k === 'touch' && touches.has(e.pointerId))) up(e, true, 'lost');  // the id is reused: its pointerup never came
       if (k !== 'touch') {
+        if (stroke && stroke.kind === 'touch' && k === 'mouse') return 'ignored';  // a live finger stroke is not replaced by a mouse
         if (stroke && stroke.kind !== 'touch') {  // a mouse or pen stroke that never saw its pointerup: the new press replaces it
           if (stroke.kind === 'pen') { penDown = false; penUpAt = now(); }
           cancelStroke(e, 'lost');

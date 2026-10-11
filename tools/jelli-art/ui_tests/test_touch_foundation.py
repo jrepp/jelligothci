@@ -613,3 +613,12 @@ def test_dirty_state_never_reflows_the_toolbar(browser, studio, size):
         assert page.evaluate(probe) == before
     finally:
         context.close()
+
+
+def test_mouse_press_does_not_replace_a_live_finger_stroke(surface):
+    page = surface()
+    touch_start(page, [(100, 100)])
+    fire(page, "pointerdown", "mouse")
+    assert ("start", "mouse") not in log(page) and ("cancel", "touch", "lost") not in log(page)
+    touch_end(page)
+    assert log(page)[-1] == ("end", "touch")
