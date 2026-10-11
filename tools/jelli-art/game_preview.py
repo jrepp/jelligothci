@@ -42,7 +42,7 @@ LOG_LINES = 120
 NEEDS = ("satiety", "energy", "hygiene", "amusement", "social")
 # Engine sources mirrored from the served checkout; art and content come from what the studio serves.
 STAGE_FILES = ("CMakeLists.txt", "VERSION", "toolchain.env")
-STAGE_DIRS = ("cmake", "core", "include", "tools/assets", "tools/audio", "tools/game-preview")
+STAGE_DIRS = ("cmake", "core", "drivers", "include", "tools/assets", "tools/audio", "tools/game-preview")
 SKIP = re.compile(r"(__pycache__|\.pyc$|\.tmp$|\.DS_Store$)")
 TARGET = "jelli_game_preview"
 

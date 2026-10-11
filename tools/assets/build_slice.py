@@ -33,9 +33,9 @@ PALETTE_ROWS = {"unramped": "other", "unramped_only": "palette", "extras": "more
 RESERVED_ROWS = set(PALETTE_ROWS.values())
 # Real limits the art must fit: the SDL live-reload pack buffer and its banks
 # (ports/sdl/asset_reload.h). Firmware embeds the same art with ample flash headroom.
-PACK_CEILING = 294912  # JELLI_ASSET_PACK_CAPACITY: 288 KiB desktop staging buffer.
-LIVE_PIXEL_CAPACITY = 131072
-LIVE_MASK_CAPACITY = 16384
+PACK_CEILING = 327680  # JELLI_ASSET_PACK_CAPACITY: 320 KiB desktop staging buffer.
+LIVE_PIXEL_CAPACITY = 147456
+LIVE_MASK_CAPACITY = 18432
 
 
 def require(condition, message):

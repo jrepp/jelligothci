@@ -12,11 +12,14 @@ typedef struct {
     uint64_t checked_ms;
     uint32_t checks, mismatches;
     unsigned stack_free;
+    unsigned brightness_percent;
+    bool brightness_known;
     bool guards_ok, heap_ok, buffers_equal, refresh_requested;
 } JelliDisplayOutput;
 
 /* Startup allocations: two 434,312-byte PSRAM frames plus 128 bytes of guards.
  * Engine task owns state; canvas access also holds the BSP display mutex. */
+JelliDisplayDriver jelli_display_output_driver(JelliDisplayOutput *output);
 void jelli_display_output_init(JelliDisplayOutput *output);
 void jelli_display_output_present(JelliDisplayOutput *output, const JelliSurface *surface,
                                   uint64_t now);

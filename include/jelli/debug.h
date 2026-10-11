@@ -2,20 +2,23 @@
 #define JELLI_DEBUG_H
 
 #include "jelli/pet_engine.h"
-#include <stddef.h>
+#include "jelli/debug_protocol.h"
 
-#define JELLI_DEBUG_LINE 512u
-#define JELLI_DEBUG_REPLY 4096u
+/* Shared discovery list for game hosts; adapters append their own commands. */
+#define JELLI_DEBUG_GAME_COMMANDS_JSON                                                             \
+    "\"capabilities\",\"state\",\"capture\",\"pixels\",\"release\",\"clock\","                     \
+    "\"habits\",\"sleep-log\",\"events\",\"sound\",\"tunables\",\"tune\","                         \
+    "\"cheat\",\"press\",\"swipe\",\"tap\""
+
 #define JELLI_DEBUG_IDLE_MS 5000u
 #define JELLI_DEBUG_CAPTURE_MS 30000u
 
 typedef struct JelliDebug JelliDebug;
 struct JelliDebug {
-    char line[JELLI_DEBUG_LINE], reply[JELLI_DEBUG_REPLY];
-    size_t used, reply_size;
+    JelliDebugProtocol protocol;
     uint64_t capture_start, capture_activity;
     uint32_t capture_id;
-    bool discard, captured;
+    bool captured;
     /* Optional host-owned, nonblocking sound queue; called on engine thread. */
     bool (*sound)(void *ctx, unsigned cue, unsigned volume);
     void *sound_ctx;

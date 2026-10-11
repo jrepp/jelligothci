@@ -24,6 +24,7 @@ static esp_err_t draw_bitmap(lv_display_t *display, esp_lcd_panel_handle_t panel
 {
     (void)display;
     JelliDisplayTransfer *transfer = ctx;
+    transfer->panel = panel;
     if (!pixels || left < 0 || top < 0 || right <= left || bottom <= top || right > JELLI_WIDTH ||
         bottom > JELLI_HEIGHT) {
         ++transfer->failed;

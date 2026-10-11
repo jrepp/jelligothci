@@ -1,7 +1,8 @@
 #include "jelli/sound.h"
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
-#include "jelli/gesture.h"
+#include "jelli/touch_guard.h"
+#include "jelli/motion.h"
 #include "jelli/engine.h"
 #include "session.h"
 #include "debug_socket.h"
@@ -17,6 +18,8 @@ enum { FRAME_MS = 8 };
 
 typedef struct {
     JelliGesture gesture;
+    JelliTouchGuard touch_guard;
+    JelliMotionMailbox motion;
     JelliAssetReload *asset_reload;
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -51,16 +54,24 @@ static bool poll_input(void *ctx, JelliInput *input)
                 return true;
             }
         }
+        if (event.type == SDL_KEYDOWN && !event.key.repeat && event.key.keysym.sym == SDLK_m)
+            jelli_motion_publish(&d->motion, JELLI_DEVICE_OK, (JelliMotionSample){now_ms(d), true});
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
             /* SDL's logical-size renderer transforms mouse events for us. */
-            jelli_gesture_begin(&d->gesture, event.button.x, event.button.y);
+            uint8_t contacts = 1;
+            jelli_touch_guard_apply(&d->touch_guard, false, &contacts);
+            if (contacts)
+                jelli_gesture_begin(&d->gesture, event.button.x, event.button.y);
         }
-        if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT &&
-            jelli_gesture_end(&d->gesture, event.button.x, event.button.y, input)) {
-            return true;
+        if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
+            uint8_t contacts = 0;
+            jelli_touch_guard_apply(&d->touch_guard, false, &contacts);
+            if (jelli_gesture_end(&d->gesture, event.button.x, event.button.y, input))
+                return true;
         }
         if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
-            d->gesture.active = false;
+            uint8_t contacts = 0;
+            jelli_touch_guard_apply(&d->touch_guard, true, &contacts);
         }
     }
     return false;
@@ -178,6 +189,7 @@ int main(int argc, char **argv)
     if (parsed >= 0)
         return parsed;
     Desktop d = {.headless = options.headless, .pet = options.pet};
+    d.touch_guard.gesture = &d.gesture;
     if (d.headless)
         SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
     SDL_SetMainReady();
@@ -211,6 +223,8 @@ int main(int argc, char **argv)
         if (!jelli_pet_init(&pet, platform, surface) ||
             !jelli_sdl_session_open(&session, &pet, &options))
             goto cleanup;
+        jelli_pet_bind_devices(&pet, (JelliMotionDriver){&d.motion, jelli_motion_poll},
+                               (JelliDisplayDriver){0});
     } else if (!jelli_init(&shapes, platform, surface))
         goto cleanup;
     run_frames(&shapes, &pet, &d, &options, &session);

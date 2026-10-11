@@ -15,7 +15,7 @@ class BuildVersionTest(unittest.TestCase):
             source.mkdir()
             # Everything the core configure step reads: sources plus the content
             # data and the CMake modules that generate code from it.
-            for name in ("cmake", "content", "core", "include", "tests", "tools"):
+            for name in ("cmake", "content", "core", "drivers", "include", "tests", "tools"):
                 shutil.copytree(repository / name, source / name)
             # Core configuration validates activity/location asset references;
             # it needs the catalog, but does not load the PNG payloads.

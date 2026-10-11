@@ -28,7 +28,7 @@ static bool command(void *ctx, JelliDebug *debug, const JelliPetEngine *engine, 
 
 static void feed(JelliDebug *debug, JelliPetEngine *engine, const char *text)
 {
-    debug->reply_size = 0;
+    debug->protocol.reply_size = 0;
     for (size_t i = 0; text[i]; ++i)
         jelli_debug_feed(debug, engine, text[i], 100u);
 }
@@ -38,9 +38,9 @@ int main(void)
     JelliDebug debug = {.command = command, .command_ctx = &calls};
     JelliPetEngine engine = {0};
     feed(&debug, &engine, "@J1 42 host secret\n");
-    CHECK(calls == 1u && length == 6u && strstr(debug.reply, "@J1 42"));
-    for (size_t i = 0; i < sizeof(debug.line); ++i)
-        CHECK(!debug.line[i]);
+    CHECK(calls == 1u && length == 6u && strstr(debug.protocol.reply, "@J1 42"));
+    for (size_t i = 0; i < sizeof(debug.protocol.line); ++i)
+        CHECK(!debug.protocol.line[i]);
     char text[JELLI_DEBUG_LINE + 32u];
     memcpy(text, "@J1 43 host ", 12u);
     memset(text + 12u, 'a', 382u);
@@ -51,11 +51,11 @@ int main(void)
     memset(text + 12u, 'a', JELLI_DEBUG_LINE);
     memcpy(text + 12u + JELLI_DEBUG_LINE, "\n", 2u);
     feed(&debug, &engine, text);
-    CHECK(calls == 2u && !debug.reply_size);
+    CHECK(calls == 2u && !debug.protocol.reply_size);
     feed(&debug, &engine, "@J1 44 clock\n");
-    CHECK(calls == 2u && strstr(debug.reply, "clock_known"));
+    CHECK(calls == 2u && strstr(debug.protocol.reply, "clock_known"));
     feed(&debug, &engine, "@J1 45 unknown\n");
-    CHECK(strstr(debug.reply, "syntax"));
+    CHECK(strstr(debug.protocol.reply, "syntax"));
     puts("Host extension handles long settings, scrubs requests, and preserves core dispatch.");
     return 0;
 }

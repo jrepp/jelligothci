@@ -133,7 +133,17 @@ make esp-flash PORT=<discovered-port>
 
 Use the repository-local SDK and discover the port each time. A successful build
 or serial startup does not verify physical display, touch, or audio behavior.
-[Hardware guide](docs/hardware.md) covers flashing, monitoring, and current limits.
+[Hardware guide](docs/hardware.md) covers flashing, monitoring, current limits,
+and the optional debug-port power experiments (`./scripts/esp validate`).
+Normal firmware excludes the experiment runner; CI compiles normal, power, and standalone factory profiles.
+See [factory validation](docs/factory-validation.md) for the non-destructive smoke image. All profiles share the `@J1` debug client;
+use `jelli-debug capabilities` to discover commands and `factory status` for
+factory state. The [ranked validation passes](docs/device-validation-passes.md) define
+repeatable optimization experiments; factory inventory captures PMU, IMU and RTC baselines.
+The RTC station pass checks progression without setting time or granting clock trust.
+The IMU station pass qualifies command handshakes and awake motion interrupts before sleep trials.
+The power profile also runs scripted touch recovery, input-timer comparisons,
+and checked display sleep/brightness trials through the same debug path.
 The ESP32 port also supports USB-configured Wi-Fi, automatic time/DST, and staged
 HTTPS OTA updates; see [network setup](docs/hardware.md#wi-fi-time-sync-and-ota).
 This network increment has been compiled but has not been flashed or verified on hardware.
@@ -151,6 +161,9 @@ The portable core uses injected time and caller-owned memory. SDL and ESP32 own
 their run loops, input, and display buffers. See the
 [architecture contracts](docs/development.md#boundary-between-engine-and-host)
 before changing interfaces; follow [CONTRIBUTING.md](CONTRIBUTING.md).
+[Device services](docs/development.md#device-services) inject clock, motion and
+brightness providers; portable register drivers can be tested without hardware.
+Desktop M injects a motion sample for development; it has no gameplay effect.
 
 ## Documentation
 
