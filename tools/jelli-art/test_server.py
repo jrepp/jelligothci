@@ -17,6 +17,7 @@ import faulthandler
 import io
 import json
 import os
+import signal
 import shutil
 import socket
 import subprocess
@@ -65,8 +66,10 @@ class Server:
         self.url = f"http://127.0.0.1:{self.port}"
         command = command or [sys.executable, str(SERVER), "--no-open", "--port", str(self.port), *args]
         self.log = tempfile.TemporaryFile()
+        # Own session, so stop() also ends git children (a push or rebase) still writing to the scratch checkout.
         self.proc = subprocess.Popen(command, stdout=self.log, stderr=subprocess.STDOUT, cwd=cwd,
-                                     env={**os.environ, **GIT_ENV, **(env or {}), "JELLI_PORT": str(self.port)})
+                                     env={**os.environ, **GIT_ENV, **(env or {}), "JELLI_PORT": str(self.port)},
+                                     start_new_session=os.name == "posix")
         deadline = time.monotonic() + 60
         while time.monotonic() < deadline:
             if self.proc.poll() is not None:
@@ -93,6 +96,11 @@ class Server:
             except subprocess.TimeoutExpired:
                 self.proc.kill()
                 self.proc.wait()
+        if os.name == "posix":
+            try:
+                os.killpg(self.proc.pid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass  # the group already exited
         if not self.log.closed:
             self.log.close()
 
@@ -552,7 +560,8 @@ class StartupTest(unittest.TestCase):
 @unittest.skipUnless(HAS_GIT, "git commit tests need git")
 class GitTest(unittest.TestCase):
     def setUp(self):
-        self.scratch = tempfile.TemporaryDirectory(prefix="jelli-art-git-")
+        # A killed git child can leave a file behind mid-removal; scratch leftovers are not a test failure.
+        self.scratch = tempfile.TemporaryDirectory(prefix="jelli-art-git-", ignore_cleanup_errors=True)
         self.addCleanup(self.scratch.cleanup)
         self.root = Path(self.scratch.name)
         self.work, self.origin = make_checkout(self.root)
