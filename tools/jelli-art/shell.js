@@ -22,10 +22,12 @@
 
   /* ---------- shortcut registry ---------- */
   /* registerShortcuts('Paint', [{keys: ['P'], description: 'Pencil'}, {keys: ['Mod+Z'], description: 'Undo'}]).
-   * keys lists alternatives; '+' joins a chord; Mod is ⌘ on macOS and Ctrl elsewhere.
+   * keys lists alternatives; '+' joins a chord; Mod is ⌘ on macOS and Ctrl elsewhere. An entry may give
+   * {gesture: 'Two-finger tap', description} instead of keys (touch.js registers the Touch and Pencil section).
    * Registering a section again replaces it. The registry documents keys; handlers stay with their panel. */
   function registerShortcuts(section, list) {
-    shortcuts.set(String(section), (list || []).map(s => ({keys: [].concat(s.keys), description: String(s.description || '')})));
+    shortcuts.set(String(section), (list || []).map(s => ({keys: s.gesture ? [] : [].concat(s.keys), gesture: s.gesture ? String(s.gesture) : '',
+      description: String(s.description || '')})));
   }
   const KEY_NAMES = {Mod: MAC ? '⌘' : 'Ctrl', Shift: MAC ? '⇧' : 'Shift', Alt: MAC ? '⌥' : 'Alt', ArrowUp: '↑', ArrowDown: '↓',
     ArrowLeft: '←', ArrowRight: '→', Space: 'Space', Escape: 'Esc'};
@@ -61,6 +63,7 @@
       el = document.createElement('div'); toasts.set(id, el); box.append(el);
       el.addEventListener('mouseenter', () => clearTimeout(el.timer));
       el.addEventListener('focusin', () => clearTimeout(el.timer));
+      el.addEventListener('pointerdown', () => clearTimeout(el.timer));  // a touch holds it, as hovering does
     }
     el.className = `shell-toast ${tone}`; el.dataset.text = text; el.dataset.mode = currentMode; el.dataset.tone = tone; el.dataset.keep = String(sticky || !!opts.keep);
     const label = {info: 'Note', ok: 'Done', warn: 'Warning', bad: 'Problem'}[tone];
@@ -222,9 +225,10 @@
     const id = document.querySelector('#shell-modes [aria-selected=true]')?.dataset.modeId, current = modeList().find(m => m.id === id)?.label;
     const sections = [...shortcuts].sort(([a], [b]) => (b === current) - (a === current) || (b === 'Everywhere') - (a === 'Everywhere'));
     const body = sections.map(([name, list]) => `<section><h3>${esc(name)}${name === current ? ' <span class="lbl">· this mode</span>' : ''}</h3><dl class="shell-keys">` +
-      list.map(s => `<dt>${s.keys.map(combo).join(' <span class="lbl">or</span> ')}</dt><dd>${esc(s.description)}</dd>`).join('') + '</dl></section>').join('');
+      list.map(s => `<dt>${s.gesture ? `<span class="shell-gesture">${esc(s.gesture)}</span>` : s.keys.map(combo).join(' <span class="lbl">or</span> ')}</dt><dd>${esc(s.description)}</dd>`).join('') + '</dl></section>').join('');
+    const gestures = sections.some(([, list]) => list.some(s => s.gesture));
     // Focus the × at the top so the list opens at its start, not scrolled to the Close button.
-    dialog({title: 'Keyboard shortcuts', body, className: 'shell-help', initial: '.shell-x', onOpen: el => { el.scrollTop = 0; el.querySelector('.shell-dialog-body').scrollTop = 0; }});
+    dialog({title: gestures ? 'Shortcuts and gestures' : 'Keyboard shortcuts', body, className: 'shell-help', initial: '.shell-x', onOpen: el => { el.scrollTop = 0; el.querySelector('.shell-dialog-body').scrollTop = 0; }});
   }
   function guideHtml() {
     const live = D.live, git = D.git || {};

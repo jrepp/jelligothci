@@ -34,6 +34,9 @@ UPDATE = os.environ.get("JELLI_UI_UPDATE") == "1"
 SCREENSHOTS = os.environ.get("JELLI_UI_SCREENSHOTS") == "1"
 VIEWS = FIXTURE["views"]
 VIEWPORTS = FIXTURE["viewports"]
+# iPad sizes (RFC-007) open with touch emulation at device scale 2, so (any-pointer: coarse) and (hover: none)
+# match. They are separate from VIEWPORTS: the view, aria and screenshot cases above stay as they were.
+TOUCH_VIEWPORTS = FIXTURE["touch_viewports"]
 CASES = [(view, viewport) for view in VIEWS for viewport in VIEWPORTS]
 BUDGET = {}  # "view@viewport" -> share of the viewport given to the view's primary surface
 NOTES = []  # printed after the run, such as baselines that can be lowered
@@ -116,41 +119,57 @@ def studio():
     lock.close()
 
 
+def new_view(browser, studio, view, viewport, scheme="dark"):
+    """(context, page) showing a view at a VIEWPORTS or TOUCH_VIEWPORTS size, settled; the caller closes the context."""
+    touch = viewport in TOUCH_VIEWPORTS
+    width, height = TOUCH_VIEWPORTS[viewport] if touch else VIEWPORTS[viewport]
+    context = browser.new_context(viewport={"width": width, "height": height}, device_scale_factor=2 if touch else 1,
+                                  has_touch=touch, color_scheme=scheme, reduced_motion="reduce", locale="en-US",
+                                  timezone_id="UTC")
+    try:
+        return context, settle(context, studio, view, viewport)
+    except BaseException:
+        context.close()
+        raise
+
+
 @pytest.fixture
 def open_view(studio, browser):
     """open_view(view, viewport, scheme='dark') -> a page showing that view, settled for snapshots."""
     contexts = []
 
     def opener(view, viewport, scheme="dark"):
-        width, height = VIEWPORTS[viewport]
-        context = browser.new_context(viewport={"width": width, "height": height}, device_scale_factor=1,
-                                      color_scheme=scheme, reduced_motion="reduce", locale="en-US",
-                                      timezone_id="UTC")
+        context, page = new_view(browser, studio, view, viewport, scheme)
         contexts.append(context)
-        ref = json.dumps(str(DATA / "before"))
-        context.add_init_script(f"try {{ localStorage.setItem('jelli-shell:guide', 'false');"
-                                f" localStorage.setItem('jelli-review:before', {json.dumps(ref)}); }} catch {{}}")
-        page = context.new_page()
-        events = []
-        page.on("console", lambda m: events.append(f"console.{m.type}: {m.text}"))
-        page.on("pageerror", lambda e: events.append(f"pageerror: {e}"))
-        page.on("requestfailed", lambda r: events.append(f"requestfailed: {r.url} {r.failure}"))
-        page.goto(f"{studio}/#{VIEWS[view]['hash']}")
-        # D is the page's top-level data binding (a script-scope let, not a window property).
-        try:
-            page.wait_for_function("() => typeof D !== 'undefined' && D && D.assets && D.assets.length > 0")
-        except Exception as error:
-            state = page.evaluate("() => ({assets: typeof D === 'undefined' ? null : (D.assets || []).length,"
-                                  " title: document.title, main: document.querySelector('main')?.innerText.slice(0, 300)})")
-            raise AssertionError(f"{view}@{viewport}: page data never loaded: {state}; events: {events[-20:]}") from error
-        page.wait_for_load_state("networkidle")
-        page.locator(VIEWS[view]["primary"]).first.wait_for(state="attached")
-        page.evaluate("() => document.fonts.ready.then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))))")
         return page
 
     yield opener
     for context in contexts:
         context.close()
+
+
+def settle(context, studio, view, viewport):
+    """A new page in context showing the view, with data loaded, fonts ready and two frames drawn."""
+    ref = json.dumps(str(DATA / "before"))
+    context.add_init_script(f"try {{ localStorage.setItem('jelli-shell:guide', 'false');"
+                            f" localStorage.setItem('jelli-review:before', {json.dumps(ref)}); }} catch {{}}")
+    page = context.new_page()
+    events = []
+    page.on("console", lambda m: events.append(f"console.{m.type}: {m.text}"))
+    page.on("pageerror", lambda e: events.append(f"pageerror: {e}"))
+    page.on("requestfailed", lambda r: events.append(f"requestfailed: {r.url} {r.failure}"))
+    page.goto(f"{studio}/#{VIEWS[view]['hash']}")
+    # D is the page's top-level data binding (a script-scope let, not a window property).
+    try:
+        page.wait_for_function("() => typeof D !== 'undefined' && D && D.assets && D.assets.length > 0")
+    except Exception as error:
+        state = page.evaluate("() => ({assets: typeof D === 'undefined' ? null : (D.assets || []).length,"
+                              " title: document.title, main: document.querySelector('main')?.innerText.slice(0, 300)})")
+        raise AssertionError(f"{view}@{viewport}: page data never loaded: {state}; events: {events[-20:]}") from error
+    page.wait_for_load_state("networkidle")
+    page.locator(VIEWS[view]["primary"]).first.wait_for(state="attached")
+    page.evaluate("() => document.fonts.ready.then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))))")
+    return page
 
 
 def pytest_terminal_summary(terminalreporter):
