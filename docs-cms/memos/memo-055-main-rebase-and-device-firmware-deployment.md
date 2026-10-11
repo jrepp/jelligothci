@@ -94,6 +94,18 @@ Evidence is retained under ignored build/rebase-flash: pre-rebase diffs, stash
 identity, resolved conflict backup, test/build/flash logs, serial boot log, debug
 responses, image metadata and hashes, flashed binary and the final source diff.
 
+# Pull request validation
+
+PR #43 publishes the signed integration. Both complete local desktop and
+ASan/UBSan suites subsequently passed 71/71, and all repository hooks passed
+with the new files staged. The first CI run exposed missing DOM element types
+in the activity editor and stale Studio UI fixtures. Explicit input, select,
+button and canvas types fix the type errors without expanding the error baseline.
+The UI fixture now pins the signed integration at 3d6bd08, including its required
+location catalog. Accessibility snapshots are refreshed in the pinned Playwright
+image and reviewed; screenshot references require the CI linux/amd64 renderer.
+These Studio changes do not change the firmware already flashed.
+
 # References
 
 - [Portable device implementation](memo-053-portable-device-boundaries.md)

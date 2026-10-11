@@ -66,19 +66,21 @@
       <p>Reward ranges include jitter and this pet’s activity bonus. Existing sleep-habit effects on fun/connection and favorite-time extras also apply; meters cap at 100.</p>
       <div id="ac-effects"></div></div>
       <aside><label>Preview pet<select id="ac-form">${opts(forms.map(f=>[f.id,f.name]),previewForm)}</select></label><canvas id="ac-preview" width="220" height="220" aria-label="Shared prop animation preview"></canvas><p>Shared prop motion. In-game placement follows each pet’s bounds.</p></aside></div>`;
-    root.querySelectorAll('[data-activity]').forEach(b => b.onclick=()=>{selected=Number(b.dataset.activity);render();});
-    root.querySelector('#ac-form').onchange=e=>{previewForm=Number(e.target.value);render();};
-    root.querySelectorAll('[data-time]').forEach(el=>el.onchange=()=>{const [h,min]=el.value.split(':').map(Number); m[el.dataset.time]=(h*60+min)||(el.dataset.time==='end_minute'?1440:0);render();});
-    root.querySelectorAll('[data-field]').forEach(el=>el.onchange=()=>{const k=el.dataset.field; m[k]=['name','kind','location','animation'].includes(k)?el.value:Number(el.value);render();});
-    root.querySelectorAll('[data-effect]').forEach(el=>el.onchange=()=>{m[el.dataset.effect][el.dataset.meter]=Math.round(Number(el.value)*10);render();});
-    root.querySelectorAll('[data-bonus]').forEach(el=>el.onchange=()=>{const form=Number(el.dataset.bonus);m.bonuses=m.bonuses.filter(b=>b.form!==form);if(el.value!=='')m.bonuses.push({form,percent:Number(el.value)});render();});
-    root.querySelectorAll('[data-place]').forEach(el=>el.onchange=()=>{m.locations=Array.from(root.querySelectorAll('[data-place]:checked'),x=>x.dataset.place);render();});
-    root.querySelector('#ac-random-place').onchange=e=>{m.randomize_location=e.target.checked;render();};
-    root.querySelectorAll('[data-pet-cost]').forEach(el=>el.onchange=()=>{const c=work.pet_costs.find(c=>c.form===Number(el.dataset.petCost));c[el.dataset.costMeter]=Number(el.value);render();});
-    root.querySelectorAll('[data-form]').forEach(el=>el.onchange=()=>{m.forms=Array.from(root.querySelectorAll('[data-form]:checked'),x=>Number(x.dataset.form));render();});
-    root.querySelector('#ac-save').onclick=save;
-    root.querySelector('#ac-revert').onclick=()=>{work=null;base=null;render();};
-    root.querySelector('#ac-add').onclick=()=>{work.moments.push({...clone(m),id:work.moments.length,name:`ACTIVITY ${work.moments.length}`,suggest_hour:-1,requires:-1});selected=work.moments.length-1;render();};
+    /** @type {NodeListOf<HTMLButtonElement>} */ (root.querySelectorAll('button[data-activity]')).forEach(b => b.onclick=()=>{selected=Number(b.dataset.activity);render();});
+    const formSelect = /** @type {HTMLSelectElement} */ (root.querySelector('#ac-form'));
+    formSelect.onchange=()=>{previewForm=Number(formSelect.value);render();};
+    /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-time]')).forEach(el=>el.onchange=()=>{const [h,min]=el.value.split(':').map(Number); m[el.dataset.time]=(h*60+min)||(el.dataset.time==='end_minute'?1440:0);render();});
+    /** @type {NodeListOf<HTMLInputElement | HTMLSelectElement>} */ (root.querySelectorAll('input[data-field],select[data-field]')).forEach(el=>el.onchange=()=>{const k=el.dataset.field; m[k]=['name','kind','location','animation'].includes(k)?el.value:Number(el.value);render();});
+    /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-effect]')).forEach(el=>el.onchange=()=>{m[el.dataset.effect][el.dataset.meter]=Math.round(Number(el.value)*10);render();});
+    /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-bonus]')).forEach(el=>el.onchange=()=>{const form=Number(el.dataset.bonus);m.bonuses=m.bonuses.filter(b=>b.form!==form);if(el.value!=='')m.bonuses.push({form,percent:Number(el.value)});render();});
+    /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-place]')).forEach(el=>el.onchange=()=>{m.locations=Array.from(/** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-place]:checked')),x=>x.dataset.place);render();});
+    const randomPlace = /** @type {HTMLInputElement} */ (root.querySelector('#ac-random-place'));
+    randomPlace.onchange=()=>{m.randomize_location=randomPlace.checked;render();};
+    /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-pet-cost]')).forEach(el=>el.onchange=()=>{const c=work.pet_costs.find(c=>c.form===Number(el.dataset.petCost));c[el.dataset.costMeter]=Number(el.value);render();});
+    /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-form]')).forEach(el=>el.onchange=()=>{m.forms=Array.from(/** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-form]:checked')),x=>Number(x.dataset.form));render();});
+    /** @type {HTMLButtonElement} */ (root.querySelector('#ac-save')).onclick=save;
+    /** @type {HTMLButtonElement} */ (root.querySelector('#ac-revert')).onclick=()=>{work=null;base=null;render();};
+    /** @type {HTMLButtonElement} */ (root.querySelector('#ac-add')).onclick=()=>{work.moments.push({...clone(m),id:work.moments.length,name:`ACTIVITY ${work.moments.length}`,suggest_hour:-1,requires:-1});selected=work.moments.length-1;render();};
     effectPreview(m, forms);
     preview();
   }
@@ -99,7 +101,7 @@
   }
   function preview() {
     if (state.view !== 'activities') return;
-    const canvas=root.querySelector('#ac-preview'); if (!canvas) return;
+    const canvas=/** @type {HTMLCanvasElement} */ (root.querySelector('#ac-preview')); if (!canvas) return;
     const ctx=canvas.getContext('2d'), m=work.moments[selected];
     ctx.clearRect(0,0,220,220);
     const form=D.behavior_vocab.forms.find(f=>f.id===previewForm);
@@ -132,6 +134,6 @@
   const previous=renderView, oldKeys=S.keydown;
   renderView=()=>{const on=state.view==='activities';root.classList.toggle('hidden',!on);cancelAnimationFrame(frame);if(!on)return previous();
     for(const id of ['detail','sheet','creature','behaviour'])document.getElementById(id)?.classList.add('hidden');
-    document.querySelectorAll('#views button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view==='activities')));render();};
+    /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('#views button')).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view==='activities')));render();};
   S.keydown=e=>{if(state.view!=='activities')return oldKeys?.(e);if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();if(dirty()&&!stale)save();}return true;};
 })();

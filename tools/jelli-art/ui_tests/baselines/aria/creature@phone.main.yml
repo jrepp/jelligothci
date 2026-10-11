@@ -5,6 +5,7 @@
       - button "MINT · baby" [pressed]
       - button "LILAC · grown"
       - button "AXOLOTL · axolotl"
+      - button "BABY AXO · axolotl-baby"
     - text: On the panel · 6× · ground at (233, 256)
     - img "Animated preview of the selected clip on the round panel"
     - text: frame 1/1 · 450 ms · plays once, holds last frame · paused
@@ -35,6 +36,7 @@
     - button "ponder"
     - button "ask"
     - button "potty"
+    - button "hug"
     - paragraph: The resting loop and the default pose. Clip baby.idle · ID 5001
     - text: Timeline · 1 frame (max 6) · 450 ms once
     - list "Timeline · 1 frame (max 6) · 450 ms once":
@@ -122,6 +124,7 @@
     - button "10. ponder uses content"
     - button "11. ask uses curious"
     - button "12. potty uses unwell"
+    - button "13. hug uses happy"
     - heading "Behaviour & size · content/creatures.json" [level=3]
     - group:
       - text: Size · baby Actor scale
@@ -188,6 +191,11 @@
             - option "happy"
             - option "asleep" [selected]
             - option "unwell"
+            - option "study"
+            - option "ponder"
+            - option "ask"
+            - option "potty"
+            - option "hug"
           - button "↑" [disabled]
           - button "↓"
           - button "✕"
@@ -213,6 +221,11 @@
             - option "happy"
             - option "asleep" [selected]
             - option "unwell"
+            - option "study"
+            - option "ponder"
+            - option "ask"
+            - option "potty"
+            - option "hug"
           - button "↑"
           - button "↓"
           - button "✕"
@@ -238,6 +251,11 @@
             - option "happy"
             - option "asleep"
             - option "unwell"
+            - option "study"
+            - option "ponder"
+            - option "ask"
+            - option "potty"
+            - option "hug"
           - button "↑"
           - button "↓"
           - button "✕"
@@ -263,6 +281,11 @@
             - option "happy" [selected]
             - option "asleep"
             - option "unwell"
+            - option "study"
+            - option "ponder"
+            - option "ask"
+            - option "potty"
+            - option "hug"
           - button "↑"
           - button "↓"
           - button "✕"
@@ -288,6 +311,11 @@
             - option "happy"
             - option "asleep"
             - option "unwell" [selected]
+            - option "study"
+            - option "ponder"
+            - option "ask"
+            - option "potty"
+            - option "hug"
           - button "↑"
           - button "↓"
           - button "✕"
@@ -313,6 +341,11 @@
             - option "happy"
             - option "asleep"
             - option "unwell"
+            - option "study"
+            - option "ponder"
+            - option "ask"
+            - option "potty"
+            - option "hug"
           - button "↑"
           - button "↓"
           - button "✕"
@@ -338,6 +371,11 @@
             - option "happy" [selected]
             - option "asleep"
             - option "unwell"
+            - option "study"
+            - option "ponder"
+            - option "ask"
+            - option "potty"
+            - option "hug"
           - button "↑"
           - button "↓"
           - button "✕"
@@ -363,6 +401,11 @@
             - option "happy" [selected]
             - option "asleep"
             - option "unwell"
+            - option "study"
+            - option "ponder"
+            - option "ask"
+            - option "potty"
+            - option "hug"
           - button "↑"
           - button "↓"
           - button "✕"
@@ -388,6 +431,11 @@
             - option "happy"
             - option "asleep"
             - option "unwell" [selected]
+            - option "study"
+            - option "ponder"
+            - option "ask"
+            - option "potty"
+            - option "hug"
           - button "↑"
           - button "↓" [disabled]
           - button "✕"
@@ -517,4 +565,4 @@
       - listitem: No unsaved behaviour or size edits.
     - button "Revert" [disabled]
     - button "Saved" [disabled]
-    - text: Space play/pause · ,/. step frames (idle beats while simulating) · J/K next/previous pose · 1–12 pick a pose · ⌘S save clips and behaviour
+    - text: Space play/pause · ,/. step frames (idle beats while simulating) · J/K next/previous pose · 1–13 pick a pose · ⌘S save clips and behaviour

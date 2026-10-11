@@ -94,6 +94,7 @@
       - option "ponder (state pose; falls back to content)"
       - option "ask (state pose; falls back to curious)"
       - option "potty (state pose; falls back to unwell)"
+      - option "hug (state pose; falls back to happy)"
     - text: Caption
     - textbox "Caption, upper case, at most 16" [disabled]: OOH?
     - text: Effect
@@ -101,12 +102,13 @@
     - text: Prop
     - button "none" [disabled]
     - text: Entered by
-    - paragraph: "bubble #4 on present_caught · bubble #6 on present_offered · bubble #8 on location · bubble #13 on woke · bubble #16 on idle"
+    - paragraph: "bubble #4 on present_caught · bubble #6 on present_offered · bubble #8 on location · bubble #13 on woke · bubble #16 on idle · jelly #5 on present_offered · jelly #6 on location · jelly #7 on woke · jelly #8 on idle"
     - text: Preview on
     - combobox "Preview on":
       - option "MINT"
       - option "LILAC"
       - option "AXOLOTL" [selected]
+      - option "BABY AXO"
     - img "Preview of the behaviour look on the round panel"
     - paragraph: At axolotl's profile scale, as the game places pose, prop, effect and caption.
     - list:
