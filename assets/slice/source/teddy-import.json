@@ -1,0 +1,22 @@
+{
+  "kind": "prizes",
+  "name": "teddy",
+  "first_id": 11010,
+  "source_cell": 36,
+  "canvas": [
+    32,
+    32
+  ],
+  "pivot": [
+    16,
+    27
+  ],
+  "palette": "teddy",
+  "note": "Teddy bear present earned by the baby axolotl's SNUGGLE activity, delivered 2026-10-10 at creature scale (72x per art pixel). source_cell 36 doubles each art pixel so the 9x11 bear reads at prize size (18x22 in a 32x32 cell), matching the bear the baby holds.",
+  "frames": [
+    {
+      "source": "teddy bear 1.png",
+      "pose": "bear"
+    }
+  ]
+}

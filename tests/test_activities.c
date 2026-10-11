@@ -1,6 +1,7 @@
 #include "jelli/activities.h"
 #include "jelli/potty.h"
 #include "jelli/save.h"
+#include "save_layout.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -196,8 +197,9 @@ static void version_eleven_loads_without_completion(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 14u);
-    memmove(bytes + size - 14u, bytes + size - 8u, 8u);
-    size -= 6u;
+    size_t newer = 6u + TEST_SAVE_V14_GAME_BYTES; /* v12 pet bytes and the v14 game tail. */
+    memmove(bytes + size - 8u - newer, bytes + size - 8u, 8u);
+    size -= newer;
     bytes[4] = 11u;
     for (unsigned i = 0u; i < 4u; ++i)
         bytes[8u + i] = (uint8_t)(size >> (i * 8u));

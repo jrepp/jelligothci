@@ -39,7 +39,10 @@ static bool condition_holds(unsigned when, const JelliPetRenderKey *v)
 static unsigned creature_pose(const JelliCreatureProfile *profile, const JelliPetRenderKey *v)
 {
     if (v->moment && v->moment <= jelli_moment_count && !v->asleep) {
-        unsigned animation = jelli_moments[v->moment - 1u].animation;
+        const JelliMoment *moment = &jelli_moments[v->moment - 1u];
+        if (moment->pose && moment->pose <= jelli_creature_pose_count)
+            return moment->pose - 1u;
+        unsigned animation = moment->animation;
         if (animation == JELLI_ANIM_REST)
             return JELLI_POSE_ASLEEP;
         if (animation == JELLI_ANIM_THINK || animation == JELLI_ANIM_WATCH)

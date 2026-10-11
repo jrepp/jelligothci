@@ -1,3 +1,4 @@
+#include "jelli/activities.h"
 #include "jelli/assets.h"
 #include <string.h>
 #include "jelli/potty.h"
@@ -256,8 +257,32 @@ static void mess_shimmers_on_the_floor(void)
     CHECK(ui.last_view.mess == 0u && !jelli_pet_mess_bounds(&ui, ui.last_view.mess, &mess));
 }
 
+static void baby_axolotl_snuggles_cries_and_sleeps(void)
+{
+    const JelliClip *asleep = jelli_creature_clip(3u, JELLI_POSE_ASLEEP);
+    const JelliClip *unwell = jelli_creature_clip(3u, JELLI_POSE_UNWELL);
+    CHECK(asleep->count == 2u && asleep->frames[0] == 1209u && asleep->frames[1] == 1210u);
+    CHECK(unwell->count == 2u && unwell->frames[0] == 1207u && unwell->frames[1] == 1208u);
+    JelliGame game;
+    JelliPetUi ui;
+    baby_axolotl_game(&game);
+    jelli_pet_ui_init(&ui);
+    game.clock_known = true;
+    game.clock_minute = 780u;
+    unsigned snuggle = 0u;
+    while (snuggle < jelli_moment_count && strcmp(jelli_moments[snuggle].name, "SNUGGLE") != 0)
+        ++snuggle;
+    CHECK(snuggle < jelli_moment_count);
+    const JelliPet *pet = &game.pets[game.active];
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_MOMENT, pet->id, snuggle}) ==
+          JELLI_OK);
+    CHECK(frame_at(&game, &ui, 0u) == 1205u); /* The authored pose holds the teddy. */
+    CHECK(frame_at(&game, &ui, 700u) == 1206u);
+}
+
 int main(void)
 {
+    baby_axolotl_snuggles_cries_and_sleeps();
     behaviour_states_show_their_look();
     mess_shimmers_on_the_floor();
     jelly_profile_matches_legacy_rules();

@@ -1,6 +1,7 @@
 #include "jelli/activities.h"
 #include "jelli/locations.h"
 #include "jelli/save.h"
+#include "save_layout.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -155,7 +156,12 @@ static void migrate_old_running_recipe(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 8u);
-    bytes[4] = 12u; /* Same layout, old immediate-reward semantics. */
+    /* v12 layout (without the v14 game tail), old immediate-reward semantics. */
+    memmove(bytes + size - 8u - TEST_SAVE_V14_GAME_BYTES, bytes + size - 8u, 8u);
+    size -= TEST_SAVE_V14_GAME_BYTES;
+    for (unsigned i = 0u; i < 4u; ++i)
+        bytes[8u + i] = (uint8_t)(size >> (i * 8u));
+    bytes[4] = 12u;
     uint32_t crc = UINT32_MAX;
     for (size_t i = 0u; i < size - 8u; ++i) {
         crc ^= bytes[i];

@@ -82,6 +82,11 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
    integration uses 320 KiB staging, 147,456 pixels and 18,432 mask bytes to retain
    both location art and baby/hug frames; see the measured budget in
    [memo-055](../memos/memo-055-main-rebase-and-device-firmware-deployment.md).
+   *Amended again 2026-10-10 (owner-approved):* the baby axolotl snuggle, cry and
+   sleep frames and the teddy present ([memo-056](../memos/memo-056-baby-axolotl-teddy-snuggle.md)) need 156,480 pixels, so the SDL
+   banks grow to 196,608 pixels, 24,576 mask bytes and 192 assets, and staging to
+   458,752 bytes (448 KiB). These are desktop limits; firmware memory is not
+   measured here.
 6. **Jelli Art authors the data.** Its Creature view edits clips with an animated
    preview at game placement. Profile and behaviour editing follows the same
    validate-then-commit path.

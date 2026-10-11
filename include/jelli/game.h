@@ -169,6 +169,8 @@ unsigned jelli_pet_favorite(const JelliPet *pet, unsigned minute);
 /* Completion triggers are submitted once by the activity/event owner. SLEEP
  * means a qualified >= six-hour rest; GIFT means a real cross-pet collection gift. */
 void jelli_prize_complete(JelliGame *game, unsigned trigger);
+/* Offers prize index (0-based) to the active pet, as a moment's authored "prize" does. */
+void jelli_prize_award(JelliGame *game, unsigned index);
 JelliResult jelli_prize_catch(JelliGame *game);
 JelliResult jelli_prize_gift(JelliGame *game, unsigned index);
 bool jelli_game_valid(const JelliGame *game);

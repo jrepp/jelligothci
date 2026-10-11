@@ -109,7 +109,7 @@ static void real_gifting_and_history(void)
     jelli_prize_complete(&game, JELLI_PRIZE_WASH);
     catch_index(&game, 5u);
     CHECK(jelli_prize_gift(&game, 5u) == JELLI_NOT_READY);
-    CHECK(jelli_prize_gift(&game, 9u) == JELLI_INVALID_TARGET);
+    CHECK(jelli_prize_gift(&game, JELLI_PRIZE_COUNT) == JELLI_INVALID_TARGET);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_ACTIVATE, 1u, 2u}) == JELLI_OK);
     game.pets[1].asleep = true;
     game.pets[1].nap_due = 100u;
@@ -194,6 +194,10 @@ static void all_nine_and_deterministic_outing(void)
     catch_index(&game, 8u);
     jelli_prize_complete(&game, JELLI_PRIZE_WASH);
     catch_index(&game, 5u);
+    jelli_prize_award(&game, 9u); /* The teddy bear comes from an authored moment's "prize". */
+    catch_index(&game, 9u);
+    jelli_prize_award(&game, JELLI_PRIZE_COUNT);
+    CHECK(!game.prizes.offered);
     CHECK(game.prizes.discovered == JELLI_PRIZE_MASK && game.prizes.owned == JELLI_PRIZE_MASK);
     CHECK(game.pets[0].prize_progress.counts[1] == 3u);
     CHECK(game.pets[1].prize_progress.counts[1] == 0u);

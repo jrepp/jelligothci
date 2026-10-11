@@ -1,7 +1,10 @@
 #include "game_fixture.h"
+#include "jelli/activities.h"
 #include "jelli/pet_rewards.h"
+#include "jelli/save.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define CHECK(e)                                                                                   \
     do {                                                                                           \
@@ -187,8 +190,45 @@ static void manual_sleep_rewards_only_at_wake(void)
     CHECK(!rewards.count && rewards.completed == 1u);
 }
 
+static void snuggle_offers_a_giftable_teddy(void)
+{
+    jelli_game_init(&game);
+    test_game_fill(&game, 1u, 3u, 1u); /* Pet 3 is BUBBLE, a baby axolotl. */
+    events = (JelliEventLog){0};
+    rewards = (JelliPetRewards){0};
+    game.events = &events;
+    game.active = 2u;
+    game.clock_known = true;
+    game.clock_minute = 780u;
+    CHECK(game.pets[2].form == 3u);
+    unsigned snuggle = 0u;
+    while (snuggle < jelli_moment_count && strcmp(jelli_moments[snuggle].name, "SNUGGLE") != 0)
+        ++snuggle;
+    CHECK(snuggle < jelli_moment_count && jelli_moments[snuggle].prize == JELLI_PRIZE_COUNT);
+    CHECK(jelli_moment_available(&game, &game.pets[0], snuggle) == JELLI_NOT_READY);
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_MOMENT, 3u, snuggle}) == JELLI_OK);
+    process();
+    advance(8000u);
+    process();
+    CHECK(rewards.completed == 1u && game.prizes.offered == JELLI_PRIZE_COUNT);
+    CHECK(game.prizes.offered_pet == 3u && jelli_prize_catch(&game) == JELLI_OK);
+    JelliSave save = {.game = game}, loaded;
+    save.game.events = NULL;
+    uint8_t bytes[JELLI_SAVE_CAPACITY];
+    size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
+    CHECK(size && jelli_save_decode(&loaded, bytes, size));
+    CHECK(loaded.game.prizes.origin_pet[JELLI_PRIZE_COUNT - 1u] == 3u);
+    /* Like every present, the teddy goes to another pet, not back to the one that earned it. */
+    CHECK(jelli_prize_gift(&game, JELLI_PRIZE_COUNT - 1u) == JELLI_NOT_READY);
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_ACTIVATE, 3u, 1u}) == JELLI_OK);
+    CHECK(jelli_prize_gift(&game, JELLI_PRIZE_COUNT - 1u) == JELLI_OK);
+    CHECK(!(game.prizes.owned & (1u << (JELLI_PRIZE_COUNT - 1u))));
+    CHECK(game.prizes.offered == 9u); /* Gifting earns the friendship bow. */
+}
+
 int main(void)
 {
+    snuggle_offers_a_giftable_teddy();
     timed_completion_excludes_unrelated_changes();
     routine_completion_and_abort();
     medicine_and_shots_do_not_offer_prizes();

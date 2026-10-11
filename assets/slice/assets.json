@@ -2345,6 +2345,152 @@
         "#d2d2d2"
       ],
       "purpose": "Quiet library scene with a black vignette"
+    },
+    {
+      "id": 1205,
+      "key": "creatures.axolotl-baby-snuggle-1",
+      "path": "creatures/axolotl-baby-snuggle-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        4,
+        18,
+        43,
+        45
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "snuggle-1"
+    },
+    {
+      "id": 1206,
+      "key": "creatures.axolotl-baby-snuggle-2",
+      "path": "creatures/axolotl-baby-snuggle-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        4,
+        18,
+        42,
+        46
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "snuggle-2"
+    },
+    {
+      "id": 1207,
+      "key": "creatures.axolotl-baby-cry-1",
+      "path": "creatures/axolotl-baby-cry-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        7,
+        18,
+        42,
+        46
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "cry-1"
+    },
+    {
+      "id": 1208,
+      "key": "creatures.axolotl-baby-cry-2",
+      "path": "creatures/axolotl-baby-cry-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        7,
+        18,
+        42,
+        46
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "cry-2"
+    },
+    {
+      "id": 1209,
+      "key": "creatures.axolotl-baby-asleep-1",
+      "path": "creatures/axolotl-baby-asleep-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        7,
+        18,
+        42,
+        43
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "asleep-1"
+    },
+    {
+      "id": 1210,
+      "key": "creatures.axolotl-baby-asleep-2",
+      "path": "creatures/axolotl-baby-asleep-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        7,
+        19,
+        42,
+        43
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "asleep-2"
+    },
+    {
+      "id": 11010,
+      "key": "prizes.teddy-bear",
+      "path": "prizes/teddy-bear.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        27
+      ],
+      "bounds": [
+        7,
+        5,
+        25,
+        27
+      ],
+      "palette": "teddy",
+      "purpose": "Teddy bear collectible from the baby axolotl's SNUGGLE; catch target, collection slot, and gift latch"
     }
   ],
   "clips": [
@@ -2777,23 +2923,27 @@
       "id": 5207,
       "key": "axolotl-baby.asleep",
       "frames": [
-        "creatures.axolotl-baby-idle-3"
+        "creatures.axolotl-baby-asleep-1",
+        "creatures.axolotl-baby-asleep-2"
       ],
       "durations_ms": [
+        900,
         900
       ],
-      "loop": false
+      "loop": true
     },
     {
       "id": 5208,
       "key": "axolotl-baby.unwell",
       "frames": [
-        "creatures.axolotl-baby-idle-2"
+        "creatures.axolotl-baby-cry-1",
+        "creatures.axolotl-baby-cry-2"
       ],
       "durations_ms": [
+        600,
         600
       ],
-      "loop": false
+      "loop": true
     },
     {
       "id": 5209,
@@ -2805,6 +2955,19 @@
       "durations_ms": [
         500,
         500
+      ],
+      "loop": true
+    },
+    {
+      "id": 5210,
+      "key": "axolotl-baby.snuggle",
+      "frames": [
+        "creatures.axolotl-baby-snuggle-1",
+        "creatures.axolotl-baby-snuggle-2"
+      ],
+      "durations_ms": [
+        700,
+        700
       ],
       "loop": true
     }
@@ -2821,7 +2984,11 @@
       "#83ebfb",
       "#1ec1d9",
       "#fde77e",
-      "#fff3cb"
+      "#fff3cb",
+      "#583713",
+      "#aa7031",
+      "#d7a670",
+      "#412609"
     ],
     "poop": [
       "#000000",
@@ -2829,6 +2996,13 @@
       "#8f4329",
       "#dfa08a",
       "#c9d6a3"
+    ],
+    "teddy": [
+      "#583713",
+      "#aa7031",
+      "#d7a670",
+      "#412609",
+      "#000000"
     ]
   },
   "palette_ramps": {
@@ -2975,6 +3149,10 @@
     },
     {
       "name": "hug",
+      "fallback": "happy"
+    },
+    {
+      "name": "snuggle",
       "fallback": "happy"
     }
   ]

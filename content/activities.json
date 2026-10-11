@@ -1053,6 +1053,56 @@
         "library"
       ],
       "randomize_location": true
+    },
+    {
+      "id": 23,
+      "name": "SNUGGLE",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {
+        "amusement": 120,
+        "social": 250,
+        "bond": 3
+      },
+      "icon": 11010,
+      "prop": 0,
+      "duration_s": 8,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [
+        3
+      ],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "hold",
+      "costs": {
+        "energy": 30
+      },
+      "jitter_pct": 10,
+      "bonuses": [
+        {
+          "form": 0,
+          "percent": 0
+        },
+        {
+          "form": 1,
+          "percent": 0
+        },
+        {
+          "form": 2,
+          "percent": 0
+        },
+        {
+          "form": 3,
+          "percent": 0
+        }
+      ],
+      "locations": [
+        "home"
+      ],
+      "randomize_location": false,
+      "pose": "snuggle",
+      "prize": "teddy-bear"
     }
   ],
   "favorites": {

@@ -222,7 +222,9 @@ static void test_preferences(void)
 static void care_interrupts_moments_without_invalidating_the_game(void)
 {
     for (unsigned choice = 0u; choice < jelli_moment_count; ++choice) {
-        if (jelli_moments[choice].kind != JELLI_MOMENT_PLAY)
+        uint32_t forms = jelli_moments[choice].forms;
+        /* Moments for other forms (SNUGGLE) are covered with their own pets in test_prizes. */
+        if (jelli_moments[choice].kind != JELLI_MOMENT_PLAY || (forms && !(forms & 2u)))
             continue;
         JelliGame game;
         ready(&game);

@@ -292,7 +292,7 @@ static void health_history_and_v1_migration(void)
     CHECK(loaded.game.pets[0].shot_until == pet->shot_until);
     CHECK(loaded.game.pets[0].medicine_until == pet->medicine_until);
     CHECK(loaded.game.pets[0].shot_goal == 3u && loaded.game.pets[0].shot_hits == 1u);
-    size_t pet_size = 130u + JELLI_HABIT_BIN_COUNT * 6u + 37u + JELLI_PRIZE_COUNT * 2u + 9u;
+    size_t pet_size = 130u + JELLI_HABIT_BIN_COUNT * 6u + 37u + JELLI_PRIZE_LEGACY_COUNT * 2u + 9u;
     for (unsigned version = 1u; version <= 2u; ++version) {
         /* Both legacy versions share the header/game prefix. */
         size_t legacy_pet_size = version == 1u ? 112u : 130u;
@@ -365,14 +365,15 @@ static void rolling_history_round_trip(void)
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 69u - (size_t)save.game.count * (4u + TEST_SAVE_V12_PET_BYTES)] =
-        2u; /* Owned bit nine is outside the nine prize slots. */
+    bytes[size - 69u - TEST_SAVE_V14_GAME_BYTES -
+          (size_t)save.game.count * (4u + TEST_SAVE_V12_PET_BYTES)] =
+        4u; /* Owned bit ten is outside the ten prize slots. */
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 30u - (size_t)save.game.count * (4u + TEST_SAVE_V12_PET_BYTES)] =
-        JELLI_PRIZE_COUNT + 1u;
+    bytes[size - 30u - TEST_SAVE_V14_GAME_BYTES -
+          (size_t)save.game.count * (4u + TEST_SAVE_V12_PET_BYTES)] = JELLI_PRIZE_COUNT + 1u;
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));

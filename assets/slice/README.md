@@ -1,7 +1,7 @@
 # Jelligotchi slice artwork
 
 The review set contains 110 PNG files: 38 creature frames, 12 small icons, 16 ring icons,
-five meter pictograms, 10 health icons, eight celebration sprites, nine collectible prizes, two backgrounds, nine props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
+five meter pictograms, 10 health icons, eight celebration sprites, ten collectible prizes, two backgrounds, nine props, and one 96-slot bitmap font atlas. Mint is the baby form; Lilac is the grown
 form; BUBBLE is a separate species that grows from the baby axolotl into the axolotl. The SDL and ESP32 pet builds embed these assets using
 `tools/assets/embed_slice.py`. Physical board appearance remains unverified.
 
@@ -33,13 +33,13 @@ without resetting game state. Ordinary launches and firmware use embedded art.
 
 | Directory | Contents |
 | --- | --- |
-| `creatures/` | Mint and Lilac: idle A/B, eating, happy, asleep, unwell, curious, content at 32x32. Axolotl: 18 frames at 48x48 (idle bob, blink, happy, surprised, chew, sleep breath, sad, potty, hug) and the baby axolotl's 4 frames (3 idle, surprised), both in the axolotl palette |
+| `creatures/` | Mint and Lilac: idle A/B, eating, happy, asleep, unwell, curious, content at 32x32. Axolotl: 18 frames at 48x48 (idle bob, blink, happy, surprised, chew, sleep breath, sad, potty, hug) and the baby axolotl's 10 frames (3 idle, surprised, teddy snuggle, cry, sleep), both in the axolotl palette (with the teddy's browns) |
 | `icons/` | Basic care, food, play, clean, rest, wake, medicine, gift, reward, inventory, back, confirm; 16x16 pixels |
 | `menus/` | Thirteen 32x32 category, moment, and close icons; rendered at 3x in rings |
 | `meters/` | Five 32x32 stat pictograms; used at 2x for manually selected stat tiles (heart also represents mood) |
 | `health/` | Nine 32x32 clicker icons, including the dental sequence |
 | `effects/` | Eight 16x16 star, heart, orb, comet, fairy-wing, music, idea, and rainbow celebration sprites |
-| `prizes/` | Nine unique 32x32 keepsakes: butterfly, pearl tooth, breakfast sun, tea sprite, movie star, bubble gem, moon charm, rainbow seed, friendship bow |
+| `prizes/` | Ten unique 32x32 keepsakes: butterfly, pearl tooth, breakfast sun, tea sprite, movie star, bubble gem, moon charm, rainbow seed, friendship bow, teddy bear (imported by `source/teddy-import.json`) |
 | `backgrounds/` | Six 64x64 neutral scenes: home, garden, park, pond, beach and library; black vignettes |
 | `props/` | Food bowl, closed/open gift, and bed; 24x24 pixels |
 | `font/` | 128x72 atlas: 16 columns by six rows of 8x12 cells, ASCII 32–127 |
@@ -77,9 +77,10 @@ finished content-pack headers are emitted.
 The generated manifest reports raw RGB565, mask and font payload sizes. The SDL
 live pack uses fixed staging and decoded banks; the builder rejects artwork
 that exceeds those bounds. These are desktop authoring limits, not a linked
-firmware memory measurement. The combined location and baby/hug art needs
-141,632 pixels and 17,704 mask bytes. The desktop banks hold 147,456 pixels and
-18,432 mask bytes; staging holds 320 KiB. Raw payload is 302,120 bytes.
+firmware memory measurement. With the baby axolotl snuggle, cry and sleep frames
+and the teddy present, the art needs 156,480 pixels and 19,560 mask bytes. The
+desktop banks hold 196,608 pixels and 24,576 mask bytes; staging holds 448 KiB
+(ADR-012). Raw payload is 333,672 bytes.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 

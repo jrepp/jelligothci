@@ -33,9 +33,9 @@ PALETTE_ROWS = {"unramped": "other", "unramped_only": "palette", "extras": "more
 RESERVED_ROWS = set(PALETTE_ROWS.values())
 # Real limits the art must fit: the SDL live-reload pack buffer and its banks
 # (ports/sdl/asset_reload.h). Firmware embeds the same art with ample flash headroom.
-PACK_CEILING = 327680  # JELLI_ASSET_PACK_CAPACITY: 320 KiB desktop staging buffer.
-LIVE_PIXEL_CAPACITY = 147456
-LIVE_MASK_CAPACITY = 18432
+PACK_CEILING = 458752  # JELLI_ASSET_PACK_CAPACITY: 448 KiB desktop staging buffer.
+LIVE_PIXEL_CAPACITY = 196608
+LIVE_MASK_CAPACITY = 24576
 
 
 def require(condition, message):
@@ -167,7 +167,7 @@ def load_assets():
     require(on_disk == paths, f"Manifest and PNGs disagree: {sorted(on_disk ^ paths)}")
     require(all(counts.values()), f"Every asset kind needs art: {counts}")
     prize_pixels = {image.tobytes() for key, image in images.items() if key.startswith("prizes.")}
-    require(len(prize_pixels) == 9, "Collectible prizes must have nine distinct pixel designs")
+    require(len(prize_pixels) == counts["prizes"], "Collectible prizes must have distinct pixel designs")
     clip_keys = set()
     for clip in manifest["clips"]:
         require(clip["id"] not in ids and clip["key"] not in clip_keys, "Duplicate clip")

@@ -138,6 +138,12 @@ void jelli_prize_complete(JelliGame *game, unsigned trigger)
     }
 }
 
+void jelli_prize_award(JelliGame *game, unsigned index)
+{
+    if (index < JELLI_PRIZE_COUNT && jelli_game_valid(game) && !game->resuming)
+        (void)offer(game, index);
+}
+
 JelliResult jelli_prize_catch(JelliGame *game)
 {
     if (!jelli_game_valid(game))

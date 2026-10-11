@@ -52,6 +52,9 @@ typedef struct {
         requires,
     animation;           /* requires: ID + 1, zero means none. */
     uint32_t icon, prop; /* Asset IDs; prop 0 means none. */
+    /* pose: creature pose index + 1 shown while it runs; prize: collection slot (1-based)
+     * offered on completion. Zero means none for either. */
+    uint8_t pose, prize;
 } JelliMoment;
 
 typedef struct {

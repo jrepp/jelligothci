@@ -11,7 +11,7 @@
     46
   ],
   "palette": "axolotl",
-  "note": "Baby axolotl frames (BUBBLE starts as this form and grows into the axolotl), delivered 2026-10-10 as 3294x3546 PNGs on the same 72x source canvas as axolotl-import.json. Shares the axolotl palette. IDs are first_id + list position, so append new frames; never reorder; mark a removed frame \"retired\" instead of deleting it.",
+  "note": "Baby axolotl frames (BUBBLE starts as this form and grows into the axolotl), delivered 2026-10-10 as 3294x3546 PNGs on the same 72x source canvas as axolotl-import.json. Shares the axolotl palette. IDs are first_id + list position, so append new frames; never reorder; mark a removed frame \"retired\" instead of deleting it. anchor is the source box of the first four frames, so wider frames appended later (the teddy snuggle) keep the earlier frames' placement.",
   "frames": [
     {
       "source": "Axolotl Baby Idle 1.png",
@@ -28,6 +28,36 @@
     {
       "source": "Axolotl Baby surprise.png",
       "pose": "surprised"
+    },
+    {
+      "source": "Hug1 Bear.png",
+      "pose": "snuggle-1"
+    },
+    {
+      "source": "Hug2 Bear.png",
+      "pose": "snuggle-2"
+    },
+    {
+      "source": "Axolotl Baby Idle 1 Cry.png",
+      "pose": "cry-1"
+    },
+    {
+      "source": "Axolotl Baby Idle 1 Cry 2.png",
+      "pose": "cry-2"
+    },
+    {
+      "source": "Axolotl Baby Sleep1.png",
+      "pose": "asleep-1"
+    },
+    {
+      "source": "Axolotl Baby Sleep2.png",
+      "pose": "asleep-2"
     }
+  ],
+  "anchor": [
+    6,
+    11,
+    41,
+    39
   ]
 }

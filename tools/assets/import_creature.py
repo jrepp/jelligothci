@@ -91,13 +91,15 @@ def union_bounds(images):
             max(b[2] for b in boxes), max(b[3] for b in boxes))
 
 
-def place(images, canvas, pivot):
+def place(images, canvas, pivot, anchor=None):
+    """Bottom-centre the frames' union on the pivot. An anchor (a source box) positions them instead,
+    so wider frames appended later do not move frames already placed by the earlier union."""
     left, top, right, bottom = union_bounds(images)
-    width, height = right - left, bottom - top
-    if width > canvas[0] or height > pivot[1]:
-        raise ValueError(f"Art {width}x{height} does not fit {canvas} above pivot row {pivot[1]}")
-    x = pivot[0] - width // 2
-    y = pivot[1] - height
+    ref = anchor or (left, top, right, bottom)
+    x = pivot[0] - (ref[2] - ref[0]) // 2 + left - ref[0]
+    y = pivot[1] - (ref[3] - ref[1]) + top - ref[1]
+    if x < 0 or y < 0 or x + right - left > canvas[0] or y + bottom - top > pivot[1]:
+        raise ValueError(f"Art {right - left}x{bottom - top} does not fit {canvas} above pivot row {pivot[1]}")
     placed = []
     for image in images:
         frame = Image.new("RGBA", tuple(canvas), (0, 0, 0, 0))
@@ -160,7 +162,7 @@ def main():
     if spec.get("reduce_to_width"):  # Shared crop first, so every frame reduces identically.
         box = union_bounds(sources)
         sources = [reduce_art(source.crop(box), spec["reduce_to_width"]) for source in sources]
-    frames = place(sources, spec["canvas"], spec["pivot"])
+    frames = place(sources, spec["canvas"], spec["pivot"], spec.get("anchor"))
     for entry, frame in zip(entries, frames):
         if entry.get("retired"):
             continue

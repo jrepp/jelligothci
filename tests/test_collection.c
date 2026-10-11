@@ -93,7 +93,8 @@ static void legacy_and_invalid_records(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&source, bytes, sizeof(bytes));
     CHECK(size != 0u);
-    size_t extension = 3u + source.game.count * TEST_SAVE_V4_PET_BYTES;
+    size_t extension =
+        3u + TEST_SAVE_V14_GAME_BYTES + (size_t)source.game.count * TEST_SAVE_V4_PET_BYTES;
     memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
     size -= extension;
     bytes[4] = 3u;
@@ -137,7 +138,8 @@ static void reversible_forms_and_merge(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size != 0u);
-    size_t extension = TEST_SAVE_TAIL_PET_BYTES * (size_t)save.game.count;
+    size_t extension =
+        TEST_SAVE_V14_GAME_BYTES + TEST_SAVE_TAIL_PET_BYTES * (size_t)save.game.count;
     memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
     size -= extension;
     bytes[4] = 7u;

@@ -4,9 +4,20 @@
 #include "game_internal.h"
 #include "jelli/collection.h"
 
+_Static_assert(JELLI_ASSET_PRIZE_COUNT == JELLI_PRIZE_COUNT, "Each prize needs one prizes.* asset");
+
 static const char *const names[JELLI_PRIZE_COUNT] = {
-    "BUTTERFLY",  "PEARL TOOTH", "BREAKFAST SUN", "TEA SPRITE",    "MOVIE STAR",
-    "BUBBLE GEM", "MOON CHARM",  "RAINBOW SEED",  "FRIENDSHIP BOW"};
+    "BUTTERFLY",  "PEARL TOOTH", "BREAKFAST SUN", "TEA SPRITE",     "MOVIE STAR",
+    "BUBBLE GEM", "MOON CHARM",  "RAINBOW SEED",  "FRIENDSHIP BOW", "TEDDY BEAR"};
+
+/* Ten slots in rows of 3, 4 and 3 so the wide middle row fits the round panel. */
+static void cell(unsigned index, int *x, int *y)
+{
+    unsigned row = index < 3u ? 0u : index < 7u ? 1u : 2u;
+    unsigned column = index - (row == 0u ? 0u : row == 1u ? 3u : 7u);
+    *x = (row == 1u ? 47 : 95) + (int)column * 96;
+    *y = 88 + (int)row * 96;
+}
 
 bool jelli_pet_gallery_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *button)
 {
@@ -19,12 +30,12 @@ bool jelli_pet_gallery_button(const JelliPetUi *ui, unsigned slot, JelliPetUiBut
         return true;
     }
     if (ui->menu_open && ui->page == JELLI_UI_COLLECTION) {
-        unsigned index = slot - 1u;
-        *button =
-            (JelliPetUiButton){.bounds = {95u + index % 3u * 96u, 88u + index / 3u * 96u, 84u, 84u},
-                               .label = names[index],
-                               .icon = JELLI_ASSET_PRIZE_BASE + slot,
-                               .scale = 2u};
+        int x, y;
+        cell(slot - 1u, &x, &y);
+        *button = (JelliPetUiButton){.bounds = {(unsigned)x, (unsigned)y, 84u, 84u},
+                                     .label = names[slot - 1u],
+                                     .icon = JELLI_ASSET_PRIZE_BASE + slot,
+                                     .scale = 2u};
         return true;
     }
     if (!ui->menu_open && slot == 1u && (ui->catch_seen || ui->latched_prize)) {
@@ -154,7 +165,8 @@ void jelli_pet_gallery_draw(Canvas *c, const JelliPetRenderKey *v)
     jelli_canvas_heading(c, "PRESENTS", 22, 3u);
     jelli_canvas_centered(c, "TAP OWNED TO HOLD", 58, 2u, PALE);
     for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i) {
-        int x = 95 + (int)(i % 3u) * 96, y = 88 + (int)(i / 3u) * 96;
+        int x, y;
+        cell(i, &x, &y);
         bool owned = (v->prize_owned & (1u << i)) != 0u;
         bool selected = v->highlighted_prize == i + 1u;
         jelli_canvas_rect(c, x, y, 84, 84, selected ? GOLD : INK);
