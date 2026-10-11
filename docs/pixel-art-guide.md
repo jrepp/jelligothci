@@ -33,7 +33,8 @@ screen.
 
 ## 2. Palette and ramps
 
-Sprites use only the 16 shared colours in `assets/slice/assets.json`, with
+Sprites use the 16 shared colours in `assets/slice/assets.json`, or their
+named palette (`palettes` in the same file, for example the axolotl), with
 binary alpha (fully transparent or fully opaque). Do not anti-alias, use
 gradients, dither, or add semi-transparent edges. Backgrounds keep their
 separate 16-grey palette.
@@ -49,6 +50,14 @@ and **deep**.
 | Coral / pink | cream `#fff4cf` | coral `#fa8c99` | rose `#d84f70` | rose |
 | Gold | cream | gold `#f5c764` | tan `#ae7855` | tan |
 | Sea / teal | mint | sea | teal | teal |
+| Recess | | mauve `#72516b` | plum `#49334f` | |
+
+The ramps live in `palette_ramps` in `assets/slice/assets.json`, light to deep,
+for the shared palette and each named palette; `palette_names` names each
+colour. Purple object and sea / teal are parts of the lilac and mint ramps.
+`build_slice.py` checks that every ramp colour is in its palette and that each
+ramp darkens step by step. Jelli Art's **Shade** tool steps along these ramps
+([Paint in Jelli Art](artwork.md#paint-in-jelli-art)).
 
 - **Ink `#291b35`** is reserved for outlines and facial features. It is never a
   fill.
@@ -56,21 +65,32 @@ and **deep**.
   tooth, pillow) and the gloss under a white glint.
 - Plum and mauve are for recessed or dark interiors (the "more" pill, gear hole).
 - Keep each sprite to **six colours or fewer, including ink**. Fewer reads better.
+  Creatures may use **eight**, because the face kit adds a white catchlight, a
+  cream gloss and coral cheeks to the four-tone ramp and ink. The font and
+  backgrounds have no colour limit. The limits are data in
+  `assets/slice/source/lint.json` (`max_colours`, `max_colours_by_kind`,
+  where `null` means no limit), and the compare page and Jelli Art flag
+  sprites over them.
 
 ## 3. Outline
 
 - Every sprite (except the font and backgrounds) has a **closed 1px ink outline**
   outside its fill.
-- Make the outline **4-connected**: no diagonal-only corner pixels. This keeps
-  curves round instead of jagged.
+- Make the outline **8-connected**: on curves and slopes, outline pixels step
+  diagonally, corner to corner. Do not leave a doubled corner, the extra pixel
+  that turns a diagonal step into an L. The **Pixel-perfect** pencil draws
+  this way.
+- The fill must still be sealed. Every fill pixel needs ink, or more fill,
+  directly to its left, right, top and bottom before transparency. A diagonal
+  gap in the outline is fine; a gap in a row or column leaks.
 - Never use a 2px outline. Thicken the shape instead.
 - Separate parts in contact (berries on a bowl, a bow on a box) with ink only
   where the separation must read. Otherwise let the colours meet directly.
 - Keep a 1px clear margin inside the canvas so the outline fits. If art must touch
   the canvas edge, the edge pixel itself becomes ink.
 
-The compare page reports silhouette pixels with no outline as **open edges**.
-The target is zero.
+The compare page reports fill pixels that touch transparency on the left, right,
+top or bottom as **open edges**. The target is zero.
 
 ## 4. Light and shading
 
@@ -174,8 +194,9 @@ listed in `assets/slice/source/hand-painted.json`. The studio adds every sprite 
 saves to that list. If you paint one of those PNGs in another editor, add its key
 to the list yourself, or the recipe will overwrite your edit. Every other icon is
 hand- or script-authored, and the re-ink pass only normalises its outline and
-specks. That pass is idempotent: running it twice changes nothing. Assets in
-`icon_polish.SKIP` are left exactly as authored.
+specks. That pass is idempotent and deterministic: running it twice changes
+nothing, and every run gives the same pixels. Studio **Tidy outline** uses the
+same pass. Assets in `icon_polish.SKIP` are left exactly as authored.
 
 ## 10. Review checklist
 
@@ -184,7 +205,11 @@ issues) and confirm:
 
 - [ ] Specks: zero, other than ink features and white glints.
 - [ ] Open edges: zero.
-- [ ] Six colours or fewer, all on-palette (off-palette chips show a red ring).
+- [ ] Within the colour limit (six, or eight for creatures), all on-palette.
+      Off-palette chips show a red ring, and the header shows `colours n / max m`.
+- [ ] The header shows **lint pass**. If a failure is intentional, use
+      **Waive…** in Jelli Art and give a reason. Waivers live in
+      `assets/slice/source/lint.json`, so reviewers see them in the diff.
 - [ ] Reads at device scale on its real backdrop (ring grey, scene, black).
 - [ ] Matches its family's face kit, light direction, and outline weight. Use
       sheet view and flip all cards with `Space`.

@@ -12,7 +12,7 @@ make jelli-art                      # http://127.0.0.1:8765/, edits this checkou
 ```
 
 Local runs only write PNGs, `assets.json` bounds, `clips` and creature frame
-assets, `source/hand-painted.json`, `source/studio-frames.json`, a creature
+assets, `source/hand-painted.json`, `source/lint.json` waivers, `source/studio-frames.json`, a creature
 import spec's frame list, `content/creatures.json` and `content/behaviors.json`.
 Commit the changes yourself. Behaviour saves need `cmake` on the path. For trials, `--assets` and `--content` serve copies of `assets/slice`
 and `content/`. A run with `--assets` but no `--content` cannot edit creature data.
@@ -28,7 +28,9 @@ static page that `tools/assets/compare_slice.py` writes. It provides:
 - Deep links: `#paint`, `#creature`, `#behaviour`, `#review`, or
   `#view=sheet&key=icons.feed&mode=diff&zoom=8`.
 - One polite live region and toasts for save results, errors, stale files,
-  git push problems and a lost server connection.
+  git push problems and a lost server connection. Switching mode closes the
+  info and done toasts of the mode left behind; warnings, problems and save
+  results (`notify(text, {keep: true})`) stay.
 - An unsaved changes button that lists edits and opens their mode. The page
   warns before closing with unsaved edits.
 - System, dark, light and high-contrast themes. The page follows
@@ -41,7 +43,7 @@ Panels use `window.JelliShell`, which exists when their script loads:
 | Call | Effect |
 | --- | --- |
 | `registerShortcuts(section, [{keys: ['Mod+S'], description}])` | Lists shortcuts in the ? overlay. Registering a section again replaces it. `keys` lists alternatives, `+` joins a chord and `Mod` is ⌘ or Ctrl. Key handling stays in the panel. |
-| `notify(text, {tone, sticky, hint, id})` | Shows a toast and announces it. Tones are `info`, `ok`, `warn` and `bad`; `bad` stays until dismissed. Reusing an `id` replaces that toast. `Studio.status()` calls this. |
+| `notify(text, {tone, sticky, hint, id, keep})` | Shows a toast and announces it. Tones are `info`, `ok`, `warn` and `bad`; `bad` stays until dismissed. `keep` keeps an `info` or `ok` toast across a mode switch. Reusing an `id` replaces that toast. `Studio.status()` calls this. |
 | `announce(text)` | Speaks text through the live region without a toast. |
 | `dialog({title, body, actions: [{label, value, primary, danger}], onOpen})` | Opens a modal `<dialog>`. Resolves with the chosen `value`, or `null` for Escape. Focus returns to the opener. |
 | `confirm(message, {title, confirmLabel, danger})` | Resolves `true` or `false`. |
@@ -59,17 +61,54 @@ browser automation, `localStorage['jelli-shell:guide'] = 'false'` hides the guid
 `studio.js` is the Paint mode UI; `paint_tools.js` holds its pixel logic as pure
 functions (`window.JelliPaint`): Bresenham lines, rectangles, ellipses inscribed
 in a pixel box, pixel-perfect strokes, flips, quarter turns, wrapped or clipped
-shifts, colour replace, bounded flood fill, and a 100-step history with a
-cursor. Tools paint only the asset's resolved palette (shared, a named palette
+shifts, colour replace, bounded flood fill, ramp shading, and a 100-step
+history with a cursor.
+
+The palette panel draws `palette_ramps` from `assets.json` as rows and labels
+colours from `palette_names` (rules: [pixel art guide](../../docs/pixel-art-guide.md#2-palette-and-ramps)).
+`JelliPaint.shade` steps a pixel along its ramp, preferring the row the artist
+last chose from. Right-click paints the secondary colour (`state.color2`). ✎ on
+a shared slot rewrites that colour in the ramps and names too, and refuses a
+colour that would break a ramp's light-to-deep order.
+
+Tools paint only the asset's resolved palette (shared, a named palette
 or an inline list) until the artist picks **custom**; paste refuses pixels
-outside the target palette on the same terms. A selection is a rect, plus
-floating pixels while it is moved or transformed, so moving it over other art
-and back is lossless until the selection is dropped. Shortcuts are registered
+outside the target palette on the same terms. A selection is a rect, plus a
+mask when the magic wand made it, plus floating pixels while it is moved or
+transformed, so moving it over other art and back is lossless until the
+selection is dropped. Shift-dragged lines snap to clean ratios and draw equal
+runs (`snapClean`, `cleanLine`); mirroring uses axes in half pixels
+(`mirrorPoints`), kept per asset in this browser. Shortcuts are registered
 with the shell's `?` overlay.
 
 ```sh
 node tools/jelli-art/test_paint_tools.js
 ```
+
+## Style lint
+
+`tools/assets/lint_rules.py` and `lint.js` (`window.JelliLint`) apply the same
+rules to each sprite's metrics. A sprite fails when it has specks, open edges,
+or more colours than its limit. Limits and waivers live in
+`assets/slice/source/lint.json`:
+
+```json
+{"max_colours": 6, "max_colours_by_kind": {"creatures": 8, "backgrounds": null, "font": null},
+ "waivers": {"props.book": {"rules": ["open_edges"], "reason": "page edge is intentionally open"}}}
+```
+
+`null` means no limit. A waived rule is shown as waived, with its reason, and
+the totals count only sprites with failures that are not waived. **Waive…** in
+the header edits one sprite's waiver through `POST /api/lint-waiver`
+(`{"key", "rules", "reason", "base": lint_sha, "artist"}`; empty `rules`
+removes it). That save holds the write lock, checks the base and writes
+atomically, like other saves. `lint_ui.js` also previews **Tidy outline**
+before it is applied, and warns once per session when Flip horizontal moves a
+shaded sprite's light. The static compare page shows the same verdicts.
+Both sides also measure the same way (`measure()`). A sprite with its own
+palette is outlined in that palette's darkest colour, which is exempt from
+specks and open edges, as the shared ink is. `test_server.py` checks that the
+Python and page measures and verdicts agree on every asset.
 
 ## Creature clips
 
@@ -122,7 +161,14 @@ ID or name is never handed out again.
 Painting a clip frame shows the **Flip-book** (`flipbook.js`) beside the canvas:
 a preview that plays the clip from the working pixels, so unsaved strokes
 animate, a thumbnail per frame, and onion skin of one to three frames each side
-(amber before, blue after, only where they differ). ← and → change frame unless
+(amber before, blue after), either only where they differ or as whole
+silhouettes (Shift+O). Frames are compared with frame 1 as `core/pet_actor.c`
+places them, each by its own ground anchor (`cr.groundAnchor`): the flip-book
+warns when a frame slides by half a source pixel or more at the form's scale,
+or when its eye height above its bottom edge changes (`JelliPaint.eyeRow`
+measures the catchlight row). **Eye & ground** draws the ground line, anchor
+and expected eye row. **Fit content** (Z) zooms the canvas to the
+opaque bounds. ← and → change frame unless
 the keyboard cursor shows; `,` and `.` always do; Shift+Space plays (Space stays
 the before-image peek). The link under it returns to the timeline. Previews
 start paused, so reduced motion needs no special case.
@@ -250,6 +296,7 @@ Every save checks that the file has not changed since the page loaded it:
 | Save | Base it sends | Where the page gets it |
 | --- | --- | --- |
 | `POST /api/save` | `"base"`: the PNG hash | `assets[].sha` in `/api/data`; the reply returns the new `sha` |
+| `POST /api/lint-waiver` | `"base"`: the hash of `lint.json` | `lint_sha` in `/api/data`; the reply returns the new one |
 | `POST /api/clips` | `"bases"`: `{clip key: hash}` (`null` for a new clip) | `clip_shas` in `/api/data` |
 | `POST /api/palette` | `"base"`: the slot's current colour | `palette` |
 | `POST /api/creatures`, `/api/content` | `"base"` / `"bases"` (required) | `creature_data_sha`, `behavior_data_sha` |
@@ -311,7 +358,14 @@ suggests keys.
 ```sh
 ./scripts/uv run --python 3.12 tools/jelli-art/test_server.py   # HTTP end to end, no browser
 tools/jelli-art/browser_smoke.sh [port]                        # optional, needs agent-browser
+tools/jelli-art/typecheck/check.sh                             # JSDoc type check (needs node)
 ```
+
+The **Studio tests** job in `.github/workflows/jelli-art.yml` runs
+`test_paint_tools.js`, `test_server.py`, `test_creatures.py`,
+`test_animation.py`, `test_game_preview.py` and `test_tidy.py` (Tidy gives the
+same pixels in every process) and the JSDoc type check on every pull request,
+and a release image is built only after they pass.
 
 `test_server.py` starts real servers on scratch copies and a scratch git
 checkout with a bare origin. It covers:
@@ -330,6 +384,53 @@ checkout with a bare origin. It covers:
 `browser_smoke.sh` drives the real page. It paints a stroke, checks the draft
 survives a reload, saves, and checks that saving over a file changed on disk
 asks first (Cancel keeps the newer file; OK overwrites it).
+
+`typecheck/check.sh` runs `tsc --checkJs` with the TypeScript pinned in
+`toolchain.env`; `typecheck/globals.d.ts` describes the page globals the
+scripts share. The scripts do not type-check cleanly yet, so
+`typecheck/baseline.txt` lists today's errors (file, code and message), and any
+other error fails. When errors are fixed, `JELLI_TS_UPDATE=1
+tools/jelli-art/typecheck/check.sh` rewrites the list.
+
+### UI tests
+
+```sh
+tools/jelli-art/ui_tests/run.sh                    # in the pinned Playwright image (podman or docker)
+JELLI_UI_UPDATE=1 tools/jelli-art/ui_tests/run.sh  # rewrite the aria and axe baselines
+```
+
+`ui_tests/` drives the page with Playwright (Python). The studio serves the
+art and content of the revision pinned in `ui_tests/fixture.json`, so art
+changes do not move the baselines. Each view (Review detail and sheet, Paint
+on a creature and an icon, Creature, Behaviour, Test in game) is checked at
+1440×900, 820×1180 and 390×844:
+
+- the accessibility tree of `main`, which must equal `baselines/aria/` exactly
+  (the mode tabs and the asset list are compared once per view, at 1440×900),
+- axe-core 4.14.0 (`vendor/axe-core/`, MPL-2.0): a serious or critical
+  violation on a node not listed in `baselines/axe.json` fails, also in the
+  light theme,
+- and, for the cases listed in `fixture.json`, a screenshot.
+
+Keyboard tests check that Tab reaches the mode tabs and the paint canvas with a
+visible focus ring, and that `?` opens the shortcuts dialog and Escape closes
+it. The share of the viewport each view gives its main surface is printed and
+written to `build/ui-tests/chrome-budget.json`; it is not checked.
+
+The **Studio UI tests** job runs these in the same image on every pull request.
+Screenshots are compared only there (`JELLI_UI_SCREENSHOTS=1`), because
+Chromium cannot run under amd64 emulation on other machines. When a page change
+moves a screenshot, the failing run uploads a `ui-tests` artifact; its
+`screenshots/*.png` are the new baselines for `ui_tests/baselines/screenshots/`.
+`JELLI_UI_LOCAL=1 tools/jelli-art/ui_tests/run.sh` runs without a container
+(Chromium goes in `.tools/`), but fonts differ, so a few aria and axe results
+can differ from the baselines too. Two such runs on one machine take turns (a
+lock on `/tmp/jelli-ui-tests.lock`), because the pinned data goes in the fixed
+directory `/tmp/jelli-ui-tests`.
+
+Known gaps: 10 of the 21 view and size cases have screenshots; the keyboard
+tests cover only the two paths above; there are no pen, touch or pinch tests;
+and the viewport shares are reported, not checked.
 
 ## Container
 

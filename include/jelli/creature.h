@@ -37,7 +37,7 @@ typedef enum {
 #define JELLI_IDLE_BEAT_CAPACITY 16u
 
 typedef struct {
-    uint8_t when, pose; /* JelliCreatureCondition, JelliCreaturePose. */
+    uint8_t when, pose; /* JelliCreatureCondition; base or state pose. */
 } JelliPoseRule;
 
 /* Per-form presentation from content/creatures.json. The first matching rule

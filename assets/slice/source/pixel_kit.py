@@ -53,7 +53,11 @@ def paint(sprite, points, color):
 
 
 def outline(sprite, color="ink", size=32):
-    """Closed 1px outline outside the silhouette; 4-connected so corners stay round."""
+    """Closed 1px outline outside the silhouette.
+
+    Ink goes on the 4-neighbours of the fill, so no fill pixel touches transparency, while the
+    outline itself steps diagonally (8-connected) with no doubled corners, as the style guide asks.
+    """
     ring = {(x + dx, y + dy) for (x, y), c in sprite.items() if c != color for dx, dy in N4} - set(sprite)
     for x, y in ring:
         if 0 <= x < size and 0 <= y < size:
@@ -103,7 +107,9 @@ def despeck(sprite, keep=("white", "ink", "cream")):
         if c not in near:
             votes = [n for n in near if n and n != "ink"]
             if votes:
-                out[(x, y)] = max(set(votes), key=votes.count)
+                # max() keeps the first of equal counts, so ties go to the earliest N8 neighbour.
+                # A set here would iterate in string-hash order, which changes per process.
+                out[(x, y)] = max(votes, key=votes.count)
     return out
 
 

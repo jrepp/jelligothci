@@ -3,5 +3,8 @@
 *
 !tools/assets/compare.html
 !tools/assets/compare_slice.py
+!tools/assets/lint_rules.py
 !tools/jelli-art/
 tools/jelli-art/__pycache__/
+tools/jelli-art/ui_tests/
+tools/jelli-art/typecheck/

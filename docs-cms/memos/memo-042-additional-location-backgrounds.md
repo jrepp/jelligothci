@@ -84,6 +84,12 @@ the publisher checks bank bounds as well as file size. A full-pack export and
 SDL load test now runs in desktop CI, including Windows; small synthetic packs
 alone had not exposed either mismatch. Local desktop and sanitizer suites pass
 62/62 tests, as do hooks, artwork export, full-pack loading and macOS packaging.
+
+Merging main's baby axolotl and hug frames (PR #37) with these backgrounds
+brought the pack to 114 assets, 141,632 pixels and 17,704 mask bytes, over
+the 131,072-pixel and 16,384-byte banks. The owner chose to raise the desktop
+banks to 196,608 pixels, 24,576 mask bytes and 192 assets, with a 448 KiB
+staging buffer, recorded in ADR-012. Firmware memory is still not measured.
 Final corrected CI results are pending.
 
 # References

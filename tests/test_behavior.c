@@ -50,17 +50,43 @@ static void bubble_game(JelliGame *game, unsigned skip)
     }
 }
 
-static void mint_has_no_repertoire(void)
+/* No jelly reaction (MINT form 0, LILAC form 1) answers the potty urge or leads to a potty
+ * request, study or contemplation, so jellies never have accidents. */
+static void jelly_tables_are_gentle(void)
+{
+    const unsigned forbidden[] = {state_named("asking_potty"), state_named("studying"),
+                                  state_named("contemplating")};
+    for (unsigned form = 0u; form < 2u; ++form) {
+        unsigned index = jelli_behavior_form_repertoire[form];
+        CHECK(index < jelli_behavior_repertoire_count);
+        const JelliRepertoire *rep = &jelli_behavior_repertoires[index];
+        CHECK(rep->reaction_count > 0u);
+        for (unsigned i = 0u; i < rep->reaction_count; ++i) {
+            const JelliBehaviorReaction *r = &jelli_behavior_reactions[rep->first_reaction + i];
+            CHECK(r->on != JELLI_STIM_POTTY_URGE);
+            for (unsigned f = 0u; f < sizeof(forbidden) / sizeof(forbidden[0]); ++f)
+                CHECK(r->state + 1u != forbidden[f]); /* Tables count states from 0. */
+        }
+    }
+}
+
+/* Mint delights at presents and never gets a mess, even with a full potty urge. */
+static void mint_jelly_is_gentle(void)
 {
     JelliGame game;
     jelli_game_init(&game);
     game.pets[0].needs[JELLI_SATIETY] = 100u;
     game.pets[0].potty = 999u;
+    unsigned delighted = 0u;
     for (unsigned s = 0u; s < 600u; ++s) {
         jelli_behavior_stimulus(&game, JELLI_STIM_PRESENT_CAUGHT, 0u);
         second(&game);
-        CHECK(game.pets[0].behavior == 0u);
+        unsigned state = game.pets[0].behavior;
+        CHECK(state != state_named("asking_potty") && state != state_named("studying"));
+        delighted += state == state_named("delighted");
+        CHECK(!(game.pets[0].behavior_flags & JELLI_PET_FLAG_MESS));
     }
+    CHECK(delighted > 0u);
 }
 
 static void presents_make_bubble_curious(void)
@@ -331,7 +357,8 @@ int main(void)
     potty_request_respects_sleep_cooldown_and_relief();
     ignored_potty_request_leaves_a_mess();
     answered_potty_request_leaves_no_mess();
-    mint_has_no_repertoire();
+    jelly_tables_are_gentle();
+    mint_jelly_is_gentle();
     presents_make_bubble_curious();
     requests_are_answered();
     hunger_asks_for_food_then_times_out();

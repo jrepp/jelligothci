@@ -117,6 +117,39 @@ test('colours and off-palette checks', () => {
   assert.deepStrictEqual(P.offPalette(b, [COLS.a.toUpperCase(), COLS.b]), [COLS.c]);
 });
 
+test('opaque bounds give the ground row; an empty buffer has none', () => {
+  assert.deepStrictEqual(P.bounds(buf(['....', '.ab.', '.b..', '....'])), {x: 1, y: 1, w: 2, h: 2});
+  assert.strictEqual(P.bounds(buf(['..', '..'])), null);
+});
+
+test('the eye row is the catchlight row of a face feature that never touches transparency', () => {
+  const face = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbbbbbba', 'abbbbbdbba', 'abbbbbabba', 'abbbbbabba', 'abbbbbbbba', '.aaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(face)), 3, 'the eye is measured at its catchlight');
+  const low = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbabbbba', 'abbbadbbba', 'abbbaabbba', 'abbbbbbbba', '.aaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(low)), 3, 'a catchlight below the top of the eye still gives the catchlight row');
+  const seam = ['.aaaaaaaaa.', 'abbbbbbbbba', 'aaaabbbbbba', 'abbbbbbbbba', 'abbbbaabbba', 'abbbbbbbbba', '.aaaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(seam)), 4, 'a seam joined to the outline is never a face feature');
+  const closed = ['.aaaaaaaa.', 'abbbbbbbba', 'abbbbbbbba', 'abbabbabba', 'abbbaabbba', 'abbbbbbbba', '.aaaaaaaa.'];
+  assert.strictEqual(P.eyeRow(buf(closed)), 3, 'without a catchlight the top of the topmost feature counts');
+  assert.strictEqual(P.eyeRow(buf(['aaaa', 'abba', 'aaaa'])), null, 'outline ink is never a face');
+  assert.strictEqual(P.eyeRow(buf(['..', '..'])), null);
+});
+
+test('shade steps along the ramp and prefers the paint colour\'s ramp', () => {
+  const coral = ['#fff4cf', '#fa8c99', '#d84f70'], gold = ['#fff4cf', '#f5c764', '#ae7855'], ramps = [coral, gold];
+  assert.strictEqual(P.shade('#fa8c99', ramps, 1), '#d84f70');
+  assert.strictEqual(P.shade('#fa8c99', ramps, -1), '#fff4cf');
+  assert.strictEqual(P.shade('#d84f70', ramps, 1), null, 'the deepest colour stays put');
+  assert.strictEqual(P.shade('#fff4cf', ramps, -1), null, 'the lightest colour stays put');
+  assert.strictEqual(P.shade('#291b35', ramps, 1), null, 'colours outside every ramp are untouched');
+  assert.strictEqual(P.shade(null, ramps, 1), null, 'transparent is untouched');
+  assert.strictEqual(P.shade('#fff4cf', ramps, 1), '#fa8c99', 'a shared colour uses the first ramp listing it');
+  assert.strictEqual(P.shade('#fff4cf', ramps, 1, ['#f5c764']), '#f5c764', '...or the ramp holding the paint colour');
+  assert.strictEqual(P.shade('#fff4cf', ramps, 1, [gold, '#fa8c99']), '#f5c764', 'the chosen ramp row beats the paint colour');
+  assert.strictEqual(P.shade('#fa8c99', ramps, 1, [gold]), '#d84f70', 'a chosen row without the colour is skipped');
+  assert.strictEqual(P.rampOf('#ae7855', ramps), gold);
+});
+
 test('history is bounded, skips no-ops and truncates redo on a new action', () => {
   const data = new Uint8ClampedArray(4), h = P.history(data, 'Opened', 5);
   assert.strictEqual(P.record(h, 'nothing', data), false);
@@ -127,6 +160,87 @@ test('history is bounded, skips no-ops and truncates redo on a new action', () =
   data[0] = 42; P.record(h, 'branch', data);
   assert.deepStrictEqual(h.entries.map(e => e.label), ['step 3', 'step 4', 'branch']);
   data[0] = 0; assert.strictEqual(P.current(h)[0], 42, 'history keeps copies, not the live buffer');
+  data[0] = 7; P.record(h, 'with extra', data, {before: 'a', after: 'b', label: 'ignored'});
+  assert.deepStrictEqual([h.entries[h.at].label, h.entries[h.at].before, h.entries[h.at].after], ['with extra', 'a', 'b'], 'extra rides along, label wins');
+});
+
+test('Alt-pick keeps the tool; the Pick colour tool hands over to pencil or eraser', () => {
+  const pal = ['#291b35', '#85e4b6'];
+  assert.deepStrictEqual(P.pickOutcome('#85e4b6', pal, 'fill'), {tool: 'fill', color: '#85e4b6'});
+  assert.deepStrictEqual(P.pickOutcome('#85e4b6', pal, 'eraser'), {tool: 'eraser', color: '#85e4b6'});
+  assert.deepStrictEqual(P.pickOutcome(null, pal, 'line'), {tool: 'line'});
+  assert.deepStrictEqual(P.pickOutcome('#85e4b6', pal, 'picker'), {tool: 'pencil', color: '#85e4b6'});
+  assert.deepStrictEqual(P.pickOutcome(null, pal, 'picker'), {tool: 'eraser'});
+  assert.deepStrictEqual(P.pickOutcome('#123456', pal, 'pencil'), {off: true});
+});
+
+/* Run lengths along the major axis: how many pixels share each minor coordinate, in order. */
+const runs = pts => { const out = [], flat = Math.abs(pts[pts.length - 1][0] - pts[0][0]) >= Math.abs(pts[pts.length - 1][1] - pts[0][1]), minor = p => p[flat ? 1 : 0];
+  for (let i = 0; i < pts.length; i++) if (i && minor(pts[i]) === minor(pts[i - 1])) out[out.length - 1]++; else out.push(1); return out; };
+
+test('clean-ratio snapping picks the nearest slope and ends on a whole run', () => {
+  assert.deepStrictEqual(P.snapClean(0, 0, 9, 0), [9, 0]);
+  assert.deepStrictEqual(P.snapClean(0, 0, 1, 8), [0, 8]);
+  assert.deepStrictEqual(P.snapClean(0, 0, 7, 6), [7, 7], "1:1 rounds to the nearest whole diagonal");
+  assert.deepStrictEqual(P.snapClean(0, 0, 9, 4), [9, 4], '2:1 by angle, five runs of two');
+  assert.deepStrictEqual(P.snapClean(0, 0, 11, 3), [11, 3], '3:1, four runs of three');
+  assert.deepStrictEqual(P.snapClean(5, 5, 1, -3), [1, -4], '1:2 up and to the left');
+  for (const [dx, dy] of [[3, 1], [1, 3], [5, 2], [2, 5], [8, 2], [2, 8], [2, 2], [-3, 1], [3, -1], [-5, -2], [7, 0], [0, -4]])
+    assert.deepStrictEqual(P.snapClean(4, 4, 4 + dx, 4 + dy), [4 + dx, 4 + dy], `a ${Math.abs(dx) + 1}×${Math.abs(dy) + 1} span is already clean`);
+  for (const [x1, y1] of [[13, 5], [-8, 3], [4, -11], [-6, -6], [17, 2], [3, 20], [0, 0]]) {
+    const [ex, ey] = P.snapClean(2, 3, 2 + x1, 3 + y1), ax = Math.abs(ex - 2) + 1, ay = Math.abs(ey - 3) + 1;
+    assert.ok(ax === 1 || ay === 1 || [1, 2, 3].includes(Math.max(ax, ay) / Math.min(ax, ay)), `${x1},${y1} snaps to ${ax}:${ay}`);
+  }
+});
+
+test('clean lines have equal runs and match from both ends', () => {
+  for (const [x0, y0, x1, y1, n] of [[0, 0, 5, 2, 2], [0, 0, 8, 2, 3], [3, 9, 0, 2, 2], [0, 0, 4, 4, 1], [7, 0, 0, 7, 1], [0, 0, 11, 3, 3]]) {
+    const pts = P.cleanLine(x0, y0, x1, y1);
+    assert.deepStrictEqual(pts[0], [x0, y0]); assert.deepStrictEqual(pts[pts.length - 1], [x1, y1]);
+    assert.ok(runs(pts).every(r => r === n), `${x0},${y0}→${x1},${y1} runs ${runs(pts)}`);
+    assert.strictEqual(key(pts), key(P.cleanLine(x1, y1, x0, y0)));
+    for (let i = 1; i < pts.length; i++) assert.strictEqual(Math.max(Math.abs(pts[i][0] - pts[i - 1][0]), Math.abs(pts[i][1] - pts[i - 1][1])), 1);
+  }
+  assert.deepStrictEqual(P.cleanLine(0, 0, 6, 2), P.line(0, 0, 6, 2), 'not a whole ratio: Bresenham');
+  assert.deepStrictEqual(P.cleanLine(0, 0, 6, 0), P.line(0, 0, 6, 0));
+});
+
+test('mirror twins about edge and centre axes', () => {
+  assert.deepStrictEqual(P.mirrorPoints(15, 4, 32, null), [[16, 4]], 'axis between columns 15 and 16 of a 32 px sprite');
+  assert.deepStrictEqual(P.mirrorPoints(0, 4, 32, null), [[31, 4]]);
+  assert.deepStrictEqual(P.mirrorPoints(15, 4, 31, null), [], 'a pixel on a centre axis is its own twin');
+  assert.deepStrictEqual(P.mirrorPoints(13, 4, 31, null), [[17, 4]]);
+  assert.deepStrictEqual(P.mirrorPoints(2, 1, null, 10), [[2, 8]]);
+  assert.deepStrictEqual(P.mirrorPoints(2, 1, 8, 10), [[5, 1], [2, 8], [5, 8]]);
+  assert.deepStrictEqual(P.mirrorPoints(3, 4, 7, 9), [], 'the centre of both axes');
+  assert.deepStrictEqual(P.mirrorPoints(3, 4, null, null), []);
+});
+
+test('magic wand selects contiguous or global colour as a cropped mask', () => {
+  const b = buf(['aab.', 'a.b.', 'bbba', '...a']);
+  const c = P.wand(b, 0, 0);
+  assert.deepStrictEqual(c.rect, {x: 0, y: 0, w: 2, h: 2});
+  assert.deepStrictEqual(rows(c.mask).map(r => r.replace(/d/g, '#')), ['##', '#.']);
+  const g = P.wand(b, 0, 0, false);
+  assert.deepStrictEqual(g.rect, {x: 0, y: 0, w: 4, h: 4});
+  assert.ok(P.selected(g.rect, g.mask, 3, 3) && !P.selected(g.rect, g.mask, 2, 0));
+  const t = P.wand(b, 3, 0);
+  assert.deepStrictEqual(t.rect, {x: 3, y: 0, w: 1, h: 2}, 'transparent pixels can be selected too');
+  assert.strictEqual(P.wand(b, 9, 0), null);
+  assert.strictEqual(P.maskFrom(3, 3, () => false), null);
+});
+
+test('masked extract, clear, replace, flood and edges stay on the mask', () => {
+  const b = buf(['aab', 'aab', 'bbb']), {rect, mask} = P.wand(b, 0, 0);
+  assert.deepStrictEqual(rows(P.extractMasked(b, {x: 0, y: 0, w: 3, h: 3}, null)), rows(b));
+  const w = P.wand(buf(['ab', 'ba']), 0, 0, false);
+  assert.deepStrictEqual(rows(P.extractMasked(buf(['ab', 'ba']), w.rect, w.mask)), ['a.', '.a']);
+  const r = P.copy(b); assert.strictEqual(P.replace(r, {x: 0, y: 0, w: 3, h: 3}, COLS.b, COLS.c, P.wand(r, 2, 0, true).mask), 5);
+  const f = P.copy(b); assert.strictEqual(P.flood(f, 0, 0, COLS.d, rect, mask), 4); assert.deepStrictEqual(rows(f), ['ddb', 'ddb', 'bbb']);
+  const cl = P.copy(b); P.clearMasked(cl, w.rect, w.mask); assert.deepStrictEqual(rows(cl), ['.ab', 'a.b', 'bbb']);
+  assert.strictEqual(P.maskEdges(rect, mask).length, 8, 'a 2×2 block has eight outer edges');
+  assert.strictEqual(P.maskEdges(w.rect, w.mask).length, 8, 'two diagonal pixels have four edges each');
+  assert.deepStrictEqual(P.colours(b, {x: 0, y: 0, w: 3, h: 3}, P.wand(b, 0, 0).mask), [[COLS.a, 4]]);
 });
 
 let failed = 0;

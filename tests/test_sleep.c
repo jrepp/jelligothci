@@ -1,5 +1,6 @@
 #include "jelli/wake.h"
 #include "jelli/game.h"
+#include "jelli/behavior.h"
 #include "jelli/save.h"
 
 #include <stdio.h>
@@ -103,11 +104,25 @@ static void advance_live(JelliGame *game, uint64_t milliseconds)
     }
 }
 
+/* Every form has a behaviour repertoire, and live play may start a state where offline
+ * catch-up never does. Waking in the live window raises `woke`, whose only reaction for
+ * this pet is curious, so hold curious on cooldown past the comparison to keep both
+ * runs stateless. */
+static void hold_wake_reaction(JelliPet *pet)
+{
+    for (unsigned i = 0u; i < jelli_behavior_state_count; ++i)
+        if (strcmp(jelli_behavior_states[i].name, "curious") == 0)
+            pet->cooldown_state = (uint8_t)(i + 1u);
+    CHECK(pet->cooldown_state != 0u);
+    pet->cooldown_left = 600u;
+}
+
 static void unaligned_nap_and_activity_match(void)
 {
     JelliGame live;
     jelli_game_init(&live);
     JelliPet *pet = &live.pets[0];
+    hold_wake_reaction(pet);
     pet->needs[JELLI_ENERGY] = 149u;
     jelli_game_advance(&live, 100u); /* Automatic nap has no linked human diary. */
     CHECK(pet->asleep && !live.sleep_log.active);
@@ -117,11 +132,13 @@ static void unaligned_nap_and_activity_match(void)
     advance_live(&live, 61100u);
     resume(&offline, 61100u);
     CHECK(!live.pets[0].asleep);
+    CHECK(live.pets[0].behavior == 0u && offline.pets[0].behavior == 0u);
     check_same_checkpoint(&live, &offline);
     CHECK(jelli_game_command(&live, (JelliCommand){JELLI_CMD_PLAY, pet->id, 0u}) == JELLI_OK);
     offline = live;
     advance_live(&live, 91300u);
     resume(&offline, 91300u);
+    CHECK(live.pets[0].behavior == 0u && offline.pets[0].behavior == 0u);
     check_same_checkpoint(&live, &offline);
     CHECK(live.pets[0].habits.lifetime_play_ticks == 80u);
 }

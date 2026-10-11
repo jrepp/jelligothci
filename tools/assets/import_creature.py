@@ -106,11 +106,14 @@ def place(images, canvas, pivot):
     return placed
 
 
-def palette_of(frames):
+def palette_of(frames, existing=()):
+    """The named palette: existing colours keep their order (ramps and names refer to them, and
+    other specs may share it), then any new colours, most used first."""
     colours = Counter("#%02x%02x%02x" % p[:3] for frame in frames for p in frame.getdata() if p[3])
-    if len(colours) > 16:
-        raise ValueError(f"{len(colours)} colours; sprites allow at most 16")
-    return [c for c, _ in colours.most_common()]
+    palette = list(existing) + [c for c, _ in colours.most_common() if c not in existing]
+    if len(palette) > 16:
+        raise ValueError(f"{len(palette)} colours; sprites allow at most 16")
+    return palette
 
 
 def frame_name(spec, entry):
@@ -119,7 +122,8 @@ def frame_name(spec, entry):
 
 def upsert(manifest, spec, frames):
     kind = spec.get("kind", "creatures")
-    manifest.setdefault("palettes", {})[spec["palette"]] = palette_of(frames)
+    palettes = manifest.setdefault("palettes", {})
+    palettes[spec["palette"]] = palette_of(frames, palettes.get(spec["palette"], ()))
     by_key = {asset["key"]: asset for asset in manifest["assets"]}
     imported = iter(frames)
     for index, entry in enumerate(spec["frames"]):

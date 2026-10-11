@@ -1,0 +1,156 @@
+tools/jelli-art/animation.js: TS2339: Property 'checked' does not exist on type 'HTMLElement'.
+tools/jelli-art/animation.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/animation.js: TS2339: Property 'dataset' does not exist on type 'EventTarget'.
+tools/jelli-art/animation.js: TS2339: Property 'dataset' does not exist on type 'EventTarget'.
+tools/jelli-art/animation.js: TS2339: Property 'focus' does not exist on type 'Element'.
+tools/jelli-art/animation.js: TS2339: Property 'offsetLeft' does not exist on type 'Element'.
+tools/jelli-art/animation.js: TS2339: Property 'offsetWidth' does not exist on type 'Element'.
+tools/jelli-art/animation.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/animation.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/animation.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/animation.js: TS2339: Property 'style' does not exist on type 'Element'.
+tools/jelli-art/animation.js: TS2339: Property 'value' does not exist on type 'Element'.
+tools/jelli-art/animation.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/creature.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
+tools/jelli-art/creature.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
+tools/jelli-art/creature.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
+tools/jelli-art/creature.js: TS2339: Property 'onFrame' does not exist on type '{ tickHooks: any[]; playHooks: any[]; scaleFor: any; panelSource: any; step: any; renderBehaviour: any; formDirty: any; save: any; }'.
+tools/jelli-art/creature.js: TS2339: Property 'onchange' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/creature.js: TS2339: Property 'renderTimeline' does not exist on type '{ tickHooks: any[]; playHooks: any[]; scaleFor: any; panelSource: any; step: any; renderBehaviour: any; formDirty: any; save: any; }'.
+tools/jelli-art/creature.js: TS2339: Property 'restartSimulation' does not exist on type '{ tickHooks: any[]; playHooks: any[]; scaleFor: any; panelSource: any; step: any; renderBehaviour: any; formDirty: any; save: any; }'.
+tools/jelli-art/flipbook.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'focus' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'focus' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'height' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'oninput' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'style' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'style' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2339: Property 'width' does not exist on type 'Element'.
+tools/jelli-art/flipbook.js: TS2367: This comparison appears to be unintentional because the types '"diff"' and '"full"' have no overlap.
+tools/jelli-art/game_preview.js: TS2339: Property 'alt' does not exist on type 'HTMLElement'.
+tools/jelli-art/game_preview.js: TS2339: Property 'checked' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'checked' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'closest' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/game_preview.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/game_preview.js: TS2339: Property 'dataset' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'src' does not exist on type 'HTMLElement'.
+tools/jelli-art/game_preview.js: TS2339: Property 'type' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'type' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'value' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'value' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'value' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'value' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'value' does not exist on type 'EventTarget'.
+tools/jelli-art/game_preview.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/lint.js: TS2339: Property 'JelliLint' does not exist on type 'typeof globalThis'.
+tools/jelli-art/lint_ui.js: TS2339: Property 'click' does not exist on type 'Element'.
+tools/jelli-art/lint_ui.js: TS2339: Property 'focus' does not exist on type 'Element'.
+tools/jelli-art/lint_ui.js: TS2339: Property 'focus' does not exist on type 'Element'.
+tools/jelli-art/lint_ui.js: TS2339: Property 'key' does not exist on type 'Event'.
+tools/jelli-art/paint_tools.js: TS2339: Property 'JelliPaint' does not exist on type 'typeof globalThis'.
+tools/jelli-art/paint_tools.js: TS2345: Argument of type 'number[]' is not assignable to parameter of type '[any, any]'.
+tools/jelli-art/paint_tools.js: TS2345: Argument of type 'number[]' is not assignable to parameter of type '[any, any]'.
+tools/jelli-art/reactions.js: TS2339: Property 'JelliSim' does not exist on type 'Window & typeof globalThis'.
+tools/jelli-art/reactions.js: TS2339: Property 'closest' does not exist on type 'EventTarget'.
+tools/jelli-art/reactions.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/reactions.js: TS2339: Property 'disabled' does not exist on type 'Element'.
+tools/jelli-art/reactions.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/reactions.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/reactions.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/reactions.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/reactions.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/shell.js: TS2322: Type '({ title, body, actions, onOpen, className, initial }?: { body?: string; actions?: { label: string; value: string; primary: boolean; }[]; className?: string; }) => Promise<any>' is not assignable to type '(options: { title: string; body?: string | Node; className?: string; initial?: string; actions?: { label: string; value: any; primary?: boolean; danger?: boolean; }[]; onOpen?: (dialog: HTMLDialogElement) => void; }) => Promise<...>'.
+tools/jelli-art/shell.js: TS2339: Property 'closest' does not exist on type 'EventTarget'.
+tools/jelli-art/shell.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/shell.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/shell.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/shell.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/shell.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/shell.js: TS2339: Property 'focus' does not exist on type 'Element'.
+tools/jelli-art/shell.js: TS2339: Property 'hidden' does not exist on type 'Element'.
+tools/jelli-art/shell.js: TS2339: Property 'initial' does not exist on type '{ body?: string; actions?: { label: string; value: string; primary: boolean; }[]; className?: string; }'.
+tools/jelli-art/shell.js: TS2339: Property 'key' does not exist on type 'Event'.
+tools/jelli-art/shell.js: TS2339: Property 'onOpen' does not exist on type '{ body?: string; actions?: { label: string; value: string; primary: boolean; }[]; className?: string; }'.
+tools/jelli-art/shell.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/shell.js: TS2339: Property 'test' does not exist on type 'string | RegExp'.
+tools/jelli-art/shell.js: TS2339: Property 'title' does not exist on type '{ body?: string; actions?: { label: string; value: string; primary: boolean; }[]; className?: string; }'.
+tools/jelli-art/shell.js: TS2339: Property 'url' does not exist on type 'RequestInfo | URL'.
+tools/jelli-art/shell.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/shell.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/shell.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/shell.js: TS2339: Property 'view' does not exist on type '{}'.
+tools/jelli-art/shell.js: TS2339: Property 'view' does not exist on type '{}'.
+tools/jelli-art/shell.js: TS2353: Object literal may only specify known properties, and 'title' does not exist in type '{ body?: string; actions?: { label: string; value: string; primary: boolean; }[]; className?: string; }'.
+tools/jelli-art/shell.js: TS2353: Object literal may only specify known properties, and 'title' does not exist in type '{ body?: string; actions?: { label: string; value: string; primary: boolean; }[]; className?: string; }'.
+tools/jelli-art/shell.js: TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+tools/jelli-art/shell.js: TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+tools/jelli-art/shell.js: TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+tools/jelli-art/shell.js: TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+tools/jelli-art/shell.js: TS2741: Property 'primary' is missing in type '{ label: string; value: string; }' but required in type '{ label: string; value: string; primary: boolean; }'.
+tools/jelli-art/studio.js: TS2339: Property 'afterDraw' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'boot' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'clipsDirty' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'closest' does not exist on type 'EventTarget'.
+tools/jelli-art/studio.js: TS2339: Property 'dataset' does not exist on type 'Element'.
+tools/jelli-art/studio.js: TS2339: Property 'decorateHeader' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
+tools/jelli-art/studio.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
+tools/jelli-art/studio.js: TS2339: Property 'keydown' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'offsetTop' does not exist on type 'Element'.
+tools/jelli-art/studio.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/studio.js: TS2339: Property 'onclick' does not exist on type 'Element'.
+tools/jelli-art/studio.js: TS2339: Property 'onion' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'overlay' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'ownPalette' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'paletteKey' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'paletteKey' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'previewTidy' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'previewTidy' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderSide' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderStage' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderToolbar' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'stepFrame' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'stepFrame' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'EventTarget'.
+tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'EventTarget'.
+tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
+tools/jelli-art/studio.js: TS2339: Property 'warnFlip' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2345: Argument of type '{ width: number; height: number; }' is not assignable to parameter of type 'StudioAsset'.
+tools/jelli-art/studio.js: TS2538: Type 'Uint8ClampedArray<ArrayBuffer>' cannot be used as an index type.
+tools/jelli-art/studio.js: TS2538: Type 'Uint8ClampedArray<ArrayBuffer>' cannot be used as an index type.
+tools/jelli-art/studio.js: TS2684: The 'this' context of type 'void' is not assignable to method's 'this' of type 'GlobalEventHandlers'.

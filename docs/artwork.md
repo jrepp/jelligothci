@@ -13,28 +13,68 @@ The studio is the review page with painting turned on. It needs no setup beyond
 the repository's pinned tools, and it only listens on your own computer.
 
 1. Pick a sprite in the left list, or use **Sheet** to browse them all.
+   **Changed only** narrows the list to sprites that differ from the before
+   image; when none do, **Show all** turns it off.
    Press **?** for the keyboard shortcuts.
 2. Choose the **Paint** tab at the top. The tools are pencil, eraser, fill,
-   colour picker, line, rectangle, ellipse and select. **Filled** fills
-   rectangles and ellipses; Shift while dragging snaps lines to 45° and makes
-   squares and circles. Right-click erases, Alt-click picks a colour, and
-   **Mirror** paints both halves of a symmetric sprite.
-3. Selection, transforms, nudges, colour replacement, guides and **Tidy
-   outline** are under **More tools**, which stays open once you open it.
-   **Select** a rectangle to move it (drag inside it, or Alt+arrow keys), copy,
-   cut, paste, delete, flip, rotate, or replace one colour with another. While
-   a selection exists, painting stays inside it; Escape clears it. Without a
-   selection, flip, rotate and Alt+arrows apply to the whole sprite. **Wrap**
-   makes nudges come round the other side, for tiling patterns.
-4. Choose a colour under **Paint colours**, beside the canvas. Tools paint only the sprite's
-   palette colours until you choose **custom**, which paints any colour. The
-   ✎ on a palette colour changes that colour in every sprite at once; it asks
-   before doing so.
-5. **Tidy outline** applies the house outline and removes stray pixels. Turn on
-   **Issues** to see what still needs attention. Undo with ⌘Z / Ctrl+Z, or click
-   any step in the **history** list beside the canvas.
+   colour picker, shade, line, rectangle, ellipse, select and magic wand.
+   **Filled** fills rectangles and ellipses. Shift while dragging snaps lines
+   to the clean ratios (flat, 3:1, 2:1, 1:1, 1:2, 1:3 and upright), with every
+   run the same length, and makes squares and circles. The left button paints
+   the main colour and the right button the secondary colour, which starts
+   transparent, so right-click erases (with Fill, the whole touching area) until
+   you choose one. X swaps the two. Alt-click picks a colour and keeps your
+   tool (with Select, Alt-drag copies instead). **Mirror** (M) paints both
+   halves of a symmetric sprite. **Shade** (T) steps each pixel one colour
+   lighter along its [ramp](pixel-art-guide.md#2-palette-and-ramps), following
+   the row you picked the colour from; right-click or Shift steps
+   deeper. The **?** overlay lists the remaining keys.
+3. Selection, transforms, nudges, colour replacement, mirror axes, guides,
+   the tile preview and **Tidy outline** are under **More tools**, which stays
+   open once you open it. **Select** a rectangle, or click a colour with the
+   **Magic wand** (Q) to select the pixels of that colour touching it
+   (Shift-click, or Shift+Enter at the keyboard cursor while the wand is the
+   tool, selects it everywhere). Move a selection by dragging inside it with
+   Select, or with Alt+arrow keys; copy, cut, paste, delete, flip, rotate, or
+   replace one colour with another. While a selection exists, painting, fill
+   and shade stay inside it; Escape clears it, and undo puts back the
+   selection each step had. Without a selection, flip, rotate and Alt+arrows
+   apply to the whole sprite. **Wrap** makes nudges come round the other side,
+   for tiling patterns (a magic-wand selection moves instead), and **Tile
+   3×3** (Shift+T) shows the sprite repeated beside the canvas so the seams
+   show. **Top/bottom** (Shift+M) mirrors vertically too. The arrows beside it
+   move the axes half a pixel at a time, so an axis can sit between two
+   columns or on one; **Centre** puts them back. Moved axes are remembered per
+   sprite (so each clip frame separately) in this browser.
+4. Choose a colour under **Paint colours**, beside the canvas, one row per
+   ramp. Click a colour for the main colour. For the secondary, right-click it,
+   press Shift+F10 on it, or choose it and press X. Tools paint only the
+   sprite's palette colours until you choose **custom**, which paints any
+   colour. The ✎ on a palette colour
+   changes that colour in every sprite at once, ramps included; it asks before
+   doing so.
+5. **Tidy outline** shows the house outline and stray-pixel fixes side by side,
+   with the changed pixels marked. Nothing changes until you choose **Apply**.
+   The header says **lint pass** or which rules the sprite fails: specks, open
+   edges, or more colours than the
+   [style guide](pixel-art-guide.md#2-palette-and-ramps) allows. Turn on
+   **Issues** to see where. If a failure is intentional, **Waive…** records the
+   rule and your reason, and the sprite stops counting as failing. Flipping a
+   shaded sprite horizontally moves its light to the top right, and the studio
+   reminds you once per session. Undo
+   with ⌘Z / Ctrl+Z, or click any step in the **history** list beside the
+   canvas.
 6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
-   pans. **Grid** and **Guides** (centre and 8 px tile centres) are toggles.
+   pans. **Fit content** (`Z`, under **More tools**) zooms to the drawn pixels
+   with a 2 px margin, which helps on frames with empty rows. **Grid** and
+   **Guides** (centre and 8 px tile centres) are toggles.
+   The backdrop starts as the sprite's real surroundings: the scene's wall
+   grey for creatures and props, ring grey for icons, menus and health, the
+   stat tile for meters, prizes and the font, and black for effects and
+   backgrounds. **Backdrop** (or `B`) changes it for that kind of sprite, and
+   the choice is remembered; picking the default again forgets it. A paint
+   colour that would barely show on the backdrop gets a dashed ring on its
+   swatch and, when zoomed in, under the cursor.
    Without a mouse, Tab to the canvas to show the keyboard cursor: the arrow
    keys move it, Enter or Space applies the tool, Shift with the arrows draws,
    and Escape hides it.
@@ -67,8 +107,17 @@ beside the canvas. It plays the clip at its real timing, including strokes you
 have not saved (**Play**, Shift+Space). Click a thumbnail, or press ← and →,
 to paint another frame; the arrows move the keyboard cursor instead while it
 shows, and `,` and `.` always change frame. **Onion skin** (O) ghosts the frames
-before (amber) and after (blue) where they differ from this one; **±1** to
-**±3** sets how many on each side, and **Ghost** sets their strength.
+before (amber) and after (blue). **Changes** ghosts only where they differ from
+this one; **Silhouette** ghosts their whole shape, to judge arcs and volume
+(Shift+O switches). **±1** to **±3** sets how many on each side, and **Ghost**
+sets their strength.
+
+The flip-book compares every frame with frame 1 the way the game places it,
+on its own ground anchor. It marks a frame ⚠ when it **slides** sideways by
+half a source pixel or more on the panel, or when its **eye** (measured at the
+white catchlight) sits higher or lower than frame 1's. **Eye & ground** draws
+those lines on the canvas and the preview. Onion ghosts still line frames up
+by their pivot.
 
 ### Behaviour and size
 
@@ -76,7 +125,9 @@ before (amber) and after (blue) where they differ from this one; **±1** to
 `content/creatures.json`. The actor scale sets the preview size; the panel
 shows the result against the 300×176 px actor and 96 px icon limits. Choose the
 form's behaviour, or **Copy as new** to change one form without the others.
-Order the pose rules; the first rule whose condition holds wins. With no match,
+Order the pose rules; the first rule whose condition holds wins. A rule may pick
+a state pose, such as the axolotl's `hug` on `touch_happy`; a form without that
+clip plays the state pose's fallback. With no match,
 the idle schedule plays one pose per 900 ms beat. The quiet cycle holds curious
 and content beats as idle every Nth cycle, offset by pet ID.
 

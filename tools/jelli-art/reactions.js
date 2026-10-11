@@ -71,6 +71,7 @@
   const anyDirty = () => bdirty() || S.creatureDoc.dirty();
   const prevDirty = S.clipsDirty;
   S.clipsDirty = () => prevDirty() || bdirty();  // guards closing the page with unsaved behaviour edits
+  S.statesDirty = () => bdirty();  // shell.js: the "Behaviour states" unsaved item
   function sync() {
     if (D.behavior_data_sha === bseen) return;
     bseen = D.behavior_data_sha;
@@ -200,9 +201,11 @@
       state.bState = name;
     });
   }
-  function deleteState(name) {
+  async function deleteState(name) {
     const users = (bwork.repertoires || []).flatMap(r => (r.reactions || []).filter(x => x.state === name).map(() => r.name));
-    if (!confirm(`Delete state ${name}${users.length ? ` and the ${users.length} reactions that enter it` : ''}?`)) return;
+    const reactions = S.count(users.length, 'reaction');
+    if (!await S.ask(`Delete state ${name}${users.length ? ` and the ${reactions} that enter${users.length === 1 ? 's' : ''} it` : ''}?`,
+      {title: `Delete state ${name}`, confirmLabel: users.length ? `Delete state and ${reactions}` : 'Delete state', danger: true})) return;
     edit((b, c) => {
       b.states = b.states.filter(s => s.name !== name);
       for (const rep of b.repertoires) rep.reactions = (rep.reactions || []).filter(r => r.state !== name);
@@ -484,7 +487,12 @@
       state.bRep = bw.repertoires.length - 1;
     });
     if (!rep) return;
-    body.querySelector('#bv-del-rep').onclick = () => { if (confirm(`Delete repertoire ${rep.name}? Its forms will no longer react.`)) edit(bw => { bw.repertoires.splice(ri, 1); }); };
+    body.querySelector('#bv-del-rep').onclick = async () => {
+      const forms = (rep.forms || []).length, text = `Delete repertoire ${rep.name}? ${forms ? `Its ${S.count(forms, 'form')}` : 'Its forms'} will no longer react.`;
+      if (!await S.ask(text, {title: `Delete repertoire ${rep.name}`, confirmLabel: 'Delete repertoire', danger: true})) return;
+      // Found by name after the dialog: the list may have changed while it was open.
+      edit(bw => { const i = bw.repertoires.findIndex(r => r.name === rep.name); if (i >= 0) bw.repertoires.splice(i, 1); });
+    };
     body.querySelector('#bv-forms').onclick = e => {
       const f = e.target.closest('button')?.dataset.form; if (!f) return;
       edit(bw => { const r = bw.repertoires[ri], i = (r.forms ||= []).indexOf(f); if (i < 0) r.forms.push(f); else r.forms.splice(i, 1); });
@@ -650,7 +658,7 @@
       render(); S.creatureDoc.refresh();
       const files = res.changed.map(n => `${n}.json`).join(' and ') || 'nothing (no changes)';
       if (res.git_error) S.status(`Saved ${files}, but the commit failed: ${res.git_error}`, 'bad', true);
-      else S.status(res.commit ? `Saved ${files} (commit ${res.commit}).` : `Saved ${files}.`);
+      else S.status(res.commit ? `Saved ${files} (commit ${res.commit}).` : `Saved ${files}.`, '', false, {keep: true});
     } catch (err) { S.status(`Save failed: ${err.message}`, 'bad', true); }
   };
 

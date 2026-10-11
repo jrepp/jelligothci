@@ -36,12 +36,13 @@ from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "assets"))
-from compare_slice import REPO, SOURCE, collect  # noqa: E402
+from compare_slice import DEVICE_SCALE, REPO, SOURCE, collect  # noqa: E402
 import animation  # noqa: E402
 import behaviors  # noqa: E402
 import activities  # noqa: E402
 import creatures  # noqa: E402
 import game_preview  # noqa: E402
+import lint_rules  # noqa: E402
 import profiles  # noqa: E402
 import request_body  # noqa: E402
 import storage  # noqa: E402
@@ -57,6 +58,7 @@ except ImportError:  # an older checkout without the polish recipe: tidy is unav
 
 MANIFEST = SOURCE / "assets.json"
 HAND_PAINTED = SOURCE / "source/hand-painted.json"
+LINT = SOURCE / lint_rules.RELATIVE  # limits and waivers (lint_rules.py)
 CONTENT = REPO / "content"
 PETS, CREATURE_DATA = CONTENT / "pets.json", CONTENT / "creatures.json"
 CONTENT_WRITABLE = True  # False for --assets trials without --content, so a trial never edits the checkout
@@ -65,8 +67,8 @@ STUDIO_JS = HERE / "studio.js"
 CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
-PAGE_SCRIPTS = (SHELL_JS, HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
-                HERE / "reactions.js", HERE / "game_preview.js", HERE / "activities.js")
+PAGE_SCRIPTS = (SHELL_JS, HERE / "lint.js", HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
+                HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js")
 EDITABLE_CONTENT = ("behaviors", "creatures", "activities")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
@@ -128,7 +130,7 @@ def version():
     """Changes whenever the manifest, creature content or any PNG changes on disk."""
     digest = hashlib.sha1()
     content = [PETS, CREATURE_DATA, *(CONTENT / f"{n}.json" for n in ("behaviors", "activities", "potty"))]
-    for path in [MANIFEST, *[p for p in content if p.exists()], *sorted(SOURCE.glob("*/*.png"))]:
+    for path in [MANIFEST, *[p for p in [*content, LINT] if p.exists()], *sorted(SOURCE.glob("*/*.png"))]:
         stat = path.stat()
         digest.update(f"{path.name}{stat.st_mtime_ns}{stat.st_size}".encode())
     return digest.hexdigest()[:16]
@@ -151,8 +153,48 @@ def payload(before):
             "studio_version": STUDIO_VERSION, "palette": manifest["palette"], "assets": records,
             **creatures.creature_data(manifest, PETS), **creature_profiles(), **behaviour_data(),
             "clip_shas": {c["key"]: clip_digest(manifest, c["key"]) for c in manifest.get("clips", [])},
+            **lint_payload(),
+            # Paint's own palette row labels, which build_slice.py also keeps ramp names away from.
+            "palette_rows": getattr(creatures.load_validator(REPO), "PALETTE_ROWS", {}),
             "capabilities": capabilities(), "startup": STARTUP,
             "git": GIT.status() if GIT else {"enabled": False}}
+
+
+def load_lint():
+    """(config, error): the served lint.json, or the checkout's when an --assets copy has none."""
+    return lint_rules.load(SOURCE, REPO / "assets/slice", DEVICE_SCALE)
+
+
+def lint_payload():
+    """Lint limits and waivers, the hash a waiver edit sends back, and any problem reading them."""
+    lint, error = load_lint()
+    return {"lint": lint, "lint_sha": lint_sha(), "lint_error": error}
+
+
+def lint_sha():
+    """Hash of the served lint.json, or None when it is missing or not a regular file (load_lint reports why)."""
+    return storage.digest(LINT) if LINT.is_file() else None
+
+
+def set_waiver(key, rules, reason, artist="", base=None):
+    """Add, replace or (with no rules) remove one sprite's lint waiver in source/lint.json."""
+    with LOCK:
+        current = lint_sha()
+        if base is not None and base != current:
+            raise StaleError("Lint waivers changed on disk since you loaded them; reload first", current)
+        lint, error = load_lint()
+        if error:
+            raise StudioError(f"Fix {LINT.name} before changing waivers: {error}")
+        keys = {a["key"] for a in read_manifest()["assets"]}
+        try:
+            updated = lint_rules.set_waiver(lint, key, rules, reason, keys)
+        except lint_rules.LintError as failure:
+            raise StudioError(str(failure)) from failure
+        data = storage.json_bytes(updated)
+        storage.write_file(storage.confined(SOURCE, lint_rules.RELATIVE), data)
+        action = "waive" if rules else "clear waiver for"
+        git = record([LINT], f"chore(art): {action} lint on {key} in Jelli Art", artist)
+    return {"ok": True, "lint": updated, "lint_sha": storage.digest_bytes(data), "version": version(), **git}
 
 
 def content_paths():
@@ -402,7 +444,17 @@ def set_palette_slot(index, color, artist="", base=None):
                 image.putdata(data)
                 files.append((path, storage.png_bytes(image)))
                 changed.append(asset["key"])
+        was = palette[index].lower()
         palette[index] = color
+        for ramp in manifest.get("palette_ramps", {}).get("shared", []):  # ramps and names refer to colours, so follow the slot
+            ramp["colours"] = [color if c.lower() == was else c for c in ramp["colours"]]
+            luma = [sum(w * v for w, v in zip((299, 587, 114), bytes.fromhex(c[1:]))) for c in ramp["colours"]]
+            if any(a <= b for a, b in zip(luma, luma[1:])):  # build_slice.py requires light to deep
+                raise StudioError(f"{color} would put the {ramp['name']} ramp out of light-to-deep order; "
+                                  "choose a colour that fits between its neighbours, or edit palette_ramps first")
+        names = manifest.get("palette_names", {}).get("shared", {})
+        if was in names:
+            manifest["palette_names"]["shared"] = {color if c == was else c: n for c, n in names.items()}
         files.append((MANIFEST, storage.json_bytes(manifest)))
         storage.write_files(files)
         paths = [path for path, _ in files]
@@ -427,6 +479,9 @@ POSTS = {  # path -> handler(body); every field is type-checked so a bad request
     "/api/save": lambda b: save_asset(F(b, "key", str), F(b, "pixels", list), request_body.artist(b),
                                       F(b, "base", str, required=False)),
     "/api/tidy": lambda b: tidy(F(b, "key", str), F(b, "pixels", list)),
+    "/api/lint-waiver": lambda b: set_waiver(F(b, "key", str), F(b, "rules", list),
+                                             F(b, "reason", str, required=False, default=""), request_body.artist(b),
+                                             F(b, "base", str, required=False)),
     "/api/clips": lambda b: save_clips(F(b, "clips", list), request_body.artist(b), F(b, "bases", dict, required=False)),
     "/api/creatures": lambda b: save_creature_data(F(b, "data", dict), F(b, "base", str, required=False),
                                                    request_body.artist(b)),
@@ -553,7 +608,7 @@ def prepare():
     for path in removed:
         print(f"Removed a temporary file an interrupted save left: {path}", flush=True)
     content = [CONTENT / f"{name}.json" for name in ("pets", "creatures", "behaviors", "activities", "potty")]
-    problems = storage.check_json(MANIFEST, HAND_PAINTED, *content)
+    problems = storage.check_json(MANIFEST, HAND_PAINTED, LINT, *content)
     STARTUP["problems"] = [f"{path} is not valid JSON ({error}); restore it from git" for path, error in problems]
     for problem in STARTUP["problems"]:
         print(f"warning: {problem}", file=sys.stderr, flush=True)
@@ -576,9 +631,10 @@ def main():
     if args.assets:
         if args.git_branch:
             parser.error("--assets trials cannot be combined with --git-branch")
-        global SOURCE, MANIFEST, HAND_PAINTED
+        global SOURCE, MANIFEST, HAND_PAINTED, LINT
         SOURCE = args.assets.resolve()
         MANIFEST, HAND_PAINTED = SOURCE / "assets.json", SOURCE / "source/hand-painted.json"
+        LINT = SOURCE / lint_rules.RELATIVE
     global CONTENT, PETS, CREATURE_DATA, CONTENT_WRITABLE
     if args.content:
         if args.git_branch:

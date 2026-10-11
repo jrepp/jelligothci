@@ -60,13 +60,29 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
    the heading (more than 300x176 on-panel pixels), and icons wider than a grid
    cell. The `jelly` behaviour reproduces the former tables exactly; a test
    compares them beat for beat.
+
+   *Amended 2026-10-10 (PR #37):* a rule may also name a state pose from
+   `assets.json` `state_poses` (RFC-005), such as the axolotl's `touch_happy` →
+   `hug`. A form without a clip for that state pose plays its fallback base
+   pose; fallbacks are one level deep, because every fallback is a base pose.
+   `tools/assets/creature_data.py` validates rule poses against the base and
+   state pose list and resolves the fallback in the clip table. Jelli Art's
+   Behaviour & size editor offers and simulates the same list, and
+   `jelli_creature_clip` returns no clip for a pose index outside the table.
 5. **Art size and palette are per asset.** Creature frames may be 32x32 or 48x48.
    An asset may name a palette in `manifest.palettes` (at most 16 colours), and
    binary alpha is unchanged. `tools/assets/import_creature.py` converts upscaled
    source art from a committed spec. IDs are `first_id` plus list position, so new
    frames are appended. The planned pack ceiling rises from 164,864 to
    237,568 bytes, and the SDL live-reload bank grows to 131,072 pixels and
-   16,384 mask bytes.
+   16,384 mask bytes. *Amended 2026-10-10 (owner-approved):* the desktop
+   live-reload staging buffer is 294,912 bytes (288 KiB) and is the pack
+   ceiling the build checks; the SDL decoder bounds pixels by the bank's real
+   capacity instead of a stale 98,304-pixel limit. *Amended again 2026-10-10
+   (owner-approved):* the location backgrounds and the baby axolotl frames
+   together needed 141,632 pixels, so the SDL banks grow to 196,608 pixels,
+   24,576 mask bytes and 192 assets, and the staging buffer to 458,752 bytes
+   (448 KiB). These are desktop limits; firmware memory is not measured here.
 6. **Jelli Art authors the data.** Its Creature view edits clips with an animated
    preview at game placement. Profile and behaviour editing follows the same
    validate-then-commit path.
@@ -89,8 +105,11 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
 - A multi-frame clip redraws the full panel on each frame change, as idle phase
   changes already did. On ESP32 this costs one full frame every 250–900 ms while
   such a clip plays. It is not measured on hardware yet.
-- The art pack is about 45% larger (220,384 raw pixel bytes). The firmware app
-  still has 59% of its partition free.
+- The art pack is larger: with PR #37's baby axolotl, hug and surprised frames
+  and PR #22's four location backgrounds, the raw payload (RGB565, masks, font)
+  is 302,120 bytes. It uses 141,632 of 196,608 live pixels and 17,704 of 24,576
+  mask bytes, leaving room for about 23 more 48x48 frames. The firmware app is 1,778,608 bytes, leaving 58% of its 4 MiB
+  partition free (measured 2026-10-10 at 41350aa); static D/IRAM is unchanged.
 - `make run-live` reloads frame pixels but not clip or profile edits; those need
   a rebuild.
 

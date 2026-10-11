@@ -46,7 +46,8 @@ Read-only API inspection on 2026-10-07 at 23:44 UTC returned:
 | Fork write tokens / secrets and variables | disabled / disabled | Retain the boundary when planning any future fork workflow support |
 | Merge methods | Squash, merge, and rebase enabled | Conventional Commit semantics must survive the chosen merge method |
 | Delete branch after merge | false | Branch cleanup is not automatic |
-| Rulesets and main protection | API returned 403 with a plan/visibility limitation | Required checks and merge protection were not inspectable; do not claim enforcement |
+| Rulesets and main protection | Ruleset `main: required checks` active (2026-10-10): Core on linux/macos/windows, test, hooks, validate, Studio tests, image; blocks deletion and force-push; repository admins bypass | Release Please PRs cannot report these checks on their head, so admins merge them after the dispatched validation passes (memo-043) |
+| Auto-merge | enabled (2026-10-10) | Merges once the required checks pass |
 
 The fork-contributor approval endpoint also returned 422 because it does not
 apply to this private repository. That is not proof that all workflow approvals

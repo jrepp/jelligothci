@@ -94,7 +94,7 @@
         },
         {
           "when": "touch_happy",
-          "pose": "happy"
+          "pose": "hug"
         },
         {
           "when": "touch_upset",
@@ -141,6 +141,13 @@
       "art": "axolotl",
       "behavior": "axolotl",
       "scale": 5,
+      "icon_scale": 2,
+      "portrait_scale": 4
+    },
+    {
+      "art": "axolotl-baby",
+      "behavior": "axolotl",
+      "scale": 4,
       "icon_scale": 2,
       "portrait_scale": 4
     }

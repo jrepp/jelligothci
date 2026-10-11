@@ -15,6 +15,11 @@ repo=$(cd "$here/../.." && pwd)
 port="${1:-18965}"
 url="http://127.0.0.1:$port"
 session="jelli-art-smoke-$port"
+# Something already answering on the port would take this test's paint and saves into its own files.
+if curl -s -o /dev/null --max-time 2 "$url/" 2>/dev/null; then  # any HTTP answer, not only a studio
+    echo "FAIL: $url already answers; stop that server or pass a free port" >&2
+    exit 1
+fi
 work=$(mktemp -d "${TMPDIR:-/tmp}/jelli-art-smoke.XXXXXX")
 cp -R "$repo/assets/slice" "$work/slice"
 cp -R "$repo/content" "$work/content"
@@ -35,6 +40,7 @@ js() { ab eval "$1" | tail -1 | tr -d '"'; }
 
 tries=0
 until curl -fsS "$url/healthz" >/dev/null 2>&1; do
+    kill -0 "$server" 2>/dev/null || fail "server exited before answering"
     tries=$((tries + 1))
     [ "$tries" -lt 100 ] || fail "server did not start"
     sleep 0.2

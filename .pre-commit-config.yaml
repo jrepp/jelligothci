@@ -49,5 +49,5 @@ repos:
         name: Immutable workflow action refs
         language: system
         entry: python3 scripts/check-workflow-pins.py
-        files: '^(\.github/workflows/|scripts/check-workflow-pins\.py$)'
+        files: '^(\.github/workflows/|scripts/check-workflow-pins\.py$|tools/jelli-art/ui_tests/run\.sh$)'
         pass_filenames: false

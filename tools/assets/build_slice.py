@@ -7,6 +7,7 @@ import argparse
 import base64
 import hashlib
 import json
+import re
 import struct
 from pathlib import Path
 
@@ -25,11 +26,16 @@ PROP_SIZES = {(16, 16), (24, 24), (32, 32)}  # Imported props such as the 16x16 
 # Runtime pose order; must match JelliCreaturePose in include/jelli/creature.h.
 CREATURE_POSES = ("idle", "idle-alt", "curious", "content", "eating", "happy", "asleep", "unwell")
 CLIP_FRAME_CAP = 6
+HEX = re.compile(r"#[0-9a-f]{6}")
+# Jelli Art's own palette rows beside the ramp rows (the studio reads these labels), so no ramp may use them:
+# colours in no ramp, the whole palette when it has no ramps, and the eraser/custom extras.
+PALETTE_ROWS = {"unramped": "other", "unramped_only": "palette", "extras": "more"}
+RESERVED_ROWS = set(PALETTE_ROWS.values())
 # Real limits the art must fit: the SDL live-reload pack buffer and its banks
 # (ports/sdl/asset_reload.h). Firmware embeds the same art with ample flash headroom.
-PACK_CEILING = 294912  # JELLI_ASSET_PACK_CAPACITY: 288 KiB desktop staging buffer.
-LIVE_PIXEL_CAPACITY = 131072
-LIVE_MASK_CAPACITY = 16384
+PACK_CEILING = 458752  # JELLI_ASSET_PACK_CAPACITY: 448 KiB desktop staging buffer.
+LIVE_PIXEL_CAPACITY = 196608
+LIVE_MASK_CAPACITY = 24576
 
 
 def require(condition, message):
@@ -61,6 +67,43 @@ def palette_colours(manifest, asset):
     palettes = manifest.get("palettes", {})
     require(isinstance(name, str) and name in palettes, f"Unknown palette: {asset['key']}")
     return palettes[name]
+
+
+def _luma(hex_colour):
+    r, g, b = bytes.fromhex(hex_colour[1:])
+    return 299 * r + 587 * g + 114 * b
+
+
+def check_palette_ramps(manifest):
+    """Shading ramps and colour names, keyed "shared" or a name in manifest["palettes"].
+
+    A ramp lists lowercase '#rrggbb' palette colours from light to deep, each darker than the last.
+    Names map a palette's colours to labels; a colour may go unnamed.
+    """
+    palettes = {"shared": manifest["palette"], **manifest.get("palettes", {})}
+    ramps, names = manifest.get("palette_ramps", {}), manifest.get("palette_names", {})
+    require(isinstance(ramps, dict) and isinstance(names, dict), "Palette ramps and names must be objects")
+    for key, entries in ramps.items():
+        require(key in palettes, f"Ramps for unknown palette: {key}")
+        colours = {c.lower() for c in palettes[key]}
+        require(isinstance(entries, list), f"Ramps must be a list: {key}")
+        labels = [e.get("name") if isinstance(e, dict) else None for e in entries]
+        require(all(isinstance(n, str) and n for n in labels) and len(labels) == len(set(labels)), f"Ramp names must be unique: {key}")
+        require(not set(labels) & RESERVED_ROWS, f"Ramp names {sorted(RESERVED_ROWS)} are taken by Jelli Art's palette rows: {key}")
+        for entry in entries:
+            ramp = entry.get("colours")
+            require(isinstance(ramp, list) and len(ramp) >= 2, f"A ramp needs two or more colours: {key} {entry['name']}")
+            require(all(isinstance(c, str) and HEX.fullmatch(c) for c in ramp), f"Ramp colours must be lowercase '#rrggbb': {key} {entry['name']}")
+            require(all(c in colours for c in ramp), f"Ramp colour not in its palette: {key} {entry['name']}")
+            require(len(set(ramp)) == len(ramp), f"Ramp repeats a colour: {key} {entry['name']}")
+            require(all(_luma(a) > _luma(b) for a, b in zip(ramp, ramp[1:])), f"Ramp must run light to deep: {key} {entry['name']}")
+    for key, labels in names.items():
+        require(key in palettes, f"Names for unknown palette: {key}")
+        colours = {c.lower() for c in palettes[key]}
+        require(isinstance(labels, dict), f"Colour names map colours to names: {key}")
+        require(all(isinstance(c, str) and HEX.fullmatch(c) and c in colours for c in labels), f"Named colour not in its palette: {key}")
+        values = list(labels.values())
+        require(all(isinstance(n, str) and n for n in values) and len(values) == len(set(values)), f"Colour names must be unique: {key}")
 
 
 def check_creature_clips(manifest):
@@ -136,6 +179,7 @@ def load_assets():
         require(all(isinstance(n, int) and 0 < n <= 10000 for n in clip["durations_ms"]), "Clip duration out of bounds")
         require(isinstance(clip.get("loop"), bool), f"Clip loop flag: {clip['key']}")
     check_creature_clips(manifest)
+    check_palette_ramps(manifest)
     return manifest, images
 
 

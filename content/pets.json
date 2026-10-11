@@ -83,6 +83,12 @@
       "name": "AXOLOTL",
       "portrait": 1101,
       "art": "axolotl"
+    },
+    {
+      "id": 3,
+      "name": "BABY AXO",
+      "portrait": 1201,
+      "art": "axolotl-baby"
     }
   ],
   "evolution_sets": [
@@ -97,9 +103,10 @@
     {
       "id": 2,
       "forms": [
+        3,
         2
       ],
-      "growth_ticks": 0
+      "growth_ticks": 600
     }
   ],
   "newborn": {

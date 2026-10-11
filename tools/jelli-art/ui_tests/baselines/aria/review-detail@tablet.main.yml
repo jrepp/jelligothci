@@ -1,0 +1,59 @@
+- main:
+  - tabpanel "Review":
+    - heading "creatures.grown-happy" [level=2]
+    - text: 32×32 · ID 1010 · device 6× 0 px changed specks 0 → 0 colours 8 → 8 / max 8 lint pass Compare
+    - group "Compare":
+      - button "Side by side" [pressed]
+      - button "Swipe"
+      - button "Flip"
+      - button "Onion"
+      - button "Diff"
+    - text: Zoom · 7×
+    - group "Zoom · 7×":
+      - button "Zoom out": −
+      - button "Fit"
+      - button "Device"
+      - button "Zoom in": +
+    - text: Backdrop
+    - group "Backdrop":
+      - button "scene" [pressed]
+      - button "black"
+      - button "ring"
+      - button "panel"
+      - button "checker"
+      - button "paper"
+    - text: Overlays
+    - group "Overlays":
+      - button "Grid" [pressed]
+      - button "Issues"
+    - text: before /tmp/jelli-ui-tests/before
+    - img "creatures.grown-happy before at 7×; hover to inspect pixels"
+    - text: after working tree
+    - img "creatures.grown-happy after at 7×; hover to inspect pixels"
+    - text: Hover a pixel to inspect it. Both panes share one cursor.
+    - heading "Palette usage · click a colour to isolate it" [level=3]
+    - 'button "ink #291b35 102 → 102"'
+    - 'button "violet #7655a3 24 → 24"'
+    - 'button "lilac #a47bdb 57 → 57"'
+    - 'button "haze #d2b8f3 381 → 381"'
+    - 'button "cream #fff4cf 2 → 2"'
+    - 'button "white #ffffff 2 → 2"'
+    - 'button "rose #d84f70 2 → 2"'
+    - 'button "coral #fa8c99 4 → 4"'
+    - heading "On the panel" [level=3]
+    - button "Physical size"
+    - text: Your screen CSS px / inch
+    - spinbutton "Your screen CSS px / inch": "96"
+    - text: before 1 css px = 1 panel px
+    - img "creatures.grown-happy before, on the round panel at device scale"
+    - text: after 1 css px = 1 panel px
+    - img "creatures.grown-happy after, on the round panel at device scale"
+    - paragraph: "Drawn at the core's draw scale on a 466 px panel (≈266 ppi: 466 px across 1.75 in). Physical size approximates the real board."
+    - heading "Review" [level=3]
+    - group "Verdict":
+      - button "Looks good"
+      - button "Needs work"
+      - button "Clear"
+    - textbox "Review notes for this asset":
+      - /placeholder: Notes for this asset (stored in this browser; Copy review notes exports all)
+    - text: J/K next/previous · 1–5 compare · [/] zoom · 0 fit · D device scale · G grid · I issues · B backdrop · hold Space to peek at before · A/X mark good/needs work · S sheet · ? all shortcuts

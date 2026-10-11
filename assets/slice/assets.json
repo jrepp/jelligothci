@@ -2052,6 +2052,153 @@
       "purpose": "Broom sweeping a potty mess away; from source/broom_art.py"
     },
     {
+      "id": 1117,
+      "key": "creatures.axolotl-hug-1",
+      "path": "creatures/axolotl-hug-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        44,
+        46
+      ],
+      "palette": "axolotl",
+      "form": "axolotl",
+      "pose": "hug-1"
+    },
+    {
+      "id": 1118,
+      "key": "creatures.axolotl-hug-2",
+      "path": "creatures/axolotl-hug-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        43,
+        46
+      ],
+      "palette": "axolotl",
+      "form": "axolotl",
+      "pose": "hug-2"
+    },
+    {
+      "id": 1119,
+      "key": "creatures.axolotl-hug-3",
+      "path": "creatures/axolotl-hug-3.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        5,
+        19,
+        43,
+        46
+      ],
+      "palette": "axolotl",
+      "form": "axolotl",
+      "pose": "hug-3"
+    },
+    {
+      "id": 1201,
+      "key": "creatures.axolotl-baby-idle-1",
+      "path": "creatures/axolotl-baby-idle-1.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        7,
+        18,
+        42,
+        46
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "idle-1"
+    },
+    {
+      "id": 1202,
+      "key": "creatures.axolotl-baby-idle-2",
+      "path": "creatures/axolotl-baby-idle-2.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        7,
+        18,
+        42,
+        45
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "idle-2"
+    },
+    {
+      "id": 1203,
+      "key": "creatures.axolotl-baby-idle-3",
+      "path": "creatures/axolotl-baby-idle-3.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        7,
+        18,
+        42,
+        45
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "idle-3"
+    },
+    {
+      "id": 1204,
+      "key": "creatures.axolotl-baby-surprised",
+      "path": "creatures/axolotl-baby-surprised.png",
+      "kind": "creatures",
+      "width": 48,
+      "height": 48,
+      "pivot": [
+        24,
+        46
+      ],
+      "bounds": [
+        8,
+        18,
+        42,
+        46
+      ],
+      "palette": "axolotl",
+      "form": "axolotl-baby",
+      "pose": "surprised"
+    },
+    {
       "id": 10003,
       "key": "backgrounds.park",
       "path": "backgrounds/park.png",
@@ -2536,6 +2683,130 @@
         300
       ],
       "loop": true
+    },
+    {
+      "id": 5113,
+      "key": "axolotl.hug",
+      "frames": [
+        "creatures.axolotl-hug-1",
+        "creatures.axolotl-hug-2",
+        "creatures.axolotl-hug-3"
+      ],
+      "durations_ms": [
+        250,
+        300,
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5201,
+      "key": "axolotl-baby.idle",
+      "frames": [
+        "creatures.axolotl-baby-idle-1",
+        "creatures.axolotl-baby-idle-2"
+      ],
+      "durations_ms": [
+        450,
+        450
+      ],
+      "loop": true
+    },
+    {
+      "id": 5202,
+      "key": "axolotl-baby.idle-alt",
+      "frames": [
+        "creatures.axolotl-baby-idle-2",
+        "creatures.axolotl-baby-idle-3",
+        "creatures.axolotl-baby-idle-2"
+      ],
+      "durations_ms": [
+        90,
+        180,
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5203,
+      "key": "axolotl-baby.curious",
+      "frames": [
+        "creatures.axolotl-baby-surprised"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5204,
+      "key": "axolotl-baby.content",
+      "frames": [
+        "creatures.axolotl-baby-idle-3"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5205,
+      "key": "axolotl-baby.eating",
+      "frames": [
+        "creatures.axolotl-baby-idle-1",
+        "creatures.axolotl-baby-idle-2"
+      ],
+      "durations_ms": [
+        250,
+        250
+      ],
+      "loop": true
+    },
+    {
+      "id": 5206,
+      "key": "axolotl-baby.happy",
+      "frames": [
+        "creatures.axolotl-baby-idle-3"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5207,
+      "key": "axolotl-baby.asleep",
+      "frames": [
+        "creatures.axolotl-baby-idle-3"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5208,
+      "key": "axolotl-baby.unwell",
+      "frames": [
+        "creatures.axolotl-baby-idle-2"
+      ],
+      "durations_ms": [
+        600
+      ],
+      "loop": false
+    },
+    {
+      "id": 5209,
+      "key": "axolotl-baby.ask",
+      "frames": [
+        "creatures.axolotl-baby-surprised",
+        "creatures.axolotl-baby-idle-1"
+      ],
+      "durations_ms": [
+        500,
+        500
+      ],
+      "loop": true
     }
   ],
   "palettes": {
@@ -2549,7 +2820,8 @@
       "#ffffff",
       "#83ebfb",
       "#1ec1d9",
-      "#fde77e"
+      "#fde77e",
+      "#fff3cb"
     ],
     "poop": [
       "#000000",
@@ -2558,6 +2830,121 @@
       "#dfa08a",
       "#c9d6a3"
     ]
+  },
+  "palette_ramps": {
+    "shared": [
+      {
+        "name": "mint jelly",
+        "colours": [
+          "#cff5cf",
+          "#85e4b6",
+          "#43bca2",
+          "#187b79"
+        ]
+      },
+      {
+        "name": "lilac jelly",
+        "colours": [
+          "#ffffff",
+          "#d2b8f3",
+          "#a47bdb",
+          "#7655a3"
+        ]
+      },
+      {
+        "name": "coral",
+        "colours": [
+          "#fff4cf",
+          "#fa8c99",
+          "#d84f70"
+        ]
+      },
+      {
+        "name": "gold",
+        "colours": [
+          "#fff4cf",
+          "#f5c764",
+          "#ae7855"
+        ]
+      },
+      {
+        "name": "recess",
+        "colours": [
+          "#72516b",
+          "#49334f"
+        ]
+      }
+    ],
+    "axolotl": [
+      {
+        "name": "body",
+        "colours": [
+          "#ffffff",
+          "#ffe3ed",
+          "#ffcbdd",
+          "#ffadca",
+          "#ff5994",
+          "#d9265d"
+        ]
+      },
+      {
+        "name": "aqua",
+        "colours": [
+          "#83ebfb",
+          "#1ec1d9"
+        ]
+      }
+    ],
+    "poop": [
+      {
+        "name": "brown",
+        "colours": [
+          "#dfa08a",
+          "#b55838",
+          "#8f4329"
+        ]
+      }
+    ]
+  },
+  "palette_names": {
+    "shared": {
+      "#291b35": "ink",
+      "#49334f": "plum",
+      "#72516b": "mauve",
+      "#187b79": "teal",
+      "#43bca2": "sea",
+      "#85e4b6": "mint",
+      "#cff5cf": "foam",
+      "#7655a3": "violet",
+      "#a47bdb": "lilac",
+      "#d2b8f3": "haze",
+      "#fff4cf": "cream",
+      "#ffffff": "white",
+      "#d84f70": "rose",
+      "#fa8c99": "coral",
+      "#f5c764": "gold",
+      "#ae7855": "tan"
+    },
+    "axolotl": {
+      "#ffcbdd": "body",
+      "#000000": "outline",
+      "#ffadca": "body shadow",
+      "#ff5994": "gill",
+      "#ffe3ed": "body light",
+      "#d9265d": "gill deep",
+      "#ffffff": "white",
+      "#83ebfb": "aqua",
+      "#1ec1d9": "deep aqua",
+      "#fde77e": "butter",
+      "#fff3cb": "cream"
+    },
+    "poop": {
+      "#000000": "outline",
+      "#b55838": "brown",
+      "#8f4329": "dark brown",
+      "#dfa08a": "light brown",
+      "#c9d6a3": "stink green"
+    }
   },
   "creature_poses": [
     "idle",
@@ -2585,6 +2972,10 @@
     {
       "name": "potty",
       "fallback": "unwell"
+    },
+    {
+      "name": "hug",
+      "fallback": "happy"
     }
   ]
 }

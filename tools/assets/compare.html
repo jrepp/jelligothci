@@ -47,6 +47,7 @@ main{overflow:auto;min-height:0;padding:14px 18px 40px}
 .stats{display:flex;gap:6px;flex-wrap:wrap}
 .stat{font:11px ui-monospace,monospace;background:var(--raised);border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--muted)}
 .stat b{color:var(--ink);font-weight:500}.stat.good b{color:var(--accent)}.stat.worse b{color:var(--bad)}
+.lint-bad{color:var(--bad)}.lint-ok{color:var(--accent)}
 .stage{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .pane{display:grid;gap:6px;justify-items:start}.pane .lbl{display:flex;justify-content:space-between;gap:12px}
 .scroller{overflow:auto;max-width:100%;width:fit-content;border:1px solid var(--line);border-radius:8px;background:#111}
@@ -124,9 +125,9 @@ section.block{border-top-width:2px}.title h2{letter-spacing:.01em}
     <div class="filters">
       <input type="search" id="query" placeholder="Filter assets…" aria-label="Filter assets">
       <div class="chips" id="kinds" role="group" aria-label="Asset kind"></div>
-      <div class="chips"><button id="changed-only" aria-pressed="true">Changed only</button><button id="copy-notes">Copy review notes</button></div>
+      <div class="chips"><button id="changed-only" aria-pressed="false">Changed only</button><button id="copy-notes">Copy review notes</button></div>
     </div>
-    <p id="list-empty" class="hidden" style="padding:12px;margin:0;color:var(--muted)">No assets match. Try turning off “Changed only”.</p>
+    <p id="list-empty" class="hidden" style="padding:12px;margin:0;color:var(--muted)">No assets match. <button id="list-show-all" hidden>Show all</button></p>
     <div id="list" role="listbox" aria-label="Assets" tabindex="0"></div>
   </aside>
   <main id="main" tabindex="-1">
@@ -172,17 +173,28 @@ section.block{border-top-width:2px}.title h2{letter-spacing:.01em}
 'use strict';
 const BOOT = JSON.parse(document.getElementById('compare-data').textContent);
 let D = BOOT, byKey = {}, decoded = {};
-const NAMES = ['ink', 'plum', 'mauve', 'teal', 'sea', 'mint', 'foam', 'violet', 'lilac', 'haze', 'cream', 'white', 'rose', 'coral', 'gold', 'tan'];
-const BACKDROPS = {black: '#000000', ring: '#4a494a', panel: '#181c18', checker: null, paper: '#f5f1e7'};
-const KIND_BACKDROP = {creatures: 'black', icons: 'ring', menus: 'ring', meters: 'panel', health: 'ring', effects: 'black', prizes: 'panel', props: 'black', font: 'panel', backgrounds: 'black'};
+/* Colour names come from assets.json palette_names, keyed by palette ("shared" or a named one) and colour. */
+const colourName = (palette, hex) => D.palette_names?.[palette]?.[hex?.toLowerCase()];
+const slotLabel = i => colourName('shared', D.palette[i]) || `slot ${i + 1}`;
+/* scene is the wall grey behind the pet (sceneGrey() reads it from backgrounds.home at load); ring is the ring button; panel is the stat tile. */
+const BACKDROPS = {scene: '#b6b6b6', black: '#000000', ring: '#4a494a', panel: '#181c18', checker: null, paper: '#f5f1e7'};
+const CHECKER = ['#36363d', '#2b2b31'];
+/* Perceived brightness 0-255 of '#rrggbb'. */
+const lumaOf = hex => [1, 3, 5].reduce((n, i, k) => n + parseInt(hex.slice(i, i + 2), 16) * [0.299, 0.587, 0.114][k], 0);
+const CHECKER_LUMA = (lumaOf(CHECKER[0]) + lumaOf(CHECKER[1])) / 2;
+const backdropLuma = name => BACKDROPS[name] ? lumaOf(BACKDROPS[name]) : CHECKER_LUMA;
+const KIND_BACKDROP = {creatures: 'scene', icons: 'ring', menus: 'ring', meters: 'panel', health: 'ring', effects: 'black', prizes: 'panel', props: 'scene', font: 'panel', backgrounds: 'black'};
 const MODES = ['side', 'swipe', 'flip', 'onion', 'diff'];
 const PANEL_PPI = 466 / 1.75;
 const DPR = Math.max(1, window.devicePixelRatio || 1);
 const store = {get(k, d) { try { const v = localStorage.getItem('jelli-review:' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem('jelli-review:' + k, JSON.stringify(v)); } catch { /* storage unavailable */ } }};
-const state = Object.assign({key: null, mode: 'side', zoom: null, grid: true, issues: false, backdrop: null, changedOnly: true, kind: 'all', query: '',
+/* Bump PREFS_VERSION to drop saved prefs whose old default should not stick: version 2 resets changedOnly, which used to default on. */
+const PREFS_VERSION = 2, savedPrefs = store.get('prefs', {});
+if (savedPrefs.prefsVersion !== PREFS_VERSION) delete savedPrefs.changedOnly;
+const state = Object.assign({key: null, mode: 'side', zoom: null, grid: true, issues: false, backdrops: {}, changedOnly: false, kind: 'all', query: '',
   view: 'detail', peek: false, isolate: null, swipe: 0.5, onion: 0.5, flipBefore: false, blink: false, hover: null, physical: false,
-  ppi: DPR >= 2 ? 127 : 96, sheetShow: 'both', sheetScale: 'device', sheetBackdrop: 'auto'}, store.get('prefs', {}));
+  ppi: DPR >= 2 ? 127 : 96, sheetShow: 'both', sheetScale: 'device', sheetBackdrop: 'auto'}, savedPrefs);
 state.peek = false; state.hover = null; state.isolate = null; state.flipBefore = false; state.blink = false;
 const reviews = store.get('reviews', {});
 const hexOf = (d, i) => '#' + [d[i], d[i + 1], d[i + 2]].map(v => v.toString(16).padStart(2, '0')).join('');
@@ -191,12 +203,15 @@ const assetPalette = a => a?.palette || D.palette;
 const label = (hex, a) => {
   const pal = assetPalette(a), i = pal.indexOf(hex);
   if (i < 0) return 'off-palette';
-  return pal === D.palette || !a.palette_name || a.palette_name === 'shared' ? NAMES[i] : `${a.palette_name} ${i + 1}`;
+  if (pal === D.palette || !a.palette_name || a.palette_name === 'shared') return slotLabel(i);
+  return colourName(a.palette_name, hex) || `${a.palette_name} ${i + 1}`;
 };
 const signature = a => { let h = 0; const s = a.after || ''; for (let i = 0; i < s.length; i += 7) h = (h * 31 + s.charCodeAt(i)) | 0; return String(h); };
-const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrop, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;
-  store.set('prefs', {mode, grid, issues, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop});
-  lastHash = '#' + new URLSearchParams({view, key, mode, zoom: zoom || 'fit'}); location.replace(lastHash); };
+const savePrefs = () => { const {key, mode, zoom, grid, issues, backdrops, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop} = state;
+  store.set('prefs', {prefsVersion: PREFS_VERSION, mode, grid, issues, backdrops, changedOnly, kind, view, swipe, onion, physical, ppi, sheetShow, sheetScale, sheetBackdrop});
+  /* Only the asset views (detail and sheet) use mode and zoom; the other views keep the key so a reload returns to the same asset. */
+  const assetView = view === 'detail' || view === 'sheet';
+  lastHash = '#' + new URLSearchParams(assetView ? {view, key, mode, zoom: zoom || 'fit'} : {view, key}); location.replace(lastHash); };
 let lastHash = '';
 /* Deep links: #view=sheet&key=…&mode=diff&zoom=8, or a bare mode name: #review, #paint, #creature, #behaviour. */
 function applyHash() {
@@ -229,7 +244,7 @@ function makeCanvas(cssW, cssH) { const c = document.createElement('canvas'); c.
 function fillBackdrop(ctx, w, h, z, name) {
   const color = BACKDROPS[name];
   if (color) { ctx.fillStyle = color; ctx.fillRect(0, 0, w * z, h * z); return; }
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { ctx.fillStyle = (x + y) % 2 ? '#2b2b31' : '#36363d'; ctx.fillRect(x * z, y * z, z, z); }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { ctx.fillStyle = CHECKER[(x + y) % 2]; ctx.fillRect(x * z, y * z, z, z); }
 }
 function drawPixels(ctx, p, z, opts = {}) {
   if (!p) return;
@@ -247,8 +262,9 @@ function drawPixels(ctx, p, z, opts = {}) {
 }
 function drawGrid(ctx, w, h, z) {
   if (!state.grid || z < 5) return;
-  for (let x = 0; x <= w; x++) { ctx.fillStyle = x % 8 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.2)'; ctx.fillRect(x * z, 0, 1, h * z); }
-  for (let y = 0; y <= h; y++) { ctx.fillStyle = y % 8 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.2)'; ctx.fillRect(0, y * z, w * z, 1); }
+  const a = asset(), ink = a && backdropLuma(backdropFor(a)) > 128 ? '0,0,0' : '255,255,255';  // dark lines on light backdrops
+  for (let x = 0; x <= w; x++) { ctx.fillStyle = x % 8 ? `rgba(${ink},.07)` : `rgba(${ink},.2)`; ctx.fillRect(x * z, 0, 1, h * z); }
+  for (let y = 0; y <= h; y++) { ctx.fillStyle = y % 8 ? `rgba(${ink},.07)` : `rgba(${ink},.2)`; ctx.fillRect(0, y * z, w * z, 1); }
 }
 function drawIssues(ctx, metrics, z) {
   if (!state.issues || !metrics) return;
@@ -264,7 +280,12 @@ function drawHover(ctx, z) {
 function tag(ctx, text, x, y, color) { ctx.font = '600 11px system-ui'; const w = ctx.measureText(text).width + 10; ctx.fillStyle = color; ctx.fillRect(x, y, w, 18); ctx.fillStyle = '#1b1b1f'; ctx.fillText(text, x + 5, y + 13); }
 
 const asset = () => byKey[state.key];
-const backdropFor = a => state.backdrop || KIND_BACKDROP[a.kind];
+/* Each kind remembers its own backdrop; picking the kind's default forgets the choice. */
+const backdropFor = a => state.backdrops?.[a.kind] || KIND_BACKDROP[a.kind];
+function setBackdrop(a, name) {
+  state.backdrops = {...state.backdrops}; if (name === KIND_BACKDROP[a.kind]) delete state.backdrops[a.kind]; else state.backdrops[a.kind] = name;
+  savePrefs(); renderDetail();
+}
 function fitZoom(a) {
   const stage = document.getElementById('stage'); const panes = state.mode === 'side' ? 2 : 1;
   // Paint keeps a side column (flip-book, colours, history) beside the canvas and fits the canvas below the toolbar.
@@ -343,10 +364,18 @@ function renderInspector(a) {
   const show = hex => hex ? `<span class="sw" style="background:${hex}"></span>${hex} ${label(hex, a)}` : '<span class="sw" style="background:repeating-linear-gradient(45deg,#555 0 2px,#222 2px 4px)"></span>transparent';
   el.innerHTML = `<span>x ${x}, y ${y}</span><span>before ${show(b)}</span><span>after ${show(f)}</span>${b !== f ? '<span style="color:var(--warn)">changed</span>' : ''}`;
 }
+/* The issues overlay's summary: what the current sprite fails, what is waived, and its colour budget. */
+function lintLegend() {
+  const a = asset(); if (!a) return '';
+  const v = lintOf(a), parts = [`colours ${v.colours}${v.max_colours !== null ? ` of ${v.max_colours} allowed` : ''}`];
+  if (v.fails.length) parts.push(`fails: ${lintNames(v.fails)}`);
+  for (const [r, why] of Object.entries(v.waived)) parts.push(`${lintNames([r])} waived (${attr(why)})`);
+  return `<span class="${v.fails.length ? 'lint-bad' : ''}">${parts.join(' · ')}</span>`;
+}
 function renderLegend() {
   const el = document.getElementById('legend');
   el.innerHTML = state.mode === 'diff' ? '<span><i style="background:#43bca2"></i>added</span><span><i style="background:#d84f70"></i>removed</span><span><i style="background:#a47bdb"></i>recoloured (centre shows new colour)</span><span>grey: unchanged</span>'
-    : state.issues ? '<span><i style="background:#ff4d6d"></i>speck: lone pixel with no same-colour neighbour (ink and white exempt)</span><span><i style="background:#ffd23f;border-radius:50%"></i>open edge: silhouette pixel without ink outline</span>' : '';
+    : state.issues ? '<span><i style="background:#ff4d6d"></i>speck: lone pixel with no same-colour neighbour (ink and white exempt)</span><span><i style="background:#ffd23f;border-radius:50%"></i>open edge: fill pixel with no ink between it and transparency (left, right, above or below)</span>' + lintLegend() : '';
   const extra = document.getElementById('mode-extra'); extra.textContent = '';
   if (state.mode === 'onion') extra.innerHTML = `<div class="lbl">After opacity</div><input type="range" id="onion" min="0" max="1" step=".05" value="${state.onion}">`;
   if (state.mode === 'flip') extra.innerHTML = `<div class="lbl">Flip</div><button id="blink" aria-pressed="${state.blink}">Auto blink</button>`;
@@ -355,6 +384,10 @@ function renderLegend() {
   extra.querySelector('#blink')?.addEventListener('click', e => { state.blink = !state.blink; e.target.setAttribute('aria-pressed', state.blink); });
 }
 
+/* Style lint (tools/jelli-art/lint.js): failing rules and waivers from the metrics and the payload's limits. */
+const lintOf = (a, m = a.after_metrics) => window.JelliLint ? JelliLint.verdict(a.key, a.kind, m, D.lint) : {fails: [], waived: {}, colours: Object.keys(m.colors).length, max_colours: null};
+const lintNames = rules => rules.map(r => window.JelliLint?.NAMES[r] || r).join(', ');
+const attr = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 function delta(b, f, lowerIsBetter = true) { if (b === undefined || b === null) return ['', `${f}`]; const cls = f === b ? '' : (f < b) === lowerIsBetter ? 'good' : 'worse'; return [cls, `${b} → ${f}`]; }
 function renderHeader(a) {
   document.getElementById('asset-name').textContent = a.key;
@@ -363,9 +396,15 @@ function renderHeader(a) {
   const s = delta(bm?.specks.length, am.specks.length), o = delta(bm?.open_edges.length, am.open_edges.length), c = delta(bm ? Object.keys(bm.colors).length : undefined, Object.keys(am.colors).length);
   if (a.kind !== 'font' && a.kind !== 'backgrounds') items.push([s[0], `specks ${s[1]}`]);
   if (am.open_edges.length || bm?.open_edges.length) items.push([o[0], `open edges ${o[1]}`]);
-  items.push(['', `colours ${c[1]}`]);
+  const v = lintOf(a), waived = Object.keys(v.waived);
+  items.push([v.fails.includes('colours') ? 'worse' : '', `colours ${c[1]}${v.max_colours !== null ? ` / max ${v.max_colours}` : ''}`]);
+  if (v.fails.length) items.push(['worse', `lint fails: ${lintNames(v.fails)}`, 'docs/pixel-art-guide.md rules this sprite breaks']);
+  else items.push(['good', 'lint pass', 'Specks, open edges and colour count meet docs/pixel-art-guide.md']);
+  if (waived.length) items.push(['', `waived: ${lintNames(waived)}`, `Waived: ${v.waived[waived[0]]}`]);
   window.Studio?.decorateHeader(a, items);
-  document.getElementById('asset-stats').innerHTML = items.map(([cls, t]) => `<span class="stat ${cls}"><b>${t}</b></span>`).join('');
+  const stats = document.getElementById('asset-stats');
+  stats.innerHTML = items.map(([cls, t, title]) => `<span class="stat ${cls}"${title ? ` title="${attr(title)}"` : ''}><b>${t}</b></span>`).join('');
+  window.Studio?.afterHeader?.(a, stats, v);
 }
 function renderPalette(a) {
   if (state.mode === 'paint' && window.Studio) return window.Studio.renderPalette(document.getElementById('palette'), a);
@@ -426,16 +465,21 @@ function filtered() {
   const q = state.query.toLowerCase();
   return D.assets.filter(a => (state.kind === 'all' || a.kind === state.kind) && (!state.changedOnly || a.changed !== 0) && (!q || a.key.includes(q)));
 }
+function setChangedOnly(on) {
+  state.changedOnly = on; document.getElementById('changed-only').setAttribute('aria-pressed', on);
+  renderList(); if (state.view === 'sheet') renderSheet(); savePrefs();
+}
 function renderList() {
   const el = document.getElementById('list'); el.textContent = '';
   const items = filtered();
-  document.getElementById('list-empty').classList.toggle('hidden', items.length > 0); el.hidden = !items.length; el.removeAttribute('aria-activedescendant');
+  document.getElementById('list-empty').classList.toggle('hidden', items.length > 0); document.getElementById('list-show-all').hidden = !state.changedOnly; el.hidden = !items.length; el.removeAttribute('aria-activedescendant');
   for (const [i, a] of items.entries()) {
     const row = document.createElement('div'); row.className = 'item'; row.id = `asset-option-${i}`; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', String(a.key === state.key));
     if (a.key === state.key) el.setAttribute('aria-activedescendant', row.id);
     const thumb = uri => uri ? `<div class="thumb"><img alt="" src="${uri}"></div>` : '<div class="thumb none"></div>';
-    const sp = a.before_metrics ? `${a.before_metrics.specks.length}→${a.after_metrics.specks.length} specks` : 'new';
-    row.innerHTML = `${thumb(a.before)}${thumb(a.after)}<div><div class="name">${reviewDot(a)}${a.key.split('.')[1]}</div><div class="sub">${a.kind} · ${a.changed < 0 ? 'new' : a.changed + ' px'} · ${sp}</div></div>`;
+    const sp = a.before_metrics ? `${a.before_metrics.specks.length}→${a.after_metrics.specks.length} specks` : 'new', v = lintOf(a);
+    const lint = v.fails.length ? `<span class="lint-bad" title="Fails: ${lintNames(v.fails)}">✗ ${lintNames(v.fails)}</span>` : `<span class="lint-ok" title="Meets the style lint${Object.keys(v.waived).length ? ' with waivers' : ''}">✓${Object.keys(v.waived).length ? ' waived' : ''}</span>`;
+    row.innerHTML = `${thumb(a.before)}${thumb(a.after)}<div><div class="name">${reviewDot(a)}${a.key.split('.')[1]}</div><div class="sub">${a.kind} · ${a.changed < 0 ? 'new' : a.changed + ' px'} · ${sp} · ${lint}</div></div>`;
     row.onclick = () => select(a.key);
     el.append(row);
   }
@@ -443,19 +487,21 @@ function renderList() {
 }
 function renderKinds() {
   const kinds = ['all', ...new Set(D.assets.map(a => a.kind))], el = document.getElementById('kinds'); el.textContent = '';
-  for (const k of kinds) { const n = D.assets.filter(a => (k === 'all' || a.kind === k) && a.changed !== 0).length; const b = document.createElement('button');
-    b.textContent = `${k} ${n}`; b.setAttribute('aria-pressed', String(state.kind === k)); b.onclick = () => { state.kind = k; renderKinds(); renderList(); savePrefs(); }; el.append(b); }
+  for (const k of kinds) { const of = D.assets.filter(a => k === 'all' || a.kind === k), n = of.filter(a => a.changed !== 0).length; const b = document.createElement('button');
+    b.textContent = `${k} ${of.length}${n ? ` · ${n} changed` : ''}`; b.setAttribute('aria-pressed', String(state.kind === k)); b.onclick = () => { state.kind = k; renderKinds(); renderList(); savePrefs(); }; el.append(b); }
 }
 function renderTotals() {
-  const sum = (side, f) => D.assets.reduce((n, a) => n + (a[side] ? f(a[side]) : 0), 0);
   const changed = D.assets.filter(a => a.changed !== 0).length;
-  document.getElementById('totals').innerHTML = `<span><b>${changed}</b>/${D.assets.length} changed</span><span>specks <b>${sum('before_metrics', m => m.specks.length)} → ${sum('after_metrics', m => m.specks.length)}</b></span><span>open edges <b>${sum('before_metrics', m => m.open_edges.length)} → ${sum('after_metrics', m => m.open_edges.length)}</b></span>`;
+  /* Sprites failing a rule that is not waived; raw speck and edge counts stay on each asset. */
+  const failing = side => D.assets.filter(a => a[side] && lintOf(a, a[side]).fails.length).length;
+  const waived = D.assets.filter(a => Object.keys(lintOf(a).waived).length).length;
+  document.getElementById('totals').innerHTML = `<span><b>${changed}</b>/${D.assets.length} changed</span><span title="Sprites that fail the style lint (specks, open edges or colour count), not counting waived rules">lint failing <b>${failing('before_metrics')} → ${failing('after_metrics')}</b></span>${waived ? `<span>waived <b>${waived}</b></span>` : ''}${D.lint_error ? `<span class="lint-bad" title="${attr(D.lint_error)}">lint.json unreadable</span>` : ''}`;
   document.getElementById('before-label').textContent = D.before_label; document.getElementById('after-label').textContent = D.after_label;
 }
 function renderDetail() {
   const a = asset(); if (!a) return;
   document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)));
-  renderBackdrops('backdrops', backdropFor(a), name => { state.backdrop = name === KIND_BACKDROP[a.kind] ? null : name; renderDetail(); });
+  renderBackdrops('backdrops', backdropFor(a), name => setBackdrop(a, name));
   document.getElementById('grid').setAttribute('aria-pressed', state.grid); document.getElementById('issues').setAttribute('aria-pressed', state.issues);
   document.getElementById('detail').classList.toggle('painting', state.mode === 'paint');
   renderHeader(a); renderLegend(); renderStage(); renderPalette(a); renderContext(a); renderReview(a);
@@ -529,7 +575,8 @@ function wire() {
   document.getElementById('zoom-fit').onclick = () => setZoom(null); document.getElementById('zoom-device').onclick = () => setZoom(Math.max(1, Math.round(asset().device_scale)));
   document.getElementById('grid').onclick = () => { state.grid = !state.grid; renderDetail(); savePrefs(); };
   document.getElementById('issues').onclick = () => { state.issues = !state.issues; renderDetail(); savePrefs(); };
-  document.getElementById('changed-only').onclick = e => { state.changedOnly = !state.changedOnly; e.target.setAttribute('aria-pressed', state.changedOnly); renderList(); if (state.view === 'sheet') renderSheet(); savePrefs(); };
+  document.getElementById('changed-only').onclick = () => setChangedOnly(!state.changedOnly);
+  document.getElementById('list-show-all').onclick = () => setChangedOnly(false);
   document.getElementById('query').oninput = e => { state.query = e.target.value; renderList(); if (state.view === 'sheet') renderSheet(); };
   document.getElementById('copy-notes').onclick = exportNotes;
   document.getElementById('verdict').onclick = e => { const b = e.target.closest('button'); if (b) setVerdict(b.dataset.verdict); };
@@ -560,7 +607,7 @@ function wire() {
     else if (k === 'd') setZoom(Math.max(1, Math.round(asset().device_scale)));
     else if (k === 'g') { state.grid = !state.grid; renderDetail(); savePrefs(); }
     else if (k === 'i') { state.issues = !state.issues; renderDetail(); savePrefs(); }
-    else if (k === 'b') { const names = Object.keys(BACKDROPS), a = asset(); state.backdrop = names[(names.indexOf(backdropFor(a)) + 1) % names.length]; renderDetail(); }
+    else if (k === 'b') { const names = Object.keys(BACKDROPS), a = asset(); setBackdrop(a, names[(names.indexOf(backdropFor(a)) + 1) % names.length]); }
     else if (k === 'a') setVerdict('ok');
     else if (k === 'x') setVerdict('fix');
     else if (k === 's') { state.view = state.view === 'sheet' ? 'detail' : 'sheet'; renderView(); savePrefs(); }
@@ -573,6 +620,14 @@ async function loadPayload(data) {
   const next = {};
   await Promise.all(data.assets.map(async a => { next[a.key] = {before: await decode(a.before), after: await decode(a.after)}; }));
   D = data; byKey = Object.fromEntries(D.assets.map(a => [a.key, a])); decoded = next;
+  BACKDROPS.scene = sceneGrey(decoded['backgrounds.home']?.after || decoded['backgrounds.home']?.before) || BACKDROPS.scene;
+}
+/* The most common non-black colour of the home background: the wall behind the pet. */
+function sceneGrey(p) {
+  if (!p) return null;
+  const n = new Map();
+  for (let i = 0; i < p.data.length; i += 4) { if (!p.data[i + 3]) continue; const hex = hexOf(p.data, i); if (hex !== '#000000') n.set(hex, (n.get(hex) || 0) + 1); }
+  return [...n].sort((x, y) => y[1] - x[1])[0]?.[0] || null;
 }
 async function boot() {
   if (BOOT.live && window.Studio) await window.Studio.boot(); else await loadPayload(BOOT);

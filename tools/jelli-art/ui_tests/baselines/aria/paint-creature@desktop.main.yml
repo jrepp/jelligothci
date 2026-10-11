@@ -1,0 +1,118 @@
+- main:
+  - tabpanel "Paint":
+    - heading "creatures.axolotl-idle-2" [level=2]
+    - text: "48×48 · ID 1102 · device 6× 0 px changed specks 15 → 15 open edges 4 → 4 colours 7 → 7 / max 8 lint fails: specks, open edges"
+    - button "Waive…"
+    - text: Zoom · 10×
+    - group "Zoom · 10×":
+      - button "Zoom out": −
+      - button "Fit"
+      - button "Device"
+      - button "Zoom in": +
+    - text: Backdrop
+    - group "Backdrop":
+      - button "scene" [pressed]
+      - button "black"
+      - button "ring"
+      - button "panel"
+      - button "checker"
+      - button "paper"
+    - text: Overlays
+    - group "Overlays":
+      - button "Grid" [pressed]
+      - button "Issues"
+    - toolbar "Paint tools":
+      - text: Tool
+      - group "Tool":
+        - button "Pencil" [pressed]
+        - button "Eraser"
+        - button "Fill"
+        - button "Pick colour"
+        - button "Shade"
+        - button "Line"
+        - button "Rectangle"
+        - button "Ellipse"
+        - button "Select"
+        - button "Magic wand"
+      - text: Options
+      - group "Options":
+        - button "Filled"
+        - button "Pixel-perfect"
+        - button "Mirror"
+      - text: History
+      - group "History":
+        - button "Undo" [disabled]
+        - button "Redo" [disabled]
+      - text: File
+      - group "File":
+        - button "Revert"
+        - button "Use before"
+        - button "Saved" [disabled]
+    - group: More tools selection · transform · nudge · replace colour · mirror · guides · tiles · tidy
+    - text: paint Hover or focus the canvas
+    - application "creatures.axolotl-idle-2, 48 by 48 pixels"
+    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."
+    - heading "Paint colours · axolotl palette · click to paint" [level=3]
+    - group "Main and secondary colours":
+      - text: "main outline #000000 · secondary (right-click) transparent"
+      - button "⇄ Swap"
+    - group "body":
+      - text: body
+      - 'button "white · #ffffff · used by 12 assets"': white 2 px
+      - 'button "body light · #ffe3ed · used by 15 assets"': body light 17 px
+      - 'button "body · #ffcbdd · used by 15 assets"': body 346 px
+      - 'button "body shadow · #ffadca · used by 15 assets"': body shadow 92 px
+      - 'button "gill · #ff5994 · used by 15 assets"': gill 43 px
+      - 'button "gill deep · #d9265d · used by 15 assets"': gill deep 4 px
+    - group "aqua":
+      - text: aqua
+      - 'button "aqua · #83ebfb · used by 2 assets"': aqua —
+      - 'button "deep aqua · #1ec1d9 · used by 2 assets"': deep aqua —
+    - group "other":
+      - text: other
+      - 'button "outline · #000000 · used by 15 assets" [pressed]': outline 148 px
+      - 'button "butter · #fde77e · used by 1 assets"': butter —
+    - group "more":
+      - text: more
+      - button "eraser · transparent · secondary colour": eraser right-click
+      - button "Choose a custom colour": custom pick…
+    - paragraph: Click a colour to paint with it; right-click it, press Shift+F10 on it, or choose it and press X to make it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. This sprite uses the axolotl palette, so the shared palette and its ✎ do not apply. Tools paint only these colours until you choose custom; custom colours work in the live game only. Shift-click isolates a colour.
+    - region "Flip-book":
+      - heading "Flip-book" [level=3]
+      - text: axolotl.idle · 4 frames · loops
+      - note: ✓ Frames keep frame 1's ground anchor and eye 16 px above the ground
+      - button "Eye & ground"
+      - img "axolotl.idle preview, with unsaved paint"
+      - group "Flip-book":
+        - button "◀ Frame←"
+        - button "Play⇧Space"
+        - button "Frame ▶→"
+      - text: showing frame 2/4 · 450 ms Painting frame 2 of 4. ← and → change frame while the keyboard cursor is hidden; , and . always do.
+      - list "Frames of axolotl.idle":
+        - listitem:
+          - 'button "Paint frame 1: idle-1, 450 ms"': 1 · idle-1 450 ms
+        - listitem:
+          - 'button "Paint frame 2: idle-2, 450 ms"': 2 · idle-2 450 ms
+        - listitem:
+          - 'button "Paint frame 3: idle-3, 450 ms"': 3 · idle-3 450 ms
+        - listitem:
+          - 'button "Paint frame 4: idle-4, 450 ms"': 4 · idle-4 450 ms
+      - button "Onion skinO" [pressed]
+      - group "Onion skin shows":
+        - button "Changes" [pressed]
+        - button "Silhouette"
+      - group "Frames each side":
+        - button "±1" [pressed]
+        - button "±2"
+        - button "±3"
+      - text: Ghost
+      - slider "Onion skin opacity": "0.5"
+      - text: "before: idle-1 after: idle-3"
+      - button "Edit order and timing in the Creature tab ↗"
+    - text: before /tmp/jelli-ui-tests/before
+    - img "creatures.axolotl-idle-2 before (/tmp/jelli-ui-tests/before)"
+    - text: history click a step to go back
+    - list "history click a step to go back":
+      - listitem:
+        - button "1. Opened"
+    - text: Hover a pixel to inspect it. Both panes share one cursor.

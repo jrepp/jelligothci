@@ -1,0 +1,9 @@
+{
+  "max_colours": 6,
+  "max_colours_by_kind": {
+    "backgrounds": null,
+    "creatures": 8,
+    "font": null
+  },
+  "waivers": {}
+}

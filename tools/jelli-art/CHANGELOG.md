@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.6.1](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.6.0...jelli-art-v0.6.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **jelli-art:** reset the studio branch after a squash-merge when the base moved on ([#38](https://github.com/jrepp/jelligothci/issues/38)) ([a12ef19](https://github.com/jrepp/jelligothci/commit/a12ef19ae6e584752cb2663e87c6adfd90b59efb))
+
+## [0.6.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.5.0...jelli-art-v0.6.0) (2026-10-10)
+
+
+### Features
+
+* **jelli-art:** clean-ratio lines, magic wand, movable mirror and tiled preview ([#30](https://github.com/jrepp/jelligothci/issues/30)) ([34d196a](https://github.com/jrepp/jelligothci/commit/34d196a809422bd99efb84e6d3da4c28b1a44a4d))
+* **jelli-art:** colour ramps, shading and secondary colour ([#29](https://github.com/jrepp/jelligothci/issues/29)) ([d65a45e](https://github.com/jrepp/jelligothci/commit/d65a45e69f24cd77cebf0d2f817b7056f3c1d754))
+* **jelli-art:** lint that matches the style guide ([#25](https://github.com/jrepp/jelligothci/issues/25)) ([8f750dd](https://github.com/jrepp/jelligothci/commit/8f750dd8206c31459d9c8fc669f3052d7fefac6b))
+
+## [0.5.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.4.0...jelli-art-v0.5.0) (2026-10-10)
+
+
+### Features
+
+* **jelli-art:** animation guides and onion skin modes ([#27](https://github.com/jrepp/jelligothci/issues/27)) ([c26a8d4](https://github.com/jrepp/jelligothci/commit/c26a8d4b6e1e31c13aae64f79d72b921a4d096f6))
+
+
+### Bug Fixes
+
+* **jelli-art:** first-run defaults and readable backdrops ([#24](https://github.com/jrepp/jelligothci/issues/24)) ([12e0d75](https://github.com/jrepp/jelligothci/commit/12e0d75747270aeb8d4e39d854a570dd6b0519b0))
+* **jelli-art:** temporary Alt-pick, styled confirms and view-scoped links ([#26](https://github.com/jrepp/jelligothci/issues/26)) ([ff389c2](https://github.com/jrepp/jelligothci/commit/ff389c22c798871a5279e07bb3254c5e6d55db13))
+
 ## [0.4.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.3.0...jelli-art-v0.4.0) (2026-10-10)
 
 
