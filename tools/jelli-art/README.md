@@ -69,17 +69,25 @@ use `window.JelliTouch`; its header comment documents each call.
 | `kind(e)`, `coarse()` | `'pen'`, `'touch'` or `'mouse'` for a pointer event; whether any coarse pointer is present. |
 | `pencilOnly()`, `setPencilOnly(on)`, `onPencilOnly(fn)` | The viewer's Pencil only switch, off by default and kept per viewer. `onPencilOnly` returns an unsubscribe function. |
 | `offerPencilOnly()` | Once per viewer, a toast with a button that turns Pencil only on. |
-| `gestures(handlers, options)` | A recogniser for a canvas: `stroke.start/move/end/cancel` for the mouse, the Pencil and one finger (fingers only while Pencil only is off); `pan`, `pinch`, `gestureEnd`, `tap(2 or 3)`, `point` and `longPress`. `attach(el)` wires an element and returns a detach function. |
+| `gestures(handlers, options)` | A recogniser for a canvas: `stroke.start/move/end/cancel` for the mouse, the Pencil and one finger (fingers only while Pencil only is off); `pan`, `pinch`, `gestureEnd`, `tap(2 or 3)`, `point` and `longPress`. `attach(el)` wires an element and returns a detach function. `stroke.cancel(e, reason)` gets a reason (`second-finger`, `long-press`, `pen`, `lost`, `blur`, `cancel`); `reset(reason)` cancels a stroke and ends a gesture. |
 | `registerGestures([{gesture, description}])` | Adds gestures to the Touch and Pencil section of the ? overlay, merged by name. |
 | `info(text, label)`, `popover(text, anchor)` | A tap-to-reveal ⓘ button (HTML), and the popover it opens. |
-| `setList(open)` | Opens or closes the asset-list drawer. |
+| `setList(open)`, `drawerOn()` | Opens or closes the asset-list drawer; `drawerOn()` is true while the primary pointer is coarse (a hybrid with a mouse keeps the aside). |
 
 On coarse pointers, buttons, selects, inputs, chips, tabs and list rows are at
 least 44 px (`--tap`), and `<kbd>` hints in buttons stay hidden until the first
 key press outside a text field (`html[data-keys]`). A long press on a control
 with a `title` shows the title in a popover. Elements with
 `data-touch-surface` handle their own long press. The **List** button turns the
-asset list into a drawer. Mouse and keyboard pages look as they did.
+asset list into a drawer on devices whose primary pointer is coarse. Mouse and keyboard pages look as they did.
+
+Input hardening: a finger lift that leaves one finger freezes the gesture
+(no pan or pinch from the remaining finger) and `gestureEnd` fires when the last
+lifts; a lost pointer capture, `pointercancel`, window blur or hidden tab
+cancels the stroke; a new mouse or pen press replaces a stuck stroke. Fingers
+that land during a pen stroke stay inert after the pen lifts (RFC-007 would let
+them join a gesture). The long-press popover opens inside an open dialog and
+skips form fields.
 
 ## Paint tools
 

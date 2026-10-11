@@ -61,9 +61,16 @@
     let el = toasts.get(id);
     if (!el) {
       el = document.createElement('div'); toasts.set(id, el); box.append(el);
-      el.addEventListener('mouseenter', () => clearTimeout(el.timer));
+      // Hovering holds it; pointerenter only for a real mouse, since the mouse events a touch emulates arrive after it lifts.
+      el.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') clearTimeout(el.timer); });
       el.addEventListener('focusin', () => clearTimeout(el.timer));
-      el.addEventListener('pointerdown', () => clearTimeout(el.timer));  // a touch holds it, as hovering does
+      // A touch holds it, as hovering does; when the touch ends it runs on for what was left, or a short while.
+      el.addEventListener('pointerdown', () => { if (el.due) el.left = Math.max(0, el.due - performance.now()); clearTimeout(el.timer); });
+      for (const type of ['pointerup', 'pointercancel']) el.addEventListener(type, e => {
+        if (e.pointerType === 'mouse') return;
+        if (el.due && el.left !== undefined) arm(id, el, Math.max(el.left, 2000));
+        el.left = undefined;
+      });
     }
     el.className = `shell-toast ${tone}`; el.dataset.text = text; el.dataset.mode = currentMode; el.dataset.tone = tone; el.dataset.keep = String(sticky || !!opts.keep);
     const label = {info: 'Note', ok: 'Done', warn: 'Warning', bad: 'Problem'}[tone];
@@ -71,11 +78,13 @@
       '<button type="button" class="shell-dismiss" aria-label="Dismiss notification">×</button>';
     el.querySelector('.shell-dismiss').onclick = () => dismiss(id);
     clearTimeout(el.timer);
-    if (!sticky) el.timer = setTimeout(() => dismiss(id), opts.timeout || 6000);
+    el.due = 0; el.left = undefined;
+    if (!sticky) arm(id, el, opts.timeout || 6000);
     while (toasts.size > 4) dismiss(toasts.keys().next().value);
     announce(`${label}: ${text}${hint ? ` ${hint}` : ''}`);
     return id;
   }
+  function arm(id, el, ms) { clearTimeout(el.timer); el.due = performance.now() + ms; el.timer = setTimeout(() => dismiss(id), ms); }
   /* Switching mode clears passing info and done toasts from the mode left behind; warnings, problems, sticky toasts and {keep: true} ones (save results) stay. */
   function leaveMode(next) {
     if (currentMode) for (const [id, el] of [...toasts]) if (el.dataset.mode !== next && el.dataset.keep !== 'true' && ['info', 'ok'].includes(el.dataset.tone)) dismiss(id);
@@ -196,7 +205,7 @@
   }
   function updateDirty() {
     const items = dirtyItems(), btn = document.getElementById('shell-unsaved'); if (!btn) return;
-    btn.classList.toggle('hidden', !items.length);
+    btn.classList.toggle('shell-clean', !items.length);  // stays in flow, so the toolbar never reflows
     btn.textContent = items.length ? `● Unsaved: ${items.map(i => i.label + (i.n > 1 ? ` (${i.n})` : '')).join(', ')}` : '';
     const modes = new Set(items.map(i => i.mode));
     document.querySelectorAll('#shell-modes [role=tab]').forEach(t => { t.querySelector('.shell-tab-dirty').hidden = !modes.has(t.dataset.modeId); });
@@ -256,11 +265,19 @@
   }
 
   /* ---------- page furniture ---------- */
+  /* Marker and tab state changes must not move the page: the unsaved button keeps its space, tab dots a fixed width. */
+  const STABLE_CSS = `.shell-unsaved.shell-clean{display:none}
+@media (pointer: coarse){
+  .shell-unsaved{min-width:15em;text-align:center}.shell-unsaved.shell-clean{display:inline-block;visibility:hidden}
+  .shell-tab-dirty,.shell-tab-dirty[hidden]{display:inline-block;width:1.2em;text-align:center}.shell-tab-dirty[hidden]{visibility:hidden}
+  .shell-tools{flex-wrap:nowrap;max-width:100%;overflow-x:auto;scrollbar-width:none}.shell-tools>*{flex:none}
+}`;
   function insertChrome() {
+    const st = document.createElement('style'); st.id = 'shell-stable-style'; st.textContent = STABLE_CSS; document.head.append(st);
     const header = document.querySelector('header');
     if (D.live) header.querySelector('h1').innerHTML = '<span class="mark" aria-hidden="true"></span><b>Jelli Art</b> <span>studio</span>';
     header.querySelector('h1').insertAdjacentHTML('afterend', '<nav id="shell-modes" class="shell-modes hidden" aria-label="Modes"><div role="tablist" aria-label="Modes"></div></nav>' +
-      '<div class="shell-tools"><button type="button" id="shell-unsaved" class="shell-unsaved hidden" aria-haspopup="dialog"></button>' +
+      '<div class="shell-tools"><button type="button" id="shell-unsaved" class="shell-unsaved shell-clean" aria-haspopup="dialog"></button>' +
       '<button type="button" id="shell-help-button" aria-haspopup="dialog" aria-keyshortcuts="Shift+?">Shortcuts <kbd>?</kbd></button>' +
       '<button type="button" id="shell-guide-button" aria-controls="shell-guide">Guide</button>' +
       `<label class="lbl" for="shell-theme">Theme</label><select id="shell-theme">${THEMES.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div><div class="shell-break"></div>`);
