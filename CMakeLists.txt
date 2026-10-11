@@ -83,6 +83,12 @@ if(BUILD_TESTING)
   add_executable(jelli_display_copy_tests tests/test_display_copy.c)
   target_include_directories(jelli_display_copy_tests PRIVATE include)
   add_test(NAME display_copy COMMAND jelli_display_copy_tests)
+  add_executable(jelli_swap_copy_tests tests/test_swap_copy.c)
+  target_link_libraries(jelli_swap_copy_tests PRIVATE jelli_core)
+  add_test(NAME swap_copy COMMAND jelli_swap_copy_tests)
+  add_executable(jelli_sleep_resume_tests tests/test_sleep_resume.c)
+  target_link_libraries(jelli_sleep_resume_tests PRIVATE jelli_core)
+  add_test(NAME sleep_resume COMMAND jelli_sleep_resume_tests)
   add_executable(jelli_network_config_tests tests/test_network_config.c ports/esp32/main/network_config.c)
   add_test(NAME network_config COMMAND jelli_network_config_tests)
   add_executable(jelli_tests tests/test_engine.c)
@@ -175,6 +181,8 @@ if(BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_rtc_experiment.py)
       add_test(NAME factory_capture COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_factory_capture.py)
+      add_test(NAME pipeline_experiment COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_pipeline_experiment.py)
       add_test(NAME panel_experiment COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_panel_experiment.py)
       add_test(NAME touch_experiment COMMAND ${Python3_EXECUTABLE}

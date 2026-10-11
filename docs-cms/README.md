@@ -33,6 +33,9 @@ Device sleep and driver capability audit: [memo-054](memos/memo-054-device-power
 
 Current sleep, habits, and collectibles: [memo-018](memos/memo-018-sleep-habits-and-collectible-presents.md).
 
+Hardware optimization continuation and pending board recovery:
+[memo-056](memos/memo-056-hardware-optimization-continuation.md).
+
 Latest release and expressive slice: [memo-017](memos/memo-017-release-downloads-and-expressive-slice.md).
 
 Latest responsive routines/audio work: [memo-016](memos/memo-016-responsive-pet-routines-and-audio.md).

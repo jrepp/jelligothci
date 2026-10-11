@@ -1,5 +1,6 @@
 #include "display_output.h"
 #include "display_copy.h"
+#include "pipeline_profile.h"
 #include "render_benchmark.h"
 #include "network.h"
 #include "validation/experiments.h"
@@ -75,13 +76,23 @@ void jelli_display_output_present(JelliDisplayOutput *output, const JelliSurface
                  r.x <= JELLI_WIDTH && r.y <= JELLI_HEIGHT && r.width <= JELLI_WIDTH - r.x &&
                  r.height <= JELLI_HEIGHT - r.y;
     ESP_ERROR_CHECK(valid ? ESP_OK : ESP_ERR_INVALID_SIZE);
+    uint64_t lock_start = jelli_profile_now();
     ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
+    jelli_profile_record(JELLI_PROFILE_LOCK, lock_start, 0u);
+    uint64_t copy_start = jelli_profile_now();
     /* Explicit refresh retransmits the existing canvas; it does not repair or
      * overwrite it, so a copy mismatch remains available for diagnosis. */
     for (unsigned y = r.y; r.width && y < r.y + r.height; ++y)
         memcpy(output->canvas_pixels + y * JELLI_WIDTH + r.x,
                surface->pixels + y * surface->stride + r.x, r.width * sizeof(uint16_t));
+    if (r.width && r.height)
+        jelli_profile_record(JELLI_PROFILE_COPY, copy_start,
+                             (uint32_t)r.width * r.height * sizeof(uint16_t));
+    uint64_t check_start = jelli_profile_now();
+    bool checked = output->checks && now >= output->checked_ms && now - output->checked_ms < 5000u;
     check_buffers(output, now);
+    if (!checked)
+        jelli_profile_record(JELLI_PROFILE_CHECK, check_start, 0u);
     if (output->refresh_requested) {
         r = (JelliRect){0, 0, JELLI_WIDTH, JELLI_HEIGHT};
         output->refresh_requested = false;
@@ -132,6 +143,26 @@ static void benchmark_copy(JelliDisplayOutput *output, JelliDebug *debug, uint32
         jelli_debug_response(debug, id, body);
 }
 
+static bool experiment_command(JelliDisplayOutput *output, JelliDebug *debug, uint32_t id,
+                               char **words, unsigned count)
+{
+#ifdef CONFIG_JELLI_POWER_EXPERIMENTS
+    if (count == 4u && !strcmp(words[3], "benchmark-staging")) {
+        jelli_staging_benchmark(output, debug, id);
+        return true;
+    }
+#endif
+    if (count >= 4u && !strcmp(words[3], "profile")) {
+        ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
+        bool handled = jelli_profile_command(debug, id, words, count);
+        bsp_display_unlock();
+        if (!handled)
+            jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"profile_unavailable\"}");
+        return true;
+    }
+    return false;
+}
+
 bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEngine *engine,
                                   uint32_t id, char **words, unsigned count)
 {
@@ -156,6 +187,8 @@ bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEn
         return true;
     if (count < 3u || strcmp(words[2], "display"))
         return jelli_network_command(NULL, debug, engine, id, words, count);
+    if (experiment_command(output, debug, id, words, count))
+        return true;
     if (count == 4u && !strcmp(words[3], "benchmark-rect")) {
         jelli_render_benchmark(output, debug, id);
     } else if (count == 4u && !strcmp(words[3], "benchmark-copy")) {

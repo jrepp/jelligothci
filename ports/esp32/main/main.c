@@ -10,6 +10,7 @@
 #include "validation/experiments.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "display_output.h"
+#include "pipeline_profile.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -26,6 +27,7 @@ typedef struct {
     JelliDisplayOutput display;
     QueueHandle_t input;
     uint64_t present_ms;
+    uint64_t frame_started_us;
 } Board;
 static const char *TAG = "jelligotchi";
 
@@ -65,6 +67,7 @@ static void touch_event(lv_event_t *event)
 static void present(void *ctx, const JelliSurface *surface)
 {
     Board *b = ctx;
+    jelli_profile_record(JELLI_PROFILE_ENGINE, b->frame_started_us, 0u);
     b->present_ms = 0;
     uint64_t start = now_ms(ctx);
     jelli_display_output_present(&b->display, surface, start);
@@ -86,6 +89,7 @@ static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *se
         jelli_experiments_poll(&board->display, engine);
         jelli_network_poll(engine, session, frozen);
         jelli_esp_session_update(session, engine, frozen);
+        board->frame_started_us = jelli_profile_now();
         if (!frozen && !jelli_pet_frame(engine))
             return;
         unsigned cue =
@@ -148,6 +152,12 @@ void app_main(void)
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_PRESSED, &board);
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_RELEASED, &board);
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_PRESS_LOST, &board);
+    /* The custom draw callback supplies the panel handle. Complete the first
+     * LVGL refresh under its mutex before issuing checked panel commands;
+     * scheduler timing must not decide whether startup brightness can work. */
+    lv_obj_invalidate(board.display.canvas);
+    lv_refr_now(display);
+    ESP_ERROR_CHECK(board.display.transfer.panel ? ESP_OK : ESP_ERR_INVALID_STATE);
     bsp_display_unlock();
     JelliDisplayDriver display_driver = jelli_display_output_driver(&board.display);
     ESP_ERROR_CHECK(jelli_display_brightness(display_driver, 60));

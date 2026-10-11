@@ -254,3 +254,38 @@ assume an MCU reset resets the independently powered sensor. Power, panel, touch
 and IMU trials reject overlapping runs. After the session restore normal firmware
 and check its profile/display state. No current or manufacturing acceptance is
 inferred from these checks.
+
+
+## Pipeline and staging pass
+
+The power profile adds `display profile start`, `display profile stop`, and
+`display profile STAGE` through the shared debug protocol. STAGE is engine, lock,
+copy, check, swap, stage or transfer. Normal firmware rejects these commands.
+Capture the current scene with:
+
+```sh
+./scripts/uv run --python 3.12 tools/debug/pipeline_experiment.py \
+  --port "$JELLI_DEBUG_PORT" --output build/pipeline-run-001 \
+  --scene home-idle --seconds 10
+```
+
+Captures expire on the device after 60 seconds; the station accepts 6–30 second
+windows and rejects expired results.
+
+Build and flash the power image first using the existing procedure. Keep the
+flashed binary/configuration hashes and source patch with the capture. Stop on
+missing completion samples or unhealthy display counters. The seven stages have
+independent sample windows; percentiles use the last 128 samples, while totals
+and maxima cover the full run. Engine includes simulation, input and rendering.
+Transfer ends at SPI completion, not visible scanout. LVGL rendering and physical
+input-to-visible response are not yet separately measured. No energy inference
+is valid without an external meter.
+
+`display benchmark-staging` is a power-only shared-protocol command. It alternates
+16 pairs of LVGL swap-plus-copy versus a fused scalar swap/copy at 36, 466 and
+23,300 pixels. It borrows the existing buffers under the display mutex after a
+checked SPI drain, verifies every output byte and restores the canvas. It pauses
+rendering; do not combine it with a timing capture or another power trial. It is
+not a production setting. Host tests cover unaligned buffers, tails and guards.
+Device performance and physical output remain pending; see
+[memo-056](../docs-cms/memos/memo-056-hardware-optimization-continuation.md).
