@@ -104,8 +104,8 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
 - The art pack is larger: with PR #37's baby axolotl, hug and surprised frames,
   the raw payload (RGB565, masks, font) is 267,304 bytes. It uses 125,248 of
   131,072 live pixels and 15,656 of 16,384 mask bytes, leaving room for two more
-  48x48 frames. The firmware app had 58% of its partition free before PR #37's
-  art; that has not been re-measured since.
+  48x48 frames. The firmware app is 1,778,608 bytes, leaving 58% of its 4 MiB
+  partition free (measured 2026-10-10 at 41350aa); static D/IRAM is unchanged.
 - `make run-live` reloads frame pixels but not clip or profile edits; those need
   a rebuild.
 
