@@ -7,7 +7,7 @@ repos:
         name: C formatting (clang-format)
         language: system
         entry: scripts/c-lint format-check
-        files: '^((core|include|ports|tests)/.*\.[ch]$|\.clang-format$|toolchain\.env$|scripts/c-lint$)'
+        files: '^((core|drivers|include|ports|tests)/.*\.[ch]$|\.clang-format$|toolchain\.env$|scripts/c-lint$)'
         exclude: '^ports/esp32/managed_components/'
         pass_filenames: false
         require_serial: true
@@ -15,7 +15,7 @@ repos:
         name: Portable C static analysis (clang-tidy)
         language: system
         entry: scripts/c-lint analyze
-        files: '^(core/|include/|tests/|\.clang-tidy$|toolchain\.env$|scripts/c-lint$)'
+        files: '^(core/|drivers/|include/|tests/|\.clang-tidy$|toolchain\.env$|scripts/c-lint$)'
         pass_filenames: false
         require_serial: true
       - id: docuchango
@@ -28,7 +28,7 @@ repos:
         name: All project C static analysis (Cppcheck)
         language: system
         entry: scripts/c-lint cppcheck
-        files: '^((core|include|ports|tests)/|toolchain\.env$|scripts/c-lint$)'
+        files: '^((core|drivers|include|ports|tests)/|toolchain\.env$|scripts/c-lint$)'
         exclude: '^ports/esp32/managed_components/'
         pass_filenames: false
         require_serial: true
@@ -36,7 +36,7 @@ repos:
         name: C function, file, and complexity limits
         language: system
         entry: scripts/c-lint size
-        files: '^((core|include|ports|tests)/|\.c-size-limits\.json$|scripts/check-c-size\.py$|scripts/c-lint$|toolchain\.env$)'
+        files: '^((core|drivers|include|ports|tests)/|\.c-size-limits\.json$|scripts/check-c-size\.py$|scripts/c-lint$|toolchain\.env$)'
         exclude: '^ports/esp32/managed_components/'
         pass_filenames: false
       - id: release-metadata

@@ -1,4 +1,5 @@
 #include "sound_output.h"
+#include "audio_board.h"
 #include "jelli/sound.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_heap_caps.h"
@@ -6,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include <string.h>
 
 typedef struct {
@@ -19,6 +21,25 @@ static StackType_t task_stack[4096u / sizeof(StackType_t)];
 static esp_codec_dev_handle_t codec;
 static int16_t pcm[JELLI_SOUND_BLOCK];
 static JelliSynth synth;
+static StaticSemaphore_t audio_mutex_storage;
+static SemaphoreHandle_t audio_mutex;
+static bool audio_enabled;
+
+bool jelli_sound_output_enable(bool enabled)
+{
+    if (!audio_mutex || xSemaphoreTake(audio_mutex, pdMS_TO_TICKS(2000)) != pdTRUE)
+        return false;
+    int result = ESP_CODEC_DEV_OK;
+    if (enabled != audio_enabled) {
+        esp_codec_dev_sample_info_t format = {
+            .sample_rate = JELLI_SOUND_RATE, .channel = 1, .bits_per_sample = 16};
+        result = enabled ? esp_codec_dev_open(codec, &format) : esp_codec_dev_close(codec);
+        if (result == ESP_CODEC_DEV_OK)
+            audio_enabled = enabled;
+    }
+    xSemaphoreGive(audio_mutex);
+    return result == ESP_CODEC_DEV_OK;
+}
 
 static void sound_task(void *unused)
 {
@@ -27,6 +48,12 @@ static void sound_task(void *unused)
         Request request;
         if (xQueueReceive(queue, &request, portMAX_DELAY) != pdTRUE)
             continue;
+        if (xSemaphoreTake(audio_mutex, portMAX_DELAY) != pdTRUE)
+            continue;
+        if (!audio_enabled) {
+            xSemaphoreGive(audio_mutex);
+            continue;
+        }
         bool ok = esp_codec_dev_set_out_vol(codec, request.volume) == ESP_CODEC_DEV_OK;
         ok = ok && jelli_sound_start(&synth, request.cue);
         unsigned samples = 0u;
@@ -43,6 +70,7 @@ static void sound_task(void *unused)
         memset(pcm, 0, sizeof(pcm));
         if (ok)
             ok = esp_codec_dev_write(codec, pcm, sizeof(pcm)) == ESP_CODEC_DEV_OK;
+        xSemaphoreGive(audio_mutex);
         ESP_LOGI("sound", "%s cue=%s volume=%u samples=%u stack_free=%u",
                  ok ? "submitted" : "failed", jelli_sound_name(request.cue),
                  (unsigned)request.volume, samples, (unsigned)uxTaskGetStackHighWaterMark(NULL));
@@ -52,7 +80,7 @@ static void sound_task(void *unused)
 bool jelli_sound_output_init(void)
 {
     size_t before = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    codec = bsp_audio_codec_speaker_init();
+    codec = jelli_audio_board_init();
     if (!codec)
         return false;
     esp_codec_dev_sample_info_t format = {
@@ -60,6 +88,8 @@ bool jelli_sound_output_init(void)
     if (esp_codec_dev_set_out_vol(codec, 35) != ESP_CODEC_DEV_OK ||
         esp_codec_dev_open(codec, &format) != ESP_CODEC_DEV_OK)
         return false;
+    audio_mutex = xSemaphoreCreateMutexStatic(&audio_mutex_storage);
+    audio_enabled = true;
     queue = xQueueCreateStatic(4u, sizeof(Request), queue_storage, &queue_control);
     if (!queue || !xTaskCreateStatic(sound_task, "jelli_sound", sizeof(task_stack), NULL, 3u,
                                      task_stack, &task_control))

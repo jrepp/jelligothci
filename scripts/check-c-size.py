@@ -31,7 +31,7 @@ def main() -> int:
     if any(type(value) is not int or value <= 0 for value in limits.values()):
         raise ValueError("C size limits must be positive integers")
     tracked = subprocess.check_output(
-        ["git", "ls-files", "-z", "--", "core", "include", "ports", "tests"], cwd=ROOT
+        ["git", "ls-files", "-z", "--", "core", "drivers", "include", "ports", "tests"], cwd=ROOT
     ).decode().split("\0")
     paths = [ROOT / name for name in tracked if name.endswith((".c", ".h"))
              and not name.startswith("ports/esp32/managed_components/")]

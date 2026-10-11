@@ -24,10 +24,10 @@ static bool sound(void *ctx, unsigned cue, unsigned volume)
 
 static void send(JelliDebug *debug, JelliPetEngine *engine, const char *line, const char *expected)
 {
-    debug->reply_size = 0;
+    debug->protocol.reply_size = 0;
     for (const char *p = line; *p; ++p)
         jelli_debug_feed(debug, engine, *p, 100u);
-    CHECK(debug->reply_size > 0u && strstr(debug->reply, expected));
+    CHECK(debug->protocol.reply_size > 0u && strstr(debug->protocol.reply, expected));
 }
 
 int main(void)

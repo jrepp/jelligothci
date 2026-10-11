@@ -15,10 +15,31 @@ bool jelli_pet_init(JelliPetEngine *engine, JelliPlatform platform, JelliSurface
     engine->surface = surface;
     engine->last_ms = platform.now_ms(platform.ctx);
     engine->running = true;
+    engine->motion_result = JELLI_DEVICE_UNAVAILABLE;
     jelli_game_init(&engine->game);
     engine->game.events = &engine->events;
     jelli_pet_ui_init(&engine->ui);
     return true;
+}
+
+void jelli_pet_bind_devices(JelliPetEngine *engine, JelliMotionDriver motion,
+                            JelliDisplayDriver display)
+{
+    engine->motion_driver = motion;
+    engine->display_driver = display;
+    engine->motion = (JelliMotionSample){0};
+    engine->motion_result = JELLI_DEVICE_UNAVAILABLE;
+}
+
+static void sample_motion(JelliPetEngine *engine, uint64_t now)
+{
+    JelliMotionSample sample = {0};
+    JelliMotionDriver driver = engine->motion_driver;
+    engine->motion_result =
+        driver.poll ? driver.poll(driver.ctx, &sample) : JELLI_DEVICE_UNAVAILABLE;
+    if (engine->motion_result == JELLI_DEVICE_OK && sample.detected && sample.observed_ms > now)
+        engine->motion_result = JELLI_DEVICE_RESPONSE;
+    engine->motion = engine->motion_result == JELLI_DEVICE_OK ? sample : (JelliMotionSample){0};
 }
 
 static void advance(JelliPetEngine *engine, uint64_t elapsed)
@@ -81,6 +102,7 @@ bool jelli_pet_frame(JelliPetEngine *engine)
     uint64_t now = engine->platform.now_ms(engine->platform.ctx);
     uint64_t elapsed = now >= engine->last_ms ? now - engine->last_ms : 0;
     engine->last_ms = now;
+    sample_motion(engine, now);
     bool was_resuming = engine->game.resuming;
     rewards(engine); /* Includes commands submitted through the external debug interface. */
     advance(engine, elapsed);

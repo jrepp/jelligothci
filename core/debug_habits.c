@@ -29,7 +29,7 @@ static void habits(JelliDebug *debug, const JelliGame *game, uint32_t id)
 static bool append_session(JelliDebug *debug, size_t *used, const JelliSleepSession *s, bool active,
                            bool comma)
 {
-    int size = snprintf(debug->reply + *used, sizeof(debug->reply) - *used,
+    int size = snprintf(debug->protocol.reply + *used, sizeof(debug->protocol.reply) - *used,
                         "%s{\"bed_unix_seconds\":%" PRIu64 ",\"wake_unix_seconds\":%" PRIu64
                         ",\"duration_seconds\":%" PRIu32 ",\"flags\":%u,\"active\":%s,"
                         "\"bed_energy\":%u,\"bed_sleep_score\":%u,\"real_duration\":%s}",
@@ -37,7 +37,7 @@ static bool append_session(JelliDebug *debug, size_t *used, const JelliSleepSess
                         s->duration_seconds, (unsigned)s->flags, active ? "true" : "false",
                         (unsigned)s->bed_energy, (unsigned)s->bed_sleep_score,
                         (s->flags & JELLI_SLEEP_REAL_DURATION) ? "true" : "false");
-    if (size < 0 || (size_t)size >= sizeof(debug->reply) - *used)
+    if (size < 0 || (size_t)size >= sizeof(debug->protocol.reply) - *used)
         return false;
     *used += (size_t)size;
     return true;
@@ -46,11 +46,11 @@ static bool append_session(JelliDebug *debug, size_t *used, const JelliSleepSess
 static void sleep_log(JelliDebug *debug, const JelliGame *game, uint32_t id)
 {
     const JelliSleepLog *log = &game->sleep_log;
-    int size = snprintf(debug->reply, sizeof(debug->reply),
+    int size = snprintf(debug->protocol.reply, sizeof(debug->protocol.reply),
                         "\n@J1 %" PRIu32 " {\"ok\":true,\"pet_id\":%" PRIu32
                         ",\"active\":%s,\"total_seconds\":%" PRIu64 ",\"sessions\":[",
                         id, log->pet_id, log->active ? "true" : "false", log->total_seconds);
-    if (size < 0 || (size_t)size >= sizeof(debug->reply))
+    if (size < 0 || (size_t)size >= sizeof(debug->protocol.reply))
         return;
     size_t used = (size_t)size;
     for (unsigned i = 0u; i < log->count; ++i) {
@@ -60,10 +60,10 @@ static void sleep_log(JelliDebug *debug, const JelliGame *game, uint32_t id)
                             i > 0u))
             return;
     }
-    if (used + 4u >= sizeof(debug->reply))
+    if (used + 4u >= sizeof(debug->protocol.reply))
         return;
-    memcpy(debug->reply + used, "]}\n", 4u);
-    debug->reply_size = used + 3u;
+    memcpy(debug->protocol.reply + used, "]}\n", 4u);
+    debug->protocol.reply_size = used + 3u;
 }
 
 void jelli_debug_habits(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id,
