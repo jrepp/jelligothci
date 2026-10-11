@@ -12,12 +12,25 @@
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="activities" aria-pressed="false">Activities</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="activities" class="hidden"></div>');
   const root = document.getElementById('activities');
+  /** @type {any} */ (window).JelliDesign.watch(root);
   document.head.insertAdjacentHTML('beforeend', `<style>
+    #activities{container:ac/inline-size}
     .ac-grid{display:grid;grid-template-columns:190px minmax(260px,600px) 220px;gap:24px}
     .ac-list{display:grid;gap:6px;align-content:start}.ac-fields label{display:block;margin:12px 0}
     .ac-fields input,.ac-fields select{margin-left:8px;max-width:260px}.ac-fields input[type=number]{width:90px}
     #ac-preview{image-rendering:pixelated;background:#171b26;border-radius:50%;width:220px;height:220px}
-    @media(max-width:1000px){.ac-grid{grid-template-columns:1fr}.ac-list{grid-template-columns:repeat(3,1fr)}}
+    /* The view's own width decides (RFC-007): list beside the fields with the preview above them, and under 800 px
+     * one column with the preview pinned on top. */
+    @container ac (max-width:1200px){
+      .ac-grid{grid-template-columns:190px minmax(0,1fr);grid-template-areas:"lst prev" "lst fld"}
+      .ac-grid>:nth-child(1){grid-area:lst}.ac-grid>:nth-child(2){grid-area:fld}.ac-grid>:nth-child(3){grid-area:prev;align-self:start}
+    }
+    @container ac (max-width:800px){
+      .ac-grid{display:flex;flex-direction:column;gap:16px}.ac-grid>*{min-width:0}.ac-list{grid-template-columns:repeat(3,1fr)}
+      .ac-grid>aside{order:-1;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;border:0;flex-direction:row;align-items:center;gap:12px}
+      .ac-grid>aside p{display:none}.ac-grid>aside label{display:flex;align-items:center;gap:8px}
+      #ac-preview{width:130px;height:130px}
+    }
   </style>`);
   function sync() {
     if (base === D.activity_sha) return;

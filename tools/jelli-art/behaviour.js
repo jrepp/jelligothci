@@ -5,6 +5,67 @@
  * offset by pet ID. This mirrors core/creature.c and core/pet_actor.c for the preview;
  * the checkout's tools/assets/creature_data.py validates saves. Loaded after creature.js. */
 'use strict';
+/* Touch helpers shared by the game design views (RFC-007 T3), as window.JelliDesign. They live here because this
+ * is the first design view script to load. Everything is hidden on fine pointers, so mouse and keyboard pages
+ * look as before; on (any-pointer: coarse) the words, ⓘ buttons and steppers appear.
+ *   words(glyph, word)  a glyph-only button's content: the glyph, plus its word on coarse pointers
+ *   help(text, label)   a tap-to-reveal ⓘ (JelliTouch.info) for coarse pointers; keep the title= for desktop
+ *   watch(root)         wraps every number input under root, now and after each re-render, in − and + buttons
+ *                       (coarse pointers only) that step by the input's own step and fire input and change */
+(() => {
+  const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  const words = (glyph, word) => `${glyph}<span class="jd-w"> ${esc(word)}</span>`;
+  const help = (text, label = 'More about this') => `<span class="jd-i">${window.JelliTouch ? window.JelliTouch.info(text, label) : ''}</span>`;
+  /** The name a number input is announced by: its aria-label, else the label just before it. */
+  function nameOf(/** @type {HTMLInputElement} */ input) {
+    const own = input.getAttribute('aria-label') || input.labels?.[0]?.textContent;
+    if (own) return own.trim();
+    /** @type {Element | null} */ let el = input.parentElement?.classList.contains('jd-step') ? input.parentElement : input;
+    for (el = el.previousElementSibling; el; el = el.previousElementSibling) if (el.matches('label')) return (el.textContent || '').trim();
+    return input.id || 'value';
+  }
+  function bump(/** @type {HTMLInputElement} */ input, /** @type {number} */ dir) {
+    const before = input.value;
+    try { if (dir > 0) input.stepUp(); else input.stepDown(); } catch { return; }  // step="any" or an invalid value
+    if (input.value === before) return;
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    input.dispatchEvent(new Event('change', {bubbles: true}));
+  }
+  let serial = 0;
+  function wrap(/** @type {HTMLInputElement} */ input) {
+    if (input.dataset.jd !== undefined) return;
+    input.dataset.jd = '';
+    const box = document.createElement('span'), name = nameOf(input);
+    box.className = 'jd-step';
+    const label = input.closest('label');  // a wrapping label would otherwise pick the − button as its control
+    if (label && !label.htmlFor) { input.id ||= `jd-n${++serial}`; label.htmlFor = input.id; }
+    const button = (/** @type {number} */ dir, /** @type {string} */ glyph, /** @type {string} */ verb) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'jd-s'; b.textContent = glyph; b.setAttribute('aria-label', `${verb} ${name}`);
+      b.disabled = input.matches(':disabled');
+      b.onclick = () => bump(input, dir);
+      return b;
+    };
+    input.replaceWith(box);
+    box.append(button(-1, '−', 'Decrease'), input, button(1, '+', 'Increase'));
+  }
+  /** @param {Element} root */
+  function watch(root) {
+    const run = () => root.querySelectorAll('input[type=number]:not([data-jd])').forEach(i => wrap(/** @type {HTMLInputElement} */ (i)));
+    new MutationObserver(run).observe(root, {childList: true, subtree: true});
+    run();
+  }
+  document.head.insertAdjacentHTML('beforeend', `<style>
+    .jd-i,.jd-w,.jd-s,.jd-c{display:none}.jd-step{display:contents}
+    @media(any-pointer:coarse){
+      .jd-i,.jd-w{display:inline}.jd-c{display:inline-block}.jd-step{display:inline-flex;align-items:center;gap:4px}
+      .jd-s{display:inline-block;padding:0;font-size:20px;line-height:1}
+      #cr-behaviour select,#behaviour select,#activities select,#game select{min-width:var(--tap)}
+      #cr-behaviour label:has(>input[type=checkbox]),#behaviour label:has(>input[type=checkbox]),#activities label:has(>input[type=checkbox]),#game label:has(>input[type=checkbox]){
+        display:flex;width:fit-content;align-items:center;gap:8px;min-height:var(--tap);min-width:var(--tap)}
+    }</style>`);
+  /** @type {any} */ (window).JelliDesign = {words, help, watch};
+})();
 (() => {
   const S = window.Studio, cr = S?.cr;
   if (!cr) return;
@@ -14,6 +75,12 @@
     wake_surprised: 'Just woken by a touch.', wake_happy: 'Just woken well rested.',
     unwell: 'Unwell or recovering.', eating: 'Eating.', playing: 'Playing, giving or exercising.',
     touch_happy: 'A pleasant touch reaction.', touch_upset: 'An upset touch reaction.'};
+  const {words: W, help} = /** @type {any} */ (window).JelliDesign;
+  const PANEL_HELP = `Actor scale sizes the pet on the panel; icon and portrait scale size it in the collection and portrait cells.
+Pose rules are checked top to bottom and the first condition that holds picks the pose. Earlier and Later change the order.
+Conditions:\n${Object.entries(CONDITION_HELP).map(([k, v]) => `${k}: ${v}`).join('\n')}
+Copy as new copies this behaviour under a new name for this form only; Delete is off while a form uses it.`;
+  const SIM_HELP = `Simulate on panel shows in the preview above what the rules pick. Tap conditions to say which hold; idle means none do. Pet ID offsets the quiet cycle.`;
   const GESTURES = new Set(['curious', 'content']);
   const clone = v => JSON.parse(JSON.stringify(v));
   let work = null, base = null, seen = undefined, stale = false;
@@ -23,7 +90,8 @@
 
   document.head.insertAdjacentHTML('beforeend', `<style>
     .bh-grid{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:24px;align-items:start}
-    @media(max-width:1100px){.bh-grid{grid-template-columns:1fr}}
+    #cr-behaviour{container:bh/inline-size}
+    @container bh (max-width:800px){.bh-grid{grid-template-columns:minmax(0,1fr)}}
     #cr-behaviour fieldset{border:0;padding:0;margin:0;min-width:0}
     .bh-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0}
     .bh-row select,.bh-row input[type=number]{width:auto}
@@ -222,14 +290,14 @@
   const ordinal = n => `${n}${[11, 12, 13].includes(n % 100) ? 'th' : ({1: 'st', 2: 'nd', 3: 'rd'})[n % 10] || 'th'}`;
   const range = (lo, hi) => Array.from({length: hi - lo + 1}, (_, i) => lo + i);
   let host = null;
-  cr.renderBehaviour = el => { host = el; render(); };
+  cr.renderBehaviour = el => { if (host !== el) /** @type {any} */ (window).JelliDesign.watch(el); host = el; render(); };
   function render() {
     if (!host || !host.isConnected) return;
     sync();
     const lim = L(), art = state.cForm;
     if (!work) { host.innerHTML = '<h3>Behaviour &amp; size</h3><p class="studio-note">This checkout has no content/creatures.json, or it is not valid JSON.</p>'; timeline = null; return; }
     const p = profileOf(art), editable = D.creature_data_editable && !stale;
-    const head = `<h3>Behaviour &amp; size <span class="lbl">· content/creatures.json${dirty() ? ' · <span class="cr-dirty">unsaved</span>' : ''}</span></h3>
+    const head = `<h3>Behaviour &amp; size <span class="lbl">· content/creatures.json${dirty() ? ' · <span class="cr-dirty">unsaved</span>' : ''}</span> ${help(PANEL_HELP, 'About behaviour and size')}</h3>
       ${stale ? '<p class="bh-bad">content/creatures.json changed on disk while you were editing. Revert to load it, then reapply your changes.</p>' : ''}
       ${D.creature_data_editable ? '' : '<p class="bh-warn">Read-only here: the checkout has no creature_data.py validator, or this trial runs without --content.</p>'}`;
     if (!p) {
@@ -240,7 +308,7 @@
     const b = behaviourOf(p.behavior), size = sizeReport(art, p), users = usersOf(p.behavior), others = users.filter(u => u !== art);
     const ruleRows = b ? b.pose_rules.map((r, i) => `<li data-i="${i}"><span class="n">${i + 1}</span>
         <select data-f="when" aria-label="Rule ${i + 1} condition" title="${esc(CONDITION_HELP[r.when] || '')}">${options(lim.conditions, r.when)}</select> → <select data-f="pose" aria-label="Rule ${i + 1} pose" title="Base poses, then state poses (a form without that clip plays its fallback)">${options(cr.poses(), r.pose)}</select>
-        <button data-act="up" ${i ? '' : 'disabled'} title="Check earlier">↑</button><button data-act="down" ${i < b.pose_rules.length - 1 ? '' : 'disabled'} title="Check later">↓</button><button data-act="remove" title="Remove rule">✕</button></li>`).join('') : '';
+        <button data-act="up" ${i ? '' : 'disabled'} title="Check earlier">${W('↑', 'Earlier')}</button><button data-act="down" ${i < b.pose_rules.length - 1 ? '' : 'disabled'} title="Check later">${W('↓', 'Later')}</button><button data-act="remove" title="Remove rule">${W('✕', 'Remove')}</button></li>`).join('') : '';
     const beats = b ? b.idle_beats.map((pose, i) => `<select data-beat="${i}" aria-label="Idle beat ${i + 1}">${options(lim.idle_poses, pose)}</select>`).join('') : '';
     const issues = allIssues();
     host.innerHTML = `${head}<fieldset id="bh-fields" ${editable ? '' : 'disabled'}><div class="bh-grid">
@@ -266,7 +334,7 @@
           <label for="bh-quiet">Quiet cycle</label><select id="bh-quiet">${options(range(0, lim.quiet_max), b.quiet_cycle)}</select></div>
         <p class="studio-note">${b.quiet_cycle ? `Every ${b.quiet_cycle === 1 ? '' : ordinal(b.quiet_cycle) + ' '}cycle (offset by pet ID) holds curious and content beats as idle.` : 'Quiet cycle 0: curious and content beats always play.'}</p>` : `<p class="bh-bad">Unknown behaviour ${esc(p.behavior)}.</p>`}
       </div></div></fieldset>
-      <div class="lbl" style="margin-top:14px">Simulate</div>
+      <div class="lbl" style="margin-top:14px">Simulate ${help(SIM_HELP, 'About Simulate')}</div>
       <div class="bh-row"><button id="bh-sim" aria-pressed="${sim.on}" title="Show what the rules pick in the panel preview above">Simulate on panel</button>
         <div class="bh-cond" id="bh-conds" role="group" aria-label="Conditions that hold">${lim.conditions.map(c => `<button data-cond="${esc(c)}" aria-pressed="${sim.conds.has(c)}" title="${esc(CONDITION_HELP[c] || c)}">${esc(c)}</button>`).join('')}</div>
         <button id="bh-idle" title="No condition holds">idle</button>

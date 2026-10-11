@@ -160,6 +160,13 @@ The odds bar covers the next ten minutes, and the preview shows the resulting
 look with an optional potty mess. **Save behaviour** (⌘S / Ctrl+S) checks both
 files with the engine's own validator before writing them.
 
+On an iPad, the design views show a word on each icon-only button (for example
+**↑ Earlier** and **✕ Remove**), a tap-to-reveal ⓘ beside the groups that
+explain themselves with a tooltip on a desktop, and − and + buttons on number
+fields. **Test in game** gains **◀ Frame** and **Frame ▶** for the `,` and `.`
+keys. In landscape the list sits beside the inspector with the preview above it;
+in portrait the view stacks and the preview stays pinned at the top.
+
 ## Edit in the running game
 
 ```sh
