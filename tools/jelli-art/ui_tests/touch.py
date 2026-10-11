@@ -3,14 +3,16 @@ real PointerEvents: Input.dispatchMouseEvent with pointerType "pen" for an Apple
 Input.dispatchTouchEvent with several touchPoints for fingers (each finger gets its own pointerId).
 
 Open the page at a touch size, such as open_view(view, "ipad-portrait"), so the context has touch enabled.
-Coordinates are CSS pixels in the viewport. Chromium releases every finger on touch_end(), so lift all fingers
-together; there is no single-finger lift. Waits are real time: the recogniser in touch.js times its thresholds
+Coordinates are CSS pixels in the viewport. touch_end() lifts every finger together; touch_lift() lifts some and
+keeps the rest (a staggered lift), and touch_move() takes a dict {finger: (x, y)} to move only the fingers still down.
+Fingers are numbered 1, 2, ... by position in the first touch_start list. Waits are real time: the recogniser in touch.js times its thresholds
 with performance.now(), and thresholds(page) returns them (JelliTouch.T).
 
     pen_stroke(page, [(10, 10), (40, 10)])          a Pencil stroke through the points
     touch_start(page, [(x1, y1), (x2, y2)])          fingers down (ids 1, 2, ... by position in the list)
     touch_move(page, [(x1, y1), (x2, y2)])           the same fingers, moved
     touch_end(page)                                 every finger up
+    touch_lift(page, {2: (x2, y2)})                 every finger up except the listed ones (finger number: position)
     tap(page, [(x1, y1), (x2, y2)])                 a quick multi-finger (or one-finger) tap
     long_press(page, (x, y))                        one finger held past the long-press time
     pinch(page, (cx, cy), 100, 200)                 two fingers spreading from 100 to 200 px apart
@@ -18,16 +20,18 @@ with performance.now(), and thresholds(page) returns them (JelliTouch.T).
     small_targets(page, "main")                     visible controls under 44 x 44 CSS px
     sideways_overflow(page)                         px the page scrolls sideways (0 when it fits)
 """
-_SESSIONS = {}
-_DOWN = set()  # ids of pages with fingers down
+import weakref
+
+_SESSIONS = weakref.WeakKeyDictionary()  # keyed on the page itself: id() values are reused after a page closes
+_DOWN = weakref.WeakSet()  # pages with fingers down
 STEPS = 6  # moves per drag, so the page sees a path rather than a jump
 
 
 def cdp(page):
     """One CDP session per page."""
-    session = _SESSIONS.get(id(page))
+    session = _SESSIONS.get(page)
     if session is None:
-        session = _SESSIONS[id(page)] = page.context.new_cdp_session(page)
+        session = _SESSIONS[page] = page.context.new_cdp_session(page)
     return session
 
 
@@ -67,13 +71,15 @@ def pen_stroke(page, points, hold_ms=0):
 
 
 def _points(points):
-    return [{"x": x, "y": y, "id": i + 1, "radiusX": 4, "radiusY": 4, "force": 1} for i, (x, y) in enumerate(points)]
+    """A list of (x, y) numbers the fingers 1, 2, ...; a dict {finger: (x, y)} names them."""
+    items = points.items() if isinstance(points, dict) else ((i + 1, p) for i, p in enumerate(points))
+    return [{"x": x, "y": y, "id": n, "radiusX": 4, "radiusY": 4, "force": 1} for n, (x, y) in items]
 
 
 def touch_start(page, points):
     """Fingers down. Pass every finger that is down, earlier ones first: a longer list adds fingers."""
     cdp(page).send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": _points(points)})
-    _DOWN.add(id(page))
+    _DOWN.add(page)
 
 
 def touch_move(page, points):
@@ -82,9 +88,16 @@ def touch_move(page, points):
 
 def touch_end(page):
     """Every finger up; nothing when none is down."""
-    if id(page) in _DOWN:
-        _DOWN.discard(id(page))
+    if page in _DOWN:
+        _DOWN.discard(page)
         cdp(page).send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+
+
+def touch_lift(page, remaining):
+    """Lift the fingers not in remaining ({finger number: (x, y)}); the listed ones stay down where they are."""
+    if not remaining:
+        return touch_end(page)
+    cdp(page).send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": _points(remaining)})
 
 
 def drag(page, start, end, steps=STEPS):
