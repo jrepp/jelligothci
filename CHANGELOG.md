@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.9.0](https://github.com/jrepp/jelligothci/compare/v0.8.0...v0.9.0) (2026-10-11)
+
+
+### Features
+
+* add baby axolotl form, hug clip and fixed blink frame ([#37](https://github.com/jrepp/jelligothci/issues/37)) ([882955c](https://github.com/jrepp/jelligothci/commit/882955cbfa064d39ea03a695b704dfc9ae05c378))
+* add baby axolotl snuggle activity and giftable teddy bear ([#44](https://github.com/jrepp/jelligothci/issues/44)) ([2adacd5](https://github.com/jrepp/jelligothci/commit/2adacd5f30376e2cfb2beb8737620312645fba80))
+* add bounded hardware profiling and staging experiments ([#45](https://github.com/jrepp/jelligothci/issues/45)) ([336b68c](https://github.com/jrepp/jelligothci/commit/336b68c40245d85620547ce81a4c7479c20d88d1))
+* add park pond beach and library locations ([97aba5f](https://github.com/jrepp/jelligothci/commit/97aba5f161981c1905e5346e0e65f39ce76aa422))
+* add portable device drivers and board qualification profiles ([3d6bd08](https://github.com/jrepp/jelligothci/commit/3d6bd0876972c47542e8ecfac9e589de5bee847c))
+* add portable device services, qualification profiles and authored activities ([88cc868](https://github.com/jrepp/jelligothci/commit/88cc868333f397235da4310bd9d676adfecf5c62))
+* author pet activities with timed unlocks and shared animations ([58360fd](https://github.com/jrepp/jelligothci/commit/58360fd728b65d54de8c1ebea5f6a80a39b2fa13))
+* balance authored activities with pet costs and locations ([d4ff557](https://github.com/jrepp/jelligothci/commit/d4ff557e1fd32f68be8e790c3cea8770a8e50c9a))
+* **content:** give Mint and Lilac a gentle jelly repertoire ([#36](https://github.com/jrepp/jelligothci/issues/36)) ([74a40b7](https://github.com/jrepp/jelligothci/commit/74a40b796e64eb9092c4f1aa6bccdf51f214c5a0))
+
+
+### Bug Fixes
+
+* align Studio type checks and fixtures with activity content ([507edf6](https://github.com/jrepp/jelligothci/commit/507edf6211b26eaa0835369a4eae2b99f2af2d49))
+* fit authored artwork in bounded desktop live packs ([a495f9f](https://github.com/jrepp/jelligothci/commit/a495f9ffae39cc939fb8ef45fb7532d86ceab0bb))
+* include asset catalog in release version test fixture ([42e20e1](https://github.com/jrepp/jelligothci/commit/42e20e13ed6b53e11322df6ba1cd58a953c9c794))
+* package releases with every present the engine defines ([#47](https://github.com/jrepp/jelligothci/issues/47)) ([2a86b46](https://github.com/jrepp/jelligothci/commit/2a86b460fb889c1166d752da818b75c067a211dc))
+* **sdl:** decode the full live art pack ([#42](https://github.com/jrepp/jelligothci/issues/42)) ([a48458b](https://github.com/jrepp/jelligothci/commit/a48458b0335e644516cb1a4842fb3785b5cefb79))
+
 ## [0.8.0](https://github.com/jrepp/jelligothci/compare/v0.7.0...v0.8.0) (2026-10-10)
 
 
