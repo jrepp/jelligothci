@@ -67,10 +67,10 @@ checkout; the workflow is portable, its downloaded binaries/caches are not.
 
 The ESP32 port uses Waveshare's BSP for this exact board, including its touch
 orientation and panel initialization. It is not the similarly named 1.75C board.
-The app sets 60% display brightness. SDL targets an 8 ms update interval; ESP32
-targets 16 ms for its engine loop and LVGL refresh timer. The ESP32 loop includes
-render/presentation work in that interval and yields on overruns. Actual update
-rates are logged every five seconds and are not panel-refresh guarantees.
+The app's startup brightness and host pacing are set in the respective port
+implementations ([ESP32](../ports/esp32/main/main.c), [SDL](../ports/sdl/main.c)).
+The ESP32 loop includes render/presentation work in its interval and yields on
+overruns. Logged update rates are not panel-refresh guarantees.
 Firmware uses performance compiler optimization with assertions retained.
 The earlier shapes firmware measured 61–62 engine updates/second on the attached
 board during motion; this is not a panel FPS or touch-latency measurement. See

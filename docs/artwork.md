@@ -122,14 +122,15 @@ by their pivot.
 ### Behaviour and size
 
 **Behaviour & size**, below **All poses**, edits the form's entry in
-`content/creatures.json`. The actor scale sets the preview size; the panel
-shows the result against the 300×176 px actor and 96 px icon limits. Choose the
+`content/creatures.json`. The actor scale sets the preview size; the panel shows
+the result against the limits enforced by
+[`tools/assets/creature_data.py`](../tools/assets/creature_data.py). Choose the
 form's behaviour, or **Copy as new** to change one form without the others.
 Order the pose rules; the first rule whose condition holds wins. A rule may pick
 a state pose, such as the axolotl's `hug` on `touch_happy`; a form without that
-clip plays the state pose's fallback. With no match,
-the idle schedule plays one pose per 900 ms beat. The quiet cycle holds curious
-and content beats as idle every Nth cycle, offset by pet ID.
+clip plays the state pose's fallback. With no match, the idle schedule plays one
+pose per beat. The quiet cycle holds curious and content beats as idle every Nth
+cycle, offset by pet ID.
 
 Turn on **Simulate on panel** and pick conditions, or **idle**, to see which
 rule and clip the game would choose. The idle timeline plays the beat schedule
@@ -211,16 +212,16 @@ source art. Embedded fallback images remain available if no override is loaded.
 open build/assets/preview.html    # macOS; otherwise open in a browser
 ```
 
-The builder validates all 79 PNGs: dimensions, IDs, bounds, palette, binary alpha,
-clips, and the nine prizes' distinct pixels. It emits the self-contained HTML
+The builder validates the PNG inventory: dimensions, IDs, bounds, palette,
+binary alpha, clips, and distinct prize art. It emits the self-contained HTML
 sheet, contact sheet, and RGB565/mask exports into ignored `build/assets/`.
 Release builds retain the stricter shared-palette and manifest-bounds checks;
 update the authored manifest and palette intentionally when accepting a paintover.
 
-The inventory includes sixteen creature frames, care and ring icons, health
-activities, stat pictograms, celebration sprites, backgrounds, props, font, and
-nine unique presents. See [the source inventory](../assets/slice/README.md) for
-stable IDs, provenance, reproduction, and byte budgets.
+The inventory includes creature frames, care and ring icons, health activities,
+stat pictograms, celebration sprites, backgrounds, props, font, and presents.
+See [the source inventory](../assets/slice/README.md) for stable IDs, provenance,
+reproduction, and current asset details.
 
 ## Add a creature
 

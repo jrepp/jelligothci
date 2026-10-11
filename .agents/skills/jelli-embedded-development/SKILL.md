@@ -17,9 +17,11 @@ scratch space, queue capacity, and bytes transferred per frame. Distinguish
 internal RAM, PSRAM, DMA-capable memory, and flash; they are not interchangeable.
 Use byte counts from actual types and dimensions rather than guessed capacity.
 
-The current RGB565 frame uses 466 * 466 * 2 = 434,312 bytes. The ESP32 host has
-one engine buffer and one LVGL canvas buffer, totaling 868,624 bytes before BSP
-buffers, tasks, queues, and driver allocations. Do not call that the total RAM
+Derive framebuffer bytes from the dimensions and pixel type in the
+[surface contract](../../../include/jelli/engine.h) and the allocations in
+[display output](../../../ports/esp32/main/display_output.c), including guards.
+Account for the separate engine and LVGL canvas buffers as well as BSP buffers,
+tasks, queues, and driver allocations; frame storage alone is not the total RAM
 footprint. Keep large framebuffers off task stacks.
 
 Prefer fixed storage, caller-supplied buffers, and bounded pools. The core and

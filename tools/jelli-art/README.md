@@ -61,8 +61,7 @@ browser automation, `localStorage['jelli-shell:guide'] = 'false'` hides the guid
 `studio.js` is the Paint mode UI; `paint_tools.js` holds its pixel logic as pure
 functions (`window.JelliPaint`): Bresenham lines, rectangles, ellipses inscribed
 in a pixel box, pixel-perfect strokes, flips, quarter turns, wrapped or clipped
-shifts, colour replace, bounded flood fill, ramp shading, and a 100-step
-history with a cursor.
+shifts, colour replace, bounded flood fill, ramp shading, and undo history.
 
 The palette panel draws `palette_ramps` from `assets.json` as rows and labels
 colours from `palette_names` (rules: [pixel art guide](../../docs/pixel-art-guide.md#2-palette-and-ramps)).
@@ -120,9 +119,8 @@ fixed; frames, durations and the loop flag are editable. State poses
 for one, in which case the fallback base pose plays and the view says so. **Add
 clip** starts one from the fallback; **Remove clip** deletes it, so the fallback
 plays again. The preview picks the
-frame from elapsed time and draws it as the game does: the form profile's actor
-scale, ground anchor at (233, 256) on the round 466 px panel. Reduced motion
-starts it paused.
+frame from elapsed time and draws it as the game does using the form profile and
+round display geometry. Reduced motion starts it paused.
 
 Saves change only the edited `clips` entries. Before writing, the studio runs
 the served checkout's `tools/assets/build_slice.py` `load_assets()` on a scratch
@@ -262,8 +260,9 @@ content checks (`cmake/Jelli*.cmake`), art checks (`build_slice.py` through
 `embed_slice.py`), or C compile errors, with the build log. Unsaved edits are not
 included; save first.
 
-Builds are bounded at 300 s with one build at a time, renders at 30 s with two
-at a time. Without `cmake` or a C compiler the view says so and stays read-only.
+Build and render work is bounded and concurrency-limited by
+[`game_preview.py`](game_preview.py). Without `cmake` or a
+C compiler the view says so and stays read-only.
 The container image installs `cmake` but no compiler. Scenarios that the
 engine refuses, such as a moment it rejects, report the engine's own reason.
 
@@ -308,10 +307,11 @@ accepted, so older pages keep working. Other errors use these statuses:
 
 - `400`: a missing or wrongly typed field, invalid JSON, or a validator
   rejecting the edit.
-- `411`, `413`, `415`: no `Content-Length`, a body over 1 MiB, or a body that
-  is not `application/json`. Plain cross-site form posts get `415`.
+- `411`, `413`, `415`: no `Content-Length`, a body over the server's configured
+  limit, or a body that is not `application/json`. Plain cross-site form posts
+  get `415`.
 - `405`: the wrong method.
-- `503` (`"retry": true`): another save held the lock for 60 s.
+- `503` (`"retry": true`): another save holds the write lock.
 - `500`: an internal error. The server log has the traceback, and the server
   keeps running.
 
@@ -330,7 +330,7 @@ queued. The queue is retried before the next commit and in the background.
 `POST /api/git/retry` retries now. The page shows queued commits in the
 header and as a `JelliShell` toast.
 
-Failed pushes back off from 15 s to 10 minutes. A rejected push is repaired
+Failed pushes back off before retrying. A rejected push is repaired
 when that is safe:
 
 - If the remote branch's studio files already match the base branch (merged
@@ -475,11 +475,7 @@ Release Please opens the release PR. When it merges,
 
 ## Activities
 
-The catalog includes meals, tea, dessert, going out, movie, reading, Yoga,
-jogging, fishing, day dreaming, nap, chess, drawing, thinking, gardening,
-soccer, volleyball, swimming, baseball, bug catching and science.
-
-The Activities view edits `content/activities.json`. Set eligible pet forms
+The Activities view edits [`content/activities.json`](../../content/activities.json). Set eligible pet forms
 (no selection means all), opening and closing times, duration, meter
 gains/costs, allowed locations, an earlier activity to complete that day, and a random
 weight. A positive weight joins the hourly optional activity pool; zero makes
@@ -503,28 +499,28 @@ Offline catch-up does not award new prerequisite completions.
 
 The editor validates recipes through the engine's CMake generator, checks
 sprite and form references, and rejects stale saves. Existing names/IDs remain
-fixed because behavior references and saved progress use them; append new
-recipes (up to 32) instead of deleting or reordering existing ones. Content
+fixed because behavior references and saved progress use them; append recipes
+instead of deleting or reordering existing ones. The
+[activity generator](../../cmake/JelliActivities.cmake) validates capacity. Content
 changes reach the game through a rebuild; PNG hot reload alone does not reload
 activity rules.
 
 
-Activity effects use meter points (0–100) in the editor and tenths (0–1000) in
-JSON. Costs are paid on acceptance and rewards on completion; interrupting keeps
-the costs and gives no reward. Meals consume one food when started. Set reward
-jitter (0–25%), per-form reward bonuses (0–100%), and each form's energy/hydration
-cost multipliers (0–300%, shared across recipes and Exercise). A blank bonus
-inherits behavior affinity; explicit zero disables it. The preview shows the
-selected pet's cost and reward range before passive decay, sleep-habit modifiers,
-favorite-time extras and saturation. Bond defaults to slow 0.1–0.2-point gains;
-most ordinary meter gains are 10–40 points.
+The editor displays meter points; JSON stores tenths of a point. Costs are paid
+on acceptance and rewards on completion; interrupting keeps the costs and gives
+no reward. Meals consume food when started. A blank pet reward bonus inherits
+behavior affinity; explicit zero disables it. The preview shows the selected
+pet's cost and reward range before passive decay, sleep-habit modifiers,
+favorite-time extras, and saturation. Field ranges are enforced by the activity
+generator and [cost validator](../../cmake/JelliActivityCosts.cmake).
 
 Select one or more locations from `content/locations.json`, then enable random
 choice or let the pet stay where allowed. Random travel happens only after an
-activity is accepted. Home, Garden, Park, Pond, Beach and Library are available.
+activity is accepted.
 The game reads names, backgrounds and indoor/outdoor atmosphere from the same
-catalog. Append locations with unique keys/IDs and registered background assets
-(up to eight); unknown keys or non-background asset references fail validation.
+catalog. Append locations with unique keys/IDs and registered background assets;
+unknown keys or non-background asset references fail validation. Catalog
+capacity is enforced by the [location validator](../../cmake/JelliLocations.cmake).
 The same CMake validators run in core-only, desktop and firmware builds and
 reject broken asset, pet, location, activity and prerequisite references.
 The [balance audit](../../docs-cms/memos/memo-041-activity-balance-and-location-integrity.md)

@@ -34,9 +34,9 @@ ignored build output; retain measured conclusions and limitations in memos.
 
 The engine task owns command dispatch and trial execution. LVGL owns input
 filter calls under its display lock. Probe IRQ handlers only count with ISR-safe
-synchronization. Startup adds three I2C handles; the profile also owns a 4,072-byte
-scratch game and 512-byte result buffer. No experiment task or frame buffer is
-added. Disabled builds omit this storage and all probe initialization.
+synchronization. Startup initializes validation probes and their bounded working
+state. No experiment task or frame buffer is added. Disabled builds omit this
+storage and all probe initialization.
 
 The shared portable `core/debug_protocol.c` and ESP32 `debug_usb.c` own parsing,
 framing and transport for every profile. Only command handlers differ. The
@@ -58,16 +58,16 @@ and [the measured experiments](../../../../docs-cms/memos/memo-044-device-power-
 
 Touch validation uses `power touch run legacy|propagate|guard 33|16|10` and
 `power touch result`. The station runner is `tools/debug/touch_experiment.py`.
-Its fixed state is capped at 192 bytes plus a 768-byte report; it adds no task or
-per-run allocation. Callbacks and trial state are serialized by the display lock.
+Its trial state is fixed and callbacks are serialized by the display lock; it
+adds no task or per-run allocation.
 Synthetic notifications exercise the adapter without touching controller registers;
 physical IRQ activity invalidates that trial. Normal input error handling lives
 in `touch_input.*` and is shared with the guard experiment. See the
 [touch pass workflow](../../../../docs/device-validation-passes.md#touch-recovery-and-scheduling-pass).
 
 Display treatments use `power panel run MODE` / `power panel result` and
-`tools/debug/panel_experiment.py`. They own a 768-byte result buffer and small
-engine-task state, with no new allocation, task or framebuffer. The hash-checked
+`tools/debug/panel_experiment.py`. They own fixed result and engine-task state,
+with no per-run allocation, task or framebuffer. The hash-checked
 build-local CO5300 policy seam exists only in power builds; normal/factory images
 use the original driver. See [display pass](../../../../docs/device-validation-passes.md#display-transitions-and-brightness-pass)
 for the source guard, timing boundaries and physical-evidence requirements.
@@ -75,6 +75,5 @@ for the source guard, timing boundaries and physical-evidence requirements.
 IMU qualification uses `power imu run MODE` / `power imu result` and the shared
 station runner `tools/debug/imu_experiment.py`. `boards/qmi_probe.*` owns bounded
 command handshakes and explicit WoM exit; `power/imu_trial.*` owns awake observation
-and run correlation. Its budget is an 80-byte probe, a 1200-byte report and small
-runner state. The `-int2` modes explicitly qualify the vendor's A-compatible output
+and run correlation. The `-int2` modes explicitly qualify the vendor's A-compatible output
 enable; they are not production defaults. See [IMU qualification](../../../../docs/device-validation-passes.md#imu-command-and-interrupt-qualification).

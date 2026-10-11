@@ -37,8 +37,10 @@ timeout. This smoke schema never grants production acceptance.
 ## Shared debug contract
 
 All profiles use `@J1 REQUEST_ID COMMAND` followed by LF and correlated JSON
-replies. The portable parser owns the same 512-byte request and 4 KiB reply
-bounds, malformed-line handling and secret-buffer clearing. ESP32 profiles use
+replies. The portable parser owns bounded request/reply framing,
+malformed-line handling and secret-buffer clearing. See
+[the shared protocol limits](../include/jelli/debug_protocol.h) and
+[parser implementation](../core/debug_protocol.c) for framing details. ESP32 profiles use
 the same USB transport, bounded polling and reply timeout. SDK logs stay outside
 framed replies. The former `@JF1` stream is removed; historical captures remain
 in the original experiment evidence.
@@ -86,17 +88,17 @@ The shared client also supports local socket transports, but factory firmware
 itself has no network endpoint. Remote automation runs on the USB-connected
 station host.
 
-Results use stable IDs, `pending`, `not_run`, `pass`, `error` or `skip`, SDK error code and
-elapsed microseconds. Pass meanings are intentionally narrow:
+Results use stable IDs, `pending`, `not_run`, `pass`, `error` or `skip`, SDK
+error code and elapsed microseconds. Pass meanings are intentionally narrow:
 
 | Test ID | Current check | Pass establishes |
 | --- | --- | --- |
 | `identity` | Read base MAC from eFuse | Read succeeded; does not validate SKU or fixture inventory |
-| `psram.scratch` | Two patterns over an allocated 1 KiB PSRAM buffer | That scratch region passed; not full RAM coverage |
-| `pmic.read` | Read AXP2101 registers 03/26/80/90 with 50 ms deadline per read | Register transactions succeeded; not rail correctness |
-| `pmic.inventory` | Read 25 allowlisted AXP configuration/status registers | Transactions succeeded; no rail, charging or gauge accuracy claim |
-| `imu.identity` | Read QMI8658 identity/revision and controls 00–08 at 0x6b | Transactions succeeded and identity is 0x05; not motion accuracy |
-| `rtc.snapshot` | Burst read PCF85063 00–0a plus timer control 11 | Transactions succeeded; not trusted UTC or retention |
+| `psram.scratch` | Pattern checks in a scratch region | That region passed; not full RAM coverage |
+| `pmic.read` | Read selected AXP2101 registers | Register transactions succeeded; not rail correctness |
+| `pmic.inventory` | Read allowlisted AXP configuration/status registers | Transactions succeeded; no rail, charging or gauge accuracy claim |
+| `imu.identity` | Read QMI8658 identity, revision and selected controls | Transactions succeeded and identity matched; not motion accuracy |
+| `rtc.snapshot` | Coherent PCF85063 calendar and timer-control snapshot | Transactions succeeded; not trusted UTC or retention |
 | `display.visible` | Skip: external observation required | Nothing |
 | `touch.physical` | Skip: physical stimulus required | Nothing |
 | `audio.audible` | Skip: acoustic fixture required | Nothing |
@@ -107,8 +109,9 @@ and `valid` prefix length. Failed/unread bytes are not measurements. RTC calenda
 uses one burst for a coherent sample; PMU/IMU inventory is a sequential snapshot.
 No probe enables sensors, clears IRQ status, writes charging/rail settings or
 sets time. Reading an address pointer is the only I2C write phase. IMU status/FIFO
-registers are excluded. Each read has a 50 ms deadline, stops on first error,
-and the largest inventory is bounded by 25 transactions (1.25 s timeout budget).
+registers are excluded. Reads are bounded and stop on first error. Current
+register selections and timeouts live with the
+[board probes](../ports/esp32/main/validation/boards/).
 Schema 3 updates the catalog and required host validation; old schema 2 captures
 remain historical evidence and are rejected by the new station tool.
 
@@ -136,13 +139,11 @@ production acceptance requires an explicit reviewed schema/requirements update.
    in CI. Record bench evidence separately from physical or electrical proof.
    Version incompatible protocol or acceptance changes.
 
-The factory runtime reserves a 1 KiB PSRAM scratch allocation, shared USB rings
-(4 KiB TX / 1 KiB RX) and SDK I2C metadata at startup. Fixed internal storage
-holds the shared protocol buffers (512-byte request / 4 KiB reply), a 1,536-byte
-report buffer and ten small result records plus three fixed register inventories. It adds no task or framebuffer.
-The I2C handles and scratch buffer live for the image lifetime. Tests allocate
-nothing per run. Transport loss leaves retained results available for queries;
-it does not trigger another run.
+The factory profile keeps scratch and result state for the image lifetime and
+does not add a task or framebuffer. Its memory layout is owned by the factory
+and shared protocol implementation. Tests allocate nothing per run. Transport
+loss leaves retained results available for queries; it does not trigger another
+run.
 
 See [validation layout](../ports/esp32/main/validation/README.md),
 [ADR-013](../docs-cms/adr/adr-013-board-validation-profiles.md), and
