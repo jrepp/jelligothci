@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.8.0...jelli-art-v0.9.0) (2026-10-11)
+
+
+### Features
+
+* **jelli-art:** Paint with touch and Apple Pencil (RFC-007 T1) ([#56](https://github.com/jrepp/jelligothci/issues/56)) ([94e058f](https://github.com/jrepp/jelligothci/commit/94e058f0d7a913a5ead602a1154a52f3d596437f))
+* **jelli-art:** touch and Pencil foundation (RFC-007 T0) ([#52](https://github.com/jrepp/jelligothci/issues/52)) ([0ef8e48](https://github.com/jrepp/jelligothci/commit/0ef8e48d11964908fb7c8dcae5c407485deb64a8))
+* **jelli-art:** touch layout and controls for the game design views ([#57](https://github.com/jrepp/jelligothci/issues/57)) ([cbf30c2](https://github.com/jrepp/jelligothci/commit/cbf30c2878b6215111c96fd48ef00f75528678d1))
+* **jelli-art:** touch timeline and flip-book (RFC-007 T2) ([#58](https://github.com/jrepp/jelligothci/issues/58)) ([a3424c7](https://github.com/jrepp/jelligothci/commit/a3424c7e08a0fccbfe09b418eec29036d9340f79))
+
+
+### Bug Fixes
+
+* **jelli-art:** harden touch gestures after review ([#55](https://github.com/jrepp/jelligothci/issues/55)) ([e47b0ef](https://github.com/jrepp/jelligothci/commit/e47b0ef4bf44af0f5ebe0329e75157a2767acf75))
+* **jelli-art:** keep the desktop Behaviour layout unchanged ([#59](https://github.com/jrepp/jelligothci/issues/59)) ([cc07fce](https://github.com/jrepp/jelligothci/commit/cc07fce1263953bbd2588e085c62425d968426f1))
+
 ## [0.8.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.7.0...jelli-art-v0.8.0) (2026-10-11)
 
 
