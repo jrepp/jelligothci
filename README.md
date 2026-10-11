@@ -132,7 +132,12 @@ make esp-flash PORT=<discovered-port>
 
 Use the repository-local SDK and discover the port each time. A successful build
 or serial startup does not verify physical display, touch, or audio behavior.
-[Hardware guide](docs/hardware.md) covers flashing, monitoring, and current limits.
+[Hardware guide](docs/hardware.md) covers flashing, monitoring, current limits,
+and the optional debug-port power experiments (`./scripts/esp validate`).
+Normal firmware excludes the experiment runner; CI compiles normal, power, and standalone factory profiles.
+See [factory validation](docs/factory-validation.md) for the non-destructive smoke image. All profiles share the `@J1` debug client;
+use `jelli-debug capabilities` to discover commands and `factory status` for
+factory state.
 The ESP32 port also supports USB-configured Wi-Fi, automatic time/DST, and staged
 HTTPS OTA updates; see [network setup](docs/hardware.md#wi-fi-time-sync-and-ota).
 This network increment has been compiled but has not been flashed or verified on hardware.

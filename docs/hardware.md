@@ -236,3 +236,83 @@ reconnect, RTC sync/offline retention, DST behavior, heap/stack margins during
 TLS, valid update/reboot, corrupt/wrong-project image rejection, interrupted
 transfer, rollback, and physical display/touch responsiveness during downloads.
 See [network implementation evidence](../docs-cms/memos/memo-019-wifi-time-and-ota-foundation.md).
+
+
+## Power experiments over USB
+
+This investigation adds explicit diagnostics, not an automatic pet-sleep policy.
+The ESP32 host uses a playback-only I2S channel and blocks the network worker
+while networking is disabled. In the validation profile, PM and tickless-idle support are compiled in;
+frequency scaling and automatic sleep are enabled only during the `auto` trial.
+CPU state is retained during light sleep because the tested image had no free
+retention-capable heap. USB keeps its normal automatic-sleep protection.
+
+Build this opt-in image separately from normal firmware. Both profiles keep
+SDK configuration inside their own build directory; an old generated
+`ports/esp32/sdkconfig` is no longer used by the wrapper. Transfer any intentional
+local settings explicitly. Do not use `make esp-flash` for a validation image:
+
+```sh
+./scripts/esp validate                         # compile only
+./scripts/esp ports                            # discover the current port
+./scripts/esp validate -p "$JELLI_DEBUG_PORT" flash
+./scripts/esp validate -p "$JELLI_DEBUG_PORT" monitor
+```
+
+Then run the capture tool:
+
+```sh
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" power
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" power locks
+./scripts/uv run --python 3.12 tools/debug/power_experiment.py \
+  --port "$JELLI_DEBUG_PORT" --output build/power-trial-01 delay pause off panel audio
+```
+
+Use a new output directory for each run. The runner saves JSON replies, raw
+serial logs, and a framebuffer capture. The `audio` trial plays a quiet tap cue
+before and after close/reopen. `power locks` prints SDK lock statistics into raw
+serial output; the CLI JSON only confirms whether PM support is compiled.
+
+| Trial | Operation |
+| --- | --- |
+| `delay` | Hold engine for one second; LVGL still runs |
+| `blank` | Set brightness to zero for one second, then restore |
+| `pause` | Pause LVGL and its tick for one second |
+| `off` | Pause LVGL and switch display off/on without deep standby |
+| `panel` | Pause LVGL and use panel sleep/deep standby for one second |
+| `audio` | Pause LVGL and close/reopen the playback codec around a one-second hold |
+| `reset50`, `reset100` | Ten touch-reset/checkcode probes using the selected recovery delay; finish with a 100 ms reset recovery |
+| `light` | Pause LVGL, close audio, sleep panel, then request 100 ms MCU light sleep with GPIO11/timer wake |
+| `touch` | Same setup with a ten-second timer fallback; tap the dark screen to test GPIO wake |
+| `auto` | Pause LVGL, close audio, sleep panel, enable automatic light sleep for one second, then restore PM configuration |
+
+Each trial restores its settings and excludes the diagnostic interval from live
+pet time. `power result` reports operation and restoration errors separately,
+timing, IRQ counts, LVGL ticks and network wakeups. A scratch copy of the game
+compares a three-second live gap with bounded resume; no scratch state is saved.
+Touch trials consume a release gesture so waking cannot activate a care button.
+If the timer wins without a touch, the next physical gesture is consumed.
+
+Explicit MCU sleep interrupts USB even with automatic-sleep protection enabled.
+The runner closes the port and reconnects by serial identity after the bounded
+window. It never retries a sleep action after losing its reply. If capture fails,
+rediscover the device and query `power result` before deciding whether to rerun.
+Normal commands can also be issued as `power run MODE`, followed by `power result`
+after completion. Allow for panel initialization time beyond the hold duration.
+
+Serial success and a framebuffer capture do not establish visible panel recovery,
+physical touch wake, audible quality, or battery-current savings. See
+[memo-044](../docs-cms/memos/memo-044-device-power-experiments.md) for measured
+results, exact images, limitations and remaining work.
+
+The [experiment layout and maintenance contract](../ports/esp32/main/validation/README.md)
+explains profile isolation, board identity, and reuse by future factory tests.
+Normal firmware omits `power` commands and all probe initialization.
+
+## Standalone factory validation
+
+`./scripts/esp factory` builds the isolated smoke image without the pet engine,
+assets, saves, or networking. Follow the [factory validation contract](factory-validation.md)
+for flashing, automated capture, exit codes and adding board-specific checks.
+This is a non-destructive development foundation; required physical checks are
+skipped and it cannot grant manufacturing acceptance.

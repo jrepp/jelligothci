@@ -29,13 +29,13 @@ static void present(void *ctx, const JelliSurface *surface)
 }
 static void request(const char *text)
 {
-    debug.reply_size = 0;
+    debug.protocol.reply_size = 0;
     for (size_t i = 0; text[i]; ++i)
         jelli_debug_feed(&debug, &engine, text[i], clock_ms);
 }
 static bool contains(const char *text)
 {
-    return debug.reply_size && strstr(debug.reply, text) != NULL;
+    return debug.protocol.reply_size && strstr(debug.protocol.reply, text) != NULL;
 }
 
 static int capture_tests(void)
@@ -58,7 +58,7 @@ static int capture_tests(void)
     request("@J1 11 pixels 1 465 2\n");
     CHECK(contains("\"rgb565\":\"1234abcd\""));
     request("@J1 12 pixels 1 0 466\n");
-    CHECK(debug.reply_size < JELLI_DEBUG_REPLY && debug.reply_size > 1864u);
+    CHECK(debug.protocol.reply_size < JELLI_DEBUG_REPLY && debug.protocol.reply_size > 1864u);
     clock_ms += JELLI_DEBUG_IDLE_MS;
     CHECK(!jelli_debug_frozen(&debug, &engine, clock_ms));
     CHECK(jelli_pet_frame(&engine));
@@ -125,16 +125,16 @@ static int parser_tests(void)
     request("@J1 8 tap 0 0 extra\n");
     CHECK(contains("range"));
     request("log noise\n");
-    CHECK(debug.reply_size == 0);
+    CHECK(debug.protocol.reply_size == 0);
     for (unsigned i = 0; i < 200u; ++i)
         jelli_debug_feed(&debug, &engine, 'x', clock_ms);
     jelli_debug_feed(&debug, &engine, '\n', clock_ms);
-    CHECK(debug.reply_size == 0);
+    CHECK(debug.protocol.reply_size == 0);
     request("@J1 9 state\n");
     CHECK(contains("true"));
-    size_t pending = debug.reply_size;
+    size_t pending = debug.protocol.reply_size;
     jelli_debug_feed(&debug, &engine, 'x', clock_ms);
-    CHECK(debug.reply_size == pending && debug.used == 0);
+    CHECK(debug.protocol.reply_size == pending && debug.protocol.used == 0);
     return 0;
 }
 
@@ -174,7 +174,7 @@ static int reply_capacity_tests(void)
         (void)jelli_pet_frame(&engine);
     }
     request("@J1 10 state\n");
-    CHECK(debug.reply_size > 0u && contains("\"creature\"") && contains("READING"));
+    CHECK(debug.protocol.reply_size > 0u && contains("\"creature\"") && contains("READING"));
     return 0;
 }
 
@@ -190,10 +190,11 @@ int main(int argc, char **argv)
         int byte;
         while ((byte = getchar()) != EOF) {
             jelli_debug_feed(&debug, &engine, (char)byte, clock_ms);
-            if (debug.reply_size) {
-                CHECK(fwrite(debug.reply, 1u, debug.reply_size, stdout) == debug.reply_size);
+            if (debug.protocol.reply_size) {
+                CHECK(fwrite(debug.protocol.reply, 1u, debug.protocol.reply_size, stdout) ==
+                      debug.protocol.reply_size);
                 CHECK(fflush(stdout) == 0);
-                debug.reply_size = 0;
+                debug.protocol.reply_size = 0;
                 if (!debug.captured)
                     clock_ms += 100u; /* Deterministic host time for transition polling. */
                 if (!jelli_debug_frozen(&debug, &engine, clock_ms))

@@ -26,6 +26,8 @@ Usage: scripts/esp COMMAND [arguments]
   monitor PORT         Open serial monitor; exit with Ctrl+]
   ports                List serial ports without resetting the board
   doctor               Show SDK/tool versions and serial ports
+  validate [idf args]  Build/use isolated SKU 31261 power validation image
+  factory [idf args]   Build/use standalone SKU 31261 factory smoke image
   idf [arguments]      Run arbitrary idf.py commands in the local environment
 
 To upgrade, edit both pins in toolchain.env, then run sync and build.
@@ -93,7 +95,9 @@ activate() {
 }
 idf() {
     idf.py -C "$repo_dir/ports/esp32" -B "$repo_dir/build/esp32" \
-        -DIDF_TARGET=esp32s3 "$@"
+        -DIDF_TARGET=esp32s3 \
+        -DSDKCONFIG="$repo_dir/build/esp32/sdkconfig" \
+        -DSDKCONFIG_DEFAULTS="$repo_dir/ports/esp32/sdkconfig.defaults" "$@"
 }
 command_name="${1:-help}"
 if [[ $# -gt 0 ]]; then shift; fi
@@ -113,6 +117,17 @@ case "$command_name" in
         python --version
         xtensa-esp-elf-gcc --version | head -n 1
         python -m serial.tools.list_ports -v
+        ;;
+    validate|factory)
+        profile=power
+        if [[ "$command_name" = factory ]]; then profile=factory; fi
+        activate
+        mkdir -p "$repo_dir/build/esp32-$profile"
+        if [[ $# -eq 0 ]]; then set -- build; fi
+        idf.py -C "$repo_dir/ports/esp32" -B "$repo_dir/build/esp32-$profile" \
+            -DIDF_TARGET=esp32s3 \
+            -DSDKCONFIG="$repo_dir/build/esp32-$profile/sdkconfig" \
+            -DSDKCONFIG_DEFAULTS="$repo_dir/ports/esp32/sdkconfig.defaults;$repo_dir/ports/esp32/profiles/$profile.defaults" "$@"
         ;;
     idf) activate; idf "$@" ;;
     *) usage >&2; exit 2 ;;
