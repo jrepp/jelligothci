@@ -77,9 +77,8 @@ static size_t creature(char *out, size_t capacity, const JelliPetEngine *engine)
     return size < 0 || (size_t)size >= capacity ? 0u : (size_t)size;
 }
 
-void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id)
+static const char *page_name(unsigned page)
 {
-    const JelliPetRenderKey *v = &engine->ui.last_view;
     static const char *const pages[JELLI_UI_PAGE_COUNT] = {[JELLI_UI_HOME] = "home",
                                                            [JELLI_UI_CARE] = "care",
                                                            [JELLI_UI_MORE] = "more",
@@ -99,9 +98,15 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
                                                            [JELLI_UI_PRESENT_ACTION] =
                                                                "present_action",
                                                            [JELLI_UI_FOOD] = "food"};
-    const char *page = v->page < JELLI_UI_PAGE_COUNT ? pages[v->page] : "unknown";
+    return page < JELLI_UI_PAGE_COUNT ? pages[page] : "unknown";
+}
+
+void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id)
+{
+    const JelliPetRenderKey *v = &engine->ui.last_view;
+    const char *page = page_name(v->page);
     int size = snprintf(
-        debug->reply, sizeof(debug->reply),
+        debug->protocol.reply, sizeof(debug->protocol.reply),
         "\n@J1 %" PRIu32 " {\"ok\":true,\"version\":1,\"width\":466,\"height\":466,"
         "\"capture\":%" PRIu32 ",\"rendered\":%s,\"transitioning\":%s,\"ticks\":%" PRIu64 ","
         "\"visual\":{\"page\":\"%s\",\"page_id\":%u,\"pet_id\":%" PRIu32
@@ -136,24 +141,27 @@ void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t
         (unsigned)v->bedtime, (unsigned)v->active, (unsigned)v->count, v->stored_id,
         (unsigned)v->stored_form, truth(v->stored_asleep), (unsigned)v->mood, (unsigned)v->reaction,
         (unsigned)v->night);
-    if (size < 0 || (size_t)size >= sizeof(debug->reply))
+    if (size < 0 || (size_t)size >= sizeof(debug->protocol.reply))
         return;
     size_t used = (size_t)size;
-    size_t pet = creature(debug->reply + used, sizeof(debug->reply) - used, engine);
+    size_t pet =
+        creature(debug->protocol.reply + used, sizeof(debug->protocol.reply) - used, engine);
     if (!pet)
         return;
     used += pet;
-    size_t summary = collection(debug->reply + used, sizeof(debug->reply) - used, v);
+    size_t summary =
+        collection(debug->protocol.reply + used, sizeof(debug->protocol.reply) - used, v);
     if (!summary)
         return;
     used += summary;
-    size_t extra = buttons(debug->reply + used, sizeof(debug->reply) - used, &engine->ui);
-    if (!extra || used + extra + 4u >= sizeof(debug->reply))
+    size_t extra =
+        buttons(debug->protocol.reply + used, sizeof(debug->protocol.reply) - used, &engine->ui);
+    if (!extra || used + extra + 4u >= sizeof(debug->protocol.reply))
         return;
     used += extra;
-    debug->reply[used++] = ']';
-    debug->reply[used++] = '}';
-    debug->reply[used++] = '\n';
-    debug->reply[used] = '\0';
-    debug->reply_size = used;
+    debug->protocol.reply[used++] = ']';
+    debug->protocol.reply[used++] = '}';
+    debug->protocol.reply[used++] = '\n';
+    debug->protocol.reply[used] = '\0';
+    debug->protocol.reply_size = used;
 }

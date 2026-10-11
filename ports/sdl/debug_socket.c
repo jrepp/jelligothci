@@ -107,7 +107,7 @@ static bool read_request(JelliPetEngine *engine, uint64_t now)
     }
     for (unsigned n = 0; n < sizeof(received) && received_at < received_size; ++n) {
         jelli_debug_feed(&debug, engine, received[received_at++], now);
-        if (debug.reply_size) {
+        if (debug.protocol.reply_size) {
             pending_since = now;
             break;
         }
@@ -121,12 +121,13 @@ static bool write_reply(uint64_t now)
 #ifdef MSG_NOSIGNAL
     flags = MSG_NOSIGNAL;
 #endif
-    ssize_t size = send(client, debug.reply + sent, debug.reply_size - sent, flags);
+    ssize_t size =
+        send(client, debug.protocol.reply + sent, debug.protocol.reply_size - sent, flags);
     if (size > 0) {
         sent += (size_t)size;
-        if (sent == debug.reply_size) {
+        if (sent == debug.protocol.reply_size) {
             sent = 0;
-            debug.reply_size = 0;
+            debug.protocol.reply_size = 0;
         }
     } else if (size == 0 || (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)) {
         return false;
@@ -155,7 +156,7 @@ bool jelli_sdl_debug_poll(JelliPetEngine *engine)
     if (client < 0)
         accept_client();
     if (client >= 0) {
-        bool ok = debug.reply_size ? write_reply(now) : read_request(engine, now);
+        bool ok = debug.protocol.reply_size ? write_reply(now) : read_request(engine, now);
         if (!ok)
             disconnect_client(engine, now);
     }

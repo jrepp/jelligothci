@@ -55,7 +55,7 @@ The checks are:
 | Check | Coverage |
 | --- | --- |
 | clang-format | Tracked project C sources and headers |
-| clang-tidy | Core and tests, with real C11 headers and the public interface |
+| clang-tidy | Core, portable drivers and tests, with real C11 headers and the public interface |
 | Cppcheck | All project C, including SDL and ESP32 adapters, without SDK setup |
 | Lizard and file limits | 80 function NLOC, 400 physical file lines, complexity 20 |
 | Docuchango | Structured documents, frontmatter, and links |
@@ -188,3 +188,45 @@ storage, integer channel interpolation, and no heap allocation. The engine uses
 three slots, not a dynamic animation scheduler. Input draining remains bounded;
 the ESP32 eight-event queue drops a new event when full. See
 [ADR-009](../docs-cms/adr/adr-009-bounded-input-color-animation.md) for the contract.
+
+
+## Device services
+
+`include/jelli/device.h` defines optional clock, motion and display providers.
+Each provider has an independent borrowed context and explicit status. Missing
+callbacks report unavailable. Bind motion/display with `jelli_pet_bind_devices`
+after engine init; rebinding clears the motion sample. Hosts serialize access
+and keep context alive until unbound or the engine stops. The original
+`JelliPlatform` interface is unchanged.
+
+Motion polling runs once per pet frame and must not block. The host acquires
+sensor observations separately, then publishes a coalesced event through
+`JelliMotionMailbox` or its own synchronized queue. The sample's time uses the
+engine's monotonic epoch. Failed polls clear the sample; timestamps beyond the
+current frame time are rejected. SDL M injects a simulated event into this same
+boundary. It has no visual or gameplay reaction yet. Normal ESP32 firmware reports
+motion unavailable because pickup/wake qualification is incomplete.
+
+Clock reads return UTC milliseconds and source validity. Host sessions retain
+responsibility for durable trust, timezone and save anchors. The ESP32 session
+receives a `JelliClockDriver`; it never infers trust from a moving RTC alone.
+Display brightness requests accept 0..100 and return the actual adapter result.
+A failed request may have reached hardware and is not automatically retried.
+Sleep/wake policy is outside this interface.
+
+The `drivers/` C11 library contains QMI8658 and PCF85063 protocols. Provide a
+`JelliRegisterIo` with a bounded read/write implementation and, for QMI setup,
+injected time/delay callbacks. Transfers use at most 16 bytes. Board addresses,
+GPIO routing, interrupt evidence and bus locking stay in ports. QMI setup and
+cleanup are synchronous host operations, never engine/ISR callbacks. The power
+profile uses the same tested driver; normal and factory images exclude it.
+Its explicit INT2 opt-in does not establish wake readiness on another board.
+
+`JelliTouchGuard` applies fault cancellation before host gesture translation and
+requires a valid release before a new contact. Its guard and gesture share one
+owner or host lock. ESP32 uses the LVGL lock; SDL runs them on its event thread.
+
+Use `make core-test` for fake transport and service tests, `make test` for the
+SDL integration, and `make sanitize` for memory/undefined-behavior checks.
+The existing C analysis and size gates include portable drivers. Firmware
+profile isolation is checked with `tools/debug/check_firmware_profile.py`.

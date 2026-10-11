@@ -1109,6 +1109,11 @@
       "form": 2,
       "energy_pct": 100,
       "hydration_pct": 150
+    },
+    {
+      "form": 3,
+      "energy_pct": 100,
+      "hydration_pct": 150
     }
   ]
 }

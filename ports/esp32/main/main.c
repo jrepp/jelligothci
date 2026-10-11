@@ -4,7 +4,10 @@
 #include "debug_wire.h"
 #include "sound_output.h"
 #include "session.h"
+#include "rtc_clock.h"
+#include "touch_input.h"
 #include "network.h"
+#include "validation/experiments.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "display_output.h"
 #include "esp_log.h"
@@ -19,6 +22,7 @@ enum { FRAME_MS = 16 };
 
 typedef struct {
     JelliGesture gesture;
+    JelliTouchGuard touch;
     JelliDisplayOutput display;
     QueueHandle_t input;
     uint64_t present_ms;
@@ -43,6 +47,10 @@ static void touch_event(lv_event_t *event)
     lv_point_t point;
     lv_indev_get_point(device, &point);
     lv_event_code_t code = lv_event_get_code(event);
+    if (jelli_experiments_filter_touch(code)) {
+        b->gesture.active = false;
+        return;
+    }
     if (code == LV_EVENT_PRESSED)
         jelli_gesture_begin(&b->gesture, point.x, point.y);
     else if (code == LV_EVENT_PRESS_LOST)
@@ -68,13 +76,14 @@ static void paused(void *ctx, bool value)
     ESP_LOGI(TAG, "Animation %s", value ? "paused" : "running");
 }
 
-static void run_engine(JelliPetEngine *engine, const Board *board, JelliEspSession *session)
+static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *session)
 {
     uint64_t report_start = now_ms(NULL);
     unsigned frames = 0;
     for (;;) {
         uint64_t start = now_ms(NULL);
         bool frozen = jelli_debug_wire_poll(engine, start);
+        jelli_experiments_poll(&board->display, engine);
         jelli_network_poll(engine, session, frozen);
         jelli_esp_session_update(session, engine, frozen);
         if (!frozen && !jelli_pet_frame(engine))
@@ -112,12 +121,15 @@ void app_main(void)
     static Board board;
     static JelliPetEngine engine;
     static JelliEspSession session;
+    static JelliRegisterIo rtc_io;
     jelli_display_output_init(&board.display);
     board.input = xQueueCreate(8, sizeof(JelliInput));
     ESP_ERROR_CHECK(board.input ? ESP_OK : ESP_ERR_NO_MEM);
     lv_display_t *display = bsp_display_start();
     ESP_ERROR_CHECK(display ? ESP_OK : ESP_FAIL);
     ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
+    ESP_ERROR_CHECK(
+        jelli_touch_input_init(&board.touch, &board.gesture, bsp_display_get_input_dev()));
     jelli_display_transfer_attach(&board.display.transfer, display);
     lv_timer_set_period(lv_display_get_refr_timer(display), FRAME_MS);
     lv_obj_t *screen = lv_screen_active();
@@ -137,7 +149,8 @@ void app_main(void)
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_RELEASED, &board);
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_PRESS_LOST, &board);
     bsp_display_unlock();
-    ESP_ERROR_CHECK(bsp_display_brightness_set(60));
+    JelliDisplayDriver display_driver = jelli_display_output_driver(&board.display);
+    ESP_ERROR_CHECK(jelli_display_brightness(display_driver, 60));
 
     JelliPlatform platform = {&board, now_ms, poll_input, present, paused};
     JelliSurface surface = {.pixels = board.display.engine_pixels,
@@ -145,11 +158,14 @@ void app_main(void)
                             .height = JELLI_HEIGHT,
                             .stride = JELLI_WIDTH};
     ESP_ERROR_CHECK(jelli_pet_init(&engine, platform, surface) ? ESP_OK : ESP_FAIL);
-    jelli_esp_session_open(&session, &engine);
+    jelli_pet_bind_devices(&engine, (JelliMotionDriver){0}, display_driver);
+    JelliClockDriver clock = jelli_rtc_clock_open(&rtc_io, bsp_i2c_get_handle());
+    jelli_esp_session_open(&session, &engine, clock);
     ESP_LOGI(TAG, "Pet slice ready: tap menus; NVS checkpoint and RTC session initialized");
     if (!jelli_sound_output_init())
         ESP_LOGW(TAG, "Sound unavailable; game remains playable");
     jelli_network_init(&engine);
+    jelli_experiments_init(&board.touch);
     jelli_debug_wire_init(&board.display);
     run_engine(&engine, &board, &session);
 }

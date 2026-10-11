@@ -77,7 +77,9 @@ finished content-pack headers are emitted.
 The generated manifest reports raw RGB565, mask and font payload sizes. The SDL
 live pack uses fixed staging and decoded banks; the builder rejects artwork
 that exceeds those bounds. These are desktop authoring limits, not a linked
-firmware memory measurement.
+firmware memory measurement. The combined location and baby/hug art needs
+141,632 pixels and 17,704 mask bytes. The desktop banks hold 147,456 pixels and
+18,432 mask bytes; staging holds 320 KiB. Raw payload is 302,120 bytes.
 
 To reproduce candidate PNGs without overwriting reviewed source art:
 

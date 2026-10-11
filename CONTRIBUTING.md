@@ -158,3 +158,17 @@ installed, results, and any missing checks. A fresh checkout on the maintainer's
 Mac is useful evidence, but is not a fresh machine or proof of Linux/Windows
 firmware support. The [handoff record](docs-cms/memos/memo-005-contributor-and-maintainer-handoff.md)
 tracks the current acceptance boundary and recovery instructions.
+
+## Board validation profiles
+
+When changing ESP32 board support or experiment interfaces, build
+`make esp-build`, `./scripts/esp validate`, and `./scripts/esp factory`. CI compiles all three against the pinned
+SDK. These use separate generated SDK configurations and output directories.
+Run `python3 tools/debug/check_firmware_profile.py normal build/esp32` and
+`python3 tools/debug/check_firmware_profile.py power build/esp32-power` to verify
+isolation; also run `python3 tools/debug/check_firmware_profile.py factory build/esp32-factory`.
+Run `python3 tests/test_factory_capture.py` for result validation. Shared debug
+protocol changes also require `make test`, `make core-test`, and `make sanitize`;
+the parser test runs without a game engine or SDL. Source formatting and C analysis include experiments as normal code.
+See [hardware experiments](docs/hardware.md#power-experiments-over-usb) for flashing
+and serial evidence. CI compilation does not establish hardware test results.

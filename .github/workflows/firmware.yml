@@ -1,0 +1,43 @@
+name: Firmware profiles
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [normal, power, factory]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Install build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y git wget flex bison gperf python3 python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+      - name: Check factory transcript validation
+        run: python3 tests/test_factory_capture.py
+      - name: Bootstrap pinned SDK
+        run: make esp-bootstrap
+      - name: Build normal firmware
+        if: matrix.profile == 'normal'
+        run: make esp-build
+      - name: Build power validation firmware
+        if: matrix.profile == 'power'
+        run: ./scripts/esp validate
+      - name: Build factory smoke firmware
+        if: matrix.profile == 'factory'
+        run: ./scripts/esp factory
+      - name: Verify build isolation
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          if [ "$PROFILE" = normal ]; then build_dir=build/esp32; else build_dir="build/esp32-$PROFILE"; fi
+          python3 tools/debug/check_firmware_profile.py "$PROFILE" "$build_dir"

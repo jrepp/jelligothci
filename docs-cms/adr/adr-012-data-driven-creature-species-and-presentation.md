@@ -78,7 +78,10 @@ Separate *what a state means* (code) from *how a creature presents it* (data):
    16,384 mask bytes. *Amended 2026-10-10 (owner-approved):* the desktop
    live-reload staging buffer is 294,912 bytes (288 KiB) and is the pack
    ceiling the build checks; the SDL decoder bounds pixels by the bank's real
-   capacity instead of a stale 98,304-pixel limit.
+   capacity instead of a stale 98,304-pixel limit. The subsequent main/device-power
+   integration uses 320 KiB staging, 147,456 pixels and 18,432 mask bytes to retain
+   both location art and baby/hug frames; see the measured budget in
+   [memo-055](../memos/memo-055-main-rebase-and-device-firmware-deployment.md).
 6. **Jelli Art authors the data.** Its Creature view edits clips with an animated
    preview at game placement. Profile and behaviour editing follows the same
    validate-then-commit path.

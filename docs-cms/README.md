@@ -8,6 +8,29 @@ status](memos/memo-001-shapes-mvp-foundation.md) and
 Wi-Fi/time/OTA foundation: [memo-019](memos/memo-019-wifi-time-and-ota-foundation.md).
 Planned AP setup and optional Wi-Fi debug: [RFC-003](rfcs/rfc-003-wifi-provisioning-and-network-debug.md).
 
+Main rebase and device deployment: [memo-055](memos/memo-055-main-rebase-and-device-firmware-deployment.md).
+
+Portable device interfaces: [ADR-014](adr/adr-014-injected-device-services.md) and
+[memo-053](memos/memo-053-portable-device-boundaries.md).
+
+IMU command and interrupt qualification: [memo-052](memos/memo-052-imu-command-and-interrupt-qualification.md).
+
+RTC progression and trust prerequisite: [memo-051](memos/memo-051-rtc-progression-validation.md).
+
+Display sleep/brightness trials and visual restoration: [memo-050](memos/memo-050-display-sleep-and-brightness-validation.md).
+Touch recovery and scheduling hardware trials: [memo-049](memos/memo-049-touch-recovery-and-scheduling-validation.md).
+Factory inventory hardware baseline and validation methodology: [memo-048](memos/memo-048-factory-inventory-validation-pass.md).
+Device capability research and ranked experiments: [memo-047](memos/memo-047-device-capabilities-and-experiment-backlog.md).
+Shared game/factory debug path and retained factory state: [memo-046](memos/memo-046-shared-factory-debug-path.md).
+
+Maintained validation profiles and standalone factory smoke: [memo-045](memos/memo-045-validation-and-factory-firmware.md).
+
+Proposed reusable board validation and factory boundary: [ADR-013](adr/adr-013-board-validation-profiles.md).
+
+Device power experiments and measured driver gaps: [memo-044](memos/memo-044-device-power-experiments.md).
+
+Device sleep and driver capability audit: [memo-054](memos/memo-054-device-power-and-driver-audit.md).
+
 Current sleep, habits, and collectibles: [memo-018](memos/memo-018-sleep-habits-and-collectible-presents.md).
 
 Latest release and expressive slice: [memo-017](memos/memo-017-release-downloads-and-expressive-slice.md).
