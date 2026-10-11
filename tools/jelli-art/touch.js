@@ -14,14 +14,17 @@
  *   gestures(handlers, opts)  a recogniser; see "gesture recogniser" below
  *   registerGestures(list)    adds [{gesture, description}] to the help dialog's Touch and Pencil
  *                             section, merged by gesture name (later entries replace earlier ones)
- *   info(text, label)         HTML for a tap-to-reveal ⓘ button that shows text in the popover
- *   popover(text, anchor)     shows text in the popover next to an element; hidePopover() closes it
- *   setList(open)             opens or closes the asset-list drawer (coarse pointers only)
+ *   info(text, label)         HTML for a tap-to-reveal ⓘ button that shows text in the popover (aria-expanded and
+ *                             aria-controls while open; the popover is a tooltip the button aria-describedby points at)
+ *   popover(text, anchor)     shows text in the popover next to an element (inside the anchor's open <dialog>,
+ *                             so a modal never covers it); hidePopover() closes it
+ *   setList(open)             opens or closes the asset-list drawer (devices whose primary pointer is coarse)
+ *   drawerOn()                true while the drawer applies (primary pointer coarse; a hybrid keeps the aside)
  *
  * Page furniture it adds: `html[data-keys]` after the first key press outside a text field (CSS hides
  * <kbd> hints in buttons on coarse pointers until then); a long press (T.LONG_PRESS_MS) on any
  * control with a title shows that title in the popover (put `data-touch-surface` on canvases and
- * other elements that handle their own long press); class `jt-hit` grows an element's hit area by
+ * other elements that handle their own long press; form fields are skipped); class `jt-hit` grows an element's hit area by
  * --hit-pad without changing its look; tokens --tap, --tap-gap and --hit-pad on :root. */
 'use strict';
 (() => {
@@ -51,6 +54,8 @@
   const kind = e => (e.pointerType === 'pen' ? 'pen' : e.pointerType === 'touch' ? 'touch' : 'mouse');
   const coarseQuery = window.matchMedia ? matchMedia('(any-pointer: coarse)') : null;
   const coarse = () => !!coarseQuery?.matches;
+  const primaryCoarse = window.matchMedia ? matchMedia('(pointer: coarse)') : null;
+  const drawerOn = () => !!primaryCoarse?.matches;
   const listeners = new Set();
   const pencilOnly = () => !!local.get('pencil-only', false);
   /** @param {boolean} on */
@@ -76,13 +81,22 @@
   /* ---------- gesture recogniser ----------
    * gestures({stroke: {start(e), move(e), end(e), cancel(e)}, pan(dx, dy), pinch(g), gestureEnd(g), tap(fingers, g),
    *           point(e), longPress(e)}, {pencilOnly: () => bool, offerPencilOnly: bool})
-   * returns {handle(e), attach(el), reset(), busy()}. Feed it pointerdown/move/up/cancel (attach(el) does
+   * returns {handle(e), attach(el), reset(reason), busy()}. Feed it pointerdown/move/up/cancel (attach(el) does
    * that, captures each pointer and returns a detach function); handle(e) returns what the event became:
    * 'stroke', 'gesture' or 'ignored'.
    * - stroke.*: the mouse, a pen, and one finger while Pencil only is off. A finger stroke is cancelled
    *   (stroke.cancel) when a second finger lands within SECOND_FINGER_MS or a long press fires; after that
    *   window further fingers are ignored until it ends. Touches while a pen is down or within PALM_MS of
-   *   it lifting never stroke. A pen landing during a finger gesture ends the gesture first.
+   *   it lifting never stroke. A pen landing during a finger gesture ends the gesture first. Deviation from
+ *   RFC-007: a finger that lands while the pen is down stays inert for good, even after the pen lifts
+ *   (the RFC lets it join a gesture then); that is the safer choice for resting palms.
+ * - stroke.cancel(e, reason): reason is 'second-finger', 'long-press', 'pen' (a pen took over), 'lost' (pointer
+ *   capture lost, or a new pointerdown reused the id or replaced a stuck stroke), 'blur' (window blurred, tab
+ *   hidden, or reset()) or 'cancel' (pointercancel). Handlers written before reasons existed can ignore it.
+ * - A mouse or pen pointerdown while another mouse or pen stroke is live replaces it (the old one is cancelled
+ *   with 'lost'), so a lost pointerup never blocks painting. reset(reason) cancels any stroke and ends any gesture.
+ * - A gesture left with fewer than two live fingers (a staggered lift) is frozen: moves are ignored, new fingers
+ *   are inert, and gestureEnd fires once when the last finger lifts (if it panned or pinched).
    * - pan(dx, dy): incremental movement of the two-finger midpoint (or one finger with Pencil only) once it
    *   has moved PAN_PX; pinch(g) once the finger distance changed by PINCH_RATIO, with g = {scale (since the
    *   gesture began), cx, cy (midpoint now), x0, y0 (midpoint at the start)}; gestureEnd(g) when the last
@@ -99,10 +113,11 @@
     const h = handlers || {}, sk = h.stroke || {}, onlyPen = opts.pencilOnly || pencilOnly;
     /** @type {Map<number, {x: number, y: number, x0: number, y0: number, t0: number, moved: number}>} */
     const touches = new Map();
-    /** @type {{id: number, kind: string, t0: number} | null} */
+    /** @type {{id: number, kind: string, t0: number, e: PointerEvent} | null} */
     let stroke = null;
     /** @type {any} */
-    let gesture = null;  // {ids, first, startMid, startDist, mid, maxFingers, tapOk, panning, pinching, one}
+    let gesture = null;  // {ids, first, x0, y0, ox, oy, mid, maxFingers, tapOk, panning, pinching, one, frozen}
+    let lastEvent = /** @type {any} */ (null);
     let penDown = false, penUpAt = -Infinity, pressTimer = 0, pressId = -1;
     const ignored = new Set();  // finger ids that do nothing until they lift
     const clearPress = () => { clearTimeout(pressTimer); pressTimer = 0; pressId = -1; };
@@ -114,10 +129,12 @@
     function rebase() {
       const ids = live(); gesture.ids = ids; if (!ids.length) return;
       gesture.mid = midOf(ids); gesture.baseDist = distOf(ids); gesture.baseScale = gesture.scale;
+      gesture.ox = gesture.mid.x; gesture.oy = gesture.mid.y;  // the pan threshold is measured from here
+      if (!gesture.one && ids.length < 2) gesture.frozen = true;
     }
     function startGesture(one) {
       const ids = live(), m = midOf(ids), t0s = ids.map(id => touches.get(id).t0), first = Math.min(...t0s);
-      gesture = {ids, first, x0: m.x, y0: m.y, mid: m, startDist: distOf(ids), maxFingers: ids.length,
+      gesture = {ids, first, x0: m.x, y0: m.y, ox: m.x, oy: m.y, mid: m, frozen: false, maxFingers: ids.length,
         tapOk: !one && Math.max(...t0s) - first <= T.TAP_DOWN_MS && ids.every(id => touches.get(id).moved <= T.TAP_MOVE_PX),
         panning: false, pinching: false, one, scale: 1, baseScale: 1, baseDist: distOf(ids)};
     }
@@ -125,13 +142,13 @@
       const g = gesture; gesture = null; if (!g) return;
       if (g.panning || g.pinching) h.gestureEnd?.({scale: g.scale, cx: g.mid.x, cy: g.mid.y, x0: g.x0, y0: g.y0});
     }
-    function cancelStroke(e) { if (!stroke) return; stroke = null; sk.cancel?.(e); }
+    function cancelStroke(e, reason) { if (!stroke) return; const own = stroke.e || e; stroke = null; sk.cancel?.(own, reason); }  // the cancelled stroke's own latest event
     function armPress(e) {
       clearPress(); if (!h.longPress) return;
       pressId = e.pointerId;
       pressTimer = window.setTimeout(() => {
         const p = touches.get(pressId); if (!p || p.moved > T.LONG_PRESS_MOVE_PX || live().length !== 1) return;
-        if (stroke?.id === pressId) cancelStroke(e);
+        if (stroke?.id === pressId) cancelStroke(e, 'long-press');
         if (gesture?.one) gesture = null;
         ignored.add(pressId); pressTimer = 0;
         h.longPress(e);
@@ -140,15 +157,20 @@
     /** @param {PointerEvent} e */
     function down(e) {
       const k = kind(e);
+      if (stroke?.id === e.pointerId || (k === 'touch' && touches.has(e.pointerId))) up(e, true, 'lost');  // the id is reused: its pointerup never came
       if (k !== 'touch') {
-        if (stroke && !(k === 'pen' && stroke.kind === 'touch')) return 'ignored';
+        if (stroke && stroke.kind === 'touch' && k === 'mouse') return 'ignored';  // a live finger stroke is not replaced by a mouse
+        if (stroke && stroke.kind !== 'touch') {  // a mouse or pen stroke that never saw its pointerup: the new press replaces it
+          if (stroke.kind === 'pen') { penDown = false; penUpAt = now(); }
+          cancelStroke(e, 'lost');
+        }
         if (k === 'pen') {  // the Pencil takes over: a finger stroke is cancelled, a gesture ends, fingers down stay inert
-          cancelStroke(e); if (gesture) endGesture();
+          cancelStroke(e, 'pen'); if (gesture) endGesture();
           for (const id of touches.keys()) ignored.add(id);
           penDown = true; if (opts.offerPencilOnly) offerPencilOnly();
         }
         clearPress();
-        stroke = {id: e.pointerId, kind: k, t0: now()};
+        stroke = {id: e.pointerId, kind: k, t0: now(), e};
         sk.start?.(e); return 'stroke';
       }
       touches.set(e.pointerId, {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: now(), moved: 0});
@@ -159,15 +181,16 @@
       if (ids.length === 1) {
         if (now() - penUpAt < T.PALM_MS) return 'ignored';
         if (onlyPen()) { startGesture(true); armPress(e); return 'gesture'; }
-        stroke = {id: e.pointerId, kind: 'touch', t0: now()};
+        stroke = {id: e.pointerId, kind: 'touch', t0: now(), e};
         armPress(e); sk.start?.(e); return 'stroke';
       }
       clearPress();
       if (stroke) {  // a finger stroke: a second finger this soon means a gesture, later it is ignored
         if (now() - stroke.t0 > T.SECOND_FINGER_MS) { ignored.add(e.pointerId); return 'ignored'; }
-        cancelStroke(e);
+        cancelStroke(e, 'second-finger');
       }
-      if (!gesture || gesture.one) startGesture(false);
+      if (gesture?.frozen) { ignored.add(e.pointerId); return 'ignored'; }  // a lifted finger already ended this gesture's pan and pinch
+      if (!gesture || gesture.one) { endGesture(); startGesture(false); }
       else {
         gesture.maxFingers = Math.max(gesture.maxFingers, live().length);
         if (now() - gesture.first > T.TAP_DOWN_MS) gesture.tapOk = false;
@@ -178,6 +201,7 @@
     /** @param {PointerEvent} e */
     function move(e) {
       if (stroke?.id === e.pointerId) {
+        stroke.e = e;
         const p = touches.get(e.pointerId);
         if (p) { p.x = e.clientX; p.y = e.clientY; p.moved = Math.max(p.moved, Math.hypot(p.x - p.x0, p.y - p.y0)); }
         if (p && p.moved > T.LONG_PRESS_MOVE_PX && pressId === e.pointerId) clearPress();
@@ -187,25 +211,26 @@
       p.x = e.clientX; p.y = e.clientY; p.moved = Math.max(p.moved, Math.hypot(p.x - p.x0, p.y - p.y0));
       if (pressId === e.pointerId && p.moved > T.LONG_PRESS_MOVE_PX) clearPress();
       if (ignored.has(e.pointerId) || !gesture || !gesture.ids.includes(e.pointerId)) return 'ignored';
-      if (p.moved > T.TAP_MOVE_PX) gesture.tapOk = false;
+      if (p.moved > T.TAP_MOVE_PX) gesture.tapOk = false;  // a tap is judged by each finger's own movement, never the midpoint's
+      if (gesture.frozen) return 'gesture';
       const m = midOf(gesture.ids), d = distOf(gesture.ids);
       let prev = gesture.mid;
-      // Once a pan starts, its first step covers the distance moved under the threshold too.
-      if (!gesture.panning && Math.hypot(m.x - gesture.x0, m.y - gesture.y0) > T.PAN_PX) { gesture.panning = true; gesture.tapOk = false; prev = {x: gesture.x0, y: gesture.y0}; }
-      if (!gesture.one && !gesture.pinching && gesture.startDist && Math.abs(d / gesture.startDist - 1) > T.PINCH_RATIO) { gesture.pinching = true; gesture.tapOk = false; }
+      // Once a pan starts, its first step covers the distance moved under the threshold too (measured from the last rebase).
+      if (!gesture.panning && Math.hypot(m.x - gesture.ox, m.y - gesture.oy) > T.PAN_PX) { gesture.panning = true; gesture.tapOk = false; prev = {x: gesture.ox, y: gesture.oy}; }
+      if (!gesture.one && !gesture.pinching && gesture.baseDist && Math.abs(d / gesture.baseDist - 1) > T.PINCH_RATIO) { gesture.pinching = true; gesture.tapOk = false; }
       gesture.mid = m;
       if (gesture.pinching && gesture.baseDist) { gesture.scale = gesture.baseScale * d / gesture.baseDist; h.pinch?.(snap()); }
       if (gesture.panning) h.pan?.(m.x - prev.x, m.y - prev.y);
       return 'gesture';
     }
     /** @param {PointerEvent} e */
-    function up(e) {
-      const cancelled = e.type === 'pointercancel';
+    function up(e, forced = false, why = 'cancel') {
+      const cancelled = forced || e.type === 'pointercancel';
       if (stroke?.id === e.pointerId) {
         if (stroke.kind === 'pen') { penDown = false; penUpAt = now(); }
         if (pressId === e.pointerId) clearPress();
         stroke = null; touches.delete(e.pointerId);
-        if (cancelled) sk.cancel?.(e); else sk.end?.(e);
+        if (cancelled) sk.cancel?.(e, why); else sk.end?.(e);
         return 'stroke';
       }
       const p = touches.get(e.pointerId); if (!p) return 'ignored';
@@ -225,12 +250,19 @@
     }
     /** @param {PointerEvent} e */
     function handle(e) {
+      lastEvent = e;
       if (e.type === 'pointerdown') return down(e);
       if (e.type === 'pointermove') return move(e);
       if (e.type === 'pointerup' || e.type === 'pointercancel') return up(e);
+      if (e.type === 'lostpointercapture') return up(e, true, 'lost');
       return 'ignored';
     }
-    function reset() { clearPress(); touches.clear(); ignored.clear(); stroke = null; gesture = null; penDown = false; }
+    function wipe() { clearPress(); touches.clear(); ignored.clear(); stroke = null; gesture = null; penDown = false; }
+    /** Drop every pointer: a stroke is cancelled and a gesture that panned or pinched ends. @param {string} [reason] */
+    function reset(reason = 'blur') {
+      cancelStroke(lastEvent, reason);
+      endGesture(); wipe();
+    }
     /** @param {HTMLElement} el */
     function attach(el) {
       /** @param {PointerEvent} e */
@@ -238,10 +270,15 @@
         if (e.type === 'pointerdown') { try { el.setPointerCapture(e.pointerId); } catch { /* synthetic or released pointer */ } }
         if (handle(e) !== 'ignored' && e.pointerType !== 'mouse') e.preventDefault();
       };
-      const types = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'];
+      const types = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture'];
       for (const t of types) el.addEventListener(t, on);
+      const away = () => reset('blur'), hidden = () => { if (document.visibilityState === 'hidden') reset('blur'); };
+      window.addEventListener('blur', away); document.addEventListener('visibilitychange', hidden);
       el.dataset.touchSurface = ''; el.style.touchAction = 'none';
-      return () => { for (const t of types) el.removeEventListener(t, on); reset(); };
+      return () => {
+        for (const t of types) el.removeEventListener(t, on);
+        window.removeEventListener('blur', away); document.removeEventListener('visibilitychange', hidden); wipe();
+      };
     }
     return {handle, attach, reset, busy: () => !!(stroke || gesture)};
   }
@@ -252,20 +289,30 @@
   function hidePopover() {
     if (!pop) return;
     pop.remove(); pop = null;
-    popAnchor?.getAttribute('aria-expanded') === 'true' && popAnchor.setAttribute('aria-expanded', 'false');
+    if (popAnchor) {
+      if (popAnchor.getAttribute('aria-expanded') === 'true') popAnchor.setAttribute('aria-expanded', 'false');
+      popAnchor.removeAttribute('aria-controls');
+      if (popAnchor.dataset.jtDesc !== undefined) {
+        if (popAnchor.dataset.jtDesc) popAnchor.setAttribute('aria-describedby', popAnchor.dataset.jtDesc); else popAnchor.removeAttribute('aria-describedby');
+        delete popAnchor.dataset.jtDesc;
+      }
+    }
     popAnchor = null;
   }
   /** @param {string} text @param {Element} anchor */
   function popover(text, anchor) {
     hidePopover(); if (!text) return;
     pop = document.createElement('div'); pop.className = 'jt-pop'; pop.id = 'jt-pop'; pop.setAttribute('role', 'tooltip'); pop.textContent = text;
-    document.body.append(pop);
+    (anchor.closest('dialog[open]') || document.body).append(pop);  // a modal dialog sits in the top layer above the page
     const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, ph = pop.offsetHeight;
     const left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2));
     const top = r.bottom + 8 + ph < innerHeight ? r.bottom + 8 : Math.max(8, r.top - ph - 8);
     pop.style.left = `${left}px`; pop.style.top = `${top}px`;
     popAnchor = /** @type {HTMLElement} */ (anchor);
-    shell()?.announce(text);
+    // One channel only: the tooltip role plus aria-describedby, not also a live announcement.
+    popAnchor.dataset.jtDesc = popAnchor.getAttribute('aria-describedby') || '';
+    popAnchor.setAttribute('aria-describedby', [popAnchor.dataset.jtDesc, 'jt-pop'].filter(Boolean).join(' '));
+    popAnchor.setAttribute('aria-controls', 'jt-pop');
   }
   /** @param {string} text @param {string} [label] */
   const info = (text, label = 'More about this') =>
@@ -281,20 +328,27 @@
   }
   /* A long press on a control with a title shows the title; the click that ends it is swallowed. */
   function wireTitles() {
-    let timer = 0, start = null, target = null, shown = false;
+    let timer = 0, start = null, target = null, shown = false, shownTimer = 0;
     const clear = () => { clearTimeout(timer); timer = 0; target = null; };
+    const FIELDS = 'input, textarea, select, [contenteditable]';
     document.addEventListener('pointerdown', e => {
       const t = /** @type {Element} */ (e.target);
       if (pop && !t.closest?.('.jt-pop, .jt-info')) hidePopover();
-      shown = false; clear();
+      shown = false; clearTimeout(shownTimer); clear();
       if (e.pointerType === 'mouse') return;
       const el = t.closest?.('[title]');
-      if (!el || el.closest('[data-touch-surface]') || !el.getAttribute('title')) return;
+      if (!el || el.matches(FIELDS) || t.closest?.(FIELDS) || el.closest('[data-touch-surface]') || !el.getAttribute('title')) return;
       target = el; start = {x: e.clientX, y: e.clientY};
       timer = window.setTimeout(() => { if (target) { popover(target.getAttribute('title'), target); shown = true; } timer = 0; }, T.LONG_PRESS_MS);
     }, true);
     document.addEventListener('pointermove', e => { if (target && Math.hypot(e.clientX - start.x, e.clientY - start.y) > T.LONG_PRESS_MOVE_PX) clear(); }, true);
-    for (const type of ['pointerup', 'pointercancel']) document.addEventListener(type, clear, true);
+    for (const type of ['pointerup', 'pointercancel']) {
+      document.addEventListener(type, () => {
+        clear();
+        // The click that ends a long press follows at once; a keyboard activation later must not be swallowed.
+        if (shown) { clearTimeout(shownTimer); shownTimer = window.setTimeout(() => { shown = false; }, 300); }
+      }, true);
+    }
     document.addEventListener('click', e => {
       if (shown) { shown = false; e.preventDefault(); e.stopPropagation(); return; }
       const b = /** @type {HTMLElement} */ (/** @type {Element} */ (e.target).closest?.('.jt-info'));
@@ -304,7 +358,11 @@
       popover(b.dataset.info || '', b); b.setAttribute('aria-expanded', 'true');
     }, true);
     document.addEventListener('contextmenu', e => { if (shown || timer) e.preventDefault(); }, true);
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && pop) { const a = popAnchor; hidePopover(); a?.focus?.(); } }, true);
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || !pop) return;
+      e.preventDefault(); e.stopPropagation();  // close the popover only; a dialog behind it stays open
+      const a = popAnchor; hidePopover(); a?.focus?.();
+    }, true);
     window.addEventListener('scroll', hidePopover, true);
   }
 
@@ -325,9 +383,11 @@
     if (!btn || !aside) return;
     document.documentElement.dataset.list = open ? 'open' : 'closed';
     btn.setAttribute('aria-expanded', String(open));
-    if (!coarse()) return;
-    if (open) /** @type {HTMLElement} */ (aside.querySelector('input, [aria-selected=true], .item') || aside)?.focus?.({preventScroll: true});
-    else if (aside.contains(document.activeElement)) btn.focus();
+    if (!drawerOn()) return;
+    if (open) {
+      if (!aside.hasAttribute('tabindex')) aside.tabIndex = -1;
+      /** @type {HTMLElement} */ (aside.querySelector('input, [aria-selected=true], .item, button, [tabindex]') || aside).focus({preventScroll: true});
+    } else if (aside.contains(document.activeElement) || document.activeElement === document.body) btn.focus();
   }
   function wireList() {
     const tools = document.querySelector('.shell-tools'), aside = document.querySelector('aside');
@@ -338,8 +398,10 @@
     document.documentElement.dataset.list = 'closed';
     document.getElementById('jt-list-button').onclick = () => setList(!listOpen());
     /** @type {HTMLElement} */ (document.querySelector('.jt-scrim')).onclick = () => setList(false);
-    aside.addEventListener('click', e => { if (coarse() && /** @type {Element} */ (e.target).closest?.('.item')) setList(false); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && listOpen() && coarse() && !document.querySelector('dialog[open]')) setList(false); });
+    aside.addEventListener('click', e => { if (drawerOn() && /** @type {Element} */ (e.target).closest?.('.item')) setList(false); });
+    // Anything that moves focus into the closed (hidden) list opens the drawer first, so focus is never lost.
+    aside.addEventListener('focusin', () => { if (drawerOn() && !listOpen()) setList(true); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && listOpen() && drawerOn() && !document.querySelector('dialog[open]')) setList(false); });
   }
 
   /* ---------- styles ---------- */
@@ -362,6 +424,8 @@
   button,select,a,.chip,.item,[role=tab],[role=button],[role=slider],.card{touch-action:manipulation}
   button,.chip,.item,[role=tab],[role=button],.card,canvas,[data-touch-surface]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
   :root:not([data-keys]) button kbd,:root:not([data-keys]) [role=tab] kbd,:root:not([data-keys]) [role=button] kbd{display:none}
+}
+@media (pointer: coarse){
   .jt-list-toggle{display:inline-block}
   :root[data-list=closed] .layout{grid-template-columns:minmax(0,1fr)}:root[data-list=closed] .layout>aside{display:none}
   :root[data-list=open] .layout{grid-template-columns:minmax(0,1fr)}
@@ -369,7 +433,7 @@
   :root[data-list=open] .jt-scrim{display:block;position:fixed;inset:0;z-index:44;background:#0008}
 }
 @media (hover: none){
-  button:not([aria-pressed=true]):hover,.card:hover{border-color:var(--line)}
+  button:not([aria-pressed=true],[aria-selected=true],[aria-current],.primary,.danger):hover,.card:hover{border-color:var(--line)}
   .item:not([aria-selected=true]):hover{background:transparent}
 }`;
 

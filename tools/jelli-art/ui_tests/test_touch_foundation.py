@@ -8,7 +8,7 @@ import pytest
 
 from conftest import new_view
 from touch import (drag, long_press, pan, pen_down, pen_move, pen_stroke, pen_up, pinch, small_targets, tap,
-                   thresholds, touch_end, touch_move, touch_start)
+                   thresholds, touch_end, touch_lift, touch_move, touch_start)
 
 VIEW = "review-detail"
 
@@ -18,11 +18,12 @@ SURFACE = """pencilOnly => {
     const el = document.createElement('div'); el.id = 'jt-test';
     Object.assign(el.style, {position: 'fixed', left: '0', top: '0', width: '600px', height: '600px', zIndex: '1000', background: '#444'});
     document.body.append(el);
-    window.__log = []; window.__po = pencilOnly;
+    window.__log = []; window.__po = pencilOnly; window.__ids = {};
+    el.addEventListener('pointerdown', e => { (window.__ids[e.pointerType] ||= []).push(e.pointerId); }, true);
     const log = (...a) => window.__log.push(a);
     const g = JelliTouch.gestures({
       stroke: {start: e => log('start', e.pointerType), move: e => log('move', e.pointerType), end: e => log('end', e.pointerType),
-        cancel: e => log('cancel', e.pointerType)},
+        cancel: (e, why) => log('cancel', e.pointerType, why)},
       pan: (dx, dy) => log('pan', dx, dy), pinch: g => log('pinch', g.scale), gestureEnd: g => log('gestureEnd', g.scale),
       tap: n => log('tap', n), point: () => log('point'), longPress: e => log('longPress', e.pointerType)},
       {pencilOnly: () => window.__po});
@@ -45,6 +46,7 @@ def surface(ipad):
         return ipad
     yield install
     touch_end(ipad)
+    ipad.evaluate("() => { window.__detach?.(); window.__detach = null; }")
 
 
 def log(page):
@@ -54,6 +56,22 @@ def log(page):
 
 def names(page):
     return [entry[0] for entry in log(page)]
+
+
+def fire(page, type_, pointer_type, nth=-1):
+    """A synthetic pointer event (pointercancel, lostpointercapture, pointerdown) on the test surface, for the pointer
+    of that type it last saw go down (CDP cannot cancel a pointer or drop its capture)."""
+    page.evaluate("""([type, kind, nth]) => { const ids = window.__ids[kind] || [];
+        document.getElementById('jt-test').dispatchEvent(new PointerEvent(type, {pointerId: ids.at(nth) ?? 1, pointerType: kind, bubbles: true, cancelable: true})); }""",
+                  [type_, pointer_type, nth])
+
+
+def mouse_stroke(page, x=300, y=400):
+    """A mouse stroke on the test surface."""
+    page.mouse.move(x, y)
+    page.mouse.down()
+    page.mouse.move(x + 30, y)
+    page.mouse.up()
 
 
 def test_coarse_media_and_thresholds(ipad):
@@ -214,6 +232,207 @@ def test_pen_ends_a_finger_gesture(surface):
     assert names(page)[-1] == "end"
 
 
+# ---------- hardening: staggered lifts, stuck pointers, the pen, palms ----------
+
+def test_staggered_lift_keeps_two_and_three_finger_taps(surface):
+    for pencil_only in (True, False):
+        page = surface(pencil_only)  # two fingers, one lifts first and the other shifts a little as it does
+        touch_start(page, [(200, 300), (300, 300)])
+        page.wait_for_timeout(40)
+        touch_lift(page, {2: (300, 300)})
+        touch_move(page, {2: (303, 302)})
+        page.wait_for_timeout(40)
+        touch_end(page)
+        got = names(page)
+        assert got[-1] == "tap" and log(page)[-1] == ("tap", 2) and not {"pan", "pinch", "gestureEnd", "end"} & set(got), got
+
+    page = surface(pencil_only=True)
+    touch_start(page, [(200, 300), (300, 300), (400, 300)])
+    page.wait_for_timeout(30)
+    touch_lift(page, {2: (300, 300), 3: (400, 300)})
+    touch_move(page, {2: (302, 300), 3: (402, 300)})
+    touch_lift(page, {3: (402, 300)})
+    touch_move(page, {3: (404, 302)})
+    page.wait_for_timeout(30)
+    touch_end(page)
+    assert names(page) == ["tap"] and log(page)[-1] == ("tap", 3)
+
+
+def test_pinch_then_staggered_lift_freezes_and_ends_once(surface):
+    page = surface(pencil_only=True)
+    pinch(page, (300, 300), 200, 300, lift=False)  # fingers at x = 150 and 450
+    touch_lift(page, {2: (450, 300)})
+    page.wait_for_timeout(30)
+    before = log(page)
+    touch_move(page, {2: (480, 340)})  # the finger left behind wanders: no pan, no pinch
+    touch_move(page, {2: (520, 380)})
+    page.wait_for_timeout(30)
+    assert log(page) == before
+    touch_end(page)
+    got = log(page)
+    assert [e[0] for e in got].count("gestureEnd") == 1 and got[-1][0] == "gestureEnd"
+    assert "pan" not in [e[0] for e in got]
+    assert all(e[1] > 1 for e in got if e[0] == "pinch")
+
+
+def test_staggered_pan_ends_once_and_a_late_finger_is_inert(surface):
+    page = surface(pencil_only=True)
+    pan(page, (300, 300), (40, 0), lift=False)  # fingers at 290 and 390
+    touch_lift(page, {2: (390, 300)})
+    touch_start(page, {2: (390, 300), 3: (100, 100)})  # a new finger on a frozen gesture does nothing
+    touch_move(page, {2: (450, 300), 3: (160, 100)})
+    touch_end(page)
+    got = log(page)
+    assert [e[0] for e in got].count("gestureEnd") == 1
+    assert sum(e[1] for e in got if e[0] == "pan") == pytest.approx(40, abs=1)
+
+
+def test_pan_first_step_starts_where_the_fingers_were_last_anchored(surface):
+    page = surface(pencil_only=True)
+    t = thresholds(page)
+    pan(page, (300, 300), (40, 0))  # 6.7 px steps: the first step reported covers the distance under PAN_PX
+    first = next(e for e in log(page) if e[0] == "pan")
+    assert t["PAN_PX"] < first[1] < 20  # it covers the distance under PAN_PX, not just the last move
+
+    page = surface(pencil_only=True)  # a third finger lands far away: the midpoint moves, but the pan must not jump
+    touch_start(page, [(200, 300), (300, 300)])
+    touch_move(page, [(203, 300), (303, 300)])
+    touch_start(page, [(203, 300), (303, 300), (500, 300)])
+    page.wait_for_timeout(30)
+    drag(page, [(203, 300), (303, 300), (500, 300)], [(233, 300), (333, 300), (530, 300)])
+    touch_end(page)
+    total = sum(e[1] for e in log(page) if e[0] == "pan")
+    assert total == pytest.approx(30, abs=1.5), total
+
+
+def test_second_finger_replaces_a_one_finger_pan_and_ends_it(surface):
+    page = surface(pencil_only=True)
+    touch_start(page, [(200, 300)])
+    drag(page, [(200, 300)], [(260, 300)])
+    touch_start(page, [(260, 300), (360, 300)])
+    got = names(page)
+    assert got.count("pan") >= 1 and got[-1] == "gestureEnd"
+    touch_end(page)
+    assert names(page).count("gestureEnd") == 1
+
+
+def test_pointercancel_and_lost_capture_recover(surface):
+    page = surface()  # a finger stroke cancelled by the system
+    touch_start(page, [(100, 100)])
+    fire(page, "pointercancel", "touch")
+    assert log(page)[-1] == ("cancel", "touch", "cancel")
+    touch_end(page)
+    mouse_stroke(page)
+    assert log(page)[-1] == ("end", "mouse") and ("start", "mouse") in log(page)
+
+    page = surface()  # a pen stroke whose capture is lost
+    pen_down(page, 100, 100)
+    fire(page, "lostpointercapture", "pen")
+    assert log(page)[-1] == ("cancel", "pen", "lost")
+    pen_up(page, 100, 100)
+    page.wait_for_timeout(thresholds(page)["PALM_MS"] + 50)
+    mouse_stroke(page)
+    assert log(page)[-1] == ("end", "mouse")
+
+    page = surface(pencil_only=True)  # a pan that loses a finger and then the other
+    pan(page, (300, 300), (40, 0), lift=False)
+    fire(page, "pointercancel", "touch", 0)
+    fire(page, "lostpointercapture", "touch", 1)
+    assert names(page).count("gestureEnd") == 1
+    touch_end(page)
+    mouse_stroke(page)
+    assert log(page)[-1] == ("end", "mouse") and names(page).count("gestureEnd") == 1
+
+
+def test_stuck_stroke_never_blocks_the_next_one(surface):
+    page = surface()  # a pen stays "down" (its pointerup never arrives); the mouse still paints
+    pen_down(page, 100, 100)
+    mouse_stroke(page)
+    got = log(page)
+    assert ("cancel", "pen", "lost") in got and got[-1] == ("end", "mouse")
+    pen_up(page, 100, 100)
+
+    page = surface()  # a mouse press reusing a live pointer id supersedes the stroke
+    fire(page, "pointerdown", "mouse")
+    fire(page, "pointerdown", "mouse")
+    got = log(page)
+    assert [e[:2] for e in got] == [("start", "mouse"), ("cancel", "mouse"), ("start", "mouse")] and got[1][2] == "lost"
+
+
+def test_blur_and_hidden_tab_reset(surface):
+    page = surface()
+    pen_down(page, 100, 100)
+    page.evaluate("() => window.dispatchEvent(new Event('blur'))")
+    assert log(page)[-1] == ("cancel", "pen", "blur")
+    pen_up(page, 100, 100)
+
+    page = surface(pencil_only=True)
+    pan(page, (300, 300), (40, 0), lift=False)
+    page.evaluate("""() => { Object.defineProperty(document, 'visibilityState', {configurable: true, get: () => 'hidden'});
+        document.dispatchEvent(new Event('visibilitychange')); delete document.visibilityState; }""")
+    assert names(page)[-1] == "gestureEnd"
+    touch_end(page)
+    mouse_stroke(page)
+    assert log(page)[-1] == ("end", "mouse")
+
+
+def test_pen_takes_over_a_finger_stroke_and_a_pencil_only_pan(surface):
+    page = surface()
+    touch_start(page, [(100, 100)])
+    pen_down(page, 300, 300)
+    got = log(page)
+    assert got[-3:] == [("start", "touch"), ("cancel", "touch", "pen"), ("start", "pen")]
+    touch_move(page, [(160, 100)])  # the finger is inert now
+    pen_up(page, 300, 300)
+    touch_end(page)
+    assert names(page)[-1] == "end" and "pan" not in names(page)
+
+    page = surface(pencil_only=True)
+    touch_start(page, [(100, 100)])
+    drag(page, [(100, 100)], [(160, 100)])
+    pen_down(page, 300, 300)
+    assert names(page)[-2:] == ["gestureEnd", "start"]
+    pans = names(page).count("pan")
+    touch_move(page, [(220, 100)])
+    pen_up(page, 300, 300)
+    touch_end(page)
+    assert names(page).count("pan") == pans
+
+
+def test_fingers_down_during_a_pen_stroke_stay_inert_and_cannot_long_press(surface):
+    page = surface()
+    pen_down(page, 100, 100)
+    touch_start(page, [(400, 400)])
+    page.wait_for_timeout(thresholds(page)["LONG_PRESS_MS"] + 150)
+    pen_up(page, 100, 100)
+    page.wait_for_timeout(thresholds(page)["PALM_MS"] + 100)
+    drag(page, [(400, 400)], [(460, 460)])  # even after the pen lifts, this finger never paints or pans
+    touch_end(page)
+    got = names(page)
+    assert "longPress" not in got and "pan" not in got and got.count("start") == 1
+
+    page = surface(pencil_only=True)
+    pen_down(page, 100, 100)
+    touch_start(page, [(400, 400)])
+    pen_up(page, 100, 100)
+    page.wait_for_timeout(thresholds(page)["PALM_MS"] + 100)
+    drag(page, [(400, 400)], [(460, 400)])
+    touch_end(page)
+    assert "pan" not in names(page) and "gestureEnd" not in names(page)
+
+
+def test_second_finger_in_the_palm_window_makes_a_gesture(surface):
+    page = surface(pencil_only=True)
+    pen_stroke(page, [(100, 100), (120, 100)])
+    touch_start(page, [(300, 300)])  # just after the pen: never paints, stays live
+    touch_start(page, [(300, 300), (400, 300)])
+    drag(page, [(300, 300), (400, 300)], [(340, 300), (440, 300)])
+    touch_end(page)
+    got = log(page)
+    assert ("start", "touch") not in got and sum(e[1] for e in got if e[0] == "pan") == pytest.approx(40, abs=1)
+    assert got[-1][0] == "gestureEnd"
+
+
 # ---------- page furniture ----------
 
 def test_shell_controls_are_touch_sized(browser, studio):
@@ -286,13 +505,66 @@ def test_info_button_reveals_its_text(open_view):
     assert not page.locator(".jt-pop").is_visible() and info.get_attribute("aria-expanded") == "false"
 
 
-def test_toast_waits_while_touched(open_view):
+def test_toast_waits_while_touched_then_runs_out(open_view):
     page = open_view(VIEW, "ipad-portrait")
     page.evaluate("() => JelliShell.notify('Touched toast', {timeout: 400})")
     toast = page.locator(".shell-toast", has_text="Touched toast")
-    toast.locator("p").first.tap()
+    box = toast.bounding_box()
+    touch_start(page, [(box["x"] + 20, box["y"] + 10)])
     page.wait_for_timeout(900)
-    assert toast.is_visible()
+    assert toast.is_visible()  # held by the finger
+    touch_end(page)
+    page.wait_for_timeout(500)
+    assert toast.is_visible()  # a short while is left after the touch
+    page.wait_for_timeout(2300)
+    assert not toast.is_visible()  # and then it goes: touching must not pin it for good
+
+
+def test_long_press_skips_form_fields_and_does_not_swallow_a_later_key(open_view):
+    page = open_view(VIEW, "ipad-portrait")
+    page.evaluate("""() => { document.body.insertAdjacentHTML('beforeend',
+        '<div style="position:fixed;left:300px;top:600px;z-index:1000"><input id="jt-field" title="A field title" aria-label="Field">' +
+        '<button id="jt-titled" title="Explains what it does">Titled</button></div>');
+        window.__clicks = 0; document.getElementById('jt-titled').onclick = () => window.__clicks++; }""")
+    box = page.locator("#jt-field").bounding_box()
+    long_press(page, (box["x"] + 10, box["y"] + 10))
+    assert not page.locator(".jt-pop").is_visible()
+    box = page.locator("#jt-titled").bounding_box()
+    long_press(page, (box["x"] + box["width"] / 2, box["y"] + box["height"] / 2))
+    assert page.locator(".jt-pop").is_visible() and page.evaluate("() => window.__clicks") == 0
+    page.wait_for_timeout(500)
+    page.locator("#jt-titled").focus()
+    page.keyboard.press("Enter")
+    assert page.evaluate("() => window.__clicks") == 1
+
+
+def test_info_popover_inside_a_modal_dialog_and_its_aria(open_view):
+    page = open_view(VIEW, "ipad-portrait")
+    page.evaluate("""() => { JelliShell.dialog({title: 'Modal', body: `<p>${JelliTouch.info('Shown above the modal.', 'About the modal')}</p>`}); }""")
+    info = page.get_by_role("button", name="About the modal")
+    assert info.get_attribute("aria-controls") is None
+    info.tap()
+    pop = page.locator(".jt-pop")
+    assert pop.inner_text() == "Shown above the modal."
+    assert page.evaluate("() => document.getElementById('jt-pop').closest('dialog[open]') !== null")
+    assert page.evaluate("""() => { const r = document.getElementById('jt-pop').getBoundingClientRect();
+        return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('#jt-pop'); }""")
+    assert info.get_attribute("aria-expanded") == "true" and info.get_attribute("aria-controls") == "jt-pop"
+    assert "jt-pop" in info.get_attribute("aria-describedby")
+    page.wait_for_timeout(200)
+    assert "Shown above the modal" not in page.locator("#shell-live").inner_text()  # described, not also announced
+    page.keyboard.press("Escape")
+    assert info.get_attribute("aria-controls") is None and info.get_attribute("aria-describedby") is None
+
+
+def test_list_drawer_focus(open_view):
+    page = open_view(VIEW, "ipad-portrait")
+    button = page.locator("#jt-list-button")
+    button.tap()
+    assert page.evaluate("() => document.querySelector('aside').contains(document.activeElement)")
+    page.keyboard.press("Escape")
+    assert not page.locator("aside").is_visible()
+    assert page.evaluate("() => document.activeElement.id") == "jt-list-button"
 
 
 def test_help_lists_touch_and_pencil(open_view):
@@ -325,3 +597,28 @@ def test_pencil_only_offered_once(open_view):
     assert not offer.is_visible()
     page.evaluate("() => { JelliTouch.setPencilOnly(false); JelliTouch.offerPencilOnly(); }")
     assert page.locator(".shell-toast", has_text="Using an Apple Pencil").count() == 0
+
+
+@pytest.mark.parametrize("size", ["ipad-landscape", "ipad-portrait"])
+def test_dirty_state_never_reflows_the_toolbar(browser, studio, size):
+    context, page = new_view(browser, studio, VIEW, size)
+    try:
+        probe = """() => ({main: document.getElementById('main').getBoundingClientRect().top,
+            header: document.querySelector('header').getBoundingClientRect().height,
+            tabs: [...document.querySelectorAll('#shell-modes [role=tab]')].map(t => Math.round(t.getBoundingClientRect().width))})"""
+        before = page.evaluate(probe)
+        page.evaluate("""() => { const mode = document.querySelector('#shell-modes [role=tab]').dataset.modeId;
+            window.__dirty = 3; JelliShell.registerDirty('jt-dirty', {label: 'Paint', mode, check: () => window.__dirty}); }""")
+        assert page.locator("#shell-unsaved").is_visible()
+        assert page.evaluate(probe) == before
+    finally:
+        context.close()
+
+
+def test_mouse_press_does_not_replace_a_live_finger_stroke(surface):
+    page = surface()
+    touch_start(page, [(100, 100)])
+    fire(page, "pointerdown", "mouse")
+    assert ("start", "mouse") not in log(page) and ("cancel", "touch", "lost") not in log(page)
+    touch_end(page)
+    assert log(page)[-1] == ("end", "touch")
