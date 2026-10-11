@@ -233,8 +233,17 @@ def refs():
         except OSError:  # git is not installed
             return []
         return result.stdout.split("\n") if result.returncode == 0 else []
-    commits = [line.split(" ", 1) for line in git("log", "-12", "--format=%h %s") if line]
-    return {"tags": [t for t in git("tag", "--sort=-creatordate") if t][:8],
+    # Artists compare against art: the game's base branch, game releases (not jelli-art-v* studio
+    # releases), and commits that changed the artwork (images and their JSON), rather than every
+    # tag and commit.
+    base_name = GIT.base if GIT and GIT.base else "main"
+    remote = GIT.remote if GIT else "origin"
+    base = next((ref for ref in (f"{remote}/{base_name}", base_name)
+                 if git("rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")), None)
+    commits = [line.split(" ", 1) for line in git("log", "-12", "--format=%h %s", "--",
+                                                   ":(glob)assets/slice/**/*.png", ":(glob)assets/slice/**/*.json") if line]
+    return {"base": base,
+            "releases": [t for t in git("tag", "--list", "v[0-9]*", "--sort=-v:refname") if t][:6],
             "commits": [{"ref": c[0], "subject": c[1] if len(c) > 1 else ""} for c in commits]}
 
 

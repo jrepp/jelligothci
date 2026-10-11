@@ -124,11 +124,17 @@
   S.boot = async () => {
     await reload();
     restoreDrafts();
-    const refs = await api('GET', '/api/refs').catch(() => ({tags: [], commits: []}));
+    const refs = await api('GET', '/api/refs').catch(() => ({base: null, releases: [], commits: []}));
     const select = document.getElementById('before-ref');
-    const options = [['HEAD', 'HEAD (last commit)'], ...refs.tags.map(t => [t, `tag ${t}`]), ...refs.commits.map(c => [c.ref, `${c.ref} ${c.subject}`.slice(0, 60)])];
-    if (!options.some(([v]) => v === state.before)) options.unshift([state.before, state.before]);
-    select.innerHTML = options.map(([v, t]) => `<option value="${v}">${t.replace(/</g, '&lt;')}</option>`).join('');
+    /* Groups of [value, label]: what is in the game, what players have, and recent art changes. */
+    const groups = [['', [['HEAD', 'Last save (HEAD)'], ...(refs.base ? [[refs.base, `In the game now (${refs.base})`]] : [])]],
+      ['Game releases', refs.releases.map(t => [t, `Release ${t}`])],
+      ['Art changes', refs.commits.map(c => [c.ref, `${c.ref} ${c.subject}`.slice(0, 60)])]];
+    if (!groups.some(([, opts]) => opts.some(([v]) => v === state.before))) groups[0][1].unshift([state.before, state.before]);
+    const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const html = opts => opts.map(([v, t]) => `<option value="${esc(v)}">${esc(t)}</option>`).join('');
+    select.innerHTML = groups.filter(([, opts]) => opts.length)
+      .map(([label, opts]) => label ? `<optgroup label="${esc(label)}">${html(opts)}</optgroup>` : html(opts)).join('');
     select.value = state.before;
     select.onchange = async () => { state.before = select.value; store.set('before', state.before); await reload(); rerender(); };
     const artist = document.getElementById('artist'); artist.value = state.artist;
