@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.7.0...jelli-art-v0.8.0) (2026-10-11)
+
+
+### Features
+
+* **jelli-art:** compare with the game's art, releases and art changes ([#49](https://github.com/jrepp/jelligothci/issues/49)) ([3565b9a](https://github.com/jrepp/jelligothci/commit/3565b9a5ca7bb3fd3187d2d4137f4b8b2b592646))
+
 ## [0.7.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.6.1...jelli-art-v0.7.0) (2026-10-11)
 
 
