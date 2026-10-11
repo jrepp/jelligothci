@@ -1,6 +1,7 @@
 """Shared editable-art payload and archive verification for native releases."""
 import hashlib
 import json
+import re
 from pathlib import Path
 import shutil
 import zipfile
@@ -33,6 +34,14 @@ def stage_art(folder):
         'Embedded art is unchanged; start through the live-art tool to see edits.\n', encoding='utf-8')
 
 
+def prize_count():
+    """The engine's present count, so packaging follows include/jelli/prizes.h."""
+    match = re.search(r'#define JELLI_PRIZE_COUNT (\d+)u', (ROOT / 'include/jelli/prizes.h').read_text())
+    if not match:
+        raise RuntimeError('JELLI_PRIZE_COUNT not found in include/jelli/prizes.h')
+    return int(match.group(1))
+
+
 def verify_art(archive):
     manifest = json.loads((ROOT / 'assets/slice/assets.json').read_text())
     with zipfile.ZipFile(archive) as package:
@@ -41,10 +50,11 @@ def verify_art(archive):
             expected = (ROOT / relative).read_bytes()
             if package.read(relative) != expected:
                 raise RuntimeError(f'Packaged art differs: {relative}')
+        count = prize_count()
         prizes = [item for item in manifest['assets'] if item['kind'] == 'prizes']
-        if len(prizes) != 9 or len({hashlib.sha256(package.read('assets/slice/' + p['path'])).digest()
-                                   for p in prizes}) != 9:
-            raise RuntimeError('Release must contain nine distinct present PNGs')
+        if len(prizes) != count or len({hashlib.sha256(package.read('assets/slice/' + p['path'])).digest()
+                                       for p in prizes}) != count:
+            raise RuntimeError(f'Release must contain {count} distinct present PNGs (JELLI_PRIZE_COUNT)')
         for name in ('assets/slice/assets.json', 'preview.html', 'tools/assets/live_assets.py',
                      'scripts/jelli-art-live', 'ARTWORK.txt'):
             if not package.read(name):
