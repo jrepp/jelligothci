@@ -6,6 +6,10 @@
     "tablet": [820, 1180],
     "phone": [390, 844]
   },
+  "touch_viewports": {
+    "ipad-portrait": [820, 1180],
+    "ipad-landscape": [1180, 820]
+  },
   "views": {
     "review-detail": {"hash": "view=detail&key=creatures.grown-happy&mode=side&zoom=fit", "primary": "#stage"},
     "review-sheet": {"hash": "view=sheet&key=creatures.grown-happy", "primary": "#sheet"},

@@ -42,7 +42,7 @@ Panels use `window.JelliShell`, which exists when their script loads:
 
 | Call | Effect |
 | --- | --- |
-| `registerShortcuts(section, [{keys: ['Mod+S'], description}])` | Lists shortcuts in the ? overlay. Registering a section again replaces it. `keys` lists alternatives, `+` joins a chord and `Mod` is ⌘ or Ctrl. Key handling stays in the panel. |
+| `registerShortcuts(section, [{keys: ['Mod+S'], description}])` | Lists shortcuts in the ? overlay. Registering a section again replaces it. `keys` lists alternatives, `+` joins a chord and `Mod` is ⌘ or Ctrl. An entry can give `gesture: 'Two-finger tap'` instead of `keys`. Key handling stays in the panel. |
 | `notify(text, {tone, sticky, hint, id, keep})` | Shows a toast and announces it. Tones are `info`, `ok`, `warn` and `bad`; `bad` stays until dismissed. `keep` keeps an `info` or `ok` toast across a mode switch. Reusing an `id` replaces that toast. `Studio.status()` calls this. |
 | `announce(text)` | Speaks text through the live region without a toast. |
 | `dialog({title, body, actions: [{label, value, primary, danger}], onOpen})` | Opens a modal `<dialog>`. Resolves with the chosen `value`, or `null` for Escape. Focus returns to the opener. |
@@ -55,6 +55,31 @@ Space or Enter on a button reached with the keyboard activates it. After a
 click, holding Space still peeks at the before image. An element with
 `role="button"` that has no `onkeydown` handler also gets Enter and Space. For
 browser automation, `localStorage['jelli-shell:guide'] = 'false'` hides the guide.
+
+## Touch and Pencil
+
+[`touch.js`](touch.js) loads right after `shell.js` and carries the shared part
+of [RFC-007](../../docs-cms/rfcs/rfc-007-jelli-art-touch-and-pen.md): pointer
+routing, the gesture recogniser, the Pencil only switch and touch sizing. Panels
+use `window.JelliTouch`; its header comment documents each call.
+
+| Call | Effect |
+| --- | --- |
+| `T` | The thresholds (second finger, palm, pan, pinch, tap and long-press limits). The UI tests read the same values. |
+| `kind(e)`, `coarse()` | `'pen'`, `'touch'` or `'mouse'` for a pointer event; whether any coarse pointer is present. |
+| `pencilOnly()`, `setPencilOnly(on)`, `onPencilOnly(fn)` | The viewer's Pencil only switch, off by default and kept per viewer. `onPencilOnly` returns an unsubscribe function. |
+| `offerPencilOnly()` | Once per viewer, a toast with a button that turns Pencil only on. |
+| `gestures(handlers, options)` | A recogniser for a canvas: `stroke.start/move/end/cancel` for the mouse, the Pencil and one finger (fingers only while Pencil only is off); `pan`, `pinch`, `gestureEnd`, `tap(2 or 3)`, `point` and `longPress`. `attach(el)` wires an element and returns a detach function. |
+| `registerGestures([{gesture, description}])` | Adds gestures to the Touch and Pencil section of the ? overlay, merged by name. |
+| `info(text, label)`, `popover(text, anchor)` | A tap-to-reveal ⓘ button (HTML), and the popover it opens. |
+| `setList(open)` | Opens or closes the asset-list drawer. |
+
+On coarse pointers, buttons, selects, inputs, chips, tabs and list rows are at
+least 44 px (`--tap`), and `<kbd>` hints in buttons stay hidden until the first
+key press outside a text field (`html[data-keys]`). A long press on a control
+with a `title` shows the title in a popover. Elements with
+`data-touch-surface` handle their own long press. The **List** button turns the
+asset list into a drawer. Mouse and keyboard pages look as they did.
 
 ## Paint tools
 
@@ -422,6 +447,17 @@ Screenshots are compared only there (`JELLI_UI_SCREENSHOTS=1`), because
 Chromium cannot run under amd64 emulation on other machines. When a page change
 moves a screenshot, the failing run uploads a `ui-tests` artifact; its
 `screenshots/*.png` are the new baselines for `ui_tests/baselines/screenshots/`.
+`test_touch_foundation.py` drives emulated Pencil and finger input through the
+helpers in `ui_tests/touch.py` (`pen_stroke`, `touch_start`, `tap`,
+`long_press`, `pinch`, `pan`, `small_targets`). Open a page at
+`ipad-portrait` (820×1180) or `ipad-landscape` (1180×820) from
+`fixture.json`'s `touch_viewports`, which have touch enabled at device scale 2.
+It checks the recogniser at each `JelliTouch.T` threshold, the Pencil only
+switch, 44 px shell controls, the List drawer, keyboard hints, the long-press
+popover, ⓘ help, toasts and the Touch and Pencil help section. Chromium
+emulation is not iPadOS Safari, so physical behaviour still needs the iPad
+checklist in RFC-007.
+
 `JELLI_UI_LOCAL=1 tools/jelli-art/ui_tests/run.sh` runs without a container
 (Chromium goes in `.tools/`), but fonts differ, so a few aria and axe results
 can differ from the baselines too. Two such runs on one machine take turns (a
@@ -429,8 +465,9 @@ lock on `/tmp/jelli-ui-tests.lock`), because the pinned data goes in the fixed
 directory `/tmp/jelli-ui-tests`.
 
 Known gaps: 10 of the 21 view and size cases have screenshots; the keyboard
-tests cover only the two paths above; there are no pen, touch or pinch tests;
-and the viewport shares are reported, not checked.
+tests cover only the two paths above; touch tests cover the shared recogniser
+and shell, not yet the Paint, Animation and design views; and the viewport
+shares are reported, not checked.
 
 ## Container
 

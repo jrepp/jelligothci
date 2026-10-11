@@ -41,11 +41,13 @@ declare global {
     keep?: boolean;
     hint?: string;
     id?: string;
+    /** Milliseconds before a non-sticky toast closes (default 6000). */
+    timeout?: number;
   }
 
   /** window.JelliShell (shell.js); see tools/jelli-art/README.md "Page shell". */
   interface JelliShellApi {
-    registerShortcuts(section: string, entries: { keys: string[]; description: string }[]): void;
+    registerShortcuts(section: string, entries: ({ keys: string[]; description: string } | { gesture: string; description: string })[]): void;
     notify(text: string, options?: ShellToastOptions): string;
     dismiss(id: string): void;
     announce(text: string): void;
@@ -59,6 +61,33 @@ declare global {
     sync(): void;
     showGuide(show: boolean): void;
     shortcuts(): Map<string, any>;
+  }
+
+  /** A gesture snapshot: scale since the gesture began, midpoint now (cx, cy) and at the start (x0, y0), client px. */
+  interface TouchGesture { scale: number; cx: number; cy: number; x0: number; y0: number }
+
+  /** window.JelliTouch (touch.js, RFC-007); see tools/jelli-art/README.md "Touch and Pencil". */
+  interface JelliTouchApi {
+    T: Readonly<{ SECOND_FINGER_MS: number; PALM_MS: number; PAN_PX: number; PINCH_RATIO: number; TAP_DOWN_MS: number;
+      TAP_UP_MS: number; TAP_MOVE_PX: number; LONG_PRESS_MS: number; LONG_PRESS_MOVE_PX: number }>;
+    kind(e: PointerEvent): "pen" | "touch" | "mouse";
+    coarse(): boolean;
+    pencilOnly(): boolean;
+    setPencilOnly(on: boolean): void;
+    onPencilOnly(fn: (on: boolean) => void): () => void;
+    offerPencilOnly(): void;
+    gestures(handlers: {
+      stroke?: { start?(e: PointerEvent): void; move?(e: PointerEvent): void; end?(e: PointerEvent): void; cancel?(e: PointerEvent): void };
+      pan?(dx: number, dy: number): void; pinch?(g: TouchGesture): void; gestureEnd?(g: TouchGesture): void;
+      tap?(fingers: number, g: TouchGesture): void; point?(e: PointerEvent): void; longPress?(e: PointerEvent): void;
+    }, options?: { pencilOnly?: () => boolean; offerPencilOnly?: boolean }): {
+      handle(e: PointerEvent): "stroke" | "gesture" | "ignored"; attach(el: HTMLElement): () => void; reset(): void; busy(): boolean;
+    };
+    registerGestures(list: { gesture: string; description: string }[]): void;
+    info(text: string, label?: string): string;
+    popover(text: string, anchor: Element): void;
+    hidePopover(): void;
+    setList(open: boolean): void;
   }
 
   /** localStorage wrapper (prefix "jelli-review:"); reads fall back to `fallback`. */
@@ -103,6 +132,7 @@ declare global {
 
   // Module objects (window.X in the browser).
   const JelliShell: JelliShellApi;
+  const JelliTouch: JelliTouchApi;
   const JelliDrafts: any;
   const JelliPaint: any;
   const JelliLint: any;
@@ -113,6 +143,7 @@ declare global {
 
   interface Window {
     JelliShell: JelliShellApi;
+    JelliTouch: JelliTouchApi;
     JelliDrafts: any;
     JelliPaint: any;
     JelliLint: any;

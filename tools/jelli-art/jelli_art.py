@@ -67,7 +67,8 @@ STUDIO_JS = HERE / "studio.js"
 CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
-PAGE_SCRIPTS = (SHELL_JS, HERE / "lint.js", HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
+# touch.js (RFC-007) right after the shell: pointer routing, gestures and touch sizing that panels use.
+PAGE_SCRIPTS = (SHELL_JS, HERE / "touch.js", HERE / "lint.js", HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
                 HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js")
 EDITABLE_CONTENT = ("behaviors", "creatures", "activities")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
