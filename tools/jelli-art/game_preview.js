@@ -9,7 +9,7 @@
   if (!S) return;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
   const {help} = /** @type {any} */ (window).JelliDesign;
-  const GAME_HELP = `Render in engine builds the real C engine from the working copy and draws the frames (also Enter in a field, or Cmd or Ctrl Enter). ◀ Frame and Frame ▶ step through them, like the , and . keys. Save other views first: unsaved edits are not included.`;
+  const GAME_HELP = `Render in engine builds the real C engine from the working copy and draws the frames (also Enter in a field, or Cmd or Ctrl Enter). ◀ Frame and Frame ▶ step through them, like the , and . keys. It renders the saved files: edits you have not saved yet are not included.`;
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const STAGES = {scenario: 'Scenario', content: 'Content check (cmake/JelliBehaviors and friends)', configure: 'CMake configure',
     art: 'Art check (build_slice / embed_slice)', compile: 'C compile', build: 'Build', render: 'Render', timeout: 'Timed out',
@@ -26,6 +26,7 @@
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="game" aria-pressed="false">Test in game</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="game" class="hidden"><p id="gp-status" class="studio-status" role="status" aria-live="polite"></p><div id="gp-body"></div></div>');
   /** @type {any} */ (window).JelliDesign.watch(document.getElementById('game'));
+  window.JelliShell?.registerViewRoot('game');
   document.head.insertAdjacentHTML('beforeend', `<style>
     #game{container:gp/inline-size}
     .gp-grid{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:22px;align-items:start}
@@ -45,6 +46,7 @@
     .gp-row select{max-width:none;width:100%}.gp-check{display:flex;gap:6px;align-items:center;margin:4px 0;font-size:12px}
     .gp-form [aria-invalid=true]{outline:2px solid var(--bad);outline-offset:1px}
     .gp-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+    .gp-unsaved{margin:6px 0;color:var(--warn);font-size:12px}.gp-actions .gp-unsaved{flex:1 1 100%;margin:0}
     .gp-errors{border:1px solid var(--bad);border-radius:8px;padding:8px 12px;margin:0 0 12px;background:#fa8c9914}
     .gp-errors h3{margin:0 0 4px;font-size:13px;color:var(--bad)}.gp-errors ul{margin:4px 0;padding-left:18px}
     .gp-errors pre{max-height:220px;overflow:auto;font:11px ui-monospace,monospace;color:var(--muted);white-space:pre-wrap}
@@ -69,7 +71,8 @@
   async function renderGame(reason = '') {
     if (busy || !cat?.available) return;
     busy = true; stop(); paint();
-    say(reason ? `${reason}: building the engine from the working copy and rendering…` : 'Building the engine from the working copy and rendering…');
+    const what = unsaved().length ? 'the saved files' : 'the working copy';
+    say(reason ? `${reason}: building the engine from ${what} and rendering…` : `Building the engine from ${what} and rendering…`);
     const started = performance.now();
     try {
       const res = await fetch('/api/game-preview', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({scenario: scenario()})});
@@ -77,7 +80,10 @@
       result = data; frame = 0; stale = false; seenVersion = D.version;
       const secs = ((performance.now() - started) / 1000).toFixed(1);
       if (data.ok) {
-        say(`Rendered ${data.frames.length} engine frame${data.frames.length === 1 ? '' : 's'} in ${secs} s${data.rebuilt ? ' (engine rebuilt from your changes)' : ''}.`);
+        const open = unsaved(), frames = `${data.frames.length} engine frame${data.frames.length === 1 ? '' : 's'}`;
+        // Only saved files reach the engine: with unsaved edits, say so rather than claim a rebuild from "your changes".
+        say(open.length ? `Rendered ${frames} in ${secs} s from the saved files. ${unsavedNote(open)}`
+          : `Rendered ${frames} in ${secs} s${data.rebuilt ? ' (engine rebuilt from your changes)' : ''}.`);
         if (!reduced?.matches && data.frames.length > 1) playing = true;
       } else say(`${STAGES[data.stage] || 'Render'} failed; see the errors above the preview.`, 'bad');
     } catch (err) {
@@ -85,6 +91,27 @@
     }
     busy = false; paint(); if (playing) play();
   }
+
+  /* ---------- unsaved edits: the engine reads the files on disk, never the page's working copy ---------- */
+  const unsaved = () => window.JelliShell?.dirtyItems?.() || [];
+  const unsavedNote = (items = unsaved()) => {
+    const n = items.reduce((sum, i) => sum + i.n, 0);
+    return items.length ? `${S.count(n, 'unsaved edit')} ${n === 1 ? 'is' : 'are'} not included: ${items.map(i => i.label).join(', ')}. Save first to see ${n === 1 ? 'it' : 'them'}.` : '';
+  };
+  /* Two notes follow the edits while the view is open: the full one under the title, where it is on screen, and a short
+   * one in the Render button's row, which can sit below the fold of a tall form. Neither exists when nothing is unsaved. */
+  function showNote(id, parent, before, text) {
+    let el = document.getElementById(id);
+    if (!text || !parent) return el?.remove();
+    if (!el) { el = document.createElement('p'); el.id = id; el.className = 'gp-unsaved'; if (id === 'gp-unsaved') el.setAttribute('role', 'status'); before ? parent.insertBefore(el, before) : parent.append(el); }
+    if (el.textContent !== text) el.textContent = text;
+  }
+  function showUnsaved() {
+    const items = unsaved(), n = items.reduce((sum, i) => sum + i.n, 0);
+    showNote('gp-unsaved', document.getElementById('gp-body'), document.querySelector('#gp-body .gp-grid'), items.length ? `Renders the saved files. ${unsavedNote(items)}` : '');
+    showNote('gp-unsaved-near', document.querySelector('#gp-form .gp-actions'), null, items.length ? `Renders the saved files, not your ${S.count(n, 'unsaved edit')}.` : '');
+  }
+  setInterval(() => { if (state.view === 'game' && !document.hidden) showUnsaved(); }, 1000);
 
   /* ---------- helpers ---------- */
   const pageOf = name => cat?.pages.find(p => p.name === name);
@@ -164,16 +191,16 @@
       <div class="gp-report" aria-label="What the engine accepted">engine: <span>pet <b>${esc(e.form_name)}</b></span><span>pose <b>${esc(poseName(e.pose))}</b></span>
         <span>behaviour <b>${esc(e.behavior || 'none')}</b></span><span>asleep <b>${e.asleep}</b></span><span>activity <b>${esc(e.activity)}</b></span><span>moment <b>${e.moment ? esc(cat.moments[e.moment - 1] || e.moment) : 'none'}</b></span>
         <span>mess <b>${e.mess}</b></span><span>clock <b>${hhmm(e.clock_minute)}</b>${e.night ? ' (night)' : ''}</span><span>needs <b>${e.needs.join(' / ')}</b></span><span>potty <b>${e.potty}</b></span></div>
-      <p class="gp-note">Frames come from <code>jelli_pet_render</code> built from the art and content on disk${result.last_build?.seconds != null ? ` (last build ${result.last_build.seconds} s at ${esc(result.last_build.at)})` : ''}. Unsaved edits in other views are not included; save first.</p>`;
+      <p class="gp-note">Frames come from <code>jelli_pet_render</code> built from the art and content on disk${result.last_build?.seconds != null ? ` (last build ${result.last_build.seconds} s at ${esc(result.last_build.at)})` : ''}. Unsaved edits in other views are not included.</p>`;
   }
   function paint() {
     const el = document.getElementById('gp-body');
     if (!cat) { el.innerHTML = '<p class="gp-note">Loading…</p>'; return; }
     const focused = document.activeElement?.id;
-    el.innerHTML = `<div class="title"><h2>Test in game</h2><span class="lbl">the real C engine, from the working copy</span> ${help(GAME_HELP, 'About Test in game')}</div>
+    el.innerHTML = `<div class="title"><h2>Test in game</h2><span class="lbl">the real C engine, from ${unsaved().length ? 'the saved files' : 'the working copy'}</span> ${help(GAME_HELP, 'About Test in game')}</div>
       ${cat.available ? '' : `<div class="gp-errors" role="alert"><h3>Test in game is unavailable here</h3><p>${esc(cat.reason)}</p><p class="gp-note">Install cmake and a C compiler (cc, gcc or clang) on the studio host to enable it.</p></div>`}
       <div class="gp-grid"><div>${form()}</div><div class="gp-out">${stale ? '<p class="gp-note gp-lead" role="status">Art or content changed since this render.</p>' : ''}${errors()}${output()}</div></div>`;
-    wire();
+    wire(); showUnsaved();
     for (const e of result?.errors || []) {
       const id = e.field.startsWith('needs.') ? `gp-need-${e.field.slice(6)}` : e.field === 'form' ? 'gp-form-pick' : `gp-${e.field}`;
       document.getElementById(id)?.setAttribute('aria-invalid', 'true');
@@ -247,7 +274,7 @@
     const on = state.view === 'game', el = document.getElementById('game');
     el.classList.toggle('hidden', !on);
     if (!on) { stop(); return baseRenderView(); }
-    for (const id of ['detail', 'sheet', 'creature', 'behaviour']) document.getElementById(id)?.classList.add('hidden');
+    window.JelliShell?.showOnly('game');
     document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === 'game')));
     document.querySelector('main').scrollTop = 0;
     if (!cat) { paint(); await loadCatalogue(); }

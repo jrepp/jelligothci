@@ -9,9 +9,17 @@
   const dirty = () => !!work && JSON.stringify(work) !== JSON.stringify(loaded);
   const oldDirty = S.clipsDirty;
   S.clipsDirty = () => oldDirty?.() || dirty();
+  /* shell.js: the "Activities" unsaved item counts the recipes that differ (new ones included) plus the shared pet costs. */
+  S.activitiesDirty = () => {
+    if (!dirty()) return 0;
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const changed = work.moments.filter((m, i) => !same(m, loaded.moments[i])).length + Math.max(0, loaded.moments.length - work.moments.length);
+    return changed + (same(work.pet_costs, loaded.pet_costs) ? 0 : 1) || 1;
+  };
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="activities" aria-pressed="false">Activities</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="activities" class="hidden"></div>');
   const root = document.getElementById('activities');
+  window.JelliShell?.registerViewRoot('activities');
   /** @type {any} */ (window).JelliDesign.watch(root);
   document.head.insertAdjacentHTML('beforeend', `<style>
     #activities{container:ac/inline-size}
@@ -92,7 +100,9 @@
     /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-pet-cost]')).forEach(el=>el.onchange=()=>{const c=work.pet_costs.find(c=>c.form===Number(el.dataset.petCost));c[el.dataset.costMeter]=Number(el.value);render();});
     /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-form]')).forEach(el=>el.onchange=()=>{m.forms=Array.from(/** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-form]:checked')),x=>Number(x.dataset.form));render();});
     /** @type {HTMLButtonElement} */ (root.querySelector('#ac-save')).onclick=save;
-    /** @type {HTMLButtonElement} */ (root.querySelector('#ac-revert')).onclick=()=>{work=null;base=null;render();};
+    /** @type {HTMLButtonElement} */ (root.querySelector('#ac-revert')).onclick=async()=>{
+      if (dirty() && !await S.ask('Discard your unsaved activity edits and reload the saved recipes?', {title: 'Discard activity edits', confirmLabel: 'Discard edits', danger: true})) return;
+      work=null;base=null;window.JelliDrafts?.drop('activities','activities');render();};
     /** @type {HTMLButtonElement} */ (root.querySelector('#ac-add')).onclick=()=>{const {pose, prize, ...copy}=clone(m);  // a copy must not become a second prize source
       work.moments.push({...copy,id:work.moments.length,name:`ACTIVITY ${work.moments.length}`,suggest_hour:-1,requires:-1});selected=work.moments.length-1;render();};
     effectPreview(m, forms);
@@ -141,13 +151,30 @@
   async function save() {
     try {
       const res=await S.api('POST','/api/content',{docs:{activities:work},bases:{activities:base},artist:state.artist});
-      loaded=clone(work);D.activity_data=clone(work);D.activity_sha=base=res.shas.activities;D.version=res.version;
+      loaded=clone(work);D.activity_data=clone(work);D.activity_sha=base=res.shas.activities;D.version=res.version;window.JelliDrafts?.drop('activities','activities');
       S.status(res.git_error?`Saved; commit pending: ${res.git_error}`:'Activities saved',res.git_error?'warn':'');render();
     } catch(e){S.status(e.message,'bad',true);}
   }
+  /* Drafts (drafts.js): unsaved recipes survive a reload or a Safari tab eviction. */
+  function restoreDraft() {
+    const Drafts=window.JelliDrafts, d=Drafts?.restore('activities','activities',D.activity_sha); if (!d) return;
+    sync();
+    const doc=d.data;
+    if (!work || !doc || !Array.isArray(doc.moments) || !Array.isArray(doc.pet_costs)) return Drafts.drop('activities','activities');
+    work=clone(doc);
+    if (!dirty()) { work=clone(loaded); return Drafts.drop('activities','activities'); }
+    if (d.stale) base=d.base;  // sync() marks it stale, saves are refused (and would answer 409); Reload saved loads the newer file
+    window.JelliShell?.notify(`Restored unsaved activity edits from your last visit${d.stale?' (the file changed on disk since)':''}.`,{tone:'warn',id:'drafts-activities',hint:'Save to keep them, or Reload saved to discard them.'});
+  }
+  const baseBoot=S.boot;
+  S.boot=async()=>{
+    await baseBoot();
+    restoreDraft();
+    window.JelliDrafts?.track('activities','activities',{dirty,base:()=>base,data:()=>work});
+  };
   const previous=renderView, oldKeys=S.keydown;
   renderView=()=>{const on=state.view==='activities';root.classList.toggle('hidden',!on);cancelAnimationFrame(frame);if(!on)return previous();
-    for(const id of ['detail','sheet','creature','behaviour'])document.getElementById(id)?.classList.add('hidden');
+    window.JelliShell?.showOnly('activities');
     /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('#views button')).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view==='activities')));render();};
   S.keydown=e=>{if(state.view!=='activities')return oldKeys?.(e);if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();if(dirty()&&!stale)save();}return true;};
 })();

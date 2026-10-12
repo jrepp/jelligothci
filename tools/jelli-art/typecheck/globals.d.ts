@@ -55,6 +55,9 @@ declare global {
     confirm(message: string, options?: { title?: string; confirmLabel?: string; danger?: boolean }): Promise<boolean>;
     registerMode(mode: { id: string; label: string; view?: string; [field: string]: any }): void;
     registerDirty(id: string, entry: { label: string; mode: string | null; check: () => number | boolean }): void;
+    registerViewRoot(id: string): void;
+    showOnly(id: string): void;
+    dirtyItems(): { id: string; n: number; label: string; mode: string | null; [field: string]: any }[];
     activateMode(id: string): void;
     openHelp(): void;
     setTheme(theme: "auto" | "dark" | "light" | "contrast"): void;

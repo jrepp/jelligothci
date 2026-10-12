@@ -192,6 +192,14 @@
     });
   }
 
+  /* ---------- view roots ---------- */
+  /* Every view root the page has, so a view that takes over hides all the others from one list instead of a
+   * hand-kept one per module. Panels register their root with registerViewRoot(id) when they add it; showOnly(id)
+   * shows that root and hides the rest (display:none, so a hidden view leaves the Tab order too). */
+  const viewRoots = ['detail', 'sheet'];
+  function registerViewRoot(id) { if (!viewRoots.includes(id)) viewRoots.push(id); }
+  function showOnly(id) { for (const r of viewRoots) document.getElementById(r)?.classList.toggle('hidden', r !== id); }
+
   /* ---------- unsaved changes ---------- */
   /* registerDirty(id, {label, mode, check}): check() returns a count or boolean of unsaved edits. */
   function registerDirty(id, entry) { dirtyChecks.set(id, entry); updateDirty(); }
@@ -246,7 +254,7 @@
       Paint: 'edit the pixels of the selected asset; a creature frame also gets a flip-book beside the canvas to play its clip, step frames with ← and →, and onion skin its neighbours.',
       Creature: 'set the frames, timing and loop of each pose clip, and each form\'s size and behaviour.',
       Behaviour: 'edit behaviour states and reactions, and try them in the stimulus simulator.',
-      'Test in game': 'render a scenario (pet, form, needs, page, clock) with the real game engine and step through its frames; save first, since unsaved edits are not included.',
+      'Test in game': 'render a scenario (pet, form, needs, page, clock) with the real game engine and step through its frames; it renders the saved files, so unsaved edits are not included.',
       Activities: 'edit the activity recipes: which forms can do them, opening times, meter costs and rewards, locations, icon, prop and motion.'};
     const saving = !live ? '<p>This is a static review page: notes stay in this browser. Use <b>Copy review notes</b> to share them.</p>'
       : git.enabled ? `<p><b>Saving.</b> Each mode has its own Save (Mod+S). The studio checks the file, writes it, and commits it to <code>${esc(git.branch)}</code>${git.push ? ', then pushes it for review' : ''}. Commit and push results appear here and in the header.</p>`
@@ -345,7 +353,7 @@
   registerShortcuts('Behaviour', [{keys: ['Mod+S'], description: 'Save behaviour (both files)'}]);
 
   window.JelliShell = {registerShortcuts, notify, dismiss, announce, dialog, confirm: confirmDialog, registerMode, registerDirty,
-    activateMode, openHelp, setTheme, sync, showGuide, shortcuts: () => new Map(shortcuts)};
+    registerViewRoot, showOnly, dirtyItems, activateMode, openHelp, setTheme, sync, showGuide, shortcuts: () => new Map(shortcuts)};
 
   function init() {
     if (!document.querySelector('header') || !document.getElementById('main')) return;
@@ -362,6 +370,7 @@
     if (S?.clipEdits) registerDirty('clips', {label: 'Creature clips', mode: 'creature', check: () => S.clipEdits()});
     if (S?.sizeDirty) registerDirty('size', {label: 'Behaviour & size', mode: 'creature', check: () => S.sizeDirty()});
     if (S?.statesDirty) registerDirty('states', {label: 'Behaviour states', mode: 'behaviour', check: () => S.statesDirty()});
+    if (S?.activitiesDirty) registerDirty('activities', {label: 'Activities', mode: 'activities', check: () => S.activitiesDirty()});
     if (S?.clipsDirty && !S.clipEdits) registerDirty('content', {label: 'Creature or behaviour data', mode: null, check: () => S.clipsDirty()});
     wireTabs(); watchGit(); watchServer();
     document.addEventListener('keydown', keyboardButtons, true);

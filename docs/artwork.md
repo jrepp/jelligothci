@@ -161,7 +161,9 @@ cycle, offset by pet ID.
 Turn on **Simulate on panel** and pick conditions, or **idle**, to see which
 rule and clip the game would choose. The idle timeline plays the beat schedule
 with its clips. While simulating, `,` and `.` step one beat. **Save behaviour
-& size** validates the file and writes `content/creatures.json`.
+& size** validates the file and writes `content/creatures.json`. **Revert** asks
+first when there are unsaved edits, and discards only the behaviour and size
+edits: the looks you changed in the Behaviour view stay.
 
 State poses such as `study` and `ponder` are listed after the 8 base poses. A
 form without its own clip for one uses the fallback pose shown. **Add clip**
@@ -183,7 +185,9 @@ every reaction that fits, the weighted pick, the chance roll and the state it
 enters. A running state is only ended by its ends-on stimuli, never replaced.
 The odds bar covers the next ten minutes, and the preview shows the resulting
 look with an optional potty mess. **Save behaviour** (⌘S / Ctrl+S) checks both
-files with the engine's own validator before writing them.
+files with the engine's own validator before writing them. **Revert** asks first
+when there are unsaved edits, and discards only the behaviour edits (states,
+repertoires, rules and looks): the Creature tab's behaviour and size edits stay.
 
 On an iPad, the design views show a word on each icon-only button (for example
 **↑ Earlier** and **✕ Remove**), a tap-to-reveal ⓘ beside the groups that
@@ -191,6 +195,21 @@ explain themselves with a tooltip on a desktop, and − and + buttons on number
 fields. **Test in game** gains **◀ Frame** and **Frame ▶** for the `,` and `.`
 keys. In landscape the list sits beside the inspector with the preview above it;
 in portrait the view stacks and the preview stays pinned at the top.
+
+### Unsaved work and Test in game
+
+Every editor (Paint, Creature clips, Behaviour & size, Behaviour and Activities)
+shows its edits in the **Unsaved** button and on its mode tab, and the page asks
+before you close it. The studio also keeps those edits in this browser. After a
+reload, a crash or a browser that dropped the tab, it restores them and says so;
+save to keep them, or use **Revert** (**Reload saved** in Activities) to discard
+them. A restored edit whose file changed on disk since cannot be saved until you
+revert. **Revert** and **Reload saved** ask first when there are edits, and each
+discards only its own editor's edits.
+
+**Test in game** renders the files on disk. While any editor has unsaved edits it
+says so beside **Render in engine**, with the editors and the number of edits
+that are not included; save, then render again.
 
 ## Edit in the running game
 
