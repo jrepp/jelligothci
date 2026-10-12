@@ -12,12 +12,18 @@
  *   JelliDrafts.list(kind)                    [{kind, key, base, at}], newest first
  *   JelliDrafts.later(kind, key, base, fn)    put(kind, key, base, fn()) after a short pause,
  *                                             coalescing bursts (pointer strokes, typing)
+ *   JelliDrafts.track(kind, key, {dirty, base, data})  keep a draft in step with an editor: while dirty()
+ *                                             is true put(kind, key, base(), data()) whenever it changes (checked
+ *                                             every 700 ms and when the page is hidden or closed); drop it once clean
  *   JelliDrafts.encodeBytes(u8) / decodeBytes(str)  base64 for pixel buffers
  *
  * Kinds in use: 'paint' (key = asset key, base = the PNG's sha from /api/data,
- * data = base64 RGBA). Suggested for the other editors: 'clips' (key = clip key,
- * base = clip_shas[key]), 'creatures' (key = 'creatures', base = creature_data_sha),
- * 'behaviour' (key = 'content', base = {behaviors, creatures} shas joined with ':').
+ * data = base64 RGBA); 'clips' (key = 'clips', base = null, data = {clips, shas}: the
+ * unsaved clips by key and the clip_shas they started from); 'creatures' (key = 'creatures',
+ * base = creature_data_sha, data = {profiles, behaviors}: Behaviour & size);
+ * 'behaviour' (key = 'content', base = behavior_data_sha and creature_data_sha joined with ':',
+ * data = {behaviors, looks}: the Behaviour view's states, repertoires, rules and looks);
+ * 'activities' (key = 'activities', base = activity_sha, data = the activities document).
  * Restoring a stale draft is fine: send the draft's base with the save, and the
  * server answers 409 so the page can ask before overwriting the newer file.
  * Drafts expire after 14 days; when storage is full the oldest are evicted.
@@ -67,6 +73,21 @@
     flush() { for (const pending of Object.values(timers)) pending.run(); },
     encodeBytes(bytes) { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); },
     decodeBytes(text) { const s = atob(text), out = new Uint8ClampedArray(s.length); for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i); return out; },
+    /* Called by an editor once its drafts are restored at boot (not before, or the first pass would drop the very
+     * draft that is waiting to be restored). It returns a function that runs one pass now. */
+    track(kind, key, {dirty, base, data}) {
+      let last;  // undefined: nothing seen yet, null: clean, else the last text written
+      const pass = () => {
+        let on = false; try { on = !!dirty(); } catch { /* an editor mid-render */ }
+        if (!on) { if (last !== null) { last = null; Drafts.drop(kind, key); } return; }
+        let text; try { text = JSON.stringify([base(), data()]); } catch { return; }
+        if (text !== last) { last = text; Drafts.put(kind, key, base(), data()); }
+      };
+      setInterval(pass, 700);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) pass(); });  // Safari evicts a hidden tab without a beforeunload
+      window.addEventListener('pagehide', pass);
+      return pass;
+    },
     prune,
   };
   prune();

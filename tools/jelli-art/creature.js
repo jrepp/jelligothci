@@ -29,6 +29,7 @@
 
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="creature" aria-pressed="false">Creature</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="creature" class="hidden"></div>');
+  window.JelliShell?.registerViewRoot('creature');
   document.head.insertAdjacentHTML('beforeend', `<style>
     #creature{container:creature / inline-size}
     .cr-layout{display:grid;grid-template-columns:auto minmax(320px,1fr);gap:20px;align-items:start}
@@ -368,6 +369,8 @@
       const res = await S.api('POST', '/api/clips', {clips, artist: state.artist});
       const added = keys.some(k => !clipOf(k)), removed = keys.some(k => working[k].removed);
       for (const k of keys) { if (clipOf(k) && !working[k].removed) Object.assign(clipOf(k), copy(working[k])); delete working[k]; }
+      D.clip_shas = {...D.clip_shas, ...res.clip_shas};  // drafts compare against these
+      if (!dirtyKeys().length) window.JelliDrafts?.drop('clips', 'clips');
       D.version = res.version;  // before reloading, so the disk poll does not reload a second time
       if (added || removed) await S.reload();  // new clips get IDs from the server; removed ones leave D.clips
       else D.version = res.version;
@@ -381,6 +384,30 @@
     } catch (err) { S.status(`Clip save failed: ${err.message}`, 'bad', true); }
   }
 
+  /* ---------- drafts: unsaved clips survive a reload or a Safari tab eviction (drafts.js) ---------- */
+  const isClip = c => !!c && (c.removed === true || (Array.isArray(c.frames) && c.frames.every(f => typeof f === 'string') &&
+    Array.isArray(c.durations_ms) && c.durations_ms.length === c.frames.length && typeof c.loop === 'boolean'));
+  function restoreClipDrafts() {
+    const Drafts = window.JelliDrafts, d = Drafts?.restore('clips', 'clips', null); if (!d) return;
+    const shas = d.data?.shas || {}, back = [], changed = [];
+    for (const [key, c] of Object.entries(d.data?.clips || {})) {
+      if (!isClip(c)) continue;
+      if ((D.clip_shas?.[key] ?? null) !== (shas[key] ?? null)) { changed.push(key); continue; }  // /api/clips has no 409: never overwrite a newer clip
+      working[key] = c.removed ? {removed: true} : copy(c);
+      if (clipDirty(key)) back.push(key); else delete working[key];
+    }
+    if (!back.length) Drafts.drop('clips', 'clips');
+    const text = `${back.length ? `Restored unsaved clip edits from your last visit: ${back.join(', ')}.` : ''}${changed.length ? ` Dropped ${changed.join(', ')}: the clip changed on disk since.` : ''}`.trim();
+    if (text) window.JelliShell?.notify(text, {tone: 'warn', id: 'drafts-clips', hint: 'Save clips to keep them, or Revert all to discard them.'});
+  }
+  const baseBoot = S.boot;
+  S.boot = async () => {
+    await baseBoot();
+    restoreClipDrafts();
+    window.JelliDrafts?.track('clips', 'clips', {dirty: () => dirtyKeys().length > 0, base: () => null,
+      data: () => ({clips: Object.fromEntries(dirtyKeys().map(k => [k, working[k]])), shas: Object.fromEntries(dirtyKeys().map(k => [k, D.clip_shas?.[k] ?? null]))})});
+  };
+
   /* ---------- hooks into the review page ---------- */
   const baseRenderView = renderView, baseSelect = select, baseKeydown = S.keydown;
   renderView = () => {  // eslint-disable-line no-global-assign
@@ -388,7 +415,7 @@
     document.getElementById('creature').classList.toggle('hidden', !on);
     if (!on) { panelView = null; cells = []; return baseRenderView(); }
     if (!panelView) document.querySelector('main').scrollTop = 0;  // arriving from a scrolled detail view
-    document.getElementById('detail').classList.add('hidden'); document.getElementById('sheet').classList.add('hidden');
+    window.JelliShell?.showOnly('creature');
     document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === 'creature')));
     renderCreature();
   };

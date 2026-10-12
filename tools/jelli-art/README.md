@@ -47,7 +47,8 @@ Panels use `window.JelliShell`, which exists when their script loads:
 | `announce(text)` | Speaks text through the live region without a toast. |
 | `dialog({title, body, actions: [{label, value, primary, danger}], onOpen})` | Opens a modal `<dialog>`. Resolves with the chosen `value`, or `null` for Escape. Focus returns to the opener. |
 | `confirm(message, {title, confirmLabel, danger})` | Resolves `true` or `false`. |
-| `registerDirty(id, {label, mode, check})` | Adds unsaved state: `check()` returns a count or boolean. |
+| `registerDirty(id, {label, mode, check})` | Adds unsaved state: `check()` returns a count or boolean. Every editor registers one (Paint, Creature clips, Behaviour & size, Behaviour states, Activities). `dirtyItems()` returns the current `{id, n, label, mode}` list. |
+| `registerViewRoot(id)`, `showOnly(id)` | A panel registers its root element when it adds it; its `renderView` override calls `showOnly(id)`, which shows that root and hides every other registered one (`detail` and `sheet` are built in), so a hidden view is also out of the Tab order. |
 | `registerMode({id, label, view})` | Adds a tab that shows `state.view === view`. A button added to `#views` gets a tab automatically. |
 | `activateMode(id)`, `openHelp()`, `setTheme('auto'\|'dark'\|'light'\|'contrast')`, `showGuide(bool)` | Switch mode, open the overlay, change the theme, show or hide the guide. |
 
@@ -321,8 +322,11 @@ there with `-DJELLI_BUILD_SDL=OFF -DJELLI_BUILD_PET=ON`, rebuilding only when a
 file changed. Generators run with the studio's own Python, so a bad edit fails
 here exactly as in a real build. The page shows the failing step inline:
 content checks (`cmake/Jelli*.cmake`), art checks (`build_slice.py` through
-`embed_slice.py`), or C compile errors, with the build log. Unsaved edits are not
-included; save first.
+`embed_slice.py`), or C compile errors, with the build log. The engine reads the
+files on disk, so unsaved edits are not included. While an editor has any, the
+view says so under its title and beside **Render in engine**, listing the
+editors and the edit count, and the status after a render says it rendered the
+saved files instead of "engine rebuilt from your changes".
 
 Build and render work is bounded and concurrency-limited by
 [`game_preview.py`](game_preview.py). Without `cmake` or a
@@ -413,9 +417,20 @@ started from. Paint uses it: each stroke is stored after a short pause and on
 `pagehide`, saving or reverting drops the draft, and reloading restores it with
 a notice. If the file changed since the draft was made, restoring still works.
 Saving the restored draft then gets a `409`, and the page asks before
-overwriting. Other editors can call `put`, `restore`, `drop`, `list`, `later`
-and `flush`; the header comment of `drafts.js` documents each call and
-suggests keys.
+overwriting.
+
+The Creature clips, Behaviour & size, Behaviour and Activities editors keep
+drafts the same way through `track(kind, key, {dirty, base, data})`, which writes
+the editor's state while it is dirty (checked every 700 ms and when the page is
+hidden or closed, since iOS Safari fires no `beforeunload`) and drops it once the
+editor is clean. They restore after boot with a warning notice. A clip whose
+entry changed on disk since is dropped instead, because `/api/clips` has no
+`409`. Each Revert and **Reload saved** asks first when there are edits and drops
+its own draft. Behaviour & size and the Behaviour view share `creatures.json`:
+the first owns `profiles` and `behaviors`, the second `state_presentation`, and
+each Revert discards only its own section. Other code can call `put`, `restore`,
+`drop`, `list`, `later`, `flush` and `track`; the header comment of `drafts.js`
+documents each call and its keys.
 
 ## Tests
 
