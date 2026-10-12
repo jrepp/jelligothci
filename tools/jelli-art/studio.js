@@ -158,9 +158,18 @@
     window.addEventListener('beforeunload', e => { if (Object.keys(edits).some(dirty) || S.clipsDirty?.()) { e.preventDefault(); e.returnValue = ''; } });
   };
   /* Confirm through the shell's styled dialog (plain confirm() without it); "1 clip", "3 clips". */
+  /* A save that may find the file changed on disk: send(null) uses the page's own base; on a 409 it asks, and Overwrite
+   * sends again with the bases the server reports (err.body.current, a map by file name). Cancel returns null. */
+  async function saveGuarded(send, what) {
+    try { return await send(null); } catch (err) {
+      if (err.status !== 409) throw err;
+      if (!await ask(`${err.message}\n\nSave your version anyway and replace the one on disk?`, {title: `${what} changed on disk`, confirmLabel: 'Overwrite', danger: true})) return null;
+      return send(err.body?.current ?? {});
+    }
+  }
   const ask = (text, opts = {}) => window.JelliShell?.confirm ? window.JelliShell.confirm(text, opts) : Promise.resolve(confirm(text));
   const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
-  Object.assign(S, {api, status, reload, rerender: () => rerender(), renderGit, paintDirty: key => dirty(key), redraw: () => draw(), ask, count});
+  Object.assign(S, {api, saveGuarded, status, reload, rerender: () => rerender(), renderGit, paintDirty: key => dirty(key), redraw: () => draw(), ask, count});
   function renderGit(git) {
     const el = document.getElementById('git-status'); if (!git?.enabled) { el.textContent = ''; return; }
     const push = git.last_push || {}, pending = git.unpushed ? `${git.unpushed} to push` : 'synced';

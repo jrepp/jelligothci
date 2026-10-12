@@ -203,9 +203,19 @@ shows its edits in the **Unsaved** button and on its mode tab, and the page asks
 before you close it. The studio also keeps those edits in this browser. After a
 reload, a crash or a browser that dropped the tab, it restores them and says so;
 save to keep them, or use **Revert** (**Reload saved** in Activities) to discard
-them. A restored edit whose file changed on disk since cannot be saved until you
-revert. **Revert** and **Reload saved** ask first when there are edits, and each
-discards only its own editor's edits.
+them. A restored edit whose file changed on disk since can still be saved: Save
+asks whether to overwrite the newer file (**Overwrite** or **Cancel**), the same
+as for clips. **Revert** and **Reload saved** ask first when there are edits, and
+each discards only its own editor's edits.
+
+Behaviour & size (Creature tab) and Behaviour share `content/creatures.json`, but
+each view's status line and Save cover only its own part: Save behaviour & size
+writes the profiles and behaviours, and Save behaviour writes `behaviors.json` and
+the state looks. Neither commits the other view's unsaved edits.
+
+With the studio open in two tabs, a tab does not offer to restore, or discard, a
+draft that another open tab is still editing. A draft is handed over when that tab
+closes or reloads, or after about five seconds without a sign of life.
 
 **Test in game** renders the files on disk. While any editor has unsaved edits it
 says so beside **Render in engine**, with the editors and the number of edits

@@ -470,7 +470,7 @@ const localStorage = {get length() { return store.size; }, key: i => [...store.k
   getItem: k => store.has(k) ? store.get(k) : null, removeItem: k => store.delete(k),
   setItem(k, v) { const used = [...store.values()].reduce((n, s) => n + s.length, 0); if (used + v.length > quota) throw new Error('QuotaExceededError'); store.set(k, String(v)); }};
 const window = {localStorage, addEventListener: (name, fn) => { window[name] = fn; }};
-const ctx = {window, setTimeout: fn => { timers.push(fn); return timers.length; }, clearTimeout: () => {}, btoa: s => Buffer.from(s, 'binary').toString('base64'),
+const ctx = {window, document: {hidden: false, addEventListener() {}}, setInterval: () => 0, setTimeout: fn => { timers.push(fn); return timers.length; }, clearTimeout: () => {}, btoa: s => Buffer.from(s, 'binary').toString('base64'),
   atob: s => Buffer.from(s, 'base64').toString('binary'), Uint8ClampedArray, Date, JSON, String, Object, Math};
 vm.runInNewContext(fs.readFileSync(process.argv.at(-1), 'utf8'), ctx);
 const D = window.JelliDrafts, out = {};
@@ -484,6 +484,14 @@ D.later('paint', 'b', 'x', () => 'late'); out.beforeFlush = D.get('paint', 'b');
 D.drop('paint', 'a'); out.dropped = D.get('paint', 'a');
 quota = 400; for (let i = 0; i < 10; i++) D.put('paint', 'k' + i, 's', 'x'.repeat(60));
 out.newestKept = !!D.get('paint', 'k9');
+quota = Infinity;
+D.put('paint', 'own', 'b1', 'mine');  // owned by this tab; another tab with a fresh heartbeat holds 'theirs'
+const theirs = (beat) => { const k = 'jelli-art:draft:paint:theirs', d = JSON.parse(store.get(k) ?? JSON.stringify({kind: 'paint', key: 'theirs', base: 'b', data: 'x', at: Date.now(), owner: 'other'})); d.beat = beat; store.set(k, JSON.stringify(d)); };
+theirs(Date.now());
+out.liveOther = D.restore('paint', 'theirs', 'b'); D.drop('paint', 'theirs'); out.liveOtherSurvivesDrop = store.has('jelli-art:draft:paint:theirs');
+out.ownRestorable = !!D.restore('paint', 'own', 'b1');
+theirs(Date.now() - 6000); out.deadOther = !!D.restore('paint', 'theirs', 'b');
+theirs(0); out.releasedOther = !!D.restore('paint', 'theirs', 'b'); D.drop('paint', 'theirs'); out.deadOtherDropped = !store.has('jelli-art:draft:paint:theirs');
 console.log(JSON.stringify(out));
 """
 
@@ -498,6 +506,12 @@ class DraftsTest(unittest.TestCase):
         self.assertEqual(out["fresh"]["data"], "data1")
         self.assertFalse(out["fresh"]["stale"])
         self.assertTrue(out["stale"])
+        self.assertIsNone(out["liveOther"])  # a draft whose owner tab has a fresh heartbeat is not offered, or discarded
+        self.assertTrue(out["liveOtherSurvivesDrop"])
+        self.assertTrue(out["ownRestorable"])
+        self.assertTrue(out["deadOther"])  # an old heartbeat means the owner is gone
+        self.assertTrue(out["releasedOther"])  # pagehide zeroes the heartbeat
+        self.assertTrue(out["deadOtherDropped"])
         self.assertEqual(out["list"], ["a"])
         self.assertEqual(out["bytes"], [0, 1, 254, 255])
         self.assertIsNone(out["beforeFlush"])
