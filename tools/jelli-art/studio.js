@@ -187,11 +187,12 @@
   function renderGit(git) {
     const el = document.getElementById('git-status'); if (!git?.enabled) { el.textContent = ''; return; }
     const push = git.last_push || {}, pending = git.unpushed ? `${git.unpushed} to push` : 'synced';
-    el.textContent = `⎇ ${git.branch} · ${push.ok === false ? 'push failing, will retry' : git.push ? pending : 'commits only'}`;
+    /* The slot is a fixed width with an ellipsis, so a problem comes first: it must never be the part that is cut off. */
+    el.textContent = push.ok === false ? `⚠ push failing, will retry · ⎇ ${git.branch}` : `⎇ ${git.branch} · ${git.push ? pending : 'commits only'}`;
     el.className = 'studio-status' + (push.ok === false ? ' bad' : '');
     el.title = push.error || `Every save is committed to ${git.branch}${git.push ? ' and pushed to GitHub for review' : ''}.`;
     if (git.pending_commits) {  // commits that failed are queued server-side and retried (git_sync.py)
-      el.textContent += ` · ${git.pending_commits} commit(s) queued`; el.className = 'studio-status bad'; el.title = git.last_commit_error;
+      el.textContent = `⚠ ${git.pending_commits} commit(s) queued · ${el.textContent}`; el.className = 'studio-status bad'; el.title = git.last_commit_error;
       if (queued !== git.pending_commits) window.JelliShell?.notify(`${git.pending_commits} commit(s) are queued and will be retried: ${git.last_commit_error}`,
         {tone: 'warn', id: 'git-queue', sticky: true, hint: 'Your saves are on disk; the studio retries the commit (POST /api/git/retry retries now).'});
     } else if (queued) window.JelliShell?.dismiss?.('git-queue');
