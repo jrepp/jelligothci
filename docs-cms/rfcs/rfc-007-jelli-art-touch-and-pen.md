@@ -539,6 +539,25 @@ every mode. Now:
   row reserve their space on every pointer, not only coarse ones, so the canvas
   does not move when they change.
 
+**2026-10-12: Paint layout (UX M2-B; RFC-006 Decisions D1 and D5).** The Paint
+wireframes in §4 put the flip-book in the side column under the colours. Now:
+
+- The flip-book docks **under the canvas**, as one row at most about 140 px
+  tall: preview, **Frame** and **Play**, the frame strip (it scrolls sideways),
+  and an **Onion & guides** disclosure. Its panel floats over the canvas, so
+  opening it never changes the canvas size. Assets that are not creature frames
+  have no dock.
+- The side column keeps a width set by the layout, not by the zoom: the
+  legend (when Issues is on), the colours, the before image and history, then
+  the hint (still the canvas's `aria-describedby`).
+- When the main area is 900 px or wider and the window 600 px or taller, the
+  quick bar is a vertical rail beside the canvas and `#main` does not scroll.
+  Narrower, the order is the canvas, the quick bar row, the dock, then the side
+  column, and the page scrolls.
+- Fit zoom is the largest whole zoom that fits the canvas box, measured from
+  that box and refitted on resize or rotation while the artist has not chosen a
+  zoom. It never changes under a stroke or gesture in progress.
+
 # References
 
 - [RFC-006](rfc-006-jelli-art-workspaces-and-ui-foundation.md),

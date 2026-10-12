@@ -41,7 +41,7 @@ html select,html input,html textarea{border-color:var(--field)}select{font:inher
 .item .sub{font:10px ui-monospace,monospace;color:var(--muted)}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:1px}
 .dot.ok{background:var(--accent)}.dot.fix{background:var(--bad)}.dot.stale{background:var(--warn)}
-main{overflow:auto;min-height:0;padding:14px 18px 40px}
+main{overflow:auto;min-height:0;padding:14px 18px 40px;container:stage/inline-size}
 .bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:10px}
 .bar label,.lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:2px 0 10px}.title h2{margin:0;font-size:20px;letter-spacing:-.02em}
@@ -52,6 +52,7 @@ main{overflow:auto;min-height:0;padding:14px 18px 40px}
 .stage{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .pane{display:grid;gap:6px;justify-items:start}.pane .lbl{display:flex;justify-content:space-between;gap:12px}
 .scroller{overflow:auto;max-width:100%;width:fit-content;border:1px solid var(--line);border-radius:8px;background:#111}
+#detail:not(.painting) .scroller{max-height:calc(100vh - 240px);max-height:calc(100dvh - 240px)}
 canvas{display:block;image-rendering:pixelated}
 #inspector{font:12px ui-monospace,monospace;display:flex;gap:18px;flex-wrap:wrap;min-height:22px;margin:10px 0;color:var(--muted)}
 #inspector .sw{display:inline-block;width:12px;height:12px;border:1px solid #fff4;vertical-align:-2px;margin-right:4px;border-radius:2px}
@@ -128,6 +129,22 @@ html[data-mode]:not([data-mode=review]) .header-review{display:none}
 .shell-guide{display:flex;flex-direction:column;max-block-size:min(35vh,320px);max-block-size:min(35dvh,320px)}.shell-guide[hidden]{display:none}
 .shell-guide-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px}.shell-guide-head h2{margin:2px 0 6px}
 .shell-guide-body{min-height:0;overflow:auto}
+/* Paint workspace (UX M2-B, RFC-006 goals 1-3, owner decisions D1 and D5): the canvas is the primary surface. Where the main area is at least 900 px
+   wide and the window 600 px tall, #main does not scroll: the title row and bar keep their height and the stage fills what is left. Below that
+   it scrolls. The queries ask the main area (container "stage"), not the window, so Split View and the list drawer count. */
+html[data-mode=paint] main{display:flex;flex-direction:column;padding-block:10px 12px}
+html[data-mode=paint] main>*{flex:none}
+#detail.painting #inspector,#detail.painting>#legend,#detail.painting>#palette-block{display:none}  /* Paint shows the legend and colours in its side column; where they rest between renders they must not take room from the stage */
+#detail.painting #legend:empty{display:none}
+@media(min-height:600px){@container stage (min-width:900px){
+  html[data-mode=paint] main>#detail.painting{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  #detail.painting>.title{margin-block:2px 6px}
+  #detail.painting>.bar{margin-bottom:8px;gap:6px 14px}
+  #detail.painting #mode-extra .paint-tools{gap:6px 14px}#detail.painting .paint-more{margin-top:4px}
+  #detail.painting>#stage{flex:1 1 0;min-height:0;display:block}
+  #detail.painting .bar>div>.lbl,#detail.painting #mode-extra>.paint-tools>div>.lbl{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  html[data-mode=paint] .shell-guide{max-block-size:clamp(100px,16vh,150px);max-block-size:clamp(100px,16dvh,150px);margin-bottom:8px}
+}}
 @media(max-width:1279px){header h1>b,header h1>span:not(.mark){position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}header .live-badge{display:none}.shell-tools label.lbl{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}}
 @media(min-width:900px){
   header{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;column-gap:14px;row-gap:6px}
@@ -316,10 +333,10 @@ function setBackdrop(a, name) {
   savePrefs(); renderDetail();
 }
 function fitZoom(a) {
+  /* Paint measures its own scroller box (studio.js Studio.fitZoom), never the window. */
+  if (state.mode === 'paint' && window.Studio?.fitZoom) return window.Studio.fitZoom(a);
   const stage = document.getElementById('stage'); const panes = state.mode === 'side' ? 2 : 1;
-  // Paint keeps a side column (flip-book, colours, history) beside the canvas and fits the canvas below the toolbar.
-  const paint = state.mode === 'paint', top = paint ? Math.max(0, stage.getBoundingClientRect().top) + 70 : 330;
-  const avail = Math.max(200, (stage.clientWidth - 16 * panes) / panes - (paint ? 340 : 0)); const tall = Math.max(240, window.innerHeight - top);
+  const avail = Math.max(200, (stage.clientWidth - 16 * panes) / panes); const tall = Math.max(240, window.innerHeight - 330);
   return Math.max(1, Math.min(32, Math.floor(Math.min(avail / a.width, tall / a.height))));
 }
 const zoom = a => state.zoom || fitZoom(a);
@@ -364,8 +381,12 @@ function wireHover(c, a, z) {
   c.onclick = () => { if (state.mode === 'flip') { state.flipBefore = !state.flipBefore; renderStage(); } };
 }
 
-/* Paint borrows the colour section into its side column; put it back before the stage is rebuilt. */
-function homePalette() { const block = document.getElementById('palette-block'), legend = document.getElementById('legend'); if (block && block.previousElementSibling !== legend) legend.after(block); }
+/* Paint borrows the legend and the colour section into its side column; put them back (inspector, legend, colours) before the stage is rebuilt. */
+function homePalette() {
+  const block = document.getElementById('palette-block'), legend = document.getElementById('legend'), inspector = document.getElementById('inspector');
+  if (legend && legend.previousElementSibling !== inspector) inspector.after(legend);
+  if (block && block.previousElementSibling !== legend) legend.after(block);
+}
 function renderStage() {
   const a = asset(); if (!a || !decoded[a.key]) return;
   homePalette(); window.Studio?.homeCompare?.();
@@ -377,7 +398,7 @@ function renderStage() {
   for (const [kind, sub] of panes) {
     const pane = document.createElement('div'); pane.className = 'pane';
     pane.innerHTML = `<div class="lbl"><span>${kind === 'side' ? '' : kind}</span><span>${sub}</span></div>`;
-    const scroller = document.createElement('div'); scroller.className = 'scroller'; scroller.style.maxHeight = `${window.innerHeight - 260}px`;
+    const scroller = document.createElement('div'); scroller.className = 'scroller';
     if (kind === 'before' && !decoded[a.key].before) { scroller.innerHTML = '<div style="padding:30px;color:var(--muted)">No before image (new asset)</div>'; }
     else { const c = paneCanvas(a, z, kind); c.setAttribute('role', 'img'); c.setAttribute('aria-label', `${a.key} ${kind} at ${z}×; hover to inspect pixels`); scroller.append(c); }
     scroller.onscroll = () => stage.querySelectorAll('.scroller').forEach(s => { if (s !== scroller) { s.scrollLeft = scroller.scrollLeft; s.scrollTop = scroller.scrollTop; } });
@@ -623,7 +644,7 @@ function wire() {
   document.getElementById('sheet-show').onclick = e => { const s = e.target.closest('button')?.dataset.show; if (s) { state.sheetShow = s; renderSheet(); savePrefs(); } };
   document.getElementById('sheet-scale').onclick = e => { const s = e.target.closest('button')?.dataset.scale; if (s) { state.sheetScale = s; renderSheet(); savePrefs(); } };
   document.getElementById('changed-only').setAttribute('aria-pressed', state.changedOnly);
-  window.addEventListener('resize', () => { if (state.view === 'detail' && !state.zoom) renderStage(); });
+  window.addEventListener('resize', () => { if (state.view === 'detail' && !state.zoom && state.mode !== 'paint') renderStage(); });  // Paint refits from its own ResizeObserver
   window.addEventListener('resize', markScrollableStats);
   window.addEventListener('hashchange', () => { if (location.hash === lastHash) return; applyHash(); renderList(); renderView(); });
   document.getElementById('list').addEventListener('keydown', e => {

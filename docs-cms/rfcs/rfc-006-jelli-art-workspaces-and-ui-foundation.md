@@ -38,7 +38,7 @@ has one primary surface, which gets most of the screen:
 
 | View | Primary surface |
 | --- | --- |
-| Paint | The canvas, with the flip-book beside it as live context |
+| Paint | The canvas, with the flip-book docked under it as live context |
 | Creature | The preview and the timeline, visible together |
 | Behaviour, Activities | The form, with its preview beside it, never covering it |
 | Test in game | The rendered result |
@@ -64,7 +64,23 @@ primary-surface work:
   and after refs, Detail or Sheet, compare with, the totals) is Review-only, and
   every other mode has one row.
 
-D1, D3 and D5 are recorded by the chunks that implement them.
+**2026-10-12: Paint decisions D1 and D5, implemented in UX M2-B.** The owner
+approved two Paint layout decisions:
+
+- **D1: the flip-book docks under the canvas.** It is one horizontal row (the
+  preview, Frame and Play controls, the frame strip, and an "Onion & guides"
+  disclosure whose panel floats over the canvas). It is the arrangement that
+  keeps the canvas, the flip-book and the whole palette in view at 1280×800 and
+  1440×900. [RFC-007](rfc-007-jelli-art-touch-and-pen.md) records the amendment
+  to its Paint wireframe.
+- **D5: Paint's `#main` does not scroll in the workspace layout.** Where the
+  main area is at least 900 px wide and the window at least 600 px tall, the
+  title row and bar keep their height and the stage fills the rest. The canvas
+  box is sized by CSS, and the fit zoom is measured from it (a `ResizeObserver`
+  refits while the artist has not chosen a zoom). Below that size the page flows
+  and `#main` scrolls.
+
+D3 is recorded by the chunk that implements it.
 
 # Relationship to existing decisions
 

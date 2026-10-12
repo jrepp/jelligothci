@@ -255,7 +255,7 @@
     const live = D.live, git = D.git || {};
     const modes = modeList().map(m => m.label);
     const what = {Review: 'compare each asset with an earlier commit: side by side, swipe, flip, onion skin or a pixel diff, and mark it good or needs work.',
-      Paint: 'edit the pixels of the selected asset; a creature frame also gets a flip-book beside the canvas to play its clip, step frames with ← and →, and onion skin its neighbours.',
+      Paint: 'edit the pixels of the selected asset; a creature frame also gets a flip-book under the canvas to play its clip, step frames with ← and →, and onion skin its neighbours.',
       Creature: 'set the frames, timing and loop of each pose clip, and each form\'s size and behaviour.',
       Behaviour: 'edit behaviour states and reactions, and try them in the stimulus simulator.',
       'Test in game': 'render a scenario (pet, form, needs, page, clock) with the real game engine and step through its frames; it renders the saved files, so unsaved edits are not included.',

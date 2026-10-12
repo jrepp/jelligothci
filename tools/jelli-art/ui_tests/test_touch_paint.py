@@ -18,8 +18,7 @@ LAND, PORT = "ipad-landscape", "ipad-portrait"
 
 
 def ready(page):
-    """A zoom that shows the whole sprite whatever this renderer's fit zoom is, with the canvas in view."""
-    page.evaluate("() => setZoom(4)")
+    """The canvas in view, at the zoom the page chose (the fit; UX M2-B closed the blind spot of forcing 4x)."""
     page.locator("#stage .paint-canvas canvas").scroll_into_view_if_needed()
     return page
 

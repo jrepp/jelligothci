@@ -65,24 +65,43 @@
     .paint-hist button{display:block;width:100%;text-align:left;border:0;border-radius:0;background:none;padding:3px 9px;font-size:12px}
     .paint-hist button:hover{background:var(--raised)}.paint-hist button[aria-current=step]{background:var(--ink);color:var(--bg)}
     .paint-hist button.redo{color:var(--muted);font-style:italic}
-    .paint-hint{margin:6px 0 0;max-width:640px}
-    .paint-work{display:flex;gap:16px;align-items:flex-start;width:100%}
-    .paint-canvas{flex:0 1 auto;min-width:0}.paint-side{flex:1 1 300px;min-width:260px;max-width:440px;display:grid;gap:14px;align-content:start}
+    .paint-hint{margin:0;max-width:none}
+    /* The workspace (UX M2-B): a grid whose cells are sized by CSS, so the canvas box never depends on the canvas. Flow tier (narrow main area):
+     * canvas, quick bar row, flip-book dock, then the side panels. Workspace tier (main area 900 px and up, window 600 px and taller, compare.html):
+     * quick bar rail | canvas over its flip-book dock | side column, filling #stage, which does not scroll. */
+    .paint-work{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"c" "q" "d" "s";gap:14px;width:100%;--side:clamp(260px,28cqi,380px)}
+    .paint-work>.paint-canvas{grid-area:c}.paint-work>.paint-qbar{grid-area:q}.paint-work>.paint-dock{grid-area:d}.paint-work>.paint-side{grid-area:s}
+    .paint-dock[hidden]{display:none}
+    .paint-canvas{display:grid;grid-template-rows:auto auto;gap:6px;justify-items:stretch;min-width:0;min-height:0}
+    .paint-canvas .scroller{display:flex;width:100%;max-width:none;min-width:0;min-height:0;height:clamp(240px,50vh,100cqi);height:clamp(240px,50dvh,100cqi)}
+    .paint-canvas .scroller canvas{flex:none;margin:auto}
+    .paint-side{min-width:0;display:grid;gap:14px;align-content:start}
     .paint-side #palette-block{margin:0;padding:0;border:0}.paint-side #palette-block h3{margin:0 0 6px;font-size:12px}
-    .paint-side .palette{gap:4px;margin:0}.paint-side .paint-chip{min-width:46px;padding:4px 3px;font-size:9px}.paint-side .paint-chip .sw{width:26px;height:26px}
+    .paint-side .palette{gap:4px;margin:0}.paint-side .paint-chip{padding:3px 2px;font-size:9px}
+    .paint-side .paint-ramp .ramp-name{flex-basis:100%;min-width:0}
+    .paint-side .paint-pair{flex-wrap:nowrap;gap:6px}.paint-side .paint-pair .studio-note{flex:1 1 0;min-width:0;font-size:10px;line-height:1.25}.paint-side .paint-pair button{flex:none;padding:2px 6px}
+    .paint-side .paint-ramp{gap:3px}.paint-side .paint-chip{min-width:40px;gap:1px}.paint-side .paint-chip .sw{width:22px;height:22px}
     .paint-side .studio-note{font-size:11px}.paint-refs{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}.paint-refs .paint-hist{max-height:180px}
+    .paint-colour-help{margin-top:8px}.paint-colour-help>summary{cursor:pointer;font-size:11px;font-weight:600;width:fit-content}.paint-colour-help>.studio-note{margin-top:4px}
     .paint-more{margin-top:8px}.paint-more>summary{cursor:pointer;font-weight:600;font-size:12px;width:fit-content;padding:2px 0}.paint-more>summary .lbl{font-weight:400;margin-left:6px}
     .paint-more>.paint-tools{margin-top:6px}
-    @media(max-width:1100px){.paint-work{flex-wrap:wrap}.paint-side{max-width:none}}
-    .paint-qbar{display:flex;flex-wrap:wrap;gap:var(--tap-gap,8px);align-items:stretch;flex:1 1 100%;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+    .paint-qbar{display:flex;flex-wrap:wrap;gap:var(--tap-gap,8px);align-items:stretch;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
     .paint-qbar[hidden]{display:none}.paint-qbar .qb-group{display:flex;gap:var(--tap-gap,8px);flex-wrap:wrap}.paint-qbar .qb-group[hidden]{display:none}
     .paint-qbar button{min-width:var(--tap,44px);min-height:var(--tap,44px);padding:2px 4px;font-size:11px;line-height:1.15;touch-action:none}
     .paint-qbar button[aria-pressed=true]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
     .paint-qbar .qb-sep{width:1px;background:var(--line);align-self:stretch}
     .paint-work.lefty .paint-qbar{justify-content:flex-end}
-    @media(min-width:1101px){.paint-qbar{order:-1;flex:0 0 68px;flex-direction:column;flex-wrap:nowrap;position:sticky;top:8px;align-self:flex-start;max-height:calc(100vh - 16px);overflow-y:auto;overflow-x:hidden}
+    @media(min-height:600px){@container stage (min-width:900px){
+      .paint-work{height:100%;gap:0 16px;grid-template-columns:auto minmax(0,1fr) var(--side);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"q c s" "q d s"}
+      .paint-work.lefty{grid-template-columns:minmax(0,1fr) var(--side) auto;grid-template-areas:"c s q" "d s q"}
+      .paint-work.noq{grid-template-columns:minmax(0,1fr) var(--side);grid-template-areas:"c s" "d s"}
+      .paint-canvas{grid-template-rows:auto minmax(0,1fr)}
+      .paint-canvas .scroller{height:auto}
+      .paint-dock{margin-top:10px}
+      .paint-side{overflow-y:auto;min-height:0;padding-right:2px}
+      .paint-qbar{flex-direction:column;flex-wrap:nowrap;width:68px;align-self:start;max-height:100%;overflow-y:auto;overflow-x:hidden}
       .paint-qbar .qb-group{flex-direction:column;flex-wrap:nowrap}.paint-qbar .qb-sep{width:auto;height:1px;align-self:stretch}.paint-qbar button{width:100%}
-      .paint-work.lefty .paint-qbar{order:3}}
+    }}
     .paint-menu{position:fixed;z-index:60;display:grid;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:4px;box-shadow:0 6px 24px var(--shadow)}
     .paint-menu button{text-align:left;min-height:var(--tap,44px);border:0;background:none}
 
@@ -373,15 +392,15 @@
     const s = stroke; if (!s) return; stroke = null;
     if (s.kind === 'marquee') {
       if (s.pointer && !s.moved) state.sel = null;  // a click without a drag clears the selection
-      noteSel(); draw(); renderToolbarState(); renderReadout();
+      noteSel(); draw(); renderToolbarState(); renderReadout(); flushRefit();
       return announce(state.sel ? `Selected ${state.sel.w} by ${state.sel.h} at ${state.sel.x}, ${state.sel.y}` : 'Selection cleared');
     }
-    done(s.label);
+    done(s.label); flushRefit();
   }
   function cancel(quiet = false) {
     const s = stroke; if (!s) return false; stroke = null;
     work(state.key).data.set(s.snap.data); state.sel = s.snap.sel; state.selMask = s.snap.selMask; state.float = s.snap.float;
-    draw(); renderReadout(); if (!quiet) announce('Cancelled'); return true;
+    draw(); renderReadout(); if (!quiet) announce('Cancelled'); flushRefit(); return true;
   }
   /* Alt-click borrows the picker for one click and keeps the current tool (paint_tools.js pickOutcome).
    * secondary (the right button) sets the secondary colour, transparent included, and always keeps the tool. */
@@ -532,7 +551,7 @@
       box.innerHTML = '<div class="lbl"><span>tiled 3×3</span><span>seams show while Wrap nudges</span></div>';
       const [c] = makeCanvas(3 * a.width * s, 3 * a.height * s); c.setAttribute('role', 'img'); c.setAttribute('aria-label', `${a.key} repeated 3 by 3`);
       Object.assign(c.style, {maxWidth: '100%', height: 'auto', imageRendering: 'pixelated'});
-      box.append(c); side.insertBefore(box, side.children[1] || null);
+      box.append(c); const colours = side.querySelector('#palette-block'); if (colours) colours.after(box); else side.append(box);
     }
     // Hover moves redraw the canvas; the tiles only change with the pixels, the backdrop or the isolated colour.
     const look = `${backdropFor(a)}|${state.isolate}`, last = box.last;
@@ -624,33 +643,82 @@
   }
   function homeCompare() { const wrap = document.getElementById('before-wrap'), refs = document.querySelector('#header-review .refs'); if (wrap && refs && wrap.parentElement !== refs.parentElement) refs.after(wrap); }
   Object.assign(S, {homeCompare});
+  /* The workspace skeleton (UX M2-B) is built once per asset and kept: cells sized by CSS (see the style block), so Studio.fitZoom can measure the
+   * scroller before the canvas exists, and later renders swap only the canvas and the side column. The flip-book dock (flipbook.js renderDock) is in
+   * place before the measurement, so its height is already out of the box. */
+  let sk = null, refitRaf = 0, refitWait = false;
+  function skeleton(a) {
+    const stage = document.getElementById('stage');
+    if (sk && sk.key === a.key && sk.work.parentElement === stage) return sk;
+    sk?.ro.disconnect(); closeMenu(); cancelAnimationFrame(refitRaf); refitRaf = 0; refitWait = false;
+    stage.textContent = '';
+    const work = document.createElement('div'); work.className = 'paint-work';
+    const pane = document.createElement('div'); pane.className = 'pane paint-canvas';
+    pane.innerHTML = '<div class="lbl"><span id="paint-title">paint</span><span class="paint-readout" id="paint-readout"></span></div>';
+    const scroller = document.createElement('div'); scroller.className = 'scroller'; pane.append(scroller);
+    pane.insertAdjacentHTML('beforeend', '<div id="paint-live" class="vh" aria-live="polite"></div>');
+    const dock = document.createElement('div'); dock.className = 'paint-dock';
+    const side = document.createElement('div'); side.className = 'paint-side';
+    const qbar = quickBar(), shown = JT.coarse() || state.quickbar; qbar.hidden = !shown;
+    work.classList.toggle('noq', !shown); work.classList.toggle('lefty', !!state.lefty);
+    work.append(pane, qbar, dock, side); stage.append(work);
+    const ro = new ResizeObserver(() => refit());
+    ro.observe(scroller);
+    sk = {key: a.key, work, pane, scroller, dock, side, ro, fresh: true};
+    dock.hidden = !S.renderDock?.(dock, a);
+    return sk;
+  }
+  /* The fit zoom: the largest whole zoom at which the sprite fits the scroller's box (its border box less the border, so scrollbars never count), from
+   * 1 to 32. Never computed from the window. `a` may be just {width, height} (Fit content), then the current skeleton is measured. */
+  const fitZoomOf = a => {
+    if (LOCKED.has(a.kind)) return 1;
+    const {scroller} = sk?.work.isConnected ? sk : skeleton(asset()), r = scroller.getBoundingClientRect();
+    const w = r.width - 2 * scroller.clientLeft, h = r.height - 2 * scroller.clientTop;
+    if (!(w > 0 && h > 0)) return view?.z || 4;  // not laid out (hidden): keep what is shown
+    return clampN(Math.floor(Math.min(w / a.width, h / a.height)), 1, 32);
+  };
+  Object.assign(S, {fitZoom: fitZoomOf});  // compare.html fitZoom() delegates here in Paint
+  /* A resize, a rotation, Split View or the guide hiding changes the box; while the artist has not chosen a zoom, fit again. A stroke or gesture
+   * in progress finishes first (flushRefit), so the canvas never changes size under the pointer. */
+  function refit() {
+    if (state.zoom || !view || !sk?.work.isConnected || state.mode !== 'paint' || state.view !== 'detail') return;
+    if (stroke || gs || pan || rec?.busy()) { refitWait = true; return; }
+    cancelAnimationFrame(refitRaf);
+    refitRaf = requestAnimationFrame(() => {
+      refitRaf = 0;
+      if (state.zoom || !view) return;
+      if (stroke || gs || pan || rec?.busy()) { refitWait = true; return; }
+      if (fitZoomOf(view.a) !== view.z) renderStage();
+    });
+  }
+  const flushRefit = () => { if (refitWait) { refitWait = false; refit(); } };
   S.renderStage = (a, z) => {
     const stage = document.getElementById('stage'), old = view; closeMenu(); homeCompare();
     const hadFocus = old && document.activeElement === old.c, scroll = old && old.a.key === a.key ? [old.scroller.scrollLeft, old.scroller.scrollTop] : null;
-    stage.textContent = '';
     document.getElementById('zoom-label').textContent = `· ${z}×`;
-    if (LOCKED.has(a.kind)) { view = null; stage.innerHTML = '<p class="studio-note">The font atlas and backgrounds are not paintable here yet; edit those PNGs in an image editor.</p>'; return; }
+    if (LOCKED.has(a.kind)) {
+      sk?.ro.disconnect(); sk = null; view = null; stage.textContent = '';
+      stage.innerHTML = '<p class="studio-note">The font atlas and backgrounds are not paintable here yet; edit those PNGs in an image editor.</p>'; return;
+    }
     if (selKey !== a.key) {  // a keyboard artist stepping through clip frames keeps the cursor where it was
       const keep = hadFocus && state.kbd && state.cursor[0] < a.width && state.cursor[1] < a.height;
       selKey = a.key; stroke = null; state.sel = state.float = state.selMask = null; selSeen = null; state.kbd = keep;
       if (!keep) state.cursor = [a.width >> 1, a.height >> 1];
     }
     ensure(a.key);
-    /* Canvas on the left; a side column holds the colours, the flip-book (flipbook.js), the before image and history. */
-    const work = document.createElement('div'); work.className = 'paint-work';
-    const pane = document.createElement('div'); pane.className = 'pane paint-canvas';
-    pane.innerHTML = '<div class="lbl"><span>paint</span><span class="paint-readout" id="paint-readout"></span></div>';
-    const scroller = document.createElement('div'); scroller.className = 'scroller';
+    /* Canvas and its flip-book dock (flipbook.js) under it; a side column holds the legend, the colours, the before image, the history and the hint. */
+    const {scroller, side, dock, fresh} = skeleton(a);
+    sk.fresh = false;
+    if (!fresh) dock.hidden = !S.renderDock?.(dock, a);
+    document.getElementById('paint-title').textContent = `paint · ${z}×`;
     const [c, ctx] = makeCanvas(a.width * z, a.height * z); c.style.cursor = 'crosshair'; c.style.touchAction = 'none';
     Object.assign(c, {tabIndex: 0}); c.setAttribute('role', 'application'); c.setAttribute('aria-roledescription', 'pixel canvas');
     c.setAttribute('aria-label', `${a.key}, ${a.width} by ${a.height} pixels`); c.setAttribute('aria-describedby', 'paint-hint');
-    scroller.append(c); pane.append(scroller);
-    pane.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">${hintHtml()}</p><div id="paint-live" class="vh" aria-live="polite"></div>`);
-    const side = document.createElement('div'); side.className = 'paint-side';
-    work.append(pane, quickBar(), side); stage.append(work);
+    scroller.replaceChildren(c);
     view = {c, ctx, a, z, scroller};
+    side.textContent = '';
+    const legend = document.getElementById('legend'); if (legend) side.append(legend);
     const colours = document.getElementById('palette-block'); if (colours) side.append(colours);
-    S.renderSide?.(side, a);  // flipbook.js: the clip's flip-book and onion skin
     const refs = document.createElement('div'); refs.className = 'paint-refs'; side.append(refs);
     const ref = decoded[a.key].before;
     if (ref) {
@@ -665,7 +733,7 @@
     hist.innerHTML = '<div class="lbl" id="paint-hist-label"><span>history</span><span>click a step to go back</span></div><ol class="paint-hist" id="paint-history" aria-labelledby="paint-hist-label"></ol>';
     hist.querySelector('ol').onclick = e => { const b = e.target.closest('[data-step]'); if (b) restore(Number(b.dataset.step)); };
     refs.append(hist);
-    scroller.style.maxHeight = `${Math.max(240, window.innerHeight - Math.max(0, scroller.getBoundingClientRect().top) - 24)}px`;
+    side.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">${hintHtml()}</p>`);
     wireCanvas(c, scroller, a);
     if (anchor) { scroller.scrollLeft = anchor.px * z - anchor.ox; scroller.scrollTop = anchor.py * z - anchor.oy; anchor = null; }
     else if (scroll) [scroller.scrollLeft, scroller.scrollTop] = scroll;
@@ -734,12 +802,12 @@
         },
         move(e) { if (pan) { scroller.scrollLeft = pan.l - (e.clientX - pan.x); scroller.scrollTop = pan.t - (e.clientY - pan.y); return; } track(e); },
         end(e) {
-          const go = later; later = null; if (pan) { pan = null; return; }
+          const go = later; later = null; if (pan) { pan = null; return flushRefit(); }
           if (go) return go();
           if (stroke?.pointer) { const [x, y] = at(e); drag(x, y, e.shiftKey || modOn('constrain')); release(); }  // the lift point counts even if its move was coalesced
         },
         cancel(e, reason) {
-          if (pan) { pan = null; return; }
+          if (pan) { pan = null; return flushRefit(); }
           const quiet = ['second-finger', 'long-press', 'pen'].includes(reason);
           later = null; if (stroke?.pointer) cancel(quiet);
         }},
@@ -750,9 +818,9 @@
         c.style.transformOrigin = `${s.ox}px ${s.oy}px`; c.style.transform = `scale(${clampN(g.scale, 1 / z, 32 / z)})`;
       },
       gestureEnd(g) {
-        const s = gs; gs = null; if (!s) return;
+        const s = gs; gs = null; if (!s) return flushRefit();
         c.style.transform = ''; c.style.transformOrigin = '';
-        const next = clampN(Math.round(s.z * g.scale), 1, 32); if (s.ox === null || next === s.z || !c.isConnected) return;
+        const next = clampN(Math.round(s.z * g.scale), 1, 32); if (s.ox === null || next === s.z || !c.isConnected) return flushRefit();
         const r = scroller.getBoundingClientRect();
         anchor = {px: s.ox / s.z, py: s.oy / s.z, ox: (s.cx ?? g.cx) - r.left, oy: (s.cy ?? g.cy) - r.top};  // the pinched pixel stays under the fingers
         setZoom(next); announce(`Zoom ${next}×`);
@@ -832,7 +900,7 @@
     bar.hidden = !(JT.coarse() || state.quickbar);
     // A hidden bar cannot show or clear a latched modifier, so a mouse user would keep painting with 2nd or Pick on.
     if (bar.hidden) { for (const k in mods) mods[k].latched = mods[k].held = false; applyPeek(); }
-    bar.closest('.paint-work')?.classList.toggle('lefty', !!state.lefty);
+    const work = bar.closest('.paint-work'); work?.classList.toggle('lefty', !!state.lefty); work?.classList.toggle('noq', bar.hidden);
     const q = id => /** @type {HTMLButtonElement} */ (bar.querySelector('#qb-' + id)), pressed = (id, on) => q(id).setAttribute('aria-pressed', String(!!on)), e = edits[state.key];
     q('undo').disabled = !(e && e.hist.at > 0); q('redo').disabled = !(e && e.hist.at < e.hist.entries.length - 1);
     const sel = state.tool === 'select', word = CONSTRAIN[state.tool];
@@ -1062,7 +1130,7 @@
       note.textContent = own
         ? `Click a colour to paint with it; right-click it, press Shift+F10 on it, or choose it and press X to make it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. This sprite uses ${where}, so the shared palette and its ✎ do not apply. Tools paint only these colours until you choose custom; custom colours work in the live game only. Shift-click isolates a colour.`
         : 'Click a colour to paint with it; right-click it, press Shift+F10 on it, or choose it and press X to make it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.';
-      el.append(note);
+      const help = document.createElement('details'); help.className = 'paint-colour-help'; help.innerHTML = '<summary>About the colours</summary>'; help.append(note); el.append(help);
     });
     /* One palette slot's chip; the shared palette also gets its ✎. */
     function slotChip(hex, i, parent, ramp) {

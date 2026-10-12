@@ -2,8 +2,8 @@
   - tabpanel "Paint":
     - heading "icons.food" [level=2]
     - group "Sprite details, scrolls sideways": 16×16 · ID 2002 · device 6× 0 px changed specks 0 → 0 colours 3 → 3 / max 6 lint pass
-    - text: Zoom · 12×
-    - group "Zoom · 12×":
+    - text: Zoom · 30×
+    - group "Zoom · 30×":
       - button "Zoom out": −
       - button "Fit"
       - button "Device"
@@ -48,9 +48,8 @@
         - button "Use before"
         - button "Saved" [disabled]
     - group: More tools selection · transform · nudge · replace colour · mirror · guides · tiles · tidy
-    - text: paint Hover or focus the canvas
+    - text: paint · 30× Hover or focus the canvas
     - application "icons.food, 16 by 16 pixels"
-    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."
     - heading "Paint colours · click to paint · ✎ edits the shared palette" [level=3]
     - group "Main and secondary colours":
       - text: "main ink #291b35 · secondary (right-click) transparent"
@@ -105,7 +104,7 @@
       - text: more
       - button "eraser · transparent · secondary colour": eraser right-click
       - button "Choose a custom colour": custom pick…
-    - paragraph: Click a colour to paint with it; right-click it, press Shift+F10 on it, or choose it and press X to make it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.
+    - group: About the colours
     - text: before /tmp/jelli-ui-tests/before compare with
     - combobox "compare with":
       - option "/tmp/jelli-ui-tests/before" [selected]
@@ -115,4 +114,4 @@
     - list "history click a step to go back":
       - listitem:
         - button "1. Opened"
-    - text: Hover a pixel to inspect it. Both panes share one cursor.
+    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."

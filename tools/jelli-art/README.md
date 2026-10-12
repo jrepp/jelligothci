@@ -141,6 +141,18 @@ functions (`window.JelliPaint`): Bresenham lines, rectangles, ellipses inscribed
 in a pixel box, pixel-perfect strokes, flips, quarter turns, wrapped or clipped
 shifts, colour replace, bounded flood fill, ramp shading, and undo history.
 
+The Paint workspace is a grid built once per asset (`skeleton()` in `studio.js`):
+the canvas box is sized by CSS, never by the canvas. `Studio.fitZoom` measures
+that box and picks the largest whole zoom (1 to 32) that fits it, and a
+`ResizeObserver` refits on resize, rotation, Split View or the guide hiding, only
+while `state.zoom` is null (the artist has not chosen a zoom) and never during a
+stroke or gesture. Where the main area (the container `stage` on `main`) is at
+least 900 px wide and the window 600 px tall, `#main` does not scroll: quick bar
+rail, canvas over its flip-book dock, then the side column (legend, colours,
+before and history, hint). Narrower, the page flows. `ui_tests/test_layout.py`
+asserts the box share, fit zoom and dock position at 1920×1080, 1440×900,
+1280×800 and the iPad sizes, without calling `setZoom`.
+
 The palette panel draws `palette_ramps` from `assets.json` as rows and labels
 colours from `palette_names` (rules: [pixel art guide](../../docs/pixel-art-guide.md#2-palette-and-ramps)).
 `JelliPaint.shade` steps a pixel along its ramp, preferring the row the artist
@@ -238,7 +250,9 @@ import spec. The studio refuses frames that a saved or unsaved clip, a
 `source/studio-frames.json` records every added and retired frame, so a retired
 ID or name is never handed out again.
 
-Painting a clip frame shows the **Flip-book** (`flipbook.js`) beside the canvas:
+Painting a clip frame shows the **Flip-book** (`flipbook.js`) docked under the canvas
+as one row (preview, Frame and Play, the frame strip, and an **Onion & guides**
+disclosure whose panel floats over the canvas):
 a preview that plays the clip from the working pixels, so unsaved strokes
 animate, a thumbnail per frame, and onion skin of one to three frames each side
 (amber before, blue after), either only where they differ or as whole

@@ -1,5 +1,5 @@
-/* Jelli Art: the flip-book beside the Paint canvas when the sprite is a frame of a creature clip.
- * Loaded after animation.js. A live preview plays the clip with its real timing from the working
+/* Jelli Art: the flip-book under the Paint canvas when the sprite is a frame of a creature clip.
+ * Loaded after animation.js. Docked under the Paint canvas (UX M2-B). A live preview plays the clip with its real timing from the working
  * pixels, so unsaved strokes animate; a strip of frame thumbnails jumps between frames; onion skin
  * ghosts up to three frames either side. Keys: Left/Right (while the keyboard cursor is hidden)
  * or , and . change frame, Shift+Space plays or pauses, O toggles onion skin and Shift+O switches
@@ -19,32 +19,37 @@
   const ONION_MODES = [['diff', 'Changes', 'Ghost only the pixels that differ from this frame'], ['full', 'Silhouette', 'Ghost every pixel of the neighbouring frames, to judge arcs and volume']];
   Object.assign(state, {onionSkin: store.get('onion-skin', true), onionAlpha: store.get('onion-alpha', 0.5), onionRange: store.get('onion-range', 1),
     onionMode: store.get('onion-mode', 'diff') === 'full' ? 'full' : 'diff', animGuides: store.get('anim-guides', false)});
-  const fb = {playing: false, start: 0, raf: 0, shown: -1, measured: new Map(), drawn: null};
+  const fb = {open: false, playing: false, start: 0, raf: 0, shown: -1, measured: new Map(), drawn: null};
   const esc = cr.esc;
+  const attrOf = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');  // an attribute value that serialises back unchanged, so afterDraw can compare
   const shell = () => window.JelliShell;
   const announce = text => shell()?.announce?.(text);
 
   document.head.insertAdjacentHTML('beforeend', `<style>
-    .fb{background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:8px}
-    .fb h3{margin:0;font-size:13px}.fb-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
-    .fb-body{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
-    .fb-preview{border-radius:8px;background:#000;image-rendering:pixelated;flex:none}
-    .fb-controls{display:grid;gap:6px;align-content:start;min-width:0}
-    .fb-now{font:12px ui-monospace,monospace;color:var(--muted)}
-    .fb-strip{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+    /* The dock under the Paint canvas (D1): one row, at most about 140 px tall, so the canvas, the dock and the palette are all in view. */
+    .fb{position:relative;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:8px 12px;display:grid;grid-template-columns:auto fit-content(290px) minmax(0,1fr) auto;gap:6px 14px;align-items:center}
+    .fb.fb-empty{display:block}
+    .fb h3{margin:0;font-size:13px}.fb-head{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+    .fb-preview{border-radius:8px;background:#000;image-rendering:pixelated;flex:none;max-width:96px;max-height:96px}
+    .fb-controls{display:grid;gap:4px;align-content:center;min-width:0}
+    .fb-now{font:12px ui-monospace,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .fb-strip{display:flex;gap:6px;margin:0;padding:2px 2px 6px;list-style:none;overflow-x:auto;min-width:0;position:relative;scrollbar-width:thin}
+    .fb-strip li{flex:none}
     .fb-strip button{display:grid;justify-items:center;gap:2px;padding:4px;border:2px solid var(--line);border-radius:8px;background:var(--raised);font:10px ui-monospace,monospace;color:var(--muted);min-width:52px}
     .fb-strip button[aria-current=true]{border-color:var(--accent);color:var(--ink)}
     .fb-strip button.playing{box-shadow:0 0 0 2px var(--warn)}
     .fb-strip canvas{image-rendering:pixelated;background:#000;border-radius:4px}
-    .fb-onion{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;border-top:1px solid var(--line);padding-top:8px}
+    .fb-more>summary{cursor:pointer;font-weight:600;font-size:12px;padding:6px 4px;white-space:nowrap}
+    .fb-panel{position:absolute;right:8px;bottom:calc(100% + 6px);z-index:20;width:min(460px,calc(100% - 16px));display:grid;gap:10px;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 6px 24px var(--shadow)}
+    .fb-onion{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
     .fb-legend{font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}.fb-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
     .fb button kbd,.cr-keys kbd{font:10px ui-monospace,monospace;opacity:.8;margin-left:5px;padding:0 3px;border:1px solid currentColor;border-radius:3px;background:transparent}
     .fb .link{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;justify-self:start;font-size:12px}
     .fb input[type=range]{width:110px}
-    .fb-align{font-size:11px;color:var(--muted)}.fb-align.warn{color:var(--warn);font-weight:600}
+    .fb-align{font-size:11px;color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.fb-align.warn{color:var(--warn);font-weight:600}
     @media (any-pointer: coarse){
-      .fb,.fb-controls,.fb-strip,.fb-onion,.fb-body,.fb .seg{gap:var(--tap-gap)}
-      .fb-strip button{min-width:var(--tap);min-height:var(--tap)}.fb .link{min-height:var(--tap)}
+      .fb,.fb-strip,.fb-onion,.fb .seg{gap:var(--tap-gap)}
+      .fb-strip button{min-width:var(--tap);min-height:var(--tap)}.fb .link,.fb-more>summary{min-height:var(--tap);display:inline-flex;align-items:center}
     }
     .fb-strip button.off{border-color:var(--warn)}.fb-strip button.off span:first-of-type::before{content:'⚠ '}
   </style>`);
@@ -180,11 +185,12 @@
     if (state.animGuides) drawGuides(g, a, z, fb.drawn.ms[ctx.index], fb.drawn.ref);
   };
   function alignmentNote(c, al) {
-    if (!al.ref) return '<span class="fb-align warn" role="note">First frame is empty, so nothing is compared</span>';
+    if (!al.ref) return '<span class="fb-align warn" role="note" title="First frame is empty, so nothing is compared">First frame is empty, so nothing is compared</span>';
     const eye = (al.ref.eyeAbove === null ? 'no eye found' : `eye ${al.ref.eyeAbove} px above the ground`) + (al.scale ? '' : ' · scale unknown, slides not checked');
     const bad = al.off.map((o, i) => (o.length ? `frame ${i + 1} ${o.join(', ')}` : '')).filter(Boolean);
-    if (bad.length) return `<span class="fb-align warn" role="note">⚠ Against frame 1 (${eye}): ${bad.join('; ')}</span>`;
-    return `<span class="fb-align" role="note">${c.frames.length > 1 ? '✓ Frames keep frame 1\'s ground anchor and' : 'Frame 1 sets the ground anchor and'} ${eye}</span>`;
+    if (bad.length) { const t = `⚠ Against frame 1 (${eye}): ${bad.join('; ')}`; return `<span class="fb-align warn" role="note" title="${attrOf(t)}">${t}</span>`; }
+    const t = `${c.frames.length > 1 ? '✓ Frames keep frame 1\'s ground anchor and' : 'Frame 1 sets the ground anchor and'} ${eye}`;
+    return `<span class="fb-align" role="note" title="${attrOf(t)}">${t}</span>`;
   }
 
   /* ---------- the preview: every frame aligned on its pivot ---------- */
@@ -250,39 +256,45 @@
     g.setTransform(DPR, 0, 0, DPR, 0, 0); g.imageSmoothingEnabled = false; g.clearRect(0, 0, a.width * s, a.height * s); drawPixels(g, p, s);
   }
 
-  /* ---------- the panel in the Paint side column ---------- */
   const kbd = k => `<kbd>${k}</kbd>`;
-  S.renderSide = (side, a) => {
-    if (a.kind !== 'creatures') return;
+  /* ---------- the dock under the Paint canvas ---------- */
+  S.renderDock = (dock, a) => {
+    dock.textContent = '';
+    if (a.kind !== 'creatures') return false;
     const ctx = A.paintContext(a.key), box = document.createElement('section');
     box.className = 'fb'; box.setAttribute('aria-labelledby', 'fb-title');
+    dock.append(box);
     if (!ctx) {
+      box.className = 'fb fb-empty';
       box.innerHTML = `<h3 id="fb-title">Flip-book</h3><p class="studio-note" style="margin:0">This frame is not in any clip yet. Add it to a pose with <b>+ clip</b> in the Creature tab's frame library.</p>`;
-      side.append(box); return;
+      return true;
     }
     fb.measured.clear();
     const {c, index, clip} = ctx, n = c.frames.length, many = n > 1, near = around(ctx, state.onionRange), al = alignment(c);
     const names = list => list.map(i => esc(byKey[c.frames[i]]?.pose || c.frames[i])).join(', ');
-    box.innerHTML = `<div class="fb-head"><h3 id="fb-title">Flip-book</h3><span class="lbl">${esc(clip)} · ${n} frame${n === 1 ? '' : 's'} · ${c.loop ? 'loops' : 'plays once'}</span></div>
-      <div class="fb-head">${alignmentNote(c, al)}<button id="fb-guides" aria-pressed="${!!state.animGuides}" title="Draw each frame's ground line and ground anchor, and where frame 1's eye height puts the eye, on the canvas and the preview">Eye &amp; ground</button></div>
-      <div class="fb-body"><canvas id="fb-preview" class="fb-preview" role="img" aria-label="${esc(clip)} preview, with unsaved paint"></canvas>
-        <div class="fb-controls"><div class="seg" role="group" aria-label="Flip-book">
-          <button id="fb-prev" title="Paint the previous frame" aria-keyshortcuts="ArrowLeft ," ${many ? '' : 'disabled'}>◀ Frame${kbd('←')}</button>
-          <button id="fb-play" aria-pressed="${fb.playing}" title="Play the clip in the preview while you paint" aria-keyshortcuts="Shift+Space" ${n ? '' : 'disabled'}>${fb.playing ? 'Pause' : 'Play'}${kbd('⇧Space')}</button>
-          <button id="fb-next" title="Paint the next frame" aria-keyshortcuts="ArrowRight ." ${many ? '' : 'disabled'}>Frame ▶${kbd('→')}</button></div>
-          <span class="fb-now" id="fb-now" aria-live="off"></span>
-          <span class="studio-note" style="margin:0">Painting frame <b>${index + 1}</b> of ${n}. ← and → change frame while the keyboard cursor is hidden; , and . always do.</span></div></div>
-      <ol class="fb-strip" id="fb-strip" aria-label="Frames of ${esc(clip)}">${c.frames.map((k, i) => `<li><button data-i="${i}" aria-current="${i === index}"${al.off[i].length ? ' class="off"' : ''} aria-label="Paint frame ${i + 1}: ${esc(byKey[k]?.pose || k)}, ${c.durations_ms[i]} ms${al.off[i].length ? `, ${al.off[i].join(', ')}` : ''}"><canvas></canvas><span>${i + 1} · ${esc(byKey[k]?.pose || k)}</span><span>${c.durations_ms[i]} ms</span></button></li>`).join('')}</ol>
-      <div class="fb-onion"><button id="fb-onion" aria-pressed="${state.onionSkin}" title="Ghost the neighbouring frames (Shift+O: changes only or whole silhouettes)" aria-keyshortcuts="O" ${many ? '' : 'disabled'}>Onion skin${kbd('O')}</button>
-        <div class="seg" role="group" aria-label="Onion skin shows">${ONION_MODES.map(([m, label, what]) => `<button data-onion-mode="${m}" aria-pressed="${state.onionMode === m}" title="${what} (Shift+O switches)" ${many && state.onionSkin ? '' : 'disabled'}>${label}</button>`).join('')}</div>
-        <div class="seg" role="group" aria-label="Frames each side">${[1, 2, 3].map(r => `<button data-range="${r}" aria-pressed="${state.onionRange === r}" title="Ghost ${r} frame${r > 1 ? 's' : ''} each side" ${many && state.onionSkin ? '' : 'disabled'}>±${r}</button>`).join('')}</div>
-        <label class="lbl">Ghost <input type="range" id="fb-alpha" min="0.15" max="0.9" step="0.05" value="${state.onionAlpha}" aria-label="Onion skin opacity" ${many && state.onionSkin ? '' : 'disabled'}></label>
-        ${state.onionSkin && many ? `<span class="fb-legend">${near.prev.length ? `<span><i style="background:rgb(${GHOST.prev})"></i>before: ${names(near.prev)}</span>` : ''}${near.next.length ? `<span><i style="background:rgb(${GHOST.next})"></i>after: ${names(near.next)}</span>` : ''}</span>` : ''}</div>
-      ${window.JelliTouch?.coarse() ? `<div class="fb-onion">${window.JelliTouch.info('Onion skin ghosts the neighbouring frames: Changes shows only the pixels that differ, Silhouette shows every pixel. Frames each side sets how many frames to ghost. Eye & ground draws each frame\'s ground line and anchor, and where frame 1\'s eye height puts the eye.', 'About onion skin and guides')}<span class="studio-note" style="margin:0">What the onion and guide buttons do</span></div>` : ''}
-      <button class="link" id="fb-timeline" title="Switch to the Creature tab with this clip's timeline">Edit order and timing in the Creature tab ↗</button>`;
-    side.append(box);
+    /* One row: preview, the transport, the frames (scrolls sideways) and a "Onion & guides" disclosure whose panel floats over the canvas,
+     * so opening it never changes the canvas box. */
+    box.innerHTML = `<canvas id="fb-preview" class="fb-preview" role="img" aria-label="${esc(clip)} preview, with unsaved paint"></canvas>
+      <div class="fb-controls"><div class="fb-head"><h3 id="fb-title">Flip-book</h3><span class="lbl">${esc(clip)} · ${n} frame${n === 1 ? '' : 's'} · ${c.loop ? 'loops' : 'plays once'}</span></div>
+        <div class="seg" role="group" aria-label="Flip-book">
+          <button id="fb-prev" title="Paint the previous frame (Left arrow or ,)" aria-keyshortcuts="ArrowLeft ," ${many ? '' : 'disabled'}>◀ Frame</button>
+          <button id="fb-play" aria-pressed="${fb.playing}" title="Play the clip in the preview while you paint (Shift+Space)" aria-keyshortcuts="Shift+Space" ${n ? '' : 'disabled'}>${fb.playing ? 'Pause' : 'Play'}</button>
+          <button id="fb-next" title="Paint the next frame (Right arrow or .)" aria-keyshortcuts="ArrowRight ." ${many ? '' : 'disabled'}>Frame ▶</button></div>
+        <span class="fb-now" id="fb-now" aria-live="off"></span>${alignmentNote(c, al)}</div>
+      <ol class="fb-strip" id="fb-strip" aria-label="Frames of ${esc(clip)}">${c.frames.map((k, i) => `<li><button data-i="${i}" aria-current="${i === index}"${al.off[i].length ? ' class="off"' : ''} aria-label="${i + 1} · ${esc(byKey[k]?.pose || k)} ${c.durations_ms[i]} ms${al.off[i].length ? `, ${al.off[i].join(', ')}` : ''}" title="Paint frame ${i + 1}"><canvas></canvas><span>${i + 1} · ${esc(byKey[k]?.pose || k)}</span><span>${c.durations_ms[i]} ms</span></button></li>`).join('')}</ol>
+      <details class="fb-more" id="fb-more"${fb.open ? ' open' : ''}><summary>Onion &amp; guides</summary><div class="fb-panel">
+        <div class="fb-onion"><button id="fb-onion" aria-pressed="${state.onionSkin}" title="Ghost the neighbouring frames (Shift+O: changes only or whole silhouettes)" aria-keyshortcuts="O" ${many ? '' : 'disabled'}>Onion skin${kbd('O')}</button>
+          <div class="seg" role="group" aria-label="Onion skin shows">${ONION_MODES.map(([m, label, what]) => `<button data-onion-mode="${m}" aria-pressed="${state.onionMode === m}" title="${what} (Shift+O switches)" ${many && state.onionSkin ? '' : 'disabled'}>${label}</button>`).join('')}</div>
+          <div class="seg" role="group" aria-label="Frames each side">${[1, 2, 3].map(r => `<button data-range="${r}" aria-pressed="${state.onionRange === r}" title="Ghost ${r} frame${r > 1 ? 's' : ''} each side" ${many && state.onionSkin ? '' : 'disabled'}>±${r}</button>`).join('')}</div>
+          <label class="lbl">Ghost <input type="range" id="fb-alpha" min="0.15" max="0.9" step="0.05" value="${state.onionAlpha}" aria-label="Onion skin opacity" ${many && state.onionSkin ? '' : 'disabled'}></label>
+          ${state.onionSkin && many ? `<span class="fb-legend">${near.prev.length ? `<span><i style="background:rgb(${GHOST.prev})"></i>before: ${names(near.prev)}</span>` : ''}${near.next.length ? `<span><i style="background:rgb(${GHOST.next})"></i>after: ${names(near.next)}</span>` : ''}</span>` : ''}</div>
+        <div class="fb-onion"><button id="fb-guides" aria-pressed="${!!state.animGuides}" title="Draw each frame's ground line and ground anchor, and where frame 1's eye height puts the eye, on the canvas and the preview">Eye &amp; ground</button>
+          ${window.JelliTouch?.coarse() ? `${window.JelliTouch.info('Onion skin ghosts the neighbouring frames: Changes shows only the pixels that differ, Silhouette shows every pixel. Frames each side sets how many frames to ghost. Eye & ground draws each frame\'s ground line and anchor, and where frame 1\'s eye height puts the eye.', 'About onion skin and guides')}<span class="studio-note" style="margin:0">What the onion and guide buttons do</span>` : ''}</div>
+        <span class="studio-note" style="margin:0">Painting frame <b>${index + 1}</b> of ${n}. ← and → change frame while the keyboard cursor is hidden; , and . always do.</span>
+        <button class="link" id="fb-timeline" title="Switch to the Creature tab with this clip's timeline">Edit order and timing in the Creature tab ↗</button></div></details>`;
     const b = frameBox(c), preview = box.querySelector('#fb-preview'), [sized] = makeCanvas(b.w * b.s, b.h * b.s);
     preview.width = sized.width; preview.height = sized.height; preview.style.width = sized.style.width; preview.style.height = sized.style.height;
+    const strip = box.querySelector('#fb-strip');
     box.querySelectorAll('#fb-strip button').forEach(btn => {
       const k = c.frames[Number(btn.dataset.i)], a2 = byKey[k], cv = btn.querySelector('canvas');
       if (a2) { const s = Math.max(1, Math.floor(40 / Math.max(a2.width, a2.height))), [m] = makeCanvas(a2.width * s, a2.height * s); cv.width = m.width; cv.height = m.height; cv.style.width = m.style.width; cv.style.height = m.style.height; drawThumb(cv, k); }
@@ -297,7 +309,13 @@
     box.querySelectorAll('[data-range]').forEach(r => { r.onclick = () => { state.onionRange = Number(r.dataset.range); store.set('onion-range', state.onionRange); renderStage(); document.querySelector(`[data-range="${state.onionRange}"]`)?.focus(); }; });
     box.querySelector('#fb-alpha').oninput = e => { state.onionAlpha = Number(e.target.value); store.set('onion-alpha', state.onionAlpha); S.redraw?.(); };
     box.querySelector('#fb-timeline').onclick = () => A.backToTimeline();
+    const more = /** @type {HTMLDetailsElement} */ (box.querySelector('#fb-more'));
+    more.ontoggle = () => { fb.open = more.open; };
+    more.onkeydown = e => { if (e.key === 'Escape' && more.open) { e.stopPropagation(); more.open = false; more.querySelector('summary').focus(); } };
+    const here = /** @type {HTMLElement | null} */ (strip.querySelector('[aria-current=true]'));
+    if (here) strip.scrollLeft = here.parentElement.offsetLeft - (strip.clientWidth - here.offsetWidth) / 2;  // the painted frame stays in view without scrolling the page
     if (fb.playing && !fb.raf) fb.raf = requestAnimationFrame(tick); else if (!fb.playing) showFrame(index);
+    return true;
   };
 
   /* ---------- keys ---------- */

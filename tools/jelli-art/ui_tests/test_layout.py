@@ -12,10 +12,10 @@ import json
 import pytest
 
 from conftest import DATA, NOTES, VIEWS, settle
-from touch import pen_stroke
+from touch import fit_box, pen_stroke
 
 PAINT = "paint-creature"
-SIZES = {"1440x900": (1440, 900, False), "1280x800": (1280, 800, False), "ipad-landscape": (1180, 820, True),
+SIZES = {"1920x1080": (1920, 1080, False), "1440x900": (1440, 900, False), "1280x800": (1280, 800, False), "ipad-landscape": (1180, 820, True),
          "ipad-portrait": (820, 1180, True)}
 MODES = ["review", "paint", "creature", "behaviour", "game", "activities"]
 
@@ -149,9 +149,6 @@ def test_the_canvas_never_moves_while_you_work(page_at, size):
                                                            body=json.dumps({"sha": "mock-sha", "version": version, "commit": None})))
     page.evaluate("() => Studio.renderGit({enabled: true, branch: 'main', push: true, unpushed: 0, last_push: {ok: true}})")
     page.wait_for_timeout(100)
-    # The first fit is taken from the stage's top while the page is still settling (touch chrome joins the header after it), so it can be a
-    # step off the settled one on a touch screen. Measuring fit against a CSS box after layout is the Paint workspace chunk (M2-B).
-    page.evaluate("() => renderStage()")
     seen = [("start", canvas(page))]
 
     def step(name, act):
@@ -179,6 +176,104 @@ def test_the_canvas_never_moves_while_you_work(page_at, size):
         if after["z"] != before["z"]:
             moves.append(f"{name}: zoom {before['z']} -> {after['z']}")
     assert not moves, "\n".join(moves) + f"\n{seen}"
+
+
+# ---------- the Paint workspace (UX M2-B): the canvas box is CSS-sized and the fit zoom is measured from it ----------
+
+def expected_fit(box):
+    return max(1, min(32, int(min(box["w"] / box["sprite"][0], box["h"] / box["sprite"][1]))))
+
+
+# size: (box share of the viewport, fit zoom for the 48x48 sprite, workspace tier)
+PAINT_TARGETS = {"1920x1080": (0.38, 14, True), "1440x900": (0.27, 9, True), "1280x800": (0.23, 7, True),
+                 "ipad-landscape": (0.24, 7, True), "ipad-portrait": (0.35, 10, False)}
+
+
+@pytest.mark.parametrize("size", list(PAINT_TARGETS))
+def test_paint_box_and_default_fit_zoom(page_at, size):
+    """At the zoom the page chose (no setZoom): the box meets the spec's share, the zoom fills it, the flip-book and the palette are in view,
+    and in the workspace tier #main does not scroll (D5)."""
+    share, fit, workspace = PAINT_TARGETS[size]
+    page = page_at(size)
+    box = fit_box(page)
+    NOTES.append(f"paint {size}: box {box['w']:.0f}x{box['h']:.0f} = {box['share'] * 100:.1f}% of the viewport (target {share * 100:.0f}%), "
+                 f"fit {box['zoom']:g}x (target {fit}x), dock top {box['dock']['top']:.0f}/bottom {box['dock']['bottom']:.0f} of {box['vh']}")
+    assert box["userZoom"] is None
+    assert box["share"] >= share, box
+    assert box["zoom"] == expected_fit(box) >= fit, box
+    assert not box["overflows"], "fit fills the box with no scrollbars"
+    assert box["canvas"]["right"] <= box["scroller"]["right"] and box["canvas"]["bottom"] <= box["scroller"]["bottom"]
+    assert box["dock"]["top"] >= box["scroller"]["bottom"], "the flip-book docks under the canvas (D1)"
+    assert box["dock"]["height"] <= (160 if SIZES[size][2] else 140), box["dock"]
+    if workspace:
+        assert box["dock"]["bottom"] <= box["vh"], "the flip-book is fully in view without scrolling"
+        assert box["mainScroll"] == 0 and box["mainOverflow"] <= 1, "#main does not scroll in the workspace (D5)"
+        assert box["lastRamp"]["bottom"] <= box["side"]["bottom"], "the whole palette is in view"
+    else:
+        assert box["dock"]["top"] < box["vh"]
+
+
+def wait_fit(page):
+    page.wait_for_timeout(200)
+    page.evaluate("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+
+
+def test_paint_refits_on_resize_and_keeps_a_chosen_zoom(page_at):
+    page = page_at("1440x900")
+    seen = []
+    for width, height in [(1440, 900), (1280, 800), (1440, 900)]:
+        page.set_viewport_size({"width": width, "height": height})
+        wait_fit(page)
+        box = fit_box(page)
+        assert box["zoom"] == expected_fit(box) and not box["overflows"], box
+        seen.append(box["zoom"])
+    assert seen[0] > seen[1] and seen[0] == seen[2], seen
+    page.locator("#zoom-in").click()
+    chosen = fit_box(page)["zoom"]
+    page.set_viewport_size({"width": 1280, "height": 800})
+    wait_fit(page)
+    assert fit_box(page)["zoom"] == chosen, "a resize keeps the zoom the artist chose"
+
+
+def test_paint_refits_on_rotation(page_at):
+    page = page_at("ipad-landscape")
+    landscape = fit_box(page)
+    page.set_viewport_size({"width": 820, "height": 1180})
+    wait_fit(page)
+    portrait = fit_box(page)
+    assert portrait["zoom"] == expected_fit(portrait) and portrait["zoom"] != landscape["zoom"], (landscape, portrait)
+    page.set_viewport_size({"width": 1180, "height": 820})
+    wait_fit(page)
+    assert fit_box(page)["zoom"] == landscape["zoom"]
+
+
+def test_the_refit_waits_for_the_stroke_to_finish(page_at):
+    page = page_at("1440x900")
+    c = fit_box(page)["canvas"]
+    page.mouse.move(c["left"] + c["width"] * 0.3, c["top"] + c["height"] * 0.3)
+    page.mouse.down()
+    page.mouse.move(c["left"] + c["width"] * 0.5, c["top"] + c["height"] * 0.3, steps=4)
+    before = fit_box(page)["zoom"]
+    page.set_viewport_size({"width": 1280, "height": 800})
+    wait_fit(page)
+    assert fit_box(page)["zoom"] == before, "the canvas does not change size under the pointer"
+    page.mouse.up()
+    wait_fit(page)
+    box = fit_box(page)
+    assert box["zoom"] == expected_fit(box) and box["zoom"] != before
+
+
+def test_the_dock_options_float_over_the_canvas(page_at):
+    page = page_at("1440x900")
+    before = fit_box(page)
+    page.locator("#fb-more summary").click()
+    assert page.locator("#fb-onion").is_visible()
+    after = fit_box(page)
+    assert after["scroller"] == before["scroller"] and after["zoom"] == before["zoom"], "opening Onion & guides never moves the canvas"
+    panel = page.locator(".fb-panel").bounding_box()
+    assert panel["y"] + panel["height"] <= before["dock"]["top"] + 1, "the panel floats above the dock"
+    page.keyboard.press("Escape")
+    assert not page.locator("#fb-onion").is_visible()
 
 
 # ---------- Getting started ----------
@@ -209,6 +304,9 @@ def test_the_guide_is_capped_keeps_hide_in_view_and_stays_hidden(browser, studio
         hide = page.get_by_role("button", name="Hide this guide")
         hb = hide.bounding_box()
         assert 0 <= hb["y"] and hb["y"] + hb["height"] <= vh, hb
+        # With the guide open the canvas still gets a usable box, fully in view (the card is capped smaller in the Paint workspace).
+        scroller = page.locator("#stage .paint-canvas .scroller").bounding_box()
+        assert scroller["height"] >= 200 and scroller["y"] >= 0 and scroller["y"] + scroller["height"] <= vh, scroller
         assert hb["y"] + hb["height"] <= box["y"] + box["height"], "Hide is part of the heading row, not scrolled away inside the card"
         hide.click()
         assert not guide.is_visible()
