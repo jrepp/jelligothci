@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.11.0](https://github.com/jrepp/jelligothci/compare/v0.10.0...v0.11.0) (2026-10-11)
+
+
+### Features
+
+* **jelli-art:** Paint with touch and Apple Pencil (RFC-007 T1) ([#56](https://github.com/jrepp/jelligothci/issues/56)) ([94e058f](https://github.com/jrepp/jelligothci/commit/94e058f0d7a913a5ead602a1154a52f3d596437f))
+* **jelli-art:** touch layout and controls for the game design views ([#57](https://github.com/jrepp/jelligothci/issues/57)) ([cbf30c2](https://github.com/jrepp/jelligothci/commit/cbf30c2878b6215111c96fd48ef00f75528678d1))
+* **jelli-art:** touch timeline and flip-book (RFC-007 T2) ([#58](https://github.com/jrepp/jelligothci/issues/58)) ([a3424c7](https://github.com/jrepp/jelligothci/commit/a3424c7e08a0fccbfe09b418eec29036d9340f79))
+
 ## [0.10.0](https://github.com/jrepp/jelligothci/compare/v0.9.0...v0.10.0) (2026-10-11)
 
 
