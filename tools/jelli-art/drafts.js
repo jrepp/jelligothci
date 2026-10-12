@@ -24,6 +24,9 @@
  * 'behaviour' (key = 'content', base = behavior_data_sha and creature_data_sha joined with ':',
  * data = {behaviors, looks}: the Behaviour view's states, repertoires, rules and looks);
  * 'activities' (key = 'activities', base = activity_sha, data = the activities document).
+ * Several tabs: each draft records its owner tab and a heartbeat; restore() returns null and drop() keeps the draft
+ * while another tab owns it with a heartbeat under 5 s old (pagehide releases it at once). track() rewrites a draft
+ * that another tab removed from under it.
  * Restoring a stale draft is fine: send the draft's base with the save, and the
  * server answers 409 so the page can ask before overwriting the newer file.
  * Drafts expire after 14 days; when storage is full the oldest are evicted.
@@ -32,7 +35,13 @@
 'use strict';
 (() => {
   const PREFIX = 'jelli-art:draft:', MAX_AGE_MS = 14 * 864e5, MAX_DRAFTS = 64, PAUSE_MS = 400;
-  const timers = {};
+  const timers = {}, passes = new Set();
+  /* Ownership (several tabs): a draft records the tab that wrote it (owner) and a heartbeat (beat). A tab does not
+   * restore or drop a draft whose owner is another tab with a fresh heartbeat; pagehide zeroes the beat, so a reload
+   * or a closed tab hands its draft over at once, and a crashed or evicted tab hands it over after ALIVE_MS. */
+  const TAB = Math.random().toString(36).slice(2) + Date.now().toString(36), ALIVE_MS = 5000, BEAT_MS = 1500;
+  const owned = new Set();
+  const foreignLive = v => !!v && !!v.owner && v.owner !== TAB && Date.now() - (v.beat || 0) < ALIVE_MS;
   const id = (kind, key) => `${PREFIX}${kind}:${key}`;
   const cancel = name => { if (timers[name]) { clearTimeout(timers[name].timer); delete timers[name]; } };
   const storage = () => { try { return window.localStorage; } catch { return null; } };
@@ -52,18 +61,22 @@
   const Drafts = window.JelliDrafts = {
     put(kind, key, base, data) {
       const s = storage(); if (!s) return false;
-      const text = JSON.stringify({kind, key, base: base ?? null, data, at: Date.now()});
+      const text = JSON.stringify({kind, key, base: base ?? null, data, at: Date.now(), owner: TAB, beat: Date.now()});
       for (const keep of [MAX_DRAFTS, Math.floor(MAX_DRAFTS / 4), 0]) {
-        try { s.setItem(id(kind, key), text); return true; } catch { prune(keep); }  // quota: evict oldest, retry
+        try { s.setItem(id(kind, key), text); owned.add(id(kind, key)); return true; } catch { prune(keep); }  // quota: evict oldest, retry
       }
       return false;
     },
     get: (kind, key) => read(id(kind, key)),
     restore(kind, key, base) {
-      const d = read(id(kind, key)); if (!d) return null;
+      const d = read(id(kind, key)); if (!d || foreignLive(d)) return null;  // another open tab is still editing it
       return {data: d.data, base: d.base, at: d.at, stale: (base ?? null) !== d.base};
     },
-    drop(kind, key) { cancel(id(kind, key)); try { storage()?.removeItem(id(kind, key)); } catch { /* ignore */ } },
+    drop(kind, key) {
+      cancel(id(kind, key)); owned.delete(id(kind, key));
+      if (foreignLive(read(id(kind, key)))) return;  // not ours to discard while its tab is alive
+      try { storage()?.removeItem(id(kind, key)); } catch { /* ignore */ }
+    },
     list: kind => all().map(([, v]) => v).filter(v => !kind || v.kind === kind).map(({kind: k, key, base, at}) => ({kind: k, key, base, at})),
     later(kind, key, base, fn) {
       const name = id(kind, key), run = () => { cancel(name); Drafts.put(kind, key, base, fn()); };
@@ -76,20 +89,36 @@
     /* Called by an editor once its drafts are restored at boot (not before, or the first pass would drop the very
      * draft that is waiting to be restored). It returns a function that runs one pass now. */
     track(kind, key, {dirty, base, data}) {
-      let last;  // undefined: nothing seen yet, null: clean, else the last text written
+      let last;  // undefined: nothing seen yet, null: clean, else the last text written successfully
       const pass = () => {
         let on = false; try { on = !!dirty(); } catch { /* an editor mid-render */ }
-        if (!on) { if (last !== null) { last = null; Drafts.drop(kind, key); } return; }
+        if (!on) {  // clean: a draft is dropped when the editor goes from dirty to clean, never for an editor that booted clean
+          if (last !== null && last !== undefined) Drafts.drop(kind, key);
+          last = null; return;
+        }
         let text; try { text = JSON.stringify([base(), data()]); } catch { return; }
-        if (text !== last) { last = text; Drafts.put(kind, key, base(), data()); }
+        /* Rewrite on a change, and also when another tab removed our draft (its Discard, a prune) though nothing changed. */
+        const gone = text === last && !!storage() && !read(id(kind, key));
+        if (text !== last || gone) { if (Drafts.put(kind, key, base(), data())) last = text; }  // a failed write is retried next pass
       };
+      passes.add(pass);
       setInterval(pass, 700);
-      document.addEventListener('visibilitychange', () => { if (document.hidden) pass(); });  // Safari evicts a hidden tab without a beforeunload
-      window.addEventListener('pagehide', pass);
       return pass;
     },
     prune,
   };
   prune();
-  window.addEventListener('pagehide', () => Drafts.flush());
+  function beat(release) {
+    for (const name of owned) {
+      const v = read(name); if (!v || v.owner !== TAB) continue;
+      try { storage().setItem(name, JSON.stringify({...v, beat: release ? 0 : Date.now()})); } catch { /* ignore */ }
+    }
+  }
+  setInterval(() => beat(false), BEAT_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) passes.forEach(p => p());  // Safari evicts a hidden tab without a beforeunload
+    else beat(false);
+  });
+  window.addEventListener('pageshow', () => beat(false));
+  window.addEventListener('pagehide', () => { Drafts.flush(); passes.forEach(p => p()); beat(true); });  // release last, so a reload restores at once
 })();

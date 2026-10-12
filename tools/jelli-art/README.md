@@ -286,11 +286,14 @@ mirrors `roll()`, `reaction_fits()`, `react()` and `deliver()` in
 `core/behavior.c`. It also mirrors the placement in `core/pet_behavior_draw.c`.
 Night is an input there; the game derives it from the pet clock.
 
-**Save behaviour** sends both files with the hashes the page loaded. The server
+**Save behaviour** sends `behaviors.json` (when it has edits) and `creatures.json`
+(when the looks have edits, with the Behaviour & size section as last saved), with
+the hashes the page loaded. The Creature tab's **Save behaviour & size** sends
+only `creatures.json` with the looks as last saved. The server
 runs `cmake/JelliBehaviors.cmake` with `cmake -P` on a scratch copy holding the
 candidate and the checkout's `activities.json` and `pets.json`. `creature_data.py`
 `load()` and `load_looks()` then check the looks against the candidate states.
-Both files are written in one commit. The container image installs `cmake`.
+Changed files are written in one commit. The container image installs `cmake`.
 
 ```sh
 ./scripts/uv run --python 3.12 tools/jelli-art/test_creatures.py
@@ -429,7 +432,18 @@ started from; the save sends it as `bases`, so `/api/clips` answers `409` and th
 page asks before overwriting the newer clip. Each Revert and **Reload saved** asks first when there are edits and drops
 its own draft. Behaviour & size and the Behaviour view share `creatures.json`:
 the first owns `profiles` and `behaviors`, the second `state_presentation`, and
-each Revert discards only its own section. Other code can call `put`, `restore`,
+each Revert and Save covers only its own section (the save sends the other
+section as last read from disk, and the other view keeps its unsaved edits). A
+restored draft whose file changed since can be saved: the save sends the old
+base, the server answers `409`, and `Studio.saveGuarded` asks before overwriting
+with the bases the server reports.
+
+Several tabs: a draft records its owner tab and a heartbeat (refreshed every
+1.5 s, zeroed on `pagehide`). `restore` returns nothing, and `drop` keeps the
+draft, while another tab owns it with a heartbeat under 5 s old; `track` rewrites
+its draft if another tab removed it, and retries a write that failed. A hidden
+tab whose timers the browser throttles for minutes may look dead to another tab.
+Other code can call `put`, `restore`,
 `drop`, `list`, `later`, `flush` and `track`; the header comment of `drafts.js`
 documents each call and its keys.
 
