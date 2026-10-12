@@ -68,7 +68,15 @@
     if (w.removed) return !!saved;
     return !saved || !sameClip(w, saved);
   };
-  const dirtyKeys = () => Object.keys(working).filter(clipDirty);
+  /* clipBase[key]: the clip_shas entry (null: no such clip) the unsaved edit started from, kept when the file changes on
+   * disk meanwhile, so a save sends it as the clip's base and the server answers 409 for a clip that moved (creature.js
+   * restores it from a draft too). Noted the first time dirtyKeys sees the edit, which every edit triggers at once. */
+  const clipBase = {};
+  const dirtyKeys = () => {
+    for (const k of Object.keys(clipBase)) if (!(k in working)) delete clipBase[k];
+    for (const k of Object.keys(working)) if (!(k in clipBase)) clipBase[k] = D.clip_shas?.[k] ?? null;
+    return Object.keys(working).filter(clipDirty);
+  };
   S.clipsDirty = () => dirtyKeys().length > 0;
   S.clipEdits = () => dirtyKeys().length;  // shell.js: the "Creature clips" unsaved item
   const selectedKey = () => `${state.cForm}.${state.cPose}`;
@@ -366,7 +374,13 @@
     if (blocked.length) return S.status(`Fix ${blocked.join(', ')} before saving`, 'bad', true);
     try {
       const clips = keys.map(k => working[k].removed ? {key: k, remove: true} : {key: k, ...copy(working[k])});
-      const res = await S.api('POST', '/api/clips', {clips, artist: state.artist});
+      const send = bases => S.api('POST', '/api/clips', {clips, bases, artist: state.artist});
+      const res = await send(Object.fromEntries(keys.map(k => [k, clipBase[k] ?? null]))).catch(async err => {
+        if (err.status !== 409) throw err;  // a clip changed on disk since the edit started: overwrite only if asked
+        if (!await S.ask(`${err.message}\n\nSave your version anyway and replace the one on disk?`, {title: 'Clip changed on disk', confirmLabel: 'Overwrite', danger: true})) return null;
+        return send(err.body?.current);
+      });
+      if (!res) return;  // Cancel keeps the edits and the newer file
       const added = keys.some(k => !clipOf(k)), removed = keys.some(k => working[k].removed);
       for (const k of keys) { if (clipOf(k) && !working[k].removed) Object.assign(clipOf(k), copy(working[k])); delete working[k]; }
       D.clip_shas = {...D.clip_shas, ...res.clip_shas};  // drafts compare against these
@@ -392,12 +406,14 @@
     const shas = d.data?.shas || {}, back = [], changed = [];
     for (const [key, c] of Object.entries(d.data?.clips || {})) {
       if (!isClip(c)) continue;
-      if ((D.clip_shas?.[key] ?? null) !== (shas[key] ?? null)) { changed.push(key); continue; }  // /api/clips has no 409: never overwrite a newer clip
       working[key] = c.removed ? {removed: true} : copy(c);
-      if (clipDirty(key)) back.push(key); else delete working[key];
+      clipBase[key] = shas[key] ?? null;  // a clip that changed since answers 409 on save, which asks before overwriting
+      if (!clipDirty(key)) { delete working[key]; delete clipBase[key]; continue; }
+      back.push(key);
+      if ((D.clip_shas?.[key] ?? null) !== clipBase[key]) changed.push(key);
     }
     if (!back.length) Drafts.drop('clips', 'clips');
-    const text = `${back.length ? `Restored unsaved clip edits from your last visit: ${back.join(', ')}.` : ''}${changed.length ? ` Dropped ${changed.join(', ')}: the clip changed on disk since.` : ''}`.trim();
+    const text = `${back.length ? `Restored unsaved clip edits from your last visit: ${back.join(', ')}.` : ''}${changed.length ? ` ${changed.join(', ')} changed on disk since; saving asks before it overwrites the newer clip.` : ''}`.trim();
     if (text) window.JelliShell?.notify(text, {tone: 'warn', id: 'drafts-clips', hint: 'Save clips to keep them, or Revert all to discard them.'});
   }
   const baseBoot = S.boot;
@@ -405,7 +421,7 @@
     await baseBoot();
     restoreClipDrafts();
     window.JelliDrafts?.track('clips', 'clips', {dirty: () => dirtyKeys().length > 0, base: () => null,
-      data: () => ({clips: Object.fromEntries(dirtyKeys().map(k => [k, working[k]])), shas: Object.fromEntries(dirtyKeys().map(k => [k, D.clip_shas?.[k] ?? null]))})});
+      data: () => ({clips: Object.fromEntries(dirtyKeys().map(k => [k, working[k]])), shas: Object.fromEntries(dirtyKeys().map(k => [k, clipBase[k] ?? null]))})});
   };
 
   /* ---------- hooks into the review page ---------- */

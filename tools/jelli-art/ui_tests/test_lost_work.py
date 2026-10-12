@@ -75,6 +75,18 @@ def test_every_ordered_pair_of_views_shows_exactly_one_root(studio_page):
     assert not problems, "\n".join(problems)
 
 
+@pytest.mark.parametrize("hash_, root", [("view=game", "game"), ("view=activities", "activities"), ("view=creature", "creature"),
+                                         ("view=behaviour", "behaviour"), ("view=sheet", "sheet"), ("paint", "detail"), ("review", "detail")])
+def test_a_deep_link_lands_on_exactly_one_view(studio_page, studio, hash_, root):
+    page = studio_page["page"]
+    page.goto(f"{studio}/#{hash_}")
+    page.reload()
+    page.wait_for_function("() => typeof D !== 'undefined' && D && D.assets && D.assets.length > 0")
+    page.wait_for_timeout(300)
+    shown = page.evaluate("roots => roots.filter(id => getComputedStyle(document.getElementById(id)).display !== 'none')", ROOTS)
+    assert shown == [root], shown
+
+
 def test_tab_order_never_reaches_a_hidden_view(studio_page):
     page = studio_page["page"]
     go(page, "game")
@@ -118,16 +130,57 @@ def test_creature_clip_edit_comes_back_after_a_reload(studio_page):
     page.wait_for_function("() => document.getElementById('shell-unsaved').textContent.includes('Creature clips')")
 
 
-def test_clip_draft_for_a_clip_that_changed_on_disk_is_dropped(studio_page):
-    page = studio_page["page"]
+def edit_clip(page):
     go(page, "creature")
     page.evaluate("() => { state.cForm = 'axolotl'; state.cPose = 'idle'; Studio.cr.rerender(); Studio.cr.change(w => { w.durations_ms[0] = 321; }); }")
+
+
+def test_clip_save_sends_the_clip_base(studio_page):
+    page = studio_page["page"]
+    sent = []
+
+    def route(r):  # answered here, so the session-wide fixture keeps its clips
+        sent.append(r.request.post_data_json)
+        r.fulfill(content_type="application/json", body=json.dumps(
+            {"ok": True, "changed": ["axolotl.idle"], "version": "v2", "clip_shas": {"axolotl.idle": "new"}}))
+
+    page.route("**/api/clips", route)
+    edit_clip(page)
+    page.locator("#cr-save").click()
+    page.wait_for_function("() => document.getElementById('cr-save')?.textContent === 'Saved'")
+    assert sent[0]["bases"].keys() == {"axolotl.idle"}
+    assert sent[0]["bases"]["axolotl.idle"]  # the sha the page loaded, not missing: the server can answer 409
+
+
+def test_clip_edit_over_a_clip_that_moved_on_disk_asks_and_cancel_keeps_both(studio_page):
+    page = studio_page["page"]
+    edit_clip(page)
+    # Another editor moved the clip: the page still holds the sha the edit started from.
+    page.route("**/api/clips", lambda r: r.fulfill(status=409, content_type="application/json", body=json.dumps(
+        {"error": "Clip axolotl.idle changed since you loaded it; reload to see the new version", "stale": True, "current": {"axolotl.idle": "newer"}})))
+    page.locator("#cr-save").click()
+    dialog(page).wait_for()
+    dialog(page).get_by_role("button", name="Cancel").click()
+    assert page.evaluate("() => Studio.cr.current('axolotl.idle').durations_ms[0]") == 321  # edits kept
+    page.wait_for_function("() => document.getElementById('shell-unsaved').textContent.includes('Creature clips')")
+
+
+def test_clip_draft_for_a_clip_that_changed_on_disk_is_restored_with_its_old_base(studio_page):
+    page = studio_page["page"]
+    edit_clip(page)
     wait_draft(page, "clips")
     page.evaluate("""() => { const k = 'jelli-art:draft:clips:clips', d = JSON.parse(localStorage.getItem(k));
         d.data.shas['axolotl.idle'] = 'old'; localStorage.setItem(k, JSON.stringify(d)); }""")
     page = studio_page["reopen"]()
     toast(page, "changed on disk since").wait_for()
-    assert page.evaluate("() => Studio.cr.current('axolotl.idle').durations_ms[0]") != 321
+    assert page.evaluate("() => Studio.cr.current('axolotl.idle').durations_ms[0]") == 321  # not lost
+    go(page, "creature")
+    seen = []
+    page.route("**/api/clips", lambda r: (seen.append(r.request.post_data_json), r.continue_()))
+    page.locator("#cr-save").click()
+    dialog(page).wait_for()  # the real server answered 409: the base was the old sha
+    assert seen[0]["bases"] == {"axolotl.idle": "old"}
+    dialog(page).get_by_role("button", name="Cancel").click()
 
 
 def size_edit(page):

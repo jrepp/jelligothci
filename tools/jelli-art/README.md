@@ -424,8 +424,9 @@ drafts the same way through `track(kind, key, {dirty, base, data})`, which write
 the editor's state while it is dirty (checked every 700 ms and when the page is
 hidden or closed, since iOS Safari fires no `beforeunload`) and drops it once the
 editor is clean. They restore after boot with a warning notice. A clip whose
-entry changed on disk since is dropped instead, because `/api/clips` has no
-`409`. Each Revert and **Reload saved** asks first when there are edits and drops
+entry changed on disk since is restored with the `clip_shas` hash its edit
+started from; the save sends it as `bases`, so `/api/clips` answers `409` and the
+page asks before overwriting the newer clip. Each Revert and **Reload saved** asks first when there are edits and drops
 its own draft. Behaviour & size and the Behaviour view share `creatures.json`:
 the first owns `profiles` and `behaviors`, the second `state_presentation`, and
 each Revert discards only its own section. Other code can call `put`, `restore`,
