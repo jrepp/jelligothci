@@ -23,8 +23,32 @@ setup and add design tokens, CSS cascade layers, light-DOM custom elements, a
 small in-house controls kit and browser tests. The work lands as small PRs that
 each ship.
 
-This is a draft proposal. Nothing in it is approved until the owner approves
-it.
+This is a draft proposal. Only the decisions recorded under
+[Decisions](#decisions) are approved; the rest needs the owner's approval.
+
+# Decisions
+
+**2026-10-12: goals 1–3 are the studio's design point of view.** The owner
+approved [Goals](#goals) 1 (task-first layouts), 2 (zen without lost access)
+and 3 (responsive layout) as the standard every view is built and reviewed
+against. The approval followed the adversarial desktop, phone and iPad reviews
+of studio 0.9.0 recorded in
+[memo-066](../memos/memo-066-jelli-art-touch-and-pencil-delivery.md). Each view
+has one primary surface, which gets most of the screen:
+
+| View | Primary surface |
+| --- | --- |
+| Paint | The canvas, with the flip-book beside it as live context |
+| Creature | The preview and the timeline, visible together |
+| Behaviour, Activities | The form, with its preview beside it, never covering it |
+| Test in game | The rendered result |
+| Review | The before and after images |
+
+Desktop layouts may change where that serves these goals. This supersedes
+[RFC-007](rfc-007-jelli-art-touch-and-pen.md)'s rule that desktop pages look
+exactly as before, for layout only. RFC-007's input rules still apply: every
+mouse, keyboard and screen-reader path keeps working. Goals 4 to 6, the
+detailed design, chrome levels and the migration plan below are still Draft.
 
 # Relationship to existing decisions
 

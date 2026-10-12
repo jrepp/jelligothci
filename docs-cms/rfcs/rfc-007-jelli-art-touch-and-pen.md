@@ -34,6 +34,11 @@ implement, unless the owner decides otherwise.
 - **All views are in scope:** Paint, Animation and flip-book, Creature,
   Behaviour, Reactions, Activities, Test in game.
 - **Staged delivery:** implementation lands as staged PRs that run in parallel.
+- **2026-10-12: desktop layout may change.** Layout now follows the design
+  point of view in [RFC-006 Decisions](rfc-006-jelli-art-workspaces-and-ui-foundation.md#decisions),
+  so desktop layout can change where RFC-006 goals 1 to 3 call for it. Goal 4
+  of this RFC still applies to input: every mouse, keyboard and screen-reader
+  path keeps working.
 
 # Approval basis
 
