@@ -147,8 +147,6 @@ tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTML
 tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
 tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
 tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
-tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
-tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
 tools/jelli-art/studio.js: TS2339: Property 'warnFlip' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2345: Argument of type '{ width: number; height: number; }' is not assignable to parameter of type 'StudioAsset'.
 tools/jelli-art/studio.js: TS2538: Type 'Uint8ClampedArray<ArrayBuffer>' cannot be used as an index type.

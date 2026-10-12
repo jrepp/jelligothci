@@ -92,9 +92,14 @@ the repository's pinned tools, and it only listens on your own computer.
    with touch only; **Quick bar** and **Left-handed** under **More tools** show
    it with a mouse or move it to the right.
 7. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
-   shows it straight away. "Compare with" picks what the before image is: your
-   last save, the art in the game now (`main`), a game release, or a recent
-   commit that changed art.
+   shows it straight away. Each save is recorded with **Your name**, which you
+   set under **Settings** in the header; if it is empty, the studio asks once
+   before the first save. In Paint, "Compare with" is in the **before** pane
+   beside the canvas, and picks what the before image is: your last save, the
+   art in the game now (`main`), a game release, or a recent commit that changed
+   art. Review shows it in the header's second row, with the before and after
+   refs and the lint totals; those are Review-only, so every other mode has a
+   single header row that does not change height when you start editing.
 
 Saved sprites are listed in `assets/slice/source/hand-painted.json`. The polish
 recipe never overwrites them. Custom colours work in the live game, but release
@@ -199,8 +204,9 @@ in portrait the view stacks and the preview stays pinned at the top.
 ### Unsaved work and Test in game
 
 Every editor (Paint, Creature clips, Behaviour & size, Behaviour and Activities)
-shows its edits in the **Unsaved** button and on its mode tab, and the page asks
-before you close it. The studio also keeps those edits in this browser. After a
+shows its edits in the **Unsaved** button (a fixed-width pill beside the git
+status, so the page never shifts when it appears) and on its mode tab, and the
+page asks before you close it. The studio also keeps those edits in this browser. After a
 reload, a crash or a browser that dropped the tab, it restores them and says so;
 save to keep them, or use **Revert** (**Reload saved** in Activities) to discard
 them. A restored edit whose file changed on disk since can still be saved: Save

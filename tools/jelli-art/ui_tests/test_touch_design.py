@@ -203,6 +203,9 @@ def test_game_form_and_result_switch_columns(design):
 def test_preview_is_pinned_when_stacked(design, name, pin):
     page, _ = design(name, "ipad-portrait")
     assert rect(page, pin)["top"] < rect(page, "main")["top"] + 400  # on top of the inspector, not below it
+    # The shorter header (UX M2-A) leaves these views too little to scroll at 1180 px tall to reach the point where the preview sticks.
+    page.set_viewport_size({"width": 820, "height": 800})
+    page.wait_for_timeout(100)
     offset, scrolled = pinned(page, pin)
     assert scrolled > 100 and 0 <= offset <= 16, f"{name}: scrolled {scrolled}px and the preview is {offset}px from the top"
 

@@ -31,9 +31,10 @@
   const savePaintPrefs = () => store.set('paint', {filled: state.filled, perfect: state.perfect, wrap: state.wrap, guides: state.guides, tiled: state.tiled, quickbar: state.quickbar, lefty: state.lefty});
   MODES.push('paint');
   document.getElementById('modes').insertAdjacentHTML('beforeend', '<button data-mode="paint" title="Paint (6)">Paint</button>');
-  document.querySelector('header .refs').insertAdjacentHTML('afterend',
-    '<span class="live-badge" id="live-badge">● live</span><label class="lbl" for="before-ref">compare with</label><select id="before-ref"></select>' +
-    '<input id="artist" class="artist" placeholder="Your name (for history)" aria-label="Your name, recorded with saves"><span id="git-status" class="studio-status"></span><span id="studio-status" class="studio-status" role="status"></span>');
+  /* Header row 2 (Review only) holds the before and after refs and the compare-with select; in Paint that select lives in the before pane
+   * (homeCompare puts it back whenever the stage is rebuilt). Row 1 gets the save-state cluster; the shell (shell.js) adds the Unsaved pill to it. */
+  document.querySelector('header .refs').insertAdjacentHTML('afterend', '<span class="before-wrap" id="before-wrap"><label class="lbl" for="before-ref">compare with</label><select id="before-ref"></select></span>');
+  document.querySelector('header h1').insertAdjacentHTML('afterend', '<div class="shell-state" id="shell-state"><span class="live-badge" id="live-badge">● live</span><span id="git-status" class="studio-status"></span><span id="studio-status" class="studio-status" role="status"></span></div>');
   document.head.insertAdjacentHTML('beforeend', `<style>
     .live-badge{font:600 11px ui-monospace,monospace;color:var(--accent)}
     select{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:4px 6px;max-width:220px}
@@ -57,7 +58,7 @@
     .paint-chip.faint .sw{outline:2px dashed var(--ink);outline-offset:2px}
     .eraser-sw{background:repeating-conic-gradient(#555 0 25%,#2b2b31 0 50%) 0 0/10px 10px}
     .studio-note{font-size:12px;color:var(--muted);max-width:760px;margin:6px 0}
-    .artist{width:170px;padding:4px 8px}
+    .artist{width:100%;padding:4px 8px}
     .paint-tools{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:end}
     .paint-readout{font:12px ui-monospace,monospace;color:var(--ink);text-transform:none;letter-spacing:0}
     .paint-hist{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto;position:relative;min-width:150px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
@@ -90,7 +91,26 @@
   </style>`);
 
   /* ---------- server calls ---------- */
+  /* Every save records a name (D2, 2026-10-12): it lives in Settings, and an empty one is asked for once, before the first save of this visit. */
+  let askedName = false;
+  async function ensureArtist() {
+    if (String(state.artist || '').trim() || askedName || !window.JelliShell?.dialog) return;
+    askedName = true;
+    const body = document.createElement('div'); let typed = '';
+    body.innerHTML = '<p>Each save is recorded with a name in the history. You can change it later under Settings in the header.</p><label class="lbl" for="ask-artist">Your name</label><input id="ask-artist" type="text" autocomplete="name" maxlength="80" style="width:100%">';
+    const choice = await window.JelliShell.dialog({title: 'Who is saving?', body, initial: '#ask-artist', actions: [{label: 'Skip', value: 'skip'}, {label: 'Save with this name', value: 'ok', primary: true}],
+      onOpen: el => {
+        const field = /** @type {HTMLInputElement} */ (el.querySelector('#ask-artist'));
+        field.addEventListener('input', () => { typed = field.value; });
+        field.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter') { e.preventDefault(); el.close('ok'); } });
+      }});
+    const name = choice === 'ok' ? typed.trim() : '';
+    if (!name) return;
+    state.artist = name; store.set('artist', name);
+    const field = /** @type {HTMLInputElement | null} */ (document.getElementById('artist')); if (field) field.value = name;
+  }
   async function api(method, url, body) {
+    if (method !== 'GET' && body && 'artist' in body && !String(body.artist || '').trim()) { await ensureArtist(); body.artist = state.artist; }
     const res = await fetch(url, {method, headers: body ? {'Content-Type': 'application/json'} : {}, body: body ? JSON.stringify(body) : undefined});
     const data = await res.json().catch(() => ({error: res.statusText}));
     if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), {status: res.status, body: data});
@@ -150,7 +170,10 @@
       .map(([label, opts]) => label ? `<optgroup label="${esc(label)}">${html(opts)}</optgroup>` : html(opts)).join('');
     select.value = state.before;
     select.onchange = async () => { state.before = select.value; store.set('before', state.before); await reload(); rerender(); };
-    const artist = document.getElementById('artist'); artist.value = state.artist;
+    const field = document.createElement('div');
+    field.innerHTML = '<label class="lbl" for="artist">Your name</label><input id="artist" class="artist" type="text" autocomplete="name" maxlength="80" aria-describedby="artist-hint"><p id="artist-hint">Recorded in the history with every save.</p>';
+    window.JelliShell?.addSetting(field);
+    const artist = /** @type {HTMLInputElement} */ (field.querySelector('#artist')); artist.value = state.artist;
     artist.oninput = () => { state.artist = artist.value; store.set('artist', state.artist); };
     document.getElementById('live-badge').textContent = `● Jelli Art ${D.studio_version || ''}`;
     renderGit(D.git);
@@ -173,11 +196,12 @@
   function renderGit(git) {
     const el = document.getElementById('git-status'); if (!git?.enabled) { el.textContent = ''; return; }
     const push = git.last_push || {}, pending = git.unpushed ? `${git.unpushed} to push` : 'synced';
-    el.textContent = `⎇ ${git.branch} · ${push.ok === false ? 'push failing, will retry' : git.push ? pending : 'commits only'}`;
+    /* The slot is a fixed width with an ellipsis, so a problem comes first: it must never be the part that is cut off. */
+    el.textContent = push.ok === false ? `⚠ push failing, will retry · ⎇ ${git.branch}` : `⎇ ${git.branch} · ${git.push ? pending : 'commits only'}`;
     el.className = 'studio-status' + (push.ok === false ? ' bad' : '');
     el.title = push.error || `Every save is committed to ${git.branch}${git.push ? ' and pushed to GitHub for review' : ''}.`;
     if (git.pending_commits) {  // commits that failed are queued server-side and retried (git_sync.py)
-      el.textContent += ` · ${git.pending_commits} commit(s) queued`; el.className = 'studio-status bad'; el.title = git.last_commit_error;
+      el.textContent = `⚠ ${git.pending_commits} commit(s) queued · ${el.textContent}`; el.className = 'studio-status bad'; el.title = git.last_commit_error;
       if (queued !== git.pending_commits) window.JelliShell?.notify(`${git.pending_commits} commit(s) are queued and will be retried: ${git.last_commit_error}`,
         {tone: 'warn', id: 'git-queue', sticky: true, hint: 'Your saves are on disk; the studio retries the commit (POST /api/git/retry retries now).'});
     } else if (queued) window.JelliShell?.dismiss?.('git-queue');
@@ -608,8 +632,10 @@
     else return;
     e.preventDefault(); e.stopPropagation();
   }
+  function homeCompare() { const wrap = document.getElementById('before-wrap'), refs = document.querySelector('#header-review .refs'); if (wrap && refs && wrap.parentElement !== refs.parentElement) refs.after(wrap); }
+  Object.assign(S, {homeCompare});
   S.renderStage = (a, z) => {
-    const stage = document.getElementById('stage'), old = view; closeMenu();
+    const stage = document.getElementById('stage'), old = view; closeMenu(); homeCompare();
     const hadFocus = old && document.activeElement === old.c, scroll = old && old.a.key === a.key ? [old.scroller.scrollLeft, old.scroller.scrollTop] : null;
     stage.textContent = '';
     document.getElementById('zoom-label').textContent = `· ${z}×`;
@@ -640,6 +666,7 @@
     if (ref) {
       const rz = Math.max(1, Math.min(4, Math.floor(96 / Math.max(a.width, a.height)))), box = document.createElement('div'); box.className = 'pane';
       box.innerHTML = `<div class="lbl"><span>before</span><span>${D.before_label}</span></div>`;
+      const wrap = document.getElementById('before-wrap'); if (wrap) box.querySelector('.lbl').after(wrap);
       const [rc, rctx] = makeCanvas(a.width * rz, a.height * rz); fillBackdrop(rctx, a.width, a.height, rz, backdropFor(a)); drawPixels(rctx, ref, rz);
       rc.setAttribute('role', 'img'); rc.setAttribute('aria-label', `${a.key} before (${D.before_label})`);
       box.append(rc); refs.append(box);

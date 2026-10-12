@@ -163,6 +163,8 @@
     if (s.mode !== 'paint' && s.mode) lastReviewMode = s.mode;
     const current = list.find(m => m.active()) || list[0];
     if (current.id !== currentMode) leaveMode(current.id);
+    document.documentElement.dataset.mode = current.id;  // mode-specific CSS keys off this, never off the window width
+    if (current.id === 'review') window.Studio?.homeCompare?.();  // the compare-with select lives in Paint's before pane while painting
     for (const m of list) {
       const tab = document.getElementById(`tab-${m.id}`); if (!tab) continue;
       const on = m === current, panel = m.panel();
@@ -214,7 +216,9 @@
   function updateDirty() {
     const items = dirtyItems(), btn = document.getElementById('shell-unsaved'); if (!btn) return;
     btn.classList.toggle('shell-clean', !items.length);  // stays in flow, so the toolbar never reflows
-    btn.textContent = items.length ? `● Unsaved: ${items.map(i => i.label + (i.n > 1 ? ` (${i.n})` : '')).join(', ')}` : '';
+    const text = items.length ? `● Unsaved: ${items.map(i => i.label + (i.n > 1 ? ` (${i.n})` : '')).join(', ')}` : '';
+    btn.textContent = text;  // the pill has a fixed width and ellipsis; the full text stays in the DOM and in title
+    if (text) btn.title = text; else btn.removeAttribute('title');
     const modes = new Set(items.map(i => i.mode));
     document.querySelectorAll('#shell-modes [role=tab]').forEach(t => { t.querySelector('.shell-tab-dirty').hidden = !modes.has(t.dataset.modeId); });
     if (items.length && !wasDirty) announce('You have unsaved changes.');
@@ -259,10 +263,10 @@
     const saving = !live ? '<p>This is a static review page: notes stay in this browser. Use <b>Copy review notes</b> to share them.</p>'
       : git.enabled ? `<p><b>Saving.</b> Each mode has its own Save (Mod+S). The studio checks the file, writes it, and commits it to <code>${esc(git.branch)}</code>${git.push ? ', then pushes it for review' : ''}. Commit and push results appear here and in the header.</p>`
         : '<p><b>Saving.</b> Each mode has its own Save button (⌘S / Ctrl+S). The studio checks the change, then writes it into this checkout. Nothing is committed: check <code>git diff</code> and commit when you are happy.</p>';
-    return `<h2 id="shell-guide-title">Getting started</h2><p>Pick an asset in the list on the left (or press J and K), then choose a mode:</p>
+    return `<div class="shell-guide-head"><h2 id="shell-guide-title">Getting started</h2><button type="button" id="shell-guide-close">Hide this guide</button></div>
+      <div class="shell-guide-body"><p>Pick an asset in the list on the left (or press J and K), then choose a mode:</p>
       <ul>${modes.map(m => `<li><b>${esc(m)}</b>${what[m] ? `: ${what[m]}` : ''}</li>`).join('')}</ul>${saving}
-      <p>Unsaved edits show as <span class="shell-warn">● Unsaved</span> in the header. Press <kbd>?</kbd> for every keyboard shortcut.</p>
-      <button type="button" id="shell-guide-close">Hide this guide</button>`;
+      <p>Unsaved edits show as <span class="shell-warn">● Unsaved</span> in the header. Press <kbd>?</kbd> for every keyboard shortcut.</p></div>`;
   }
   function showGuide(show) {
     const el = document.getElementById('shell-guide'); if (!el) return;
@@ -273,22 +277,28 @@
   }
 
   /* ---------- page furniture ---------- */
-  /* Marker and tab state changes must not move the page: the unsaved button keeps its space, tab dots a fixed width. */
-  const STABLE_CSS = `.shell-unsaved.shell-clean{display:none}
-@media (pointer: coarse){
-  .shell-unsaved{min-width:15em;text-align:center}.shell-unsaved.shell-clean{display:inline-block;visibility:hidden}
-  .shell-tab-dirty,.shell-tab-dirty[hidden]{display:inline-block;width:1.2em;text-align:center}.shell-tab-dirty[hidden]{visibility:hidden}
-  .shell-tools{flex-wrap:nowrap;max-width:100%;overflow-x:auto;scrollbar-width:none}.shell-tools>*{flex:none}
-}`;
+  /* Marker and tab state changes must not move the page, on any pointer: the unsaved pill keeps a fixed width, tab dots a fixed width, and the tools never wrap. */
+  const STABLE_CSS = `.shell-unsaved{box-sizing:border-box;inline-size:14em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.shell-unsaved.shell-clean{display:inline-block;visibility:hidden}
+.shell-tab-dirty,.shell-tab-dirty[hidden]{display:inline-block;width:1.2em;text-align:center}.shell-tab-dirty[hidden]{visibility:hidden}
+.shell-tools{flex-wrap:nowrap;max-width:100%;overflow-x:auto;scrollbar-width:none;padding-block:2px}.shell-tools>*{flex:none}
+@media (pointer: coarse){.shell-unsaved{inline-size:15em}}`;
   function insertChrome() {
     const st = document.createElement('style'); st.id = 'shell-stable-style'; st.textContent = STABLE_CSS; document.head.append(st);
     const header = document.querySelector('header');
     if (D.live) header.querySelector('h1').innerHTML = '<span class="mark" aria-hidden="true"></span><b>Jelli Art</b> <span>studio</span>';
     header.querySelector('h1').insertAdjacentHTML('afterend', '<nav id="shell-modes" class="shell-modes hidden" aria-label="Modes"><div role="tablist" aria-label="Modes"></div></nav>' +
-      '<div class="shell-tools"><button type="button" id="shell-unsaved" class="shell-unsaved shell-clean" aria-haspopup="dialog"></button>' +
+      '<div class="shell-tools"><button type="button" id="shell-settings-button" popovertarget="shell-settings" hidden>Settings</button>' +
       '<button type="button" id="shell-help-button" aria-haspopup="dialog" aria-keyshortcuts="Shift+?">Shortcuts <kbd>?</kbd></button>' +
       '<button type="button" id="shell-guide-button" aria-controls="shell-guide">Guide</button>' +
-      `<label class="lbl" for="shell-theme">Theme</label><select id="shell-theme">${THEMES.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div><div class="shell-break"></div>`);
+      `<label class="lbl" for="shell-theme">Theme</label><select id="shell-theme">${THEMES.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>`);
+    /* Row 1 reads: mark, tabs, save state (panels add the live badge and git status; the Unsaved pill is last), then the tools. */
+    const nav = document.getElementById('shell-modes'), tools = header.querySelector('.shell-tools');
+    const state = document.getElementById('shell-state') || Object.assign(document.createElement('div'), {id: 'shell-state', className: 'shell-state'});
+    state.insertAdjacentHTML('beforeend', '<button type="button" id="shell-unsaved" class="shell-unsaved shell-clean" aria-haspopup="dialog"></button>');
+    nav.after(state); state.after(tools);
+    document.body.insertAdjacentHTML('beforeend', '<div id="shell-settings" popover role="group" aria-labelledby="shell-settings-title"><h2 id="shell-settings-title">Settings</h2><div id="shell-settings-body"></div></div>');
+    wireSettings();
     document.body.insertAdjacentHTML('beforeend', '<div id="shell-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>' +
       '<section id="shell-toasts" class="shell-toasts" aria-label="Notifications"></section>');
     document.getElementById('main').insertAdjacentHTML('afterbegin', '<section id="shell-guide" class="shell-guide" aria-labelledby="shell-guide-title" tabindex="-1" hidden></section>');
@@ -300,6 +310,24 @@
     const theme = document.getElementById('shell-theme'); theme.value = local.get('theme', 'auto'); theme.onchange = () => setTheme(theme.value);
     document.querySelector('.skip-link')?.addEventListener('click', e => { e.preventDefault(); document.getElementById('main').focus(); });
   }
+  /* Settings popover (header tools): per-person settings such as the name recorded with saves. Panels add a field with
+   * JelliShell.addSetting(node); the button stays hidden until there is one (the static review page has none). */
+  function wireSettings() {
+    const pop = document.getElementById('shell-settings'), btn = document.getElementById('shell-settings-button');
+    pop.addEventListener('beforetoggle', e => {
+      if (e.newState !== 'open') return;
+      const r = btn.getBoundingClientRect();
+      pop.style.top = `${Math.round(r.bottom + 6)}px`; pop.style.right = `${Math.max(8, Math.round(innerWidth - r.right))}px`;
+    });
+    pop.addEventListener('toggle', e => { if (e.newState === 'open') /** @type {HTMLElement | null} */ (pop.querySelector('input, select, button'))?.focus(); });
+  }
+  function addSetting(node) {
+    const slot = document.createElement('div'); slot.className = 'shell-setting'; slot.append(node);
+    document.getElementById('shell-settings-body')?.append(slot);
+    document.getElementById('shell-settings-button')?.removeAttribute('hidden');
+    return slot;
+  }
+  function openSettings() { const pop = document.getElementById('shell-settings'); if (pop && !pop.matches(':popover-open')) pop.showPopover(); }
   function watchGit() {
     const el = document.getElementById('git-status'); if (!el) return;
     let failing = false;
@@ -353,7 +381,7 @@
   registerShortcuts('Behaviour', [{keys: ['Mod+S'], description: 'Save behaviour (both files)'}]);
 
   window.JelliShell = {registerShortcuts, notify, dismiss, announce, dialog, confirm: confirmDialog, registerMode, registerDirty,
-    registerViewRoot, showOnly, dirtyItems, activateMode, openHelp, setTheme, sync, showGuide, shortcuts: () => new Map(shortcuts)};
+    registerViewRoot, showOnly, dirtyItems, activateMode, openHelp, setTheme, sync, showGuide, addSetting, openSettings, shortcuts: () => new Map(shortcuts)};
 
   function init() {
     if (!document.querySelector('header') || !document.getElementById('main')) return;

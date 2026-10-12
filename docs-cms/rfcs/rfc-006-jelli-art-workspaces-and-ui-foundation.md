@@ -50,6 +50,22 @@ exactly as before, for layout only. RFC-007's input rules still apply: every
 mouse, keyboard and screen-reader path keeps working. Goals 4 to 6, the
 detailed design, chrome levels and the migration plan below are still Draft.
 
+**2026-10-12: header decisions D2 and D4, implemented in UX M2-A.** The owner
+approved two header changes from the layout spec for the Paint and
+primary-surface work:
+
+- **D2: "Your name" moves into a Settings popover.** The field leaves the header
+  and lives in a **Settings** popover among the tools. It is still asked for:
+  if it is empty, the first save of a visit opens a dialog for it, and Skip saves
+  without a name and does not ask again that visit. Every save in every mode
+  records it.
+- **D4: lint totals show in Review only.** The "changed" and "lint failing"
+  totals leave the header in every other mode. The header's second row (before
+  and after refs, Detail or Sheet, compare with, the totals) is Review-only, and
+  every other mode has one row.
+
+D1, D3 and D5 are recorded by the chunks that implement them.
+
 # Relationship to existing decisions
 
 - **[ADR-011](../adr/adr-011-jelli-art-component-and-container.md)

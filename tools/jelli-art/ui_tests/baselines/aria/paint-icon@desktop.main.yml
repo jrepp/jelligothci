@@ -105,7 +105,10 @@
       - button "eraser · transparent · secondary colour": eraser right-click
       - button "Choose a custom colour": custom pick…
     - paragraph: Click a colour to paint with it; right-click it, press Shift+F10 on it, or choose it and press X to make it the secondary colour. Rows are the ramps from assets.json, light to deep, which the Shade tool (T) steps along. ✎ changes that palette colour in every sprite. Tools paint only palette colours until you choose custom; custom colours work in the live game, and to ship one, put it in a palette slot. Shift-click isolates a colour.
-    - text: before /tmp/jelli-ui-tests/before
+    - text: before /tmp/jelli-ui-tests/before compare with
+    - combobox "compare with":
+      - option "/tmp/jelli-ui-tests/before" [selected]
+      - option "Last save (HEAD)"
     - img "icons.food before (/tmp/jelli-ui-tests/before)"
     - text: history click a step to go back
     - list "history click a step to go back":

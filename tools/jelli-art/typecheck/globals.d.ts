@@ -63,6 +63,8 @@ declare global {
     setTheme(theme: "auto" | "dark" | "light" | "contrast"): void;
     sync(): void;
     showGuide(show: boolean): void;
+    addSetting(node: Node): HTMLElement;
+    openSettings(): void;
     shortcuts(): Map<string, any>;
   }
 
