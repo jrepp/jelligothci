@@ -36,6 +36,9 @@ Current sleep, habits, and collectibles: [memo-018](memos/memo-018-sleep-habits-
 Hardware optimization continuation and pending board recovery:
 [memo-056](memos/memo-056-hardware-optimization-continuation.md).
 
+Jelli Art touch and Apple Pencil delivery (RFC-007, Studio 0.9.0):
+[memo-066](memos/memo-066-jelli-art-touch-and-pencil-delivery.md).
+
 Latest release and expressive slice: [memo-017](memos/memo-017-release-downloads-and-expressive-slice.md).
 
 Latest responsive routines/audio work: [memo-016](memos/memo-016-responsive-pet-routines-and-audio.md).
