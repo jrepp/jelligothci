@@ -32,11 +32,27 @@ static page that `tools/assets/compare_slice.py` writes. It provides:
   info and done toasts of the mode left behind; warnings, problems and save
   results (`notify(text, {keep: true})`) stay.
 - An unsaved changes button that lists edits and opens their mode. The page
-  warns before closing with unsaved edits.
+  warns before closing with unsaved edits. Its pill has a fixed width on every
+  pointer (the full text is in its `title`), as have the tab dots and the
+  repository status, so nothing in the header or Paint's title row moves when
+  state changes.
+- Header layout: row 1 in every mode holds the mark, the mode tabs, the
+  save-state cluster (live badge, repository status, Unsaved) and the tools
+  (Settings, Shortcuts, Guide, Theme). Row 2 (before and after refs, Detail or
+  Sheet, compare with, lint totals) shows only in Review. `shell.js` sets
+  `html[data-mode]` to the active mode id (`review`, `paint`, `creature`, ...);
+  mode-specific CSS keys off it. The body is `100dvh` tall where supported.
+- **Settings** is a popover (`popover` attribute) in the tools. `addSetting(node)`
+  adds a field to it; the button stays hidden until a field exists. Studio adds
+  **Your name**, the name recorded with every save. `Studio.api` asks for it
+  once per visit, in a dialog, before the first save that carries an empty
+  `artist`; Skip saves without one and does not ask again.
 - System, dark, light and high-contrast themes. The page follows
   `prefers-color-scheme`, `prefers-contrast` and `prefers-reduced-motion`.
 - A **?** overlay listing shortcuts, and a dismissible **Getting started**
-  guide. The **Guide** button shows it again.
+  guide. The card is at most 35% of the window height (and 320 px) and its text
+  scrolls inside it, so the heading row and **Hide this guide** stay in view.
+  The **Guide** button shows it again.
 
 Panels use `window.JelliShell`, which exists when their script loads:
 
@@ -47,6 +63,7 @@ Panels use `window.JelliShell`, which exists when their script loads:
 | `announce(text)` | Speaks text through the live region without a toast. |
 | `dialog({title, body, actions: [{label, value, primary, danger}], onOpen})` | Opens a modal `<dialog>`. Resolves with the chosen `value`, or `null` for Escape. Focus returns to the opener. |
 | `confirm(message, {title, confirmLabel, danger})` | Resolves `true` or `false`. |
+| `addSetting(node)` / `openSettings()` | Adds a field to the header's Settings popover (and shows the Settings button) / opens it. |
 | `registerDirty(id, {label, mode, check})` | Adds unsaved state: `check()` returns a count or boolean. Every editor registers one (Paint, Creature clips, Behaviour & size, Behaviour states, Activities). `dirtyItems()` returns the current `{id, n, label, mode}` list. |
 | `registerViewRoot(id)`, `showOnly(id)` | A panel registers its root element when it adds it; its `renderView` override calls `showOnly(id)`, which shows that root and hides every other registered one (`detail` and `sheet` are built in), so a hidden view is also out of the Tab order. |
 | `registerMode({id, label, view})` | Adds a tab that shows `state.view === view`. A button added to `#views` gets a tab automatically. |

@@ -599,7 +599,7 @@ def test_pencil_only_offered_once(open_view):
     assert page.locator(".shell-toast", has_text="Using an Apple Pencil").count() == 0
 
 
-@pytest.mark.parametrize("size", ["ipad-landscape", "ipad-portrait"])
+@pytest.mark.parametrize("size", ["desktop", "ipad-landscape", "ipad-portrait"])
 def test_dirty_state_never_reflows_the_toolbar(browser, studio, size):
     context, page = new_view(browser, studio, VIEW, size)
     try:

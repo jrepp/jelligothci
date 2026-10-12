@@ -19,9 +19,6 @@ LAND, PORT = "ipad-landscape", "ipad-portrait"
 
 def ready(page):
     """A zoom that shows the whole sprite whatever this renderer's fit zoom is, with the canvas in view."""
-    # T0 gap: the first edit shows #shell-unsaved, the header's tool row wraps and the page jumps 50 px mid-stroke.
-    # Reserve its room here so these tests measure Paint, not that reflow.
-    page.add_style_tag(content=".shell-unsaved.hidden{display:inline-block!important;visibility:hidden;min-width:130px}")
     page.evaluate("() => setZoom(4)")
     page.locator("#stage .paint-canvas canvas").scroll_into_view_if_needed()
     return page
@@ -97,6 +94,19 @@ def state_of(page, expr):
 
 def test_pen_paints(paint):
     page = paint()
+    x, y = blank_run(page)
+    before = steps(page)
+    row_stroke(page, x, y, 4)
+    colour = state_of(page, "state.color")
+    assert [pixel_at(page, x + i, y) for i in range(4)] == [colour] * 4
+    assert steps(page) == before + 1
+
+
+def test_pen_paints_at_the_default_fit(open_view):
+    """No setZoom: the first stroke of a visit lands on the pixel under the pen at the zoom the page chose (UX M2-A: the header
+    no longer reflows mid-stroke, so no test needs to reserve room for the Unsaved pill)."""
+    page = open_view(VIEW, LAND)
+    page.locator("#stage .paint-canvas canvas").scroll_into_view_if_needed()
     x, y = blank_run(page)
     before = steps(page)
     row_stroke(page, x, y, 4)

@@ -110,7 +110,10 @@
       - slider "Onion skin opacity": "0.5"
       - text: "before: idle-1 after: idle-3"
       - button "Edit order and timing in the Creature tab ↗"
-    - text: before /tmp/jelli-ui-tests/before
+    - text: before /tmp/jelli-ui-tests/before compare with
+    - combobox "compare with":
+      - option "/tmp/jelli-ui-tests/before" [selected]
+      - option "Last save (HEAD)"
     - img "creatures.axolotl-idle-2 before (/tmp/jelli-ui-tests/before)"
     - text: history click a step to go back
     - list "history click a step to go back":

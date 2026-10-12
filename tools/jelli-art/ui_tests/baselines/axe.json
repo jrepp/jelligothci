@@ -56,6 +56,8 @@
   },
   "paint-creature@tablet": {
     "label-content-name-mismatch": [
+      ".second",
+      "div[aria-label=\"Choose a custom colour\"]",
       "div[data-chip=\"#000000\"]",
       "div[data-chip=\"body:#d9265d\"]",
       "div[data-chip=\"body:#ff5994\"]",
@@ -68,6 +70,8 @@
   "paint-icon@desktop": {
     "label-content-name-mismatch": [
       ".faint",
+      ".second",
+      "div[aria-label=\"Choose a custom colour\"]",
       "div[data-chip=\"coral:#fa8c99\"]",
       "div[data-chip=\"mint jelly:#43bca2\"]"
     ]
@@ -75,6 +79,8 @@
   "paint-icon@desktop-light": {
     "label-content-name-mismatch": [
       ".faint",
+      ".second",
+      "div[aria-label=\"Choose a custom colour\"]",
       "div[data-chip=\"coral:#fa8c99\"]",
       "div[data-chip=\"mint jelly:#43bca2\"]"
     ]

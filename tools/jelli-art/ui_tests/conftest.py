@@ -151,8 +151,10 @@ def open_view(studio, browser):
 def settle(context, studio, view, viewport):
     """A new page in context showing the view, with data loaded, fonts ready and two frames drawn."""
     ref = json.dumps(str(DATA / "before"))
+    # A saved name keeps the first-save name prompt (UX M2-A, D2) out of the way; a different one typed in Settings survives a reload.
     context.add_init_script(f"try {{ localStorage.setItem('jelli-shell:guide', 'false');"
-                            f" localStorage.setItem('jelli-review:before', {json.dumps(ref)}); }} catch {{}}")
+                            f" localStorage.setItem('jelli-review:before', {json.dumps(ref)});"
+                            f" if (localStorage.getItem('jelli-review:artist') === null) localStorage.setItem('jelli-review:artist', '\"Test Artist\"'); }} catch {{}}")
     page = context.new_page()
     events = []
     page.on("console", lambda m: events.append(f"console.{m.type}: {m.text}"))

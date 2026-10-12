@@ -1,8 +1,9 @@
 - main:
   - tabpanel "Paint":
     - heading "creatures.axolotl-idle-2" [level=2]
-    - text: "48×48 · ID 1102 · device 6× 0 px changed specks 15 → 15 open edges 4 → 4 colours 7 → 7 / max 8 lint fails: specks, open edges"
-    - button "Waive…"
+    - group "Sprite details, scrolls sideways":
+      - text: "48×48 · ID 1102 · device 6× 0 px changed specks 15 → 15 open edges 4 → 4 colours 7 → 7 / max 8 lint fails: specks, open edges"
+      - button "Waive…"
     - text: Zoom · 4×
     - group "Zoom · 4×":
       - button "Zoom out": −
@@ -110,7 +111,10 @@
       - slider "Onion skin opacity": "0.5"
       - text: "before: idle-1 after: idle-3"
       - button "Edit order and timing in the Creature tab ↗"
-    - text: before /tmp/jelli-ui-tests/before
+    - text: before /tmp/jelli-ui-tests/before compare with
+    - combobox "compare with":
+      - option "/tmp/jelli-ui-tests/before" [selected]
+      - option "Last save (HEAD)"
     - img "creatures.axolotl-idle-2 before (/tmp/jelli-ui-tests/before)"
     - text: history click a step to go back
     - list "history click a step to go back":

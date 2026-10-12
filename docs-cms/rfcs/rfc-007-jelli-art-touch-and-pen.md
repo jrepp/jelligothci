@@ -520,6 +520,25 @@ otherwise.
    owner asked for iPad use now, and T0's tokens and gesture module are built to
    be absorbed into F2 and F6.
 
+# Amendments
+
+**2026-10-12: header chrome (UX M2-A; RFC-006 Decisions D2 and D4).** The
+header wireframes in §4 show "tabs, compare-with, save state" on one row in
+every mode. Now:
+
+- Row 1 is the same in every mode: tabs, the save state (live badge, repository
+  status, **Unsaved**), then **Settings**, **Shortcuts**, **Guide** and **Theme**
+  (plus **List** on a coarse pointer). It keeps its height whether or not
+  anything is unsaved.
+- Row 2, with the before and after refs, **Detail** or **Sheet**, compare-with
+  and the lint totals, is Review-only. In Paint, compare-with is in the
+  **before** pane beside the canvas, bound to the same setting.
+- "Your name" is in the **Settings** popover instead of the header. It is still
+  asked for once, before the first save of a visit, when it is empty.
+- The **Unsaved** pill, the tab dots, the repository status and Paint's title
+  row reserve their space on every pointer, not only coarse ones, so the canvas
+  does not move when they change.
+
 # References
 
 - [RFC-006](rfc-006-jelli-art-workspaces-and-ui-foundation.md),
