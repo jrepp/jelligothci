@@ -60,8 +60,8 @@
     const m = work.moments[selected], forms = D.behavior_vocab?.forms || [];
     const sprites = D.assets.filter(a => ['menus','icons','health','props','effects','prizes'].includes(a.kind)).map(a=>[a.id,a.key]);
     root.innerHTML = `<h2>Activities</h2><p>Share one activity, icon and animation across any pets. Random activities rotate hourly. Unlocks use local time; completion prerequisites reset daily.</p>
-      <p role="status">${stale?'Content changed elsewhere. Reload before saving.':dirty()?'Unsaved activity changes':'Saved activity recipes'}</p>
-      <button id="ac-save" ${stale||!dirty()||!D.behavior_editable?'disabled':''}>Save activities</button>
+      <p role="status">${stale?'The activity file changed on disk while you were editing. Save asks before it overwrites the newer file; Reload saved loads it instead.':dirty()?'Unsaved activity changes':'Saved activity recipes'}</p>
+      <button id="ac-save" ${!dirty()||!D.behavior_editable?'disabled':''}>Save activities</button>
       <button id="ac-revert">Reload saved</button> <button id="ac-add" ${work.moments.length>=32?'disabled':''}>Add activity</button>
       <div class="ac-grid"><nav class="ac-list" aria-label="Activity recipes">${work.moments.map((a,i)=>`<button data-activity="${i}" aria-pressed="${i===selected}">${esc(a.name)}</button>`).join('')}</nav>
       <div class="ac-fields"><h3>${esc(m.name)}</h3>
@@ -150,8 +150,9 @@
   }
   async function save() {
     try {
-      const res=await S.api('POST','/api/content',{docs:{activities:work},bases:{activities:base},artist:state.artist});
-      loaded=clone(work);D.activity_data=clone(work);D.activity_sha=base=res.shas.activities;D.version=res.version;window.JelliDrafts?.drop('activities','activities');
+      const res=await S.saveGuarded(current=>S.api('POST','/api/content',{docs:{activities:work},bases:{activities:current?.activities??base},artist:state.artist}),'Activities');
+      if(!res)return;  // Cancel keeps the edits and the newer file
+      loaded=clone(work);D.activity_data=clone(work);D.activity_sha=base=res.shas.activities;stale=false;D.version=res.version;window.JelliDrafts?.drop('activities','activities');
       S.status(res.git_error?`Saved; commit pending: ${res.git_error}`:'Activities saved',res.git_error?'warn':'');render();
     } catch(e){S.status(e.message,'bad',true);}
   }
@@ -163,8 +164,8 @@
     if (!work || !doc || !Array.isArray(doc.moments) || !Array.isArray(doc.pet_costs)) return Drafts.drop('activities','activities');
     work=clone(doc);
     if (!dirty()) { work=clone(loaded); return Drafts.drop('activities','activities'); }
-    if (d.stale) base=d.base;  // sync() marks it stale, saves are refused (and would answer 409); Reload saved loads the newer file
-    window.JelliShell?.notify(`Restored unsaved activity edits from your last visit${d.stale?' (the file changed on disk since)':''}.`,{tone:'warn',id:'drafts-activities',hint:'Save to keep them, or Reload saved to discard them.'});
+    if (d.stale) base=d.base;  // sync() marks it stale; Save sends this base, the server answers 409 and the page asks before overwriting
+    window.JelliShell?.notify(`Restored unsaved activity edits from your last visit${d.stale?' (the file changed on disk since)':''}.`,{tone:'warn',id:'drafts-activities',hint:d.stale?'Save asks before it overwrites the newer file; Reload saved discards your edits.':'Save to keep them, or Reload saved to discard them.'});
   }
   const baseBoot=S.boot;
   S.boot=async()=>{
@@ -176,5 +177,5 @@
   renderView=()=>{const on=state.view==='activities';root.classList.toggle('hidden',!on);cancelAnimationFrame(frame);if(!on)return previous();
     window.JelliShell?.showOnly('activities');
     /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('#views button')).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view==='activities')));render();};
-  S.keydown=e=>{if(state.view!=='activities')return oldKeys?.(e);if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();if(dirty()&&!stale)save();}return true;};
+  S.keydown=e=>{if(state.view!=='activities')return oldKeys?.(e);if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();if(dirty())save();}return true;};
 })();

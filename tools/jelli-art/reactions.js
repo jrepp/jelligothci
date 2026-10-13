@@ -89,9 +89,8 @@
   /* Measured against the document as loaded or last saved, so changes made elsewhere mark the page stale. */
   const bdirty = () => !!bwork && !!bloaded && JSON.stringify(bwork) !== JSON.stringify(bloaded);
   /* This view owns behaviors.json and the looks (state_presentation) of creatures.json; Behaviour & size edits on the
-   * Creature tab are not its own, so its marker and Revert leave them alone (a save still writes both files). */
+   * Creature tab are not its own, so its marker, Revert and Save leave them alone. */
   const ownDirty = () => bdirty() || S.creatureDoc.looksDirty();
-  const anyDirty = () => bdirty() || S.creatureDoc.dirty();
   const prevDirty = S.clipsDirty;
   S.clipsDirty = () => prevDirty() || bdirty();  // guards closing the page with unsaved behaviour edits
   S.statesDirty = () => ownDirty();  // shell.js: the "Behaviour states" unsaved item
@@ -201,7 +200,7 @@
     }
     return out;
   }
-  const allIssues = () => [...behaviourIssues(), ...lookIssues(), ...S.creatureDoc.issues()];
+  const allIssues = () => [...behaviourIssues(), ...lookIssues()];  // the Creature tab's size messages gate its own Save
 
   /* ---------- editing ---------- */
   function edit(fn) { fn(bwork, S.creatureDoc.work); render(); S.creatureDoc.refresh(); }
@@ -386,16 +385,16 @@
     previews = [];
     const v = V();
     if (!v || !bwork) { el.innerHTML = '<div class="title"><h2>Behaviour</h2></div><p class="studio-note">This checkout has no content/behaviors.json or cmake/JelliBehaviors.cmake, so there is no behaviour to edit.</p>'; return; }
-    const issues = allIssues(), editable = D.behavior_editable && D.creature_data_editable && !bstale && !S.creatureDoc.stale();
+    const issues = allIssues(), canSave = D.behavior_editable && D.creature_data_editable, editable = canSave && !bstale && !S.creatureDoc.stale();
     const tabs = [['states', 'States & looks'], ['repertoires', 'Repertoires'], ['simulator', 'Stimulus simulator']];
     el.innerHTML = `<div class="title"><h2>Behaviour</h2><div class="seg" id="bv-tabs">${tabs.map(([id, t]) => `<button data-tab="${id}" aria-pressed="${state.bTab === id}">${t}</button>`).join('')}</div>
         <span class="bv-note">content/behaviors.json · creatures.json looks${ownDirty() ? ' · <span class="cr-dirty">unsaved</span>' : ''}</span></div>
-      ${bstale || S.creatureDoc.stale() ? '<p class="bh-bad">A content file changed on disk while you were editing. Revert to load it, then reapply your changes.</p>' : ''}
+      ${bstale || S.creatureDoc.stale() ? '<p class="bh-bad">A content file changed on disk while you were editing. Save asks before it overwrites the newer file; Revert loads it instead.</p>' : ''}
       ${D.behavior_editable ? '' : '<p class="bh-warn">Read-only: saving behaviour needs cmake and the checkout\'s cmake/JelliBehaviors.cmake (and --content for trials).</p>'}
       ${v.missing_numbers?.length ? `<p class="bh-warn">The C headers do not define: ${esc(v.missing_numbers.join(', '))}; the simulator may be inexact.</p>` : ''}
       <div id="bv-body"></div>
       <ul class="cr-msgs">${issues.slice(0, 12).map(m => `<li>${esc(m)}</li>`).join('') || `<li class="ok">${ownDirty() ? 'Unsaved behaviour edits.' : 'No unsaved behaviour edits.'}</li>`}${issues.length > 12 ? `<li>…and ${issues.length - 12} more.</li>` : ''}</ul>
-      <div class="bar"><div class="seg"><button id="bv-revert" ${ownDirty() || bstale || S.creatureDoc.stale() ? '' : 'disabled'}>Revert</button><button id="bv-save" class="primary" ${anyDirty() && !issues.length && editable ? '' : 'disabled'} title="Validate with the engine and save (⌘S)">${anyDirty() ? 'Save behaviour' : 'Saved'}</button></div>
+      <div class="bar"><div class="seg"><button id="bv-revert" ${ownDirty() || bstale || S.creatureDoc.stale() ? '' : 'disabled'}>Revert</button><button id="bv-save" class="primary" ${ownDirty() && !issues.length && canSave ? '' : 'disabled'} title="Validate with the engine and save (⌘S)">${ownDirty() ? 'Save behaviour' : 'Saved'}</button></div>
         <button id="bv-animate" aria-pressed="${state.bAnimate}" title="Play preview clips from elapsed time">${state.bAnimate ? 'Pause previews' : 'Play previews'}</button>
         <button id="bv-mess" aria-pressed="${state.bMess}" title="Show the potty mess beside the pet (content/potty.json)">Potty mess</button> ${help(BAR_HELP, 'About these buttons')}</div>`;
     const body = el.querySelector('#bv-body');
@@ -672,16 +671,16 @@
     sync();
     const docs = {}, bases = {};
     if (bdirty()) { docs.behaviors = clone(bwork); bases.behaviors = bbase; }
-    if (S.creatureDoc.dirty()) { docs.creatures = clone(S.creatureDoc.work); bases.creatures = S.creatureDoc.base(); }
+    if (S.creatureDoc.looksDirty()) { docs.creatures = S.creatureDoc.merged(['state_presentation']); bases.creatures = S.creatureDoc.base(); }  // the looks only
     if (!Object.keys(docs).length) return;
     const issues = allIssues();
     if (issues.length) return S.status(`Fix before saving: ${issues[0]}`, 'bad', true);
-    if (bstale || S.creatureDoc.stale()) return S.status('A content file changed on disk; revert first', 'bad', true);
     try {
-      const res = await S.api('POST', '/api/content', {docs, bases, artist: state.artist});
+      const res = await S.saveGuarded(current => S.api('POST', '/api/content', {docs, bases: {...bases, ...Object.fromEntries(Object.keys(docs).map(n => [n, current?.[n] ?? bases[n]]))}, artist: state.artist}), 'Content');
+      if (!res) return;  // Cancel keeps the edits and the newer files
       if (docs.behaviors) { D.behavior_data = docs.behaviors; bloaded = clone(docs.behaviors); D.behavior_data_sha = bseen = bbase = res.shas.behaviors; bstale = false; }
-      if (docs.creatures) S.creatureDoc.saved(docs.creatures, res.shas.creatures);
-      window.JelliDrafts?.drop('behaviour', 'content');
+      if (docs.creatures) S.creatureDoc.savedSection(docs.creatures, res.shas.creatures, ['state_presentation']);
+      if (!ownDirty()) window.JelliDrafts?.drop('behaviour', 'content');
       D.version = res.version;
       render(); S.creatureDoc.refresh();
       const files = res.changed.map(n => `${n}.json`).join(' and ') || 'nothing (no changes)';
@@ -719,9 +718,9 @@
     if (!bwork || !S.creatureDoc.work || !behaviors || typeof behaviors !== 'object' || !(looks === undefined || Array.isArray(looks))) return Drafts.drop('behaviour', 'content');
     bwork = behaviors; S.creatureDoc.setLooks(looks);
     if (!ownDirty()) return Drafts.drop('behaviour', 'content');
-    if (d.stale) { bstale = true; bbase = bases?.b ?? bbase; S.creatureDoc.setBase(bases?.c ?? S.creatureDoc.base()); }  // saves are refused (and would answer 409); Revert loads the newer files
+    if (d.stale) { bstale = true; bbase = bases?.b ?? bbase; S.creatureDoc.setBase(bases?.c ?? S.creatureDoc.base()); }  // Save then answers 409 and asks before overwriting; Revert loads the newer files
     window.JelliShell?.notify(`Restored unsaved behaviour edits from your last visit${d.stale ? ' (a content file changed on disk since)' : ''}.`,
-      {tone: 'warn', id: 'drafts-behaviour', hint: 'Save to keep them, or Revert to discard them.'});
+      {tone: 'warn', id: 'drafts-behaviour', hint: d.stale ? 'Save asks before it overwrites the newer files; Revert discards your edits.' : 'Save to keep them, or Revert to discard them.'});
   }
   const baseBoot = S.boot;
   S.boot = async () => {

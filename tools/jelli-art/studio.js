@@ -200,17 +200,27 @@
     window.addEventListener('beforeunload', e => { if (Object.keys(edits).some(dirty) || S.clipsDirty?.()) { e.preventDefault(); e.returnValue = ''; } });
   };
   /* Confirm through the shell's styled dialog (plain confirm() without it); "1 clip", "3 clips". */
+  /* A save that may find the file changed on disk: send(null) uses the page's own base; on a 409 it asks, and Overwrite
+   * sends again with the bases the server reports (err.body.current, a map by file name). Cancel returns null. */
+  async function saveGuarded(send, what) {
+    try { return await send(null); } catch (err) {
+      if (err.status !== 409) throw err;
+      if (!await ask(`${err.message}\n\nSave your version anyway and replace the one on disk?`, {title: `${what} changed on disk`, confirmLabel: 'Overwrite', danger: true})) return null;
+      return send(err.body?.current ?? {});
+    }
+  }
   const ask = (text, opts = {}) => window.JelliShell?.confirm ? window.JelliShell.confirm(text, opts) : Promise.resolve(confirm(text));
   const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
-  Object.assign(S, {api, status, reload, rerender: () => rerender(), renderGit, paintDirty: key => dirty(key), redraw: () => draw(), ask, count});
+  Object.assign(S, {api, saveGuarded, status, reload, rerender: () => rerender(), renderGit, paintDirty: key => dirty(key), redraw: () => draw(), ask, count});
   function renderGit(git) {
     const el = document.getElementById('git-status'); if (!git?.enabled) { el.textContent = ''; return; }
     const push = git.last_push || {}, pending = git.unpushed ? `${git.unpushed} to push` : 'synced';
-    el.textContent = `⎇ ${git.branch} · ${push.ok === false ? 'push failing, will retry' : git.push ? pending : 'commits only'}`;
+    /* The slot is a fixed width with an ellipsis, so a problem comes first: it must never be the part that is cut off. */
+    el.textContent = push.ok === false ? `⚠ push failing, will retry · ⎇ ${git.branch}` : `⎇ ${git.branch} · ${git.push ? pending : 'commits only'}`;
     el.className = 'studio-status' + (push.ok === false ? ' bad' : '');
     el.title = push.error || `Every save is committed to ${git.branch}${git.push ? ' and pushed to GitHub for review' : ''}.`;
     if (git.pending_commits) {  // commits that failed are queued server-side and retried (git_sync.py)
-      el.textContent += ` · ${git.pending_commits} commit(s) queued`; el.className = 'studio-status bad'; el.title = git.last_commit_error;
+      el.textContent = `⚠ ${git.pending_commits} commit(s) queued · ${el.textContent}`; el.className = 'studio-status bad'; el.title = git.last_commit_error;
       if (queued !== git.pending_commits) window.JelliShell?.notify(`${git.pending_commits} commit(s) are queued and will be retried: ${git.last_commit_error}`,
         {tone: 'warn', id: 'git-queue', sticky: true, hint: 'Your saves are on disk; the studio retries the commit (POST /api/git/retry retries now).'});
     } else if (queued) window.JelliShell?.dismiss?.('git-queue');

@@ -397,3 +397,38 @@ def test_skipping_the_name_still_saves_and_does_not_nag(page_at):
     page.wait_for_timeout(300)
     assert page.locator("dialog.shell-dialog[open]").count() == 0
     assert len(sent) == 2
+
+
+def test_a_git_problem_leads_the_status_so_the_ellipsis_cannot_hide_it(page_at):
+    """The git status slot has a fixed width and an ellipsis (no layout shift); the failure must be the part that stays visible."""
+    page = page_at("1280x800")
+    page.evaluate("() => Studio.renderGit({enabled: true, branch: 'fix/a-very-long-branch-name-for-a-feature', push: true, unpushed: 2, last_push: {ok: false, error: 'denied'}})")
+    text = page.locator("#git-status").inner_text()
+    assert text.startswith("⚠ push failing"), text
+    page.evaluate("() => Studio.renderGit({enabled: true, branch: 'fix/a-very-long-branch-name-for-a-feature', push: true, unpushed: 0, last_push: {ok: true}, pending_commits: 2, last_commit_error: 'locked'})")
+    assert page.locator("#git-status").inner_text().startswith("⚠ 2 commit(s) queued")
+
+
+def test_settings_and_the_name_prompt_work_from_the_keyboard(page_at):
+    page = page_at("1440x900")
+    button = page.get_by_role("button", name="Settings")
+    button.focus()
+    page.keyboard.press("Enter")
+    page.wait_for_function("() => document.activeElement?.id === 'artist'")
+    assert page.get_by_label("Your name").evaluate("e => e === document.activeElement"), "opening Settings moves focus into it"
+    page.keyboard.press("Escape")
+    assert not page.get_by_label("Your name").is_visible()
+    assert button.evaluate("e => e === document.activeElement"), "Escape returns focus to the Settings button"
+    # Mod+S with no name asks once; Escape skips and the save still happens (no keyboard trap, no loop).
+    version = page.evaluate("() => D.version")
+    sent = []
+    page.route("**/api/save", lambda route: (sent.append(1), route.fulfill(status=200, content_type="application/json",
+                                                                          body=json.dumps({"sha": "m", "version": version, "commit": None})))[1])
+    page.evaluate("() => { state.artist = ''; localStorage.removeItem('jelli-review:artist'); }")
+    paint_something(page, False)
+    page.locator("#stage .paint-canvas canvas").focus()
+    page.keyboard.press("ControlOrMeta+s")
+    page.locator("dialog.shell-dialog[open]").wait_for()
+    page.keyboard.press("Escape")
+    page.wait_for_function("() => document.getElementById('save').textContent === 'Saved'")
+    assert len(sent) == 1

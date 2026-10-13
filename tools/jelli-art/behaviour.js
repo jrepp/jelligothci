@@ -120,8 +120,8 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
   const baseClipsDirty = S.clipsDirty;
   S.clipsDirty = () => baseClipsDirty() || dirty();  // also guards the page against closing with edits
   /* creatures.json is edited by two views. This one owns profiles and behaviors (Behaviour & size); the Behaviour view
-   * owns state_presentation (the looks). Revert, the unsaved markers and the drafts are scoped to the section, while
-   * a save still writes the whole document. */
+   * owns state_presentation (the looks). Revert, the unsaved markers, the drafts and Save are scoped to the section: a
+   * save writes the other section as it is on disk (merged()), so it never commits the other view's unsaved edits. */
   const SIZE_KEYS = ['profiles', 'behaviors'], section = (doc, keys) => JSON.stringify(keys.map(k => doc?.[k] ?? null));
   const sizeDirty = () => !!work && !!loaded && section(work, SIZE_KEYS) !== section(loaded, SIZE_KEYS);
   const looksDirty = () => !!work && !!loaded && section(work, ['state_presentation']) !== section(loaded, ['state_presentation']);
@@ -304,7 +304,7 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
     if (!work) { host.innerHTML = '<h3>Behaviour &amp; size</h3><p class="studio-note">This checkout has no content/creatures.json, or it is not valid JSON.</p>'; timeline = null; return; }
     const p = profileOf(art), editable = D.creature_data_editable && !stale;
     const head = `<h3>Behaviour &amp; size <span class="lbl">· content/creatures.json${sizeDirty() ? ' · <span class="cr-dirty">unsaved</span>' : ''}</span> ${help(PANEL_HELP, 'About behaviour and size')}</h3>
-      ${stale ? '<p class="bh-bad">content/creatures.json changed on disk while you were editing. Revert to load it, then reapply your changes.</p>' : ''}
+      ${stale ? '<p class="bh-bad">content/creatures.json changed on disk while you were editing. Save asks before it overwrites the newer file; Revert loads it instead.</p>' : ''}
       ${D.creature_data_editable ? '' : '<p class="bh-warn">Read-only here: the checkout has no creature_data.py validator, or this trial runs without --content.</p>'}`;
     if (!p) {
       host.innerHTML = `${head}<p class="studio-note">${esc(art)} has no profile yet.</p><fieldset ${editable ? '' : 'disabled'}><button id="bh-add-profile">Add a profile for ${esc(art)}</button></fieldset>`;
@@ -349,7 +349,7 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
       <div class="lbl">Idle timeline · ${lim.beat_ms} ms per beat · dashed beats are quieted</div>
       <div class="bh-timeline" id="bh-timeline" tabindex="0" role="region" aria-label="Idle timeline"></div>
       <ul class="cr-msgs">${issues.map(m => `<li>${esc(m)}</li>`).join('') || `<li class="ok">${sizeDirty() ? 'Unsaved behaviour or size edits.' : 'No unsaved behaviour or size edits.'}</li>`}</ul>
-      <div class="seg"><button id="bh-revert" ${sizeDirty() || stale ? '' : 'disabled'}>Revert</button><button id="bh-save" class="primary" ${dirty() && !issues.length && editable ? '' : 'disabled'} title="Save behaviour and size (⌘S)">${dirty() ? 'Save behaviour & size' : 'Saved'}</button></div>`;
+      <div class="seg"><button id="bh-revert" ${sizeDirty() || stale ? '' : 'disabled'}>Revert</button><button id="bh-save" class="primary" ${sizeDirty() && !issues.length && D.creature_data_editable ? '' : 'disabled'} title="Save behaviour and size (⌘S)">${sizeDirty() ? 'Save behaviour & size' : 'Saved'}</button></div>`;
     wire(p, b);
     if (b) buildTimeline(host.querySelector('#bh-timeline'), b); else timeline = null;
     cr.redraw();
@@ -412,7 +412,20 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
   /* The working creatures.json is shared with the Behaviour view (state looks), which saves both files together. */
   S.creatureDoc = {
     get work() { sync(); return work; }, dirty, issues: () => allIssues(), base: () => base, stale: () => stale,
-    saved(sent, sha) { D.creature_data = sent; loaded = clone(sent); D.creature_data_sha = seen = base = sha; stale = false; window.JelliDrafts?.drop('creatures', 'creatures'); },
+    /* The saved document with only these top-level sections taken from the working copy; the rest is as last read from disk. */
+    merged(keys) {
+      const doc = clone(D.creature_data);
+      for (const k of keys) if (work[k] === undefined) delete doc[k]; else doc[k] = clone(work[k]);
+      return doc;
+    },
+    /* After a save of `keys`: the other section keeps its unsaved edits, or follows the file if it had none. */
+    savedSection(sent, sha, keys) {
+      const clean = [...new Set([...Object.keys(work), ...Object.keys(sent)])].filter(k => !keys.includes(k) &&
+        JSON.stringify(work[k] ?? null) === JSON.stringify(loaded?.[k] ?? null));
+      D.creature_data = sent; loaded = clone(sent); D.creature_data_sha = seen = base = sha; stale = false;
+      for (const k of clean) if (sent[k] === undefined) delete work[k]; else work[k] = clone(sent[k]);
+      if (!sizeDirty()) window.JelliDrafts?.drop('creatures', 'creatures');
+    },
     revert() { work = D.creature_data ? clone(D.creature_data) : null; loaded = work && clone(work); base = seen = D.creature_data_sha; stale = false; },
     /* One section back to the saved document; the other keeps its edits. Stale (the file changed on disk): all of it reloads. */
     revertSize() { if (stale || !work || !loaded) return S.creatureDoc.revert(); for (const k of SIZE_KEYS) work[k] = clone(loaded[k]); },
@@ -424,15 +437,14 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
     setBase(sha) { base = sha; },  // a restored stale draft keeps the base it started from, so a save answers 409
     refresh() { render(); cr.renderForms(); cr.redraw(); }};
   async function save() {
-    if (S.saveContent) return S.saveContent();  // one validated save for creatures.json and behaviors.json
-    if (!dirty()) return;
+    if (!sizeDirty()) return;
     const issues = allIssues();
     if (issues.length) return S.status(`Fix the behaviour and size messages before saving: ${issues[0]}`, 'bad', true);
-    if (stale) return S.status('content/creatures.json changed on disk; revert first', 'bad', true);
-    try {
-      const sent = clone(work), res = await S.api('POST', '/api/creatures', {data: sent, base, artist: state.artist});
-      D.creature_data = sent; loaded = clone(sent); D.creature_data_sha = seen = base = res.sha; D.version = res.version;
-      window.JelliDrafts?.drop('creatures', 'creatures');
+    try {  // only profiles and behaviors are sent as edited; the looks go as saved, so this never commits the Behaviour view's edits
+      const sent = S.creatureDoc.merged(SIZE_KEYS);
+      const res = await S.saveGuarded(current => S.api('POST', '/api/creatures', {data: sent, base: current?.creatures ?? base, artist: state.artist}), 'content/creatures.json');
+      if (!res) return;  // Cancel keeps the edits and the newer file
+      S.creatureDoc.savedSection(sent, res.sha, SIZE_KEYS); D.version = res.version;
       render(); cr.renderForms();
       if (res.git_error) S.status(`Saved creature data, but the commit failed: ${res.git_error}`, 'bad', true);
       else S.status(res.commit ? `Saved content/creatures.json (commit ${res.commit}).` : 'Saved content/creatures.json.', '', false, {keep: true});
@@ -448,9 +460,9 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
     if (!work || !Array.isArray(profiles) || !Array.isArray(behaviors)) return Drafts.drop('creatures', 'creatures');
     work.profiles = profiles; work.behaviors = behaviors;
     if (!sizeDirty()) return Drafts.drop('creatures', 'creatures');
-    if (d.stale) { base = d.base; stale = true; }  // saves then answer 409; Revert loads the newer file
+    if (d.stale) { base = d.base; stale = true; }  // Save then answers 409 and asks before overwriting; Revert loads the newer file
     window.JelliShell?.notify(`Restored unsaved behaviour and size edits from your last visit${d.stale ? ' (the file changed on disk since)' : ''}.`,
-      {tone: 'warn', id: 'drafts-size', hint: 'Save to keep them, or Revert to discard them.'});
+      {tone: 'warn', id: 'drafts-size', hint: d.stale ? 'Save asks before it overwrites the newer file; Revert discards your edits.' : 'Save to keep them, or Revert to discard them.'});
   }
   const baseBoot = S.boot;
   S.boot = async () => {
