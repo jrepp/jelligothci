@@ -153,7 +153,12 @@ The ESP32 host keeps two buffers in PSRAM: the core renders into one, and
 and invalidates that region. SDL similarly updates only the damaged texture region. LVGL never
 reads the core's working buffer asynchronously. Touch events cross from the
 LVGL task to the engine through a small FreeRTOS queue. DMA, byte order, and
-display initialization remain the BSP's responsibility.
+display initialization use the BSP and host adapter.
+The host [prepares the display](../ports/esp32/main/display_transfer.c) with the
+LVGL worker deferred, installs its reserved DMA staging callback and canvas,
+then starts the worker after releasing the display mutex. Starting refresh
+before callback installation can trigger an extra SPI bounce allocation; see
+[the startup investigation](../docs-cms/memos/memo-068-display-startup-order-and-cache-results.md).
 
 The pet engine uses fixed caller-owned state and the simulation and resume bounds
 defined in [`game.h`](../include/jelli/game.h). Its renderer uses embedded sprites

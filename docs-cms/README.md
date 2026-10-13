@@ -39,6 +39,44 @@ Hardware optimization continuation and pending board recovery:
 Jelli Art touch and Apple Pencil delivery (RFC-007, Studio 0.9.0):
 [memo-066](memos/memo-066-jelli-art-touch-and-pencil-delivery.md).
 
+Planned hardware feature follow-up and outstanding implementation/validation:
+[memo-058](memos/memo-058-planned-hardware-follow-up.md).
+
+Test-bed startup recovery, sequential hardware checks and render/LVGL attribution:
+[memo-059](memos/memo-059-testbed-recovery-and-pipeline-attribution.md).
+
+Two-pickup IMU interrupt rearm prerequisite:
+[memo-060](memos/memo-060-imu-interrupt-rearm-prerequisite.md).
+
+Bounded IMU MCU sleep/wake experiment:
+[memo-061](memos/memo-061-bounded-imu-light-sleep-trial.md).
+
+SIMD fill and packed RGB565 blend device measurements:
+[memo-062](memos/memo-062-simd-fill-and-packed-blend-device-benchmarks.md).
+
+Clipped rectangle SIMD and matched scalar control:
+[memo-063](memos/memo-063-clipped-rectangle-simd-device-trial.md).
+
+LVGL full-update cost attribution and copy-path comparison:
+[memo-064](memos/memo-064-lvgl-update-cost-and-copy-trial.md).
+
+Back-buffer memory classification and matched draw-buffer placement:
+[memo-065](memos/memo-065-back-buffer-memory-placement-trial.md).
+
+LVGL dispatch/event attribution and guarded empty-overlay trial:
+[memo-071](memos/memo-071-lvgl-dispatch-and-empty-overlay-trial.md).
+
+Isolated cache configuration build matrix and device protocol:
+[memo-067](memos/memo-067-cache-configuration-trial.md).
+
+Display startup ordering fix and cache device results:
+[memo-068](memos/memo-068-display-startup-order-and-cache-results.md).
+
+Display command stack reduction and device qualification:
+[memo-069](memos/memo-069-display-command-stack-margin.md).
+
+Latest local normal firmware deployment: [memo-070](memos/memo-070-latest-local-firmware-deployment.md).
+
 Latest release and expressive slice: [memo-017](memos/memo-017-release-downloads-and-expressive-slice.md).
 
 Latest responsive routines/audio work: [memo-016](memos/memo-016-responsive-pet-routines-and-audio.md).
