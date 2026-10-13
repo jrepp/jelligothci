@@ -125,6 +125,15 @@ class Server:
             raise AssertionError(f"GET {path}: {status} {body}")
         return body
 
+    def get_text(self, path):
+        """(status, body text) for endpoints that are not JSON (the metrics scrape)."""
+        request = urllib.request.Request(self.url + path, method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                return response.status, response.read().decode()
+        except urllib.error.HTTPError as error:
+            return error.code, error.read().decode(errors="replace")
+
     def post(self, path, body, expect=200):
         status, reply = self.request("POST", path, body)
         if status != expect:
@@ -461,6 +470,24 @@ class ServerTest(unittest.TestCase):
         self.assertTrue(health["ok"])
         self.assertEqual(health["problems"], [])
         self.assertEqual(health["capabilities"]["cmake"], HAS_CMAKE)
+
+    def test_metrics_scrape(self):
+        status, text = self.server.get_text("/metrics")
+        self.assertEqual(status, 200)
+        self.assertIn("# TYPE jelli_art_http_requests_total counter", text)
+        self.assertIn("# TYPE jelli_art_http_request_duration_seconds histogram", text)
+        self.assertIn("# TYPE jelli_art_process_uptime_seconds gauge", text)
+        # The scrape itself is only visible on the NEXT scrape: a response is
+        # rendered before its own request completes.
+        self.server.get_text("/metrics")
+        status, text = self.server.get_text("/metrics")
+        self.assertIn('route="/metrics",status="200"', text)
+        # ...and no route label carries id-shaped segments: the series count
+        # stays bounded no matter what the data contains.
+        for line in text.splitlines():
+            if line.startswith("jelli_art_http_requests_total{"):
+                route = line.split('route="', 1)[1].split('"', 1)[0]
+                self.assertFalse(any(seg.isdigit() or len(seg) > 40 for seg in route.split("/")), line)
 
 
 DRAFTS_CHECK = r"""
