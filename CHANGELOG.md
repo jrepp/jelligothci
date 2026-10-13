@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.12.0](https://github.com/jrepp/jelligothci/compare/v0.11.0...v0.12.0) (2026-10-13)
+
+
+### Features
+
+* **jelli-art:** Paint workspace with the canvas first (UX M2-B) ([#66](https://github.com/jrepp/jelligothci/issues/66)) ([7cab83e](https://github.com/jrepp/jelligothci/commit/7cab83efe635fcef0ed65c33dcacf08b583f1258))
+* **jelli-art:** task-first shell chrome (UX M2-A) ([#64](https://github.com/jrepp/jelligothci/issues/64)) ([f3039d8](https://github.com/jrepp/jelligothci/commit/f3039d87c925025866c89e01293ebcc5bacf37dc))
+
+
+### Bug Fixes
+
+* **jelli-art:** multi-tab drafts and per-view save state (UX M1 follow-up) ([#65](https://github.com/jrepp/jelligothci/issues/65)) ([88d9418](https://github.com/jrepp/jelligothci/commit/88d9418dd62c314b146677c028d9e400f8ea11d6))
+* **jelli-art:** stop losing work and showing the wrong view (UX M1) ([#61](https://github.com/jrepp/jelligothci/issues/61)) ([4a6f57d](https://github.com/jrepp/jelligothci/commit/4a6f57d3bd3975eef4bd8e5f6a42409040c452af))
+
 ## [0.11.0](https://github.com/jrepp/jelligothci/compare/v0.10.0...v0.11.0) (2026-10-11)
 
 
