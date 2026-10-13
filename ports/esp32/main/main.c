@@ -10,6 +10,7 @@
 #include "validation/experiments.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "display_output.h"
+#include "esp_lv_adapter.h"
 #include "pipeline_profile.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -129,7 +130,7 @@ void app_main(void)
     jelli_display_output_init(&board.display);
     board.input = xQueueCreate(8, sizeof(JelliInput));
     ESP_ERROR_CHECK(board.input ? ESP_OK : ESP_ERR_NO_MEM);
-    lv_display_t *display = bsp_display_start();
+    lv_display_t *display = jelli_display_prepare();
     ESP_ERROR_CHECK(display ? ESP_OK : ESP_FAIL);
     ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
     ESP_ERROR_CHECK(
@@ -152,13 +153,12 @@ void app_main(void)
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_PRESSED, &board);
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_RELEASED, &board);
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_PRESS_LOST, &board);
-    /* The custom draw callback supplies the panel handle. Complete the first
-     * LVGL refresh under its mutex before issuing checked panel commands;
-     * scheduler timing must not decide whether startup brightness can work. */
+    /* LVGL's task owns refresh work and its stack. Wait for the custom draw
+     * callback after releasing the mutex, before checked panel commands. */
     lv_obj_invalidate(board.display.canvas);
-    lv_refr_now(display);
-    ESP_ERROR_CHECK(board.display.transfer.panel ? ESP_OK : ESP_ERR_INVALID_STATE);
     bsp_display_unlock();
+    ESP_ERROR_CHECK(esp_lv_adapter_start());
+    ESP_ERROR_CHECK(jelli_display_transfer_wait_ready(&board.display.transfer));
     JelliDisplayDriver display_driver = jelli_display_output_driver(&board.display);
     ESP_ERROR_CHECK(jelli_display_brightness(display_driver, 60));
 

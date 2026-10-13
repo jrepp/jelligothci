@@ -1,5 +1,8 @@
 #include "pipeline_profile.h"
 #ifdef CONFIG_JELLI_POWER_EXPERIMENTS
+#include "jelli/pet_ui.h"
+#include "lvgl_copy_trial.h"
+#include "esp_err.h"
 #include "esp_timer.h"
 #include "esp_attr.h"
 #include "esp_random.h"
@@ -20,8 +23,92 @@ static DRAM_ATTR portMUX_TYPE lock = portMUX_INITIALIZER_UNLOCKED;
 static DRAM_ATTR bool active, expired;
 static DRAM_ATTR uint64_t submitted_us, expires_us;
 static uint32_t generation, boot;
-static const char *const names[] = {"engine", "lock", "copy", "check", "swap", "stage", "transfer"};
-_Static_assert(sizeof(timings) + sizeof(snapshot) <= 4608u, "Profile exceeds 4.5 KiB");
+static const char *const names[] = {
+    "engine",     "lock",      "copy",       "check",         "swap",           "stage",
+    "transfer",   "render",    "lvgl",       "lvgl_wait",     "lvgl_flush",     "lvgl_work",
+    "lvgl_image", "lvgl_fill", "lvgl_tasks", "lvgl_dispatch", "lvgl_draw_wait", "lvgl_events"};
+/* LVGL-task event state, serialized by the display mutex. Flush and wait
+ * intervals are disjoint in the pinned LVGL partial-render path. */
+static uint64_t lvgl_started_us, flush_started_us, wait_started_us;
+static uint64_t frame_flush_us, frame_wait_us;
+static uint32_t frame_bytes;
+static void record_elapsed(JelliProfileStage stage, uint64_t elapsed, uint32_t bytes);
+_Static_assert(sizeof(timings) + sizeof(snapshot) <= 10240u, "Profile exceeds 10 KiB");
+_Static_assert(sizeof(names) / sizeof(names[0]) == JELLI_PROFILE_COUNT, "Stage names missing");
+
+/* GNU ld wrapping is enabled only in the ESP32 power image. The original
+ * renderer and portable engine remain unchanged; no second renderer is used. */
+void __real_jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
+                             uint64_t animation_ms, bool paused);
+void __wrap_jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
+                             uint64_t animation_ms, bool paused);
+void __wrap_jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
+                             uint64_t animation_ms, bool paused)
+{
+    uint64_t start = jelli_profile_now();
+    __real_jelli_pet_render(surface, game, ui, animation_ms, paused);
+    jelli_profile_record(JELLI_PROFILE_RENDER, start, 0u);
+}
+
+static void lvgl_event(lv_event_t *event)
+{
+    uint64_t now = jelli_profile_now();
+    switch (lv_event_get_code(event)) {
+    case LV_EVENT_RENDER_START:
+        lvgl_started_us = now;
+        frame_flush_us = frame_wait_us = 0u;
+        frame_bytes = 0u;
+        break;
+    case LV_EVENT_FLUSH_START:
+        flush_started_us = now;
+        break;
+    case LV_EVENT_FLUSH_FINISH:
+        if (flush_started_us && now >= flush_started_us) {
+            const lv_area_t *area = lv_event_get_param(event);
+            uint32_t bytes = area ? (uint32_t)lv_area_get_size(area) * 2u : 0u;
+            uint64_t elapsed = now - flush_started_us;
+            if (lvgl_started_us) {
+                record_elapsed(JELLI_PROFILE_LVGL_FLUSH, elapsed, bytes);
+                frame_flush_us += elapsed;
+                frame_bytes += bytes;
+            }
+        }
+        flush_started_us = 0u;
+        break;
+    case LV_EVENT_FLUSH_WAIT_START:
+        wait_started_us = now;
+        break;
+    case LV_EVENT_FLUSH_WAIT_FINISH:
+        if (wait_started_us && now >= wait_started_us) {
+            uint64_t elapsed = now - wait_started_us;
+            if (lvgl_started_us) {
+                record_elapsed(JELLI_PROFILE_LVGL_WAIT, elapsed, 0u);
+                frame_wait_us += elapsed;
+            }
+        }
+        wait_started_us = 0u;
+        break;
+    case LV_EVENT_RENDER_READY:
+        if (lvgl_started_us && now >= lvgl_started_us) {
+            uint64_t elapsed = now - lvgl_started_us;
+            record_elapsed(JELLI_PROFILE_LVGL, elapsed, frame_bytes);
+            uint64_t excluded = frame_flush_us + frame_wait_us;
+            if (excluded <= elapsed)
+                record_elapsed(JELLI_PROFILE_LVGL_WORK, elapsed - excluded, frame_bytes);
+        }
+        lvgl_started_us = 0u;
+        break;
+    default:
+        break;
+    }
+}
+
+void jelli_profile_attach(lv_display_t *display)
+{
+    uint32_t before = lv_display_get_event_count(display);
+    lv_display_add_event_cb(display, lvgl_event, LV_EVENT_ALL, NULL);
+    ESP_ERROR_CHECK(lv_display_get_event_count(display) > before ? ESP_OK : ESP_ERR_NO_MEM);
+}
 
 static void IRAM_ATTR expire(void)
 {
@@ -59,13 +146,19 @@ static void IRAM_ATTR record(JelliProfileStage stage, uint64_t elapsed, uint32_t
         timing->maximum = value;
 }
 
+static void record_elapsed(JelliProfileStage stage, uint64_t elapsed, uint32_t bytes)
+{
+    portENTER_CRITICAL(&lock);
+    if ((unsigned)stage < JELLI_PROFILE_COUNT)
+        record(stage, elapsed, bytes);
+    portEXIT_CRITICAL(&lock);
+}
+
 void jelli_profile_record(JelliProfileStage stage, uint64_t start, uint32_t bytes)
 {
     uint64_t end = jelli_profile_now();
-    portENTER_CRITICAL(&lock);
-    if ((unsigned)stage < JELLI_PROFILE_COUNT && end >= start)
-        record(stage, end - start, bytes);
-    portEXIT_CRITICAL(&lock);
+    if (end >= start)
+        record_elapsed(stage, end - start, bytes);
 }
 
 void jelli_profile_submit(void)
@@ -130,10 +223,49 @@ static void report(JelliDebug *debug, uint32_t id, unsigned stage)
         jelli_debug_response(debug, id, body);
 }
 
+static void copy_mode(JelliDebug *debug, uint32_t id, const char *method)
+{
+    bool libc_copy = !strcmp(method, "libc");
+    if ((!libc_copy && strcmp(method, "builtin")) || jelli_profile_active()) {
+        jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"mode_or_busy\"}");
+        return;
+    }
+    if (!jelli_lvgl_copy_qualify()) {
+        jelli_lvgl_copy_mode(false);
+        jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"copy_equivalence\"}");
+        return;
+    }
+    jelli_lvgl_copy_mode(libc_copy);
+    jelli_debug_response(debug, id,
+                         libc_copy ? "{\"ok\":true,\"memcpy\":\"libc\"}"
+                                   : "{\"ok\":true,\"memcpy\":\"builtin\"}");
+}
+
+static void overlay_mode(JelliDebug *debug, uint32_t id, const char *method)
+{
+    bool skipped = !strcmp(method, "skip");
+    if ((!skipped && strcmp(method, "baseline")) || jelli_profile_active() ||
+        !jelli_profile_overlay_mode(skipped)) {
+        jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"overlay_guard_or_busy\"}");
+        return;
+    }
+    jelli_debug_response(debug, id,
+                         skipped ? "{\"ok\":true,\"overlays\":\"skip\"}"
+                                 : "{\"ok\":true,\"overlays\":\"baseline\"}");
+}
+
 bool jelli_profile_command(JelliDebug *debug, uint32_t id, char **words, unsigned count)
 {
     if (count < 4u || strcmp(words[2], "display") || strcmp(words[3], "profile"))
         return false;
+    if (count == 6u && !strcmp(words[4], "overlays")) {
+        overlay_mode(debug, id, words[5]);
+        return true;
+    }
+    if (count == 6u && !strcmp(words[4], "memcpy")) {
+        copy_mode(debug, id, words[5]);
+        return true;
+    }
     if (!boot)
         boot = esp_random();
     if (count == 5u && (!strcmp(words[4], "start") || !strcmp(words[4], "stop"))) {

@@ -38,6 +38,42 @@ class ImuTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate(reply | {key: value}, {'boot': 1, 'run': 2}, 'quiet')
 
+    def test_rearm_needs_both_events_and_idle_restoration(self):
+        reply = self.result() | dict(mode='rearm-int2', armed='30' + ARMED[2:],
+                                    elapsed_us=40000000, completed_events=2,
+                                    motion_levels=[1, 1], motion_status=[4, 4],
+                                    ack_levels=[1, 0], idle_levels=[0, 0],
+                                    ack_wait_us=[120000, 140000])
+        self.assertEqual(validate(reply, {'boot': 1, 'run': 2}, 'rearm-int2'), 'rearm_observed')
+        for key, value in [('completed_events', 1), ('completed_events', 2.0), ('motion_levels', [1, 0]),
+                           ('motion_status', [4, 0]), ('motion_status', [4, 260]),
+                           ('idle_levels', [0, 1]), ('ack_levels', [0, 2]),
+                           ('ack_wait_us', [99999, 140000]), ('ack_wait_us', [1000000, 140000]),
+                           ('ack_wait_us', [120000]), ('motion_levels', [True, 1]),
+                           ('elapsed_us', 55000000), ('restore_error', 1)]:
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                validate(reply | {key: value}, {'boot': 1, 'run': 2}, 'rearm-int2')
+
+    def test_sleep_requires_correlated_wake_and_clean_restoration(self):
+        reply = self.result() | dict(mode='sleep-int2', armed='30' + ARMED[2:],
+                                    mcu_slept=True, sleep_attempted=True, already_active=False,
+                                    wake_cleanup_error=0, host_restore_error=0,
+                                    wake_cause=7, wake_level=1, sleep_us=3000000)
+        accepted = {'boot': 1, 'run': 2}
+        self.assertEqual(validate(reply, accepted, 'sleep-int2'), 'gpio_motion_wake')
+        for key, value in [('wake_cause', 4), ('wake_level', 0), ('status1', 0),
+                           ('sleep_attempted', False), ('already_active', True),
+                           ('wake_cleanup_error', 1), ('host_restore_error', 1),
+                           ('mcu_slept', False), ('sleep_us', 0), ('sleep_us', True),
+                           ('sleep_us', 12000000), ('boot', 2), ('restore_error', 1)]:
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                validate(reply | {key: value}, accepted, 'sleep-int2')
+        timer = reply | dict(wake_cause=4, wake_level=0, status1=0, sleep_us=10000100)
+        self.assertEqual(validate(timer, accepted, 'sleep-int2'), 'timer_fallback')
+        for key, value in [('sleep_us', 5000000), ('status1', 4), ('wake_level', 1)]:
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                validate(timer | {key: value}, accepted, 'sleep-int2')
+
 
 if __name__ == '__main__':
     unittest.main()

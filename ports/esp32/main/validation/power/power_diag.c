@@ -3,6 +3,7 @@
 #include "touch_trial.h"
 #include "panel_trial.h"
 #include "imu_trial.h"
+#include "power_trial.h"
 #include "sound_output.h"
 #include "pipeline_profile.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
@@ -61,17 +62,22 @@ static bool touch_command(JelliDebug *debug, uint32_t id, char **words, unsigned
            jelli_panel_trial_command(debug, id, words, count);
 }
 
+static bool display_trial_command(char **words, unsigned count)
+{
+    return count >= 4 && !strcmp(words[2], "display") &&
+           (!strncmp(words[3], "benchmark-", 10u) ||
+            (!strcmp(words[3], "profile") &&
+             ((count == 5 && !strcmp(words[4], "start")) ||
+              (count == 6 && (!strcmp(words[4], "memcpy") || !strcmp(words[4], "overlays"))))));
+}
+
 static bool reject_busy_run(JelliDebug *debug, uint32_t id, char **words, unsigned count)
 {
     bool run_command = count >= 4 && !strcmp(words[2], "power") &&
                        (!strcmp(words[3], "run") || (count >= 5 && !strcmp(words[4], "run")));
-    bool display_trial =
-        count >= 4 && !strcmp(words[2], "display") &&
-        (!strncmp(words[3], "benchmark-", 10u) ||
-         (count == 5 && !strcmp(words[3], "profile") && !strcmp(words[4], "start")));
     bool busy = pending || jelli_touch_trial_busy() || jelli_panel_trial_busy() ||
                 jelli_imu_trial_busy() || jelli_profile_active();
-    if ((run_command || display_trial) && (busy || debug->captured)) {
+    if ((run_command || display_trial_command(words, count)) && (busy || debug->captured)) {
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"busy\"}");
         return true;
     }
@@ -187,7 +193,8 @@ static esp_err_t hold_trial(unsigned mode)
     return ESP_OK;
 }
 
-static esp_err_t run_trial(unsigned mode, JelliDisplayOutput *output, esp_err_t *restore)
+static esp_err_t run_trial(unsigned mode, JelliDisplayOutput *output, esp_err_t *restore,
+                           esp_err_t (*hold)(void))
 {
     int brightness = output->brightness_known ? (int)output->brightness_percent : -1;
     bool paused = false, audio_closed = false, panel_attempted = false;
@@ -218,7 +225,7 @@ static esp_err_t run_trial(unsigned mode, JelliDisplayOutput *output, esp_err_t 
     esp_pm_dump_locks(stdout);
 #endif
     if (result == ESP_OK)
-        result = hold_trial(mode);
+        result = hold ? hold() : hold_trial(mode);
     hold_us = (uint64_t)esp_timer_get_time() - hold_start;
     tick_delta = lv_tick_get() - tick_start;
     network_delta = jelli_experiments_network_wakes() - network_start;
@@ -229,9 +236,27 @@ static esp_err_t run_trial(unsigned mode, JelliDisplayOutput *output, esp_err_t 
     return result;
 }
 
+esp_err_t jelli_power_sleep_trial(JelliDisplayOutput *output, JelliPetEngine *engine,
+                                  esp_err_t (*hold)(void), esp_err_t *restore)
+{
+    /* Keep the wake gesture out of gameplay, including the eventual release. */
+    if (bsp_display_lock(2000) != ESP_OK)
+        return ESP_ERR_TIMEOUT;
+    suppress_touch = true;
+    bsp_display_unlock();
+    uint64_t start = (uint64_t)esp_timer_get_time();
+    esp_err_t error = run_trial(LIGHT, output, restore, hold);
+    engine->last_ms += ((uint64_t)esp_timer_get_time() - start) / 1000u;
+    JelliInput ignored;
+    for (unsigned n = 0; n < 8u && engine->platform.poll; ++n)
+        if (!engine->platform.poll(engine->platform.ctx, &ignored))
+            break;
+    return error;
+}
+
 void jelli_experiments_poll(JelliDisplayOutput *output, JelliPetEngine *engine)
 {
-    jelli_imu_trial_poll();
+    jelli_imu_trial_poll(output, engine);
     jelli_touch_trial_poll();
     jelli_panel_trial_poll(output, engine);
     if (!pending)
@@ -248,7 +273,7 @@ void jelli_experiments_poll(JelliDisplayOutput *output, JelliPetEngine *engine)
     esp_err_t restore;
     ESP_LOGI("power", "begin %s; bounded timer fallback; pet time paused for diagnostic",
              modes[mode]);
-    esp_err_t result = run_trial(mode, output, &restore);
+    esp_err_t result = run_trial(mode, output, &restore, NULL);
     uint64_t end = (uint64_t)esp_timer_get_time();
     /* Exclude this explicit diagnostic from live progression, including captures. */
     engine->last_ms += (end - start) / 1000u;

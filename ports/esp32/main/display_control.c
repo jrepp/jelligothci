@@ -7,11 +7,13 @@ static JelliDeviceResult brightness(void *ctx, unsigned percent)
     JelliDisplayOutput *output = ctx;
     if (percent > 100u)
         return JELLI_DEVICE_INVALID;
-    if (!output->transfer.panel)
-        return JELLI_DEVICE_UNAVAILABLE;
     esp_err_t locked = bsp_display_lock(100);
     if (locked != ESP_OK)
         return locked == ESP_FAIL ? JELLI_DEVICE_IO : locked;
+    if (!output->transfer.panel) {
+        bsp_display_unlock();
+        return JELLI_DEVICE_UNAVAILABLE;
+    }
     /* The BSP setter discards this driver's SPI error. Keep the requested
      * percent here; a cache-derived byte->percent round trip loses precision. */
     esp_err_t result =
