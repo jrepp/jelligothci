@@ -130,12 +130,13 @@ tools/jelli-art/studio.js: TS2339: Property 'paletteKey' does not exist on type 
 tools/jelli-art/studio.js: TS2339: Property 'paletteKey' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'previewTidy' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'previewTidy' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderDock' does not exist on type '{}'.
+tools/jelli-art/studio.js: TS2339: Property 'renderDock' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'renderPalette' does not exist on type '{}'.
-tools/jelli-art/studio.js: TS2339: Property 'renderSide' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'renderStage' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'renderToolbar' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'stepFrame' does not exist on type '{}'.

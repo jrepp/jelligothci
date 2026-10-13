@@ -182,7 +182,7 @@ def test_creature_layout_follows_the_container(creature):
     assert columns == (2 if wide else 1)
 
 
-# ---- the flip-book, beside the Paint canvas ----
+# ---- the flip-book, docked under the Paint canvas ----
 
 @pytest.fixture(params=SIZES)
 def flipbook(request, browser, studio):
@@ -200,6 +200,8 @@ def test_flipbook_controls_by_tap(flipbook):
     tap_on(flipbook, "#fb-play")
     assert flipbook.locator("#fb-play").get_attribute("aria-pressed") == "false"
 
+    tap_on(flipbook, "#fb-more summary")  # the onion and guide options live in the dock's disclosure (it stays open across renders)
+    assert flipbook.locator("#fb-onion").is_visible()
     on = flipbook.evaluate("() => state.onionSkin")
     tap_on(flipbook, "#fb-onion")
     assert flipbook.evaluate("() => state.onionSkin") is (not on)

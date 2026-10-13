@@ -46,7 +46,7 @@ the repository's pinned tools, and it only listens on your own computer.
    move the axes half a pixel at a time, so an axis can sit between two
    columns or on one; **Centre** puts them back. Moved axes are remembered per
    sprite (so each clip frame separately) in this browser.
-4. Choose a colour under **Paint colours**, beside the canvas, one row per
+4. Choose a colour under **Paint colours**, in the column beside the canvas, one row per
    ramp. Click a colour for the main colour. For the secondary, right-click it,
    press Shift+F10 on it, or choose it and press X. Tools paint only the
    sprite's palette colours until you choose **custom**, which paints any
@@ -132,7 +132,7 @@ tooltip. The Creature view stacks into one column when its own width is under
 900 px. ([RFC-007](../docs-cms/rfcs/rfc-007-jelli-art-touch-and-pen.md))
 
 **Paint ✎** on a frame card opens that frame in Paint with the **Flip-book**
-beside the canvas. It plays the clip at its real timing, including strokes you
+docked under the canvas. It plays the clip at its real timing, including strokes you
 have not saved (**Play**, Shift+Space). Click a thumbnail, or press ← and →,
 to paint another frame; the arrows move the keyboard cursor instead while it
 shows, and `,` and `.` always change frame. **Onion skin** (O) ghosts the frames
@@ -140,7 +140,7 @@ before (amber) and after (blue). **Changes** ghosts only where they differ from
 this one; **Silhouette** ghosts their whole shape, to judge arcs and volume
 (Shift+O switches). **±1** to **±3** sets how many on each side, and **Ghost**
 sets their strength.
-The flip-book's Play, Frame, Onion skin, Changes/Silhouette and range buttons
+The flip-book's Play, Frame, Onion skin (in the **Onion & guides** panel), Changes/Silhouette and range buttons
 are the touch equivalents of Shift+Space, ←/→, O and Shift+O, sized for fingers.
 
 The flip-book compares every frame with frame 1 the way the game places it,

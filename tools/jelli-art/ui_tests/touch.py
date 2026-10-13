@@ -19,6 +19,7 @@ with performance.now(), and thresholds(page) returns them (JelliTouch.T).
     pan(page, (cx, cy), (dx, dy))                   two fingers dragged together
     small_targets(page, "main")                     visible controls under 44 x 44 CSS px
     sideways_overflow(page)                         px the page scrolls sideways (0 when it fits)
+    fit_box(page)                                   Paint's canvas box, zoom, and the dock and palette rects
 """
 import weakref
 
@@ -163,3 +164,18 @@ def small_targets(page, root="body", minimum=44):
 
 def sideways_overflow(page):
     return page.evaluate("() => Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth)")
+
+
+def fit_box(page):
+    """Paint's canvas box: the scroller's border box less its border (scrollbars never count), the canvas's zoom and size, whether the
+    scroller overflows, #main's scroll state, and the viewport rects of the flip-book dock, the palette's last row and the side column."""
+    return page.evaluate("""() => {
+        const s = document.querySelector('#stage .paint-canvas .scroller'), r = s.getBoundingClientRect(), c = s.querySelector('canvas').getBoundingClientRect();
+        const a = byKey[state.key], main = document.getElementById('main'), box = el => { if (!el) return null; const b = el.getBoundingClientRect();
+          return {left: b.left, top: b.top, right: b.right, bottom: b.bottom, width: b.width, height: b.height}; };
+        const w = r.width - 2 * s.clientLeft, h = r.height - 2 * s.clientTop;
+        return {w, h, vw: innerWidth, vh: innerHeight, share: w * h / (innerWidth * innerHeight), zoom: Math.round(c.width / a.width * 100) / 100,
+          sprite: [a.width, a.height], canvas: box(s.querySelector('canvas')), userZoom: state.zoom,
+          overflows: s.scrollWidth > s.clientWidth || s.scrollHeight > s.clientHeight,
+          mainScroll: main.scrollTop, mainOverflow: main.scrollHeight - main.clientHeight, dock: box(document.querySelector('.paint-dock')),
+          side: box(document.querySelector('.paint-side')), lastRamp: box(document.querySelector('#palette .paint-ramp:last-of-type')), scroller: box(s)}; }""")
