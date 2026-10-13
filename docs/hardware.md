@@ -240,6 +240,9 @@ See [network implementation evidence](../docs-cms/memos/memo-019-wifi-time-and-o
 
 ## Power experiments over USB
 
+For isolated cache-configuration builds and their matched device protocol, see
+[the cache trial](../docs-cms/memos/memo-067-cache-configuration-trial.md).
+
 This investigation adds explicit diagnostics, not an automatic pet-sleep policy.
 The ESP32 host uses a playback-only I2S channel and blocks the network worker
 while networking is disabled. In the validation profile, PM and tickless-idle support are compiled in;
@@ -321,8 +324,9 @@ skipped and it cannot grant manufacturing acceptance.
 ### Startup panel readiness
 
 The checked brightness provider obtains its panel handle from the custom draw
-callback. Startup must run the first canvas refresh under the LVGL mutex before
-requesting brightness. A detected USB port does not establish that this sequence
-completed. If startup aborts, retain the serial trace and resolve the failing
-condition; do not infer a panel wiring fault from the generic ESP error label.
-See [the startup race and recovery record](../docs-cms/memos/memo-056-hardware-optimization-continuation.md).
+callback. Startup invalidates the canvas under the LVGL mutex, releases it, and
+uses the bounded [readiness wait](../ports/esp32/main/display_transfer.c) before
+requesting brightness. Refresh work must remain on the LVGL task: a synchronous
+first refresh on the main task overflowed its stack. A detected USB port does not
+establish readiness. Retain startup failure traces and check the actual cause.
+See [the recovery and test-bed follow-up](../docs-cms/memos/memo-059-testbed-recovery-and-pipeline-attribution.md).

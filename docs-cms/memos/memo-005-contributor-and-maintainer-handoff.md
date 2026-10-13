@@ -108,6 +108,12 @@ by Release Please; check that run rather than assuming ordinary PR events fired.
 Use the revision actually checked out by the job, not only the workflow's main
 branch SHA, when assessing a manual dispatch with a ref input.
 
+If `gh pr edit` fails on deprecated Projects classic GraphQL fields, use
+`gh api --method PATCH repos/jrepp/jelligothci/pulls/NUMBER --input body.json`
+with a JSON object containing the intended `body`, then read back the PR to
+verify it. This bypasses the obsolete query without changing repository policy;
+see [publication evidence](memo-070-latest-local-firmware-deployment.md#publication-follow-up-2026-10-13).
+
 For a failure, identify whether it is source/test behavior, metadata, dependency
 downloads, permission, or publication. Retry a diagnosed transient failure;
 stop repeating the same action when it recurs and investigate the cause. Do not
