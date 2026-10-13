@@ -43,3 +43,25 @@ This task verified the firmware build, flash and serial startup. Host tests were
 not rerun for this deployment-only task. Physical display colors, animation and
 touch response still require operator confirmation for this flash; serial
 initialization does not establish them.
+
+# Publication follow-up, 2026-10-13
+
+The pending implementation and evidence were rebased onto current main and
+published as [implementation PR 67](https://github.com/jrepp/jelligothci/pull/67)
+and dependent [documentation PR 68](https://github.com/jrepp/jelligothci/pull/68).
+The memo-066 collision with upstream Studio documentation was resolved by
+renumbering the local LVGL dispatch record to [memo-071](memo-071-lvgl-dispatch-and-empty-overlay-trial.md),
+preserving its UUID and created date. The index conflict retained both entries.
+
+On the rebased tree, desktop/core/sanitizer suites passed 74/33/74 tests;
+41 targeted Python tests, all repository hooks, documentation validation and
+repair, all nine firmware builds, profile isolation and cache-matrix checks
+passed. The rebuilt normal image reports v0.11.0; it was not flashed. These
+checks do not extend the physical evidence for the earlier v0.8.0 deployment.
+Logs remain under ignored `build/pr-publish/`.
+
+Updating the first PR's cross-link with `gh pr edit` failed because its GraphQL
+query requested deprecated Projects classic metadata. A REST PATCH through
+`gh api`, with the exact body in a JSON input file, succeeded; subsequent reads
+confirmed both PRs were open and mergeable with their intended bases. CI was
+still pending at publication. The installed CLI was not upgraded.
