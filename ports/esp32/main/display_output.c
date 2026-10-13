@@ -1,4 +1,8 @@
 #include "display_output.h"
+#ifdef CONFIG_JELLI_POWER_EXPERIMENTS
+#include "span_benchmark.h"
+#include "display_memory_trial.h"
+#endif
 #include "display_copy.h"
 #include "pipeline_profile.h"
 #include "render_benchmark.h"
@@ -6,6 +10,7 @@
 #include "validation/experiments.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_heap_caps.h"
+#include "esp_attr.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -107,7 +112,7 @@ void jelli_display_output_present(JelliDisplayOutput *output, const JelliSurface
 
 /* Explicit bounded diagnostic. Alternate order to reduce cache bias; timings
  * exclude comparisons. The engine task and display mutex own both frames. */
-static void benchmark_copy(JelliDisplayOutput *output, JelliDebug *debug, uint32_t id)
+static void NOINLINE_ATTR benchmark_copy(JelliDisplayOutput *output, JelliDebug *debug, uint32_t id)
 {
     enum { PAIRS = 32 };
     uint64_t elapsed[2] = {0};
@@ -147,6 +152,19 @@ static bool experiment_command(JelliDisplayOutput *output, JelliDebug *debug, ui
                                char **words, unsigned count)
 {
 #ifdef CONFIG_JELLI_POWER_EXPERIMENTS
+    if (count == 4u &&
+        (!strcmp(words[3], "benchmark-simd-rect") || !strcmp(words[3], "benchmark-control-rect"))) {
+        jelli_render_simd_benchmark(output, debug, id, !strcmp(words[3], "benchmark-simd-rect"));
+        return true;
+    }
+    if (count == 4u && (!strcmp(words[3], "memory") || !strcmp(words[3], "benchmark-memory"))) {
+        jelli_display_memory_trial(output, debug, id, !strcmp(words[3], "benchmark-memory"));
+        return true;
+    }
+    if (count == 4u && !strcmp(words[3], "benchmark-spans")) {
+        jelli_span_benchmark(output, debug, id);
+        return true;
+    }
     if (count == 4u && !strcmp(words[3], "benchmark-staging")) {
         jelli_staging_benchmark(output, debug, id);
         return true;
@@ -161,6 +179,25 @@ static bool experiment_command(JelliDisplayOutput *output, JelliDebug *debug, ui
         return true;
     }
     return false;
+}
+
+/* Keep formatting buffers out of the dispatcher frame: it remains on the
+ * engine task stack while nested experiment/network handlers execute.
+ * The ESP32-only noinline boundary is intentional, including for copy timing. */
+static void NOINLINE_ATTR report_health(const JelliDisplayOutput *output, JelliDebug *debug,
+                                        uint32_t id)
+{
+    char body[320];
+    int size = snprintf(
+        body, sizeof(body),
+        "{\"ok\":true,\"checks\":%" PRIu32 ",\"mismatches\":%" PRIu32
+        ",\"buffers_equal\":%s,\"guards_ok\":%s,\"heap_ok\":%s,"
+        "\"stack_free_bytes\":%u,\"transfers\":%" PRIu32 ",\"transfer_failures\":%" PRIu32 "}",
+        output->checks, output->mismatches, output->buffers_equal ? "true" : "false",
+        output->guards_ok ? "true" : "false", output->heap_ok ? "true" : "false",
+        output->stack_free, output->submitted, output->failed);
+    if (size > 0 && (size_t)size < sizeof(body))
+        jelli_debug_response(debug, id, body);
 }
 
 bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEngine *engine,
@@ -197,17 +234,7 @@ bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEn
         output->refresh_requested = true;
         jelli_debug_response(debug, id, "{\"ok\":true,\"pending\":true}");
     } else if (count == 3u) {
-        char body[320];
-        int size = snprintf(
-            body, sizeof(body),
-            "{\"ok\":true,\"checks\":%" PRIu32 ",\"mismatches\":%" PRIu32
-            ",\"buffers_equal\":%s,\"guards_ok\":%s,\"heap_ok\":%s,"
-            "\"stack_free_bytes\":%u,\"transfers\":%" PRIu32 ",\"transfer_failures\":%" PRIu32 "}",
-            output->checks, output->mismatches, output->buffers_equal ? "true" : "false",
-            output->guards_ok ? "true" : "false", output->heap_ok ? "true" : "false",
-            output->stack_free, output->submitted, output->failed);
-        if (size > 0 && (size_t)size < sizeof(body))
-            jelli_debug_response(debug, id, body);
+        report_health(output, debug, id);
     } else
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"syntax\"}");
     return true;

@@ -28,6 +28,7 @@ Usage: scripts/esp COMMAND [arguments]
   doctor               Show SDK/tool versions and serial ports
   validate [idf args]  Build/use isolated SKU 31261 power validation image
   factory [idf args]   Build/use standalone SKU 31261 factory smoke image
+  cache-trial MODE [idf args]  Power image: baseline, icache, dcache, line64, icache-line64, combined
   idf [arguments]      Run arbitrary idf.py commands in the local environment
 
 To upgrade, edit both pins in toolchain.env, then run sync and build.
@@ -118,16 +119,27 @@ case "$command_name" in
         xtensa-esp-elf-gcc --version | head -n 1
         python -m serial.tools.list_ports -v
         ;;
-    validate|factory)
+    validate|factory|cache-trial)
         profile=power
         if [[ "$command_name" = factory ]]; then profile=factory; fi
+        output_profile="$profile"
+        profile_defaults="$repo_dir/ports/esp32/profiles/$profile.defaults"
+        if [[ "$command_name" = cache-trial ]]; then
+            cache_mode="${1:-}"
+            case "$cache_mode" in
+                baseline|icache|dcache|line64|icache-line64|combined) shift ;;
+                *) echo 'Choose cache-trial baseline|icache|dcache|line64|icache-line64|combined' >&2; exit 2 ;;
+            esac
+            output_profile="cache-$cache_mode"
+            profile_defaults="$profile_defaults;$repo_dir/ports/esp32/profiles/cache/$cache_mode.defaults"
+        fi
         activate
-        mkdir -p "$repo_dir/build/esp32-$profile"
+        mkdir -p "$repo_dir/build/esp32-$output_profile"
         if [[ $# -eq 0 ]]; then set -- build; fi
-        idf.py -C "$repo_dir/ports/esp32" -B "$repo_dir/build/esp32-$profile" \
+        idf.py -C "$repo_dir/ports/esp32" -B "$repo_dir/build/esp32-$output_profile" \
             -DIDF_TARGET=esp32s3 \
-            -DSDKCONFIG="$repo_dir/build/esp32-$profile/sdkconfig" \
-            -DSDKCONFIG_DEFAULTS="$repo_dir/ports/esp32/sdkconfig.defaults;$repo_dir/ports/esp32/profiles/$profile.defaults" "$@"
+            -DSDKCONFIG="$repo_dir/build/esp32-$output_profile/sdkconfig" \
+            -DSDKCONFIG_DEFAULTS="$repo_dir/ports/esp32/sdkconfig.defaults;$profile_defaults" "$@"
         ;;
     idf) activate; idf "$@" ;;
     *) usage >&2; exit 2 ;;

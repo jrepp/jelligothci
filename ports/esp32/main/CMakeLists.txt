@@ -36,9 +36,9 @@ include("${CMAKE_CURRENT_LIST_DIR}/../../../cmake/JelliWake.cmake")
 jelli_wake_data(wake_data)
 set(experiment_sources)
 if(CONFIG_JELLI_POWER_EXPERIMENTS)
-    list(APPEND experiment_sources "pipeline_profile.c" "staging_benchmark.c" "validation/power/power_diag.c"
+    list(APPEND experiment_sources "lvgl_dispatch_profile.c" "display_memory_trial.c" "lvgl_copy_trial.c" "span_rect.c" "span_kernels.c" "span_fill_s3.S" "span_benchmark.c" "pipeline_profile.c" "staging_benchmark.c" "validation/power/power_diag.c"
         "validation/power/touch_trial.c" "validation/power/panel_trial.c"
-        "../../../drivers/qmi8658.c" "validation/power/imu_trial.c" "validation/boards/qmi_probe.c"
+        "../../../drivers/qmi8658.c" "validation/power/imu_trial.c" "validation/power/imu_sleep.c" "validation/boards/qmi_probe.c"
         "validation/boards/pmic_probe.c" "validation/boards/waveshare_31261.c" "validation/network_probe.c")
 endif()
 idf_component_register(
@@ -55,8 +55,12 @@ idf_component_register(
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra -Werror)
 
 target_compile_definitions(${COMPONENT_LIB} PRIVATE JELLI_VERSION_LABEL="v${PROJECT_VER}")
+target_link_options(${COMPONENT_LIB} INTERFACE "-Wl,--wrap=esp_lv_adapter_start")
 
 if(CONFIG_JELLI_POWER_EXPERIMENTS)
+    target_link_options(${COMPONENT_LIB} INTERFACE "-Wl,--wrap=jelli_pet_render"
+        "-Wl,-u,__wrap_lv_draw_finalize_task_creation" "-Wl,--wrap=lv_draw_finalize_task_creation" "-Wl,--wrap=lv_draw_dispatch"
+        "-Wl,--wrap=lv_obj_send_event" "-Wl,--wrap=lv_draw_dispatch_wait_for_request" "-Wl,--wrap=esp_lv_adapter_register_display" "-Wl,--wrap=lv_memcpy" "-Wl,--wrap=lv_draw_sw_blend_image_to_rgb565" "-Wl,--wrap=lv_draw_sw_blend_color_to_rgb565")
     include("${CMAKE_CURRENT_LIST_DIR}/../cmake/PanelSleepTrial.cmake")
     jelli_panel_sleep_trial()
     include("${CMAKE_CURRENT_LIST_DIR}/../cmake/PipelineProfile.cmake")

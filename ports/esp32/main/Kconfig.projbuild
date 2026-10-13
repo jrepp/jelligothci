@@ -11,4 +11,12 @@ config JELLI_POWER_EXPERIMENTS
     help
         Explicit debug-port experiments for Waveshare SKU 31261. May reset
         touch and interrupt USB. Use the power validation build profile.
+config JELLI_MEMORY_TRIAL
+    int "Power-only draw-buffer placement (0=baseline, 1=small PSRAM, 2=small internal)"
+    range 0 2
+    default 0
+    depends on JELLI_POWER_EXPERIMENTS
+    help
+        Matched eight-row partial draw buffers for memory-placement trials.
+        The baseline keeps the BSP configuration. Does not change DMA staging.
 endmenu

@@ -20,6 +20,12 @@ static uint64_t last_sync, reboot_after;
 static bool ready, reboot_requested, reboot_blocked, boot_checked;
 static char current_zone[96];
 
+bool jelli_network_idle_offline(void)
+{
+    return !state.active.enabled && submitted == state.completed && !reboot_requested &&
+           state.ota == JELLI_OTA_IDLE;
+}
+
 void jelli_network_init(const JelliPetEngine *engine)
 {
     if (!jelli_network_load(&draft))
