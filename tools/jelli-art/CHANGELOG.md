@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.10.0...jelli-art-v0.11.0) (2026-10-14)
+
+
+### Features
+
+* **jelli-art:** expose Prometheus /metrics for the nuc scrape ([#70](https://github.com/jrepp/jelligothci/issues/70)) ([804aa01](https://github.com/jrepp/jelligothci/commit/804aa01ee42f97bc5357b92a6cc55484007ff03d))
+
 ## [0.10.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.9.0...jelli-art-v0.10.0) (2026-10-13)
 
 
