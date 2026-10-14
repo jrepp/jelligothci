@@ -25,6 +25,7 @@ import subprocess
 import socketserver
 import sys
 import threading
+import time
 import traceback
 import webbrowser
 from http import HTTPStatus
@@ -47,6 +48,7 @@ import profiles  # noqa: E402
 import request_body  # noqa: E402
 import storage  # noqa: E402
 from git_sync import GitSync  # noqa: E402
+from metrics import Metrics  # noqa: E402
 
 # Art recipes come from the served checkout so tidy matches that checkout's palette.
 sys.path.insert(0, str(SOURCE / "source"))
@@ -78,6 +80,7 @@ MAX_BODY = 1 << 20
 PAGE_SCRIPTS += (HERE / "drafts.js",)
 HEX_COLOUR = re.compile(r"#[0-9a-fA-F]{6}")
 LOCK = storage.WriteLock()  # every save holds it: one writer per served root, across studio processes
+METRICS = Metrics()  # scraped at /metrics by prom-nuc through the nuc gateway
 STARTUP = {"removed_temp_files": [], "problems": []}
 
 
@@ -501,7 +504,7 @@ POSTS = {  # path -> handler(body); every field is type-checked so a bad request
     "/api/palette": lambda b: set_palette_slot(F(b, "index", int), F(b, "color", str), request_body.artist(b),
                                                F(b, "base", str, required=False)),
 }
-GETS = {"/", "/api/data", "/healthz", "/api/git", "/api/version", "/api/refs", "/api/clips", "/api/creatures", "/api/frames",
+GETS = {"/", "/api/data", "/healthz", "/metrics", "/api/git", "/api/version", "/api/refs", "/api/clips", "/api/creatures", "/api/frames",
         "/api/behaviour"}
 
 
@@ -519,6 +522,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def send(self, status, body, content_type="application/json"):
         data = body if isinstance(body, bytes) else json.dumps(body).encode()
+        self._last_status = int(status)
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
@@ -543,6 +547,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(HTTPStatus.OK, payload(query.get("before", ["HEAD"])[0]))
         if method == "GET" and url.path == "/healthz":
             return self.send(HTTPStatus.OK, health())
+        if method == "GET" and url.path == "/metrics":
+            # Unauthenticated scrape endpoint for Prometheus (prom-nuc), like /healthz.
+            # It carries counters only, never art or user data; the gateway is what
+            # keeps it off the internet.
+            return self.send(HTTPStatus.OK, METRICS.render().encode(), "text/plain; version=0.0.4; charset=utf-8")
         if method == "GET" and url.path == "/api/git":
             return self.send(HTTPStatus.OK, GIT.status() if GIT else {"enabled": False})
         if method == "POST" and url.path == "/api/git/retry":
@@ -569,6 +578,9 @@ class Handler(BaseHTTPRequestHandler):
         return self.send(HTTPStatus.NOT_FOUND, {"error": "Not found"})
 
     def handle_method(self, method):
+        started = time.monotonic()
+        self._last_status = None
+        METRICS.begin()
         try:
             self.route(method)
         except request_body.RequestError as error:
@@ -590,6 +602,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(HTTPStatus.INTERNAL_SERVER_ERROR,
                       {"error": f"Jelli Art hit an internal error ({type(error).__name__}: {error}). "
                                 "Reload to see what is on disk; the server log has details."})
+        finally:
+            METRICS.end(method, urlparse(self.path).path, self._last_status, time.monotonic() - started)
 
     def do_GET(self):  # noqa: N802 (http.server naming)
         self.handle_method("GET")
