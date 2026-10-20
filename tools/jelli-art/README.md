@@ -480,6 +480,20 @@ documents each call and its keys.
 
 ## Tests
 
+The **Scenes** view composes registered background artwork with independent tilt
+and sideways-travel parameters. See the
+[authoring guide](../../docs/artwork.md#compose-background-scenes) and the
+[runtime proposal](../../docs-cms/rfcs/rfc-011-layered-backgrounds-and-motion.md).
+Saved scenes can be opened in **Test in game**, whose background controls inject
+synthetic tilt and sideways speed into the portable renderer. Editor motion sliders
+remain an authoring preview; save first to test the composition in the engine.
+`GET /api/scenes` returns the document, base hash, editability and limits.
+`POST /api/scenes` accepts `data`, a required `base` (null only for a new document),
+and optional `artist`. Saves validate references and bounded values under the
+shared write lock, atomically replace `content/scenes.json`, and use normal studio
+git recording. A stale base returns 409 without writing. Copied artwork without
+an explicit content root cannot save scenes.
+
 ```sh
 ./scripts/uv run --python 3.12 tools/jelli-art/test_server.py   # HTTP end to end, no browser
 tools/jelli-art/browser_smoke.sh [port]                        # optional, needs agent-browser
@@ -488,7 +502,7 @@ tools/jelli-art/typecheck/check.sh                             # JSDoc type chec
 
 The **Studio tests** job in `.github/workflows/jelli-art.yml` runs
 `test_paint_tools.js`, `test_server.py`, `test_creatures.py`,
-`test_animation.py`, `test_game_preview.py`, `test_creation.py` and `test_tidy.py` (Tidy gives the
+`test_animation.py`, `test_game_preview.py`, `test_creation.py`, `test_scenes.py` and `test_tidy.py` (Tidy gives the
 same pixels in every process) and the JSDoc type check on every pull request,
 and a release image is built only after they pass.
 

@@ -5,10 +5,12 @@
 # ///
 """Emit immutable C pixel and mask arrays for the portable renderer."""
 import argparse
+import json
 from pathlib import Path
 
 import asset_ids
 import creature_data
+import scene_data
 from build_slice import load_assets
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -76,9 +78,13 @@ def generate(output):
             chunks.append(f"    {{{ident}u, {width}u, {height}u, {name}_pixels, {name}_mask, {stride}u, {ground_x}u, {ground_y}u, {center_x}u, {center_y}u, {left}u, {top}u, {right}u, {bottom}u}},")
     chunks.extend(["};", "", "const JelliAsset *jelli_asset_find(uint32_t id)", "{", "    for (unsigned i = 0u; i < sizeof(assets) / sizeof(assets[0]); ++i) {", "        if (assets[i].id == id)", "            return &assets[i];", "    }", "    return 0;", "}", "", "const uint8_t *jelli_asset_glyph(uint8_t codepoint)", "{", "    if (codepoint < 32u || codepoint > 127u)", "        codepoint = (uint8_t)'?';", "    return &font_glyphs[(unsigned)(codepoint - 32u) * 12u];", "}", ""])
     chunks.extend(creature_data.emit(manifest))
+    scenes = json.loads((ROOT / "content/scenes.json").read_text())
+    chunks.append(scene_data.emit(scenes, manifest))
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text("\n\n".join(chunks))
+    output.write_text("\n\n".join(chunks) + "\n")
     (output.parent / "jelli_asset_ids.h").write_text(asset_ids.header(manifest))
+    (output.parent / "jelli_scene_resources.json").write_text(
+        json.dumps(scene_data.resources(scenes, manifest), indent=2) + "\n")
     if glyph_data is None:
         raise ValueError("Font asset is missing")
     print(f"Embedded {len(records)} assets: {output}")

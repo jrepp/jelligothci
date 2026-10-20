@@ -2,7 +2,7 @@
 # requires-python = ">=3.12,<3.13"
 # dependencies = ["Pillow==12.0.0"]
 # ///
-"""Reproduce the four additional 64px location scenes in the existing gray palette.
+"""Reproduce the four additional 64px location scenes in the muted earth ramp.
 
 Only writes park/pond/beach/library PNGs and their manifest records. Existing
 Home/Garden and hand-painted creature/icon artwork are preserved.
@@ -11,10 +11,11 @@ import json
 import math
 from pathlib import Path
 from PIL import Image, ImageDraw
+from background_kit import EARTH_RAMP
 
 ROOT = Path(__file__).resolve().parents[1]
 NAMES = ('park', 'pond', 'beach', 'library')
-PALETTE = [f'#{v:02x}{v:02x}{v:02x}' for v in range(0, 211, 14)]
+PALETTE = EARTH_RAMP
 
 
 def park(d):
@@ -89,7 +90,7 @@ def scene(name):
             radius = math.hypot(x-31.5, y-31.5)/32
             vignette = max(0, 1-max(0, radius-.60)/.40)**.8
             value = max(0, min(210, round(image.getpixel((x, y))*vignette/14)*14))
-            out.putpixel((x, y), (value, value, value, 255))
+            out.putpixel((x, y), (*bytes.fromhex(PALETTE[value // 14][1:]), 255))
     return out
 
 

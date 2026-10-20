@@ -7,5 +7,6 @@
     - tab "Behaviour"
     - tab "Test in game" [selected]
     - tab "Activities"
+    - tab "Scenes"
     - tab "New"
   - button "More modes": ›

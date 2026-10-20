@@ -14,12 +14,14 @@ function(jelli_generate_pet_assets output_variable)
   file(GLOB_RECURSE art_inputs CONFIGURE_DEPENDS "${jelli_root}/assets/slice/*.png")
   add_custom_command(
     OUTPUT "${generated}" "${ids}"
+    BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/generated/jelli_scene_resources.json"
     COMMAND "${jelli_uv}" run --python 3.12
             "${jelli_root}/tools/assets/embed_slice.py" --output "${generated}"
     DEPENDS "${jelli_root}/tools/assets/embed_slice.py" "${jelli_root}/tools/assets/asset_ids.py"
             "${jelli_root}/tools/assets/build_slice.py"
             "${jelli_root}/tools/assets/sprite_geometry.py"
             "${jelli_root}/tools/assets/creature_data.py"
+            "${jelli_root}/tools/assets/scene_data.py" "${jelli_root}/content/scenes.json"
             "${jelli_root}/assets/slice/assets.json" "${jelli_root}/content/pets.json" "${jelli_root}/content/creatures.json" "${jelli_root}/content/behaviors.json" "${jelli_root}/toolchain.env" ${art_inputs}
     COMMENT "Embedding validated slice artwork"
     VERBATIM

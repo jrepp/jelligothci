@@ -114,7 +114,8 @@ def create_healthy_assets(root, palette):
             d.ellipse((0,9,5,14),fill=white);d.ellipse((10,9,15,14),fill=white)
         folder='effects';(root/folder).mkdir(exist_ok=True);path=f'{folder}/{name}.png';im.save(root/path)
         records.append(dict(id=9001+index,key=f'{folder}.{name}',path=path,kind=folder,width=16,height=16,pivot=[8,8],bounds=list(im.getchannel('A').getbbox()),purpose='Magical celebration sprite; native RGB565 fade'))
-    grays=[f'#{v:02x}{v:02x}{v:02x}' for v in range(0,211,14)]
+    from background_kit import EARTH_RAMP
+    grays=EARTH_RAMP
     for index,name in enumerate(('home','garden')):
         im=Image.new('RGBA',(64,64));pixels=im.load()
         for y in range(64):
@@ -134,9 +135,9 @@ def create_healthy_assets(root, palette):
                     if ((x-11)**2+(y-36)**2<48 or (x-51)**2+(y-35)**2<65):shade-=42
                     if 41<y<53 and (x+2*y)%17<2:shade-=28
                     if (x-47)**2+(y-17)**2<16:shade+=28
-                value=max(0,min(210,int((shade+7)/14)*14));pixels[x,y]=(value,value,value,255)
+                value=max(0,min(210,int((shade+7)/14)*14));pixels[x,y]=(*bytes.fromhex(grays[value//14][1:]),255)
         folder='backgrounds';(root/folder).mkdir(exist_ok=True);path=f'{folder}/{name}.png';im.save(root/path)
-        records.append(dict(id=10001+index,key=f'{folder}.{name}',path=path,kind=folder,width=64,height=64,pivot=[32,32],bounds=[0,0,64,64],palette=grays,purpose='Subtle neutral scene with black vignette; nearest sampling at panel size'))
+        records.append(dict(id=10001+index,key=f'{folder}.{name}',path=path,kind=folder,width=64,height=64,pivot=[32,32],bounds=[0,0,64,64],palette=grays,purpose='Muted earth-tone scene with black vignette; nearest sampling at panel size'))
     from location_art import create_location_assets
     records.extend(create_location_assets(root))
     return records

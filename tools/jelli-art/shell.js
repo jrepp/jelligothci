@@ -148,8 +148,10 @@
   function activateMode(id, focus = false) {
     const m = modeList().find(x => x.id === id); if (!m) return;
     m.activate(); renderView(); savePrefs();
-    document.getElementById(`tab-${id}`)?.scrollIntoView({block: 'nearest', inline: 'nearest'});
-    requestAnimationFrame(syncModeOverflow);
+    requestAnimationFrame(() => {
+      syncModeOverflow();
+      document.getElementById(`tab-${id}`)?.scrollIntoView({block: 'nearest', inline: 'nearest'});
+    });
     if (focus) document.getElementById(`tab-${id}`)?.focus();
   }
   function buildTabs(list) {
@@ -307,6 +309,7 @@
 .shell-tab-dirty,.shell-tab-dirty[hidden]{display:inline-block;width:1.2em;text-align:center}.shell-tab-dirty[hidden]{visibility:hidden}
 .shell-modes{display:flex;align-items:center;gap:2px;overflow:visible;min-width:0;width:100%}
 .shell-modes [role=tablist]{min-width:0;overflow-x:auto;scrollbar-width:none;flex:1}
+.shell-modes [role=tab]{position:relative}
 .shell-mode-scroll{flex:none;padding:2px 8px;min-width:28px;font-size:22px;line-height:1;border-color:transparent}
 .shell-mode-scroll[hidden]{display:none}.shell-mode-scroll:disabled{opacity:.3}
 .shell-guide summary{cursor:pointer;line-height:1.5;color:var(--muted)}

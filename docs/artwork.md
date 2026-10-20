@@ -309,6 +309,70 @@ reproduction, and current asset details.
 
 ## Create content in the studio
 
+### Compose background scenes
+
+Choose **Scenes** to assemble a background from shared artwork. Select a layer,
+set its position, tilt amplitude and travel percentage, then use **Move back** or
+**Move forward** to change its order. **Art library** adds another instance of an
+existing background; **Paint artwork** opens its shared pixels in Paint. Editing
+that artwork affects every scene that references it. **Duplicate scene** copies
+the composition while retaining the shared art references.
+
+Layer thumbnails help identify shared pieces. **Duplicate layer** copies the selected
+layer's settings and seed; change its layer seed if you want independent variation.
+Reorder and remove controls are at the top of the selected-layer inspector. **Undo**
+and **Redo** recover document edits, including layer deletion, within the current tab.
+Reloading saved content resets this history. Use Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z
+outside text fields; text fields retain their normal text-editing undo.
+
+**Preview selected layer only** temporarily isolates a layer without changing its
+saved visibility. **Show all layers** restores the composition. The preview stays
+beside desktop controls when there is enough screen height; phone layouts keep it
+in the normal page flow. The pet reference uses the home actor's ground position.
+Scene settings are separate from the selected-layer inspector, and **Layer variation**
+expands only when needed.
+
+Give each layer a **Layer name** such as “Distant buildings” or “Curbside props”.
+The layer list displays these names independently of the shared artwork file.
+**Layer variation** offers horizontal/vertical jitter, travel variation in percentage
+points, and an appearance chance. These choose one initial variation for the whole
+layer; repeated tiles share that choice. Keep the sidewalk at zero vertical jitter
+and 100% appearance so it stays under the pet.
+
+Set **Scene seed** or use **Try another variation** to explore another arrangement.
+The readout shows the selected layer's resolved position, speed and visibility.
+Save the seed along with the composition to reproduce it in **Test in game** and
+native builds. Each **Layer seed** stays attached through renames and reordering;
+use different layer seeds for independent variation or the same seed for coordinated
+choices. New layers receive an unused seed. Variation is resolved at build time,
+so frames remain stable while moving; this does not schedule passing traffic.
+
+Use the two tilt sliders and **Play travel** to preview depth and sideways
+walking. Negative travel speed reverses direction. **Reset motion** returns to
+neutral. Traveling layers repeat horizontally; disabling repeat also clears their
+travel speed. The pet checkbox supplies a color and placement reference.
+
+**Save** writes [scene definitions](../content/scenes.json). Scene edits participate
+in unsaved warnings, browser draft recovery and stale-save confirmation.
+Use **Test saved scene in game** to open the saved composition in the C renderer.
+The game preview offers a saved-scene selector, tilt percentages and signed travel
+speed. Render several frames to see travel; the first frame starts at zero distance.
+With unsaved edits, the button becomes **Save and test in game** and saves before
+opening the preview. Edits made while that save is pending remain in Scenes for a
+subsequent save. Valid numeric edits take effect while typing; invalid fields block
+saving and receive focus. Cmd/Ctrl+S also works while a form field has focus. Flat location backgrounds remain the
+default when no scene is selected. The [engine proposal](../docs-cms/rfcs/rfc-011-layered-backgrounds-and-motion.md)
+tracks later activity integration, device orientation and forward travel.
+
+In **New**, choose **Background artwork**, then **Reusable scene layer only**
+to create paintable art without a gameplay location. Backgrounds default to the
+muted earth kit palette. The kit's
+[native source recipe](../assets/slice/source/background_kit.py) generates
+candidates into `build/assets/background-kit`; it does not overwrite painted art.
+The [manifest](../assets/slice/assets.json) owns the current library and palette ramps.
+
+### Create assets and locations
+
 Use **New** to create a pet from an explicit artwork/gameplay template, an icon,
 prop, present, or background and location. Each flow validates the full catalog
 before saving and opens the result in Paint. Registered presents become choices

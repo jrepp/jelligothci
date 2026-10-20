@@ -1,0 +1,263 @@
+{
+  "version": 1,
+  "scenes": [
+    {
+      "key": "market-street",
+      "name": "Market street",
+      "fill": "#c9cbb8",
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Sky",
+          "random": {
+            "seed": 0,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-town",
+          "x": 0,
+          "y": -20,
+          "tilt_x": 1,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Distant buildings",
+          "random": {
+            "seed": 1,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-street-fronts",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 2,
+          "tilt_y": 0,
+          "travel": 45,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Shopfronts",
+          "random": {
+            "seed": 2,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-sidewalk",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 3,
+          "tilt_y": 0,
+          "travel": 80,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Sidewalk and road",
+          "random": {
+            "seed": 3,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-street-edge",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 4,
+          "tilt_y": 0,
+          "travel": 100,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Curbside props",
+          "random": {
+            "seed": 4,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        }
+      ],
+      "seed": 0
+    },
+    {
+      "key": "garden-walk",
+      "name": "Garden walk",
+      "fill": "#c9cbb8",
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Sky",
+          "random": {
+            "seed": 0,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 1,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Distant hills",
+          "random": {
+            "seed": 1,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 2,
+          "tilt_y": 1,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Trees",
+          "random": {
+            "seed": 2,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-paving",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 3,
+          "tilt_y": 1,
+          "travel": 100,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Garden paving",
+          "random": {
+            "seed": 3,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        }
+      ],
+      "seed": 0
+    },
+    {
+      "key": "town-garden",
+      "name": "Town garden",
+      "fill": "#c9cbb8",
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Sky",
+          "random": {
+            "seed": 0,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-town",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 1,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Distant buildings",
+          "random": {
+            "seed": 1,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 2,
+          "tilt_y": 1,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Trees",
+          "random": {
+            "seed": 2,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        },
+        {
+          "asset": "backgrounds.kit-paving",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 3,
+          "tilt_y": 1,
+          "travel": 100,
+          "repeat_x": true,
+          "visible": true,
+          "name": "Garden paving",
+          "random": {
+            "seed": 3,
+            "x": 0,
+            "y": 0,
+            "travel": 0,
+            "chance": 100
+          }
+        }
+      ],
+      "seed": 0
+    }
+  ]
+}

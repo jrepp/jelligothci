@@ -13,8 +13,29 @@ static void usage(const char *name)
            "Pet mode is default. Click menus; Space debug-pauses; Escape exits.\n"
            "--save enables two-slot local persistence. Omit it for an unsaved session.\n"
            "--demo requires --headless and scripts care using 100 ms/frame.\n"
-           "Other headless runs use 8 ms/frame. --wall-ms supplies a fake headless clock.\n",
+           "Other headless runs use 8 ms/frame. --wall-ms supplies a fake headless clock.\n"
+           "--scene KEY enables layered backgrounds (e.g. market-street).\n"
+           "--tilt-x N / --tilt-y N: -100..100 percent; --travel-speed N: -32..32 px/s.\n"
+           "With a scene: arrows tilt, A/D travel, R resets travel. Space freezes motion.\n",
            name);
+}
+
+static bool scene_value(const char *key, const char *text, JelliOptions *options)
+{
+    int limit = !strcmp(key, "--travel-speed") ? 32 : 100;
+    char *end = NULL;
+    errno = 0;
+    long value = strtol(text, &end, 10);
+    if (errno || end == text || *end || value < -limit || value > limit)
+        return false;
+    if (!strcmp(key, "--tilt-x"))
+        options->tilt_x = (int)value;
+    else if (!strcmp(key, "--tilt-y"))
+        options->tilt_y = (int)value;
+    else
+        options->travel_speed = (int)value;
+    options->scene_motion = true;
+    return true;
 }
 
 static bool number(const char *text, uint64_t *out)
@@ -40,6 +61,10 @@ static bool value_option(const char *key, const char *value, JelliOptions *optio
         options->asset_pack = value;
     else if (!strcmp(key, "--save"))
         options->save_path = value;
+    else if (!strcmp(key, "--scene"))
+        options->scene = value;
+    else if (!strcmp(key, "--tilt-x") || !strcmp(key, "--tilt-y") || !strcmp(key, "--travel-speed"))
+        return scene_value(key, value, options);
     else {
         uint64_t parsed = 0;
         if (!number(value, &parsed))
@@ -58,9 +83,10 @@ static bool value_option(const char *key, const char *value, JelliOptions *optio
 
 static bool valid_mode(const JelliOptions *options)
 {
-    bool pet_options =
-        options->save_path || options->demo || options->debug_socket || options->asset_pack;
-    return (options->pet || !pet_options) && (!options->demo || options->headless);
+    bool pet_options = options->save_path || options->demo || options->debug_socket ||
+                       options->asset_pack || options->scene;
+    return (options->pet || !pet_options) && (!options->demo || options->headless) &&
+           (!options->scene_motion || options->scene);
 }
 
 int jelli_sdl_options(int argc, char **argv, JelliOptions *options)

@@ -51,6 +51,8 @@ class CreationTest(unittest.TestCase):
                 result = self.create(request)
                 self.assertEqual(result["key"], kind + ".test-" + kind)
                 manifest = creation.read(self.source / "assets.json")
+                if kind == "backgrounds":
+                    self.assertEqual(manifest["assets"][-1]["palette"], manifest["palettes"]["earth-kit"])
                 creation.validate(REPO, self.source, self.content, manifest,
                                   {n: creation.read(self.content / f"{n}.json") for n in creation.DOCS if (self.content / f"{n}.json").exists()}, {})
                 self.assertEqual(manifest["assets"][:len(original["assets"])], original["assets"])

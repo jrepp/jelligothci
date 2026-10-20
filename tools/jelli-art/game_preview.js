@@ -14,8 +14,8 @@
   const STAGES = {scenario: 'Scenario', content: 'Content check (cmake/JelliBehaviors and friends)', configure: 'CMake configure',
     art: 'Art check (build_slice / embed_slice)', compile: 'C compile', build: 'Build', render: 'Render', timeout: 'Timed out',
     tools: 'Build tools', unavailable: 'Unavailable'};
-  const SAVE_URLS = new Set(['/api/save', '/api/clips', '/api/creatures', '/api/content', '/api/palette', '/api/create']);
-  const defaults = {location: '', present: '', present_state: 'none', completion: 'running', pet: '', form: '', page: 'home', menu: false, behavior: '', moment: '', asleep: false, mess: false, potty: 0,
+  const SAVE_URLS = new Set(['/api/save', '/api/clips', '/api/creatures', '/api/content', '/api/palette', '/api/create', '/api/scenes']);
+  const defaults = {scene:'', tilt_x:0, tilt_y:0, travel_speed:0, location: '', present: '', present_state: 'none', completion: 'running', pet: '', form: '', page: 'home', menu: false, behavior: '', moment: '', asleep: false, mess: false, potty: 0,
     needs: {satiety: 700, energy: 700, hygiene: 700, amusement: 700, social: 700}, clock: false, minute: 540,
     start_ms: 0, frames: 12, step_ms: 200, advance_s: 0, live: false};
   const sc = Object.assign(structuredClone(defaults), store.get('game-scenario', {}));
@@ -64,6 +64,7 @@
   }
   function scenario() {
     const out = {pet: sc.pet, form: sc.form, page: sc.page, menu: sc.menu && !!pageOf(sc.page)?.ring, behavior: sc.behavior,
+      scene:sc.scene, tilt_x:sc.tilt_x, tilt_y:sc.tilt_y, travel_speed:sc.travel_speed,
       location: sc.location, present: sc.present, present_state: sc.present_state, completion: sc.completion,
       moment: sc.asleep ? '' : sc.moment, asleep: sc.asleep, mess: sc.mess, potty: sc.potty, needs: sc.needs,
       minute: sc.clock ? sc.minute : -1, start_ms: sc.start_ms, frames: sc.frames, step_ms: sc.step_ms, advance_s: sc.advance_s, live: sc.live};
@@ -155,6 +156,12 @@
         ${check('asleep', 'Asleep (REST command)', sc.asleep)}${check('mess', 'Potty mess on the floor', sc.mess)}
         ${num('potty', 'Potty urge', sc.potty, 0, 1000, 10)}
       </fieldset>
+      ${cat.scenes?.length ? `<fieldset><legend>Background motion</legend>
+        <div class="gp-row"><label for="gp-scene">Saved scene</label><select id="gp-scene" data-k="scene">${opt('','Flat location background',sc.scene)}${cat.scenes.map(s=>opt(s.key,s.name,sc.scene)).join('')}</select></div>
+        ${num('tilt_x','Horizontal tilt (%)',sc.tilt_x,-100,100)}
+        ${num('tilt_y','Vertical tilt (%)',sc.tilt_y,-100,100)}
+        ${num('travel_speed','Travel speed (px/s)',sc.travel_speed,-32,32)}
+        <p class="gp-note">Motion applies to the selected saved scene. Travel starts at zero in frame 1.</p></fieldset>` : ''}
       <fieldset><legend>Needs (0–1000)</legend>${cat.needs.map(n => num(`need-${n}`, n, sc.needs[n], 0, 1000, 10)).join('')}</fieldset>
       <fieldset><legend>Scene and presents</legend>
         <div class="gp-row"><label for="gp-location">Location</label><select id="gp-location" data-k="location">${opt('','Default home',sc.location)}${(cat.locations||[]).map(p=>opt(p.key,p.name,sc.location)).join('')}</select></div>
@@ -279,6 +286,9 @@
     {keys: ['.', 'ArrowRight'], description: 'Next frame'}]);
 
   /* ---------- hooks into the page ---------- */
+  /** @type {any} */ (S).previewScene = key => {
+    sc.scene=key;persist();window.JelliShell.activateMode('game');
+  };
   const baseRenderView = renderView, baseSelect = select, baseKeydown = S.keydown;
   renderView = async () => {  // eslint-disable-line no-global-assign
     const on = state.view === 'game', el = document.getElementById('game');

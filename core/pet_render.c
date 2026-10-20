@@ -1,6 +1,7 @@
 #include "jelli/potty.h"
 #include "jelli/creature.h"
 #include "jelli/wake.h"
+#include "jelli/pet_scene.h"
 #include "pet_draw.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
@@ -52,6 +53,10 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     uint8_t other_index = game->active == 0u ? 1u : 0u;
     const JelliPet *other = &game->pets[other_index];
     JelliPetRenderKey key = {.assets = ui->assets};
+    if (ui->scene && ui->scene->ready) {
+        key.scene_pixels = ui->scene->pixels;
+        key.scene_revision = ui->scene->revision;
+    }
     uint64_t day_phase =
         (pet->ticks % JELLI_DAY_TICKS + pet->phase_offset % JELLI_DAY_TICKS) % JELLI_DAY_TICKS;
     jelli_pet_timing(ui, pet, animation_ms, &key);
@@ -183,7 +188,8 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->care_seconds == b->care_seconds && a->volume == b->volume &&
+    return a->scene_pixels == b->scene_pixels && a->scene_revision == b->scene_revision &&
+           a->care_seconds == b->care_seconds && a->volume == b->volume &&
            a->hydration == b->hydration && a->assets == b->assets && same_frame_key(a, b) &&
            same_pet_key(a, b) && jelli_pet_gallery_same(a, b) && jelli_pet_collection_same(a, b);
 }
@@ -196,6 +202,7 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
         surface->stride < surface->width || !jelli_game_valid(game))
         return;
     uint64_t time = paused && ui->rendered ? ui->last_animation_phase : animation_ms;
+    jelli_pet_scene_prepare(ui);
     JelliPetRenderKey view = render_key(game, ui, time, paused);
     jelli_pet_actor_clip(ui, &view, time);
     jelli_pet_actor_layout(ui, &view);

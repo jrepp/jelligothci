@@ -78,13 +78,15 @@ void jelli_pet_draw_background(JelliSurface *s, const JelliPetRenderKey *view, J
     const JelliAsset *a = jelli_asset_lookup(
         view->assets,
         jelli_locations[view->location < jelli_location_count ? view->location : 0u].background);
-    if (!a)
+    if (!a && !view->scene_pixels)
         return;
+    const uint16_t *pixels = view->scene_pixels ? view->scene_pixels : a->pixels;
+    unsigned width = view->scene_pixels ? JELLI_SCENE_SIZE : a->width;
+    unsigned height = view->scene_pixels ? JELLI_SCENE_SIZE : a->height;
     for (unsigned y = region.y; y < region.y + region.height; ++y) {
         for (unsigned x = region.x; x < region.x + region.width; ++x) {
             int rx = 2 * (int)x - 465, ry = 2 * (int)y - 465;
-            uint16_t color =
-                a->pixels[(y * a->height / JELLI_HEIGHT) * a->width + x * a->width / JELLI_WIDTH];
+            uint16_t color = pixels[(y * height / JELLI_HEIGHT) * width + x * width / JELLI_WIDTH];
             unsigned shade = 256u - view->night / 2u;
             unsigned r = (color >> 11) * shade >> 8;
             unsigned g = ((color >> 5) & 63u) * shade >> 8;

@@ -1221,23 +1221,23 @@
       ],
       "palette": [
         "#000000",
-        "#0e0e0e",
-        "#1c1c1c",
-        "#2a2a2a",
-        "#383838",
-        "#464646",
-        "#545454",
-        "#626262",
-        "#707070",
-        "#7e7e7e",
-        "#8c8c8c",
-        "#9a9a9a",
-        "#a8a8a8",
-        "#b6b6b6",
-        "#c4c4c4",
-        "#d2d2d2"
+        "#10110e",
+        "#20221b",
+        "#303229",
+        "#404338",
+        "#505447",
+        "#606455",
+        "#707464",
+        "#808473",
+        "#909383",
+        "#a0a293",
+        "#b0b1a3",
+        "#bfbfb2",
+        "#cecdc1",
+        "#dddbd0",
+        "#ece9df"
       ],
-      "purpose": "Subtle neutral scene with black vignette; nearest sampling at panel size"
+      "purpose": "Muted earth-tone scene with black vignette; nearest sampling at panel size"
     },
     {
       "id": 10002,
@@ -1258,23 +1258,23 @@
       ],
       "palette": [
         "#000000",
-        "#0e0e0e",
-        "#1c1c1c",
-        "#2a2a2a",
-        "#383838",
-        "#464646",
-        "#545454",
-        "#626262",
-        "#707070",
-        "#7e7e7e",
-        "#8c8c8c",
-        "#9a9a9a",
-        "#a8a8a8",
-        "#b6b6b6",
-        "#c4c4c4",
-        "#d2d2d2"
+        "#10110e",
+        "#20221b",
+        "#303229",
+        "#404338",
+        "#505447",
+        "#606455",
+        "#707464",
+        "#808473",
+        "#909383",
+        "#a0a293",
+        "#b0b1a3",
+        "#bfbfb2",
+        "#cecdc1",
+        "#dddbd0",
+        "#ece9df"
       ],
-      "purpose": "Subtle neutral scene with black vignette; nearest sampling at panel size"
+      "purpose": "Muted earth-tone scene with black vignette; nearest sampling at panel size"
     },
     {
       "id": 6011,
@@ -2217,21 +2217,21 @@
       ],
       "palette": [
         "#000000",
-        "#0e0e0e",
-        "#1c1c1c",
-        "#2a2a2a",
-        "#383838",
-        "#464646",
-        "#545454",
-        "#626262",
-        "#707070",
-        "#7e7e7e",
-        "#8c8c8c",
-        "#9a9a9a",
-        "#a8a8a8",
-        "#b6b6b6",
-        "#c4c4c4",
-        "#d2d2d2"
+        "#10110e",
+        "#20221b",
+        "#303229",
+        "#404338",
+        "#505447",
+        "#606455",
+        "#707464",
+        "#808473",
+        "#909383",
+        "#a0a293",
+        "#b0b1a3",
+        "#bfbfb2",
+        "#cecdc1",
+        "#dddbd0",
+        "#ece9df"
       ],
       "purpose": "Quiet park scene with a black vignette"
     },
@@ -2254,21 +2254,21 @@
       ],
       "palette": [
         "#000000",
-        "#0e0e0e",
-        "#1c1c1c",
-        "#2a2a2a",
-        "#383838",
-        "#464646",
-        "#545454",
-        "#626262",
-        "#707070",
-        "#7e7e7e",
-        "#8c8c8c",
-        "#9a9a9a",
-        "#a8a8a8",
-        "#b6b6b6",
-        "#c4c4c4",
-        "#d2d2d2"
+        "#10110e",
+        "#20221b",
+        "#303229",
+        "#404338",
+        "#505447",
+        "#606455",
+        "#707464",
+        "#808473",
+        "#909383",
+        "#a0a293",
+        "#b0b1a3",
+        "#bfbfb2",
+        "#cecdc1",
+        "#dddbd0",
+        "#ece9df"
       ],
       "purpose": "Quiet pond scene with a black vignette"
     },
@@ -2291,21 +2291,21 @@
       ],
       "palette": [
         "#000000",
-        "#0e0e0e",
-        "#1c1c1c",
-        "#2a2a2a",
-        "#383838",
-        "#464646",
-        "#545454",
-        "#626262",
-        "#707070",
-        "#7e7e7e",
-        "#8c8c8c",
-        "#9a9a9a",
-        "#a8a8a8",
-        "#b6b6b6",
-        "#c4c4c4",
-        "#d2d2d2"
+        "#10110e",
+        "#20221b",
+        "#303229",
+        "#404338",
+        "#505447",
+        "#606455",
+        "#707464",
+        "#808473",
+        "#909383",
+        "#a0a293",
+        "#b0b1a3",
+        "#bfbfb2",
+        "#cecdc1",
+        "#dddbd0",
+        "#ece9df"
       ],
       "purpose": "Quiet beach scene with a black vignette"
     },
@@ -2328,21 +2328,21 @@
       ],
       "palette": [
         "#000000",
-        "#0e0e0e",
-        "#1c1c1c",
-        "#2a2a2a",
-        "#383838",
-        "#464646",
-        "#545454",
-        "#626262",
-        "#707070",
-        "#7e7e7e",
-        "#8c8c8c",
-        "#9a9a9a",
-        "#a8a8a8",
-        "#b6b6b6",
-        "#c4c4c4",
-        "#d2d2d2"
+        "#10110e",
+        "#20221b",
+        "#303229",
+        "#404338",
+        "#505447",
+        "#606455",
+        "#707464",
+        "#808473",
+        "#909383",
+        "#a0a293",
+        "#b0b1a3",
+        "#bfbfb2",
+        "#cecdc1",
+        "#dddbd0",
+        "#ece9df"
       ],
       "purpose": "Quiet library scene with a black vignette"
     },
@@ -2491,6 +2491,186 @@
       ],
       "palette": "teddy",
       "purpose": "Teddy bear collectible from the baby axolotl's SNUGGLE; catch target, collection slot, and gift latch"
+    },
+    {
+      "id": 10007,
+      "key": "backgrounds.kit-sky",
+      "path": "backgrounds/kit-sky.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable muted sky layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 10008,
+      "key": "backgrounds.kit-hills",
+      "path": "backgrounds/kit-hills.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        19,
+        64,
+        64
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable muted hills layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 10009,
+      "key": "backgrounds.kit-town",
+      "path": "backgrounds/kit-town.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        18,
+        64,
+        56
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable muted town layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 10010,
+      "key": "backgrounds.kit-shop",
+      "path": "backgrounds/kit-shop.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        4,
+        21,
+        42,
+        57
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable muted shop layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 10011,
+      "key": "backgrounds.kit-trees",
+      "path": "backgrounds/kit-trees.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        24,
+        64,
+        64
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable muted trees layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 10012,
+      "key": "backgrounds.kit-paving",
+      "path": "backgrounds/kit-paving.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        56,
+        64,
+        64
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable muted paving layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 10013,
+      "key": "backgrounds.kit-street-fronts",
+      "path": "backgrounds/kit-street-fronts.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        10,
+        64,
+        31
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable muted street-fronts layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 10014,
+      "key": "backgrounds.kit-sidewalk",
+      "path": "backgrounds/kit-sidewalk.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        31,
+        64,
+        64
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable muted sidewalk layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 10015,
+      "key": "backgrounds.kit-street-edge",
+      "path": "backgrounds/kit-street-edge.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        3,
+        35,
+        59,
+        46
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable muted street-edge layer; source geometry in background_kit.py"
     }
   ],
   "clips": [
@@ -3003,6 +3183,24 @@
       "#d7a670",
       "#412609",
       "#000000"
+    ],
+    "earth-kit": [
+      "#30312b",
+      "#474a3f",
+      "#626955",
+      "#7f866c",
+      "#a1a68a",
+      "#c0c1a5",
+      "#5c5047",
+      "#796452",
+      "#987f66",
+      "#b39c7e",
+      "#d0bda0",
+      "#ded2b9",
+      "#666f70",
+      "#87918b",
+      "#a9b2a5",
+      "#c9cbb8"
     ]
   },
   "palette_ramps": {
@@ -3076,6 +3274,39 @@
           "#dfa08a",
           "#b55838",
           "#8f4329"
+        ]
+      }
+    ],
+    "earth-kit": [
+      {
+        "name": "Foliage",
+        "colours": [
+          "#c0c1a5",
+          "#a1a68a",
+          "#7f866c",
+          "#626955",
+          "#474a3f",
+          "#30312b"
+        ]
+      },
+      {
+        "name": "Clay",
+        "colours": [
+          "#ded2b9",
+          "#d0bda0",
+          "#b39c7e",
+          "#987f66",
+          "#796452",
+          "#5c5047"
+        ]
+      },
+      {
+        "name": "Air",
+        "colours": [
+          "#c9cbb8",
+          "#a9b2a5",
+          "#87918b",
+          "#666f70"
         ]
       }
     ]

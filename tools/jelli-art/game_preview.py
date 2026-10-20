@@ -87,6 +87,7 @@ def catalogue(repo, content):
     return {"pages": [{"id": v, "name": n, "ring": v < ring_limit and v != collection} for v, n in pages],
             "entries": entries, "states": states, "moments": moments, "needs": list(NEEDS),
             "locations": (behaviors.read_json(Path(content) / "locations.json") or {}).get("locations", []),
+            "scenes": (behaviors.read_json(Path(content) / "scenes.json") or {}).get("scenes", []),
             "prizes": (behaviors.read_json(Path(content) / "prizes.json") or {}).get("prizes", []),
             "limits": {"frames": MAX_FRAMES, "step_ms": MAX_STEP_MS, "start_ms": MAX_START_MS,
                        "advance_s": MAX_ADVANCE_S, "need": 1000, "potty": 1000, "minute": 1439}}
@@ -152,6 +153,7 @@ def parse_scenario(raw, cat):
     state = _named(raw, "behavior", cat["states"], errors)
     moment = _named(raw, "moment", cat["moments"], errors)
     location = _named(raw, "location", [p["key"] for p in cat.get("locations", [])], errors)
+    scene = _named(raw, "scene", [s["key"] for s in cat.get("scenes", [])], errors)
     present = _named(raw, "present", [p["key"] for p in cat.get("prizes", [])], errors)
     present_state = raw.get("present_state", "none")
     if present_state not in ("none", "offered", "owned"):
@@ -172,6 +174,9 @@ def parse_scenario(raw, cat):
         errors.append({"field": "needs", "message": f"unknown needs {', '.join(unknown)}"})
     needs = [_integer(needs_raw, n, 0, 1000, 700, errors, "needs.") for n in NEEDS]
     s = {"potty": _integer(raw, "potty", 0, 1000, 0, errors), "minute": _integer(raw, "minute", -1, 1439, -1, errors),
+         "tilt_x": _integer(raw, "tilt_x", -100, 100, 0, errors),
+         "tilt_y": _integer(raw, "tilt_y", -100, 100, 0, errors),
+         "travel_speed": _integer(raw, "travel_speed", -32, 32, 0, errors),
          "start_ms": _integer(raw, "start_ms", 0, MAX_START_MS, 0, errors),
          "step_ms": _integer(raw, "step_ms", 1, MAX_STEP_MS, 200, errors),
          "frames": _integer(raw, "frames", 1, MAX_FRAMES, 12, errors),
@@ -191,7 +196,11 @@ def parse_scenario(raw, cat):
             "--behavior", 0 if state is None else state + 1, "--moment", 0 if moment is None else moment + 1,
             *[x for key in ("potty", "minute", "start_ms", "step_ms", "frames", "advance_s") for x in (f"--{key}", s[key])],
             *[x for key in ("menu", "mess", "asleep", "live") for x in (f"--{key}", int(s[key]))]]
+    if scene is not None:
+        argv += ["--scene", cat["scenes"][scene]["key"],
+                 *[x for key in ("tilt_x", "tilt_y", "travel_speed") for x in (f"--{key}", s[key])]]
     summary = {"pet": entry["name"], "form": form["name"], "page": page_names[page],
+               "scene": cat["scenes"][scene]["key"] if scene is not None else "",
                "behavior": cat["states"][state] if state is not None else "", "moment": cat["moments"][moment] if moment is not None else "",
                "needs": dict(zip(NEEDS, needs)), "location": raw.get("location", ""),
                "present": raw.get("present", ""), "present_state": present_state, "completion": completion, **s}
@@ -205,6 +214,7 @@ def alt_text(summary, index):
     parts += [f"behaviour {s['behavior']}"] if s["behavior"] else []
     parts += [f"running {s['moment']}"] if s["moment"] else []
     parts += [f"location {s['location']}"] if s.get("location") else []
+    parts += [f"background scene {s['scene']}"] if s.get("scene") else []
     parts += [f"present {s['present']} {s['present_state']}"] if s.get("present_state", "none") != "none" else []
     parts += [f"completion {s['completion']}"] if s.get("completion", "running") != "running" else []
     parts += ["asleep"] if s["asleep"] else []
