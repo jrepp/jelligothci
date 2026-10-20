@@ -22,7 +22,7 @@ static bool same_arena(const JelliArena *left, const JelliArena *right)
 
 static void initialization(void)
 {
-    _Alignas(max_align_t) unsigned char bytes[64];
+    _Alignas(JelliMemoryAlignment) unsigned char bytes[64];
     JelliArena arena;
     CHECK(jelli_arena_init(&arena, (JelliByteSpan){bytes, sizeof(bytes)}) == JELLI_MEMORY_OK);
     JelliArena before = arena;
@@ -45,9 +45,9 @@ static void initialization(void)
 
 static void allocation_bounds(void)
 {
-    _Alignas(max_align_t) unsigned char bytes[6u * _Alignof(max_align_t)];
+    _Alignas(JelliMemoryAlignment) unsigned char bytes[6u * _Alignof(JelliMemoryAlignment)];
     memset(bytes, 0xacu, sizeof(bytes));
-    const size_t guard = _Alignof(max_align_t);
+    const size_t guard = _Alignof(JelliMemoryAlignment);
     const size_t capacity = 4u * guard;
     JelliArena arena;
     CHECK(jelli_arena_init(&arena, (JelliByteSpan){bytes + guard, capacity}) == JELLI_MEMORY_OK);
@@ -55,7 +55,7 @@ static void allocation_bounds(void)
     CHECK(jelli_arena_allocate(&arena, 1u, 1u, &out) == JELLI_MEMORY_OK);
     CHECK(out.data == bytes + guard && out.capacity == 1u);
     out.data[0] = 7u;
-    size_t alignment = _Alignof(max_align_t);
+    size_t alignment = _Alignof(JelliMemoryAlignment);
     CHECK(jelli_arena_allocate(&arena, alignment, alignment, &out) == JELLI_MEMORY_OK);
     CHECK(out.data == bytes + guard + alignment && out.capacity == alignment);
     CHECK(arena.used == 2u * alignment && arena.high_water == 2u * alignment);
@@ -77,14 +77,14 @@ static void allocation_bounds(void)
 
 static void allocation_failures(void)
 {
-    _Alignas(max_align_t) unsigned char bytes[32];
+    _Alignas(JelliMemoryAlignment) unsigned char bytes[32];
     JelliArena arena;
     CHECK(jelli_arena_init(&arena, (JelliByteSpan){bytes, sizeof(bytes)}) == JELLI_MEMORY_OK);
     JelliByteSpan out = {NULL, 19u};
     CHECK(jelli_arena_allocate(&arena, 0u, 1u, &out) == JELLI_MEMORY_INVALID);
     CHECK(jelli_arena_allocate(&arena, 1u, 0u, &out) == JELLI_MEMORY_INVALID);
     CHECK(jelli_arena_allocate(&arena, 1u, 3u, &out) == JELLI_MEMORY_INVALID);
-    CHECK(jelli_arena_allocate(&arena, 1u, _Alignof(max_align_t) * 2u, &out) ==
+    CHECK(jelli_arena_allocate(&arena, 1u, _Alignof(JelliMemoryAlignment) * 2u, &out) ==
           JELLI_MEMORY_INVALID);
     CHECK(jelli_arena_allocate(&arena, 1u, 1u, NULL) == JELLI_MEMORY_INVALID);
     CHECK(jelli_arena_allocate(NULL, 1u, 1u, &out) == JELLI_MEMORY_INVALID);
@@ -94,8 +94,8 @@ static void allocation_failures(void)
 
 static void alignment_padding_exhaustion(void)
 {
-    _Alignas(max_align_t) unsigned char bytes[2u * _Alignof(max_align_t)];
-    const size_t alignment = _Alignof(max_align_t);
+    _Alignas(JelliMemoryAlignment) unsigned char bytes[2u * _Alignof(JelliMemoryAlignment)];
+    const size_t alignment = _Alignof(JelliMemoryAlignment);
     JelliArena arena;
     CHECK(jelli_arena_init(&arena, (JelliByteSpan){bytes, alignment + 1u}) == JELLI_MEMORY_OK);
     JelliByteSpan out;
@@ -109,7 +109,7 @@ static void alignment_padding_exhaustion(void)
 
 static void marks_and_rewind(void)
 {
-    _Alignas(max_align_t) unsigned char bytes[32];
+    _Alignas(JelliMemoryAlignment) unsigned char bytes[32];
     JelliArena arena, other;
     CHECK(jelli_arena_init(&arena, (JelliByteSpan){bytes, sizeof(bytes)}) == JELLI_MEMORY_OK);
     CHECK(jelli_arena_init(&other, (JelliByteSpan){NULL, 0u}) == JELLI_MEMORY_OK);
@@ -141,7 +141,7 @@ static void marks_and_rewind(void)
 
 static void exclusive_checkout(void)
 {
-    _Alignas(max_align_t) unsigned char bytes[32];
+    _Alignas(JelliMemoryAlignment) unsigned char bytes[32];
     JelliArena arena, other;
     CHECK(jelli_arena_init(&arena, (JelliByteSpan){bytes, sizeof(bytes)}) == JELLI_MEMORY_OK);
     CHECK(jelli_arena_init(&other, (JelliByteSpan){NULL, 0u}) == JELLI_MEMORY_OK);
@@ -180,7 +180,7 @@ static void exclusive_checkout(void)
 
 static void exhausted_identities(void)
 {
-    _Alignas(max_align_t) unsigned char bytes[16];
+    _Alignas(JelliMemoryAlignment) unsigned char bytes[16];
     JelliArena arena;
     CHECK(jelli_arena_init(&arena, (JelliByteSpan){bytes, sizeof(bytes)}) == JELLI_MEMORY_OK);
     JelliByteSpan out;

@@ -40,10 +40,11 @@ static void checked_alignment(void)
     CHECK(result == 19u);
     CHECK(jelli_size_align(3u, 3u, &result) == JELLI_MEMORY_INVALID);
     CHECK(result == 19u);
-    CHECK(jelli_size_align(3u, _Alignof(max_align_t) * 2u, &result) == JELLI_MEMORY_INVALID);
+    CHECK(jelli_size_align(3u, _Alignof(JelliMemoryAlignment) * 2u, &result) ==
+          JELLI_MEMORY_INVALID);
     CHECK(result == 19u);
     CHECK(jelli_size_align(1u, 1u, NULL) == JELLI_MEMORY_INVALID);
-    for (size_t alignment = 1u; alignment <= _Alignof(max_align_t); alignment *= 2u) {
+    for (size_t alignment = 1u; alignment <= _Alignof(JelliMemoryAlignment); alignment *= 2u) {
         CHECK(jelli_size_align(0u, alignment, &result) == JELLI_MEMORY_OK);
         CHECK(result == 0u);
         CHECK(jelli_size_align(alignment, alignment, &result) == JELLI_MEMORY_OK);

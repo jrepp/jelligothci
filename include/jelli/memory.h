@@ -5,6 +5,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* MSVC's C library omits C11 max_align_t. Its fundamental scalar types are
+ * covered by this union; keep the standard type on other supported toolchains. */
+#if defined(_MSC_VER)
+typedef union {
+    long double floating;
+    intmax_t integer;
+    void *pointer;
+    void (*function)(void);
+} JelliMemoryAlignment;
+#else
+typedef max_align_t JelliMemoryAlignment;
+#endif
+
 typedef enum {
     JELLI_MEMORY_OK,
     JELLI_MEMORY_INVALID,
@@ -25,7 +38,7 @@ typedef struct {
 
 /* Every failure leaves outputs and arena state unchanged. Output objects must
  * not overlap inputs, arena state, or backing storage. Supported alignments are
- * powers of two no greater than _Alignof(max_align_t). */
+ * powers of two no greater than _Alignof(JelliMemoryAlignment). */
 JelliMemoryStatus jelli_size_add(size_t left, size_t right, size_t *out);
 JelliMemoryStatus jelli_size_multiply(size_t left, size_t right, size_t *out);
 JelliMemoryStatus jelli_size_align(size_t size, size_t alignment, size_t *out);
@@ -56,7 +69,7 @@ typedef struct {
     uint64_t generation;
 } JelliArenaLease;
 
-/* Any nonnull storage base must be aligned to _Alignof(max_align_t), including
+/* Any nonnull storage base must be aligned to _Alignof(JelliMemoryAlignment), including
  * zero-capacity storage. Empty NULL storage is accepted. The arena object must
  * be disjoint from its backing storage. Initialization does not read the old
  * arena; discard every prior view, mark and lease before reinitializing. */

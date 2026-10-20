@@ -3,7 +3,7 @@
 static bool valid_alignment(size_t alignment)
 {
     return alignment != 0 && (alignment & (alignment - 1)) == 0 &&
-           alignment <= _Alignof(max_align_t);
+           alignment <= _Alignof(JelliMemoryAlignment);
 }
 
 static bool valid_span(JelliByteSpan span) { return span.data != NULL || span.capacity == 0; }
@@ -55,7 +55,7 @@ JelliMemoryStatus jelli_arena_init(JelliArena *arena, JelliByteSpan storage)
 {
     if (arena == NULL || !valid_span(storage))
         return JELLI_MEMORY_INVALID;
-    if (storage.data != NULL && (uintptr_t)storage.data % _Alignof(max_align_t) != 0)
+    if (storage.data != NULL && (uintptr_t)storage.data % _Alignof(JelliMemoryAlignment) != 0)
         return JELLI_MEMORY_INVALID;
     *arena = (JelliArena){.storage = storage, .epoch = 1};
     return JELLI_MEMORY_OK;

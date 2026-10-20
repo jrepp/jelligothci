@@ -13,7 +13,7 @@ doc_uuid: fab3f8c3-c216-4895-b941-66695ebe84f5
 Following the owner's direction to continue into implementation, this increment
 implements the checked-storage foundation in
 [RFC-009](../rfcs/rfc-009-bounded-memory-systems-and-adoption.md).
-The code is an uncommitted change based on
+The initial measurements below used an uncommitted change based on
 `d830df7374ca3e72ed0608f6341b0776d0ed29e0`; validation below applies to this
 working-tree increment, not the base revision alone.
 The implementation/test set has SHA256
@@ -96,3 +96,18 @@ multithreaded runtime qualification is established by this increment. Its
 checkout API remains externally synchronized. The source audit and resource
 tradeoffs remain recorded in
 [memo-071](memo-071-allocation-audit-and-memory-trajectories.md).
+
+# Publication portability follow-up
+
+[PR #71](https://github.com/jrepp/jelligothci/pull/71) publishes this foundation
+with the subsequent Jellipak and authoring increments. Its first Windows CI
+build failed because MSVC's C library does not define `max_align_t`.
+The public header now provides `JelliMemoryAlignment`: the standard type on
+other supported toolchains and a union covering fundamental scalar alignment
+on MSVC. Arena storage and alignment validation use that same public type.
+This preserves the existing alignment contract on macOS and Linux without
+defining a reserved standard-library name.
+
+Native arithmetic/arena tests and a strict C11 build exercising the fallback
+branch passed. The fallback branch check on a host compiler does not substitute
+for the Windows CI build; that build is the platform acceptance check.
