@@ -279,7 +279,7 @@
         <div class="seg" role="group" aria-label="Flip-book">
           <button id="fb-prev" title="Paint the previous frame (Left arrow or ,)" aria-keyshortcuts="ArrowLeft ," ${many ? '' : 'disabled'}>◀ Frame</button>
           <button id="fb-play" aria-pressed="${fb.playing}" title="Play the clip in the preview while you paint (Shift+Space)" aria-keyshortcuts="Shift+Space" ${n ? '' : 'disabled'}>${fb.playing ? 'Pause' : 'Play'}</button>
-          <button id="fb-next" title="Paint the next frame (Right arrow or .)" aria-keyshortcuts="ArrowRight ." ${many ? '' : 'disabled'}>Frame ▶</button></div>
+          <button id="fb-next" title="Paint the next frame (Right arrow or .)" aria-keyshortcuts="ArrowRight ." ${many ? '' : 'disabled'}>Frame ▶</button><button id="fb-duplicate" title="Copy the saved frame to a new PNG and insert it after this frame when the clip has room">${window.JelliIcons.svg("duplicate")}Duplicate frame</button></div>
         <span class="fb-now" id="fb-now" aria-live="off"></span>${alignmentNote(c, al)}</div>
       <ol class="fb-strip" id="fb-strip" aria-label="Frames of ${esc(clip)}">${c.frames.map((k, i) => `<li><button data-i="${i}" aria-current="${i === index}"${al.off[i].length ? ' class="off"' : ''} aria-label="${i + 1} · ${esc(byKey[k]?.pose || k)} ${c.durations_ms[i]} ms${al.off[i].length ? `, ${al.off[i].join(', ')}` : ''}" title="Paint frame ${i + 1}"><canvas></canvas><span>${i + 1} · ${esc(byKey[k]?.pose || k)}</span><span>${c.durations_ms[i]} ms</span></button></li>`).join('')}</ol>
       <details class="fb-more" id="fb-more"${fb.open ? ' open' : ''}><summary>Onion &amp; guides</summary><div class="fb-panel">
@@ -303,6 +303,7 @@
     box.querySelector('#fb-prev').onclick = () => paintFrame(-1);
     box.querySelector('#fb-next').onclick = () => paintFrame(1);
     box.querySelector('#fb-play').onclick = () => setPlaying(!fb.playing);
+    /** @type {HTMLButtonElement} */ (box.querySelector('#fb-duplicate')).onclick = () => A.duplicatePaintFrame();
     box.querySelector('#fb-onion').onclick = toggleOnion;
     box.querySelector('#fb-guides').onclick = toggleAnimGuides;
     box.querySelectorAll('[data-onion-mode]').forEach(b => { b.onclick = () => setOnionMode(b.dataset.onionMode); });

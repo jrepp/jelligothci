@@ -5,6 +5,30 @@ alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md) and
 [memo-002: Build, release, and runner validation](memos/memo-002-build-release-and-runner-validation.md).
 
+Proposed Jellipak shared desktop/device artwork store:
+[RFC-008](rfcs/rfc-008-jellipak-resource-store.md), with reproducible compression
+measurements in [memo-070](memos/memo-070-compressed-resource-payload-measurements.md).
+Foundation-first bounded memory and adoption plan:
+[RFC-009](rfcs/rfc-009-bounded-memory-systems-and-adoption.md) (draft).
+Allocation audit and recommendations:
+[memo-071](memos/memo-071-allocation-audit-and-memory-trajectories.md).
+Proposed Jellipak features, self-tests, and build validation:
+[RFC-010](rfcs/rfc-010-jellipak-build-and-validation.md).
+Checked-memory and scratch-arena implementation evidence:
+[memo-072](memos/memo-072-memory-foundation-implementation.md).
+Portable Jellipak block reader and native verification:
+[memo-073](memos/memo-073-jellipak-block-reader.md).
+Jellipak artwork compiler, complete pack measurements, and desktop verification:
+[memo-074](memos/memo-074-jellipak-artwork-compiler.md).
+Native byte-for-byte decompression verification:
+[memo-075](memos/memo-075-jellipak-native-byte-comparison.md).
+Jelli Art creation workflows and Safari validation:
+[memo-076](memos/memo-076-jelli-art-creation-workflow-review.md).
+Implemented creation workflows and adversarial validation:
+[memo-077](memos/memo-077-jelli-art-creation-delivery.md).
+Creative workspace, standard saves and duplication:
+[memo-078](memos/memo-078-jelli-paint-creative-workflow-pass.md).
+
 Wi-Fi/time/OTA foundation: [memo-019](memos/memo-019-wifi-time-and-ota-foundation.md).
 Planned AP setup and optional Wi-Fi debug: [RFC-003](rfcs/rfc-003-wifi-provisioning-and-network-debug.md).
 

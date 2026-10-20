@@ -7,6 +7,7 @@
 #include "jelli/activities.h"
 #include "jelli/behavior.h"
 #include "jelli/collection.h"
+#include "jelli/locations.h"
 #include "jelli/pet_ui.h"
 #include <errno.h>
 #include <stddef.h>
@@ -24,6 +25,7 @@
 typedef struct {
     long entry, form, page, menu, behavior, potty, mess, asleep, moment, minute;
     long start_ms, step_ms, frames, advance_s, live;
+    long location, present, present_state, completion;
     long needs[JELLI_NEED_COUNT];
     const char *out;
 } Scenario;
@@ -36,7 +38,11 @@ typedef struct {
 
 #define OPTION(field, low, high) {"--" #field, offsetof(Scenario, field), low, high}
 static const Option options[] = {
-    OPTION(entry, 1, 9),
+    OPTION(entry, 1, UINT8_MAX),
+    OPTION(location, 0, JELLI_LOCATION_CAPACITY - 1),
+    OPTION(present, 0, JELLI_PRIZE_COUNT),
+    OPTION(present_state, 0, 2),
+    OPTION(completion, 0, 2),
     OPTION(form, 0, JELLI_FORM_CAPACITY - 1),
     OPTION(page, 0, JELLI_UI_PAGE_COUNT - 1),
     OPTION(menu, 0, 1),
@@ -59,6 +65,7 @@ static uint16_t pixels[JELLI_WIDTH * JELLI_HEIGHT];
 static uint8_t row[JELLI_WIDTH * 3u];
 static JelliGame game;
 static JelliPetUi ui;
+static JelliEventLog events;
 
 static bool parse_long(const char *text, long low, long high, long *value)
 {
@@ -122,7 +129,7 @@ static bool parse_args(int argc, char **argv, Scenario *scenario)
             return false;
         }
     }
-    return scenario->out != NULL;
+    return scenario->out != NULL && (unsigned)scenario->entry <= jelli_collection_entry_count;
 }
 
 static const char *fail(const char *message)
@@ -150,6 +157,22 @@ static const char *apply_pet(const Scenario *s)
     for (unsigned i = 0u; i < JELLI_NEED_COUNT; ++i)
         pet->needs[i] = (uint16_t)s->needs[i];
     pet->potty = (uint16_t)s->potty;
+    if ((unsigned)s->location >= jelli_location_count)
+        return fail("unknown location");
+    pet->location = (uint8_t)s->location;
+    if (s->present_state) {
+        if (!s->present || (unsigned)s->present > jelli_prize_count)
+            return fail("unknown present");
+        unsigned index = (unsigned)s->present - 1u;
+        if (s->present_state == 1) {
+            game.prizes.offered = (uint8_t)s->present;
+            game.prizes.offered_pet = pet->id;
+        } else {
+            game.prizes.owned |= (uint16_t)(1u << index);
+            game.prizes.discovered |= (uint16_t)(1u << index);
+            game.prizes.origin_pet[index] = pet->id;
+        }
+    }
     if (s->minute >= 0) {
         game.clock_known = ui.clock_known = true;
         game.clock_minute = ui.clock_minute = (uint16_t)s->minute;
@@ -161,10 +184,38 @@ static const char *apply_command(JelliCommandKind kind, uint32_t value, const ch
 {
     JelliCommand command = {kind, game.pets[game.active].id, value};
     JelliResult result = jelli_game_command(&game, command);
+    (void)jelli_pet_rewards_process(&ui.rewards, &game, false, false, 0u);
     if (result == JELLI_OK)
         return NULL;
     printf("{\"ok\":false,\"error\":\"%s: %s\"}\n", refusal, jelli_game_result_name(result));
     return refusal;
+}
+
+/* Small steps avoid the live catch-up limit and observe every completion event. */
+static void advance_preview(uint64_t elapsed_ms)
+{
+    while (elapsed_ms) {
+        uint64_t step = elapsed_ms > 100u ? 100u : elapsed_ms;
+        jelli_game_advance(&game, step);
+        (void)jelli_pet_rewards_process(&ui.rewards, &game, false, false, 0u);
+        elapsed_ms -= step;
+    }
+}
+
+/* Complete using the engine clock and command path. Two runs test the daily policy. */
+static const char *complete_moment(const Scenario *s)
+{
+    if (!s->completion)
+        return NULL;
+    if (!s->moment)
+        return fail("completion requires a moment");
+    for (long run = 0; run < s->completion; ++run) {
+        if (run && apply_command(JELLI_CMD_MOMENT, (uint32_t)(s->moment - 1), "repeat refused"))
+            return "repeat";
+        unsigned seconds = jelli_moments[s->moment - 1].duration_s;
+        advance_preview((uint64_t)seconds * 1000u);
+    }
+    return NULL;
 }
 
 static const char *apply_state(const Scenario *s)
@@ -175,6 +226,8 @@ static const char *apply_state(const Scenario *s)
         if (apply_command(JELLI_CMD_MOMENT, (uint32_t)(s->moment - 1), "moment refused"))
             return "moment";
     }
+    if (complete_moment(s))
+        return "completion";
     if (s->asleep && apply_command(JELLI_CMD_REST, 0u, "rest refused"))
         return "rest";
     JelliPet *pet = &game.pets[game.active];
@@ -190,8 +243,7 @@ static const char *apply_state(const Scenario *s)
     }
     if (s->mess)
         pet->behavior_flags |= JELLI_PET_FLAG_MESS;
-    for (long second = 0; second < s->advance_s; ++second)
-        jelli_game_advance(&game, 1000u);
+    advance_preview((uint64_t)s->advance_s * 1000u);
     ui.page = (JelliPetPage)s->page;
     ui.menu_open = s->menu != 0;
     return jelli_game_valid(&game) ? NULL : fail("the engine rejects this scenario state");
@@ -225,7 +277,7 @@ static bool render_frames(const Scenario *s, JelliSurface *surface)
     uint64_t start = (uint64_t)s->start_ms, step = (uint64_t)s->step_ms;
     for (unsigned i = 0u; i < (unsigned)s->frames; ++i) {
         if (i && s->live)
-            jelli_game_advance(&game, step);
+            advance_preview(step);
         jelli_pet_render(surface, &game, &ui, start + (uint64_t)i * step, false);
         if (!ui.rendered || !write_frame(s->out, i))
             return false;
@@ -261,7 +313,10 @@ static void report(const Scenario *s)
     printf("{\"ok\":true,\"frames\":%ld,\"entry\":%u,\"form\":%u,\"form_name\":\"%s\","
            "\"behavior\":\"%s\",\"asleep\":%s,\"moment\":%u,\"activity\":\"%s\",\"mess\":%s,"
            "\"pose\":%u,\"page\":%u,\"menu\":%s,\"night\":%u,\"clock_minute\":%u,"
-           "\"needs\":[%u,%u,%u,%u,%u],\"potty\":%u}\n",
+           "\"needs\":[%u,%u,%u,%u,%u],\"potty\":%u,"
+           "\"location\":%u,\"location_name\":\"%s\",\"owned\":%u,\"offered\":%u,"
+           "\"completed_moments\":%u,\"bond\":%u,\"hydration\":%u,"
+           "\"rendered_location\":%u,\"visible_offered\":%u}\n",
            s->frames, (unsigned)pet->collection_entry, (unsigned)pet->form,
            jelli_collection_forms[pet->form].name, state ? state->name : "",
            pet->asleep ? "true" : "false", (unsigned)pet->moment, activity_name(pet->activity),
@@ -269,14 +324,18 @@ static void report(const Scenario *s)
            (unsigned)ui.last_view.pose, (unsigned)ui.page, ui.menu_open ? "true" : "false",
            (unsigned)ui.last_view.night, (unsigned)ui.last_view.clock_minute,
            (unsigned)pet->needs[0], (unsigned)pet->needs[1], (unsigned)pet->needs[2],
-           (unsigned)pet->needs[3], (unsigned)pet->needs[4], (unsigned)pet->potty);
+           (unsigned)pet->needs[3], (unsigned)pet->needs[4], (unsigned)pet->potty,
+           (unsigned)pet->location, jelli_locations[pet->location].name,
+           (unsigned)game.prizes.owned, (unsigned)game.prizes.offered,
+           (unsigned)pet->completed_moments, (unsigned)pet->bond, (unsigned)pet->hydration,
+           (unsigned)ui.last_view.location, (unsigned)ui.last_view.offered_prize);
 }
 
 int main(int argc, char **argv)
 {
     Scenario scenario;
     if (!parse_args(argc, argv, &scenario)) {
-        fprintf(stderr, "Usage: jelli_game_preview --out DIR [--entry 1..9] [--form N] "
+        fprintf(stderr, "Usage: jelli_game_preview --out DIR [--entry N] [--form N] "
                         "[--page N] [--menu 0|1] [--behavior STATE+1] [--needs a,b,c,d,e] "
                         "[--potty 0..1000] [--mess 0|1] [--asleep 0|1] [--moment ID+1] "
                         "[--minute -1..1439] [--start_ms MS] [--step_ms MS] [--frames 1..48] "
@@ -284,6 +343,7 @@ int main(int argc, char **argv)
         return 2;
     }
     jelli_game_init(&game);
+    game.events = &events;
     jelli_pet_ui_init(&ui);
     if (apply_pet(&scenario) || apply_state(&scenario))
         return 3;

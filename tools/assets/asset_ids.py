@@ -8,8 +8,9 @@ import sys
 from pathlib import Path
 
 MANIFEST = Path(__file__).resolve().parents[2] / "assets/slice/assets.json"
-# Families the renderer indexes by position (prize index, effect style, need meter).
-INDEXED_FAMILIES = {"prizes": "PRIZE", "effects": "EFFECT", "meters": "METER"}
+# Families the renderer indexes by position (effect style and need meter).
+# Prizes use explicit stable catalog slots mapped to artwork IDs.
+INDEXED_FAMILIES = {"effects": "EFFECT", "meters": "METER"}
 
 
 def asset_macro(key):

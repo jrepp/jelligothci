@@ -5,7 +5,9 @@
 
 static unsigned selected(const JelliPetUi *ui)
 {
-    return ui->selected_pet >= 1u && ui->selected_pet <= 9u ? ui->selected_pet : 1u;
+    return ui->selected_pet >= 1u && ui->selected_pet <= jelli_collection_entry_count
+               ? ui->selected_pet
+               : 1u;
 }
 
 static const JelliEvolutionSet *selected_set(const JelliPetUi *ui)
@@ -21,25 +23,37 @@ static unsigned reached_count(const JelliEvolutionSet *set, unsigned reached)
     return count;
 }
 
+static bool grid_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *button)
+{
+    bool forms = ui->page == JELLI_UI_EVOLUTIONS;
+    const JelliEvolutionSet *set = selected_set(ui);
+    if (forms && slot > set->form_count)
+        return false;
+    unsigned index = slot - 1u;
+    unsigned form = forms ? jelli_evolution_form(set, index) : ui->last_view.pet_forms[index];
+    bool compact = !forms && jelli_collection_entry_count > 9u;
+    unsigned columns = compact ? 4u : 3u;
+    unsigned width = compact ? 66u : 84u, height = compact ? 64u : 84u;
+    *button = (JelliPetUiButton){
+        .bounds = {(compact ? 65u : 95u) + index % columns * (compact ? 84u : 96u),
+                   (compact ? 82u : 88u) + index / columns * (compact ? 68u : 96u), width, height},
+        .label = forms ? jelli_collection_forms[form].name : jelli_collection_entries[index].name,
+        .icon = jelli_collection_forms[form].portrait,
+        .scale = jelli_creature_profile(form)->icon_scale};
+    if (compact) {
+        unsigned fit = jelli_canvas_fit_scale(button->icon, 58u);
+        if (button->scale > fit)
+            button->scale = fit;
+    }
+    return true;
+}
+
 bool jelli_pet_collection_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *button)
 {
-    if (!ui->menu_open || !slot || slot > 9u)
+    if (!ui->menu_open || !slot || slot > jelli_collection_entry_count)
         return false;
-    if (ui->page == JELLI_UI_PETS || ui->page == JELLI_UI_EVOLUTIONS) {
-        bool forms = ui->page == JELLI_UI_EVOLUTIONS;
-        const JelliEvolutionSet *set = selected_set(ui);
-        if (forms && slot > set->form_count)
-            return false;
-        unsigned index = slot - 1u;
-        unsigned form = forms ? jelli_evolution_form(set, index) : ui->last_view.pet_forms[index];
-        *button =
-            (JelliPetUiButton){.bounds = {95u + index % 3u * 96u, 88u + index / 3u * 96u, 84u, 84u},
-                               .label = forms ? jelli_collection_forms[form].name
-                                              : jelli_collection_entries[index].name,
-                               .icon = jelli_collection_forms[form].portrait,
-                               .scale = jelli_creature_profile(form)->icon_scale};
-        return true;
-    }
+    if (ui->page == JELLI_UI_PETS || ui->page == JELLI_UI_EVOLUTIONS)
+        return grid_button(ui, slot, button);
     if (ui->page != JELLI_UI_PET_DETAIL || slot > 2u)
         return false;
     *button = (JelliPetUiButton){
@@ -120,7 +134,8 @@ void jelli_pet_collection_key(const JelliPetUi *ui, const JelliGame *game, Jelli
     key->selected_form = ui->selected_form;
     key->active_entry = game->pets[game->active].collection_entry;
     key->pets_new = game->new_pets;
-    for (unsigned entry = 1u; entry <= 9u; ++entry) /* Locked pets show their starting form. */
+    for (unsigned entry = 1u; entry <= jelli_collection_entry_count;
+         ++entry) /* Locked pets show their starting form. */
         key->pet_forms[entry - 1u] = jelli_collection_set(entry)->forms[0];
     for (unsigned i = 0u; i < game->count; ++i) {
         const JelliPet *pet = &game->pets[i];
@@ -137,7 +152,7 @@ bool jelli_pet_collection_same(const JelliPetRenderKey *a, const JelliPetRenderK
         a->active_entry != b->active_entry || a->pets_new != b->pets_new ||
         a->pets_owned != b->pets_owned)
         return false;
-    for (unsigned i = 0u; i < 9u; ++i)
+    for (unsigned i = 0u; i < jelli_collection_entry_count; ++i)
         if (a->pet_forms[i] != b->pet_forms[i] || a->pet_reached[i] != b->pet_reached[i])
             return false;
     return true;
@@ -163,6 +178,23 @@ static void draw_form_caption(Canvas *c, const JelliPetUi *ui, const JelliEvolut
     jelli_canvas_centered(c, text, 350, 1u, PALE);
 }
 
+static void draw_cell_label(Canvas *c, const JelliPetUiButton *b, bool compact, bool owned,
+                            bool active, bool fresh)
+{
+    int x = (int)b->bounds.x, y = (int)b->bounds.y;
+    int width = (int)b->bounds.width, height = (int)b->bounds.height;
+    if (compact) {
+        if (active || fresh)
+            jelli_canvas_disk(c, x + width - 8, y + 8, 3, active ? GOLD : MINT);
+        return;
+    }
+    const char *badge = !owned ? "LOCKED" : active ? "ACTIVE" : fresh ? "NEW" : "OWNED";
+    jelli_canvas_text(c, badge, x + width / 2 - (int)strlen(badge) * 4, y + 4, 1u,
+                      owned ? MINT : PALE);
+    const char *name = b->label;
+    jelli_canvas_text(c, name, x + width / 2 - (int)strlen(name) * 4, y + height - 18, 1u, PALE);
+}
+
 static void draw_grid(Canvas *c, const JelliPetUi *ui)
 {
     const JelliPetRenderKey *v = &ui->last_view;
@@ -171,7 +203,7 @@ static void draw_grid(Canvas *c, const JelliPetUi *ui)
     const JelliEvolutionSet *set = selected_set(ui);
     jelli_canvas_heading(c, forms ? "EVOLUTIONS" : "PETS", 22, 3u);
     jelli_canvas_centered(c, forms ? "TAP TO SWITCH FORM" : "TAP TO EXPLORE", 61, 1u, MINT);
-    for (unsigned slot = 1u; slot <= 9u; ++slot) {
+    for (unsigned slot = 1u; slot <= jelli_collection_entry_count; ++slot) {
         JelliPetUiButton b;
         if (!jelli_pet_collection_button(ui, slot, &b))
             continue;
@@ -183,19 +215,14 @@ static void draw_grid(Canvas *c, const JelliPetUi *ui)
         bool active = forms ? (v->pets_owned & (1u << entry)) && v->pet_forms[entry] == form
                             : v->active_entry == slot;
         bool focus = forms ? ui->selected_form == i : ui->selected_pet == slot;
-        jelli_canvas_rect(c, x, y, 84, 84, focus ? GOLD : INK);
-        jelli_canvas_rect(c, x + 3, y + 3, 78, 78, BG);
+        int width = (int)b.bounds.width, height = (int)b.bounds.height;
+        jelli_canvas_rect(c, x, y, width, height, focus ? GOLD : INK);
+        jelli_canvas_rect(c, x + 3, y + 3, width - 6, height - 6, BG);
         c->dim = !owned;
-        jelli_canvas_centered_sprite(c, b.icon, x + 42, y + 36, b.scale);
+        jelli_canvas_centered_sprite(c, b.icon, x + width / 2, y + height / 2, b.scale);
         c->dim = false;
-        const char *badge = !owned                                  ? "LOCKED"
-                            : active                                ? "ACTIVE"
-                            : (!forms && (v->pets_new & (1u << i))) ? "NEW"
-                                                                    : "OWNED";
-        jelli_canvas_text(c, badge, x + 42 - (int)strlen(badge) * 4, y + 4, 1u,
-                          owned ? MINT : PALE);
-        const char *name = b.label;
-        jelli_canvas_text(c, name, x + 42 - (int)strlen(name) * 4, y + 66, 1u, PALE);
+        draw_cell_label(c, &b, !forms && jelli_collection_entry_count > 9u, owned, active,
+                        !forms && (v->pets_new & (1u << i)));
     }
     if (forms)
         draw_form_caption(c, ui, set);

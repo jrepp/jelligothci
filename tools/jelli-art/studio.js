@@ -5,7 +5,7 @@
 'use strict';
 (() => {
   const S = window.Studio = {}, T = window.JelliPaint, JT = window.JelliTouch;
-  const LOCKED = new Set(['font', 'backgrounds']);
+  const LOCKED = new Set(['font']);
   const SHAPES = new Set(['line', 'rect', 'ellipse']);
   /* [id, name, key, what it does] */
   const TOOLS = [
@@ -19,6 +19,7 @@
     ['ellipse', 'Ellipse', 'U', 'Drag the bounding box; Shift makes a circle'],
     ['select', 'Select', 'V', 'Drag a rectangle; drag inside it to move, Alt-drag to copy'],
     ['wand', 'Magic wand', 'Q', 'Select the touching pixels of one colour; Shift-click selects that colour everywhere'],
+    ['hand', 'Hand', 'H', 'Drag to pan the canvas without changing pixels; middle-drag pans with any tool'],
   ];
   const ARROWS = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]};
   const edits = {};  // key -> {saved, hist}; the working buffer is decoded[key].after
@@ -105,6 +106,52 @@
     .paint-menu{position:fixed;z-index:60;display:grid;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:4px;box-shadow:0 6px 24px var(--shadow)}
     .paint-menu button{text-align:left;min-height:var(--tap,44px);border:0;background:none}
 
+    /* Paint chrome uses a compact rail and contextual options; controls keep their original IDs and actions. */
+    #mode-extra{min-width:0;flex:1 1 100%;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:center}.paint-commandbar{grid-column:2;grid-row:1}.paint-context{grid-column:1;grid-row:1}.paint-selection-context{grid-column:1/-1;grid-row:2}.paint-commandbar{display:flex;align-items:center;gap:10px;min-height:34px;justify-content:flex-end;padding:4px 0}
+    .paint-commandbar>div>.lbl{display:none}.paint-commandbar #save{min-width:76px}.paint-commandbar .seg{gap:3px;align-items:center}.paint-commandbar button,.paint-property button{display:inline-flex;gap:5px;align-items:center;justify-content:center}.paint-commandbar .save-state{display:inline-block;min-width:58px;text-align:right;margin-right:7px;font-size:10px;color:var(--muted)}.save-state[data-state=dirty]{color:var(--warn)}.save-state[data-state=error]{color:var(--bad)}.jelli-icon{display:inline-block;width:16px;height:16px;flex:none;vertical-align:-3px}
+    .paint-context button[hidden]{display:none}.paint-context{display:flex;align-items:center;gap:10px;min-height:40px;flex-wrap:wrap;padding:5px 0}.paint-active-tool{font-size:12px;font-weight:650;min-width:92px}.paint-tool-help{font-size:11px;color:var(--muted);flex:1 1 160px}
+    .paint-selection-context{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:5px 0;border-top:1px solid var(--line)}.paint-selection-context[hidden]{display:none}.paint-selection-context .lbl{margin:0}
+    .paint-toolrail{grid-area:t;align-self:start;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:4px}
+    .paint-toolrail #tools{display:flex;gap:3px;flex-wrap:wrap}.paint-toolrail #tools button{display:flex;align-items:center;justify-content:center;gap:4px;position:relative;min-width:36px;min-height:36px;padding:6px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--muted)}
+    .paint-toolrail #tools button[aria-pressed=true]{background:var(--chip-on);border-color:var(--accent);color:var(--ink)}.paint-toolrail #tools button:hover{background:var(--raised);color:var(--ink)}
+    .paint-tool-icon{display:block;width:21px;height:21px;flex:none}.paint-tool-icon svg{display:block;width:100%;height:100%}.paint-toolrail .paint-tool-name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+    .paint-toolrail kbd{font:8px ui-monospace,monospace;position:absolute;right:2px;bottom:0;color:var(--muted)}
+    .paint-work{grid-template-areas:"t" "c" "q" "d" "s";gap:10px;--side:232px}.paint-work>.paint-toolrail{grid-area:t}
+    .paint-canvas .scroller{border-color:#ffffff1a;border-radius:5px;background:#25262a;box-shadow:inset 0 0 0 1px #0003}.paint-canvas>.lbl{min-height:22px;align-items:center}.paint-readout{font-size:10px;overflow-wrap:anywhere}
+    .paint-side{grid-template-columns:minmax(0,1fr);gap:12px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.paint-side #palette-block{order:-2}.paint-side #paint-more{order:-1}.paint-side #legend:empty{display:none}
+    .paint-side .paint-more{margin:0;border-block:1px solid var(--line);padding-block:8px}.paint-more>summary{font-size:12px;list-style-position:inside;padding:3px 0}.paint-more>summary .lbl{display:none}
+    .paint-property{padding:7px 0;border-top:1px solid var(--line)}.paint-property:first-of-type{margin-top:7px}.paint-property>summary{font-size:11px;font-weight:600;cursor:pointer;padding:3px 0}.paint-property>div{margin-top:8px}.paint-property .lbl{font-size:10px;margin-bottom:4px}.paint-property .seg{display:flex;flex-wrap:wrap;gap:3px}.paint-property button{font-size:11px;padding:4px 7px}.paint-property select{max-width:100%}
+    .paint-side .paint-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 30px;gap:5px;align-items:center;margin-bottom:10px;min-width:0;width:100%;max-width:100%}.paint-side #swap-colours{min-width:0;width:100%;max-width:100%;justify-self:stretch}.paint-side .paint-colour-current{display:grid;justify-items:start;gap:5px;padding:6px!important;min-width:0;width:100%;text-align:left;background:var(--raised);border:1px solid var(--line);border-radius:5px}.paint-side .paint-colour-current .sw{display:block;width:32px;height:32px;border-radius:3px;border:1px solid #fff3}.paint-colour-current span:not(.sw){font-size:10px;color:var(--muted);line-height:1.3}.paint-colour-current strong{display:block;font:9px ui-monospace,monospace;color:var(--ink);overflow-wrap:anywhere}
+    .paint-side .paint-refs{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.paint-side .paint-refs>.pane{min-width:0;max-width:100%}.paint-side .before-wrap{display:grid;min-width:0;max-width:100%}.paint-side .before-wrap select{min-width:0;width:100%;max-width:100%}.paint-side .paint-hist{width:100%;min-width:0;max-height:150px}.paint-side .paint-hint{font-size:10px;line-height:1.5}.paint-side .paint-slot .edit{top:-3px;right:-3px;border:1px solid var(--line)}
+    @media(min-height:600px){@container stage (min-width:650px){
+      .paint-work,.paint-work.noq,.paint-work.lefty{height:100%;grid-template-columns:48px minmax(0,1fr) var(--side);grid-template-rows:minmax(0,1fr) auto auto;grid-template-areas:"t c s" "t q s" "t d s";gap:8px 10px}
+      .paint-toolrail #tools{flex-direction:column;flex-wrap:nowrap}.paint-toolrail{width:48px;max-height:100%;overflow-y:auto;overflow-x:hidden}.paint-toolrail #tools button{width:38px}
+      .paint-canvas{grid-template-rows:auto minmax(0,1fr)}.paint-canvas .scroller{height:auto}.paint-side{overflow-y:auto;min-height:0}.paint-dock{margin-top:0}
+      .paint-qbar,.paint-work.lefty .paint-qbar{grid-area:q;flex-direction:row;flex-wrap:wrap;width:auto;max-height:104px;overflow:auto;align-self:auto;justify-content:flex-start}.paint-work.lefty .paint-qbar{justify-content:flex-end}.paint-qbar .qb-group{flex-direction:row;flex-wrap:wrap}.paint-qbar .qb-sep{width:1px;height:auto}.paint-qbar button{width:auto;min-height:36px}
+    }}
+    @container stage (max-width:649px){#mode-extra{grid-template-columns:minmax(0,1fr)}.paint-commandbar{grid-column:1;grid-row:1}.paint-context{grid-row:2}.paint-selection-context{grid-row:3}.paint-tool-help{flex-basis:100%}.paint-toolrail #tools{flex-wrap:nowrap;overflow-x:auto}.paint-toolrail #tools button{flex:none}}
+    @media(any-pointer:coarse){.paint-toolrail #tools button{min-width:44px;min-height:44px}.paint-toolrail kbd{display:none}.paint-commandbar button,.paint-context button,.paint-selection-context button{min-height:44px}.paint-toolrail{padding:3px}.paint-side .paint-colour-current{min-height:76px}.paint-side .paint-pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px}.paint-side .paint-chip{min-width:44px;min-height:44px}.paint-qbar button{min-height:44px}}
+    @media(min-height:600px) and (any-pointer:coarse){@container stage (min-width:650px){.paint-work,.paint-work.noq,.paint-work.lefty{grid-template-columns:54px minmax(0,1fr) var(--side)}.paint-toolrail{width:54px}.paint-toolrail #tools button{width:44px}}}
+
+    /* Touch landscape keeps modifiers beside the canvas; portrait gives the artwork the full width. */
+    @media(min-height:600px) and (any-pointer:coarse){
+      @container stage (min-width:900px){
+        .paint-work,.paint-work.noq{grid-template-columns:54px 68px minmax(0,1fr) var(--side);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"t q c s" "t q d s"}
+        .paint-work.lefty{grid-template-columns:54px minmax(0,1fr) var(--side) 68px;grid-template-areas:"t c s q" "t d s q"}
+        .paint-work.noq,.paint-work.noq.lefty{grid-template-columns:54px minmax(0,1fr) var(--side);grid-template-areas:"t c s" "t d s"}
+        .paint-qbar,.paint-work.lefty .paint-qbar{width:68px;max-height:100%;height:100%;flex-direction:column;flex-wrap:nowrap;overflow-y:auto;overflow-x:hidden;align-self:stretch;justify-content:flex-start}
+        .paint-qbar .qb-group{flex-direction:column;flex-wrap:nowrap}.paint-qbar .qb-sep{width:auto;height:1px;flex:none}.paint-qbar button{width:100%;flex:none}
+      }
+      @container stage (min-width:650px) and (max-width:899px){
+        html[data-mode=paint] main>#detail.painting{flex:none;display:block}
+        #detail.painting>#stage{flex:none}
+        .paint-work,.paint-work.noq,.paint-work.lefty{height:auto;grid-template-columns:minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"t" "c" "q" "d" "s";gap:10px}
+        .paint-toolrail{width:auto;max-height:none}.paint-toolrail #tools{flex-direction:row;flex-wrap:nowrap;overflow-x:auto}.paint-toolrail #tools button{width:44px;flex:none}
+        .paint-canvas{grid-template-rows:auto auto}.paint-canvas .scroller{height:clamp(240px,50dvh,100cqi)}
+        .paint-side{overflow:visible}.paint-qbar,.paint-work.lefty .paint-qbar{max-height:none;overflow:visible}
+      }
+    }
+
     .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
     @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important}}
   </style>`);
@@ -143,20 +190,32 @@
   const announce = text => { if (window.JelliShell) return window.JelliShell.announce(text); const el = document.getElementById('paint-live'); if (el) el.textContent = text; };
 
   /* ---------- loading and live reload ---------- */
+  const pendingSaves = new Set(), paintSaveErrors = new Map();
+  let reloadSequence = 0, writeEpoch = 0;
+  Object.assign(S, {paintSaving: key => pendingSaves.has(key)});
   async function reload() {
-    const keep = Object.entries(edits).filter(([key]) => dirty(key)).map(([key]) => [key, decoded[key].after.data.slice()]);
-    await loadPayload(await api('GET', `/api/data?before=${encodeURIComponent(state.before)}`));
+    const sequence = ++reloadSequence, epoch = writeEpoch;
+    let keep = [];
+    const published = await loadPayload(await api('GET', `/api/data?before=${encodeURIComponent(state.before)}`), () => {
+      // Fetch and image decoding both yield to painting. Capture the current buffers
+      // only at publication, and ignore responses overtaken by a newer load or save.
+      if (sequence !== reloadSequence || epoch !== writeEpoch || pendingSaves.size) return false;
+      if (stroke) release();
+      keep = Object.entries(edits).filter(([key]) => dirty(key)).map(([key]) => [key, work(key).data.slice()]);
+    });
+    if (!published) return;
     state.float = null; stroke = null;
     const kept = new Set(keep.map(([key]) => key));
     for (const key of Object.keys(edits)) {
       if (!decoded[key]?.after) { delete edits[key]; continue; }
       const data = decoded[key].after.data, e = edits[key];
       e.saved = data.slice();
-      if (!kept.has(key)) e.base = byKey[key].sha;  // dirty edits keep the base they started from
-      // A clean sprite that changed on disk starts a fresh history; dirty ones keep theirs (restored below).
+      if (!kept.has(key)) e.base = byKey[key].sha;
       if (!kept.has(key) && !T.current(e.hist).every((v, i) => v === data[i])) e.hist = T.history(data, 'Loaded from disk');
     }
-    for (const [key, data] of keep) if (decoded[key]?.after) { decoded[key].after.data.set(data); refresh(key); }
+    for (const [key, data] of keep) if (decoded[key]?.after && decoded[key].after.data.length === data.length) {
+      decoded[key].after.data.set(data); refresh(key); draft(key);
+    }
   }
   /* Unsaved paint from a previous visit (drafts.js); a stale one saves only after a confirm (409).
    * The history starts at the file on disk, then a "Restored draft" step, so Undo shows what is on disk. */
@@ -346,6 +405,7 @@
   /* Start the tool at a pixel. pointer: false for the keyboard cursor. secondary: the right button (secondary colour,
    * or a deeper shade); deeper: Shift with the shade tool; shift: Shift with the magic wand (select everywhere). */
   function press(x, y, tool, {secondary = false, deeper = false, alt = false, pointer = true, held = false, shift = false} = {}) {
+    if (tool === 'hand') return announce('Hand tool: drag to pan the canvas');
     if (tool === 'picker') return pick(x, y, secondary);
     // Right-click with Select paints the secondary colour (it used to erase); Shift+Enter at the keyboard cursor stays a select.
     if (tool === 'select' && secondary && pointer) tool = 'pencil';
@@ -656,7 +716,7 @@
   /* The workspace skeleton (UX M2-B) is built once per asset and kept: cells sized by CSS (see the style block), so Studio.fitZoom can measure the
    * scroller before the canvas exists, and later renders swap only the canvas and the side column. The flip-book dock (flipbook.js renderDock) is in
    * place before the measurement, so its height is already out of the box. */
-  let sk = null, refitRaf = 0, refitWait = false;
+  let sk = null, refitRaf = 0, refitWait = false, workspaceControls = null;
   function skeleton(a) {
     const stage = document.getElementById('stage');
     if (sk && sk.key === a.key && sk.work.parentElement === stage) return sk;
@@ -671,7 +731,7 @@
     const side = document.createElement('div'); side.className = 'paint-side';
     const qbar = quickBar(), shown = JT.coarse() || state.quickbar; qbar.hidden = !shown;
     work.classList.toggle('noq', !shown); work.classList.toggle('lefty', !!state.lefty);
-    work.append(pane, qbar, dock, side); stage.append(work);
+    work.append(pane, qbar, dock, side); if (workspaceControls) work.prepend(workspaceControls.rail); stage.append(work);
     const ro = new ResizeObserver(() => refit());
     ro.observe(scroller);
     sk = {key: a.key, work, pane, scroller, dock, side, ro, fresh: true};
@@ -704,11 +764,16 @@
   const flushRefit = () => { if (refitWait) { refitWait = false; refit(); } };
   S.renderStage = (a, z) => {
     const stage = document.getElementById('stage'), old = view; closeMenu(); homeCompare();
+    // A manual zoom/backdrop rebuild may arrive before pointerup. Finish the current
+    // gesture against its original canvas before detaching its listeners.
+    if (stroke && old?.a.key === state.key) release();
+    else if (stroke && old) { work(old.a.key).data.set(stroke.snap.data); stroke = null; refresh(old.a.key); draft(old.a.key); }
+    detachCanvas?.(); detachCanvas = null; rec = null; gs = null; pan = null; later = null;
     const hadFocus = old && document.activeElement === old.c, scroll = old && old.a.key === a.key ? [old.scroller.scrollLeft, old.scroller.scrollTop] : null;
     document.getElementById('zoom-label').textContent = `· ${z}×`;
     if (LOCKED.has(a.kind)) {
       sk?.ro.disconnect(); sk = null; view = null; stage.textContent = '';
-      stage.innerHTML = '<p class="studio-note">The font atlas and backgrounds are not paintable here yet; edit those PNGs in an image editor.</p>'; return;
+      stage.innerHTML = '<p class="studio-note">The font atlas is not paintable here yet; edit that PNG in an image editor.</p>'; return;
     }
     if (selKey !== a.key) {  // a keyboard artist stepping through clip frames keeps the cursor where it was
       const keep = hadFocus && state.kbd && state.cursor[0] < a.width && state.cursor[1] < a.height;
@@ -721,12 +786,13 @@
     sk.fresh = false;
     if (!fresh) dock.hidden = !S.renderDock?.(dock, a);
     document.getElementById('paint-title').textContent = `paint · ${z}×`;
-    const [c, ctx] = makeCanvas(a.width * z, a.height * z); c.style.cursor = 'crosshair'; c.style.touchAction = 'none';
+    const [c, ctx] = makeCanvas(a.width * z, a.height * z); c.style.cursor = state.tool === 'hand' ? 'grab' : 'crosshair'; c.style.touchAction = 'none';
     Object.assign(c, {tabIndex: 0}); c.setAttribute('role', 'application'); c.setAttribute('aria-roledescription', 'pixel canvas');
     c.setAttribute('aria-label', `${a.key}, ${a.width} by ${a.height} pixels`); c.setAttribute('aria-describedby', 'paint-hint');
     scroller.replaceChildren(c);
     view = {c, ctx, a, z, scroller};
     side.textContent = '';
+    if (workspaceControls) { sk.work.prepend(workspaceControls.rail); side.append(workspaceControls.inspector); }
     const legend = document.getElementById('legend'); if (legend) side.append(legend);
     const colours = document.getElementById('palette-block'); if (colours) side.append(colours);
     const refs = document.createElement('div'); refs.className = 'paint-refs'; side.append(refs);
@@ -750,7 +816,7 @@
     if (hadFocus) { pointing = true; c.focus({preventScroll: true}); pointing = false; }  // a rebuild keeps the cursor as it was
     renderQuick(); draw(); renderReadout(); renderHistory();
   };
-  const DESKTOP_HINT = `Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans.
+  const DESKTOP_HINT = `Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms; Hand (H) or middle-drag pans.
       Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. <kbd>?</kbd> lists every shortcut.`;
   /* Touch wording replaces the mouse wording on coarse pointers (RFC-007); the keyboard sentence stays for a keyboard-attached iPad. */
   const KEYBOARD_HINT = DESKTOP_HINT.slice(DESKTOP_HINT.indexOf('Keyboard:'));
@@ -797,7 +863,7 @@
     rec = JT.gestures({
       stroke: {
         start(e) {
-          if (JT.kind(e) === 'mouse' && e.button === 1) { pan = {x: e.clientX, y: e.clientY, l: scroller.scrollLeft, t: scroller.scrollTop}; return; }
+          if (state.tool === 'hand' || (JT.kind(e) === 'mouse' && e.button === 1)) { pan = {x: e.clientX, y: e.clientY, l: scroller.scrollLeft, t: scroller.scrollTop}; return; }
           later = null; if (stroke) return;
           for (const k in mods) if (mods[k].held) mods[k].used = true;  // a modifier held for a stroke is a hold, however short
           const [x, y] = at(e), secondary = e.button === 2 || modOn('second'), alt = e.altKey || modOn('pick'), shift = e.shiftKey || modOn('constrain');
@@ -964,19 +1030,20 @@
   }
 
   /* ---------- toolbar, header and palette ---------- */
+  const toolIcon = id => window.JelliIcons?.svg(id) || '';
   const btn = (id, text, title, keys, extra = '') => `<button id="${id}" title="${title}${keys ? ` (${keys})` : ''}"${keys ? ` aria-keyshortcuts="${keys.replace(/⌘/g, 'Meta+').replace(/⇧/g, 'Shift+')}"` : ''}${extra}>${text}</button>`;
   S.renderToolbar = extra => {
     if (LOCKED.has(asset().kind)) return;
     /* Everyday tools stay in view; the rest folds into More tools (remembered) so the canvas sits near the top. */
-    extra.innerHTML = `<div class="paint-tools" role="toolbar" aria-label="Paint tools">
-      <div><div class="lbl" id="tools-label">Tool</div><div class="seg" id="tools" role="group" aria-labelledby="tools-label">${TOOLS.map(([id, name, key, what]) =>
-        `<button data-tool="${id}" title="${name} (${key}): ${what}" aria-keyshortcuts="${key}">${name}</button>`).join('')}</div></div>
-      <div><div class="lbl">Options</div><div class="seg" role="group" aria-label="Options">${btn('filled', 'Filled', 'Filled rectangles and ellipses', '⇧F')}${btn('perfect', 'Pixel-perfect', 'Pencil strokes stay 1 px wide: diagonal steps without doubled L corners, as house outlines are drawn', '⇧P')}${btn('mirror', 'Mirror', 'Mirror left/right', 'M')}</div></div>
-      <div><div class="lbl">History</div><div class="seg" role="group" aria-label="History">${btn('undo', 'Undo', 'Undo', '⌘Z')}${btn('redo', 'Redo', 'Redo', '⇧⌘Z')}</div></div>
-      <div><div class="lbl">File</div><div class="seg" role="group" aria-label="File">${btn('revert', 'Revert', 'Discard unsaved edits', '')}${btn('reset', 'Use before', 'Load the before image into the canvas', '')}${btn('save', 'Save', 'Save', '⌘S', ' class="primary"')}</div></div></div>
-      <details class="paint-more" id="paint-more"${store.get('paint-more', false) ? ' open' : ''}><summary>More tools <span class="lbl">selection · transform · nudge · replace colour · mirror · guides · tiles · tidy</span></summary>
+    extra.innerHTML = `<div class="paint-commandbar" id="paint-commandbar" role="toolbar" aria-label="Paint commands">
+      <div><div class="lbl">History</div><div class="seg" role="group" aria-label="History">${btn('undo', `${toolIcon('undo')}<span>Undo</span>`, 'Undo', '⌘Z')}${btn('redo', `${toolIcon('redo')}<span>Redo</span>`, 'Redo', '⇧⌘Z')}</div></div>
+      <div><div class="lbl">File</div><div class="seg" role="group" aria-label="File"><span id="paint-save-status" class="save-state" role="status" aria-live="polite" aria-atomic="true">Saved</span>${btn('save', `${toolIcon('save')}<span>Save</span>`, 'Save this asset', '⌘S', ' class="primary"')}</div></div></div>
+      <div class="paint-context" id="paint-context" role="toolbar" aria-label="Tool options"><span id="paint-active-tool" class="paint-active-tool">Pencil</span><div class="seg" role="group" aria-label="Drawing options">${btn('filled', 'Filled', 'Filled rectangles and ellipses', '⇧F')}${btn('perfect', 'Pixel-perfect', 'Keep strokes 1 px wide, without doubled diagonal corners', '⇧P')}${btn('mirror', 'Mirror', 'Mirror left/right', 'M')}</div><span id="paint-tool-help" class="paint-tool-help"></span></div>
+      <div id="paint-selection-context" class="paint-selection-context" role="toolbar" aria-label="Selection actions"><span class="lbl" id="paint-selection-label">Selection</span><div class="seg" role="group" aria-label="Selection">${btn('sel-all', 'All', 'Select the whole sprite', '⌘A')}${btn('sel-copy', 'Copy', 'Copy the selection, or the whole sprite', '⌘C')}${btn('sel-cut', 'Cut', 'Cut the selection', '⌘X')}${btn('sel-paste', 'Paste', 'Paste as a floating selection', '⌘V')}${btn('sel-delete', 'Delete', 'Clear selected pixels', 'Delete')}${btn('sel-none', 'Deselect', 'Drop the selection', 'Escape')}</div></div>
+      <div class="paint-toolrail" id="paint-toolrail" role="toolbar" aria-label="Paint tools"><div class="seg" id="tools" role="group" aria-label="Tools">${TOOLS.map(([id, name, key, what]) =>
+        `<button data-tool="${id}" title="${name} (${key}): ${what}" aria-label="${name}" aria-keyshortcuts="${key}"><span class="paint-tool-icon" aria-hidden="true">${toolIcon(id)}</span><span class="paint-tool-name">${name}</span><kbd aria-hidden="true">${key}</kbd></button>`).join('')}</div></div>
+      <details class="paint-more" id="paint-more"${store.get('paint-more', true) ? ' open' : ''}><summary>Properties <span class="lbl">transform · symmetry · view</span></summary>
       <div class="paint-tools" role="toolbar" aria-label="More paint tools">
-      <div><div class="lbl">Selection</div><div class="seg" role="group" aria-label="Selection">${btn('sel-all', 'All', 'Select the whole sprite', '⌘A')}${btn('sel-copy', 'Copy', 'Copy the selection, or the whole sprite', '⌘C')}${btn('sel-cut', 'Cut', 'Cut the selection', '⌘X')}${btn('sel-paste', 'Paste', 'Paste as a floating selection', '⌘V')}${btn('sel-delete', 'Delete', 'Clear the selected pixels', 'Delete')}${btn('sel-none', 'Deselect', 'Drop the selection', 'Escape')}</div></div>
       <div><div class="lbl">Transform</div><div class="seg" role="group" aria-label="Transform">${btn('flip-h', '⇋', 'Flip left/right: the selection, or the whole sprite', '⇧H', ' aria-label="Flip horizontally"')}${btn('flip-v', '⇅', 'Flip top/bottom: the selection, or the whole sprite', '⇧V', ' aria-label="Flip vertically"')}${btn('rot-cw', '↻', 'Rotate 90° clockwise', '⇧R', ' aria-label="Rotate clockwise"')}${btn('rot-ccw', '↺', 'Rotate 90° anticlockwise', '', ' aria-label="Rotate anticlockwise"')}</div></div>
       <div><div class="lbl">Nudge</div><div class="seg" role="group" aria-label="Nudge">${[['ArrowLeft', '←', 'left'], ['ArrowUp', '↑', 'up'], ['ArrowDown', '↓', 'down'], ['ArrowRight', '→', 'right']].map(([k, g, w]) =>
         btn(`nudge-${w}`, g, `Move the selection (or shift the sprite) 1 px ${w}`, `Alt+${k}`, ` aria-label="Nudge ${w}" data-nudge="${k}"`)).join('')}${btn('wrap', 'Wrap', 'Nudges wrap pixels round inside the selection or sprite', 'W')}</div></div>
@@ -987,7 +1054,7 @@
           btn(id, g, t, '', ` aria-label="${t}" data-axis="${dx},${dy}"`)).join('')}${btn('axis-centre', 'Centre', 'Put the mirror axes back in the middle', '')}</div></div>
       <div><div class="lbl">View</div><div class="seg" role="group" aria-label="View">${btn('guides', 'Guides', 'Centre and tile-centre guides', '⇧G')}${btn('fit-content', 'Fit content', 'Zoom to the drawn pixels plus a 2 px margin', 'Z')}${btn('tiled', 'Tile 3×3', 'Show the sprite repeated 3×3 beside the canvas, to check Wrap seams', '⇧T')}</div></div>
       <div><div class="lbl">Touch</div><div class="seg" role="group" aria-label="Touch">${btn('quickbar', 'Quick bar', 'Show the quick bar with a mouse too; touch screens always show it', '')}${btn('lefty', 'Left-handed', 'Put the quick bar on the right', '')}</div></div>
-      <div><div class="lbl">Clean up</div>${btn('tidy', 'Tidy outline', 'Closed 1px outline, remove specks, bottom shadow', '')}</div></div></details>`;
+      <div><div class="lbl">Clean up</div>${btn('tidy', 'Tidy outline', 'Closed 1px outline, remove specks, bottom shadow', '')}</div><div><div class="lbl">Restore</div><div class="seg" role="group" aria-label="Restore pixels">${btn('revert', `${toolIcon('revert')}<span>Revert</span>`, 'Discard unsaved edits', '')}${btn('reset', 'Use before', 'Load the before image into the canvas', '')}</div></div></div></details>`;
     extra.querySelector('#paint-more').ontoggle = e => store.set('paint-more', e.target.open);
     const on = (id, fn) => { extra.querySelector('#' + id).onclick = fn; };
     extra.querySelector('#tools').onclick = e => { const t = e.target.closest('button')?.dataset.tool; if (t) setTool(t); };
@@ -1006,6 +1073,21 @@
     on('revert', () => { const e = edits[state.key]; if (e && dirty(state.key)) { state.float = null; work(state.key).data.set(e.saved); done('Revert'); } });
     on('reset', () => { const b = decoded[state.key].before; if (b) { state.float = null; work(state.key).data.set(b.data); done('Use before'); } });
     on('save', save);
+    const inspector = extra.querySelector('#paint-more'), groups = [...inspector.querySelector('.paint-tools').children];
+    /** @type {[string, number[]][]} */
+    const sections = [['Transform & selection', [0, 1, 2]], ['Symmetry', [3]], ['View & input', [4, 5]], ['Clean up & restore', [6, 7]]];
+    for (const [title, indices] of sections) {
+      const section = document.createElement('details'); section.className = 'paint-property';
+      section.open = store.get(`paint-property-${title}`, title === 'Transform & selection');
+      const summary = document.createElement('summary'); summary.textContent = title; section.append(summary);
+      for (const index of indices) if (groups[index]) section.append(groups[index]);
+      section.ontoggle = () => store.set(`paint-property-${title}`, section.open);
+      inspector.append(section);
+    }
+    inspector.querySelector('.paint-tools').remove();
+    workspaceControls?.rail.remove(); workspaceControls?.inspector.remove();
+    workspaceControls = {rail: extra.querySelector('#paint-toolrail'), inspector};
+    if (sk?.work.isConnected) { sk.work.prepend(workspaceControls.rail); sk.side.prepend(inspector); }
     renderToolbarState();
   };
   /* Move the mirror axes by half pixels (or back to the middle), kept per asset in this browser. */
@@ -1021,20 +1103,38 @@
   function setTool(tool) {
     if (tool === state.tool) return;
     if (stroke) cancel();
-    state.tool = tool; renderToolbarState(); renderPalette(asset()); draw(); renderReadout();
+    state.tool = tool; if (view) view.c.style.cursor = tool === 'hand' ? 'grab' : 'crosshair'; renderToolbarState(); renderPalette(asset()); draw(); renderReadout();
     announce(`${TOOLS.find(t => t[0] === tool)[1]} tool`);
   }
   function renderToolbarState() {
-    document.querySelectorAll('#tools button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool)));
+    if (view) view.c.style.cursor = state.tool === 'hand' ? 'grab' : 'crosshair';
+    document.querySelectorAll('#tools button').forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === state.tool)));
     for (const id of ['mirror', 'filled', 'perfect', 'wrap', 'guides', 'tiled', 'quickbar', 'lefty']) document.getElementById(id)?.setAttribute('aria-pressed', String(!!state[id]));
     document.getElementById('mirror-v')?.setAttribute('aria-pressed', String(!!state.mirrorV));
     const axisEl = document.getElementById('mirror-axis'), ax = view && axisOf(view.a);
     if (axisEl && ax) axisEl.textContent = `x ${ax.x2 / 2} · y ${ax.y2 / 2}`;
-    const e = edits[state.key], isDirty = dirty(state.key), save = document.getElementById('save');
-    if (save) { save.disabled = !isDirty; save.textContent = isDirty ? 'Save' : 'Saved'; }
-    const able = (id, ok) => { const b = document.getElementById(id); if (b) b.disabled = !ok; };
+    const e = edits[state.key], isDirty = dirty(state.key), save = /** @type {HTMLButtonElement} */ (document.getElementById('save'));
+    if (save) {
+      const saving = pendingSaves.has(state.key);
+      save.disabled = !isDirty || saving;
+      const saveState = document.getElementById('paint-save-status'), failure = paintSaveErrors.get(state.key);
+      if (saveState) { saveState.textContent = saving ? 'Saving…' : failure ? (failure.startsWith('Saved; commit failed:') ? 'Commit failed' : 'Save failed') : isDirty ? 'Unsaved' : 'Saved'; saveState.dataset.state = saving ? 'saving' : failure ? 'error' : isDirty ? 'dirty' : 'saved'; saveState.title = failure || ''; }
+    }
+    const able = (id, ok) => { const b = /** @type {HTMLButtonElement} */ (document.getElementById(id)); if (b) b.disabled = !ok; };
     able('undo', e && e.hist.at > 0); able('redo', e && e.hist.at < e.hist.entries.length - 1);
     const p = work(state.key), sel = view && selRect();
+    const tool = TOOLS.find(t => t[0] === state.tool), title = document.getElementById('paint-active-tool'), help = document.getElementById('paint-tool-help');
+    if (title) title.textContent = tool ? `${tool[1]} · ${tool[2]}` : '';
+    if (help) help.textContent = state.tool === 'hand' ? 'Drag to pan · Space peeks at before' : state.tool === 'select' ? 'Drag to select · Alt-drag to copy' : state.tool === 'wand' ? 'Click a colour · Shift selects it everywhere' : state.tool === 'shade' ? 'Lighter · Shift or right-click for deeper' : SHAPES.has(state.tool) ? 'Drag to draw · Shift constrains' : 'Alt-click picks a colour';
+    /** @type {[string, boolean][]} */
+    const contextualOptions = [['filled', ['rect', 'ellipse'].includes(state.tool)], ['perfect', ['pencil', 'shade'].includes(state.tool)], ['mirror', !['hand', 'picker', 'select', 'wand'].includes(state.tool)]];
+    for (const [id, relevant] of contextualOptions) {
+      const control = /** @type {HTMLButtonElement} */ (document.getElementById(id)); if (control) { control.hidden = !relevant; control.disabled = !relevant; }
+    }
+    const selection = document.getElementById('paint-selection-context');
+    if (selection) selection.hidden = !(sel || clipboard || ['select', 'wand'].includes(state.tool));
+    const selectionLabel = document.getElementById('paint-selection-label');
+    if (selectionLabel) selectionLabel.textContent = sel ? `${state.float ? 'Floating' : 'Selection'} ${sel.w} × ${sel.h}` : 'Selection';
     for (const id of ['sel-cut', 'sel-delete', 'sel-none']) able(id, !!sel);
     able('sel-paste', !!clipboard); able('rot-cw', sel || p?.w === p?.h); able('rot-ccw', sel || p?.w === p?.h);
     renderQuick();
@@ -1054,8 +1154,8 @@
     const own = ownPalette(a), pal = paletteOf(a), where = paletteWhere(a);
     // Arriving at a sprite: keep a custom colour the artist chose, otherwise start from one of its palette colours.
     if (S.paletteKey !== a.key) { S.paletteKey = a.key; if (state.color && !pal.includes(state.color) && !state.custom) state.color = inkOf(a); }
-    el.previousElementSibling.innerHTML = own ? `Paint colours <span class="lbl">· ${a.palette_name} palette · click to paint</span>`
-      : 'Paint colours <span class="lbl">· click to paint · ✎ edits the shared palette</span>';
+    el.previousElementSibling.innerHTML = own ? `Paint colours <span class="lbl">· ${a.palette_name}</span>`
+      : 'Paint colours <span class="lbl">· shared palette</span>';
     const peers = D.assets.filter(x => own ? x.palette_name === a.palette_name : !ownPalette(x));
     const counts = a.after_metrics.colors, usage = hex => peers.filter(x => x.after_metrics.colors[hex]).length;
     if (state.color2 && !pal.includes(state.color2) && !state.custom2) state.color2 = null;  // the secondary keeps to this palette too
@@ -1117,9 +1217,13 @@
     keepFocus(el, 'data-chip', () => {
       el.textContent = '';
       const pair = document.createElement('div'); pair.className = 'paint-pair'; pair.setAttribute('role', 'group'); pair.setAttribute('aria-label', 'Main and secondary colours');
-      pair.innerHTML = `<span class="pair-sw">${swatch(state.color)}${swatch(state.color2)}</span><span class="studio-note">main ${state.color ? `${label(state.color, a)} ${state.color}` : 'transparent'}
-        · secondary (right-click) ${state.color2 ? `${label(state.color2, a)} ${state.color2}` : 'transparent'}</span>${btn('swap-colours', '⇄ Swap', 'Swap the main and secondary colours', 'X', ' data-chip="swap"')}`;
-      pair.querySelector('#swap-colours').onclick = swapColours; el.append(pair);
+      pair.innerHTML = `<button type="button" class="paint-colour-current" id="paint-main-colour" data-chip="main" aria-label="Main ${state.color || 'Transparent'}. Choose a colour from the palette" title="Main colour · choose a swatch below">${swatch(state.color)}<span>Main <strong>${state.color || 'Transparent'}</strong></span></button>
+        <button type="button" class="paint-colour-current" id="paint-secondary-colour" data-chip="secondary" aria-label="Secondary ${state.color2 || 'Transparent'}. Colour actions" title="Secondary colour · right-click a palette swatch to set it">${swatch(state.color2)}<span>Secondary <strong>${state.color2 || 'Transparent'}</strong></span></button>${btn('swap-colours', '⇄', 'Swap the main and secondary colours', 'X', ' aria-label="Swap main and secondary colours" data-chip="swap"')}`;
+      /** @type {HTMLButtonElement} */ (pair.querySelector('#swap-colours')).onclick = swapColours;
+      /** @type {HTMLButtonElement} */ (pair.querySelector('#paint-main-colour')).onclick = () => { const target = el.querySelector(`.paint-chip[aria-pressed="true"]`) || el.querySelector('.paint-chip'); target?.focus({preventScroll: true}); target?.scrollIntoView({block: 'nearest'}); announce('Choose a palette swatch for the main colour'); };
+      const secondary = /** @type {HTMLButtonElement} */ (pair.querySelector('#paint-secondary-colour'));
+      secondary.onclick = () => openMenu(secondary, [['Swap with main colour (X)', swapColours], ['Use transparent', () => setSecondary(null, false)], ['Set to main colour', () => setSecondary(state.color, state.custom)]]);
+      el.append(pair);
       const ramped = new Set(ramps.flatMap(r => r.colours)), rest = pal.filter(h => !ramped.has(h));
       const lines = [...ramps.map(r => [r.name, r.colours.filter(h => pal.includes(h))]), ...(rest.length ? [[ramps.length ? ROWS.unramped : ROWS.unramped_only, rest]] : [])];
       lines.forEach(([name, colours], n) => { const r = row(name); colours.forEach(hex => slotChip(hex, pal.indexOf(hex), r, n < ramps.length ? name : null)); });
@@ -1179,7 +1283,7 @@
     {keys: ['Alt+ArrowLeft', 'Alt+ArrowRight', 'Alt+ArrowUp', 'Alt+ArrowDown'], description: 'Move the selection 1 px, or shift the sprite'},
     {keys: ['W'], description: 'Wrap nudges round inside the selection or sprite'},
     {keys: ['Shift+H', 'Shift+V'], description: 'Flip horizontally, vertically (selection or sprite)'}, {keys: ['Shift+R'], description: 'Rotate 90° clockwise'},
-    {keys: ['[', ']', '0'], description: 'Zoom out, in, fit'}, {keys: ['Mod+Wheel'], description: 'Zoom at the pointer'}, {keys: ['Middle-drag'], description: 'Pan'},
+    {keys: ['[', ']', '0'], description: 'Zoom out, in, fit'}, {keys: ['Mod+Wheel'], description: 'Zoom at the pointer'}, {keys: ['H', 'Middle-drag'], description: 'Hand tool / pan'},
     {keys: ['Z'], description: 'Fit content: zoom to the drawn pixels'},
     {keys: ['G'], description: 'Pixel grid'}, {keys: ['Shift+G'], description: 'Centre and tile-centre guides'},
     {keys: ['Space'], description: 'Hold to peek at the before image (until the keyboard cursor is in use)'},
@@ -1188,21 +1292,32 @@
 
   /* ---------- server-backed actions ---------- */
   async function save() {
-    const a = asset(), p = work(a.key); if (!dirty(a.key)) return;
+    const a = asset(), p = work(a.key);
+    if (!dirty(a.key) || pendingSaves.has(a.key)) return;
     if (!p.data.some((v, i) => i % 4 === 3 && v)) return status('An asset needs at least one pixel', 'bad');
-    const pixels = []; for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) pixels.push(pixel(p, x, y));
+    const submitted = p.data.slice(), pixels = [];
+    for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) pixels.push(pixel(p, x, y));
+    paintSaveErrors.delete(a.key); pendingSaves.add(a.key); ++writeEpoch; renderToolbarState();
     try {
       const e = edits[a.key], send = base => api('POST', '/api/save', {key: a.key, pixels, artist: state.artist, base});
       const res = await send(e.base ?? a.sha).catch(async err => {
-        if (err.status !== 409 || !await askOverwrite(a.key)) throw err;  // Cancel keeps the newer file on disk
-        return send(err.body.current);  // the 409 names the hash now on disk
+        if (err.status !== 409 || !await askOverwrite(a.key)) throw err;
+        return send(err.body.current);
       });
-      e.saved = p.data.slice(); e.base = a.sha = res.sha; a.hand_painted = true; D.version = res.version;
-      window.JelliDrafts?.drop('paint', a.key);
-      renderHeader(a); renderToolbarState(); renderList();
-      if (res.git_error) status(`Saved ${a.key}, but the commit failed: ${res.git_error}`, 'bad', true);
-      else status(res.commit ? `Saved ${a.key} (commit ${res.commit}).` : `Saved ${a.key}. With make run-live, the game shows it now.`, '', false, {keep: true});
-    } catch (err) { status(`Save failed: ${err.message}`, 'bad', true); }
+      // Only the submitted pixels reached disk; painting may have continued while
+      // awaiting the request or conflict dialog. Keep those later edits and drafts.
+      e.saved = submitted; e.base = a.sha = res.sha; a.hand_painted = true; D.version = res.version;
+      draft(a.key);
+      if (asset()?.key === a.key) renderHeader(a);
+      renderList();
+      const newer = dirty(a.key) ? ' Newer edits are still unsaved.' : '';
+      if (res.git_error) {
+        paintSaveErrors.set(a.key, `Saved; commit failed: ${res.git_error}`);
+        status(`Saved ${a.key}, but the commit failed: ${res.git_error}${newer}`, 'bad', true);
+      }
+      else status(`Saved ${a.key}${res.commit ? ` (commit ${res.commit})` : ''}.${newer}`, '', false, {keep: true});
+    } catch (err) { paintSaveErrors.set(a.key, err.message); status(`Save failed: ${err.message}`, 'bad', true); }
+    finally { pendingSaves.delete(a.key); ++writeEpoch; renderToolbarState(); }
   }
   async function askOverwrite(key) {
     const text = `${key} changed on disk since you started editing it. Overwrite it with your version?`;
@@ -1252,6 +1367,7 @@
   S.keydown = e => {
     const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
     if (e.repeat && !(mod && k === 'z')) return false;
+    if (state.mode !== 'paint' || state.view !== 'detail' || !view) return false;
     if (mod && k === 's') { e.preventDefault(); save(); return true; }
     if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return true; }
     if (mod && k === 'y') { e.preventDefault(); redo(); return true; }
@@ -1263,7 +1379,7 @@
     if (e.key === 'Escape') return cancel() || (state.sel ? (deselect(), true) : false);
     if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); return deleteSel(); }
     if (e.shiftKey) { if (SHIFTED[k]) { SHIFTED[k](); return true; } return false; }
-    const tool = {p: 'pencil', e: 'eraser', f: 'fill', c: 'picker', t: 'shade', l: 'line', r: 'rect', u: 'ellipse', v: 'select', q: 'wand'}[k];
+    const tool = {p: 'pencil', e: 'eraser', f: 'fill', c: 'picker', t: 'shade', l: 'line', r: 'rect', u: 'ellipse', v: 'select', q: 'wand', h: 'hand'}[k];
     if (tool) { setTool(tool); return true; }
     if (k === 'x') { swapColours(); return true; }  // Paint only: Review keeps X for "needs work"
     if (k === 'm') { toggle('mirror', 'Mirror'); return true; }

@@ -22,6 +22,9 @@
 enum { FRAME_PIXELS = JELLI_WIDTH * JELLI_HEIGHT, GUARD_PIXELS = 16, GUARD = 0xa55a };
 static const char *TAG = "jelli_display";
 
+/* Bounded startup PSRAM keeps both guarded frames off task stacks; retain the
+ * separate engine/canvas ownership when adopting proposed memory foundations:
+ * docs-cms/rfcs/rfc-009-bounded-memory-systems-and-adoption.md#adoption-sequence */
 static uint16_t *allocate_frame(void)
 {
     uint16_t *raw = heap_caps_calloc(FRAME_PIXELS + 2u * GUARD_PIXELS, sizeof(uint16_t),

@@ -2,8 +2,16 @@
 #define JELLI_PRIZES_H
 #include <stdbool.h>
 #include <stdint.h>
-#define JELLI_PRIZE_COUNT 10u
-#define JELLI_PRIZE_MASK 1023u
+#define JELLI_PRIZE_COUNT 16u
+/* Storage capacity follows the serialized uint16 ownership masks. Catalog IDs append only. */
+typedef struct {
+    const char *key;
+    const char *name;
+    uint16_t asset;
+} JelliPrizeDefinition;
+extern const JelliPrizeDefinition jelli_prizes[];
+extern const unsigned jelli_prize_count;
+#define JELLI_PRIZE_MASK ((uint16_t)((UINT32_C(1) << jelli_prize_count) - 1u))
 /* Prizes saved in the original blocks; later prizes are saved in the version 14 tail. */
 #define JELLI_PRIZE_LEGACY_COUNT 9u
 typedef enum {
@@ -19,7 +27,7 @@ typedef enum {
     JELLI_PRIZE_GIFT
 } JelliPrizeTrigger;
 typedef struct {
-    uint16_t counts[JELLI_PRIZE_COUNT];
+    uint16_t counts[JELLI_PRIZE_LEGACY_COUNT];
     uint64_t last_breakfast_day;
     bool breakfast_day_known;
 } JelliPrizeProgress;

@@ -90,7 +90,7 @@ enum {
     JELLI_INPUT_VIEW_STAT,
     JELLI_INPUT_CATCH_PRESENT,
     JELLI_INPUT_CLOCK = 72,      /* + clock slot 0..6 */
-    JELLI_INPUT_COLLECTION = 80, /* + collection slot 1..9 */
+    JELLI_INPUT_COLLECTION = 80, /* + collection slot 1..JELLI_PET_CAPACITY */
 };
 _Static_assert((int)JELLI_UI_ACTION_COUNT <= (int)JELLI_INPUT_FIRST,
                "Input codes overlap UI actions");
@@ -115,13 +115,13 @@ typedef struct {
     uint8_t exercise_bob; /* Barbell frame 0/1 while exercising. */
     uint8_t night, mood, reaction, care_blocked, ring_page, ring_visible;
     bool ring_moving, clock_edit, ring_clock_edit;
-    uint16_t unavailable;
+    uint32_t unavailable;
     uint16_t stat_value, sleep_score, prize_owned, prize_discovered;
     uint32_t prize_origins[JELLI_PRIZE_COUNT];
     uint8_t reward_index, offered_prize, latched_prize, highlighted_prize;
     uint8_t catch_phase;
     uint8_t selected_pet, selected_form, active_entry;
-    uint8_t pet_forms[9], pet_reached[9];
+    uint8_t pet_forms[JELLI_PET_CAPACITY], pet_reached[JELLI_PET_CAPACITY];
     uint16_t pets_owned, pets_new;
     bool reward_active;
     int16_t timezone_minutes;

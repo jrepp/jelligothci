@@ -91,13 +91,13 @@
     c.frames.forEach((k, i) => { if (byKey[k]?.form !== form) out.push(`Frame ${i + 1}: ${k} does not belong to the ${form} form.`); });
     return out;
   }
-  function change(fn, rerender = true) {
-    const key = selectedKey(), base = current(key); if (!base) return;
+  function changeAt(key, fn, rerender = true) {
+    const base = current(key); if (!base) return;
     const w = working[key] ||= copy(base); fn(w);
     if (!clipDirty(key)) delete working[key];
-    restart();
-    if (rerender) renderEditor(); else renderSaveState();
+    if (key === selectedKey()) { restart(); if (rerender) renderEditor(); else renderSaveState(); }
   }
+  function change(fn, rerender = true) { changeAt(selectedKey(), fn, rerender); }
 
   /* ---------- timing: frame from elapsed milliseconds, never from frame counts ---------- */
   const safeDurations = c => c.durations_ms.map(n => Number.isFinite(n) && n > 0 ? n : 1);
@@ -219,7 +219,7 @@
     if (!list.some(f => f.art === state.cForm)) state.cForm = list[0].art;
     if (!poses().includes(state.cPose)) state.cPose = poses()[0];
     const width = el.clientWidth || window.innerWidth, css = Math.min(PANEL, Math.max(240, width - (width < 900 ? 32 : 360)));  // stacked below 900 px: the panel may take the width
-    el.innerHTML = `<div class="title"><h2>Creature</h2><div class="seg" id="cr-forms" role="group" aria-label="Creature form"></div></div>
+    el.innerHTML = `<div class="title"><h2>Creature</h2><button id="cr-duplicate" title="Copy this creature’s saved frames, clips and settings into a new pet">${window.JelliIcons.svg("duplicate")}Duplicate creature</button><div class="seg" id="cr-forms" role="group" aria-label="Creature form"></div></div>
       <div class="cr-layout">
         <div class="cr-panel"><div class="lbl"><span>On the panel · <span id="cr-scale">${scaleOf(state.cForm)}×</span> · ground at (${CENTER}, ${FLOOR})</span></div><div id="cr-canvas"></div>
           <div class="cr-readout" id="cr-readout" aria-live="off"></div>
@@ -232,6 +232,7 @@
     const [c, ctx] = makeCanvas(css, css); document.getElementById('cr-canvas').append(c);
     c.setAttribute('role', 'img'); c.setAttribute('aria-label', 'Animated preview of the selected clip on the round panel');
     panelView = {c, ctx, css};
+    document.getElementById("cr-duplicate").onclick = () => S.duplicateCreature?.(state.cForm);
     renderForms(); renderTransport(); renderEditor(); renderStrip();
     cr.renderBehaviour?.(document.getElementById('cr-behaviour'));
     play.drawn = {}; schedule();
@@ -279,7 +280,7 @@
         ? `<p class="cr-pose-help">State pose with no ${esc(state.cForm)} clip: it <b>uses fallback: ${esc(fallback)}</b>, which the preview plays.</p>
            <div class="bar"><button id="cr-add-clip" title="Start from a copy of the ${esc(fallback)} clip">Add clip</button>
            ${clipDirty(key) ? '<button id="cr-revert">Keep the clip</button>' : ''}</div><ul class="cr-msgs" id="cr-msgs"></ul>
-           <div class="bar"><div class="seg"><button id="cr-revert-all">Revert all</button><button id="cr-save" class="primary" title="Save clips (⌘S)">Save clips</button></div></div>`
+           <div class="bar"><div class="seg"><button id="cr-revert-all">Revert all</button><button id="cr-save" class="primary" title="Save clips (⌘S)">${window.JelliIcons.svg("save")}Save clips</button><span id="cr-save-status" class="save-state" role="status"></span></div></div>`
         : `<p class="studio-note">No clip ${esc(key)} in assets.json.</p>`;
       el.innerHTML = `<div class="lbl">Pose</div><div class="seg" id="cr-poses" style="flex-wrap:wrap">${tabs}</div>${msg}`;
       wirePoses(el);
@@ -300,7 +301,7 @@
         <span class="studio-note" style="margin:0">${c.loop ? 'Cycles while the pose lasts.' : 'Plays once, then holds the last frame.'}</span></div>
       <ul class="cr-msgs" id="cr-msgs"></ul>
       <div id="cr-library"></div>
-      <div class="bar" style="margin-top:12px"><div class="seg"><button id="cr-revert">Revert pose</button><button id="cr-revert-all">Revert all</button><button id="cr-save" class="primary" title="Save clips (⌘S)">Save clips</button></div></div>`;
+      <div class="bar" style="margin-top:12px"><div class="seg"><button id="cr-revert">Revert pose</button><button id="cr-revert-all">Revert all</button><button id="cr-save" class="primary" title="Save clips (⌘S)">${window.JelliIcons.svg("save")}Save clips</button><span id="cr-save-status" class="save-state" role="status"></span></div></div>`;
     wirePoses(el);
     el.querySelector('#cr-loop').onclick = () => change(w => { w.loop = !w.loop; });
     cr.renderTimeline?.(el.querySelector('#cr-timeline'), el.querySelector('#cr-library'), key, c);
@@ -336,7 +337,9 @@
       msgs.innerHTML = issues.map(m => `<li>${esc(m)}</li>`).join('') + (others.length ? `<li>Fix ${others.map(esc).join(', ')} before saving.</li>` : '')
         + (!issues.length && !others.length ? `<li class="ok">${dirtyKeys().length ? `${dirtyKeys().length} clip${dirtyKeys().length > 1 ? 's' : ''} with unsaved edits.` : 'No unsaved clip edits.'}</li>` : '');
     }
-    if (save) { save.disabled = !dirtyKeys().length || blocked.length > 0; save.textContent = dirtyKeys().length ? `Save clips (${dirtyKeys().length})` : 'Saved'; }
+    if (save) { save.disabled = clipSaveState === 'saving' || !dirtyKeys().length || blocked.length > 0; save.innerHTML = `${window.JelliIcons.svg('save')}Save clips`; }
+    const status = document.getElementById('cr-save-status');
+    if (status) { status.dataset.saveState = clipSaveState; status.textContent = clipSaveState === 'saving' ? 'Saving…' : clipSaveState === 'error' ? 'Save failed' : dirtyKeys().length ? `${dirtyKeys().length} unsaved clips` : 'Saved'; }
     const revert = document.getElementById('cr-revert'); if (revert) revert.disabled = !clipDirty(key);
     const all = document.getElementById('cr-revert-all'); if (all) all.disabled = !dirtyKeys().length;
     renderForms(); renderStripState();
@@ -368,12 +371,16 @@
   }
 
   /* ---------- save ---------- */
+  let clipSaveState = 'idle';
   async function saveClips() {
+    if (clipSaveState === 'saving') return;
     const keys = dirtyKeys(); if (!keys.length) return;
     const blocked = keys.filter(k => current(k) && problems(k, current(k)).length);
     if (blocked.length) return S.status(`Fix ${blocked.join(', ')} before saving`, 'bad', true);
+    const submitted = Object.fromEntries(keys.map(k => [k, working[k].removed ? {removed: true} : copy(working[k])]));
+    clipSaveState = 'saving'; renderSaveState();
     try {
-      const clips = keys.map(k => working[k].removed ? {key: k, remove: true} : {key: k, ...copy(working[k])});
+      const clips = keys.map(k => 'removed' in submitted[k] ? {key: k, remove: true} : {key: k, ...submitted[k]});
       const send = bases => S.api('POST', '/api/clips', {clips, bases, artist: state.artist});
       const res = await send(Object.fromEntries(keys.map(k => [k, clipBase[k] ?? null]))).catch(async err => {
         if (err.status !== 409) throw err;  // a clip changed on disk since the edit started: overwrite only if asked
@@ -381,9 +388,20 @@
         return send(err.body?.current);
       });
       if (!res) return;  // Cancel keeps the edits and the newer file
-      const added = keys.some(k => !clipOf(k)), removed = keys.some(k => working[k].removed);
-      for (const k of keys) { if (clipOf(k) && !working[k].removed) Object.assign(clipOf(k), copy(working[k])); delete working[k]; }
-      D.clip_shas = {...D.clip_shas, ...res.clip_shas};  // drafts compare against these
+      const added = keys.some(k => !clipOf(k)), removed = keys.some(k => 'removed' in submitted[k]);
+      for (const k of keys) {
+        // A revert, removal or further edit while awaiting Save is a new desired
+        // state. Publish only the submitted clip as saved, then retain that intent.
+        const desired = current(k) ? copy(current(k)) : {removed: true};
+        const saved = clipOf(k), sent = submitted[k];
+        if ('removed' in sent) D.clips = D.clips.filter(c => c.key !== k);
+        else if (saved) Object.assign(saved, copy(sent));
+        else D.clips.push({key: k, ...copy(sent)}); // server assigns the ID; reload below supplies it
+        if (JSON.stringify(desired) === JSON.stringify(sent)) delete working[k];
+        else working[k] = desired;
+        clipBase[k] = res.clip_shas?.[k] ?? null;
+      }
+      D.clip_shas = {...D.clip_shas, ...res.clip_shas};
       if (!dirtyKeys().length) window.JelliDrafts?.drop('clips', 'clips');
       D.version = res.version;  // before reloading, so the disk poll does not reload a second time
       if (added || removed) await S.reload();  // new clips get IDs from the server; removed ones leave D.clips
@@ -395,7 +413,8 @@
         const what = res.changed.length === 1 ? res.changed[0] : `${res.changed.length} clips`;
         S.status(res.commit ? `Saved ${what} (commit ${res.commit}).` : `Saved ${what} to assets.json.`, '', false, {keep: true});
       }
-    } catch (err) { S.status(`Clip save failed: ${err.message}`, 'bad', true); }
+    } catch (err) { clipSaveState = 'error'; S.status(`Clip save failed: ${err.message}`, 'bad', true); }
+    finally { if (clipSaveState === 'saving') clipSaveState = 'idle'; renderSaveState(); }
   }
 
   /* ---------- drafts: unsaved clips survive a reload or a Safari tab eviction (drafts.js) ---------- */
@@ -463,7 +482,7 @@
   Object.assign(cr, {esc, poses, statePoses, fallbackOf, resolved, forms, formLabel, formFrames, clipOf, current, frameAt, drawSprite, groundAnchor,
     selectedKey, setPlaying, playing: () => play.on, redraw: () => { play.drawn = {}; schedule(); }, rerender: () => renderCreature(),
     renderForms: () => renderForms(), PANEL, CENTER, FLOOR, reduced,
-    change, restart, seek, paint, cap, maxMs, clipDirty, copy, offsetOf, totalOf, safeDurations, renderEditor: () => renderEditor(),
+    change, changeAt, restart, seek, paint, cap, maxMs, clipDirty, copy, offsetOf, totalOf, safeDurations, renderEditor: () => renderEditor(),
     pausedFrame: () => play.on ? null : play.frame});
   let resizeTimer = null;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (state.view === 'creature') renderCreature(); }, 150); });

@@ -1,4 +1,7 @@
 function(jelli_generate_pet_assets output_variable)
+  # Current raw-array generator. Proposed Jellipak replacement must retain
+  # dependency tracking and add the validation gates recorded in:
+  # docs-cms/rfcs/rfc-010-jellipak-build-and-validation.md#repository-integration-and-review-gates
   get_filename_component(jelli_root "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/.." ABSOLUTE)
   if(WIN32)
     find_program(jelli_uv NAMES uv REQUIRED)

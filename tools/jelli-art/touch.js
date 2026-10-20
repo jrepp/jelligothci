@@ -18,8 +18,8 @@
  *                             aria-controls while open; the popover is a tooltip the button aria-describedby points at)
  *   popover(text, anchor)     shows text in the popover next to an element (inside the anchor's open <dialog>,
  *                             so a modal never covers it); hidePopover() closes it
- *   setList(open)             opens or closes the asset-list drawer (devices whose primary pointer is coarse)
- *   drawerOn()                true while the drawer applies (primary pointer coarse; a hybrid keeps the aside)
+ *   setList(open)             opens or closes the asset-list drawer (devices whose primary pointer is coarse or viewport is narrow)
+ *   drawerOn()                true while the drawer applies (primary pointer coarse or viewport at most 760px)
  *
  * Page furniture it adds: `html[data-keys]` after the first key press outside a text field (CSS hides
  * <kbd> hints in buttons on coarse pointers until then); a long press (T.LONG_PRESS_MS) on any
@@ -55,7 +55,8 @@
   const coarseQuery = window.matchMedia ? matchMedia('(any-pointer: coarse)') : null;
   const coarse = () => !!coarseQuery?.matches;
   const primaryCoarse = window.matchMedia ? matchMedia('(pointer: coarse)') : null;
-  const drawerOn = () => !!primaryCoarse?.matches;
+  const narrowQuery = window.matchMedia ? matchMedia('(max-width: 760px)') : null;
+  const drawerOn = () => !!primaryCoarse?.matches || !!narrowQuery?.matches;
   const listeners = new Set();
   const pencilOnly = () => !!local.get('pencil-only', false);
   /** @param {boolean} on */
@@ -425,7 +426,7 @@
   button,.chip,.item,[role=tab],[role=button],.card,canvas,[data-touch-surface]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
   :root:not([data-keys]) button kbd,:root:not([data-keys]) [role=tab] kbd,:root:not([data-keys]) [role=button] kbd{display:none}
 }
-@media (pointer: coarse){
+@media (pointer: coarse), (max-width:760px){
   .jt-list-toggle{display:inline-block}
   :root[data-list=closed] .layout{grid-template-columns:minmax(0,1fr)}:root[data-list=closed] .layout>aside{display:none}
   :root[data-list=open] .layout{grid-template-columns:minmax(0,1fr)}

@@ -15,7 +15,7 @@ with tempfile.TemporaryDirectory(prefix='jelli-activity-refs-') as scratch:
     (work / 'assets/slice').mkdir(parents=True)
     for name in ('JelliActivities.cmake', 'JelliLocations.cmake', 'JelliActivityCosts.cmake'):
         shutil.copy(root / 'cmake' / name, work / 'cmake')
-    for name in ('pets.json', 'locations.json'):
+    for name in ('pets.json', 'locations.json', 'prizes.json'):
         shutil.copy(root / 'content' / name, work / 'content')
     shutil.copy(root / 'assets/slice/assets.json', work / 'assets/slice')
     driver = work / 'check.cmake'

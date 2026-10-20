@@ -97,37 +97,13 @@
       "div[data-chip=\"mint jelly:#43bca2\"]"
     ]
   },
-  "paint-icon@tablet": {
-    "label-content-name-mismatch": [
-      "div[data-chip=\"mint jelly:#43bca2\"]"
-    ]
-  },
+  "paint-icon@tablet": {},
   "review-detail@desktop": {},
   "review-detail@desktop-light": {},
   "review-detail@phone": {},
   "review-detail@tablet": {},
-  "review-sheet@desktop": {
-    "color-contrast": [
-      "div[title=\"creatures.baby-eating\"] > .name > span:nth-child(1)",
-      "div[title=\"creatures.baby-happy\"] > .name > span:nth-child(1)",
-      "div[title=\"creatures.baby-idle-a\"] > .name > span:nth-child(1)",
-      "div[title=\"creatures.baby-idle-b\"] > .name > span:nth-child(1)"
-    ]
-  },
-  "review-sheet@desktop-light": {
-    "color-contrast": [
-      "div[title=\"creatures.baby-eating\"] > .name > span:nth-child(1)",
-      "div[title=\"creatures.baby-happy\"] > .name > span:nth-child(1)",
-      "div[title=\"creatures.baby-idle-a\"] > .name > span:nth-child(1)",
-      "div[title=\"creatures.baby-idle-b\"] > .name > span:nth-child(1)"
-    ]
-  },
+  "review-sheet@desktop": {},
+  "review-sheet@desktop-light": {},
   "review-sheet@phone": {},
-  "review-sheet@tablet": {
-    "color-contrast": [
-      "div[title=\"creatures.baby-eating\"] > .name > span:nth-child(1)",
-      "div[title=\"creatures.baby-idle-a\"] > .name > span:nth-child(1)",
-      "div[title=\"creatures.baby-idle-b\"] > .name > span:nth-child(1)"
-    ]
-  }
+  "review-sheet@tablet": {}
 }

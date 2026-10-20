@@ -27,6 +27,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 import game_preview as gp  # noqa: E402
+import creation  # noqa: E402
 import jelli_art  # noqa: E402
 
 CAT = gp.catalogue(REPO, REPO / "content")
@@ -85,6 +86,16 @@ class ScenarioTest(unittest.TestCase):
         self.assertEqual(self.fields({"page": "collection", "menu": True}), {"menu"})
         self.assertEqual(self.fields({"behavior": "dancing"}), {"behavior"})
         self.assertEqual(self.fields([]), {"scenario"})
+
+    def test_scene_and_completion_validation(self):
+        for raw, field in (({"location": "missing"}, "location"),
+                           ({"present_state": "owned"}, "present"),
+                           ({"completion": "repeat"}, "moment"),
+                           ({"completion": "invalid"}, "completion")):
+            self.assertIn(field, self.fields(raw))
+        argv, summary = gp.parse_scenario({"location": "garden"}, CAT)
+        self.assertEqual(dict(zip(argv[::2], argv[1::2]))["--location"], "1")
+        self.assertEqual(summary["location"], "garden")
 
     def test_alt_text_describes_the_scenario(self):
         _, summary = gp.parse_scenario({"pet": "BUBBLE", "form": "AXOLOTL", "behavior": "studying", "mess": True, "asleep": True,
@@ -233,6 +244,73 @@ class RealEngineTest(unittest.TestCase):
         self.assertFalse(again["rebuilt"])
         self.assertTrue(again["engine"]["asleep"])
         self.assertEqual(again["engine"]["night"], 255)
+
+    def test_newly_authored_pet_renders_with_new_entry_and_form(self):
+        request = {"type": "pet", "key": "preview-pet", "name": "PREVIEW PET", "template_form": "baby",
+                   "size": 32, "evolution": "single-form", "gameplay_policy": "copy-template",
+                   "behavior": "jelly", "scale": 3, "icon_scale": 1, "portrait_scale": 3,
+                   "unlock_prize": 1, "hint": "CATCH BUTTERFLY"}
+        creation.create(REPO, self.source, self.content, request,
+                        creation.data(REPO, self.source, self.content)["bases"])
+        rendered = self.service.render({"pet": "PREVIEW PET", "form": "PREVIEW PET", "frames": 1})
+        self.assertTrue(rendered["ok"])
+        self.assertEqual(rendered["engine"]["entry"], 10)
+        self.assertEqual(rendered["engine"]["form_name"], "PREVIEW PET")
+        self.assertEqual(png(rendered["frames"][0]).size, (466, 466))
+
+    def test_scene_and_present_state_reach_engine(self):
+        home = self.service.render({"frames": 1})
+        garden = self.service.render({"location": "garden", "frames": 1})
+        self.assertEqual(garden["engine"]["location"], 1)
+        self.assertEqual(garden["engine"]["rendered_location"], 1)
+        self.assertNotEqual(png(home["frames"][0]).tobytes(), png(garden["frames"][0]).tobytes())
+        offered = self.service.render({"present": "teddy-bear", "present_state": "offered", "frames": 1})
+        owned = self.service.render({"present": "teddy-bear", "present_state": "owned", "frames": 1})
+        self.assertEqual(offered["engine"]["offered"], 10)
+        self.assertEqual(offered["engine"]["visible_offered"], 10)
+        self.assertEqual(owned["engine"]["owned"], 1 << 9)
+        self.assertEqual(owned["engine"]["offered"], 0)
+
+    def test_daily_snuggle_completion_uses_engine_policy(self):
+        scenario = {"pet": "BUBBLE", "form": "BABY AXO", "moment": "SNUGGLE", "frames": 1,
+                    "minute": 540}
+        first = self.service.render({**scenario, "completion": "first"})["engine"]
+        repeat = self.service.render({**scenario, "completion": "repeat"})["engine"]
+        self.assertEqual(first["moment"], 0)
+        self.assertEqual(repeat["moment"], 0)
+        self.assertGreater(first["completed_moments"], 0)
+        self.assertEqual(first["bond"], repeat["bond"])
+        self.assertEqual(first["offered"], 10)
+        # A second eight seconds decays needs, but pays no second 30-point energy cost.
+        self.assertLess(abs(first["needs"][1] - repeat["needs"][1]), 10)
+
+    def test_completion_rewards_with_simulation_and_live_frames(self):
+        scenario = {"pet": "BUBBLE", "moment": "SNUGGLE", "minute": 540}
+        advanced = self.service.render({**scenario, "frames": 1, "advance_s": 8})["engine"]
+        live = self.service.render({**scenario, "frames": 2, "step_ms": 8000, "live": True})["engine"]
+        self.assertEqual(advanced["offered"], 10)
+        self.assertEqual(live["offered"], 10)
+        self.assertEqual(advanced["bond"], live["bond"])
+        self.assertEqual(advanced["moment"], 0)
+        self.assertEqual(live["moment"], 0)
+
+    def test_every_run_policy_rewards_repeated_completion(self):
+        path = self.content / "activities.json"
+        original = path.read_text()
+        doc = json.loads(original)
+        recipe = next(m for m in doc["moments"] if m["name"] == "SNUGGLE")
+        recipe["daily_reward"] = False
+        recipe["jitter_pct"] = 0
+        path.write_text(json.dumps(doc))
+        scenario = {"pet": "BUBBLE", "moment": "SNUGGLE", "frames": 1, "minute": 540}
+        try:
+            first = self.service.render({**scenario, "completion": "first"})["engine"]
+            repeat = self.service.render({**scenario, "completion": "repeat"})["engine"]
+            initial = self.service.render({"pet": "BUBBLE", "frames": 1})["engine"]["bond"]
+            self.assertEqual(repeat["bond"] - initial, (first["bond"] - initial) * 2)
+            self.assertGreater(first["needs"][1] - repeat["needs"][1], 20)
+        finally:
+            path.write_text(original)
 
     def test_2_working_copy_art_reaches_the_render(self):
         scenario = {"frames": 1}

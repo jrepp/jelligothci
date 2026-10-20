@@ -9,6 +9,7 @@ Run: tools/jelli-art/ui_tests/run.sh -k touch_paint
 import json
 
 import pytest
+from playwright.sync_api import expect
 
 from touch import (drag, long_press, pan, pen_down, pen_move, pen_stroke, pen_up, pinch, small_targets, tap, thresholds,
                    touch_end, touch_start)
@@ -279,26 +280,33 @@ def test_first_pen_offers_pencil_only_once(paint):
 
 # ---------- the quick bar ----------
 
-def test_quick_bar_controls_are_touch_sized(paint):
-    for size in (LAND, PORT):
-        page = paint(size)
-        page.locator("#tools [data-tool=select]").tap()
-        x, y = blank_run(page)
-        pen_stroke(page, [screen(page, x, y), screen(page, x + 3, y + 3)])  # a selection shows the selection row
-        assert page.locator("#qb-sel").is_visible()
-        assert small_targets(page, "#paint-qbar") == [], size
-        assert small_targets(page, "#tools") == [], size
+@pytest.mark.parametrize("size", [LAND, PORT])
+def test_quick_bar_controls_are_touch_sized(paint, size):
+    page = paint(size)
+    select_tool = page.locator("#tools [data-tool=select]")
+    select_tool.tap()
+    expect(select_tool).to_have_attribute("aria-pressed", "true")
+    # The selection context changes stage height; let its ResizeObserver refit settle before
+    # scrolling the canvas into view, since refit may replace the canvas element.
+    page.evaluate("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+    ready(page)
+    page.evaluate("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
+    x, y = blank_run(page)
+    pen_stroke(page, [screen(page, x, y), screen(page, x + 3, y + 3)])  # a selection shows the selection row
+    expect(page.locator("#qb-sel")).to_be_visible()
+    assert small_targets(page, "#paint-qbar") == [], size
+    assert small_targets(page, "#tools") == [], size
 
 
 def test_quick_bar_layout_follows_orientation_and_handedness(paint):
     page = paint(LAND)
-    bar, cv, side = (page.locator(s).bounding_box() for s in ("#paint-qbar", "#stage .paint-canvas canvas", "#stage .paint-side"))
+    bar, cv = (page.locator(s).bounding_box() for s in ("#paint-qbar", "#stage .paint-canvas canvas"))
     assert bar["x"] + bar["width"] <= cv["x"] + 1
     page.evaluate("() => document.getElementById('lefty').click()")
     bar, side = page.locator("#paint-qbar").bounding_box(), page.locator("#stage .paint-side").bounding_box()
     assert bar["x"] >= side["x"] + side["width"] - 1
     page = paint(PORT)
-    bar, cv = page.locator("#paint-qbar").bounding_box(), page.locator("#stage .paint-canvas canvas").bounding_box()
+    bar, cv = page.locator("#paint-qbar").bounding_box(), page.locator("#stage .paint-canvas").bounding_box()
     assert bar["y"] >= cv["y"] + cv["height"] - 1
 
 
@@ -307,7 +315,12 @@ def test_quick_bar_is_hidden_with_a_mouse_unless_asked(open_view):
     bar = page.locator("#paint-qbar")
     assert not bar.is_visible()
     assert "Right-click paints the secondary colour" in page.locator("#paint-hint").inner_text()
-    page.locator("#paint-more summary").click()
+    properties = page.locator("#paint-more")
+    if not properties.evaluate("el => el.open"):
+        page.locator("#paint-more>summary").click()
+    view_input = properties.locator("details").filter(has=page.locator("summary", has_text="View & input"))
+    if not view_input.evaluate("el => el.open"):
+        view_input.locator(":scope>summary").click()
     page.locator("#quickbar").click()
     assert bar.is_visible() and page.locator("#quickbar").get_attribute("aria-pressed") == "true"
     page.reload()

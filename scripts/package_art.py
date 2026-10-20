@@ -1,7 +1,6 @@
 """Shared editable-art payload and archive verification for native releases."""
 import hashlib
 import json
-import re
 from pathlib import Path
 import shutil
 import zipfile
@@ -22,8 +21,12 @@ def stage_art(folder):
         shutil.copy2(ROOT / 'scripts' / name, folder / 'scripts' / name)
     shutil.copy2(ROOT / 'toolchain.env', folder / 'toolchain.env')
     shutil.copy2(preview, folder / 'preview.html')
+    manifest = json.loads((ROOT / 'assets/slice/assets.json').read_text())
+    registered_prizes = registered_prize_assets(manifest)
+    png_count = sum(item['path'].lower().endswith('.png') for item in manifest['assets'])
     (folder / 'ARTWORK.txt').write_text(
-        'Editable PNGs: assets/slice/ (79 images, including nine unique prizes).\n'
+        f'Editable PNGs: assets/slice/ ({png_count} images, including '
+        f'{len(registered_prizes)} registered prizes).\n'
         'Open preview.html for the standalone art sheet.\n'
         'macOS/Linux live art: ./scripts/jelli-art-live\n'
         'Windows live art: uv run --python 3.12 tools/assets/live_assets.py\n'
@@ -34,12 +37,23 @@ def stage_art(folder):
         'Embedded art is unchanged; start through the live-art tool to see edits.\n', encoding='utf-8')
 
 
-def prize_count():
-    """The engine's present count, so packaging follows include/jelli/prizes.h."""
-    match = re.search(r'#define JELLI_PRIZE_COUNT (\d+)u', (ROOT / 'include/jelli/prizes.h').read_text())
-    if not match:
-        raise RuntimeError('JELLI_PRIZE_COUNT not found in include/jelli/prizes.h')
-    return int(match.group(1))
+def registered_prize_assets(manifest):
+    """Return artwork for active catalog entries, excluding reserved engine capacity."""
+    catalog = json.loads((ROOT / 'content/prizes.json').read_text())['prizes']
+    by_id = {}
+    for item in manifest['assets']:
+        if item['kind'] != 'prizes':
+            continue
+        if item['id'] in by_id:
+            raise RuntimeError(f"Duplicate prize artwork asset ID {item['id']}")
+        by_id[item['id']] = item
+    registered = []
+    for prize in catalog:
+        asset = by_id.get(prize['asset'])
+        if asset is None or asset['key'] != f"prizes.{prize['key']}":
+            raise RuntimeError(f"Missing packaged artwork for prize {prize['key']}")
+        registered.append(asset)
+    return registered
 
 
 def verify_art(archive):
@@ -50,11 +64,11 @@ def verify_art(archive):
             expected = (ROOT / relative).read_bytes()
             if package.read(relative) != expected:
                 raise RuntimeError(f'Packaged art differs: {relative}')
-        count = prize_count()
-        prizes = [item for item in manifest['assets'] if item['kind'] == 'prizes']
-        if len(prizes) != count or len({hashlib.sha256(package.read('assets/slice/' + p['path'])).digest()
-                                       for p in prizes}) != count:
-            raise RuntimeError(f'Release must contain {count} distinct present PNGs (JELLI_PRIZE_COUNT)')
+        prizes = registered_prize_assets(manifest)
+        hashes = {hashlib.sha256(package.read('assets/slice/' + p['path'])).digest()
+                  for p in prizes}
+        if len(hashes) != len(prizes):
+            raise RuntimeError(f'Release must contain {len(prizes)} distinct registered prize PNGs')
         for name in ('assets/slice/assets.json', 'preview.html', 'tools/assets/live_assets.py',
                      'scripts/jelli-art-live', 'ARTWORK.txt'):
             if not package.read(name):

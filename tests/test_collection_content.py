@@ -13,6 +13,7 @@ with tempfile.TemporaryDirectory(prefix="jelli-content-") as directory:
     (work / "cmake").mkdir()
     (work / "content").mkdir()
     shutil.copy(root / "cmake/JelliCollection.cmake", work / "cmake")
+    shutil.copy(root / "content/prizes.json", work / "content")
     driver = work / "check.cmake"
     # Standalone -P scripts do not inherit the project's CMake policy baseline.
     driver.write_text('cmake_minimum_required(VERSION 3.21)\n'
@@ -31,6 +32,9 @@ with tempfile.TemporaryDirectory(prefix="jelli-content-") as directory:
         invalid = copy.deepcopy(catalog)
         invalid["entries"][0][field] = value
         check(invalid, False)
+    invalid = copy.deepcopy(catalog)
+    invalid["forms"][0]["portrait"] = "01001"
+    check(invalid, False)
     for count in (8, 10):
         invalid = copy.deepcopy(catalog)
         invalid["entries"] = (invalid["entries"] + [invalid["entries"][0]])[:count]

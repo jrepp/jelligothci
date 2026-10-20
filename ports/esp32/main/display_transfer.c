@@ -42,6 +42,9 @@ lv_display_t *jelli_display_prepare(void)
     return display;
 }
 
+/* This startup reservation requires aligned internal DMA-capable memory and
+ * stays owned through each completion callback; proposed storage changes:
+ * docs-cms/rfcs/rfc-009-bounded-memory-systems-and-adoption.md#foundation-contracts */
 void jelli_display_transfer_init(JelliDisplayTransfer *transfer)
 {
     transfer->pixels =

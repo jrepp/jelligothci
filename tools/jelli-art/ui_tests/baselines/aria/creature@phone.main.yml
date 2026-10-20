@@ -1,6 +1,7 @@
 - main:
   - tabpanel "Creature":
     - heading "Creature" [level=2]
+    - button "Duplicate creature"
     - group "Creature form":
       - button "MINT · baby" [pressed]
       - button "LILAC · grown"
@@ -110,7 +111,8 @@
         - button "Retire content": Retire
     - button "Revert pose" [disabled]
     - button "Revert all" [disabled]
-    - button "Saved" [disabled]
+    - button "Save clips" [disabled]
+    - status: Saved
     - heading "All poses · click one to edit it" [level=3]
     - button "1. idle 1f · once"
     - button "2. idle-alt 1f · once"
@@ -564,5 +566,6 @@
     - list:
       - listitem: No unsaved behaviour or size edits.
     - button "Revert" [disabled]
-    - button "Saved" [disabled]
+    - button "Save behaviour & size" [disabled]
+    - status: Saved
     - text: Space play/pause · ,/. step frames (idle beats while simulating) · J/K next/previous pose · 1–13 pick a pose · ⌘S save clips and behaviour

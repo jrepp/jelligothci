@@ -488,7 +488,7 @@ tools/jelli-art/typecheck/check.sh                             # JSDoc type chec
 
 The **Studio tests** job in `.github/workflows/jelli-art.yml` runs
 `test_paint_tools.js`, `test_server.py`, `test_creatures.py`,
-`test_animation.py`, `test_game_preview.py` and `test_tidy.py` (Tidy gives the
+`test_animation.py`, `test_game_preview.py`, `test_creation.py` and `test_tidy.py` (Tidy gives the
 same pixels in every process) and the JSDoc type check on every pull request,
 and a release image is built only after they pass.
 
@@ -523,6 +523,11 @@ tools/jelli-art/typecheck/check.sh` rewrites the list.
 tools/jelli-art/ui_tests/run.sh                    # in the pinned Playwright image (podman or docker)
 JELLI_UI_UPDATE=1 tools/jelli-art/ui_tests/run.sh  # rewrite the aria and axe baselines
 ```
+
+The [UI requirements](ui_tests/requirements.in) include the CMake version pinned in
+[toolchain.env](../../toolchain.env), because browser creation and duplication tests
+validate copied content through the real generators. The Playwright image does
+not include CMake; the container runner exposes the hash-pinned package on PATH.
 
 `ui_tests/` drives the page with Playwright (Python). The studio serves the
 art and content of the revision pinned in `ui_tests/fixture.json`, so art

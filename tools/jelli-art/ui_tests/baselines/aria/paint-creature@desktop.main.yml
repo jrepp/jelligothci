@@ -21,9 +21,21 @@
     - group "Overlays":
       - button "Grid" [pressed]
       - button "Issues"
+    - toolbar "Paint commands":
+      - group "History":
+        - button "Undo" [disabled]
+        - button "Redo" [disabled]
+      - group "File":
+        - status: Saved
+        - button "Save" [disabled]
+    - toolbar "Tool options":
+      - text: Pencil · P
+      - group "Drawing options":
+        - button "Pixel-perfect"
+        - button "Mirror"
+      - text: Alt-click picks a colour
     - toolbar "Paint tools":
-      - text: Tool
-      - group "Tool":
+      - group "Tools":
         - button "Pencil" [pressed]
         - button "Eraser"
         - button "Fill"
@@ -34,21 +46,7 @@
         - button "Ellipse"
         - button "Select"
         - button "Magic wand"
-      - text: Options
-      - group "Options":
-        - button "Filled"
-        - button "Pixel-perfect"
-        - button "Mirror"
-      - text: History
-      - group "History":
-        - button "Undo" [disabled]
-        - button "Redo" [disabled]
-      - text: File
-      - group "File":
-        - button "Revert"
-        - button "Use before"
-        - button "Saved" [disabled]
-    - group: More tools selection · transform · nudge · replace colour · mirror · guides · tiles · tidy
+        - button "Hand"
     - text: paint · 10× Hover or focus the canvas
     - application "creatures.axolotl-idle-2, 48 by 48 pixels"
     - region "Flip-book":
@@ -59,6 +57,7 @@
         - button "◀ Frame"
         - button "Play"
         - button "Frame ▶"
+        - button "Duplicate frame"
       - text: showing frame 2/4 · 450 ms
       - note "✓ Frames keep frame 1's ground anchor and eye 16 px above the ground"
       - list "Frames of axolotl.idle":
@@ -71,10 +70,45 @@
         - listitem:
           - button "4 · idle-4 450 ms"
       - group: Onion & guides
-    - heading "Paint colours · axolotl palette · click to paint" [level=3]
+    - group:
+      - text: Properties
+      - group:
+        - text: Transform & selection Transform
+        - group "Transform":
+          - button "Flip horizontally": ⇋
+          - button "Flip vertically": ⇅
+          - button "Rotate clockwise": ↻
+          - button "Rotate anticlockwise": ↺
+        - text: Nudge
+        - group "Nudge":
+          - button "Nudge left": ←
+          - button "Nudge up": ↑
+          - button "Nudge down": ↓
+          - button "Nudge right": →
+          - button "Wrap"
+        - text: Replace colour
+        - group "Replace colour":
+          - combobox "Replace colour":
+            - 'option "body #ffcbdd · 346 px" [selected]'
+            - 'option "outline #000000 · 148 px"'
+            - 'option "body shadow #ffadca · 92 px"'
+            - 'option "gill #ff5994 · 43 px"'
+            - 'option "body light #ffe3ed · 17 px"'
+            - 'option "gill deep #d9265d · 4 px"'
+            - 'option "white #ffffff · 2 px"'
+          - button "→ paint colour"
+      - group: Symmetry
+      - group: View & input
+      - group: Clean up & restore
+    - heading "Paint colours · axolotl" [level=3]
     - group "Main and secondary colours":
-      - text: "main outline #000000 · secondary (right-click) transparent"
-      - button "⇄ Swap"
+      - 'button "Main #000000. Choose a colour from the palette"':
+        - text: Main
+        - strong: "#000000"
+      - button "Secondary Transparent. Colour actions":
+        - text: Secondary
+        - strong: Transparent
+      - button "Swap main and secondary colours": ⇄
     - group "body":
       - text: body
       - 'button "white · #ffffff · used by 19 assets"': white 2 px
@@ -106,4 +140,4 @@
     - list "history click a step to go back":
       - listitem:
         - button "1. Opened"
-    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."
+    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms; Hand (H) or middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."

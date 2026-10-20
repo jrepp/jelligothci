@@ -14,6 +14,9 @@ typedef struct {
     JelliAssetSet set;
 } JelliAssetBank;
 
+/* Whole-bank reload storage remains the current implementation. Proposed
+ * bounded workspace migration follows the memory foundations:
+ * docs-cms/rfcs/rfc-009-bounded-memory-systems-and-adoption.md#adoption-sequence */
 typedef struct {
     JelliAssetBank banks[2];
     uint8_t bytes[JELLI_ASSET_PACK_CAPACITY];

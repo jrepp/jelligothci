@@ -30,7 +30,7 @@ the repository's pinned tools, and it only listens on your own computer.
    the row you picked the colour from; right-click or Shift steps
    deeper. The **?** overlay lists the remaining keys.
 3. Selection, transforms, nudges, colour replacement, mirror axes, guides,
-   the tile preview and **Tidy outline** are under **More tools**, which stays
+   the tile preview and **Tidy outline** are in the **Properties** inspector, which stays
    open once you open it. **Select** a rectangle, or click a colour with the
    **Magic wand** (Q) to select the pixels of that colour touching it
    (Shift-click, or Shift+Enter at the keyboard cursor while the wand is the
@@ -65,7 +65,7 @@ the repository's pinned tools, and it only listens on your own computer.
    with ⌘Z / Ctrl+Z, or click any step in the **history** list beside the
    canvas.
 6. Zoom with `[` and `]`, **Fit**, or Ctrl/⌘ and the mouse wheel; middle-drag
-   pans. **Fit content** (`Z`, under **More tools**) zooms to the drawn pixels
+   pans. **Fit content** (`Z`, in the **Properties** inspector) zooms to the drawn pixels
    with a 2 px margin, which helps on frames with empty rows. **Grid** and
    **Guides** (centre and 8 px tile centres) are toggles.
    The backdrop starts as the sprite's real surroundings: the scene's wall
@@ -89,8 +89,13 @@ the repository's pinned tools, and it only listens on your own computer.
    and **Deselect** buttons while a selection exists. Hold a button while you
    draw, or tap it to keep it on. Long-press a palette colour for a menu to use
    it as the secondary colour, isolate it, or edit its slot. The bar shows
-   with touch only; **Quick bar** and **Left-handed** under **More tools** show
+   with touch only; **Quick bar** and **Left-handed** in the **Properties** inspector show
    it with a mouse or move it to the right.
+Use the compact tool rail to choose a tool; the options beside it change with
+the tool. **Hand** (`H`) pans the canvas without painting. Selection commands
+appear when needed, and **Properties** holds advanced transforms and view
+options. On narrow screens, **List** opens the asset browser as a drawer.
+
 7. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
    shows it straight away. Each save is recorded with **Your name**, which you
    set under **Settings** in the header; if it is empty, the studio asks once
@@ -101,10 +106,15 @@ the repository's pinned tools, and it only listens on your own computer.
    refs and the lint totals; those are Review-only, so every other mode has a
    single header row that does not change height when you start editing.
 
+Save commands keep their name and disk icon. The adjacent status distinguishes
+Unsaved, Saving, Saved and Save failed. Continuing to edit during a save keeps
+the newer changes unsaved; a successful save acknowledges only the submitted
+snapshot. Undo and Redo remain separate history commands.
+
 Saved sprites are listed in `assets/slice/source/hand-painted.json`. The polish
 recipe never overwrites them. Custom colours work in the live game, but release
 builds accept only the 16 palette colours. To ship a new colour, put it in a
-palette slot with ✎. The font atlas and backgrounds are not paintable yet.
+palette slot with ✎. Backgrounds are paintable; the font atlas still uses an external image editor.
 Follow the [pixel art authoring guide](pixel-art-guide.md) for the house style.
 
 Sprites with their own palette, such as the 48×48 axolotl, paint from that
@@ -176,16 +186,16 @@ gives the form its own clip; **Remove clip** goes back to the fallback.
 
 ### Behaviour and reactions
 
-Choose **Behaviour** at the top. **States & looks** edits each behaviour state.
+Choose **Behaviour** at the top. Start with **Behaviours**, which explains what the pet does and how it looks.
 It sets how long the state lasts and its cooldown, its need and bond changes,
 the stimuli that end it early, and an optional request with its bond reward.
 It also sets the state's look: pose, upper-case caption of up to 16 characters,
-an effect sprite above the head, and a prop. **Repertoires** chooses which forms
+an effect sprite above the head, and a prop. **Reaction rules** chooses which forms
 react and which moments they enjoy more. It also edits their reactions: a
 stimulus, an optional value, the state, the weight, the chance, and conditions
 for place, night, mood and bond.
 
-**Stimulus simulator** shows what a form would do when a stimulus arrives:
+**Test a reaction** shows what a form would do when a stimulus arrives:
 every reaction that fits, the weighted pick, the chance roll and the state it
 enters. A running state is only ended by its ends-on stimuli, never replaced.
 The odds bar covers the next ten minutes, and the preview shows the resulting
@@ -200,6 +210,12 @@ explain themselves with a tooltip on a desktop, and − and + buttons on number
 fields. **Test in game** gains **◀ Frame** and **Frame ▶** for the `,` and `.`
 keys. In landscape the list sits beside the inspector with the preview above it;
 in portrait the view stacks and the preview stays pinned at the top.
+
+Use **Duplicate behaviour** to copy the selected behavior and its appearance
+into a new named state. The copy does not change existing triggers. Connect it
+under **Reaction rules** when it should run; the **When → Do** controls describe
+that connection. Timing and appearance are shown first, while detailed effects,
+requests, ending conditions and global rules are in advanced disclosures.
 
 ### Unsaved work and Test in game
 
@@ -290,6 +306,28 @@ The inventory includes creature frames, care and ring icons, health activities,
 stat pictograms, celebration sprites, backgrounds, props, font, and presents.
 See [the source inventory](../assets/slice/README.md) for stable IDs, provenance,
 reproduction, and current asset details.
+
+## Create content in the studio
+
+Use **New** to create a pet from an explicit artwork/gameplay template, an icon,
+prop, present, or background and location. Each flow validates the full catalog
+before saving and opens the result in Paint. Registered presents become choices
+in Activities' **Completion prize** control. Background locations become choices
+in Activities and **Test in game**. Choose the daily reward policy and any custom
+pose explicitly, then save before running the real-engine preview.
+
+New pets currently use an explicitly chosen single-form policy. Use Creature to
+add frames, edit timing, and adjust the copied clips. The repository workflow
+below also supports custom import specifications and multi-stage evolution.
+Bounds and required inputs are enforced by the
+[creator](../tools/jelli-art/creation.py) and catalog generators.
+
+**Duplicate creature** in Creature opens New with the selected form's saved
+artwork, clips, scales and gameplay template prefilled. Review its new identity
+and unlock policy before creating a separate single-form pet. Save source edits
+first. **Duplicate frame** in Paint's flip-book copies the saved image to a new
+asset and inserts it after the current frame when the clip has room; a full clip
+keeps the copy in the library. Creature's timeline also provides frame duplication.
 
 ## Add a creature
 

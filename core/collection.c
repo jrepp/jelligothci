@@ -21,7 +21,7 @@ void jelli_collection_migrate(JelliGame *game)
 
 const JelliEvolutionSet *jelli_collection_set(unsigned entry)
 {
-    if (entry < 1u || entry > 9u)
+    if (entry < 1u || entry > jelli_collection_entry_count)
         return NULL;
     return &jelli_evolution_sets[jelli_collection_entries[entry - 1u].evolution_set - 1u];
 }
@@ -92,8 +92,8 @@ bool jelli_collection_valid(const JelliGame *game)
 
 static uint32_t unused_id(const JelliGame *game)
 {
-    /* At most nine occupied IDs: a free ID always exists among 1..10. */
-    for (uint32_t id = 1u; id <= 10u; ++id) {
+    /* One more candidate than occupied slots guarantees a free instance ID. */
+    for (uint32_t id = 1u; id <= JELLI_PET_CAPACITY + 1u; ++id) {
         bool found = false;
         for (unsigned i = 0u; i < game->count; ++i)
             found |= game->pets[i].id == id;
@@ -125,9 +125,10 @@ JelliPet jelli_collection_new_pet(uint32_t id, unsigned entry)
     return pet;
 }
 
-void jelli_collection_unlock(JelliGame *game)
+static void unlock_from(JelliGame *game, unsigned first)
 {
-    for (unsigned i = 0u; i < 9u && game->count < JELLI_PET_CAPACITY; ++i) {
+    for (unsigned i = first; i < jelli_collection_entry_count && game->count < JELLI_PET_CAPACITY;
+         ++i) {
         const JelliCollectionEntry *entry = &jelli_collection_entries[i];
         if (jelli_collection_find(game, entry->id) >= 0 ||
             (entry->unlock_prize &&
@@ -140,6 +141,15 @@ void jelli_collection_unlock(JelliGame *game)
         game->new_pets |= (uint16_t)(1u << i);
         ++game->revision;
     }
+}
+
+void jelli_collection_unlock(JelliGame *game) { unlock_from(game, 0u); }
+
+void jelli_collection_reconcile(JelliGame *game)
+{
+    /* Original saves know the first nine families. Append-only authored entries
+     * can become eligible from discoveries that predate their catalog entry. */
+    unlock_from(game, 9u);
 }
 
 JelliResult jelli_collection_set_form(JelliGame *game, uint32_t id, uint32_t index)

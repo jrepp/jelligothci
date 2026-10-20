@@ -1,5 +1,6 @@
-"""UX M2-A: task-first shell chrome (RFC-006 goals 1-3, layout spec M2). One header row in every mode and a second only in
-Review; everything that changes while you work (the Unsaved pill, tab dots, git status, Paint's title row) has a reserved slot,
+"""UX M2-A: task-first shell chrome (RFC-006 goals 1-3, layout spec M2). The 900–1439 px layout gives mode tabs their
+own row, with a third row only in Review. Everything that changes while you work
+(the Unsaved pill, tab dots, git status, Paint's title row) has a reserved slot,
 so the canvas never moves under the pointer; the Getting started card is capped and keeps its Hide button in view; "Your name"
 lives in a Settings popover and is asked for once before the first save when it is empty.
 
@@ -50,30 +51,66 @@ def header(page):
     return page.evaluate("() => document.querySelector('header').getBoundingClientRect().height")
 
 
+def header_rows(page):
+    return page.evaluate("""() => {
+      const rect = selector => {
+        const el = document.querySelector(selector), r = el.getBoundingClientRect();
+        return {left: r.left, right: r.right, top: r.top, bottom: r.bottom, visible: !!el.getClientRects().length};
+      };
+      const nav = document.querySelector('#shell-modes'), bar = nav.querySelector('[role=tablist]');
+      return {header: rect('header'), title: rect('header h1'), state: rect('.shell-state'), tools: rect('.shell-tools'), nav: rect('#shell-modes'),
+        review: rect('.header-review'), tabs: bar.querySelectorAll('[role=tab]').length,
+        visibleTabs: [...bar.querySelectorAll('[role=tab]')].filter(tab => tab.getClientRects().length).length,
+        tabOverflow: bar.scrollWidth > bar.clientWidth + 2,
+        scrollButtons: [...nav.querySelectorAll('[data-mode-scroll]')].every(button => !button.hidden)};
+    }""")
+
+
 def dirty(page, mode="paint", n=3):
     page.evaluate("""([mode, n]) => { window.__dirty = n;
         JelliShell.registerDirty('layout-dirty', {label: 'Paint', mode, check: () => window.__dirty}); }""", [mode, n])
 
 
-# ---------- header: one row, a second only in Review ----------
+# ---------- header: the intermediate layout gives modes a row, Review gets one more ----------
 
-@pytest.mark.parametrize("size, row, review", [("1440x900", 56, 96), ("1280x800", 56, 96), ("ipad-landscape", 64, 116)])
-def test_header_height_by_mode_and_dirty_state(page_at, size, row, review):
+@pytest.mark.parametrize("size, row_budget, review_budget", [
+    ("1440x900", 56, 96),
+    ("1280x800", 96, 132),
+    ("ipad-landscape", 120, 170),
+])
+def test_header_height_by_mode_and_dirty_state(page_at, size, row_budget, review_budget):
     page = page_at(size)
     heights = {}
+    rows = {}
     for state in ("clean", "dirty"):
         for mode in MODES:
             page.evaluate("id => JelliShell.activateMode(id)", mode)
             page.wait_for_timeout(60)
             heights[state, mode] = header(page)
+            rows[state, mode] = header_rows(page)
         if state == "clean":
             dirty(page)
             assert page.locator("#shell-unsaved").is_visible()
     NOTES.append(f"header height {size}: " + ", ".join(f"{mode} {heights['clean', mode]:.0f}/{heights['dirty', mode]:.0f}" for mode in MODES) + " (clean/dirty px)")
     for mode in MODES:
-        budget = review if mode == "review" else row
+        budget = review_budget if mode == "review" else row_budget
         assert heights["clean", mode] <= budget, f"{size} {mode}: header is {heights['clean', mode]:.0f}px, budget {budget}"
         assert abs(heights["clean", mode] - heights["dirty", mode]) <= 1, f"{size} {mode}: {heights['clean', mode]} -> {heights['dirty', mode]}"
+        if size in ("1280x800", "ipad-landscape"):
+            for state in ("clean", "dirty"):
+                layout = rows[state, mode]
+                assert layout["nav"]["visible"] and layout["tabs"] >= len(MODES), (size, mode, state, layout)
+                top_controls = sorted((layout["title"], layout["state"], layout["tools"]), key=lambda control: control["left"])
+                for left, right in zip(top_controls, top_controls[1:]):
+                    assert left["right"] <= right["left"] + 1, (size, mode, state, layout)
+                assert layout["nav"]["top"] >= max(layout["title"]["bottom"], layout["state"]["bottom"], layout["tools"]["bottom"]) - 1, layout
+                assert layout["nav"]["bottom"] <= layout["header"]["bottom"] + 1, layout
+                assert not layout["tabOverflow"] or layout["scrollButtons"], (size, mode, state, layout)
+                assert layout["tabOverflow"] or layout["visibleTabs"] == layout["tabs"], (size, mode, state, layout)
+                if mode == "review":
+                    assert layout["review"]["visible"] and layout["review"]["top"] >= layout["nav"]["bottom"] - 1, (size, state, layout)
+                else:
+                    assert not layout["review"]["visible"], (size, mode, state, layout)
 
 
 def test_row_two_is_review_only_and_lint_totals_leave_paint(page_at):
@@ -159,7 +196,8 @@ def test_the_canvas_never_moves_while_you_work(page_at, size):
     step("first stroke", lambda: paint_something(page, coarse))
     assert page.locator("#asset-stats .stat", has_text="unsaved edits").count() == 1
     step("save", lambda: page.locator("#save").click())
-    assert page.locator("#save").inner_text() == "Saved"
+    assert page.locator("#save").inner_text().strip() == "Save"
+    assert page.locator("#paint-save-status").inner_text() == "Saved"
     step("dirty again", lambda: paint_something(page, coarse, 0.6))
     key = page.evaluate("() => state.key")
     step("to a clean asset", lambda: page.evaluate("k => select(k)", other))
@@ -357,7 +395,7 @@ def save_with_empty_name(page, answer):
     assert dialog.get_by_role("heading", name="Who is saving?").is_visible()
     assert not sent, "the save waits for the answer"
     answer(dialog)
-    page.wait_for_function("() => document.getElementById('save').textContent === 'Saved'")
+    page.wait_for_function("() => document.getElementById('paint-save-status').textContent === 'Saved'")
     return sent
 
 
@@ -430,5 +468,5 @@ def test_settings_and_the_name_prompt_work_from_the_keyboard(page_at):
     page.keyboard.press("ControlOrMeta+s")
     page.locator("dialog.shell-dialog[open]").wait_for()
     page.keyboard.press("Escape")
-    page.wait_for_function("() => document.getElementById('save').textContent === 'Saved'")
+    page.wait_for_function("() => document.getElementById('paint-save-status').textContent === 'Saved'")
     assert len(sent) == 1

@@ -21,10 +21,11 @@ typedef struct {
     uint32_t growth_ticks;
 } JelliEvolutionSet;
 extern const JelliCollectionForm jelli_collection_forms[];
+extern const unsigned jelli_collection_entry_count;
 extern const unsigned jelli_collection_form_count;
 extern const JelliEvolutionSet jelli_evolution_sets[];
 extern const unsigned jelli_evolution_set_count;
-extern const JelliCollectionEntry jelli_collection_entries[9];
+extern const JelliCollectionEntry jelli_collection_entries[];
 /* content/pets.json "newborn" and "start": every new pet's stats and the new game's items. */
 typedef struct {
     uint16_t needs[JELLI_NEED_COUNT];
@@ -39,9 +40,9 @@ extern const JelliNewborn jelli_collection_newborn;
 extern const JelliStartingItems jelli_collection_start;
 /* A new pet for a collection entry, in its set's starting form. */
 JelliPet jelli_collection_new_pet(uint32_t id, unsigned entry);
-/* Entry IDs are stable 1..9, independent of instance IDs and storage order. */
+/* Entry IDs are stable 1..JELLI_PET_CAPACITY, independent of instance IDs and storage order. */
 int jelli_collection_find(const JelliGame *game, unsigned entry);
-/* NULL for entries outside 1..9. */
+/* NULL for entries outside 1..JELLI_PET_CAPACITY. */
 const JelliEvolutionSet *jelli_collection_set(unsigned entry);
 unsigned jelli_evolution_mask(const JelliEvolutionSet *set);
 /* Form ID at a set position; positions past the set fall back to its start. */
@@ -51,6 +52,8 @@ int jelli_evolution_index(const JelliEvolutionSet *set, unsigned form);
 /* True when a starting-form pet has aged into its set's second form. */
 bool jelli_collection_growth_due(const JelliPet *pet);
 void jelli_collection_unlock(JelliGame *game);
+/* After validating a decoded game, unlock appended families from existing discoveries. */
+void jelli_collection_reconcile(JelliGame *game);
 void jelli_collection_migrate(JelliGame *game);
 void jelli_collection_merge_starters(JelliGame *game);
 /* Map each pet onto its entry's evolution set after catalog changes. */

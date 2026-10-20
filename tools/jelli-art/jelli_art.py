@@ -41,6 +41,7 @@ from compare_slice import DEVICE_SCALE, REPO, SOURCE, collect  # noqa: E402
 import animation  # noqa: E402
 import behaviors  # noqa: E402
 import activities  # noqa: E402
+import creation  # noqa: E402
 import creatures  # noqa: E402
 import game_preview  # noqa: E402
 import lint_rules  # noqa: E402
@@ -70,8 +71,8 @@ CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
 # touch.js (RFC-007) right after the shell: pointer routing, gestures and touch sizing that panels use.
-PAGE_SCRIPTS = (SHELL_JS, HERE / "touch.js", HERE / "lint.js", HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
-                HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js")
+PAGE_SCRIPTS = (HERE / "icons.js", SHELL_JS, HERE / "touch.js", HERE / "lint.js", HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
+                HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js", HERE / "creation.js")
 EDITABLE_CONTENT = ("behaviors", "creatures", "activities")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
@@ -133,7 +134,7 @@ def capabilities():
 def version():
     """Changes whenever the manifest, creature content or any PNG changes on disk."""
     digest = hashlib.sha1()
-    content = [PETS, CREATURE_DATA, *(CONTENT / f"{n}.json" for n in ("behaviors", "activities", "potty"))]
+    content = [PETS, CREATURE_DATA, *(CONTENT / f"{n}.json" for n in ("behaviors", "activities", "potty", "prizes", "locations"))]
     for path in [MANIFEST, *[p for p in [*content, LINT] if p.exists()], *sorted(SOURCE.glob("*/*.png"))]:
         stat = path.stat()
         digest.update(f"{path.name}{stat.st_mtime_ns}{stat.st_size}".encode())
@@ -160,6 +161,7 @@ def payload(before):
             **lint_payload(),
             # Paint's own palette row labels, which build_slice.py also keeps ramp names away from.
             "palette_rows": getattr(creatures.load_validator(REPO), "PALETTE_ROWS", {}),
+            "creation": creation.data(REPO, SOURCE, CONTENT) if CONTENT_WRITABLE else None,
             "capabilities": capabilities(), "startup": STARTUP,
             "git": GIT.status() if GIT else {"enabled": False}}
 
@@ -215,6 +217,7 @@ def behaviour_data():
         (not path.exists(), "content/behaviors.json is missing"),
         (shutil.which("cmake") is None, "cmake is not installed, so edits cannot be validated")) if missing]
     return {"activity_data": behaviors.read_json(CONTENT / "activities.json"),
+            "prize_data": behaviors.read_json(CONTENT / "prizes.json"),
             "activity_sha": profiles.digest(CONTENT / "activities.json"),
             "activity_animations": activities.ANIMATIONS,
             "activity_locations": (behaviors.read_json(CONTENT / "locations.json") or {}).get("locations", []),
@@ -295,8 +298,8 @@ def save_asset(key, pixels, artist="", base=None):
     with LOCK:
         manifest = read_manifest()
         asset = find_asset(manifest, key)
-        if asset["kind"] in ("font", "backgrounds"):
-            raise StudioError("Font and backgrounds are not editable in the studio yet")
+        if asset["kind"] == "font":
+            raise StudioError("The font atlas is not editable in the studio yet")
         path = asset_path(asset)
         current = storage.digest(path)
         if base is not None and base != current:
@@ -487,8 +490,24 @@ def health():
             "git": git}
 
 
+def create_content(body):
+    if not CONTENT_WRITABLE:
+        raise StudioError("Creation requires a writable content root (--content for copied art)")
+    with LOCK:
+        try:
+            result = creation.create(REPO, SOURCE, CONTENT,
+                                     request_body.field(body, "request", dict),
+                                     request_body.field(body, "bases", dict))
+        except creation.StaleCreationError as error:
+            raise StaleError(str(error), creation.data(REPO, SOURCE, CONTENT)) from error
+        paths = [Path(path) for path in result.pop("paths")]
+        git = record(paths, "feat(art): create content in Jelli Art", request_body.artist(body))
+    return {**result, "version": version(), **git}
+
+
 F = request_body.field
 POSTS = {  # path -> handler(body); every field is type-checked so a bad request is a clear 400
+    "/api/create": create_content,
     "/api/save": lambda b: save_asset(F(b, "key", str), F(b, "pixels", list), request_body.artist(b),
                                       F(b, "base", str, required=False)),
     "/api/tidy": lambda b: tidy(F(b, "key", str), F(b, "pixels", list)),

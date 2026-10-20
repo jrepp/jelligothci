@@ -127,7 +127,8 @@ def test_stale_activities_draft_saves_after_an_overwrite_prompt(studio_page):
     seen.clear()  # the next Save is conflicted again
     page.locator("#ac-save").click()
     dialog(page).get_by_role("button", name="Overwrite").click()
-    page.wait_for_function("() => document.getElementById('ac-save').disabled")
+    expect(page.locator("#ac-save-status")).to_have_attribute("data-save-state", "idle")
+    expect(page.locator("#ac-save")).to_be_disabled()
     assert seen[-1]["bases"] == {"activities": "newer"}
 
 
@@ -144,7 +145,8 @@ def test_stale_size_draft_saves_after_an_overwrite_prompt(studio_page):
     page.route("**/api/creatures", lambda r: conflict(r, {"ok": True, "changed": True, "version": "v2", "sha": "fresh"}, seen))
     page.locator("#bh-save").click()
     dialog(page).get_by_role("button", name="Overwrite").click()
-    page.wait_for_function("() => document.getElementById('bh-save').disabled")
+    expect(page.locator("#bh-save-status")).to_have_attribute("data-save-state", "idle")
+    expect(page.locator("#bh-save")).to_be_disabled()
     assert seen[0]["base"] == "old" and seen[1]["base"] == "newer"
 
 
@@ -163,7 +165,8 @@ def test_stale_behaviour_draft_saves_after_an_overwrite_prompt(studio_page):
                                                          "shas": {"behaviors": "fresh", "creatures": "fresh"}}, seen))
     page.locator("#bv-save").click()
     dialog(page).get_by_role("button", name="Overwrite").click()
-    page.wait_for_function("() => document.getElementById('bv-save').disabled")
+    expect(page.locator("#bv-save-status")).to_have_attribute("data-save-state", "idle")
+    expect(page.locator("#bv-save")).to_be_disabled()
     assert seen[0]["bases"]["behaviors"] == "old" and seen[1]["bases"]["behaviors"] == "newer"
 
 
@@ -184,7 +187,8 @@ def test_behaviour_view_ignores_the_creature_tabs_size_edit(studio_page):
     page.evaluate("() => { D.behavior_editable = true; renderView(); }")
     expect(page.locator("#behaviour .cr-msgs .ok")).to_have_text("No unsaved behaviour edits.")
     assert page.locator("#bv-save").is_disabled()
-    assert page.locator("#bv-save").inner_text() == "Saved"
+    expect(page.locator("#bv-save")).to_have_text("Save behaviour")
+    expect(page.locator("#bv-save-status")).to_have_text("Saved")
 
 
 def test_size_view_ignores_the_behaviour_views_look_edit(studio_page):
@@ -208,7 +212,8 @@ def test_size_save_writes_only_the_size_section(studio_page):
 
     page.route("**/api/creatures", route)
     page.locator("#bh-save").click()
-    page.wait_for_function("() => document.getElementById('bh-save').disabled")
+    expect(page.locator("#bh-save-status")).to_have_attribute("data-save-state", "idle")
+    expect(page.locator("#bh-save")).to_be_disabled()
     assert seen[0]["data"]["state_presentation"] == saved_looks  # the unsaved look is not in the file
     assert any(p["scale"] == after for p in seen[0]["data"]["profiles"])
     assert "Behaviour states" in unsaved_button(page).inner_text()  # the look is still waiting in its own view
@@ -229,7 +234,8 @@ def test_behaviour_save_writes_only_the_looks_section(studio_page):
 
     page.route("**/api/content", route)
     page.locator("#bv-save").click()
-    page.wait_for_function("() => document.getElementById('bv-save').disabled")
+    expect(page.locator("#bv-save-status")).to_have_attribute("data-save-state", "idle")
+    expect(page.locator("#bv-save")).to_be_disabled()
     docs = seen[0]["docs"]
     assert list(docs) == ["creatures"]  # behaviors.json was not touched
     assert docs["creatures"]["profiles"] == saved_profiles

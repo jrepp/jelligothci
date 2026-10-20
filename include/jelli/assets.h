@@ -19,7 +19,9 @@ typedef struct {
 } JelliAsset;
 
 /* Optional host-owned artwork. Storage must stay valid throughout a frame.
- * NULL uses the immutable embedded assets (including on ESP32). */
+ * NULL uses the immutable embedded assets (including on ESP32).
+ * Proposed resource-generation ownership must preserve this frame lifetime:
+ * docs-cms/rfcs/rfc-009-bounded-memory-systems-and-adoption.md#foundation-contracts */
 typedef struct {
     const JelliAsset *items;
     size_t count;

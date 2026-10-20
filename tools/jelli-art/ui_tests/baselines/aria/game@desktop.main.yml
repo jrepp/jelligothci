@@ -59,6 +59,12 @@
         - option "BASEBALL"
         - option "BUG CATCHING"
         - option "SCIENCE"
+      - text: Completion
+      - combobox "Completion":
+        - option "Show running activity" [selected]
+        - option "Complete once"
+        - option "Complete twice today"
+      - text: Completion runs real commands and simulation. Repeated daily recipes pay costs and rewards only on the first run.
       - checkbox "Asleep (REST command)"
       - text: Asleep (REST command)
       - checkbox "Potty mess on the floor"
@@ -75,6 +81,25 @@
       - spinbutton "amusement": "700"
       - text: social
       - spinbutton "social": "700"
+    - group "Scene and presents":
+      - text: Scene and presents Location
+      - combobox "Location":
+        - option "Default home" [selected]
+        - option "HOME"
+        - option "GARDEN"
+        - option "PARK"
+        - option "POND"
+        - option "BEACH"
+        - option "LIBRARY"
+      - text: Present
+      - combobox "Present":
+        - option "None" [selected]
+      - text: Present state
+      - combobox "Present state":
+        - option "none" [selected]
+        - option "offered"
+        - option "owned"
+      - paragraph: Offered shows the pending catch. Owned shows collection ownership. An activity can choose its own allowed location when started.
     - group "Screen":
       - text: Screen Page
       - combobox "Page":

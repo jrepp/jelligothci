@@ -61,7 +61,7 @@ static void gifts_open_all_nine_slots(void)
     press(0u);
     press(5u);
     CHECK(engine.ui.page == JELLI_UI_COLLECTION && engine.ui.menu_open);
-    for (unsigned slot = 1u; slot <= JELLI_PRIZE_COUNT; ++slot) {
+    for (unsigned slot = 1u; slot <= jelli_prize_count; ++slot) {
         JelliPetUiButton button;
         CHECK(jelli_pet_ui_control(&engine.ui, slot, false, &button));
         CHECK(button.icon == 11000u + slot);
@@ -207,7 +207,7 @@ static void snapshot_grid(void)
 {
     reset();
     engine.game.prizes.owned = engine.game.prizes.discovered = JELLI_PRIZE_MASK;
-    for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i)
+    for (unsigned i = 0u; i < jelli_prize_count; ++i)
         engine.game.prizes.origin_pet[i] = 1u;
     engine.ui.menu_open = true;
     engine.ui.page = JELLI_UI_COLLECTION;
