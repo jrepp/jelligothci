@@ -42,7 +42,7 @@ class CreationTest(unittest.TestCase):
 
     def test_icon_prop_prize_and_background_save_reload(self):
         original = creation.read(self.source / "assets.json")
-        for kind, size in (("icons", 16), ("props", 24), ("prizes", 32), ("backgrounds", 64)):
+        for kind, size in (("effects", 16), ("icons", 16), ("props", 24), ("prizes", 32), ("backgrounds", 64)):
             with self.subTest(kind=kind):
                 request = {"type": "asset", "kind": kind, "key": "test-" + kind, "name": "TEST ART", "size": size,
                            "pivot": [size // 2, size - 1]}
@@ -217,6 +217,10 @@ class CreationTest(unittest.TestCase):
             manifest = creation.read(self.source / "assets.json")
             frames = [a for a in manifest["assets"] if a.get("form") == request["key"]]
             self.assertTrue(frames)
+            effects=creation.read(self.content / "effects.json")
+            for point in effects["hardpoints"]:
+                self.assertEqual(point["positions"][request["key"]],
+                                 [round(v*size/32) for v in point["positions"]["baby"]])
             self.assertTrue(all(a["width"] == size and a["height"] == size for a in frames))
             clips = [c for c in manifest["clips"] if c["key"].startswith(request["key"] + ".")]
             self.assertEqual(len(clips), len([c for c in manifest["clips"] if c["key"].startswith("baby.")]))

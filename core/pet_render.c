@@ -2,6 +2,7 @@
 #include "jelli/creature.h"
 #include "jelli/wake.h"
 #include "jelli/pet_scene.h"
+#include "jelli/pet_effect.h"
 #include "pet_draw.h"
 #include "pet_gallery.h"
 #include "pet_collection.h"
@@ -188,10 +189,11 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->scene_pixels == b->scene_pixels && a->scene_revision == b->scene_revision &&
-           a->care_seconds == b->care_seconds && a->volume == b->volume &&
-           a->hydration == b->hydration && a->assets == b->assets && same_frame_key(a, b) &&
-           same_pet_key(a, b) && jelli_pet_gallery_same(a, b) && jelli_pet_collection_same(a, b);
+    return a->effect_tick == b->effect_tick && a->scene_pixels == b->scene_pixels &&
+           a->scene_revision == b->scene_revision && a->care_seconds == b->care_seconds &&
+           a->volume == b->volume && a->hydration == b->hydration && a->assets == b->assets &&
+           same_frame_key(a, b) && same_pet_key(a, b) && jelli_pet_gallery_same(a, b) &&
+           jelli_pet_collection_same(a, b);
 }
 
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
@@ -205,6 +207,7 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
     jelli_pet_scene_prepare(ui);
     JelliPetRenderKey view = render_key(game, ui, time, paused);
     jelli_pet_actor_clip(ui, &view, time);
+    jelli_pet_effect_prepare(ui, &view, time);
     jelli_pet_actor_layout(ui, &view);
     jelli_pet_sleep_particles(ui, view.asleep, time);
     jelli_pet_bubbles(ui, view.asleep, time);

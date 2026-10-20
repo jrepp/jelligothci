@@ -308,11 +308,13 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
         menu_button(&c, ui);
         return;
     }
+    jelli_pet_effect_draw(&c, ui, JELLI_EFFECT_BEHIND);
     page_heading(&c, ui, view);
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS)
         settings_clock(&c, view);
     else if (ui->actor_frame)
         jelli_canvas_sprite(&c, ui->actor_frame->id, ui->actor_x, ui->actor_y, ui->actor_scale);
+    jelli_pet_effect_draw(&c, ui, JELLI_EFFECT_FRONT);
     c.icon_night = view->night;
     if (jelli_pet_page_is_routine(ui->page)) {
         activity(&c, ui);
@@ -330,6 +332,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
         draw_tile(c, view);
         jelli_pet_gallery_draw_latched(&c, view);
     }
+    jelli_pet_effect_draw(&c, ui, JELLI_EFFECT_FOREGROUND);
     jelli_pet_menu_ring(&c, game, ui);
     menu_button(&c, ui);
 }

@@ -9,6 +9,7 @@
 #include "asset_reload.h"
 #include "sound_output.h"
 #include "scene_preview.h"
+#include "jelli/pet_effect.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -187,6 +188,15 @@ static void open_audio(const Desktop *d, const JelliOptions *options)
         fprintf(stderr, "Sound unavailable: %s\n", SDL_GetError());
 }
 
+static bool open_presentation(JelliPetEngine *pet, const JelliOptions *options)
+{
+    if (options->effect && !jelli_pet_effect_start(&pet->ui, options->effect, pet->animation_ms)) {
+        fprintf(stderr, "Effect unavailable: %s\n", options->effect);
+        return false;
+    }
+    return jelli_sdl_scene_open(&scene_preview, &pet->ui, options);
+}
+
 int main(int argc, char **argv)
 {
     JelliOptions options;
@@ -230,7 +240,7 @@ int main(int argc, char **argv)
             goto cleanup;
         jelli_pet_bind_devices(&pet, (JelliMotionDriver){&d.motion, jelli_motion_poll},
                                (JelliDisplayDriver){0});
-        if (!jelli_sdl_scene_open(&scene_preview, &pet.ui, &options))
+        if (!open_presentation(&pet, &options))
             goto cleanup;
     } else if (!jelli_init(&shapes, platform, surface))
         goto cleanup;

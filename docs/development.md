@@ -308,3 +308,21 @@ Use `make core-test` for fake transport and service tests, `make test` for the
 SDL integration, and `make sanitize` for memory/undefined-behavior checks.
 The existing C analysis and size gates include portable drivers. Firmware
 profile isolation is checked with `tools/debug/check_firmware_profile.py`.
+
+
+## Authored celebration playback
+
+The [effect sampler](../include/jelli/effect.h) consumes generated immutable
+[content](../content/effects.json), using absolute elapsed animation time and
+half-open intervals. It returns bounded sprite samples and the active creature
+pose cue. The [pet adapter](../include/jelli/pet_effect.h) starts/stops one cosmetic
+sequence without changing game state or saves; opening menus, changing the pet
+or form, or a backward clock cancels playback. Active effects participate in
+full redraw and region restoration. Hosts pass the engine animation clock so
+pause does not advance effects.
+
+Hardpoints are per-form source-pixel offsets from the ground anchor; track motion
+is in native display pixels. The shared compiler resolves point and artwork keys
+at build time. Jelli Art and the saved-content preview use that same validator.
+See [ADR-015](../docs-cms/adr/adr-015-authored-celebration-timelines.md) and
+[validation evidence](../docs-cms/memos/memo-085-celebration-authoring-and-runtime.md).

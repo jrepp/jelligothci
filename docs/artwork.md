@@ -434,3 +434,33 @@ asset directory:
 ./scripts/uv run --python 3.12 tools/assets/compare_slice.py --before v0.2.0
 open build/assets/compare.html
 ```
+
+
+## Author celebration effects
+
+Open **Effects** in Jelli Art to coordinate sprite overlays and creature pose
+clips on one timeline. Select a track or cue to edit its name, start and duration.
+Sprite tracks hold one or more registered frames, with an optional frame loop,
+integer scale and linear or eased motion between start and end offsets. Creature
+cues restart the selected pose clip and cannot overlap. Use **New → Effect sprite**
+and Paint to create additional frames, or **Paint frame** to edit shared artwork.
+
+Default render layers are **Behind pet**, **In front of pet**, and **Foreground**.
+Tracks draw in list order within each layer; Move back/forward controls that order.
+Foreground draws over routine content, below navigation controls. Sprite tracks
+can overlap in time. Ordinary behavior returns between creature cues and when
+the celebration ends.
+
+Choose a preview pet, then a named hardpoint. Edit its coordinates or enable
+**Place selected hardpoint** and tap the preview. Hardpoint coordinates are source
+pixels relative to the pet's ground contact; negative Y goes upward. They are
+shared across celebrations for that artwork form. New pets inherit and scale
+their template's hardpoints. A track selects a hardpoint and adds display-pixel
+motion offsets; **Screen origin** uses absolute display coordinates instead.
+
+Play, Replay, the timeline scrubber and time stepping preview the choreography.
+Saving writes [effects.json](../content/effects.json) with stale-file protection;
+unsaved edits survive refresh as browser drafts. **Save and test in game** opens
+the actual C renderer using saved content. Save any separate Paint or Creature
+clip edits too. Effects currently start explicitly through the preview or
+`jelligotchi --effect celebrate`; they are not automatically bound to rewards.

@@ -11,6 +11,7 @@ from pathlib import Path
 import asset_ids
 import creature_data
 import scene_data
+import effect_data
 from build_slice import load_assets
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -80,6 +81,9 @@ def generate(output):
     chunks.extend(creature_data.emit(manifest))
     scenes = json.loads((ROOT / "content/scenes.json").read_text())
     chunks.append(scene_data.emit(scenes, manifest))
+    effects_path = ROOT / "content/effects.json"
+    effects = json.loads(effects_path.read_text()) if effects_path.exists() else effect_data.initial(manifest)
+    chunks.append(effect_data.emit(effects, manifest, json.loads((ROOT / "content/pets.json").read_text())["forms"]))
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n\n".join(chunks) + "\n")
     (output.parent / "jelli_asset_ids.h").write_text(asset_ids.header(manifest))

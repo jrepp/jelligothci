@@ -689,3 +689,18 @@ The same CMake validators run in core-only, desktop and firmware builds and
 reject broken asset, pet, location, activity and prerequisite references.
 The [balance audit](../../docs-cms/memos/memo-041-activity-balance-and-location-integrity.md)
 records the full recipe table and initial pet tuning.
+
+
+## Celebration effects
+
+**Effects** edits [celebration timelines and pet hardpoints](../../docs/artwork.md#author-celebration-effects).
+It reuses the shell, drafts, guarded saves, creature clip drawing, touch number
+controls and Paint. **New → Effect sprite** creates artwork for sprite tracks.
+`GET /api/effects` returns the document, base hash, editability and capacities.
+`POST /api/effects` requires `data` and its loaded `base` (null for a new file),
+validates under the shared write lock and atomically saves `content/effects.json`.
+Stale saves return 409. Copied artwork requires an explicit content directory.
+The schema/compiler is [effect_data.py](../assets/effect_data.py); the frontend
+sampler mirrors integer timing in the core. **Test saved effect in game** uses
+the actual C runtime. `test_effects.py` and `ui_tests/test_effects.py` cover the
+schema, persistence and authoring paths.

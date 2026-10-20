@@ -282,6 +282,24 @@ class RealEngineTest(unittest.TestCase):
         self.assertEqual(owned["engine"]["owned"], 1 << 9)
         self.assertEqual(owned["engine"]["offered"], 0)
 
+    def test_effect_and_hardpoint_incremental_build(self):
+        scenario = {"effect":"celebrate", "start_ms":1000, "frames":1, "minute":720}
+        before = self.service.render(scenario)
+        plain = self.service.render({**scenario, "effect":""})
+        self.assertNotEqual(png(before["frames"][0]).tobytes(), png(plain["frames"][0]).tobytes())
+        path = self.service.content / "effects.json"
+        original = path.read_bytes()
+        doc = json.loads(original)
+        for point in doc["hardpoints"]:
+            for art in point["positions"]:
+                point["positions"][art] = [30, 0]
+        try:
+            path.write_text(json.dumps(doc))
+            changed = self.service.render(scenario)
+            self.assertNotEqual(png(before["frames"][0]).tobytes(), png(changed["frames"][0]).tobytes())
+        finally:
+            path.write_bytes(original)
+
     def test_layered_scene_tilt_travel_and_incremental_build(self):
         scenario = {"scene":"market-street", "frames":2, "step_ms":200, "minute":720}
         still = self.service.render(scenario)

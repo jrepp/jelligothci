@@ -44,7 +44,7 @@ jobs:
           GIT_COMMITTER_NAME: Jelli Art CI
           GIT_COMMITTER_EMAIL: jelli-art-ci@users.noreply.github.com
         run: |
-          for test in test_server test_creatures test_animation test_game_preview test_creation test_tidy test_scenes; do
+          for test in test_server test_creatures test_animation test_game_preview test_creation test_tidy test_scenes test_effects; do
             ./scripts/uv run --python 3.12 "tools/jelli-art/$test.py"
           done
       - name: JSDoc type check (error count must not grow)

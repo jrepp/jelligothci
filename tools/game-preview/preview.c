@@ -10,6 +10,7 @@
 #include "jelli/locations.h"
 #include "jelli/pet_ui.h"
 #include "jelli/pet_scene.h"
+#include "jelli/pet_effect.h"
 #include <errno.h>
 #include <stddef.h>
 #include <inttypes.h>
@@ -29,7 +30,7 @@ typedef struct {
     long location, present, present_state, completion;
     long tilt_x, tilt_y, travel_speed;
     long needs[JELLI_NEED_COUNT];
-    const char *out, *scene;
+    const char *out, *scene, *effect;
 } Scenario;
 
 typedef struct {
@@ -107,6 +108,10 @@ static bool parse_needs(const char *text, Scenario *scenario)
 
 static bool parse_option(const char *name, const char *value, Scenario *scenario)
 {
+    if (strcmp(name, "--effect") == 0) {
+        scenario->effect = value;
+        return true;
+    }
     if (strcmp(name, "--scene") == 0) {
         scenario->scene = value;
         return strlen(value) <= 48u;
@@ -379,6 +384,10 @@ int main(int argc, char **argv)
         return 3;
     if (scenario.scene && !jelli_pet_scene_select(&ui, &scene, scenario.scene)) {
         fail("scene is unavailable");
+        return 3;
+    }
+    if (scenario.effect && !jelli_pet_effect_start(&ui, scenario.effect, 0u)) {
+        fail("effect is unavailable");
         return 3;
     }
     JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};

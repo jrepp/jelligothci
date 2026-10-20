@@ -22,9 +22,9 @@ class StaleCreationError(CreationError):
     pass
 
 
-KINDS = {"icons": (2001, 3000, (16,)), "props": (3001, 4000, (16, 24, 32)),
+KINDS = {"effects": (9001, 10000, (16,)), "icons": (2001, 3000, (16,)), "props": (3001, 4000, (16, 24, 32)),
          "prizes": (11001, 12000, (32,)), "backgrounds": (10001, 11000, (64,))}
-DOCS = ("pets", "creatures", "locations", "prizes", "activities", "behaviors")
+DOCS = ("pets", "creatures", "locations", "prizes", "activities", "behaviors", "effects")
 
 
 def read(path):
@@ -158,10 +158,20 @@ def pet_candidate(manifest, docs, images, used, reserved_keys, request, source):
     for repertoire in docs["behaviors"]["repertoires"]:
         if template["name"] in repertoire["forms"]:
             repertoire["forms"].append(name)
+    if "effects" in docs:
+        old_width = next(a["width"] for a in manifest["assets"] if a.get("form") == template["art"])
+        for point in docs["effects"]["hardpoints"]:
+            point["positions"][key] = [max(-64, min(64, round(v * size / old_width)))
+                                        for v in point["positions"][template["art"]]]
     return mapping[next(iter(mapping))]["key"]
 
 
 def validate(repo, source, content, manifest, docs, images):
+    if "effects" in docs:
+        effect_validator = creatures.load_checkout_module(repo, "effect_data")
+        if effect_validator is None:
+            raise CreationError("This checkout cannot validate effect hardpoints")
+        effect_validator.validate(docs["effects"], manifest)
     validator = creatures.load_validator(repo)
     error = creatures._run_load_assets(validator, manifest, source, images)
     if error:

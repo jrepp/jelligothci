@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "hardpoints": [
+    {
+      "key": "ground",
+      "name": "Ground",
+      "positions": {
+        "axolotl": [
+          0,
+          0
+        ],
+        "axolotl-baby": [
+          0,
+          0
+        ],
+        "baby": [
+          0,
+          0
+        ],
+        "grown": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "key": "head",
+      "name": "Head",
+      "positions": {
+        "axolotl": [
+          0,
+          -24
+        ],
+        "axolotl-baby": [
+          0,
+          -20
+        ],
+        "baby": [
+          0,
+          -20
+        ],
+        "grown": [
+          0,
+          -20
+        ]
+      }
+    },
+    {
+      "key": "mouth",
+      "name": "Mouth",
+      "positions": {
+        "axolotl": [
+          0,
+          -9
+        ],
+        "axolotl-baby": [
+          0,
+          -9
+        ],
+        "baby": [
+          0,
+          -9
+        ],
+        "grown": [
+          0,
+          -9
+        ]
+      }
+    },
+    {
+      "key": "left-hand",
+      "name": "Left hand",
+      "positions": {
+        "axolotl": [
+          -10,
+          -8
+        ],
+        "axolotl-baby": [
+          -10,
+          -8
+        ],
+        "baby": [
+          -10,
+          -8
+        ],
+        "grown": [
+          -10,
+          -8
+        ]
+      }
+    },
+    {
+      "key": "right-hand",
+      "name": "Right hand",
+      "positions": {
+        "axolotl": [
+          10,
+          -8
+        ],
+        "axolotl-baby": [
+          10,
+          -8
+        ],
+        "baby": [
+          10,
+          -8
+        ],
+        "grown": [
+          10,
+          -8
+        ]
+      }
+    },
+    {
+      "key": "chest",
+      "name": "Chest",
+      "positions": {
+        "axolotl": [
+          0,
+          -7
+        ],
+        "axolotl-baby": [
+          0,
+          -7
+        ],
+        "baby": [
+          0,
+          -7
+        ],
+        "grown": [
+          0,
+          -7
+        ]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "key": "celebrate",
+      "name": "Celebration",
+      "duration_ms": 3000,
+      "tracks": [
+        {
+          "name": "Rainbow halo",
+          "layer": "behind-pet",
+          "anchor": "head",
+          "start_ms": 0,
+          "duration_ms": 2000,
+          "x": 0,
+          "y": 0,
+          "end_x": 0,
+          "end_y": -70,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.rainbow",
+              "duration_ms": 180
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 100
+            }
+          ]
+        },
+        {
+          "name": "Left star burst",
+          "layer": "front-pet",
+          "anchor": "left-hand",
+          "start_ms": 250,
+          "duration_ms": 2000,
+          "x": 0,
+          "y": 0,
+          "end_x": -80,
+          "end_y": -70,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.star",
+              "duration_ms": 180
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 100
+            }
+          ]
+        },
+        {
+          "name": "Right heart burst",
+          "layer": "front-pet",
+          "anchor": "right-hand",
+          "start_ms": 500,
+          "duration_ms": 2000,
+          "x": 0,
+          "y": 0,
+          "end_x": 80,
+          "end_y": -70,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.heart",
+              "duration_ms": 180
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 100
+            }
+          ]
+        },
+        {
+          "name": "Final flourish",
+          "layer": "foreground",
+          "anchor": "head",
+          "start_ms": 750,
+          "duration_ms": 2000,
+          "x": 0,
+          "y": 0,
+          "end_x": 50,
+          "end_y": -70,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.music",
+              "duration_ms": 180
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 100
+            }
+          ]
+        }
+      ],
+      "cues": [
+        {
+          "name": "Anticipation",
+          "pose": "curious",
+          "start_ms": 0,
+          "duration_ms": 500
+        },
+        {
+          "name": "Celebrate",
+          "pose": "happy",
+          "start_ms": 500,
+          "duration_ms": 2000
+        },
+        {
+          "name": "Settle",
+          "pose": "content",
+          "start_ms": 2500,
+          "duration_ms": 500
+        }
+      ]
+    }
+  ]
+}
