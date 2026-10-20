@@ -115,13 +115,9 @@ tools/jelli-art/studio.js: TS2339: Property 'afterDraw' does not exist on type '
 tools/jelli-art/studio.js: TS2339: Property 'boot' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'clipsDirty' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'closest' does not exist on type 'EventTarget'.
-tools/jelli-art/studio.js: TS2339: Property 'dataset' does not exist on type 'Element'.
 tools/jelli-art/studio.js: TS2339: Property 'decorateHeader' does not exist on type '{}'.
-tools/jelli-art/studio.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
-tools/jelli-art/studio.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
 tools/jelli-art/studio.js: TS2339: Property 'keydown' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'offsetTop' does not exist on type 'Element'.
-tools/jelli-art/studio.js: TS2339: Property 'onclick' does not exist on type 'Element'.
 tools/jelli-art/studio.js: TS2339: Property 'onclick' does not exist on type 'Element'.
 tools/jelli-art/studio.js: TS2339: Property 'onion' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2339: Property 'overlay' does not exist on type '{}'.
@@ -150,6 +146,4 @@ tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTML
 tools/jelli-art/studio.js: TS2339: Property 'value' does not exist on type 'HTMLElement'.
 tools/jelli-art/studio.js: TS2339: Property 'warnFlip' does not exist on type '{}'.
 tools/jelli-art/studio.js: TS2345: Argument of type '{ width: number; height: number; }' is not assignable to parameter of type 'StudioAsset'.
-tools/jelli-art/studio.js: TS2538: Type 'Uint8ClampedArray<ArrayBuffer>' cannot be used as an index type.
-tools/jelli-art/studio.js: TS2538: Type 'Uint8ClampedArray<ArrayBuffer>' cannot be used as an index type.
 tools/jelli-art/studio.js: TS2684: The 'this' context of type 'void' is not assignable to method's 'this' of type 'GlobalEventHandlers'.

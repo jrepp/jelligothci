@@ -28,6 +28,17 @@ Implemented creation workflows and adversarial validation:
 [memo-077](memos/memo-077-jelli-art-creation-delivery.md).
 Creative workspace, standard saves and duplication:
 [memo-078](memos/memo-078-jelli-paint-creative-workflow-pass.md).
+Layered background authoring, muted art kit and proposed runtime motion:
+[RFC-011](rfcs/rfc-011-layered-backgrounds-and-motion.md), with implementation and
+validation in [memo-079](memos/memo-079-background-scene-authoring.md).
+Portable background composition and synthetic motion preview:
+[memo-080](memos/memo-080-background-scene-runtime.md).
+Walkable street artwork and reusable sidewalk/curb details:
+[memo-081](memos/memo-081-walkable-street-art.md).
+Named scene layers and seeded authored variation:
+[memo-082](memos/memo-082-scene-names-and-variation.md).
+Scene editing recovery, preview and authoring affordances:
+[memo-083](memos/memo-083-scene-authoring-affordances.md).
 
 Wi-Fi/time/OTA foundation: [memo-019](memos/memo-019-wifi-time-and-ota-foundation.md).
 Planned AP setup and optional Wi-Fi debug: [RFC-003](rfcs/rfc-003-wifi-provisioning-and-network-debug.md).

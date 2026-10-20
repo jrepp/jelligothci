@@ -18,7 +18,7 @@
     if (!snapshot) { root.innerHTML = '<h2>New</h2><p>Creation is unavailable for this served checkout.</p>'; return; }
     root.innerHTML = `<h2>New</h2><p>Create saved artwork, then paint it and test the saved scene in the engine.</p>
       <form id="creation-form" style="max-width:640px">
-      ${field('Create', `<select name="kind"><option value="pet">Pet and form</option><option value="icons">Icon artwork</option><option value="props">Prop artwork</option><option value="prizes">Present artwork</option><option value="backgrounds">Background and location</option></select>`)}
+      ${field('Create', `<select name="kind"><option value="pet">Pet and form</option><option value="icons">Icon artwork</option><option value="props">Prop artwork</option><option value="prizes">Present artwork</option><option value="backgrounds">Background artwork</option></select>`)}
       ${field('Identity', '<input name="key" required pattern="[a-z][a-z0-9-]{0,39}" maxlength="40" placeholder="my-pet">')}
       ${field('Display name', '<input name="name" required pattern="[A-Z0-9 ]{1,16}" maxlength="16" placeholder="MY PET">')}
       <div id="creation-fields"></div><button type="submit">Create and paint</button>
@@ -54,15 +54,22 @@
       };
     } else {
       fields.innerHTML = `${field('Canvas', `<select name="size">${snapshot.kinds[kind].map(n=>`<option>${n}</option>`).join('')}</select>`)}
-        ${field('Palette (#rrggbb, separated by spaces)', `<textarea name="palette" rows="3" required style="width:100%">${esc(snapshot.palette.join(' '))}</textarea>`)}
+        ${field('Palette (#rrggbb, separated by spaces)', `<textarea name="palette" rows="3" required style="width:100%">${esc((kind==='backgrounds' ? snapshot.background_palette : snapshot.palette).join(' '))}</textarea>`)}
         ${field('Placement pivot x', '<input name="pivot_x" type="number" required min="0">')}
         ${field('Placement pivot y', '<input name="pivot_y" type="number" required min="0">')}
         ${kind==='prizes'?field('Collectible registration', '<select name="collectible" required><option value="">Choose</option><option value="false">Artwork only</option><option value="true">Register as a collectible prize</option></select>'):''}
-        ${kind==='backgrounds'?`${field('Location identity (letters and underscores)', '<input name="location_key" required pattern="[a-z][a-z_]*">')}${field('Location name', '<input name="location_name" required maxlength="12" pattern="[A-Z0-9 ]+">')}${field('Environment', '<select name="outdoors" required><option value="">Choose</option><option value="false">Indoors</option><option value="true">Outdoors</option></select>')}`:''}
+        ${kind==='backgrounds'?`${field('Use', '<select name="background_use"><option value="location">Background and location</option><option value="layer">Reusable scene layer only</option></select>')}<fieldset id="creation-location"><legend>Location</legend>${field('Location identity (letters and underscores)', '<input name="location_key" required pattern="[a-z][a-z_]*">')}${field('Location name', '<input name="location_name" required maxlength="12" pattern="[A-Z0-9 ]+">')}${field('Environment', '<select name="outdoors" required><option value="">Choose</option><option value="false">Indoors</option><option value="true">Outdoors</option></select>')}</fieldset>`:''}
         <p>A visible starter marker makes the new artwork paintable. Present artwork becomes collectible only when registration is selected.</p>`;
       const size = /** @type {HTMLSelectElement} */ (fields.querySelector('[name=size]'));
       const pivot = () => { const n=Number(size.value); /** @type {HTMLInputElement} */ (fields.querySelector('[name=pivot_x]')).value=String(Math.floor(n/2)); /** @type {HTMLInputElement} */ (fields.querySelector('[name=pivot_y]')).value=String(n-2); };
       size.onchange=pivot; pivot();
+      if(kind==='backgrounds') {
+        const use=/** @type {HTMLSelectElement} */ (fields.querySelector('[name=background_use]'));
+        use.onchange=()=>{
+          const location=/** @type {HTMLFieldSetElement} */ (fields.querySelector('#creation-location'));
+          location.disabled=location.hidden=use.value==='layer';
+        };
+      }
     }
   }
   async function submit(event) {
@@ -76,7 +83,7 @@
       request.kind=kind; request.palette=String(values.palette).trim().split(/\s+/);
       request.pivot=[Number(values.pivot_x),Number(values.pivot_y)];
       if(kind==='prizes')request.collectible=values.collectible==='true';
-      if(kind==='backgrounds')request.location={key:values.location_key,name:values.location_name,outdoors:values.outdoors==='true'};
+      if(kind==='backgrounds'&&values.background_use==='location')request.location={key:values.location_key,name:values.location_name,outdoors:values.outdoors==='true'};
     }
     const button=form.querySelector('button[type=submit]'), message=document.getElementById('creation-message');
     button.disabled=true;message.textContent='Validating artwork and game content…';

@@ -40,6 +40,12 @@ activity recipes and creature content, edit the files under `content/`. See the
 [artwork guide](docs/artwork.md), [source inventory](assets/slice/README.md),
 and [pixel art guide](docs/pixel-art-guide.md) for the authoring workflow.
 
+The studio’s **Scenes** view builds backgrounds from a shared muted earth-tone
+kit, with independent tilt and sideways travel per layer. Save and use **Test saved
+scene in game** to preview the C compositor. Desktop synthetic motion controls are
+documented in [layered background presentation](docs/development.md#layered-background-presentation);
+physical device tilt and walking-activity integration remain pending.
+
 ## ESP32
 
 ```sh

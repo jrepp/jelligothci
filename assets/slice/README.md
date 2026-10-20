@@ -49,7 +49,14 @@ and clip timings. PNGs in the asset directories are the editable runtime
 art sources. The large generated atlas is retained for provenance and reproduction;
 it is not part of the runtime payload. Keep IDs stable when revising art.
 
-Sprites use 16 shared opaque colors plus transparent pixels, unless they name a palette in `palettes` (the axolotl uses its own 11 colours); backgrounds use a separate 16-gray palette. Alpha is
+Sprites use shared opaque colors plus transparent pixels, unless they select a
+separate palette. The [manifest](assets.json) owns current palettes and ramps.
+Flat backgrounds use a muted earth ramp; reusable background pieces use the
+foliage, clay and air ramps from [the native kit recipe](source/background_kit.py).
+The street kit includes storefronts, a broad sidewalk and near-curb props.
+[Market street](../../content/scenes.json) aligns the sidewalk with the home actor
+and uses slower distant buildings and faster curb details to establish depth.
+Alpha is
 binary. The font deliberately uses small-cap forms for lowercase letters; slot
 127 is a fallback glyph, not a printable ASCII character. The font is cream on
 transparent; preview it against a dark surface. Recovery reuses the unwell pose

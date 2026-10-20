@@ -60,6 +60,17 @@ class ScenarioTest(unittest.TestCase):
         self.assertEqual((args["--behavior"], args["--moment"], args["--frames"]), ("0", "0", "12"))
         self.assertEqual(summary["pet"], "JELLI")
 
+    def test_background_motion_validation(self):
+        argv, summary = gp.parse_scenario({"scene":"market-street", "tilt_x":-100,
+                                          "tilt_y":100, "travel_speed":-32}, CAT)
+        args = dict(zip(argv[::2], argv[1::2]))
+        self.assertEqual(args["--scene"], "market-street")
+        self.assertEqual(args["--travel_speed"], "-32")
+        self.assertEqual(summary["tilt_x"], -100)
+        self.assertEqual(self.fields({"scene":"missing"}), {"scene"})
+        self.assertEqual(self.fields({"tilt_x":101, "tilt_y":True, "travel_speed":33}),
+                         {"tilt_x", "tilt_y", "travel_speed"})
+
     def test_names_map_to_engine_numbers(self):
         raw = {"pet": "bubble", "page": "care", "menu": True, "behavior": "asking_potty", "moment": "tea",
                "needs": {"satiety": 100}, "potty": 900, "mess": True, "minute": 1300, "frames": 3}
@@ -270,6 +281,31 @@ class RealEngineTest(unittest.TestCase):
         self.assertEqual(offered["engine"]["visible_offered"], 10)
         self.assertEqual(owned["engine"]["owned"], 1 << 9)
         self.assertEqual(owned["engine"]["offered"], 0)
+
+    def test_layered_scene_tilt_travel_and_incremental_build(self):
+        scenario = {"scene":"market-street", "frames":2, "step_ms":200, "minute":720}
+        still = self.service.render(scenario)
+        tilted = self.service.render({**scenario, "tilt_x":100})
+        moving = self.service.render({**scenario, "travel_speed":32})
+        # Sample background beside the actor/UI: pet animation cannot cause this difference.
+        box = (50, 160, 120, 240)
+        sample = lambda result, i: png(result["frames"][i]).crop(box).tobytes()
+        self.assertEqual(sample(still, 0), sample(still, 1))
+        self.assertNotEqual(sample(still, 0), sample(tilted, 0))
+        self.assertNotEqual(sample(moving, 0), sample(moving, 1))
+        path = self.service.content / "scenes.json"
+        original = path.read_bytes()
+        doc = json.loads(original)
+        for layer in doc["scenes"][0]["layers"]:
+            layer["random"] = {"seed":0,"x":0,"y":0,"travel":0,"chance":0}
+        doc["scenes"][0]["fill"] = "#123456"
+        try:
+            path.write_text(json.dumps(doc))
+            changed = self.service.render(scenario)
+            self.assertNotEqual(sample(still, 0), sample(changed, 0))
+            self.assertEqual(len(set(png(changed["frames"][0]).crop(box).getdata())), 1)
+        finally:
+            path.write_bytes(original)
 
     def test_daily_snuggle_completion_uses_engine_policy(self):
         scenario = {"pet": "BUBBLE", "form": "BABY AXO", "moment": "SNUGGLE", "frames": 1,

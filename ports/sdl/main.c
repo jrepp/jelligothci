@@ -8,6 +8,7 @@
 #include "debug_socket.h"
 #include "asset_reload.h"
 #include "sound_output.h"
+#include "scene_preview.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
@@ -15,6 +16,8 @@
 #include <string.h>
 
 enum { FRAME_MS = 8 };
+/* Optional diagnostic cache is host-owned, never allocated on the frame stack. */
+static JelliScenePreview scene_preview;
 
 typedef struct {
     JelliGesture gesture;
@@ -138,6 +141,8 @@ static void prepare_frame(Desktop *d, JelliPetEngine *pet, const JelliOptions *o
     }
     if (options->demo && !frozen)
         jelli_sdl_demo(pet, frame);
+    if (d->pet && !frozen)
+        jelli_sdl_scene_step(&scene_preview, &pet->ui, options, now_ms(d), pet->paused);
 }
 
 static void run_frames(JelliEngine *shapes, JelliPetEngine *pet, Desktop *d,
@@ -225,6 +230,8 @@ int main(int argc, char **argv)
             goto cleanup;
         jelli_pet_bind_devices(&pet, (JelliMotionDriver){&d.motion, jelli_motion_poll},
                                (JelliDisplayDriver){0});
+        if (!jelli_sdl_scene_open(&scene_preview, &pet.ui, &options))
+            goto cleanup;
     } else if (!jelli_init(&shapes, platform, surface))
         goto cleanup;
     run_frames(&shapes, &pet, &d, &options, &session);

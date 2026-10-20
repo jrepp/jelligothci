@@ -9,6 +9,7 @@
 #include "jelli/collection.h"
 #include "jelli/locations.h"
 #include "jelli/pet_ui.h"
+#include "jelli/pet_scene.h"
 #include <errno.h>
 #include <stddef.h>
 #include <inttypes.h>
@@ -26,8 +27,9 @@ typedef struct {
     long entry, form, page, menu, behavior, potty, mess, asleep, moment, minute;
     long start_ms, step_ms, frames, advance_s, live;
     long location, present, present_state, completion;
+    long tilt_x, tilt_y, travel_speed;
     long needs[JELLI_NEED_COUNT];
-    const char *out;
+    const char *out, *scene;
 } Scenario;
 
 typedef struct {
@@ -38,6 +40,9 @@ typedef struct {
 
 #define OPTION(field, low, high) {"--" #field, offsetof(Scenario, field), low, high}
 static const Option options[] = {
+    OPTION(tilt_x, -100, 100),
+    OPTION(tilt_y, -100, 100),
+    OPTION(travel_speed, -32, 32),
     OPTION(entry, 1, UINT8_MAX),
     OPTION(location, 0, JELLI_LOCATION_CAPACITY - 1),
     OPTION(present, 0, JELLI_PRIZE_COUNT),
@@ -66,6 +71,7 @@ static uint8_t row[JELLI_WIDTH * 3u];
 static JelliGame game;
 static JelliPetUi ui;
 static JelliEventLog events;
+static JelliScene scene;
 
 static bool parse_long(const char *text, long low, long high, long *value)
 {
@@ -101,6 +107,10 @@ static bool parse_needs(const char *text, Scenario *scenario)
 
 static bool parse_option(const char *name, const char *value, Scenario *scenario)
 {
+    if (strcmp(name, "--scene") == 0) {
+        scenario->scene = value;
+        return strlen(value) <= 48u;
+    }
     if (strcmp(name, "--out") == 0) {
         scenario->out = value;
         return strlen(value) + 16u < PREVIEW_PATH_CAPACITY;
@@ -272,12 +282,32 @@ static bool write_frame(const char *directory, unsigned index)
     return fclose(file) == 0 && ok;
 }
 
+static void advance_scene(const Scenario *s, int32_t *remainder, bool first)
+{
+    if (!s->scene)
+        return;
+    int32_t distance = first ? 0 : (int32_t)(s->travel_speed * s->step_ms * 256) + *remainder;
+    *remainder = distance % 1000;
+    distance /= 1000;
+    /* Largest preview step is 320 source pixels; two bounded core updates suffice. */
+    for (unsigned part = 0; part < 2; ++part) {
+        int32_t chunk = distance < -JELLI_SCENE_DELTA_LIMIT  ? -JELLI_SCENE_DELTA_LIMIT
+                        : distance > JELLI_SCENE_DELTA_LIMIT ? JELLI_SCENE_DELTA_LIMIT
+                                                             : distance;
+        jelli_scene_advance(&scene, (int16_t)(s->tilt_x * 256 / 100),
+                            (int16_t)(s->tilt_y * 256 / 100), chunk);
+        distance -= chunk;
+    }
+}
+
 static bool render_frames(const Scenario *s, JelliSurface *surface)
 {
     uint64_t start = (uint64_t)s->start_ms, step = (uint64_t)s->step_ms;
+    int32_t remainder = 0;
     for (unsigned i = 0u; i < (unsigned)s->frames; ++i) {
         if (i && s->live)
             advance_preview(step);
+        advance_scene(s, &remainder, i == 0);
         jelli_pet_render(surface, &game, &ui, start + (uint64_t)i * step, false);
         if (!ui.rendered || !write_frame(s->out, i))
             return false;
@@ -347,6 +377,10 @@ int main(int argc, char **argv)
     jelli_pet_ui_init(&ui);
     if (apply_pet(&scenario) || apply_state(&scenario))
         return 3;
+    if (scenario.scene && !jelli_pet_scene_select(&ui, &scene, scenario.scene)) {
+        fail("scene is unavailable");
+        return 3;
+    }
     JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
     if (!render_frames(&scenario, &surface)) {
         fail("could not render or write a frame");

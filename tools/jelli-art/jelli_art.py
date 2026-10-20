@@ -42,6 +42,7 @@ import animation  # noqa: E402
 import behaviors  # noqa: E402
 import activities  # noqa: E402
 import creation  # noqa: E402
+import scenes  # noqa: E402
 import creatures  # noqa: E402
 import game_preview  # noqa: E402
 import lint_rules  # noqa: E402
@@ -72,7 +73,7 @@ BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
 # touch.js (RFC-007) right after the shell: pointer routing, gestures and touch sizing that panels use.
 PAGE_SCRIPTS = (HERE / "icons.js", SHELL_JS, HERE / "touch.js", HERE / "lint.js", HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
-                HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js", HERE / "creation.js")
+                HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js", HERE / "creation.js", HERE / "scene_variation.js", HERE / "scenes.js")
 EDITABLE_CONTENT = ("behaviors", "creatures", "activities")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
@@ -134,7 +135,7 @@ def capabilities():
 def version():
     """Changes whenever the manifest, creature content or any PNG changes on disk."""
     digest = hashlib.sha1()
-    content = [PETS, CREATURE_DATA, *(CONTENT / f"{n}.json" for n in ("behaviors", "activities", "potty", "prizes", "locations"))]
+    content = [PETS, CREATURE_DATA, *(CONTENT / f"{n}.json" for n in ("behaviors", "activities", "potty", "prizes", "locations", "scenes"))]
     for path in [MANIFEST, *[p for p in [*content, LINT] if p.exists()], *sorted(SOURCE.glob("*/*.png"))]:
         stat = path.stat()
         digest.update(f"{path.name}{stat.st_mtime_ns}{stat.st_size}".encode())
@@ -506,7 +507,44 @@ def create_content(body):
 
 
 F = request_body.field
+
+
+def scene_data():
+    with LOCK:
+        path = CONTENT / "scenes.json"
+        manifest = read_manifest()
+        try:
+            raw = path.read_bytes()
+        except FileNotFoundError:
+            raw = None
+        doc = json.loads(raw) if raw is not None else scenes.initial(manifest)
+        if doc is not None:
+            scenes.validate(doc, manifest)
+    return {"data": doc,
+            "base": storage.digest_bytes(raw) if raw is not None else None, "editable": CONTENT_WRITABLE,
+            "limits": {"scenes": scenes.MAX_SCENES, "layers": scenes.MAX_LAYERS}}
+
+
+def save_scenes(body):
+    if not CONTENT_WRITABLE:
+        raise StudioError("Scene editing requires --content for copied artwork")
+    doc = F(body, "data", dict)
+    if "base" not in body or (body["base"] is not None and not isinstance(body["base"], str)):
+        raise StudioError("Scene saves require the loaded base hash (or null for a new file)")
+    with LOCK:
+        path = storage.confined(CONTENT, "scenes.json")
+        current = storage.digest(path)
+        if body["base"] != current:
+            raise StaleError("Scenes changed on disk; reload or confirm overwrite", {"scenes": current})
+        scenes.validate(doc, read_manifest())
+        data = storage.json_bytes(doc)
+        storage.write_file(path, data)
+        git = record([path], "feat(art): edit background scenes in Jelli Art", request_body.artist(body))
+    return {"ok": True, "base": storage.digest_bytes(data), **git}
+
+
 POSTS = {  # path -> handler(body); every field is type-checked so a bad request is a clear 400
+    "/api/scenes": save_scenes,
     "/api/create": create_content,
     "/api/save": lambda b: save_asset(F(b, "key", str), F(b, "pixels", list), request_body.artist(b),
                                       F(b, "base", str, required=False)),
@@ -564,6 +602,8 @@ class Handler(BaseHTTPRequestHandler):
             return None
         if method == "GET" and url.path == "/api/data":
             return self.send(HTTPStatus.OK, payload(query.get("before", ["HEAD"])[0]))
+        if method == "GET" and url.path == "/api/scenes":
+            return self.send(HTTPStatus.OK, scene_data())
         if method == "GET" and url.path == "/healthz":
             return self.send(HTTPStatus.OK, health())
         if method == "GET" and url.path == "/metrics":
@@ -650,7 +690,7 @@ def prepare():
     STARTUP["removed_temp_files"] = [str(p) for p in removed]
     for path in removed:
         print(f"Removed a temporary file an interrupted save left: {path}", flush=True)
-    content = [CONTENT / f"{name}.json" for name in ("pets", "creatures", "behaviors", "activities", "potty")]
+    content = [CONTENT / f"{name}.json" for name in ("pets", "creatures", "behaviors", "activities", "potty", "scenes")]
     problems = storage.check_json(MANIFEST, HAND_PAINTED, LINT, *content)
     STARTUP["problems"] = [f"{path} is not valid JSON ({error}); restore it from git" for path, error in problems]
     for problem in STARTUP["problems"]:

@@ -162,6 +162,48 @@ particles, redraws the round surface for broader scene changes, and reports zero
 damage when unchanged. The original shapes renderer retains its smaller damage
 rectangles.
 
+## Layered background presentation
+
+[Scene definitions](../content/scenes.json) compile through the shared
+[validator/compiler](../tools/assets/scene_data.py) into immutable asset-ID tables.
+The generator reports deduplicated image bytes per scene in
+`generated/jelli_scene_resources.json` beside the generated C artwork.
+[The scene API](../include/jelli/scene.h) owns the capacities, Q8 tilt/distance
+units and failure contracts. Its caller-owned cache stays off task stacks;
+composition retains no borrowed image pointers and performs no allocation or IO.
+The host supplies bounded signed travel deltas independently of orientation.
+Authored initial variation is resolved by the compiler from a scene seed and stable
+per-layer seed. The browser's [variation helper](../tools/jelli-art/scene_variation.js)
+uses the same unsigned integer generator; parity tests cover both implementations.
+Renaming/reordering a layer leaves its choices stable. Sampling uses a 32-bit LCG,
+the high 24 bits for bounded offsets/chance, and fixed sample order x/y/travel/chance.
+Zero variation preserves earlier definitions. No runtime RNG or traffic scheduler
+is introduced; changing a saved seed rebuilds the immutable scene table.
+Per-layer fractional phases wrap by image width; quantization uses floor(x + 0.5).
+
+[Pet scene selection](../include/jelli/pet_scene.h) is an optional presentation
+override, independent of saved locations. It validates every image before publishing
+and retains the previous complete cache if assets become unavailable. Clearing the
+override restores the flat location background. Pixel changes in a live asset set
+must invalidate the UI as normal hot reload does. Render keys include the composed
+cache revision; quantized background changes cause a full redraw, and unchanged
+motion causes no extra damage. Actor/particle restoration samples the same cache.
+Night shading and circular clipping happen after composition.
+
+For a synthetic desktop trial, build with `make build`, then run:
+
+```sh
+build/desktop/jelligotchi --scene market-street --travel-speed 8
+```
+
+Use arrow keys for tilt, A/D for reverse/forward sideways travel, R to reset travel,
+and Space to pause. CLI `--tilt-x` / `--tilt-y` accept percentages;
+`--travel-speed` is signed source pixels per second. Defaults are neutral and still.
+The SDL adapter drops elapsed travel beyond its bounded stall window. Jelli Art's
+**Test saved scene in game** also runs this compositor with explicit scenario inputs.
+Firmware compiles the APIs but does not select a scene or acquire orientation yet.
+See [runtime measurements and validation](../docs-cms/memos/memo-080-background-scene-runtime.md).
+
 ## Bounded working storage
 
 The portable [Jellipak reader](../include/jelli/jellipak.h) mounts a provisional

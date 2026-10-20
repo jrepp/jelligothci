@@ -45,6 +45,7 @@ def data(repo, source, content):
             "templates": pets["forms"], "entries": pets["entries"], "evolution_sets": pets["evolution_sets"], "profiles": profiles_doc["profiles"],
             "behaviors": [b["name"] for b in profiles_doc["behaviors"]],
             "palette": manifest["palette"],
+            "background_palette": manifest.get("palettes", {}).get("earth-kit", manifest["palette"]),
             "prizes": read(content / "prizes.json")["prizes"] if (content / "prizes.json").exists() else [],
             "kinds": {k: list(v[2]) for k, v in KINDS.items()}}
 
@@ -232,7 +233,9 @@ def create(repo, source, content, request, bases):
         size = integer(request.get("size"), "Canvas size", 1, 64)
         if size not in KINDS[kind][2]:
             raise CreationError("Unsupported canvas size for that artwork kind")
-        palette = request.get("palette", manifest["palette"])
+        default_palette = (manifest.get("palettes", {}).get("earth-kit", manifest["palette"])
+                           if kind == "backgrounds" else manifest["palette"])
+        palette = request.get("palette", default_palette)
         if not isinstance(palette, list) or not 1 <= len(palette) <= 16 or any(
                 not isinstance(c, str) or not re.fullmatch(r"#[0-9a-f]{6}", c) for c in palette) or len(set(palette)) != len(palette):
             raise CreationError("Palette needs 1..16 distinct lowercase #rrggbb colors")
