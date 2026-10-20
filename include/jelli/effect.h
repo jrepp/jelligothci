@@ -17,6 +17,7 @@ typedef enum {
 typedef enum {
     JELLI_EFFECT_EVOLUTION,
     JELLI_EFFECT_PRESENT_CAUGHT,
+    JELLI_EFFECT_PRESENT_ACCEPTED,
     JELLI_EFFECT_TRIGGER_COUNT
 } JelliEffectTrigger;
 /* One-based definition indices; zero disables an automatic trigger. */

@@ -117,8 +117,8 @@
   }
   function triggers() {
     return `<fieldset ${!editable||loading?'disabled':''}><legend>Automatic celebrations</legend>
-      <p class="fx-note">Choose an effect for live gameplay events. Disabled by default. Playback waits for the home view; resume catch-up never celebrates.</p>
-      ${[['evolution','Pet evolves'],['present-caught','Present caught']].map(([key,label])=>`<label>${label}<select data-trigger="${key}">${opts([['','Disabled'],...work.effects.map(e=>[e.key,e.name])],work.triggers?.[key]||'')}</select></label>`).join('')}</fieldset>`;
+      <p class="fx-note">Choose an effect for live gameplay events. Choose Disabled to turn one off. Playback waits for the home view; time spent offline never triggers celebrations.</p>
+      ${[['evolution','Pet evolves'],['present-caught','New gift acquired'],['present-accepted','Pet accepts present']].map(([key,label])=>`<label>${label}<select data-trigger="${key}">${opts([['','Disabled'],...work.effects.map(e=>[e.key,e.name])],work.triggers?.[key]||'')}</select></label>`).join('')}</fieldset>`;
   }
   function timeline() {
     return ['cues','tracks'].map(k=>effect()[k].map((t,i)=>`<div class="fx-row"><button data-select="${k}:${i}" aria-pressed="${kind===k&&index===i}"><span ${k==='tracks'?`data-track-name="${i}"`:''}>${esc(t.name)}</span></button><div class="fx-bar" title="${t.start_ms}–${t.start_ms+t.duration_ms} ms"><span class="fx-span" style="left:${t.start_ms/effect().duration_ms*100}%;width:${t.duration_ms/effect().duration_ms*100}%"></span><span class="fx-playhead"></span></div></div>`).join('')).join('');

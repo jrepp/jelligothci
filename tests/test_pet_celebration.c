@@ -1,4 +1,5 @@
 #include "jelli/debug.h"
+#include "game_fixture.h"
 #include "jelli/pet_effect.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +13,7 @@
     } while (0)
 static JelliPetEngine engine;
 static uint16_t pixels[JELLI_WIDTH * JELLI_HEIGHT];
-static const uint8_t enabled[JELLI_EFFECT_TRIGGER_COUNT] = {1u, 1u};
+static const uint8_t enabled[JELLI_EFFECT_TRIGGER_COUNT] = {1u, 1u, 1u};
 static uint64_t now;
 static uint64_t clock_ms(void *ctx)
 {
@@ -46,9 +47,11 @@ static void send(JelliDebug *debug, const char *line, const char *expected)
 }
 static void triggers(void)
 {
-    /* Shipped defaults consume but never play a live event. */
+    /* Disabled bindings still consume history, so enabling cannot replay it. */
+    static const uint8_t disabled[JELLI_EFFECT_TRIGGER_COUNT] = {0};
     event(JELLI_EVENT_STATUS, 1u);
-    CHECK(jelli_pet_frame(&engine));
+    jelli_pet_celebrations(&engine.celebrations, &engine.ui, &engine.game, &engine.events, disabled,
+                           0u, false, false);
     CHECK(!engine.ui.effect && engine.celebrations.cursor == engine.events.sequence);
     process(0u, false, false);
     CHECK(!engine.ui.effect);
@@ -127,9 +130,48 @@ static void live_events(void)
     jelli_pet_effect_stop(&engine.ui);
     engine.ui.save_requested = false;
 }
+static void acceptance(void)
+{
+    test_game_pair(&engine.game);
+    jelli_pet_ui_init(&engine.ui);
+    engine.events = (JelliEventLog){0};
+    engine.celebrations = (JelliPetCelebration){0};
+    engine.game.events = &engine.events;
+    jelli_prize_complete(&engine.game, JELLI_PRIZE_WASH);
+    CHECK(jelli_prize_catch(&engine.game) == JELLI_OK);
+    CHECK(jelli_prize_gift(&engine.game, 5u) == JELLI_NOT_READY);
+    process(0u, false, false);
+    CHECK(!engine.ui.effect);
+    /* A different recipient accepts the collected present immediately. */
+    engine.game.prizes.origin_pet[5] = 2u;
+    CHECK(jelli_prize_gift(&engine.game, 5u) == JELLI_OK);
+    process(10u, false, false);
+    CHECK(engine.ui.effect);
+    jelli_pet_effect_stop(&engine.ui);
+    process(20u, false, false);
+    CHECK(!engine.ui.effect);
+    /* Legacy inventory gifting celebrates completion, never its start. */
+    CHECK(jelli_game_command(&engine.game, (JelliCommand){.kind = JELLI_CMD_GIFT,
+                                                          .actor_id = engine.game.pets[0].id}) ==
+          JELLI_OK);
+    process(30u, false, false);
+    CHECK(!engine.ui.effect);
+    for (unsigned i = 0u; i < 50u; ++i)
+        jelli_game_advance(&engine.game, 100u);
+    process(5030u, false, false);
+    CHECK(engine.ui.effect);
+    jelli_pet_effect_stop(&engine.ui);
+    engine.animation_ms = 5030u;
+    /* Authored defaults are distinct and the engine uses the generated binding. */
+    event(JELLI_EVENT_STATUS, 1u);
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(engine.ui.effect && !strcmp(engine.ui.effect->key, "evolution"));
+    jelli_pet_effect_stop(&engine.ui);
+}
 static void debug_replay(void)
 {
     JelliDebug debug = {0};
+    engine.ui.save_requested = false;
     engine.animation_ms = 500u;
     send(&debug, "@J1 1 effect play celebrate\n", "\"ok\":true");
     CHECK(engine.ui.effect && engine.ui.effect_anchor_ms == 500u);
@@ -154,6 +196,7 @@ int main(void)
     triggers();
     cancellation();
     live_events();
+    acceptance();
     debug_replay();
     puts("Celebration event delivery, deferral, cancellation and debug replay passed.");
     return 0;

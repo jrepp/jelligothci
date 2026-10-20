@@ -90,3 +90,14 @@ sequence rollover, and debug replay rejection/preservation.
 
 `make sanitize` passes all 93 checks under address/undefined-behavior sanitizers.
 A final USB discovery still found no ESP32 board.
+
+
+# Subsequent deployment
+
+The follow-up was committed and published as `2cd265b`. The board then became
+available and was identified by its debug capabilities as `waveshare-31261`.
+The normal game image was flashed and booted successfully. The owner's next
+request selected three event-specific default celebrations; that increment and
+new physical-validation evidence are recorded in
+[memo-087](memo-087-event-celebrations-and-device-validation.md). The no-board and
+disabled-default observations above describe this memo's initial check only.

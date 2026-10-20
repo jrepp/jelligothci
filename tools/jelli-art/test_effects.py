@@ -48,9 +48,9 @@ class EffectsTests(unittest.TestCase):
     def test_trigger_bindings(self):
         forms=json.loads((ROOT/'content/pets.json').read_text())['forms']
         old=copy.deepcopy(self.doc);old.pop('triggers',None)
-        self.assertIn('COUNT]={0,0}',effect_data.emit(old,self.manifest,forms))
+        self.assertIn('COUNT]={0,0,0}',effect_data.emit(old,self.manifest,forms))
         self.doc['triggers']={'evolution':'celebrate','present-caught':None}
-        self.assertIn('COUNT]={1,0}',effect_data.emit(self.doc,self.manifest,forms))
+        self.assertIn('COUNT]={1,0,0}',effect_data.emit(self.doc,self.manifest,forms))
         for bad in [{'evolution':'missing'}, {'other':'celebrate'}, {'evolution':True}, []]:
             self.doc['triggers']=bad
             with self.assertRaises(ValueError):effect_data.validate(self.doc,self.manifest)

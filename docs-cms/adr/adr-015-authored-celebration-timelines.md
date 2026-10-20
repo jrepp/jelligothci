@@ -49,8 +49,10 @@ restore ordinary presentation. Effects do not mutate saved simulation state.
   paths. Physical display cost needs measurement before automatic gameplay use.
 - Forward playback is finite. General keyframe curves, audio, particle emitters,
   cue callbacks and care/reward bindings remain separate increments. A follow-up
-  adds opt-in evolution/present-catch bindings and one bounded pending slot;
-  shipped bindings stay disabled pending gameplay-default selection.
+  adds event bindings and one bounded pending slot. The owner subsequently
+  requested evolution, new-gift acquisition and present-acceptance animations;
+  those three authored defaults are now enabled. General care bindings remain
+  unselected.
 
 # References
 

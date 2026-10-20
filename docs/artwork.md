@@ -464,11 +464,13 @@ unsaved edits survive refresh as browser drafts. **Save and test in game** opens
 the actual C renderer using saved content. Save any separate Paint or Creature
 clip edits too. Effects can also start explicitly with `jelligotchi --effect celebrate`.
 
-Under **Automatic celebrations**, select an effect for **Pet evolves** or
-**Present caught**, or leave it **Disabled**. Bindings are global and save with
-this document; rebuild the game/firmware to apply them. Present catches wait until
+Under **Automatic celebrations**, select an effect for **Pet evolves**,
+**New gift acquired** or **Pet accepts present**, or select **Disabled**. Bindings
+are global and save with this document; rebuild the game/firmware to apply them. Present catches wait until
 you return home from the collection. Only live events celebrate; offline catch-up
 does not. A pending celebration waits for an active effect, expires after 30
 animation-clock seconds, and is discarded if you switch pet/form. New eligible
-events replace the pending one. The shipped bindings are disabled. The saved-effect
-preview tests the choreography directly, not the gameplay trigger path.
+events replace the pending one. The shipped bindings select
+**Evolution — a new chapter**, **New gift — discovery**, and **Present accepted — thank you**, respectively. Acceptance celebrates a
+successful collected-present transfer or a completed inventory-gift action.
+The saved-effect preview tests the choreography directly, not the gameplay trigger path.

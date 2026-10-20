@@ -330,7 +330,8 @@ See [ADR-015](../docs-cms/adr/adr-015-authored-celebration-timelines.md) and
 
 [Gameplay delivery](../include/jelli/pet_celebration.h) consumes the bounded event
 ring once per frame after input/reward processing. Generated optional bindings
-map evolution status and successful present-catch input events to one-based effect
+map evolution status, successful present-catch input events and successful present
+acceptance to one-based effect
 indices; zero disables delivery. The queue owns at most one pending effect for
 the active pet/form, with a 32-byte state budget and no extra framebuffer. Latest
 eligible event wins; existing playback is not interrupted. Menus and pause defer
@@ -343,3 +344,9 @@ home view. Capture, pause, resume and open menus reject replay with `busy`;
 unknown keys preserve current playback. Replay changes presentation only.
 `./scripts/jelli-debug effect celebrate` uses this path on either host.
 See [follow-up evidence](../docs-cms/memos/memo-086-celebration-gameplay-follow-up.md).
+
+Present acceptance consumes a successful collected-present gift command with an
+idle result, or the inventory-giving effect when inventory actually decreased.
+A rejected gift or a started-but-unfinished giving activity never celebrates.
+[The three authored defaults](../content/effects.json) are enabled at the owner's
+request; preview keys are `evolution`, `gift-acquired`, and `present-accepted`.

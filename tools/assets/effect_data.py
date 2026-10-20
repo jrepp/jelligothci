@@ -4,7 +4,7 @@ from scene_data import fields, integer, KEY
 
 MAX_EFFECTS, MAX_TRACKS, MAX_CUES, MAX_POINTS, MAX_DURATION = 32, 16, 16, 8, 30000
 LAYERS = ["behind-pet", "front-pet", "foreground"]
-TRIGGERS = ["evolution", "present-caught"]
+TRIGGERS = ["evolution", "present-caught", "present-accepted"]
 POSES = ["idle", "idle-alt", "curious", "content", "eating", "happy", "asleep", "unwell"]
 
 

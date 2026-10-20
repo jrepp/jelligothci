@@ -11,6 +11,12 @@ static unsigned binding(const JelliEvent *event, const uint8_t *bindings)
         return bindings[JELLI_EFFECT_EVOLUTION];
     if (event->kind == JELLI_EVENT_INPUT && event->code == JELLI_INPUT_CATCH_PRESENT)
         return bindings[JELLI_EFFECT_PRESENT_CAUGHT];
+    if (event->kind == JELLI_EVENT_COMMAND && event->code == JELLI_CMD_GIFT && event->value > 0u &&
+        event->after.activity == JELLI_IDLE)
+        return bindings[JELLI_EFFECT_PRESENT_ACCEPTED];
+    if (event->kind == JELLI_EVENT_EFFECT && event->code == JELLI_GIVING &&
+        event->before.gifts > event->after.gifts)
+        return bindings[JELLI_EFFECT_PRESENT_ACCEPTED];
     return 0u;
 }
 

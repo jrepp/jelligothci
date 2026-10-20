@@ -111,17 +111,18 @@ def test_new_pet_hardpoints_join_effect_workspace(creator):
 def test_gameplay_bindings_save_and_undo(creator):
     page=creator['page'];open_effects(page)
     binding=page.get_by_role('combobox',name='Pet evolves',exact=True)
-    expect(binding).to_have_value('')
+    expect(binding).to_have_value('evolution')
     binding.select_option('celebrate')
     page.locator('#fx-undo').click()
-    expect(binding).to_have_value('')
+    expect(binding).to_have_value('evolution')
     page.locator('#fx-redo').click()
     expect(binding).to_have_value('celebrate')
     page.locator('#fx-save').click()
     expect(page.locator('#fx-status')).to_have_text('Saved')
     data=json.loads((creator['content']/'effects.json').read_text())
     assert data['triggers']['evolution']=='celebrate'
-    assert data['triggers']['present-caught'] is None
+    assert data['triggers']['present-caught']=='gift-acquired'
+    assert data['triggers']['present-accepted']=='present-accepted'
     page.reload();open_effects(page)
     expect(binding).to_have_value('celebrate')
 
