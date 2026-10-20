@@ -8,8 +8,8 @@ import tempfile
 from pathlib import Path
 
 from PIL import Image
-import creatures
 import animation
+import creatures
 import profiles
 import storage
 
@@ -35,9 +35,12 @@ def data(repo, source, content):
     source, content = Path(source), Path(content)
     manifest = read(source / "assets.json")
     pets, profiles_doc = read(content / "pets.json"), read(content / "creatures.json")
+    reservation_sources = [animation.LEDGER, *(p.relative_to(source).as_posix()
+                                               for p in sorted((source / "source").glob("*-import.json")))]
+    reservations = {path: storage.digest(storage.confined(source, path)) for path in reservation_sources}
     return {"bases": {"manifest": storage.digest(source / "assets.json"),
                       "artwork": storage.digest_bytes(storage.json_bytes({a["path"]: storage.digest(storage.confined(source, a["path"])) for a in manifest["assets"]})),
-                      "reservations": storage.digest_bytes(storage.json_bytes({p.name: storage.digest(storage.confined(source, p.relative_to(source))) for p in sorted((source / "source").glob("*.json"))})),
+                      "reservations": storage.digest_bytes(storage.json_bytes(reservations)),
                       **{n: storage.digest(content / f"{n}.json") for n in DOCS}},
             "templates": pets["forms"], "entries": pets["entries"], "evolution_sets": pets["evolution_sets"], "profiles": profiles_doc["profiles"],
             "behaviors": [b["name"] for b in profiles_doc["behaviors"]],

@@ -488,7 +488,7 @@ tools/jelli-art/typecheck/check.sh                             # JSDoc type chec
 
 The **Studio tests** job in `.github/workflows/jelli-art.yml` runs
 `test_paint_tools.js`, `test_server.py`, `test_creatures.py`,
-`test_animation.py`, `test_game_preview.py` and `test_tidy.py` (Tidy gives the
+`test_animation.py`, `test_game_preview.py`, `test_creation.py` and `test_tidy.py` (Tidy gives the
 same pixels in every process) and the JSDoc type check on every pull request,
 and a release image is built only after they pass.
 
