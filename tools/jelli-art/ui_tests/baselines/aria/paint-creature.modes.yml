@@ -1,4 +1,5 @@
 - navigation "Modes":
+  - button "Earlier modes" [disabled]: ‹
   - tablist "Modes":
     - tab "Review"
     - tab "Paint" [selected]
@@ -6,3 +7,5 @@
     - tab "Behaviour"
     - tab "Test in game"
     - tab "Activities"
+    - tab "New"
+  - button "More modes": ›

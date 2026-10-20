@@ -43,10 +43,11 @@ Measured on the local desktop build: a full 16-family fixture encodes **6,406 by
 | A numeric string could emit an octal C prize ID | Require JSON numbers and reject malformed registry fields; generator negative tests |
 | Creator reload failure could hide the saved result | Visible saved-but-refresh-failed status and recovery; browser regression |
 | External edits during scratch validation could be overwritten | Recheck bases immediately before writing; deterministic mutation-during-validation test |
+| The new full-collection UI test failed because its fixture skipped present setup and layout settling | Correct the fixture callback and settle two frames; affected desktop/sanitizer cases passed, followed by the complete sanitizer suite in CI |
 
 # Validation evidence
 
-The core suite passed **39/39**. The dedicated browser creation suite passed **6/6**, covering startup, painting/reload, 48-pixel pet creation, registered presents, backgrounds/locations, stale recovery and successful-save/failed-refresh handling. The engine preview suite passed **24** scenarios, including a newly authored pet. Runtime lint and explicit analysis of new test files passed. Full desktop, sanitizer and browser suite results are recorded below after completion.
+The core suite passed **39/39**. The dedicated browser creation suite passed **6/6**, covering startup, painting/reload, 48-pixel pet creation, registered presents, backgrounds/locations, stale recovery and successful-save/failed-refresh handling. The engine preview suite passed **24** scenarios, including a newly authored pet. Runtime lint and explicit analysis of new test files passed. The initial desktop and sanitizer runs each passed 84/85 cases; after correcting the collection fixture, both affected tests passed in both builds. [CI subsequently passed the complete sanitizer suite, 85/85, and core suite, 39/39](https://github.com/jrepp/jelligothci/actions/runs/39380297429).
 
 Safari validation used the requested local `~/d/safari-mcp` CLI against copied content in ignored `build/jelli-art-fixes/`. It created a pet and registered present and opened both in Paint, created/painted a background and location, and copied SNUGGLE into an activity with an explicit pose, daily policy and newly registered prize. Production art was not changed by these trials. A Safari helper timeout and later tab-ownership rejection required a fresh owned validation session; no action was forced against an unowned tab.
 

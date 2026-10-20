@@ -109,5 +109,6 @@ This preserves the existing alignment contract on macOS and Linux without
 defining a reserved standard-library name.
 
 Native arithmetic/arena tests and a strict C11 build exercising the fallback
-branch passed. The fallback branch check on a host compiler does not substitute
-for the Windows CI build; that build is the platform acceptance check.
+branch passed. [Windows, Linux and macOS core CI subsequently passed on
+`19f37b1`](https://github.com/jrepp/jelligothci/actions/runs/39380993838),
+providing platform acceptance beyond the host fallback-branch check.

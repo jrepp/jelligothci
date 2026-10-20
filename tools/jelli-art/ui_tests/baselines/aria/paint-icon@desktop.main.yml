@@ -19,9 +19,21 @@
     - group "Overlays":
       - button "Grid" [pressed]
       - button "Issues"
+    - toolbar "Paint commands":
+      - group "History":
+        - button "Undo" [disabled]
+        - button "Redo" [disabled]
+      - group "File":
+        - status: Saved
+        - button "Save" [disabled]
+    - toolbar "Tool options":
+      - text: Pencil · P
+      - group "Drawing options":
+        - button "Pixel-perfect"
+        - button "Mirror"
+      - text: Alt-click picks a colour
     - toolbar "Paint tools":
-      - text: Tool
-      - group "Tool":
+      - group "Tools":
         - button "Pencil" [pressed]
         - button "Eraser"
         - button "Fill"
@@ -32,27 +44,44 @@
         - button "Ellipse"
         - button "Select"
         - button "Magic wand"
-      - text: Options
-      - group "Options":
-        - button "Filled"
-        - button "Pixel-perfect"
-        - button "Mirror"
-      - text: History
-      - group "History":
-        - button "Undo" [disabled]
-        - button "Redo" [disabled]
-      - text: File
-      - group "File":
-        - button "Revert"
-        - button "Use before"
-        - button "Saved" [disabled]
-    - group: More tools selection · transform · nudge · replace colour · mirror · guides · tiles · tidy
+        - button "Hand"
     - text: paint · 32× Hover or focus the canvas
     - application "icons.food, 16 by 16 pixels"
-    - heading "Paint colours · click to paint · ✎ edits the shared palette" [level=3]
+    - group:
+      - text: Properties
+      - group:
+        - text: Transform & selection Transform
+        - group "Transform":
+          - button "Flip horizontally": ⇋
+          - button "Flip vertically": ⇅
+          - button "Rotate clockwise": ↻
+          - button "Rotate anticlockwise": ↺
+        - text: Nudge
+        - group "Nudge":
+          - button "Nudge left": ←
+          - button "Nudge up": ↑
+          - button "Nudge down": ↓
+          - button "Nudge right": →
+          - button "Wrap"
+        - text: Replace colour
+        - group "Replace colour":
+          - combobox "Replace colour":
+            - 'option "ink #291b35 · 47 px" [selected]'
+            - 'option "sea #43bca2 · 36 px"'
+            - 'option "coral #fa8c99 · 30 px"'
+          - button "→ paint colour"
+      - group: Symmetry
+      - group: View & input
+      - group: Clean up & restore
+    - heading "Paint colours · shared palette" [level=3]
     - group "Main and secondary colours":
-      - text: "main ink #291b35 · secondary (right-click) transparent"
-      - button "⇄ Swap"
+      - 'button "Main #291b35. Choose a colour from the palette"':
+        - text: Main
+        - strong: "#291b35"
+      - button "Secondary Transparent. Colour actions":
+        - text: Secondary
+        - strong: Transparent
+      - button "Swap main and secondary colours": ⇄
     - group "mint jelly":
       - text: mint jelly
       - 'button "foam · #cff5cf · used by 10 assets"': foam —
@@ -113,4 +142,4 @@
     - list "history click a step to go back":
       - listitem:
         - button "1. Opened"
-    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms, middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."
+    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms; Hand (H) or middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."

@@ -524,6 +524,11 @@ tools/jelli-art/ui_tests/run.sh                    # in the pinned Playwright im
 JELLI_UI_UPDATE=1 tools/jelli-art/ui_tests/run.sh  # rewrite the aria and axe baselines
 ```
 
+The [UI requirements](ui_tests/requirements.in) include the CMake version pinned in
+[toolchain.env](../../toolchain.env), because browser creation and duplication tests
+validate copied content through the real generators. The Playwright image does
+not include CMake; the container runner exposes the hash-pinned package on PATH.
+
 `ui_tests/` drives the page with Playwright (Python). The studio serves the
 art and content of the revision pinned in `ui_tests/fixture.json`, so art
 changes do not move the baselines. Each view (Review detail and sheet, Paint

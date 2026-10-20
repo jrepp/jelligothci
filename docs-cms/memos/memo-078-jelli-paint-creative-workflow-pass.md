@@ -37,9 +37,20 @@ Save remains an action with a stable label and familiar icon. An adjacent live s
 | New swatches had an accessible-name/content mismatch | Match visible names and accessible labels; verify with axe |
 | Narrow screens devoted most of the viewport to the asset browser | Drawer on narrow viewports independently of pointer type, smaller header, horizontal tool rail, and a visible-canvas regression |
 | Asynchronous frame duplication could modify the newly selected clip instead of the source clip | Mutate the captured clip key, recheck capacity after the await, and avoid stealing focus after navigation |
+| Dimming unchanged Review cards also reduced label contrast | Apply reduced opacity only to artwork, keeping labels fully opaque; pinned-renderer axe comparison found no new serious/critical violations and removed 12 existing violations |
+| The pinned browser-test container lacked CMake for real authoring validation | Add the project's pinned CMake package to the hashed UI dependency lock and expose its scripts in the isolated runner PATH; retain real generator validation |
+| A long comparison label expanded the inspector's implicit grid column and clipped Swap | Constrain the grid track and comparison controls to the inspector; viewport regressions check containment, functioning Swap and touch target size |
+| Header tests still required the previous single-row intermediate layout | Luna updated the checks for the deliberately separate mode row, preserving tight height limits, clean/dirty stability, visible navigation and nonoverlapping controls |
+| Tablet layouts lost too much canvas area | Place the quickbar beside the canvas in coarse-pointer landscape and stack the inspector below it in portrait; both original area and fit-zoom tests pass without reducing their requirements |
 
 # Validation
 
 Sol implementation and independent adversarial reviews covered the workspace, save transactions, cloning and runtime changes. Deferred-network browser tests exercise continued editing during saves and reloads, failed retries and late responses. Browser cloning tests compare copied pixels, verify new IDs and source preservation, and cover full clip capacity. Workspace tests cover desktop/phone layout, keyboard and Hand navigation, accessible names, mode overflow and asset-drawer focus restoration.
 
-Exact final suite counts, pinned-renderer evidence and PR/merge references are added after validation. Device builds are separate from these browser checks; no physical hardware UX claim follows from a host test or firmware build.
+The first complete run against the pinned Linux AMD64 Playwright image passed **267/271** cases with updated visual baselines. The four remaining failures were the obsolete intermediate-header expectations and two tablet canvas-space regressions. All other screenshot, ARIA, axe, creation, duplication and deferred-transaction cases passed. Header checks subsequently passed at all three target sizes; the canvas checks retain their original area and fit-zoom requirements.
+
+The corrected tablet layout measured a 758 × 356 canvas box in landscape, 27.9% of the viewport with 7× fit zoom, and 782 × 588 in portrait, 47.5% with 12× fit zoom. Landscape keeps the flipbook and complete palette visible without scrolling the main workspace. These are browser fixture measurements, not device-display measurements.
+
+All nine focused geometry and palette cases passed, including the five original desktop/tablet canvas goals. Final baseline generation passed all 28 views in the pinned AMD64 image, with no new serious/critical axe violations. Desktop and phone Paint and desktop Behaviours screenshots were visually reviewed; the final desktop Paint screenshot confirms Swap is fully visible.
+
+[PR #71](https://github.com/jrepp/jelligothci/pull/71) carries the implementation and final acceptance checks. Device builds are separate from these browser checks; no physical hardware UX claim follows from a host test or firmware build.

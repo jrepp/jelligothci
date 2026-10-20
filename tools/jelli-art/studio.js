@@ -118,11 +118,11 @@
     .paint-toolrail kbd{font:8px ui-monospace,monospace;position:absolute;right:2px;bottom:0;color:var(--muted)}
     .paint-work{grid-template-areas:"t" "c" "q" "d" "s";gap:10px;--side:232px}.paint-work>.paint-toolrail{grid-area:t}
     .paint-canvas .scroller{border-color:#ffffff1a;border-radius:5px;background:#25262a;box-shadow:inset 0 0 0 1px #0003}.paint-canvas>.lbl{min-height:22px;align-items:center}.paint-readout{font-size:10px;overflow-wrap:anywhere}
-    .paint-side{gap:12px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.paint-side #palette-block{order:-2}.paint-side #paint-more{order:-1}.paint-side #legend:empty{display:none}
+    .paint-side{grid-template-columns:minmax(0,1fr);gap:12px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.paint-side #palette-block{order:-2}.paint-side #paint-more{order:-1}.paint-side #legend:empty{display:none}
     .paint-side .paint-more{margin:0;border-block:1px solid var(--line);padding-block:8px}.paint-more>summary{font-size:12px;list-style-position:inside;padding:3px 0}.paint-more>summary .lbl{display:none}
     .paint-property{padding:7px 0;border-top:1px solid var(--line)}.paint-property:first-of-type{margin-top:7px}.paint-property>summary{font-size:11px;font-weight:600;cursor:pointer;padding:3px 0}.paint-property>div{margin-top:8px}.paint-property .lbl{font-size:10px;margin-bottom:4px}.paint-property .seg{display:flex;flex-wrap:wrap;gap:3px}.paint-property button{font-size:11px;padding:4px 7px}.paint-property select{max-width:100%}
-    .paint-side .paint-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 30px;gap:5px;align-items:center;margin-bottom:10px}.paint-side .paint-colour-current{display:grid;justify-items:start;gap:5px;padding:6px!important;min-width:0;width:100%;text-align:left;background:var(--raised);border:1px solid var(--line);border-radius:5px}.paint-side .paint-colour-current .sw{display:block;width:32px;height:32px;border-radius:3px;border:1px solid #fff3}.paint-colour-current span:not(.sw){font-size:10px;color:var(--muted);line-height:1.3}.paint-colour-current strong{display:block;font:9px ui-monospace,monospace;color:var(--ink);overflow-wrap:anywhere}
-    .paint-side .paint-refs{display:grid;gap:12px}.paint-side .paint-hist{width:100%;min-width:0;max-height:150px}.paint-side .paint-hint{font-size:10px;line-height:1.5}.paint-side .paint-slot .edit{top:-3px;right:-3px;border:1px solid var(--line)}
+    .paint-side .paint-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 30px;gap:5px;align-items:center;margin-bottom:10px;min-width:0;width:100%;max-width:100%}.paint-side #swap-colours{min-width:0;width:100%;max-width:100%;justify-self:stretch}.paint-side .paint-colour-current{display:grid;justify-items:start;gap:5px;padding:6px!important;min-width:0;width:100%;text-align:left;background:var(--raised);border:1px solid var(--line);border-radius:5px}.paint-side .paint-colour-current .sw{display:block;width:32px;height:32px;border-radius:3px;border:1px solid #fff3}.paint-colour-current span:not(.sw){font-size:10px;color:var(--muted);line-height:1.3}.paint-colour-current strong{display:block;font:9px ui-monospace,monospace;color:var(--ink);overflow-wrap:anywhere}
+    .paint-side .paint-refs{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.paint-side .paint-refs>.pane{min-width:0;max-width:100%}.paint-side .before-wrap{display:grid;min-width:0;max-width:100%}.paint-side .before-wrap select{min-width:0;width:100%;max-width:100%}.paint-side .paint-hist{width:100%;min-width:0;max-height:150px}.paint-side .paint-hint{font-size:10px;line-height:1.5}.paint-side .paint-slot .edit{top:-3px;right:-3px;border:1px solid var(--line)}
     @media(min-height:600px){@container stage (min-width:650px){
       .paint-work,.paint-work.noq,.paint-work.lefty{height:100%;grid-template-columns:48px minmax(0,1fr) var(--side);grid-template-rows:minmax(0,1fr) auto auto;grid-template-areas:"t c s" "t q s" "t d s";gap:8px 10px}
       .paint-toolrail #tools{flex-direction:column;flex-wrap:nowrap}.paint-toolrail{width:48px;max-height:100%;overflow-y:auto;overflow-x:hidden}.paint-toolrail #tools button{width:38px}
@@ -132,6 +132,25 @@
     @container stage (max-width:649px){#mode-extra{grid-template-columns:minmax(0,1fr)}.paint-commandbar{grid-column:1;grid-row:1}.paint-context{grid-row:2}.paint-selection-context{grid-row:3}.paint-tool-help{flex-basis:100%}.paint-toolrail #tools{flex-wrap:nowrap;overflow-x:auto}.paint-toolrail #tools button{flex:none}}
     @media(any-pointer:coarse){.paint-toolrail #tools button{min-width:44px;min-height:44px}.paint-toolrail kbd{display:none}.paint-commandbar button,.paint-context button,.paint-selection-context button{min-height:44px}.paint-toolrail{padding:3px}.paint-side .paint-colour-current{min-height:76px}.paint-side .paint-pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px}.paint-side .paint-chip{min-width:44px;min-height:44px}.paint-qbar button{min-height:44px}}
     @media(min-height:600px) and (any-pointer:coarse){@container stage (min-width:650px){.paint-work,.paint-work.noq,.paint-work.lefty{grid-template-columns:54px minmax(0,1fr) var(--side)}.paint-toolrail{width:54px}.paint-toolrail #tools button{width:44px}}}
+
+    /* Touch landscape keeps modifiers beside the canvas; portrait gives the artwork the full width. */
+    @media(min-height:600px) and (any-pointer:coarse){
+      @container stage (min-width:900px){
+        .paint-work,.paint-work.noq{grid-template-columns:54px 68px minmax(0,1fr) var(--side);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"t q c s" "t q d s"}
+        .paint-work.lefty{grid-template-columns:54px minmax(0,1fr) var(--side) 68px;grid-template-areas:"t c s q" "t d s q"}
+        .paint-work.noq,.paint-work.noq.lefty{grid-template-columns:54px minmax(0,1fr) var(--side);grid-template-areas:"t c s" "t d s"}
+        .paint-qbar,.paint-work.lefty .paint-qbar{width:68px;max-height:100%;height:100%;flex-direction:column;flex-wrap:nowrap;overflow-y:auto;overflow-x:hidden;align-self:stretch;justify-content:flex-start}
+        .paint-qbar .qb-group{flex-direction:column;flex-wrap:nowrap}.paint-qbar .qb-sep{width:auto;height:1px;flex:none}.paint-qbar button{width:100%;flex:none}
+      }
+      @container stage (min-width:650px) and (max-width:899px){
+        html[data-mode=paint] main>#detail.painting{flex:none;display:block}
+        #detail.painting>#stage{flex:none}
+        .paint-work,.paint-work.noq,.paint-work.lefty{height:auto;grid-template-columns:minmax(0,1fr);grid-template-rows:auto;grid-template-areas:"t" "c" "q" "d" "s";gap:10px}
+        .paint-toolrail{width:auto;max-height:none}.paint-toolrail #tools{flex-direction:row;flex-wrap:nowrap;overflow-x:auto}.paint-toolrail #tools button{width:44px;flex:none}
+        .paint-canvas{grid-template-rows:auto auto}.paint-canvas .scroller{height:clamp(240px,50dvh,100cqi)}
+        .paint-side{overflow:visible}.paint-qbar,.paint-work.lefty .paint-qbar{max-height:none;overflow:visible}
+      }
+    }
 
     .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
     @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important}}
@@ -1135,8 +1154,8 @@
     const own = ownPalette(a), pal = paletteOf(a), where = paletteWhere(a);
     // Arriving at a sprite: keep a custom colour the artist chose, otherwise start from one of its palette colours.
     if (S.paletteKey !== a.key) { S.paletteKey = a.key; if (state.color && !pal.includes(state.color) && !state.custom) state.color = inkOf(a); }
-    el.previousElementSibling.innerHTML = own ? `Paint colours <span class="lbl">· ${a.palette_name} palette · click to paint</span>`
-      : 'Paint colours <span class="lbl">· click to paint · ✎ edits the shared palette</span>';
+    el.previousElementSibling.innerHTML = own ? `Paint colours <span class="lbl">· ${a.palette_name}</span>`
+      : 'Paint colours <span class="lbl">· shared palette</span>';
     const peers = D.assets.filter(x => own ? x.palette_name === a.palette_name : !ownPalette(x));
     const counts = a.after_metrics.colors, usage = hex => peers.filter(x => x.after_metrics.colors[hex]).length;
     if (state.color2 && !pal.includes(state.color2) && !state.custom2) state.color2 = null;  // the secondary keeps to this palette too

@@ -292,12 +292,11 @@ def test_quick_bar_controls_are_touch_sized(paint):
 
 def test_quick_bar_layout_follows_orientation_and_handedness(paint):
     page = paint(LAND)
-    bar, cv = (page.locator(s).bounding_box() for s in ("#paint-qbar", "#stage .paint-canvas"))
-    assert bar["y"] >= cv["y"] + cv["height"] - 1
-    assert bar["x"] >= cv["x"] - 1 and bar["x"] + bar["width"] <= cv["x"] + cv["width"] + 1
+    bar, cv = (page.locator(s).bounding_box() for s in ("#paint-qbar", "#stage .paint-canvas canvas"))
+    assert bar["x"] + bar["width"] <= cv["x"] + 1
     page.evaluate("() => document.getElementById('lefty').click()")
-    bar, last = page.locator("#paint-qbar").bounding_box(), page.locator("#qb-pencil").bounding_box()
-    assert abs(last["x"] + last["width"] - bar["x"] - bar["width"]) <= 2
+    bar, side = page.locator("#paint-qbar").bounding_box(), page.locator("#stage .paint-side").bounding_box()
+    assert bar["x"] >= side["x"] + side["width"] - 1
     page = paint(PORT)
     bar, cv = page.locator("#paint-qbar").bounding_box(), page.locator("#stage .paint-canvas").bounding_box()
     assert bar["y"] >= cv["y"] + cv["height"] - 1
