@@ -15,6 +15,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 import creation
+import animation
 import creatures
 import storage
 
@@ -125,6 +126,45 @@ class CreationTest(unittest.TestCase):
                 self.create({"type": "asset", "kind": "icons", "key": "race", "name": "RACE", "size": 16})
         self.assertEqual(path.read_bytes(), expected)
         self.assertFalse((self.source / "icons/race.png").exists())
+
+    def reserve_frame(self, key="creatures.retired-example"):
+        manifest = creation.read(self.source / "assets.json")
+        used = {a["id"] for a in manifest["assets"]} | {c["id"] for c in manifest["clips"]}
+        ident = next(i for i in range(1001, 2001) if i not in used)
+        path = self.source / animation.LEDGER
+        path.parent.mkdir(exist_ok=True)
+        path.write_bytes(storage.json_bytes({"frames": [{"id": ident, "key": key, "retired": True}]}))
+        return ident, path
+
+    def test_pet_creation_skips_retired_frame_ids(self):
+        ident, path = self.reserve_frame()
+        ledger_before = path.read_bytes()
+        self.create(self.pet_request())
+        assets = creation.read(self.source / "assets.json")["assets"]
+        self.assertNotIn(ident, {a["id"] for a in assets})
+        self.assertEqual(path.read_bytes(), ledger_before)
+
+    def test_retired_frame_key_cannot_be_reused(self):
+        self.reserve_frame("creatures.new-jelli-idle-a")
+        before = self.snapshot()
+        with self.assertRaisesRegex(creation.CreationError, "reserved by frame history"):
+            self.create(self.pet_request())
+        self.assertEqual(before, self.snapshot())
+
+    def test_reservation_change_during_validation_is_stale(self):
+        _, path = self.reserve_frame()
+        original_validate = creation.validate
+        expected = path.read_bytes() + b"\n"
+        def change_after_validation(*args):
+            original_validate(*args)
+            path.write_bytes(expected)
+        with mock.patch.object(creation, "validate", side_effect=change_after_validation):
+            with self.assertRaisesRegex(creation.StaleCreationError, "during validation"):
+                self.create(self.pet_request())
+        self.assertEqual(path.read_bytes(), expected)
+        manifest = creation.read(self.source / "assets.json")
+        self.assertFalse(any(a.get("form") == "new-jelli" for a in manifest["assets"]))
+        self.assertFalse((self.source / "creatures/new-jelli-idle-a.png").exists())
 
     def test_png_source_change_is_stale(self):
         bases = self.bases()

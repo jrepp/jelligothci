@@ -53,4 +53,6 @@ The corrected tablet layout measured a 758 × 356 canvas box in landscape, 27.9%
 
 All nine focused geometry and palette cases passed, including the five original desktop/tablet canvas goals. Final baseline generation passed all 28 views in the pinned AMD64 image, with no new serious/critical axe violations. Desktop and phone Paint and desktop Behaviours screenshots were visually reviewed; the final desktop Paint screenshot confirms Swap is fully visible.
 
+The final pinned AMD64 verification passed **78/78** layout, palette, workspace, quickbar and view cases with baseline updates disabled and screenshot comparisons enabled. The defensive hidden-quickbar correction then passed all nine geometry/palette cases against the final source.
+
 [PR #71](https://github.com/jrepp/jelligothci/pull/71) carries the implementation and final acceptance checks. Device builds are separate from these browser checks; no physical hardware UX claim follows from a host test or firmware build.

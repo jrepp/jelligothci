@@ -9,6 +9,7 @@ from pathlib import Path
 
 from PIL import Image
 import creatures
+import animation
 import profiles
 import storage
 
@@ -36,6 +37,7 @@ def data(repo, source, content):
     pets, profiles_doc = read(content / "pets.json"), read(content / "creatures.json")
     return {"bases": {"manifest": storage.digest(source / "assets.json"),
                       "artwork": storage.digest_bytes(storage.json_bytes({a["path"]: storage.digest(storage.confined(source, a["path"])) for a in manifest["assets"]})),
+                      "reservations": storage.digest_bytes(storage.json_bytes({p.name: storage.digest(storage.confined(source, p.relative_to(source))) for p in sorted((source / "source").glob("*.json"))})),
                       **{n: storage.digest(content / f"{n}.json") for n in DOCS}},
             "templates": pets["forms"], "entries": pets["entries"], "evolution_sets": pets["evolution_sets"], "profiles": profiles_doc["profiles"],
             "behaviors": [b["name"] for b in profiles_doc["behaviors"]],
@@ -71,12 +73,13 @@ def unique_image(size, palette, ident, occupied=()):
     return image
 
 
-def append_asset(manifest, images, used, kind, key, image, **extra):
+def append_asset(manifest, images, used, reserved_keys, kind, key, image, **extra):
     ranges = KINDS.get(kind, (1001, 2000, (32, 48)))
     ident = allocate(used, *ranges[:2], f"{kind} artwork")
     path = f"{kind}/{key}.png"
-    if any(a["key"] == f"{kind}.{key}" or a["path"] == path for a in manifest["assets"]):
-        raise CreationError("That artwork identity already exists")
+    if f"{kind}.{key}" in reserved_keys or any(a["path"] == path for a in manifest["assets"]):
+        raise CreationError("That artwork identity is already used or reserved by frame history")
+    reserved_keys.add(f"{kind}.{key}")
     size = image.width
     asset = {"id": ident, "key": f"{kind}.{key}", "path": path, "kind": kind,
              "width": size, "height": size, "pivot": [size // 2, size - 2],
@@ -86,7 +89,7 @@ def append_asset(manifest, images, used, kind, key, image, **extra):
     return asset
 
 
-def pet_candidate(manifest, docs, images, used, request, source):
+def pet_candidate(manifest, docs, images, used, reserved_keys, request, source):
     key, name = request["key"], request["name"]
     pets, config = docs["pets"], docs["creatures"]
     if any(e["name"] == name for e in pets["entries"]) or any(f["art"] == key or f["name"] == name for f in pets["forms"]):
@@ -118,7 +121,7 @@ def pet_candidate(manifest, docs, images, used, request, source):
             continue
         image = Image.open(storage.confined(source, old["path"])).convert("RGBA")
         image = image.resize((size, size), Image.Resampling.NEAREST)
-        new = append_asset(manifest, images, used, "creatures", f"{key}-{old['pose']}", image,
+        new = append_asset(manifest, images, used, reserved_keys, "creatures", f"{key}-{old['pose']}", image,
                            form=key, pose=old["pose"], **({"palette": old["palette"]} if "palette" in old else {}))
         mapping[old["key"]] = new
     for old in list(manifest["clips"]):
@@ -217,10 +220,10 @@ def create(repo, source, content, request, bases):
     manifest = read(source / "assets.json")
     docs = {n: read(content / f"{n}.json") for n in DOCS if (content / f"{n}.json").exists()}
     original_docs = copy.deepcopy(docs)
-    used = {a["id"] for a in manifest["assets"]} | {c["id"] for c in manifest["clips"]}
+    used, reserved_keys = animation.reserved(manifest, source)
     images = {}
     if request.get("type") == "pet":
-        selected = pet_candidate(manifest, docs, images, used, request, source)
+        selected = pet_candidate(manifest, docs, images, used, reserved_keys, request, source)
     elif request.get("type") == "asset" and request.get("kind") in KINDS:
         kind = request["kind"]
         size = integer(request.get("size"), "Canvas size", 1, 64)
@@ -236,7 +239,7 @@ def create(repo, source, content, request, bases):
         occupied = [Image.open(storage.confined(source, a["path"])).convert("RGBA").tobytes()
                     for a in manifest["assets"] if a["kind"] == "prizes"] if kind == "prizes" else []
         image = unique_image(size, palette, ident, occupied)
-        asset = append_asset(manifest, images, used, kind, key, image, palette=palette)
+        asset = append_asset(manifest, images, used, reserved_keys, kind, key, image, palette=palette)
         pivot = request.get("pivot", asset["pivot"])
         if not isinstance(pivot, list) or len(pivot) != 2:
             raise CreationError("Placement pivot needs x and y")
