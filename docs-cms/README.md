@@ -42,6 +42,8 @@ Scene editing recovery, preview and authoring affordances:
 Celebration orchestration, named layers and per-form hardpoints:
 [ADR-015](adr/adr-015-authored-celebration-timelines.md), with implementation in
 [memo-085](memos/memo-085-celebration-authoring-and-runtime.md).
+Opt-in gameplay bindings and device replay preparation:
+[memo-086](memos/memo-086-celebration-gameplay-follow-up.md).
 Generated asset final-newline packaging regression:
 [memo-084](memos/memo-084-generated-assets-final-newline.md).
 

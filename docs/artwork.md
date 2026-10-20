@@ -462,5 +462,13 @@ Play, Replay, the timeline scrubber and time stepping preview the choreography.
 Saving writes [effects.json](../content/effects.json) with stale-file protection;
 unsaved edits survive refresh as browser drafts. **Save and test in game** opens
 the actual C renderer using saved content. Save any separate Paint or Creature
-clip edits too. Effects currently start explicitly through the preview or
-`jelligotchi --effect celebrate`; they are not automatically bound to rewards.
+clip edits too. Effects can also start explicitly with `jelligotchi --effect celebrate`.
+
+Under **Automatic celebrations**, select an effect for **Pet evolves** or
+**Present caught**, or leave it **Disabled**. Bindings are global and save with
+this document; rebuild the game/firmware to apply them. Present catches wait until
+you return home from the collection. Only live events celebrate; offline catch-up
+does not. A pending celebration waits for an active effect, expires after 30
+animation-clock seconds, and is discarded if you switch pet/form. New eligible
+events replace the pending one. The shipped bindings are disabled. The saved-effect
+preview tests the choreography directly, not the gameplay trigger path.

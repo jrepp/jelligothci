@@ -124,6 +124,9 @@ bool jelli_pet_frame(JelliPetEngine *engine)
     }
     if (!engine->running)
         return false;
+    jelli_pet_celebrations(&engine->celebrations, &engine->ui, &engine->game, &engine->events,
+                           jelli_effect_triggers, engine->animation_ms,
+                           was_resuming || engine->game.resuming, engine->paused);
     jelli_pet_gallery_update(&engine->ui, &engine->game, engine->animation_ms);
     jelli_pet_render(&engine->surface, &engine->game, &engine->ui, engine->animation_ms,
                      engine->paused);

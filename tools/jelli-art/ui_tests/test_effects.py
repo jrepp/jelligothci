@@ -101,6 +101,52 @@ def test_new_pet_hardpoints_join_effect_workspace(creator):
       await Studio.reload();
     }""")
     open_effects(page)
+    assert page.evaluate("D.assets.some(a=>a.form==='celebration-pet')")
+    assert 'celebration-pet' in page.locator('#fx-form').text_content(), page.locator('#fx-status').text_content()
     page.locator('#fx-form').select_option('celebration-pet')
     page.locator('#fx-point').select_option('1')
     expect(page.locator('#fx-point-y')).to_have_value('-20')
+
+
+def test_gameplay_bindings_save_and_undo(creator):
+    page=creator['page'];open_effects(page)
+    binding=page.get_by_role('combobox',name='Pet evolves',exact=True)
+    expect(binding).to_have_value('')
+    binding.select_option('celebrate')
+    page.locator('#fx-undo').click()
+    expect(binding).to_have_value('')
+    page.locator('#fx-redo').click()
+    expect(binding).to_have_value('celebrate')
+    page.locator('#fx-save').click()
+    expect(page.locator('#fx-status')).to_have_text('Saved')
+    data=json.loads((creator['content']/'effects.json').read_text())
+    assert data['triggers']['evolution']=='celebrate'
+    assert data['triggers']['present-caught'] is None
+    page.reload();open_effects(page)
+    expect(binding).to_have_value('celebrate')
+
+
+def test_effect_reload_waits_for_inflight_content(creator):
+    page=creator['page'];open_effects(page)
+    pending=[]
+    def hold_first(route):
+        if not pending:
+            pending.append(route)
+        else:
+            route.continue_()
+    page.route('**/api/effects',hold_first)
+    with page.expect_request('**/api/effects'):
+        page.evaluate('() => { window.firstEffectReload=Studio.reload(); }')
+    for _ in range(100):
+        if pending:break
+        page.wait_for_timeout(20)
+    assert pending
+    older=pending[0].fetch()
+    # Deliver an older in-flight response after a newer saved document exists.
+    path=creator['content']/'effects.json'
+    doc=json.loads(path.read_text());doc['effects'][0]['name']='Newest celebration'
+    path.write_text(json.dumps(doc))
+    page.evaluate('() => { window.secondEffectReload=Studio.reload(); }')
+    pending[0].fulfill(response=older)
+    page.evaluate('() => Promise.all([window.firstEffectReload,window.secondEffectReload])')
+    expect(page.locator('#fx-name')).to_have_value('Newest celebration')

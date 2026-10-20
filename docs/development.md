@@ -326,3 +326,20 @@ is in native display pixels. The shared compiler resolves point and artwork keys
 at build time. Jelli Art and the saved-content preview use that same validator.
 See [ADR-015](../docs-cms/adr/adr-015-authored-celebration-timelines.md) and
 [validation evidence](../docs-cms/memos/memo-085-celebration-authoring-and-runtime.md).
+
+
+[Gameplay delivery](../include/jelli/pet_celebration.h) consumes the bounded event
+ring once per frame after input/reward processing. Generated optional bindings
+map evolution status and successful present-catch input events to one-based effect
+indices; zero disables delivery. The queue owns at most one pending effect for
+the active pet/form, with a 32-byte state budget and no extra framebuffer. Latest
+eligible event wins; existing playback is not interrupted. Menus and pause defer
+playback, while identity changes, clock reversal, expiry, and offline resume
+clear pending work. Event sequence rollover starts a fresh cursor. Event overflow
+uses the existing ring policy; dropped history is never reconstructed.
+
+The shared debug protocol accepts `effect play KEY` and `effect stop` on the
+home view. Capture, pause, resume and open menus reject replay with `busy`;
+unknown keys preserve current playback. Replay changes presentation only.
+`./scripts/jelli-debug effect celebrate` uses this path on either host.
+See [follow-up evidence](../docs-cms/memos/memo-086-celebration-gameplay-follow-up.md).

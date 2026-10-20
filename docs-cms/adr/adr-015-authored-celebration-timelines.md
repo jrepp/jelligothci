@@ -48,7 +48,9 @@ restore ordinary presentation. Effects do not mutate saved simulation state.
 - Active effects redraw the full surface to avoid stale overlays across restoration
   paths. Physical display cost needs measurement before automatic gameplay use.
 - Forward playback is finite. General keyframe curves, audio, particle emitters,
-  cue callbacks, queues and automatic reward bindings remain separate increments.
+  cue callbacks and care/reward bindings remain separate increments. A follow-up
+  adds opt-in evolution/present-catch bindings and one bounded pending slot;
+  shipped bindings stay disabled pending gameplay-default selection.
 
 # References
 

@@ -4,6 +4,7 @@ from scene_data import fields, integer, KEY
 
 MAX_EFFECTS, MAX_TRACKS, MAX_CUES, MAX_POINTS, MAX_DURATION = 32, 16, 16, 8, 30000
 LAYERS = ["behind-pet", "front-pet", "foreground"]
+TRIGGERS = ["evolution", "present-caught"]
 POSES = ["idle", "idle-alt", "curious", "content", "eating", "happy", "asleep", "unwell"]
 
 
@@ -29,7 +30,7 @@ def interval(item, duration):
 
 
 def validate(doc, manifest):
-    fields(doc, "version hardpoints effects", "Effect document")
+    fields(doc, "version hardpoints effects", "Effect document", "triggers")
     integer(doc["version"], 1, 1, "Version")
     forms = {a["form"] for a in manifest["assets"] if a["kind"] == "creatures"}
     assets = {a["key"]: a for a in manifest["assets"]}
@@ -83,6 +84,11 @@ def validate(doc, manifest):
             if cue["start_ms"] < previous_end:
                 raise ValueError("Creature cues cannot overlap; sprite tracks can")
             previous_end = cue["start_ms"] + cue["duration_ms"]
+    triggers = doc.get("triggers", {})
+    fields(triggers, "", "Gameplay triggers", " ".join(TRIGGERS))
+    for target in triggers.values():
+        if target is not None and (not isinstance(target, str) or target not in keys):
+            raise ValueError("Gameplay triggers must select an existing effect or null")
     return doc
 
 
@@ -120,6 +126,8 @@ def emit(doc, manifest, forms):
             out.append('{0}')
         out.append('}},')
     out += ['};', f'const unsigned jelli_effect_definition_count={len(doc["effects"])}u;']
+    bindings = [next((i + 1 for i, e in enumerate(doc["effects"]) if e["key"] == doc.get("triggers", {}).get(t)), 0) for t in TRIGGERS]
+    out.append('const uint8_t jelli_effect_triggers[JELLI_EFFECT_TRIGGER_COUNT]={' + ','.join(map(str, bindings)) + '};')
     out.append('JelliEffectPoint jelli_effect_point(unsigned form, unsigned anchor) {')
     out.append(f'static const JelliEffectPoint points[{len(forms)}][{len(points)}] = {{')
     for form in sorted(forms, key=lambda f: f['id']):

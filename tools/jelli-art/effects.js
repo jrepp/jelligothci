@@ -6,7 +6,7 @@
   const clone=x=>JSON.parse(JSON.stringify(x));
   const esc=x=>String(x).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
   const opts=(items,value)=>items.map(([k,n])=>`<option value="${esc(k)}" ${k===value?'selected':''}>${esc(n)}</option>`).join('');
-  let work,loaded,base,editable=false,saving=false,loading=false;
+  let work,loaded,base,editable=false,saving=false,loading=false,loadingTask=null;
   let selected=0,kind='tracks',index=0,form='',point=0,time=0,playing=false,last=0,raf=0;
   let undo=[],redo=[],checkpoint,showPoints=true,placing=false;
   const dirty=()=>!!work&&JSON.stringify(work)!==JSON.stringify(loaded);
@@ -64,7 +64,12 @@
     if(el('engine')){el('engine').disabled=saving||loading;el('engine').textContent=dirty()||base===null?'Save and test in game':'Test saved effect in game';}
     root.querySelectorAll('[data-track-name]').forEach(n=>{n.textContent=effect().tracks[Number(n.getAttribute('data-track-name'))]?.name||'';});
   }
-  async function load(discard=false) {
+  function load(discard=false) {
+    if(loadingTask)return loadingTask;
+    loadingTask=fetchEffects(discard).finally(()=>{loadingTask=null;});
+    return loadingTask;
+  }
+  async function fetchEffects(discard=false) {
     if(loading||saving)return;
     if(discard&&dirty()&&!await shell.confirm('Discard unsaved effect and hardpoint edits?',{confirmLabel:'Reload saved'}))return;
     loading=true;
@@ -110,6 +115,11 @@
       <h4>Sprite frames</h4>${t.frames.map((f,i)=>`<div class="fx-frame"><label>Frame ${i+1}<select data-frame-asset="${i}">${opts(art().map(a=>[a.key,a.key]),f.asset)}</select></label><label>Hold (ms)<input required type="number" min="1" max="30000" data-frame-hold="${i}" value="${f.duration_ms}"></label><button data-paint="${i}">Paint frame ${i+1}</button><button data-remove-frame="${i}" ${t.frames.length===1?'disabled':''}>Remove</button></div>`).join('')}
       <button id="fx-add-frame" ${t.frames.length>=6?'disabled':''}>Add sprite frame</button>`}`;
   }
+  function triggers() {
+    return `<fieldset ${!editable||loading?'disabled':''}><legend>Automatic celebrations</legend>
+      <p class="fx-note">Choose an effect for live gameplay events. Disabled by default. Playback waits for the home view; resume catch-up never celebrates.</p>
+      ${[['evolution','Pet evolves'],['present-caught','Present caught']].map(([key,label])=>`<label>${label}<select data-trigger="${key}">${opts([['','Disabled'],...work.effects.map(e=>[e.key,e.name])],work.triggers?.[key]||'')}</select></label>`).join('')}</fieldset>`;
+  }
   function timeline() {
     return ['cues','tracks'].map(k=>effect()[k].map((t,i)=>`<div class="fx-row"><button data-select="${k}:${i}" aria-pressed="${kind===k&&index===i}"><span ${k==='tracks'?`data-track-name="${i}"`:''}>${esc(t.name)}</span></button><div class="fx-bar" title="${t.start_ms}–${t.start_ms+t.duration_ms} ms"><span class="fx-span" style="left:${t.start_ms/effect().duration_ms*100}%;width:${t.duration_ms/effect().duration_ms*100}%"></span><span class="fx-playhead"></span></div></div>`).join('')).join('');
   }
@@ -128,7 +138,7 @@
       </div><div><h3>Timeline</h3><div id="fx-timeline">${timeline()}</div></div></div>
       <fieldset ${!editable||loading?'disabled':''}><legend>Timeline authoring</legend><div class="fx-actions"><button id="fx-add-track" ${effect().tracks.length>=16?'disabled':''}>Add sprite track</button><button id="fx-add-cue" ${effect().cues.length>=16?'disabled':''}>Add creature cue</button><button id="fx-copy" ${work.effects.length>=32?'disabled':''}>Duplicate celebration</button></div>
       <label>Celebration name<input id="fx-name" type="text" required maxlength="48" value="${esc(effect().name)}"></label><label>Total duration (ms)<input id="fx-duration" required type="number" min="1" max="30000" value="${effect().duration_ms}"></label></fieldset>
-      <fieldset ${!editable||loading?'disabled':''}><legend>Pet hardpoints — ${esc(form)}</legend><label>Show attachment guides<input id="fx-guides" type="checkbox" ${showPoints?'checked':''}></label>
+      ${triggers()}<fieldset ${!editable||loading?'disabled':''}><legend>Pet hardpoints — ${esc(form)}</legend><label>Show attachment guides<input id="fx-guides" type="checkbox" ${showPoints?'checked':''}></label>
       <label>Hardpoint<select id="fx-point">${opts(work.hardpoints.map((p,i)=>[String(i),p.name]),String(point))}</select></label>
       <p class="fx-note">Select a hardpoint, enable placement, then tap the preview to place it. Coordinates use source pixels relative to the pet’s ground point; negative Y is above its feet. Changes affect every celebration for this form.</p>
       <button id="fx-place" aria-pressed="${placing}">${placing?'Finish placing hardpoint':'Place selected hardpoint'}</button><div class="fx-fields"><label>Hardpoint X<input id="fx-point-x" required type="number" min="-64" max="64" value="${work.hardpoints[point].positions[form][0]}"></label><label>Hardpoint Y<input id="fx-point-y" required type="number" min="-64" max="64" value="${work.hardpoints[point].positions[form][1]}"></label></div>
@@ -172,6 +182,7 @@
     el('canvas').onpointerdown=e=>{if(!editable||loading||!placing)return;const r=el('canvas').getBoundingClientRect(),scale=S.cr.scaleFor?.(form)||6;
       work.hardpoints[point].positions[form]=[Math.round(((e.clientX-r.left)*466/r.width-233)/scale),Math.round(((e.clientY-r.top)*466/r.height-256)/scale)].map(v=>Math.max(-64,Math.min(64,v)));
       playing=false;render();};
+    root.querySelectorAll('[data-trigger]').forEach(n=>{const f=/** @type {HTMLSelectElement} */(n);f.onchange=()=>{work.triggers??={};work.triggers[f.dataset.trigger]=f.value||null;status();};});
     bindSelect();
   }
   function draw(now) {
@@ -200,7 +211,7 @@
     raf=requestAnimationFrame(draw);
   }
   const reload=S.reload;
-  S.reload=async()=>{await reload();if(work&&!dirty())await load();};
+  S.reload=async()=>{await reload();await loadingTask;if(work&&!dirty())await load();};
   const boot=S.boot;S.boot=async()=>{await boot();await load();const d=window.JelliDrafts?.restore('effects','effects',base);
     if(work&&d?.data?.version===1&&d.data.effects?.length){work=clone(d.data);base=d.base;checkpoint=clone(work);shell.notify('Restored unsaved effects and hardpoints.',{tone:'warn'});}
     window.JelliDrafts?.track('effects','effects',{dirty,base:()=>base,data:()=>work});if(state.view==='effects')render();};

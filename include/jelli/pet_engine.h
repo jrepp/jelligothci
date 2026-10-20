@@ -3,6 +3,7 @@
 
 #include "jelli/pet_ui.h"
 #include "jelli/device.h"
+#include "jelli/pet_celebration.h"
 
 typedef struct {
     JelliPlatform platform;
@@ -14,6 +15,7 @@ typedef struct {
     JelliGame game;
     JelliPetUi ui;
     JelliEventLog events;
+    JelliPetCelebration celebrations;
     uint64_t last_ms;
     uint64_t animation_ms;
     bool running, paused;

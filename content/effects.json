@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "triggers": {"evolution": null, "present-caught": null},
   "hardpoints": [
     {
       "key": "ground",

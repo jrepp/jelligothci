@@ -14,6 +14,14 @@ typedef enum {
     JELLI_EFFECT_LAYER_COUNT
 } JelliEffectLayer;
 
+typedef enum {
+    JELLI_EFFECT_EVOLUTION,
+    JELLI_EFFECT_PRESENT_CAUGHT,
+    JELLI_EFFECT_TRIGGER_COUNT
+} JelliEffectTrigger;
+/* One-based definition indices; zero disables an automatic trigger. */
+extern const uint8_t jelli_effect_triggers[JELLI_EFFECT_TRIGGER_COUNT];
+
 typedef struct {
     int16_t x, y;
 } JelliEffectPoint;

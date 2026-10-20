@@ -8,7 +8,7 @@
 #define JELLI_DEBUG_GAME_COMMANDS_JSON                                                             \
     "\"capabilities\",\"state\",\"capture\",\"pixels\",\"release\",\"clock\","                     \
     "\"habits\",\"sleep-log\",\"events\",\"sound\",\"tunables\",\"tune\","                         \
-    "\"cheat\",\"press\",\"swipe\",\"tap\""
+    "\"effect\",\"cheat\",\"press\",\"swipe\",\"tap\""
 
 #define JELLI_DEBUG_IDLE_MS 5000u
 #define JELLI_DEBUG_CAPTURE_MS 30000u

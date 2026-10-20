@@ -704,3 +704,9 @@ The schema/compiler is [effect_data.py](../assets/effect_data.py); the frontend
 sampler mirrors integer timing in the core. **Test saved effect in game** uses
 the actual C runtime. `test_effects.py` and `ui_tests/test_effects.py` cover the
 schema, persistence and authoring paths.
+
+
+**Automatic celebrations** binds evolution or successful present catches to saved
+effects. Both ship disabled; missing `triggers` in older documents also disables
+playback. The shared validator rejects unknown events and effect references.
+Bindings participate in the same undo, draft and guarded-save flow as timelines.
