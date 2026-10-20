@@ -210,6 +210,8 @@ if(BUILD_TESTING)
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_collection_content.py)
       add_test(NAME prize_content COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_prize_content.py)
+      add_test(NAME package_art COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_package_art.py)
       add_test(NAME activity_content COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_activity_content.py)
       add_test(NAME behavior_content COMMAND ${Python3_EXECUTABLE}

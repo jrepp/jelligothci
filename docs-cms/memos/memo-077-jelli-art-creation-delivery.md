@@ -46,6 +46,7 @@ Measured on the local desktop build: a full 16-family fixture encodes **6,406 by
 | The new full-collection UI test failed because its fixture skipped present setup and layout settling | Correct the fixture callback and settle two frames; affected desktop/sanitizer cases passed, followed by the complete sanitizer suite in CI |
 | Creation allocated IDs from the manifest alone, allowing a retired frame identity to be reused | Reuse the frame allocator's active/imported/retired ID and key reservations; hash reservation metadata with creation bases and recheck before publication. Regressions cover retired ID skipping, retired key rejection without writes, and a changed ledger during validation |
 | The first reservation fingerprint included unrelated lint metadata, breaking the existing invalid-lint recovery test | Limit the fingerprint to the frame ledger and import specifications actually used by reservation lookup; preserve file confinement and the existing recovery contract. Include the creation backend suite in the Studio CI test loop |
+| Windows compilation and 81 tests passed, but release-art verification still treated prize storage capacity as the catalog count | Verify present artwork against the actual prize registry, preserving byte-for-byte manifest checks and distinct registered artwork; derive release artwork notes from current catalogs |
 
 # Validation evidence
 
@@ -54,5 +55,7 @@ The core suite passed **39/39**. The dedicated browser creation suite passed **6
 Safari validation used the requested local `~/d/safari-mcp` CLI against copied content in ignored `build/jelli-art-fixes/`. It created a pet and registered present and opened both in Paint, created/painted a background and location, and copied SNUGGLE into an activity with an explicit pose, daily policy and newly registered prize. Production art was not changed by these trials. A Safari helper timeout and later tab-ownership rejection required a fresh owned validation session; no action was forced against an unowned tab.
 
 The final creation backend suite passed **15/15**, including retired-frame reservation and concurrent-ledger regressions. Luna independently reviewed the reservation fix before publication. After narrowing the metadata fingerprint, Luna reran the complete server suite (**36/36**) and creation suite (**15/15**) successfully.
+
+The release-art regression is registered as `package_art` in CTest and passes locally. A real staging → ZIP → verification smoke test packaged 121 manifest images and 10 registered presents, preserving byte-for-byte checks for registered and unregistered art. This exercises the shared packaging helper; the complete Windows executable/DLL package remains a CI check.
 
 The ESP32 firmware compiled successfully with the generated registry. No firmware was flashed and no physical display, touch, heap, or stack measurement was performed. A subsequent user-requested professional creative UX pass continues in a separate increment.
