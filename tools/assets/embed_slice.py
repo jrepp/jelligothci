@@ -81,7 +81,7 @@ def generate(output):
     scenes = json.loads((ROOT / "content/scenes.json").read_text())
     chunks.append(scene_data.emit(scenes, manifest))
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text("\n\n".join(chunks))
+    output.write_text("\n\n".join(chunks) + "\n")
     (output.parent / "jelli_asset_ids.h").write_text(asset_ids.header(manifest))
     (output.parent / "jelli_scene_resources.json").write_text(
         json.dumps(scene_data.resources(scenes, manifest), indent=2) + "\n")

@@ -39,6 +39,8 @@ Named scene layers and seeded authored variation:
 [memo-082](memos/memo-082-scene-names-and-variation.md).
 Scene editing recovery, preview and authoring affordances:
 [memo-083](memos/memo-083-scene-authoring-affordances.md).
+Generated asset final-newline packaging regression:
+[memo-084](memos/memo-084-generated-assets-final-newline.md).
 
 Wi-Fi/time/OTA foundation: [memo-019](memos/memo-019-wifi-time-and-ota-foundation.md).
 Planned AP setup and optional Wi-Fi debug: [RFC-003](rfcs/rfc-003-wifi-provisioning-and-network-debug.md).

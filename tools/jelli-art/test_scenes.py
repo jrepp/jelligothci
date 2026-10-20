@@ -15,6 +15,7 @@ from unittest.mock import patch
 import jelli_art as studio
 import scenes
 import scene_data
+import embed_slice
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -28,6 +29,14 @@ class SceneTests(unittest.TestCase):
         scenes.validate(self.doc, self.manifest)
         self.assertEqual(self.doc["scenes"][0]["layers"][0]["asset"],
                          self.doc["scenes"][1]["layers"][0]["asset"])
+
+    def test_generated_asset_translation_unit_ends_with_newline(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "jelli_assets.c"
+            embed_slice.generate(output)
+            with output.open("rb") as generated:
+                generated.seek(-1, 2)
+                self.assertEqual(generated.read(), b"\n")
 
     def test_compiler_resolves_ids_and_deduplicates_resources(self):
         emitted = scene_data.emit(self.doc, self.manifest)
