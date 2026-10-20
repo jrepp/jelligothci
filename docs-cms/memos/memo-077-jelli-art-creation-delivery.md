@@ -56,6 +56,6 @@ Safari validation used the requested local `~/d/safari-mcp` CLI against copied c
 
 The final creation backend suite passed **15/15**, including retired-frame reservation and concurrent-ledger regressions. Luna independently reviewed the reservation fix before publication. After narrowing the metadata fingerprint, Luna reran the complete server suite (**36/36**) and creation suite (**15/15**) successfully.
 
-The release-art regression is registered as `package_art` in CTest and passes locally. A real staging → ZIP → verification smoke test packaged 121 manifest images and 10 registered presents, preserving byte-for-byte checks for registered and unregistered art. This exercises the shared packaging helper; the complete Windows executable/DLL package remains a CI check.
+The release-art regression is registered as `package_art` in CTest and passes locally. A real staging → ZIP → verification smoke test packaged 121 manifest images and 10 registered presents, preserving byte-for-byte checks for registered and unregistered art. [Release CI on `65846ab`](https://github.com/jrepp/jelligothci/actions/runs/39384980388) subsequently passed Windows tests (**82/82**) and produced its executable/DLL ZIP, then passed macOS tests (**86/86**) and produced the native, source-art and preview archives.
 
 The ESP32 firmware compiled successfully with the generated registry. No firmware was flashed and no physical display, touch, heap, or stack measurement was performed. A subsequent user-requested professional creative UX pass continues in a separate increment.

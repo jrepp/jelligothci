@@ -42,6 +42,7 @@ Save remains an action with a stable label and familiar icon. An adjacent live s
 | A long comparison label expanded the inspector's implicit grid column and clipped Swap | Constrain the grid track and comparison controls to the inspector; viewport regressions check containment, functioning Swap and touch target size |
 | Header tests still required the previous single-row intermediate layout | Luna updated the checks for the deliberately separate mode row, preserving tight height limits, clean/dirty stability, visible navigation and nonoverlapping controls |
 | Tablet layouts lost too much canvas area | Place the quickbar beside the canvas in coarse-pointer landscape and stack the inspector below it in portrait; both original area and fit-zoom tests pass without reducing their requirements |
+| One full CI run intermittently missed the selection before checking touch-target sizes after switching tools | Wait for the selected-tool state and pending canvas layout/refit before computing raw pen coordinates; use an auto-waiting selection-visibility assertion and identify each orientation separately. Keep the real pen gesture and all 44-pixel target checks |
 
 # Validation
 
@@ -54,5 +55,9 @@ The corrected tablet layout measured a 758 × 356 canvas box in landscape, 27.9%
 All nine focused geometry and palette cases passed, including the five original desktop/tablet canvas goals. Final baseline generation passed all 28 views in the pinned AMD64 image, with no new serious/critical axe violations. Desktop and phone Paint and desktop Behaviours screenshots were visually reviewed; the final desktop Paint screenshot confirms Swap is fully visible.
 
 The final pinned AMD64 verification passed **78/78** layout, palette, workspace, quickbar and view cases with baseline updates disabled and screenshot comparisons enabled. The defensive hidden-quickbar correction then passed all nine geometry/palette cases against the final source.
+
+The touch-selection failure occurred in a later **274/275** CI run after a prior **275/275** run passed. Source review identified queued context-row layout/refit work as a plausible coordinate-sampling race; the trace did not establish a product defect. Luna stabilized test readiness and Sol independently confirmed that active-stroke refits remain deferred.
+
+The first readiness adjustment exposed a canvas detachment while scrolling during a pending refit. Settling the refit before scrolling, then settling again before computing pen coordinates, passed ten repeated runs across both orientations (**20/20** cases).
 
 [PR #71](https://github.com/jrepp/jelligothci/pull/71) carries the implementation and final acceptance checks. Device builds are separate from these browser checks; no physical hardware UX claim follows from a host test or firmware build.
