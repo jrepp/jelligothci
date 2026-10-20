@@ -50,7 +50,7 @@
     return `<label>${label}<input data-field="${key}" type="${type}" value="${esc(work.moments[selected][key])}" ${extra}></label>`;
   }
   function selectField(label,key,values) {
-    return `<label>${label}<select data-field="${key}">${opts(values,work.moments[selected][key])}</select></label>`;
+    return `<label>${label}<select data-field="${key}">${opts(values,work.moments[selected][key]??'')}</select></label>`;
   }
   const meters = ['satiety','energy','hygiene','amusement','social','hydration','bond'];
   const timeString = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
@@ -60,9 +60,9 @@
     const m = work.moments[selected], forms = D.behavior_vocab?.forms || [];
     const sprites = D.assets.filter(a => ['menus','icons','health','props','effects','prizes'].includes(a.kind)).map(a=>[a.id,a.key]);
     root.innerHTML = `<h2>Activities</h2><p>Share one activity, icon and animation across any pets. Random activities rotate hourly. Unlocks use local time; completion prerequisites reset daily.</p>
-      <p role="status">${stale?'The activity file changed on disk while you were editing. Save asks before it overwrites the newer file; Reload saved loads it instead.':dirty()?'Unsaved activity changes':'Saved activity recipes'}</p>
-      <button id="ac-save" ${!dirty()||!D.behavior_editable?'disabled':''}>Save activities</button>
-      <button id="ac-revert">Reload saved</button> <button id="ac-add" ${work.moments.length>=32?'disabled':''}>Add activity</button>
+      <p id="ac-save-status" class="save-state" role="status" data-save-state="${saveState}">${saveState==='saving'?'Saving…':saveState==='error'?'Save failed':stale?'The activity file changed on disk while you were editing. Save asks before it overwrites the newer file; Reload saved loads it instead.':dirty()?'Unsaved activity changes':'Saved activity recipes'}</p>
+      <button id="ac-save" class="primary" title="Save activities (⌘S / Ctrl+S)" ${saveState==='saving'||!dirty()||!D.behavior_editable?'disabled':''}>${window.JelliIcons.svg("save")}Save activities</button>
+      <button id="ac-revert">${window.JelliIcons.svg("reload")}Reload saved</button> <button id="ac-add" ${work.moments.length>=32?'disabled':''}>Add activity</button><p>New activities copy visible recipe fields, with no custom pose or prize and rewards on every run. Choose these policies explicitly below.</p>
       <div class="ac-grid"><nav class="ac-list" aria-label="Activity recipes">${work.moments.map((a,i)=>`<button data-activity="${i}" aria-pressed="${i===selected}">${esc(a.name)}</button>`).join('')}</nav>
       <div class="ac-fields"><h3>${esc(m.name)}</h3>
       ${field('Name','name','text',selected<loaded.moments.length?'readonly':'maxlength="12"')}
@@ -75,6 +75,10 @@
       ${field('Random weight (0 = always offered)','random_weight','number','min="0" max="100"')}
       <fieldset><legend>Eligible pets (none selected = all)</legend>${forms.map(f=>`<label><input type="checkbox" data-form="${f.id}" ${m.forms.includes(f.id)?'checked':''}>${esc(f.name)}</label>`).join('')}</fieldset>
       ${selectField('Shared animation','animation',(D.activity_animations||[]).map(a=>[a,a]))}
+      <fieldset><legend>Completion policy</legend>
+      <label><input id="ac-daily" type="checkbox" ${m.daily_reward?'checked':''}>Costs and rewards only on the first run each local day</label><p>Later runs that day play freely without costs, gains or a prize. The first reward is claimed at acceptance, including interrupted runs.</p>
+      ${selectField('Custom pose','pose',[['','Use animation pose'],...(D.creature_poses||[]).map(p=>[p,p]),...(D.state_poses||[]).map(p=>[p.name,p.name])])}
+      ${selectField('Completion prize','prize',[['','None'],...(D.prize_data?.prizes||D.assets.filter(a=>a.kind==='prizes').map(a=>({key:a.key.replace(/^prizes\./,''),name:a.key}))).map(p=>[p.key,p.name])])}</fieldset>
       ${selectField('Menu icon','icon',sprites)}${selectField('Animated prop','prop',[[0,'None'],...sprites])}
       <fieldset><legend>Allowed locations</legend>${(D.activity_locations||[]).map(p=>`<label><input type="checkbox" data-place="${esc(p.key)}" ${m.locations.includes(p.key)?'checked':''}>${esc(p.name)}</label>`).join('')}
       <label><input id="ac-random-place" type="checkbox" ${m.randomize_location?'checked':''}>Choose a random allowed location at start</label><p>Otherwise stay here if allowed, or travel to the first allowed location in the catalog.</p></fieldset>
@@ -86,15 +90,17 @@
       <p>Bond is slow progress: most recipes provide 0.1–0.4 points; other meters change by whole points.</p>
       <p>Reward ranges include jitter and this pet’s activity bonus. Existing sleep-habit effects on fun/connection and favorite-time extras also apply; meters cap at 100.</p>
       <div id="ac-effects"></div></div>
-      <aside><label>Preview pet<select id="ac-form">${opts(forms.map(f=>[f.id,f.name]),previewForm)}</select></label><canvas id="ac-preview" width="220" height="220" aria-label="Shared prop animation preview"></canvas><p>Shared prop motion. In-game placement follows each pet’s bounds.</p></aside></div>`;
+      <aside><label>Preview pet<select id="ac-form">${opts(forms.map(f=>[f.id,f.name]),previewForm)}</select></label><canvas id="ac-preview" width="220" height="220" aria-label="Approximate activity animation thumbnail"></canvas><p>Approximate animation thumbnail. Actor and prop sizes and motion differ from the engine. Save and use Test in game to verify actual placement and location.</p></aside></div>`;
     /** @type {NodeListOf<HTMLButtonElement>} */ (root.querySelectorAll('button[data-activity]')).forEach(b => b.onclick=()=>{selected=Number(b.dataset.activity);render();});
     const formSelect = /** @type {HTMLSelectElement} */ (root.querySelector('#ac-form'));
     formSelect.onchange=()=>{previewForm=Number(formSelect.value);render();};
     /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-time]')).forEach(el=>el.onchange=()=>{const [h,min]=el.value.split(':').map(Number); m[el.dataset.time]=(h*60+min)||(el.dataset.time==='end_minute'?1440:0);render();});
-    /** @type {NodeListOf<HTMLInputElement | HTMLSelectElement>} */ (root.querySelectorAll('input[data-field],select[data-field]')).forEach(el=>el.onchange=()=>{const k=el.dataset.field; m[k]=['name','kind','location','animation'].includes(k)?el.value:Number(el.value);render();});
+    /** @type {NodeListOf<HTMLInputElement | HTMLSelectElement>} */ (root.querySelectorAll('input[data-field],select[data-field]')).forEach(el=>el.onchange=()=>{const k=el.dataset.field; m[k]=['name','kind','location','animation','pose','prize'].includes(k)?el.value:Number(el.value);if(['pose','prize'].includes(k)&&!el.value)delete m[k];render();});
     /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-effect]')).forEach(el=>el.onchange=()=>{m[el.dataset.effect][el.dataset.meter]=Math.round(Number(el.value)*10);render();});
     /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-bonus]')).forEach(el=>el.onchange=()=>{const form=Number(el.dataset.bonus);m.bonuses=m.bonuses.filter(b=>b.form!==form);if(el.value!=='')m.bonuses.push({form,percent:Number(el.value)});render();});
     /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-place]')).forEach(el=>el.onchange=()=>{m.locations=Array.from(/** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-place]:checked')),x=>x.dataset.place);render();});
+    const daily = /** @type {HTMLInputElement} */ (root.querySelector('#ac-daily'));
+    daily.onchange=()=>{m.daily_reward=daily.checked;render();};
     const randomPlace = /** @type {HTMLInputElement} */ (root.querySelector('#ac-random-place'));
     randomPlace.onchange=()=>{m.randomize_location=randomPlace.checked;render();};
     /** @type {NodeListOf<HTMLInputElement>} */ (root.querySelectorAll('input[data-pet-cost]')).forEach(el=>el.onchange=()=>{const c=work.pet_costs.find(c=>c.form===Number(el.dataset.petCost));c[el.dataset.costMeter]=Number(el.value);render();});
@@ -103,8 +109,8 @@
     /** @type {HTMLButtonElement} */ (root.querySelector('#ac-revert')).onclick=async()=>{
       if (dirty() && !await S.ask('Discard your unsaved activity edits and reload the saved recipes?', {title: 'Discard activity edits', confirmLabel: 'Discard edits', danger: true})) return;
       work=null;base=null;window.JelliDrafts?.drop('activities','activities');render();};
-    /** @type {HTMLButtonElement} */ (root.querySelector('#ac-add')).onclick=()=>{const {pose, prize, ...copy}=clone(m);  // a copy must not become a second prize source
-      work.moments.push({...copy,id:work.moments.length,name:`ACTIVITY ${work.moments.length}`,suggest_hour:-1,requires:-1});selected=work.moments.length-1;render();};
+    /** @type {HTMLButtonElement} */ (root.querySelector('#ac-add')).onclick=()=>{const {pose, prize, daily_reward, ...copy}=clone(m);  // explicit new recipe policy
+      work.moments.push({...copy,id:work.moments.length,name:`ACTIVITY ${work.moments.length}`,suggest_hour:-1,requires:-1,daily_reward:false});selected=work.moments.length-1;render();};
     effectPreview(m, forms);
     preview();
   }
@@ -148,13 +154,18 @@
     if(pix){const off=document.createElement('canvas');off.width=pix.w;off.height=pix.h;off.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(pix.data),pix.w,pix.h),0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(off,x-24,y-24,48,48);}
     frame=requestAnimationFrame(preview);
   }
+  let saveState = 'idle';
   async function save() {
+    if (saveState === 'saving' || !dirty()) return;
+    const sent = clone(work);
+    saveState = 'saving'; render();
     try {
-      const res=await S.saveGuarded(current=>S.api('POST','/api/content',{docs:{activities:work},bases:{activities:current?.activities??base},artist:state.artist}),'Activities');
+      const res=await S.saveGuarded(current=>S.api('POST','/api/content',{docs:{activities:sent},bases:{activities:current?.activities??base},artist:state.artist}),'Activities');
       if(!res)return;  // Cancel keeps the edits and the newer file
-      loaded=clone(work);D.activity_data=clone(work);D.activity_sha=base=res.shas.activities;stale=false;D.version=res.version;window.JelliDrafts?.drop('activities','activities');
+      loaded=clone(sent);D.activity_data=clone(sent);D.activity_sha=base=res.shas.activities;stale=false;D.version=res.version;if(!dirty())window.JelliDrafts?.drop('activities','activities');
       S.status(res.git_error?`Saved; commit pending: ${res.git_error}`:'Activities saved',res.git_error?'warn':'');render();
-    } catch(e){S.status(e.message,'bad',true);}
+    } catch(e){saveState='error';S.status(e.message,'bad',true);}
+    finally { if(saveState==='saving')saveState='idle';render(); }
   }
   /* Drafts (drafts.js): unsaved recipes survive a reload or a Safari tab eviction. */
   function restoreDraft() {

@@ -72,7 +72,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     if (ui->menu_open) {
         for (unsigned slot = 1; slot <= JELLI_PRIZE_COUNT; ++slot)
             if (jelli_pet_ui_available(ui, game, slot) != JELLI_OK)
-                key.unavailable |= (uint16_t)(1u << slot);
+                key.unavailable |= (uint32_t)(1u << slot);
     }
     if (!ui->menu_open && ui->latched_prize && !game->prizes.offered &&
         jelli_pet_gallery_available(ui, game, 1u) != JELLI_OK)

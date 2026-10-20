@@ -377,7 +377,7 @@ static void rolling_history_round_trip(void)
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
-    test_game_fill(&save.game, 2u, JELLI_PET_CAPACITY, 1u);
+    test_game_fill(&save.game, 2u, jelli_collection_entry_count, 1u);
     size = encode(&save, bytes);
     CHECK(size <= JELLI_SAVE_CAPACITY && jelli_save_decode(&loaded, bytes, size));
     check_same_save(&save, &loaded);

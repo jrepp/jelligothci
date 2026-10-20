@@ -148,15 +148,32 @@
   function activateMode(id, focus = false) {
     const m = modeList().find(x => x.id === id); if (!m) return;
     m.activate(); renderView(); savePrefs();
+    document.getElementById(`tab-${id}`)?.scrollIntoView({block: 'nearest', inline: 'nearest'});
+    requestAnimationFrame(syncModeOverflow);
     if (focus) document.getElementById(`tab-${id}`)?.focus();
   }
   function buildTabs(list) {
     const nav = document.getElementById('shell-modes'), bar = nav.querySelector('[role=tablist]');
     bar.innerHTML = list.map(m => `<button type="button" role="tab" id="tab-${esc(m.id)}" data-mode-id="${esc(m.id)}">${esc(m.label)}<span class="shell-tab-dirty" hidden> ●<span class="sr-only"> (unsaved)</span></span></button>`).join('');
     nav.classList.toggle('hidden', list.length < 2);
+    requestAnimationFrame(syncModeOverflow);
+  }
+  function syncModeOverflow() {
+    const nav = document.getElementById('shell-modes');
+    if (!nav) return;
+    const bar = nav.querySelector('[role=tablist]');
+    const overflow = bar.scrollWidth > bar.clientWidth + 2;
+    for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (nav.querySelectorAll('[data-mode-scroll]'))) {
+      button.hidden = !overflow;
+      button.disabled = button.dataset.modeScroll === '-1' ? bar.scrollLeft < 2
+        : bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 2;
+    }
+    nav.classList.toggle('has-overflow', overflow);
   }
   /* Bring tabs, panels, title and the review sub-switch in line with state. Cheap; runs after every render. */
   function sync() {
+    // Modules can register modes before DOMContentLoaded inserts the shell chrome.
+    if (!document.getElementById('shell-modes')) return;
     const s = st(), list = modeList(); if (!s || !list.length) return;
     const key = list.map(m => `${m.id}:${m.label}`).join('|');
     if (key !== tabsKey) { tabsKey = key; buildTabs(list); }
@@ -183,6 +200,12 @@
   }
   function wireTabs() {
     const bar = document.querySelector('#shell-modes [role=tablist]');
+    const nav = document.getElementById('shell-modes');
+    /** @type {NodeListOf<HTMLButtonElement>} */ (nav.querySelectorAll('[data-mode-scroll]')).forEach(button => {
+      button.addEventListener('click', () => bar.scrollBy({left: Number(button.dataset.modeScroll) * Math.max(160, bar.clientWidth * .7), behavior: 'auto'}));
+    });
+    bar.addEventListener('scroll', syncModeOverflow, {passive: true});
+    new ResizeObserver(syncModeOverflow).observe(bar);
     bar.addEventListener('click', e => { const t = e.target.closest('[role=tab]'); if (t) activateMode(t.dataset.modeId); });
     bar.addEventListener('keydown', e => {
       const tabs = [...bar.querySelectorAll('[role=tab]')], i = tabs.indexOf(document.activeElement);
@@ -259,14 +282,15 @@
       Creature: 'set the frames, timing and loop of each pose clip, and each form\'s size and behaviour.',
       Behaviour: 'edit behaviour states and reactions, and try them in the stimulus simulator.',
       'Test in game': 'render a scenario (pet, form, needs, page, clock) with the real game engine and step through its frames; it renders the saved files, so unsaved edits are not included.',
+      New: 'create a pet, icon, prop, present or background, with validated game content.',
       Activities: 'edit the activity recipes: which forms can do them, opening times, meter costs and rewards, locations, icon, prop and motion.'};
     const saving = !live ? '<p>This is a static review page: notes stay in this browser. Use <b>Copy review notes</b> to share them.</p>'
       : git.enabled ? `<p><b>Saving.</b> Each mode has its own Save (Mod+S). The studio checks the file, writes it, and commits it to <code>${esc(git.branch)}</code>${git.push ? ', then pushes it for review' : ''}. Commit and push results appear here and in the header.</p>`
         : '<p><b>Saving.</b> Each mode has its own Save button (⌘S / Ctrl+S). The studio checks the change, then writes it into this checkout. Nothing is committed: check <code>git diff</code> and commit when you are happy.</p>';
     return `<div class="shell-guide-head"><h2 id="shell-guide-title">Getting started</h2><button type="button" id="shell-guide-close">Hide this guide</button></div>
-      <div class="shell-guide-body"><p>Pick an asset in the list on the left (or press J and K), then choose a mode:</p>
+      <details class="shell-guide-body"><summary>Choose an asset → Paint → Animate → Test in game. Open the quick-start guide.</summary><p>Pick an asset in the list on the left (or press J and K), then choose a mode:</p>
       <ul>${modes.map(m => `<li><b>${esc(m)}</b>${what[m] ? `: ${what[m]}` : ''}</li>`).join('')}</ul>${saving}
-      <p>Unsaved edits show as <span class="shell-warn">● Unsaved</span> in the header. Press <kbd>?</kbd> for every keyboard shortcut.</p></div>`;
+      <p>Unsaved edits show as <span class="shell-warn">● Unsaved</span> in the header. Press <kbd>?</kbd> for every keyboard shortcut.</p></details>`;
   }
   function showGuide(show) {
     const el = document.getElementById('shell-guide'); if (!el) return;
@@ -281,13 +305,27 @@
   const STABLE_CSS = `.shell-unsaved{box-sizing:border-box;inline-size:14em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 .shell-unsaved.shell-clean{display:inline-block;visibility:hidden}
 .shell-tab-dirty,.shell-tab-dirty[hidden]{display:inline-block;width:1.2em;text-align:center}.shell-tab-dirty[hidden]{visibility:hidden}
+.shell-modes{display:flex;align-items:center;gap:2px;overflow:visible;min-width:0;width:100%}
+.shell-modes [role=tablist]{min-width:0;overflow-x:auto;scrollbar-width:none;flex:1}
+.shell-mode-scroll{flex:none;padding:2px 8px;min-width:28px;font-size:22px;line-height:1;border-color:transparent}
+.shell-mode-scroll[hidden]{display:none}.shell-mode-scroll:disabled{opacity:.3}
+.shell-guide summary{cursor:pointer;line-height:1.5;color:var(--muted)}
+@media(min-width:900px) and (max-width:1439px){
+  header{grid-template-columns:auto minmax(0,1fr) auto}
+  header>.shell-modes{grid-column:1/-1;grid-row:2;justify-self:stretch}
+  header>.shell-state{grid-column:2;grid-row:1}
+  header>.shell-tools{grid-column:3;grid-row:1}
+  header>.header-review{grid-row:3}
+}
+@media(max-width:760px){header h1{display:none}.shell-modes{order:2;flex:1 0 100%}.shell-tools{order:1;width:100%;margin-left:0}.shell-state{order:3}}
+@media(pointer:coarse){.shell-mode-scroll{min-width:44px;min-height:44px}}
 .shell-tools{flex-wrap:nowrap;max-width:100%;overflow-x:auto;scrollbar-width:none;padding-block:2px}.shell-tools>*{flex:none}
 @media (pointer: coarse){.shell-unsaved{inline-size:15em}}`;
   function insertChrome() {
     const st = document.createElement('style'); st.id = 'shell-stable-style'; st.textContent = STABLE_CSS; document.head.append(st);
     const header = document.querySelector('header');
     if (D.live) header.querySelector('h1').innerHTML = '<span class="mark" aria-hidden="true"></span><b>Jelli Art</b> <span>studio</span>';
-    header.querySelector('h1').insertAdjacentHTML('afterend', '<nav id="shell-modes" class="shell-modes hidden" aria-label="Modes"><div role="tablist" aria-label="Modes"></div></nav>' +
+    header.querySelector('h1').insertAdjacentHTML('afterend', '<nav id="shell-modes" class="shell-modes hidden" aria-label="Modes"><button type="button" class="shell-mode-scroll" data-mode-scroll="-1" aria-label="Earlier modes" hidden>‹</button><div role="tablist" aria-label="Modes"></div><button type="button" class="shell-mode-scroll" data-mode-scroll="1" aria-label="More modes" hidden>›</button></nav>' +
       '<div class="shell-tools"><button type="button" id="shell-settings-button" popovertarget="shell-settings" hidden>Settings</button>' +
       '<button type="button" id="shell-help-button" aria-haspopup="dialog" aria-keyshortcuts="Shift+?">Shortcuts <kbd>?</kbd></button>' +
       '<button type="button" id="shell-guide-button" aria-controls="shell-guide">Guide</button>' +

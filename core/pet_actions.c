@@ -5,7 +5,8 @@
 #include "pet_collection.h"
 #include "pet_food.h"
 
-_Static_assert(sizeof(JelliGame) <= 4096u, "Action preflight workspace exceeds budget");
+/* Sixteen authored collection slots; caller-owned workspace remains off task stacks. */
+_Static_assert(sizeof(JelliGame) <= 8192u, "Action preflight workspace exceeds budget");
 
 bool jelli_pet_moment_for_action(JelliPetUiAction action, unsigned *moment)
 {

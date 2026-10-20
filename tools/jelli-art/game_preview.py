@@ -86,6 +86,8 @@ def catalogue(repo, content):
     moments = [m.get("name") for m in (behaviors.read_json(Path(content) / "activities.json") or {}).get("moments", [])]
     return {"pages": [{"id": v, "name": n, "ring": v < ring_limit and v != collection} for v, n in pages],
             "entries": entries, "states": states, "moments": moments, "needs": list(NEEDS),
+            "locations": (behaviors.read_json(Path(content) / "locations.json") or {}).get("locations", []),
+            "prizes": (behaviors.read_json(Path(content) / "prizes.json") or {}).get("prizes", []),
             "limits": {"frames": MAX_FRAMES, "step_ms": MAX_STEP_MS, "start_ms": MAX_START_MS,
                        "advance_s": MAX_ADVANCE_S, "need": 1000, "potty": 1000, "minute": 1439}}
 
@@ -149,6 +151,18 @@ def parse_scenario(raw, cat):
     page = _named(raw, "page", page_names, errors) or 0
     state = _named(raw, "behavior", cat["states"], errors)
     moment = _named(raw, "moment", cat["moments"], errors)
+    location = _named(raw, "location", [p["key"] for p in cat.get("locations", [])], errors)
+    present = _named(raw, "present", [p["key"] for p in cat.get("prizes", [])], errors)
+    present_state = raw.get("present_state", "none")
+    if present_state not in ("none", "offered", "owned"):
+        errors.append({"field": "present_state", "message": "must be none, offered or owned"})
+    if present_state != "none" and present is None:
+        errors.append({"field": "present", "message": "choose a present"})
+    completion = raw.get("completion", "running")
+    if completion not in ("running", "first", "repeat"):
+        errors.append({"field": "completion", "message": "must be running, first or repeat"})
+    if completion != "running" and moment is None:
+        errors.append({"field": "moment", "message": "choose a moment to complete"})
     needs_raw = raw.get("needs", {})
     if not isinstance(needs_raw, dict):
         errors.append({"field": "needs", "message": "must map need names to 0..1000"})
@@ -170,13 +184,17 @@ def parse_scenario(raw, cat):
         errors.append({"field": "menu", "message": f"the {page_names[page]} page has no ring menu"})
     if errors:
         raise ScenarioError(errors)
-    argv = ["--entry", entry["id"], "--form", form["id"], "--page", page, "--needs", ",".join(map(str, needs)),
+    argv = ["--location", cat["locations"][location]["id"] if location is not None else 0,
+            "--present", cat["prizes"][present]["id"] + 1 if present is not None else 0,
+            "--present_state", ("none", "offered", "owned").index(present_state),
+            "--completion", ("running", "first", "repeat").index(completion), "--entry", entry["id"], "--form", form["id"], "--page", page, "--needs", ",".join(map(str, needs)),
             "--behavior", 0 if state is None else state + 1, "--moment", 0 if moment is None else moment + 1,
             *[x for key in ("potty", "minute", "start_ms", "step_ms", "frames", "advance_s") for x in (f"--{key}", s[key])],
             *[x for key in ("menu", "mess", "asleep", "live") for x in (f"--{key}", int(s[key]))]]
     summary = {"pet": entry["name"], "form": form["name"], "page": page_names[page],
                "behavior": cat["states"][state] if state is not None else "", "moment": cat["moments"][moment] if moment is not None else "",
-               "needs": dict(zip(NEEDS, needs)), **s}
+               "needs": dict(zip(NEEDS, needs)), "location": raw.get("location", ""),
+               "present": raw.get("present", ""), "present_state": present_state, "completion": completion, **s}
     return [str(a) for a in argv], summary
 
 
@@ -186,6 +204,9 @@ def alt_text(summary, index):
     parts = [f"{s['pet']} as {s['form']}", f"on the {s['page'].replace('_', ' ')} page" + (" with the ring menu open" if s["menu"] else "")]
     parts += [f"behaviour {s['behavior']}"] if s["behavior"] else []
     parts += [f"running {s['moment']}"] if s["moment"] else []
+    parts += [f"location {s['location']}"] if s.get("location") else []
+    parts += [f"present {s['present']} {s['present_state']}"] if s.get("present_state", "none") != "none" else []
+    parts += [f"completion {s['completion']}"] if s.get("completion", "running") != "running" else []
     parts += ["asleep"] if s["asleep"] else []
     parts += ["a mess on the floor"] if s["mess"] else []
     parts += [f"potty urge {s['potty']}"] if s["potty"] else []

@@ -117,7 +117,7 @@ declare global {
   function hexOf(data: Uint8ClampedArray, index: number): string;
   function lumaOf(hex: string): number;
   function fitZoom(a: StudioAsset): number;
-  function loadPayload(data: StudioData): Promise<void>;
+  function loadPayload(data: StudioData, beforePublish?: () => boolean | void): Promise<boolean>;
   function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, z: number): void;
   function drawIssues(ctx: CanvasRenderingContext2D, metrics: StudioAsset["after_metrics"], z: number): void;
   function drawHover(ctx: CanvasRenderingContext2D, z: number): void;
@@ -147,6 +147,7 @@ declare global {
   const module: { exports: any } | undefined;
 
   interface Window {
+    JelliIcons: { svg(name: string): string };
     JelliShell: JelliShellApi;
     JelliTouch: JelliTouchApi;
     JelliDrafts: any;

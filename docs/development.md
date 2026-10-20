@@ -140,7 +140,7 @@ background IO and stronger crash durability remain in the backlog.
 pause-state output. `JelliSurface` injects a host-owned RGB565 drawable buffer,
 including its row stride and a bounded damage rectangle. Preserve its pixels
 between frames: the first render initializes the full surface; subsequent frames
-report only the region that changed (zero width/height means no changes). The core allocates no memory and includes no SDL,
+report only the region that changed (zero width/height means no changes). The core performs no heap allocation and includes no SDL,
 LVGL, FreeRTOS, or ESP headers. Hosts own their run loops and frame pacing;
 animation speed depends on elapsed injected time, not on frame count. All engine
 calls are single-threaded.
@@ -161,6 +161,51 @@ and the bitmap font. It restores bounded regions for mood changes and button
 particles, redraws the round surface for broader scene changes, and reports zero
 damage when unchanged. The original shapes renderer retains its smaller damage
 rectangles.
+
+## Bounded working storage
+
+The portable [Jellipak reader](../include/jelli/jellipak.h) mounts a provisional
+indexed block container through an exact-read source callback and decodes raw
+or LZ4 payloads into caller-owned buffers. Source bytes remain immutable for the
+mounted lifetime; failed decode output must not be published. The native
+`jelli_jellipak_verify` target sweeps every block through this shared code.
+[Implementation and validation evidence](../docs-cms/memos/memo-073-jellipak-block-reader.md)
+records the wire boundary and reproduction commands. C image expansion,
+scene residency, and threaded loading remain planned; current renderers retain
+their existing asset paths.
+
+`make jellipak` builds the desktop native verifier and writes a provisional
+artwork pack plus a separate measurement report under `build/desktop/generated`.
+The compiler validates shared palettes and image reconstruction, then verifies
+every compressed block with the C reader before publishing the pack. Its image
+metadata is currently validated in Python. See
+[compiler and local desktop evidence](../docs-cms/memos/memo-074-jellipak-artwork-compiler.md)
+for reproduction, measured size, and the remaining runtime boundary.
+
+Pack builds also compare every native-decoded byte against captured
+precompression buffers before publication. The
+[byte-comparison evidence](../docs-cms/memos/memo-075-jellipak-native-byte-comparison.md)
+distinguishes this build gate from the standalone verifier's CRC sweep.
+
+The portable [memory API](../include/jelli/memory.h) provides checked size
+arithmetic, bounded byte views, and an aligned arena over caller-owned storage.
+It never allocates or frees backing memory. The host supplies an aligned region
+and remains responsible for its lifetime and memory capabilities.
+
+Arena allocation and failed operations follow the header's output/state
+contracts. Rewind/reset invalidate marks and require every reclaimed view to be
+unused. Checkout/checkin guards exclusive use of already allocated views:
+while checked out, the owner cannot allocate, mark, rewind, or reset. These
+operations require external synchronization; the token is not a mutex or a
+worker executor. Initialize arena state outside its backing region and keep its
+address stable while marks or leases exist.
+
+[Memory tests](../tests/test_memory.c) and
+[arena tests](../tests/test_memory_arena.c) exercise the portable contracts
+without SDL, artwork tools, or an SDK. The
+[adoption plan](../docs-cms/rfcs/rfc-009-bounded-memory-systems-and-adoption.md)
+describes subsequent consumers. The current renderer, reload banks, and firmware
+allocations do not yet use these foundations.
 
 
 ## Input and animation

@@ -80,6 +80,14 @@
     .bv-outcome{font-size:14px;margin:8px 0}.bv-outcome b{color:var(--accent)}
     .bv-odds{display:grid;gap:3px;max-width:420px}.bv-odds div{display:grid;grid-template-columns:120px 1fr 48px;gap:6px;align-items:center;font:11px ui-monospace,monospace}
     .bv-odds i{display:block;height:8px;background:var(--accent);border-radius:4px}
+    .bv-workflow{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:8px 0 16px}.bv-workflow>p{margin:0 0 9px;color:var(--muted);font-size:12px}.bv-workflow>p b{color:var(--ink)}.bv-workflow ol{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0;padding:0}.bv-workflow li{display:grid;gap:3px;font-size:11px;color:var(--muted)}.bv-workflow li b{font-size:12px;color:var(--ink)}
+    .bv-summary{padding:12px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;margin-bottom:12px}.bv-summary h3{overflow-wrap:anywhere;font-size:16px;text-transform:capitalize;margin:0 0 6px}.bv-summary p{font-size:12px;color:var(--muted);margin:5px 0}.bv-summary button{margin-top:4px;font-size:11px}
+    .bv-list button{min-width:0}.bv-list button>span{min-width:0;overflow-wrap:anywhere}.bv-section-title{font-size:12px;margin:18px 0 7px}.bv-advanced{border-top:1px solid var(--line);padding:8px 0;margin-top:10px}.bv-advanced>summary{cursor:pointer;font-size:11px;font-weight:600;padding:4px 0}.bv-advanced .bv-chips{margin-block:6px 10px}
+    #bv-state .bv-field{gap:6px 10px}#bv-state input[type=text]{max-width:100%}#bv-duplicate-state{display:inline-flex;align-items:center;gap:5px}.bv-card{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;padding:10px}.bv-reaction-main,.bv-reaction-conditions,.bv-reaction-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.bv-rule-word{font-size:11px;font-weight:650}.bv-rule-details{margin:0;padding:3px 0}.bv-reaction-actions{justify-content:flex-end}.bv-reaction-actions button{font-size:11px}.bv-reaction-main select{max-width:100%}.bv-reaction-conditions{padding-top:8px}.bv-rule-details summary{color:var(--muted);font-weight:400}
+    @container bv (min-width:801px) and (max-width:1300px){.bv-grid.st{grid-template-columns:200px minmax(0,1fr);grid-template-areas:"lst prev" "lst ins"}.bv-grid.st>:nth-child(1){grid-area:lst}.bv-grid.st>:nth-child(2){grid-area:ins}.bv-grid.st>:nth-child(3){grid-area:prev}.bv-grid .bv-preview canvas{width:min(100%,240px)!important;height:auto!important}}
+    @container bv (max-width:800px){.bv-workflow ol{gap:8px}.bv-workflow{padding:10px}.bv-workflow li{font-size:10px}.bv-workflow li b{font-size:11px}.bv-summary{margin-top:4px}}
+    @container bv (max-width:450px){.bv-workflow ol{grid-template-columns:1fr}.bv-workflow li{grid-template-columns:125px minmax(0,1fr);align-items:center}.bv-workflow li b{font-size:11px}}
+
   </style>`);
 
   /* ---------- data ---------- */
@@ -222,6 +230,45 @@
       ensureLooks(c).push({state: name, pose: 'content', caption: ''});
       state.bState = name;
     });
+  }
+  // States have implicit table IDs: append the copy so existing saved IDs stay put.
+  // Reaction rules remain unchanged; adding another weighted candidate changes gameplay.
+  async function duplicateState(sourceName) {
+    const source = bwork?.states.find(x => x.name === sourceName);
+    if (!source || !lookOf(sourceName)) return S.status('This behaviour needs an appearance before it can be duplicated.', 'warn', true);
+    if (bwork.states.length >= L().states) return S.status(`This catalog already has ${L().states} behaviours.`, 'warn', true);
+    let name = `${sourceName}_copy`, n = 2;
+    while (stateNames().includes(name)) name = `${sourceName}_copy_${n++}`;
+    const result = await window.JelliShell.dialog({title: 'Duplicate behaviour', initial: '#bv-copy-name',
+      body: `<p>Copy <b>${esc(sourceName)}</b>, including its timing, effects, requests and appearance. The original stays unchanged.</p>
+        <label for="bv-copy-name">New behaviour key</label><input id="bv-copy-name" type="text" value="${esc(name)}" required pattern="[a-z][a-z0-9_]*" autocomplete="off" spellcheck="false" aria-describedby="bv-copy-help bv-copy-error" style="width:100%">
+        <p id="bv-copy-help" class="studio-note">Use a unique lower_snake_case key. Connect the copy in Reaction rules when you want a creature to use it; existing triggers and their odds stay unchanged.</p>
+        <p id="bv-copy-error" class="bh-bad" role="alert"></p>`,
+      actions: [{label: 'Cancel', value: 'cancel'}, {label: 'Duplicate behaviour', value: 'copy', primary: true}],
+      onOpen(dialog) {
+        const input = /** @type {HTMLInputElement} */ (dialog.querySelector('#bv-copy-name'));
+        const error = dialog.querySelector('#bv-copy-error');
+        const validate = () => {
+          name = input.value.trim();
+          const message = !/^[a-z][a-z0-9_]*$/.test(name) ? 'Use lower_snake_case: start with a letter, then letters, numbers or underscores.'
+            : stateNames().includes(name) ? 'A behaviour already uses that key. Choose another.'
+              : bwork.states.length >= L().states ? `The catalog is full (${L().states} behaviours).` : '';
+          input.setCustomValidity(message); error.textContent = message; return !message;
+        };
+        input.addEventListener('input', validate);
+        dialog.querySelector('[value=copy]').addEventListener('click', e => { if (!validate()) { e.preventDefault(); input.reportValidity(); } else input.value = name; });
+        input.addEventListener('keydown', e => { if (e.key !== 'Enter') return; e.preventDefault(); if (validate()) dialog.close('copy'); else input.reportValidity(); });
+        input.select();
+      }});
+    if (result !== 'copy') return;
+    // The dialog can span an asynchronous reload; validate against the current documents.
+    const current = bwork?.states.find(x => x.name === sourceName), look = lookOf(sourceName);
+    if (!current || !look || stateNames().includes(name) || !/^[a-z][a-z0-9_]*$/.test(name) || bwork.states.length >= L().states)
+      return S.status('The behaviour catalog changed while the dialog was open. Duplicate it again from the current version.', 'warn', true);
+    edit((b, c) => { b.states.push({...clone(current), name}); ensureLooks(c).push({...clone(look), state: name}); state.bState = name; });
+    store.set('behaviour-state', name);
+    S.status(`Duplicated ${sourceName} as ${name}. Its appearance is ready to preview; connect it in Reaction rules, then save.`, '', false, {keep: true});
+    document.getElementById('bv-state')?.querySelector('input')?.focus({preventScroll: true});
   }
   async function deleteState(name) {
     const users = (bwork.repertoires || []).flatMap(r => (r.reactions || []).filter(x => x.state === name).map(() => r.name));
@@ -382,19 +429,21 @@
   function render() {
     const el = document.getElementById('behaviour'); if (!el || state.view !== 'behaviour') return;
     sync();
+    const openDisclosures = new Map([...el.querySelectorAll('details[data-bv-disclosure]')].map(x => [x.getAttribute('data-bv-disclosure'), x.hasAttribute('open')]));
     previews = [];
     const v = V();
     if (!v || !bwork) { el.innerHTML = '<div class="title"><h2>Behaviour</h2></div><p class="studio-note">This checkout has no content/behaviors.json or cmake/JelliBehaviors.cmake, so there is no behaviour to edit.</p>'; return; }
     const issues = allIssues(), canSave = D.behavior_editable && D.creature_data_editable, editable = canSave && !bstale && !S.creatureDoc.stale();
-    const tabs = [['states', 'States & looks'], ['repertoires', 'Repertoires'], ['simulator', 'Stimulus simulator']];
+    const tabs = [['states', 'Behaviours'], ['repertoires', 'Reaction rules'], ['simulator', 'Test a reaction']];
     el.innerHTML = `<div class="title"><h2>Behaviour</h2><div class="seg" id="bv-tabs">${tabs.map(([id, t]) => `<button data-tab="${id}" aria-pressed="${state.bTab === id}">${t}</button>`).join('')}</div>
-        <span class="bv-note">content/behaviors.json · creatures.json looks${ownDirty() ? ' · <span class="cr-dirty">unsaved</span>' : ''}</span></div>
+        <span class="bv-note">${ownDirty() ? '<span class="cr-dirty">Unsaved changes</span>' : 'Creature reactions & appearance'}</span></div>
+      <div class="bv-workflow" id="bv-workflow" aria-label="How behaviours work"><p><b>A reaction is a When → Do rule.</b> Choose what happens, decide which creatures react to it, then preview the result.</p><ol><li><b>1 · Behaviours</b><span>What the pet does and how it looks.</span></li><li><b>2 · Reaction rules</b><span>When it happens, and which creatures use it.</span></li><li><b>3 · Test a reaction</b><span>Try an event and see why a rule matched.</span></li></ol></div>
       ${bstale || S.creatureDoc.stale() ? '<p class="bh-bad">A content file changed on disk while you were editing. Save asks before it overwrites the newer file; Revert loads it instead.</p>' : ''}
       ${D.behavior_editable ? '' : '<p class="bh-warn">Read-only: saving behaviour needs cmake and the checkout\'s cmake/JelliBehaviors.cmake (and --content for trials).</p>'}
       ${v.missing_numbers?.length ? `<p class="bh-warn">The C headers do not define: ${esc(v.missing_numbers.join(', '))}; the simulator may be inexact.</p>` : ''}
       <div id="bv-body"></div>
       <ul class="cr-msgs">${issues.slice(0, 12).map(m => `<li>${esc(m)}</li>`).join('') || `<li class="ok">${ownDirty() ? 'Unsaved behaviour edits.' : 'No unsaved behaviour edits.'}</li>`}${issues.length > 12 ? `<li>…and ${issues.length - 12} more.</li>` : ''}</ul>
-      <div class="bar"><div class="seg"><button id="bv-revert" ${ownDirty() || bstale || S.creatureDoc.stale() ? '' : 'disabled'}>Revert</button><button id="bv-save" class="primary" ${ownDirty() && !issues.length && canSave ? '' : 'disabled'} title="Validate with the engine and save (⌘S)">${ownDirty() ? 'Save behaviour' : 'Saved'}</button></div>
+      <div class="bar"><div class="seg"><button id="bv-revert" ${ownDirty() || bstale || S.creatureDoc.stale() ? '' : 'disabled'}>Revert</button><button id="bv-save" class="primary" ${saveState !== "saving" && !(S.creatureDoc.looksDirty() && S.creatureDoc.saving) && ownDirty() && !issues.length && canSave ? '' : 'disabled'} title="Validate with the engine and save (⌘S)">${window.JelliIcons.svg('save')}Save behaviour</button></div><span id="bv-save-status" class="save-state" role="status" data-save-state="${saveState}">${saveState === 'saving' ? 'Saving…' : saveState === 'error' ? 'Save failed' : S.creatureDoc.looksDirty() && S.creatureDoc.saving ? 'Another section is saving…' : ownDirty() ? 'Unsaved' : 'Saved'}</span>
         <button id="bv-animate" aria-pressed="${state.bAnimate}" title="Play preview clips from elapsed time">${state.bAnimate ? 'Pause previews' : 'Play previews'}</button>
         <button id="bv-mess" aria-pressed="${state.bMess}" title="Show the potty mess beside the pet (content/potty.json)">Potty mess</button> ${help(BAR_HELP, 'About these buttons')}</div>`;
     const body = el.querySelector('#bv-body');
@@ -416,6 +465,11 @@
         if (!x.matches('[data-sim], [data-sim-step], [data-readonly-ok], [data-state], [data-rep], .jt-info')) x.disabled = true;
       });
     }
+    body.querySelectorAll('details[data-bv-disclosure]').forEach(node => {
+      const x = /** @type {HTMLDetailsElement} */ (node), key = x.dataset.bvDisclosure;
+      x.open = openDisclosures.has(key) ? openDisclosures.get(key) : store.get(`bv-disclosure-${key}`, false);
+      x.addEventListener('toggle', () => store.set(`bv-disclosure-${key}`, x.open));
+    });
     wireBindings(body);
     redraw();
   }
@@ -434,18 +488,20 @@
     if (!stateNames().includes(state.bState)) state.bState = stateNames()[0] || null;
     const si = b.states.findIndex(s => s.name === state.bState), s = b.states[si];
     const list = b.states.map(x => `<button data-state="${esc(x.name)}" aria-pressed="${x.name === state.bState}"><span>${esc(x.name)}</span><span class="sub">${esc(lookOf(x.name)?.caption || '')}</span></button>`).join('');
-    body.innerHTML = `<div class="bv-grid st"><div><div class="bv-k">States · ${b.states.length}/${L().states}</div><div class="bv-list" id="bv-states">${list}</div>
-        <button id="bv-add-state" style="margin-top:6px" ${b.states.length >= L().states ? 'disabled' : ''}>Add state</button>
-        <div class="bv-k" style="margin-top:16px">Rules</div>
+    body.innerHTML = `<div class="bv-grid st"><div><div class="bv-k">Behaviours · ${b.states.length}/${L().states}</div><div class="bv-list" id="bv-states">${list}</div>
+        <button id="bv-add-state" style="margin-top:6px" ${b.states.length >= L().states ? 'disabled' : ''}>New behaviour</button>
+        <details class="bv-advanced" id="bv-global-rules" data-bv-disclosure="global"><summary>Global event settings</summary><p class="studio-note">These settings apply to every creature: when night begins and ends, and when a need becomes low.</p>
         <div class="bv-field"><label>Night from</label>${num('night.start_minute', b.night?.start_minute, 0, 1439)}<span class="bv-note">${minuteText(b.night?.start_minute)}</span></div>
         <div class="bv-field"><label>to</label>${num('night.end_minute', b.night?.end_minute, 0, 1439)}<span class="bv-note">${minuteText(b.night?.end_minute)} · minutes of the pet's day</span></div>
-        <div class="bv-field"><label>Need low below</label>${num('need_low', b.need_low, 1, 999)}<span class="bv-note">of 1000 · raises need_low</span></div></div>
+        <div class="bv-field"><label>Need low below</label>${num('need_low', b.need_low, 1, 999)}<span class="bv-note">of 1000 · raises need_low</span></div></details></div>
       <div id="bv-state">${s ? stateEditor(s, si, lists) : '<p class="studio-note">No states yet.</p>'}</div>
       <div class="bv-preview" id="bv-look-preview"></div></div>`;
     body.querySelector('#bv-states').onclick = e => { const n = e.target.closest('button')?.dataset.state; if (n) { state.bState = n; store.set('behaviour-state', n); render(); } };
     body.querySelector('#bv-add-state').onclick = addState;
     if (!s) return;
     body.querySelector('#bv-delete-state').onclick = () => deleteState(s.name);
+    body.querySelector('#bv-duplicate-state').onclick = () => duplicateState(s.name);
+    body.querySelector('#bv-open-rules').onclick = () => { const selected = s.name; state.bTab = 'repertoires'; const index = bwork.repertoires.findIndex(r => (r.reactions || []).some(x => x.state === s.name)); if (index >= 0) state.bRep = index; store.set('behaviour-tab', state.bTab); render(); if (index < 0) S.status(`Choose a creature group, add a reaction rule, and set its Do behaviour to ${selected}.`, '', false, {keep: true}); };
     body.querySelector('#bv-ends').onclick = e => {
       const stim = e.target.closest('button')?.dataset.end; if (!stim) return;
       edit(bw => { const x = bw.states[si], ends = x.ends_on ||= []; const i = ends.indexOf(stim); if (i < 0) ends.push(stim); else ends.splice(i, 1); });
@@ -467,24 +523,27 @@
     const effects = [...lists.needs, 'bond'].map(n => `<div class="bv-field"><label>${n}</label>${num(`${p}.effects.${n}`, s.effects?.[n] ?? 0, -100, 100, 'opt-int0')}</div>`).join('');
     const users = bwork.repertoires.flatMap(r => (r.reactions || []).map((x, i) => [r.name, i, x]).filter(([, , x]) => x.state === s.name));
     const poseOpts = cr.poses().map(pose => { const f = cr.fallbackOf(pose); return `<option value="${esc(pose)}"${pose === look?.pose ? ' selected' : ''}>${esc(pose)}${f ? ` (state pose; falls back to ${esc(f)})` : ''}</option>`; }).join('');
-    return `<div class="bv-field"><label>Name</label><input type="text" data-rename="${esc(s.name)}" value="${esc(s.name)}" pattern="[a-z][a-z0-9_]*" aria-label="State name"><button id="bv-delete-state">Delete state</button></div>
-      <div class="bv-field"><label>Lasts</label>${num(`${p}.duration_s.0`, s.duration_s?.[0], 1, lim.duration_max_s, 'int', 'aria-label="Shortest duration, seconds"')}–${num(`${p}.duration_s.1`, s.duration_s?.[1], 1, lim.duration_max_s, 'int', 'aria-label="Longest duration, seconds"')}<span class="bv-note">s</span>
+    const matches = users.map(([rep, index, reaction]) => `${rep}: ${reaction.on}`).join(' · ');
+    const summary = `${s.duration_s?.[0] ?? '?'}–${s.duration_s?.[1] ?? '?'} seconds · ${s.cooldown_s ?? '?'} seconds before it can repeat`;
+    return `<section class="bv-summary" id="bv-state-summary"><h3>${esc(s.name.replace(/_/g, ' '))}</h3><p>${esc(summary)}</p><p>${users.length ? `Triggered by ${esc(matches)}.` : 'Not triggered yet. Add a reaction rule to let a creature use this behaviour.'}</p><button id="bv-open-rules" type="button">${users.length ? 'Edit its reaction rules' : 'Connect a reaction rule'} →</button></section>
+      <div class="bv-field"><label>Behaviour key</label><input type="text" data-rename="${esc(s.name)}" value="${esc(s.name)}" pattern="[a-z][a-z0-9_]*" aria-label="State name"><button id="bv-duplicate-state" ${bwork.states.length >= lim.states || !look ? 'disabled' : ''} title="Copy this behaviour and appearance; choose a new key">${window.JelliIcons.svg('copy')}Duplicate behaviour</button></div>
+      <h3 class="bv-section-title">Timing</h3><div class="bv-field"><label>Lasts</label>${num(`${p}.duration_s.0`, s.duration_s?.[0], 1, lim.duration_max_s, 'int', 'aria-label="Shortest duration, seconds"')}–${num(`${p}.duration_s.1`, s.duration_s?.[1], 1, lim.duration_max_s, 'int', 'aria-label="Longest duration, seconds"')}<span class="bv-note">s</span>
         <label>Cooldown</label>${num(`${p}.cooldown_s`, s.cooldown_s, 0, lim.cooldown_max_s)}<span class="bv-note">s before it can start again</span></div>
-      <div class="bv-k" style="margin-top:8px">Effects on entry · ±${lim.effect}, then clamped to 0–1000</div><div style="display:flex;flex-wrap:wrap;gap:4px 14px">${effects}</div>
+      <h3 class="bv-section-title">Appearance ${help(LOOK_HELP, 'About the look')}</h3><p class="studio-note">Reuse a pose clip, add a caption, and optionally place an effect or prop. The panel preview follows these settings.</p>
+      ${look ? `<div class="bv-field"><label>Pose</label><select data-c="state_presentation.${li}.pose">${poseOpts}</select></div>
+        <div class="bv-field"><label>Caption</label><input type="text" data-c="state_presentation.${li}.caption" data-t="caption" maxlength="16" value="${esc(look.caption || '')}" style="text-transform:uppercase" aria-label="Caption, upper case, at most 16"></div>
+        <div class="bv-field"><label>Effect</label>${pickButton('data-pick="effect" title="Sprite drawn above the head, scaled to about 40 px"', look.effect)}
+          <label>Prop</label>${pickButton('data-pick="prop" title="Sprite drawn at 3x over the lower body"', look.prop)}</div>`
+        : `<p class="bh-warn">This state has no look yet.</p><button id="bv-add-look">Add look</button><span data-pick="effect"></span><span data-pick="prop"></span>`}
+      <details class="bv-advanced" data-bv-disclosure="effects"${store.get('bv-disclosure-effects', false) ? ' open' : ''}><summary>Effects, requests & ending conditions</summary>      <div class="bv-k" style="margin-top:8px">Effects on entry · ±${lim.effect}, then clamped to 0–1000</div><div style="display:flex;flex-wrap:wrap;gap:4px 14px">${effects}</div>
       <div class="bv-k" style="margin-top:8px">Ends early on</div><div class="bv-chips" id="bv-ends">${lists.stimuli.map(st => `<button data-end="${st}" aria-pressed="${(s.ends_on || []).includes(st)}">${st}</button>`).join('')}</div>
       <div class="bv-field" style="margin-top:8px"><label>Request</label><select id="bv-request" aria-label="Command that answers the state">${opt(lists.commands, s.request?.command, 'none')}</select>
         ${s.request?.command === 'health' ? `<select data-b="${p}.request.health" data-t="opt-str" aria-label="Health routine">${opt(lists.health, s.request?.health, 'any routine')}</select>` : ''}
         ${s.request ? `<label>Bond reward</label>${num(`${p}.request.bond`, s.request.bond ?? 0, 0, lim.request_bond, 'opt-int')}` : ''}
         <label>On timeout</label><select data-b="${p}.on_timeout" data-t="opt-str">${opt(lim.timeouts.slice(1), s.on_timeout, 'nothing')}</select></div>
       <p class="studio-note">${s.request ? 'Answering the request ends the state with the bond reward; ignoring it times out.' : 'No request: the state just plays out.'} ${s.on_timeout === 'accident' ? 'Timing out causes a potty accident (the mess).' : ''}</p>
-      <div class="bv-k" style="margin-top:12px">Look · content/creatures.json ${help(LOOK_HELP, 'About the look')}</div>
-      ${look ? `<div class="bv-field"><label>Pose</label><select data-c="state_presentation.${li}.pose">${poseOpts}</select></div>
-        <div class="bv-field"><label>Caption</label><input type="text" data-c="state_presentation.${li}.caption" data-t="caption" maxlength="16" value="${esc(look.caption || '')}" style="text-transform:uppercase" aria-label="Caption, upper case, at most 16"></div>
-        <div class="bv-field"><label>Effect</label>${pickButton('data-pick="effect" title="Sprite drawn above the head, scaled to about 40 px"', look.effect)}
-          <label>Prop</label>${pickButton('data-pick="prop" title="Sprite drawn at 3x over the lower body"', look.prop)}</div>`
-        : `<p class="bh-warn">This state has no look yet.</p><button id="bv-add-look">Add look</button><span data-pick="effect"></span><span data-pick="prop"></span>`}
-      <div class="bv-k" style="margin-top:12px">Entered by</div>
-      <p class="studio-note">${users.length ? users.map(([r, i, x]) => `${esc(r)} #${i + 1} on ${esc(x.on)}`).join(' · ') : 'No reaction enters this state yet.'}</p>`;
+</details>
+      <details class="bv-advanced" data-bv-disclosure="identity"${store.get('bv-disclosure-identity', false) ? ' open' : ''}><summary>References & removal</summary><p class="studio-note">${users.length ? users.map(([r, i, x]) => `${esc(r)} #${i + 1} on ${esc(x.on)}`).join(' · ') : 'No reaction enters this behaviour yet.'}</p><button id="bv-delete-state">Delete state</button></details>`;
   }
   function renderLookPreview(host, stateName) {
     const forms = V().forms.filter(f => f.art);
@@ -501,10 +560,10 @@
     const b = bwork, v = V(), lists = v.lists;
     state.bRep = Math.min(state.bRep, Math.max(0, b.repertoires.length - 1));
     const rep = b.repertoires[state.bRep], ri = state.bRep;
-    body.innerHTML = `<div class="bv-grid rp"><div><div class="bv-k">Repertoires · ${b.repertoires.length}/${L().repertoires}</div>
+    body.innerHTML = `<div class="bv-grid rp"><div><div class="bv-k">Creature groups · ${b.repertoires.length}/${L().repertoires}</div>
         <div class="bv-list" id="bv-reps">${b.repertoires.map((r, i) => `<button data-rep="${i}" aria-pressed="${i === ri}"><span>${esc(r.name)}</span><span class="sub">${esc((r.forms || []).join(', '))}</span></button>`).join('')}</div>
-        <button id="bv-add-rep" style="margin-top:6px" ${b.repertoires.length >= L().repertoires ? 'disabled' : ''}>Add repertoire</button>
-        <p class="studio-note">Forms without a repertoire never enter behaviour states.</p></div>
+        <button id="bv-add-rep" style="margin-top:6px" ${b.repertoires.length >= L().repertoires ? 'disabled' : ''}>New creature group</button>
+        <p class="studio-note">A group shares reaction rules across its selected creature forms. Forms without a group do not enter these behaviours.</p></div>
       <div>${rep ? repertoireEditor(rep, ri, lists, v) : '<p class="studio-note">No repertoires yet.</p>'}</div></div>`;
     body.querySelector('#bv-reps').onclick = e => { const i = e.target.closest('button')?.dataset.rep; if (i !== undefined) { state.bRep = Number(i); render(); } };
     body.querySelector('#bv-add-rep').onclick = () => edit(bw => {
@@ -548,9 +607,9 @@
       +${num(`${p}.affinities.${i}.bonus_pct`, a.bonus_pct, 0, 200)}<span class="bv-note">% gains</span><button data-del-aff="${i}" title="Remove">${W('✕', 'Remove')}</button></div>`).join('');
     const rows = (rep.reactions || []).map((r, i) => reactionRow(r, i, `${p}.reactions.${i}`, lists, v, names, (rep.reactions || []).length)).join('');
     return `<div class="bv-field"><label>Name</label><input type="text" data-b="${p}.name" value="${esc(rep.name)}"><button id="bv-del-rep">Delete repertoire</button></div>
-      <div class="bv-k">Forms</div><div class="bv-chips" id="bv-forms">${formChips}</div>
-      <div class="bv-k" style="margin-top:10px">Affinities · moments this species enjoys more</div><div id="bv-affs">${affs}</div><button id="bv-add-aff">Add affinity</button>
-      <div class="bv-k" style="margin-top:12px">Reactions · ${(rep.reactions || []).length} · weighted pick among those that fit, then the chance roll ${help(REACT_HELP, 'About reactions')}</div>
+      <h3 class="bv-section-title">Who reacts?</h3><p class="studio-note">Choose the creature forms that share these rules. A form can belong to one group.</p><div class="bv-chips" id="bv-forms">${formChips}</div>
+      <details class="bv-advanced" data-bv-disclosure="affinities-${ri}"><summary>Activity affinities · reward tuning</summary><p class="studio-note">Optional bonuses to an activity’s meter gains for this group.</p><div id="bv-affs">${affs}</div><button id="bv-add-aff">Add affinity</button></details>
+      <h3 class="bv-section-title">When → Do · ${(rep.reactions || []).length} rules ${help(REACT_HELP, 'About reactions')}</h3><p class="studio-note">When an event happens, matching rules compete by weight. The chosen rule then rolls its chance to start the behaviour.</p>
       <div id="bv-reactions">${rows}</div><button id="bv-add-reaction">Add reaction</button>`;
   }
   function valueControls(r, p, lists, v) {
@@ -568,16 +627,16 @@
   }
   function reactionRow(r, i, p, lists, v, names, count, hit) {
     const w = r.when || {};
-    return `<div class="bv-card${hit ? ` ${hit}` : ''}" data-r="${i}"><span class="n">${i + 1}</span>
+    return `<div class="bv-card${hit ? ` ${hit}` : ''}" data-r="${i}"><div class="bv-reaction-main"><span class="n">${i + 1}</span><span class="bv-rule-word">When</span>
       <select data-on aria-label="Stimulus">${opt(lists.stimuli, r.on)}</select>${valueControls(r, p, lists, v)}
-      → <select data-b="${p}.state" aria-label="State">${opt(names, r.state)}</select>
+      <span class="bv-rule-word">→ Do</span> <select data-b="${p}.state" aria-label="State">${opt(names, r.state)}</select></div><details class="bv-advanced bv-rule-details" data-bv-disclosure="rule-${state.bRep}-${i}"><summary>Chance & conditions · ${r.chance_pct ?? 100}% · weight ${r.weight ?? 1}</summary><div class="bv-reaction-conditions">
       <label class="bv-note">weight</label>${num(`${p}.weight`, r.weight, 1, 100, 'opt-int', 'placeholder="1"')}
       <label class="bv-note">chance</label>${num(`${p}.chance_pct`, r.chance_pct, 1, 100, 'opt-int', 'placeholder="100"')}<span class="bv-note">%</span>
       <span class="bv-note">when</span><select data-b="${p}.when.location" data-t="opt-str" aria-label="Condition location">${opt(lists.locations, w.location, 'anywhere')}</select>
       <select data-b="${p}.when.night" data-t="tri" aria-label="Condition night"><option value=""${w.night === undefined ? ' selected' : ''}>day or night</option><option value="true"${w.night === true ? ' selected' : ''}>night</option><option value="false"${w.night === false ? ' selected' : ''}>day</option></select>
       <label class="bv-note">mood</label>${num(`${p}.when.mood_min`, w.mood_min, 0, 100, 'opt-int', 'placeholder="0"')}–${num(`${p}.when.mood_max`, w.mood_max, 0, 100, 'opt-int', 'placeholder="100"')}
       <label class="bv-note">bond ≥</label>${num(`${p}.when.bond_min`, w.bond_min, 0, 1000, 'opt-int', 'placeholder="0"')}
-      <button data-act="up" ${i ? '' : 'disabled'} title="Earlier">${W('↑', 'Earlier')}</button><button data-act="down" ${i < count - 1 ? '' : 'disabled'} title="Later">${W('↓', 'Later')}</button><button data-act="copy" title="Duplicate">${W('⧉', 'Duplicate')}</button><button data-act="remove" title="Remove">${W('✕', 'Remove')}</button></div>`;
+      </div></details><div class="bv-reaction-actions"><button data-act="up" ${i ? '' : 'disabled'} title="Earlier">${W('↑', 'Earlier')}</button><button data-act="down" ${i < count - 1 ? '' : 'disabled'} title="Later">${W('↓', 'Later')}</button><button data-act="copy" title="Duplicate">${W('⧉', 'Duplicate')}</button><button data-act="remove" title="Remove">${W('✕', 'Remove')}</button></div></div>`;
   }
 
   /* ---------- stimulus simulator ---------- */
@@ -631,7 +690,7 @@
     }).join('') || '';
     const entered = r?.entered ? bwork.states[r.entered.index] : null, shown = o.kept || r?.entered?.name || null;
     const tally = odds(pet, 600), total = 600;
-    body.innerHTML = `<div class="bv-grid sm"><div>
+    body.innerHTML = `<p class="studio-note bv-test-intro">Choose a creature and event to test your current edits. This simulator explains rule selection; <b>Test in game</b> previews saved content with the real game engine.</p><div class="bv-grid sm"><div>
       <div class="bv-field"><label>Form</label><select data-sim="form">${opt(v.forms.map(f => f.name), sim.form)}</select>
         <span class="bv-note">${rep ? `repertoire ${esc(rep.name)} · ${(rep.reactions || []).length} reactions` : 'no repertoire: never reacts'}</span></div>
       <div class="bv-field"><label>Stimulus</label><select data-sim="stimulus">${opt(lists.stimuli, sim.stimulus)}</select>${stimValue}<span class="bv-note">value ${o.value}${o.value === Sim.ANY ? ' (any)' : ''}</span></div>
@@ -667,14 +726,17 @@
   }
 
   /* ---------- save: both files, validated together by the engine ---------- */
+  let saveState = 'idle';
   S.saveContent = async () => {
+    if (saveState === 'saving') return;
     sync();
     const docs = {}, bases = {};
     if (bdirty()) { docs.behaviors = clone(bwork); bases.behaviors = bbase; }
     if (S.creatureDoc.looksDirty()) { docs.creatures = S.creatureDoc.merged(['state_presentation']); bases.creatures = S.creatureDoc.base(); }  // the looks only
-    if (!Object.keys(docs).length) return;
+    if (!Object.keys(docs).length || (docs.creatures && S.creatureDoc.saving)) return;
     const issues = allIssues();
     if (issues.length) return S.status(`Fix before saving: ${issues[0]}`, 'bad', true);
+    saveState = 'saving'; if (docs.creatures) S.creatureDoc.saving = true; render();
     try {
       const res = await S.saveGuarded(current => S.api('POST', '/api/content', {docs, bases: {...bases, ...Object.fromEntries(Object.keys(docs).map(n => [n, current?.[n] ?? bases[n]]))}, artist: state.artist}), 'Content');
       if (!res) return;  // Cancel keeps the edits and the newer files
@@ -686,7 +748,8 @@
       const files = res.changed.map(n => `${n}.json`).join(' and ') || 'nothing (no changes)';
       if (res.git_error) S.status(`Saved ${files}, but the commit failed: ${res.git_error}`, 'bad', true);
       else S.status(res.commit ? `Saved ${files} (commit ${res.commit}).` : `Saved ${files}.`, '', false, {keep: true});
-    } catch (err) { S.status(`Save failed: ${err.message}`, 'bad', true); }
+    } catch (err) { saveState = 'error'; S.status(`Save failed: ${err.message}`, 'bad', true); }
+    finally { if (docs.creatures) S.creatureDoc.saving = false; if (saveState === 'saving') saveState = 'idle'; render(); }
   };
 
   /* ---------- hooks into the page ---------- */

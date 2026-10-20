@@ -349,7 +349,7 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
       <div class="lbl">Idle timeline · ${lim.beat_ms} ms per beat · dashed beats are quieted</div>
       <div class="bh-timeline" id="bh-timeline" tabindex="0" role="region" aria-label="Idle timeline"></div>
       <ul class="cr-msgs">${issues.map(m => `<li>${esc(m)}</li>`).join('') || `<li class="ok">${sizeDirty() ? 'Unsaved behaviour or size edits.' : 'No unsaved behaviour or size edits.'}</li>`}</ul>
-      <div class="seg"><button id="bh-revert" ${sizeDirty() || stale ? '' : 'disabled'}>Revert</button><button id="bh-save" class="primary" ${sizeDirty() && !issues.length && D.creature_data_editable ? '' : 'disabled'} title="Save behaviour and size (⌘S)">${sizeDirty() ? 'Save behaviour & size' : 'Saved'}</button></div>`;
+      <div class="seg"><button id="bh-revert" ${sizeDirty() || stale ? '' : 'disabled'}>Revert</button><button id="bh-save" class="primary" ${saveState !== "saving" && !S.creatureDoc.saving && sizeDirty() && !issues.length && D.creature_data_editable ? '' : 'disabled'} title="Save behaviour and size (⌘S)">${window.JelliIcons.svg('save')}Save behaviour & size</button></div><span id="bh-save-status" class="save-state" role="status" data-save-state="${saveState}">${saveState === 'saving' ? 'Saving…' : saveState === 'error' ? 'Save failed' : S.creatureDoc.saving ? 'Another section is saving…' : sizeDirty() ? 'Unsaved' : 'Saved'}</span>`;
     wire(p, b);
     if (b) buildTimeline(host.querySelector('#bh-timeline'), b); else timeline = null;
     cr.redraw();
@@ -411,6 +411,7 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
   /* ---------- save ---------- */
   /* The working creatures.json is shared with the Behaviour view (state looks), which saves both files together. */
   S.creatureDoc = {
+    saving: false,
     get work() { sync(); return work; }, dirty, issues: () => allIssues(), base: () => base, stale: () => stale,
     /* The saved document with only these top-level sections taken from the working copy; the rest is as last read from disk. */
     merged(keys) {
@@ -436,10 +437,12 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
     sizeDirty, looksDirty, setLooks(looks) { if (work) work.state_presentation = looks; },
     setBase(sha) { base = sha; },  // a restored stale draft keeps the base it started from, so a save answers 409
     refresh() { render(); cr.renderForms(); cr.redraw(); }};
+  let saveState = 'idle';
   async function save() {
-    if (!sizeDirty()) return;
+    if (!sizeDirty() || saveState === 'saving' || S.creatureDoc.saving) return;
     const issues = allIssues();
     if (issues.length) return S.status(`Fix the behaviour and size messages before saving: ${issues[0]}`, 'bad', true);
+    saveState = 'saving'; S.creatureDoc.saving = true; render();
     try {  // only profiles and behaviors are sent as edited; the looks go as saved, so this never commits the Behaviour view's edits
       const sent = S.creatureDoc.merged(SIZE_KEYS);
       const res = await S.saveGuarded(current => S.api('POST', '/api/creatures', {data: sent, base: current?.creatures ?? base, artist: state.artist}), 'content/creatures.json');
@@ -448,7 +451,8 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
       render(); cr.renderForms();
       if (res.git_error) S.status(`Saved creature data, but the commit failed: ${res.git_error}`, 'bad', true);
       else S.status(res.commit ? `Saved content/creatures.json (commit ${res.commit}).` : 'Saved content/creatures.json.', '', false, {keep: true});
-    } catch (err) { S.status(`Behaviour save failed: ${err.message}`, 'bad', true); }
+    } catch (err) { saveState = 'error'; S.status(`Behaviour save failed: ${err.message}`, 'bad', true); }
+    finally { S.creatureDoc.saving = false; if (saveState === 'saving') saveState = 'idle'; render(); }
   }
   cr.save = () => { save(); };
 

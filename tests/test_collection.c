@@ -108,9 +108,11 @@ static void legacy_and_invalid_records(void)
     size = jelli_save_encode(&loaded, bytes, sizeof(bytes));
     CHECK(size != 0u);
     JelliSave before = loaded;
-    bytes[size - 8u - (1u + loaded.game.count * TEST_SAVE_V4_PET_BYTES)] =
+    bytes[size - 8u - TEST_SAVE_V14_GAME_BYTES -
+          (1u + loaded.game.count * TEST_SAVE_V4_PET_BYTES)] =
         9u; /* First entry now duplicates an invalid NEW mask below. */
-    bytes[size - 8u - (3u + loaded.game.count * TEST_SAVE_V4_PET_BYTES)] = 1u;
+    bytes[size - 8u - TEST_SAVE_V14_GAME_BYTES -
+          (3u + loaded.game.count * TEST_SAVE_V4_PET_BYTES)] = 1u;
     repair(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     uint8_t before_bytes[JELLI_SAVE_CAPACITY], after_bytes[JELLI_SAVE_CAPACITY];
@@ -118,8 +120,8 @@ static void legacy_and_invalid_records(void)
     CHECK(jelli_save_encode(&loaded, after_bytes, sizeof(after_bytes)) == before_size);
     CHECK(before_size != 0u && memcmp(before_bytes, after_bytes, before_size) == 0);
     size = jelli_save_encode(&source, bytes, sizeof(bytes));
-    bytes[size - 8u - (1u + source.game.count * TEST_SAVE_V4_PET_BYTES) + 2u] =
-        1u; /* Duplicate collection binding. */
+    bytes[size - 8u - TEST_SAVE_V14_GAME_BYTES - (1u + source.game.count * TEST_SAVE_V4_PET_BYTES) +
+          2u] = 1u; /* Duplicate collection binding. */
     repair(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
 }

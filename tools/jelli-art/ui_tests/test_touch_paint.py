@@ -292,13 +292,14 @@ def test_quick_bar_controls_are_touch_sized(paint):
 
 def test_quick_bar_layout_follows_orientation_and_handedness(paint):
     page = paint(LAND)
-    bar, cv, side = (page.locator(s).bounding_box() for s in ("#paint-qbar", "#stage .paint-canvas canvas", "#stage .paint-side"))
-    assert bar["x"] + bar["width"] <= cv["x"] + 1
+    bar, cv = (page.locator(s).bounding_box() for s in ("#paint-qbar", "#stage .paint-canvas"))
+    assert bar["y"] >= cv["y"] + cv["height"] - 1
+    assert bar["x"] >= cv["x"] - 1 and bar["x"] + bar["width"] <= cv["x"] + cv["width"] + 1
     page.evaluate("() => document.getElementById('lefty').click()")
-    bar, side = page.locator("#paint-qbar").bounding_box(), page.locator("#stage .paint-side").bounding_box()
-    assert bar["x"] >= side["x"] + side["width"] - 1
+    bar, last = page.locator("#paint-qbar").bounding_box(), page.locator("#qb-pencil").bounding_box()
+    assert abs(last["x"] + last["width"] - bar["x"] - bar["width"]) <= 2
     page = paint(PORT)
-    bar, cv = page.locator("#paint-qbar").bounding_box(), page.locator("#stage .paint-canvas canvas").bounding_box()
+    bar, cv = page.locator("#paint-qbar").bounding_box(), page.locator("#stage .paint-canvas").bounding_box()
     assert bar["y"] >= cv["y"] + cv["height"] - 1
 
 
@@ -307,7 +308,12 @@ def test_quick_bar_is_hidden_with_a_mouse_unless_asked(open_view):
     bar = page.locator("#paint-qbar")
     assert not bar.is_visible()
     assert "Right-click paints the secondary colour" in page.locator("#paint-hint").inner_text()
-    page.locator("#paint-more summary").click()
+    properties = page.locator("#paint-more")
+    if not properties.evaluate("el => el.open"):
+        page.locator("#paint-more>summary").click()
+    view_input = properties.locator("details").filter(has=page.locator("summary", has_text="View & input"))
+    if not view_input.evaluate("el => el.open"):
+        view_input.locator(":scope>summary").click()
     page.locator("#quickbar").click()
     assert bar.is_visible() and page.locator("#quickbar").get_attribute("aria-pressed") == "true"
     page.reload()

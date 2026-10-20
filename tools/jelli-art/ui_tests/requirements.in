@@ -7,3 +7,6 @@ playwright==1.63.0
 pytest==9.1.1
 pytest-playwright==0.10.0
 Pillow==12.0.0
+# Real creation/clone browser tests run the shared content generators. The pinned
+# Playwright image has no CMake; match JELLI_CMAKE_VERSION in toolchain.env.
+cmake==4.4.4

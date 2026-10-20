@@ -8,7 +8,7 @@ bool jelli_prize_progress_valid(const JelliPrizeProgress *progress)
 {
     if (!progress || (!progress->breakfast_day_known && progress->last_breakfast_day != 0u))
         return false;
-    for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i) {
+    for (unsigned i = 0u; i < JELLI_PRIZE_LEGACY_COUNT; ++i) {
         if (progress->counts[i] > 3u)
             return false;
     }
@@ -19,7 +19,7 @@ bool jelli_prizes_valid(const JelliPrizes *prizes)
 {
     if (!prizes || prizes->owned > JELLI_PRIZE_MASK || prizes->discovered > JELLI_PRIZE_MASK ||
         (prizes->owned & prizes->discovered) != prizes->owned ||
-        prizes->offered > JELLI_PRIZE_COUNT ||
+        prizes->offered > jelli_prize_count ||
         (prizes->offered == 0u) != (prizes->offered_pet == 0u))
         return false;
     for (unsigned i = 0u; i < JELLI_PRIZE_COUNT; ++i) {
@@ -140,7 +140,7 @@ void jelli_prize_complete(JelliGame *game, unsigned trigger)
 
 void jelli_prize_award(JelliGame *game, unsigned index)
 {
-    if (index < JELLI_PRIZE_COUNT && jelli_game_valid(game) && !game->resuming)
+    if (index < jelli_prize_count && jelli_game_valid(game) && !game->resuming)
         (void)offer(game, index);
 }
 
@@ -167,7 +167,7 @@ JelliResult jelli_prize_catch(JelliGame *game)
 
 static JelliResult gift_result(const JelliGame *game, unsigned index)
 {
-    if (index >= JELLI_PRIZE_COUNT)
+    if (index >= jelli_prize_count)
         return JELLI_INVALID_TARGET;
     if (game->resuming)
         return JELLI_BUSY;
@@ -199,7 +199,7 @@ JelliResult jelli_prize_gift(JelliGame *game, unsigned index)
             jelli_prize_complete(game, JELLI_PRIZE_GIFT);
         jelli_behavior_stimulus(game, JELLI_STIM_PRESENT_GIVEN, index);
     }
-    unsigned value = index < JELLI_PRIZE_COUNT ? index + 1u : 0u;
+    unsigned value = index < jelli_prize_count ? index + 1u : 0u;
     jelli_game_emit(game, JELLI_EVENT_COMMAND, JELLI_CMD_GIFT, result, value, pet, before);
     return result;
 }

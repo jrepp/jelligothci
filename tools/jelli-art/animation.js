@@ -117,7 +117,7 @@
       <div class="an-new" role="group" aria-label="New frame">
         <label class="lbl" style="text-transform:none">New frame name<br><input type="text" id="an-name" placeholder="automatic" autocomplete="off" spellcheck="false" aria-describedby="an-new-help"></label>
         <label class="lbl" style="text-transform:none"><input type="checkbox" id="an-insert" checked> insert after the current frame</label>
-        <div class="seg"><button id="an-dup" title="Copy the current frame to a new PNG and asset">Duplicate current frame</button><button id="an-blank" title="A new frame with one ink pixel at the pivot, ready to paint">Add blank frame</button></div>
+        <div class="seg"><button id="an-dup" title="Copy the current frame to a new PNG and asset">${window.JelliIcons.svg("duplicate")}Duplicate current frame</button><button id="an-blank" title="A new frame with one ink pixel at the pivot, ready to paint">Add blank frame</button></div>
       </div>
       <p class="studio-note" id="an-new-help"></p>`;
     renderCards(el.querySelector('#an-strip'), key, c);
@@ -289,26 +289,33 @@
       list.append(card);
     }
   }
-  async function addFrame(duplicate, index = null, from = null) {
+  async function addFrame(duplicate, index = null, from = null, insertOverride = null) {
     const key = cr.selectedKey(), c = cr.current(key); if (!c) return;
     const at = index ?? currentIndex();
     const source = duplicate ? from || c.frames[at] : null;
     if (source && S.paintDirty(source)) return tell(`Save or revert your paint edits to ${source} before duplicating it`, 'warn', true);
-    const insert = document.getElementById('an-insert')?.checked !== false;
+    const insert = insertOverride ?? (document.getElementById('an-insert')?.checked !== false);
     if (insert && c.frames.length >= cr.cap()) return tell(`${key} already has ${cr.cap()} frames, the runtime cap; untick insert or remove a frame first`, 'warn', true);
-    const dirty = cr.clipDirty(key), pos = Math.min(at + 1, c.frames.length), name = document.getElementById('an-name')?.value.trim();
+    const dirty = cr.clipDirty(key), pos = Math.min(at + 1, c.frames.length), name = insertOverride === null ? document.getElementById('an-name')?.value.trim() : '';
     const body = {action: 'add', form: state.cForm, artist: state.artist, ...(source ? {from: source} : {}), ...(name ? {pose: name} : {})};
     if (insert && !dirty) Object.assign(body, {clip: key, index: pos, duration_ms: Number.isInteger(c.durations_ms[at]) ? c.durations_ms[at] : 450});
     try {
       const res = await S.api('POST', '/api/frames', body);
       D.version = res.version; await S.reload(); await loadOverview();
-      if (insert && dirty) cr.change(w => { w.frames.splice(pos, 0, res.key); w.durations_ms.splice(pos, 0, Number.isInteger(w.durations_ms[at]) ? w.durations_ms[at] : 450); }, false);
-      if (insert) { anim.focus = {index: pos, sel: '.thumb-btn'}; cr.seek(pos); }
+      let inserted = insert;
+      if (insert && (dirty || cr.clipDirty(key)) && !cr.current(key)?.frames.includes(res.key)) {
+        const latest = cr.current(key);
+        inserted = !!latest && latest.frames.length < cr.cap();
+        if (inserted) cr.changeAt(key, w => { const index = Math.min(pos, w.frames.length); w.frames.splice(index, 0, res.key); w.durations_ms.splice(index, 0, Number.isInteger(w.durations_ms[at]) ? w.durations_ms[at] : 450); }, false);
+        else tell('Frame copied into the library; the target clip changed or is full, so it was not inserted.', 'warn', true);
+      }
+      if (inserted && cr.selectedKey() === key) { anim.focus = {index: pos, sel: '.thumb-btn'}; cr.seek(pos); }
       cr.rerender();
       const how = `${source ? `Duplicated ${source} as` : 'Added blank frame'} ${res.key} (ID ${res.id})`;
-      const where = insert ? (dirty ? ` and inserted it into your unsaved ${key}` : ` in ${key}`) : '';
+      const where = inserted ? (dirty ? ` and inserted it into your unsaved ${key}` : ` in ${key}`) : '';
       if (res.git_error) tell(`${how}, but the commit failed: ${res.git_error}`, 'bad', true);
       else tell(`${how}${where}${res.commit ? ` (commit ${res.commit})` : ''}.${res.warning ? ` ${res.warning}` : ''}`, res.warning ? 'warn' : 'ok', !!res.warning);
+      return res;
     } catch (err) { tell(`New frame failed: ${err.message}`, 'bad', true); }
   }
   async function retire(a) {
@@ -349,6 +356,22 @@
     state.view = 'creature'; renderView(); savePrefs();
     if (ctx) { cr.seek(ctx.index); anim.focus = {index: ctx.index, sel: '[data-act="paint"]'}; cr.renderEditor(); }
   }
+  let duplicating = false;
+  async function duplicatePaintFrame() {
+    if (duplicating) return;
+    const sourceKey = state.key, ctx = paintContext(sourceKey); if (!ctx) return;
+    if (cr.clipDirty(ctx.clip)) return tell('Save or revert this clip before duplicating from Paint, or use Duplicate in its timeline to keep editing the unsaved clip.', 'warn', true);
+    const [form, pose] = ctx.clip.split('.'); state.cForm = form; state.cPose = pose;
+    duplicating = true;
+    try {
+      const insert = ctx.c.frames.length < cr.cap();
+      const result = await addFrame(true, ctx.index, state.key, insert);
+      if (!result?.key || state.key !== sourceKey || state.view !== 'detail' || state.mode !== 'paint') return;
+      if (insert) anim.paintClip = {key:ctx.clip,index:ctx.index+1};
+      state.view = 'detail'; state.mode = 'paint'; select(result.key);
+      if (!insert) tell('Frame duplicated into the library. This clip is full; replace a frame in Creature to animate the copy.', 'ok');
+    } finally { duplicating = false; }
+  }
   /* The page shell's ? overlay (shell.js), when it is loaded. */
   shell()?.registerShortcuts?.('Creature', [{keys: ['Space'], description: 'Play or pause'}, {keys: [',', 'ArrowLeft'], description: 'Previous frame'},
     {keys: ['.', 'ArrowRight'], description: 'Next frame'}, {keys: ['J', 'ArrowDown'], description: 'Next pose'}, {keys: ['K', 'ArrowUp'], description: 'Previous pose'},
@@ -360,5 +383,5 @@
     {gesture: 'Drag a duration handle', description: 'Change a frame\'s duration in 10 ms steps (1 ms with Fine on)'},
     {gesture: 'Drag along the timeline track', description: 'Scrub: show the frame under your finger or Pencil'},
     {gesture: 'Tap a frame', description: 'Show it on the panel; use its Move buttons to reorder'}]);
-  Object.assign(A, {paintContext, loadOverview, backToTimeline, setPaintClip: p => { anim.paintClip = p; }});
+  Object.assign(A, {duplicatePaintFrame, paintContext, loadOverview, backToTimeline, setPaintClip: p => { anim.paintClip = p; }});
 })();

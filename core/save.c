@@ -249,7 +249,7 @@ static bool read_game(Reader *reader, JelliGame *game)
         game->prizes.offered = get_u8(reader);
         game->prizes.offered_pet = get_u32(reader);
         if (game->prizes.owned > JELLI_PRIZE_MASK || game->prizes.discovered > JELLI_PRIZE_MASK ||
-            game->prizes.offered > JELLI_PRIZE_COUNT)
+            game->prizes.offered > jelli_prize_count)
             reader->failed = true;
     }
     if (reader->version >= 4u) {
@@ -333,6 +333,8 @@ static bool migrate_game(JelliGame *game, unsigned version)
         jelli_collection_merge_starters(game);
         jelli_collection_normalize(game);
         jelli_collection_unlock(game);
+    } else {
+        jelli_collection_reconcile(game);
     }
     return jelli_game_valid(game);
 }

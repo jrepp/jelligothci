@@ -14,8 +14,8 @@
   const STAGES = {scenario: 'Scenario', content: 'Content check (cmake/JelliBehaviors and friends)', configure: 'CMake configure',
     art: 'Art check (build_slice / embed_slice)', compile: 'C compile', build: 'Build', render: 'Render', timeout: 'Timed out',
     tools: 'Build tools', unavailable: 'Unavailable'};
-  const SAVE_URLS = new Set(['/api/save', '/api/clips', '/api/creatures', '/api/content', '/api/palette']);
-  const defaults = {pet: '', form: '', page: 'home', menu: false, behavior: '', moment: '', asleep: false, mess: false, potty: 0,
+  const SAVE_URLS = new Set(['/api/save', '/api/clips', '/api/creatures', '/api/content', '/api/palette', '/api/create']);
+  const defaults = {location: '', present: '', present_state: 'none', completion: 'running', pet: '', form: '', page: 'home', menu: false, behavior: '', moment: '', asleep: false, mess: false, potty: 0,
     needs: {satiety: 700, energy: 700, hygiene: 700, amusement: 700, social: 700}, clock: false, minute: 540,
     start_ms: 0, frames: 12, step_ms: 200, advance_s: 0, live: false};
   const sc = Object.assign(structuredClone(defaults), store.get('game-scenario', {}));
@@ -64,6 +64,7 @@
   }
   function scenario() {
     const out = {pet: sc.pet, form: sc.form, page: sc.page, menu: sc.menu && !!pageOf(sc.page)?.ring, behavior: sc.behavior,
+      location: sc.location, present: sc.present, present_state: sc.present_state, completion: sc.completion,
       moment: sc.asleep ? '' : sc.moment, asleep: sc.asleep, mess: sc.mess, potty: sc.potty, needs: sc.needs,
       minute: sc.clock ? sc.minute : -1, start_ms: sc.start_ms, frames: sc.frames, step_ms: sc.step_ms, advance_s: sc.advance_s, live: sc.live};
     return out;
@@ -71,6 +72,7 @@
   async function renderGame(reason = '') {
     if (busy || !cat?.available) return;
     busy = true; stop(); paint();
+    await loadCatalogue();
     const what = unsaved().length ? 'the saved files' : 'the working copy';
     say(reason ? `${reason}: building the engine from ${what} and rendering…` : `Building the engine from ${what} and rendering…`);
     const started = performance.now();
@@ -147,11 +149,19 @@
         <div class="gp-row"><label for="gp-form-pick">Form</label><select id="gp-form-pick" data-k="form">${entry.forms.map(f => opt(f.name, f.name, sc.form)).join('')}</select></div>
         <div class="gp-row"><label for="gp-behavior">Behaviour</label><select id="gp-behavior" data-k="behavior">${opt('', 'none (idle)', sc.behavior)}${cat.states.map(s => opt(s, s, sc.behavior)).join('')}</select></div>
         <div class="gp-row"><label for="gp-moment">Moment</label><select id="gp-moment" data-k="moment"${sc.asleep ? ' disabled aria-describedby="gp-moment-help"' : ''}>${opt('', 'none', sc.moment)}${cat.moments.map(m => opt(m, m, sc.moment)).join('')}</select></div>
+        <div class="gp-row"><label for="gp-completion">Completion</label><select id="gp-completion" data-k="completion">${['running','first','repeat'].map(v=>opt(v,{running:'Show running activity',first:'Complete once',repeat:'Complete twice today'}[v],sc.completion)).join('')}</select></div>
+        <div class="gp-note">Completion runs real commands and simulation. Repeated daily recipes pay costs and rewards only on the first run.</div>
         ${sc.asleep ? '<div class="gp-note" id="gp-moment-help">A sleeping pet cannot run a moment.</div>' : ''}
         ${check('asleep', 'Asleep (REST command)', sc.asleep)}${check('mess', 'Potty mess on the floor', sc.mess)}
         ${num('potty', 'Potty urge', sc.potty, 0, 1000, 10)}
       </fieldset>
       <fieldset><legend>Needs (0–1000)</legend>${cat.needs.map(n => num(`need-${n}`, n, sc.needs[n], 0, 1000, 10)).join('')}</fieldset>
+      <fieldset><legend>Scene and presents</legend>
+        <div class="gp-row"><label for="gp-location">Location</label><select id="gp-location" data-k="location">${opt('','Default home',sc.location)}${(cat.locations||[]).map(p=>opt(p.key,p.name,sc.location)).join('')}</select></div>
+        <div class="gp-row"><label for="gp-present">Present</label><select id="gp-present" data-k="present">${opt('','None',sc.present)}${(cat.prizes||[]).map(p=>opt(p.key,p.name,sc.present)).join('')}</select></div>
+        <div class="gp-row"><label for="gp-present_state">Present state</label><select id="gp-present_state" data-k="present_state">${['none','offered','owned'].map(v=>opt(v,v,sc.present_state)).join('')}</select></div>
+        <p class="gp-note">Offered shows the pending catch. Owned shows collection ownership. An activity can choose its own allowed location when started.</p>
+      </fieldset>
       <fieldset><legend>Screen</legend>
         <div class="gp-row"><label for="gp-page">Page</label><select id="gp-page" data-k="page">${cat.pages.map(p => opt(p.name, p.name.replace(/_/g, ' ') + (p.ring ? ' · ring' : ''), sc.page)).join('')}</select></div>
         ${check('menu', 'Ring menu open', sc.menu && ring, !ring)}
@@ -190,7 +200,7 @@
       <div class="gp-strip" role="group" aria-label="Rendered frames">${f.map((src, i) => `<button type="button" data-frame="${i}" aria-current="${i === frame}" aria-label="Show frame ${i + 1} at ${result.times_ms[i]} ms"><img src="${src}" alt=""></button>`).join('')}</div>
       <div class="gp-report" aria-label="What the engine accepted">engine: <span>pet <b>${esc(e.form_name)}</b></span><span>pose <b>${esc(poseName(e.pose))}</b></span>
         <span>behaviour <b>${esc(e.behavior || 'none')}</b></span><span>asleep <b>${e.asleep}</b></span><span>activity <b>${esc(e.activity)}</b></span><span>moment <b>${e.moment ? esc(cat.moments[e.moment - 1] || e.moment) : 'none'}</b></span>
-        <span>mess <b>${e.mess}</b></span><span>clock <b>${hhmm(e.clock_minute)}</b>${e.night ? ' (night)' : ''}</span><span>needs <b>${e.needs.join(' / ')}</b></span><span>potty <b>${e.potty}</b></span></div>
+        <span>location <b>${esc(e.location_name)}</b></span><span>present offered / visible <b>${e.offered} / ${e.visible_offered}</b></span><span>owned mask <b>${e.owned}</b></span><span>completed mask <b>${e.completed_moments}</b></span><span>bond / hydration <b>${e.bond} / ${e.hydration}</b></span><span>mess <b>${e.mess}</b></span><span>clock <b>${hhmm(e.clock_minute)}</b>${e.night ? ' (night)' : ''}</span><span>needs <b>${e.needs.join(' / ')}</b></span><span>potty <b>${e.potty}</b></span></div>
       <p class="gp-note">Frames come from <code>jelli_pet_render</code> built from the art and content on disk${result.last_build?.seconds != null ? ` (last build ${result.last_build.seconds} s at ${esc(result.last_build.at)})` : ''}. Unsaved edits in other views are not included.</p>`;
   }
   function paint() {
@@ -277,7 +287,7 @@
     window.JelliShell?.showOnly('game');
     document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === 'game')));
     document.querySelector('main').scrollTop = 0;
-    if (!cat) { paint(); await loadCatalogue(); }
+    paint(); await loadCatalogue();
     paint();
     if ((stale || (seenVersion && seenVersion !== D.version)) && autoRender && result) renderGame('Art or content changed');
   };

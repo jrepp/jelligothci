@@ -17,10 +17,11 @@ requirements="tools/jelli-art/ui_tests/requirements.txt"
 if [[ "${JELLI_UI_CONTAINER:-}" == 1 ]]; then
     # Inside the image (no ensurepip): the hash-pinned requirements in a throwaway target directory.
     site="${JELLI_UI_SITE:-/tmp/jelli-ui-site}"
-    [[ -d "$site/pytest" || -d "$site/_pytest" ]] ||
+    [[ ( -d "$site/pytest" || -d "$site/_pytest" ) && -d "$site/cmake" ]] ||
         python3 -m pip install -q --disable-pip-version-check --break-system-packages --require-hashes \
             --target "$site" -r "$repo_dir/$requirements"
     export PYTHONPATH="$site${PYTHONPATH:+:$PYTHONPATH}"
+    export PATH="$site/bin:$PATH"  # hash-pinned CMake for the real creation/clone generators
     cd "$repo_dir"
     exec python3 -m pytest tools/jelli-art/ui_tests "$@"
 fi

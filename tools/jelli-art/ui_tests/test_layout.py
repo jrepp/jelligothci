@@ -159,7 +159,8 @@ def test_the_canvas_never_moves_while_you_work(page_at, size):
     step("first stroke", lambda: paint_something(page, coarse))
     assert page.locator("#asset-stats .stat", has_text="unsaved edits").count() == 1
     step("save", lambda: page.locator("#save").click())
-    assert page.locator("#save").inner_text() == "Saved"
+    assert page.locator("#save").inner_text().strip() == "Save"
+    assert page.locator("#paint-save-status").inner_text() == "Saved"
     step("dirty again", lambda: paint_something(page, coarse, 0.6))
     key = page.evaluate("() => state.key")
     step("to a clean asset", lambda: page.evaluate("k => select(k)", other))
@@ -357,7 +358,7 @@ def save_with_empty_name(page, answer):
     assert dialog.get_by_role("heading", name="Who is saving?").is_visible()
     assert not sent, "the save waits for the answer"
     answer(dialog)
-    page.wait_for_function("() => document.getElementById('save').textContent === 'Saved'")
+    page.wait_for_function("() => document.getElementById('paint-save-status').textContent === 'Saved'")
     return sent
 
 
@@ -430,5 +431,5 @@ def test_settings_and_the_name_prompt_work_from_the_keyboard(page_at):
     page.keyboard.press("ControlOrMeta+s")
     page.locator("dialog.shell-dialog[open]").wait_for()
     page.keyboard.press("Escape")
-    page.wait_for_function("() => document.getElementById('save').textContent === 'Saved'")
+    page.wait_for_function("() => document.getElementById('paint-save-status').textContent === 'Saved'")
     assert len(sent) == 1

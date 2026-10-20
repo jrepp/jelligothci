@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "prizes": [
+    {
+      "id": 0,
+      "key": "butterfly",
+      "name": "BUTTERFLY",
+      "asset": 11001
+    },
+    {
+      "id": 1,
+      "key": "pearl-tooth",
+      "name": "PEARL TOOTH",
+      "asset": 11002
+    },
+    {
+      "id": 2,
+      "key": "breakfast-sun",
+      "name": "BREAKFAST SUN",
+      "asset": 11003
+    },
+    {
+      "id": 3,
+      "key": "tea-sprite",
+      "name": "TEA SPRITE",
+      "asset": 11004
+    },
+    {
+      "id": 4,
+      "key": "movie-star",
+      "name": "MOVIE STAR",
+      "asset": 11005
+    },
+    {
+      "id": 5,
+      "key": "bubble-gem",
+      "name": "BUBBLE GEM",
+      "asset": 11006
+    },
+    {
+      "id": 6,
+      "key": "moon-charm",
+      "name": "MOON CHARM",
+      "asset": 11007
+    },
+    {
+      "id": 7,
+      "key": "rainbow-seed",
+      "name": "RAINBOW SEED",
+      "asset": 11008
+    },
+    {
+      "id": 8,
+      "key": "friendship-bow",
+      "name": "FRIENDSHIP BOW",
+      "asset": 11009
+    },
+    {
+      "id": 9,
+      "key": "teddy-bear",
+      "name": "TEDDY BEAR",
+      "asset": 11010
+    }
+  ]
+}

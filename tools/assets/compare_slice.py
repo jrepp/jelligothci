@@ -168,7 +168,7 @@ def main():
     # The Jelli Art shell (mode tabs, toasts, themes, shortcut help) works without the studio scripts.
     # lint.js gives the page the same lint verdicts as lint_rules.py.
     studio = Path(__file__).resolve().parent.parent / "jelli-art"
-    scripts = [studio / name for name in ("shell.js", "lint.js") if (studio / name).exists()]
+    scripts = [studio / name for name in ("icons.js", "shell.js", "lint.js") if (studio / name).exists()]
     template = template.replace("/*__STUDIO_JS__*/", "\n".join(p.read_text() for p in scripts))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(template.replace("__COMPARE_DATA__", json.dumps(payload).replace("<", "\\u003c")))

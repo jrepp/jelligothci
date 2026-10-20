@@ -196,6 +196,8 @@ static void all_nine_and_deterministic_outing(void)
     catch_index(&game, 5u);
     jelli_prize_award(&game, 9u); /* The teddy bear comes from an authored moment's "prize". */
     catch_index(&game, 9u);
+    jelli_prize_award(&game, jelli_prize_count);
+    CHECK(!game.prizes.offered);
     jelli_prize_award(&game, JELLI_PRIZE_COUNT);
     CHECK(!game.prizes.offered);
     CHECK(game.prizes.discovered == JELLI_PRIZE_MASK && game.prizes.owned == JELLI_PRIZE_MASK);

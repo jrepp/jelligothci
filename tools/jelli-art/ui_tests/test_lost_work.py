@@ -147,7 +147,9 @@ def test_clip_save_sends_the_clip_base(studio_page):
     page.route("**/api/clips", route)
     edit_clip(page)
     page.locator("#cr-save").click()
-    page.wait_for_function("() => document.getElementById('cr-save')?.textContent === 'Saved'")
+    expect(page.locator("#cr-save-status")).to_have_text("Saved")
+    expect(page.locator("#cr-save")).to_have_text("Save clips")
+    expect(page.locator("#cr-save")).to_be_disabled()
     assert sent[0]["bases"].keys() == {"axolotl.idle"}
     assert sent[0]["bases"]["axolotl.idle"]  # the sha the page loaded, not missing: the server can answer 409
 

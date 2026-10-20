@@ -21,14 +21,16 @@ def validate(doc, repo, content, manifest):
     for before, after in zip(old, doc['moments']):
         if before['id'] != after.get('id') or before['name'] != after.get('name'):
             raise BehaviorError('Existing activity IDs and names are stable; append new activities')
-    assets = {a['id'] for a in manifest['assets']}
+    assets = {a['id']: a for a in manifest['assets']}
+    sprite_kinds = {'menus', 'icons', 'health', 'props', 'effects', 'prizes'}
     forms = {f['id'] for f in json.loads((Path(content) / 'pets.json').read_text())['forms']}
     names = set()
     for m in doc['moments']:
         if m.get('name') in names:
             raise BehaviorError('Activity names must be unique')
         names.add(m.get('name'))
-        if m.get('icon') not in assets or (m.get('prop') and m['prop'] not in assets):
+        if (assets.get(m.get('icon'), {}).get('kind') not in sprite_kinds or
+                (m.get('prop') and assets.get(m['prop'], {}).get('kind') not in sprite_kinds)):
             raise BehaviorError('Choose existing icon and prop sprites')
         if not isinstance(m.get('forms'), list) or any(f not in forms for f in m['forms']):
             raise BehaviorError('Choose existing pet forms')
@@ -39,6 +41,10 @@ def validate(doc, repo, content, manifest):
         for name in ('JelliActivities.cmake', 'JelliLocations.cmake', 'JelliActivityCosts.cmake'):
             shutil.copy(Path(repo) / 'cmake' / name, work / 'cmake')
         shutil.copy(Path(content) / 'locations.json', work / 'content')
+        if (Path(content) / 'prizes.json').exists():
+            shutil.copy(Path(content) / 'prizes.json', work / 'content')
+        if (Path(repo) / 'cmake/JelliPrizes.cmake').exists():
+            shutil.copy(Path(repo) / 'cmake/JelliPrizes.cmake', work / 'cmake')
         (work / 'assets/slice').mkdir(parents=True)
         (work / 'assets/slice/assets.json').write_text(json.dumps(manifest))
         shutil.copy(Path(content) / 'pets.json', work / 'content')
