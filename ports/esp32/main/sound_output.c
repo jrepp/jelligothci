@@ -13,17 +13,31 @@
 typedef struct {
     uint8_t cue, volume;
 } Request;
-static QueueHandle_t queue;
-static StaticQueue_t queue_control;
+static QueueHandle_t queue, music_queue;
+static StaticQueue_t queue_control, music_queue_control;
 static uint8_t queue_storage[4u * sizeof(Request)];
+static uint8_t music_queue_storage[4u * sizeof(JelliMusicCommand)];
 static StaticTask_t task_control;
 static StackType_t task_stack[4096u / sizeof(StackType_t)];
+static TaskHandle_t worker;
 static esp_codec_dev_handle_t codec;
-static int16_t pcm[JELLI_SOUND_BLOCK];
+static int16_t pcm[JELLI_SOUND_BLOCK], cue_pcm[JELLI_SOUND_BLOCK];
 static JelliSynth synth;
+static JelliMusic music;
+static JelliMusicTransition transition;
+static unsigned cue_gain;
 static StaticSemaphore_t audio_mutex_storage;
 static SemaphoreHandle_t audio_mutex;
 static bool audio_enabled;
+static portMUX_TYPE status_lock = portMUX_INITIALIZER_UNLOCKED;
+static JelliMusicStatus published;
+
+static void publish(void)
+{
+    portENTER_CRITICAL(&status_lock);
+    published = jelli_music_status(&music);
+    portEXIT_CRITICAL(&status_lock);
+}
 
 bool jelli_sound_output_enable(bool enabled)
 {
@@ -38,42 +52,79 @@ bool jelli_sound_output_enable(bool enabled)
             audio_enabled = enabled;
     }
     xSemaphoreGive(audio_mutex);
+    if (worker)
+        xTaskNotifyGive(worker);
     return result == ESP_CODEC_DEV_OK;
+}
+
+/* Audio task exclusively owns music/synth; controls apply between PCM blocks.
+ * A bounded control queue and independent care queue prevent record commands
+ * from waiting for an entire care cue. Hardware mutex covers one block only. */
+static void commands(void)
+{
+    JelliMusicCommand command;
+    for (unsigned i = 0; i < 4u; ++i) {
+        if (xQueueReceive(music_queue, &command, 0) != pdTRUE)
+            break;
+        if (jelli_music_control(&music, command))
+            jelli_music_transition_begin(&transition);
+    }
+    if (!synth.playing) {
+        Request request;
+        if (xQueueReceive(queue, &request, 0) == pdTRUE) {
+            cue_gain = request.volume;
+            (void)jelli_sound_start(&synth, request.cue);
+        }
+    }
+}
+
+static bool submit_block(void)
+{
+    JelliMusic before = music;
+    bool duck = synth.playing;
+    memset(pcm, 0, sizeof(pcm));
+    memset(cue_pcm, 0, sizeof(cue_pcm));
+    (void)jelli_music_render(&music, pcm, JELLI_SOUND_BLOCK);
+    (void)jelli_sound_render(&synth, cue_pcm, JELLI_SOUND_BLOCK);
+    for (unsigned i = 0; i < JELLI_SOUND_BLOCK; ++i)
+        pcm[i] = jelli_music_mix(jelli_music_transition_sample(&transition, pcm[i]), cue_pcm[i],
+                                 cue_gain, duck);
+    if (esp_codec_dev_write(codec, pcm, sizeof(pcm)) == ESP_CODEC_DEV_OK)
+        return true;
+    music = before; /* Never credit samples rejected by the output device. */
+    music.playing = false;
+    synth.playing = false;
+    transition = (JelliMusicTransition){0};
+    ESP_LOGW("sound", "PCM submission failed; playback paused");
+    return false;
 }
 
 static void sound_task(void *unused)
 {
     (void)unused;
     for (;;) {
-        Request request;
-        if (xQueueReceive(queue, &request, portMAX_DELAY) != pdTRUE)
-            continue;
         if (xSemaphoreTake(audio_mutex, portMAX_DELAY) != pdTRUE)
             continue;
+        bool was_active = music.playing || synth.playing;
+        commands();
         if (!audio_enabled) {
-            xSemaphoreGive(audio_mutex);
-            continue;
+            music.playing = false;
+            synth.playing = false;
         }
-        bool ok = esp_codec_dev_set_out_vol(codec, request.volume) == ESP_CODEC_DEV_OK;
-        ok = ok && jelli_sound_start(&synth, request.cue);
-        unsigned samples = 0u;
-        while (ok && synth.playing) {
-            size_t count = jelli_sound_render(&synth, pcm, JELLI_SOUND_BLOCK);
-            if (!count) {
-                ok = false;
-                break;
-            }
-            ok = esp_codec_dev_write(codec, pcm, (int)(count * sizeof(pcm[0]))) == ESP_CODEC_DEV_OK;
-            samples += (unsigned)count;
+        bool active = music.playing || synth.playing || (audio_enabled && transition.remaining);
+        if (active)
+            (void)submit_block();
+        bool idle = !music.playing && !synth.playing;
+        if (idle && audio_enabled && (active || was_active)) {
+            /* Flush the DMA tail after pause/stop/completion rather than leaving
+             * the last partly filled note block available for repetition. */
+            memset(pcm, 0, sizeof(pcm));
+            (void)esp_codec_dev_write(codec, pcm, sizeof(pcm));
         }
-        /* Drain the final note into silence rather than repeating a DMA tail. */
-        memset(pcm, 0, sizeof(pcm));
-        if (ok)
-            ok = esp_codec_dev_write(codec, pcm, sizeof(pcm)) == ESP_CODEC_DEV_OK;
+        publish();
         xSemaphoreGive(audio_mutex);
-        ESP_LOGI("sound", "%s cue=%s volume=%u samples=%u stack_free=%u",
-                 ok ? "submitted" : "failed", jelli_sound_name(request.cue),
-                 (unsigned)request.volume, samples, (unsigned)uxTaskGetStackHighWaterMark(NULL));
+        if (idle && !uxQueueMessagesWaiting(queue) && !uxQueueMessagesWaiting(music_queue))
+            (void)ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     }
 }
 
@@ -85,18 +136,24 @@ bool jelli_sound_output_init(void)
         return false;
     esp_codec_dev_sample_info_t format = {
         .sample_rate = JELLI_SOUND_RATE, .channel = 1, .bits_per_sample = 16};
-    if (esp_codec_dev_set_out_vol(codec, 35) != ESP_CODEC_DEV_OK ||
+    /* Keep the existing maximum codec ceiling; master and cue gains are mixed
+     * in PCM so care feedback and the record can share one output stream. */
+    if (esp_codec_dev_set_out_vol(codec, 80) != ESP_CODEC_DEV_OK ||
         esp_codec_dev_open(codec, &format) != ESP_CODEC_DEV_OK)
         return false;
     audio_mutex = xSemaphoreCreateMutexStatic(&audio_mutex_storage);
     audio_enabled = true;
     queue = xQueueCreateStatic(4u, sizeof(Request), queue_storage, &queue_control);
-    if (!queue || !xTaskCreateStatic(sound_task, "jelli_sound", sizeof(task_stack), NULL, 3u,
-                                     task_stack, &task_control))
+    music_queue = xQueueCreateStatic(4u, sizeof(JelliMusicCommand), music_queue_storage,
+                                     &music_queue_control);
+    if (!audio_mutex || !queue || !music_queue)
+        return false;
+    worker = xTaskCreateStatic(sound_task, "jelli_sound", sizeof(task_stack), NULL, 3u, task_stack,
+                               &task_control);
+    if (!worker)
         return false;
     size_t after = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    ESP_LOGI("sound",
-             "ready mono PCM16 22050 Hz; internal heap delta=%u free=%u; menu and CLI cues enabled",
+    ESP_LOGI("sound", "ready PCM16 22050 Hz; heap delta=%u free=%u; bounded record/care mixer",
              (unsigned)(before > after ? before - after : 0u), (unsigned)after);
     return true;
 }
@@ -104,8 +161,34 @@ bool jelli_sound_output_init(void)
 bool jelli_sound_output_request(void *ctx, unsigned cue, unsigned volume)
 {
     (void)ctx;
-    if (!queue || cue >= JELLI_SOUND_COUNT || volume > 80u)
+    if (!queue || !worker || cue >= JELLI_SOUND_COUNT || volume > 80u)
         return false;
     Request request = {(uint8_t)cue, (uint8_t)volume};
-    return xQueueSend(queue, &request, 0) == pdTRUE;
+    bool accepted = xQueueSend(queue, &request, 0) == pdTRUE;
+    if (accepted)
+        xTaskNotifyGive(worker);
+    return accepted;
+}
+
+bool jelli_music_output_control(void *ctx, JelliMusicCommand command)
+{
+    (void)ctx;
+    JelliMusic check = {0};
+    if (!music_queue || !worker || !jelli_music_control(&check, command))
+        return false;
+    bool accepted = xQueueSend(music_queue, &command, 0) == pdTRUE;
+    if (accepted)
+        xTaskNotifyGive(worker);
+    return accepted;
+}
+
+bool jelli_music_output_status(void *ctx, JelliMusicStatus *status)
+{
+    (void)ctx;
+    if (!worker || !status)
+        return false;
+    portENTER_CRITICAL(&status_lock);
+    *status = published;
+    portEXIT_CRITICAL(&status_lock);
+    return true;
 }

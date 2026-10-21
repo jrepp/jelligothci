@@ -2,6 +2,7 @@
 #include "jelli/activities.h"
 #include "jelli/pet_rewards.h"
 #include "jelli/save.h"
+#include "jelli/collectible.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,11 +53,16 @@ static void timed_completion_excludes_unrelated_changes(void)
     CHECK(rewards.pending && !rewards.count);
     int energy = rewards.gains[JELLI_ENERGY];
     int social = rewards.gains[JELLI_SOCIAL];
-    CHECK(energy == 0 && social == 0);
+    CHECK(energy > 0 && social > 0);
     command(JELLI_CMD_TOUCH, 0u);
     process();
     CHECK(rewards.gains[JELLI_ENERGY] == energy && rewards.gains[JELLI_SOCIAL] == social);
-    advance(8000u);
+    advance(2000u);
+    process();
+    CHECK(rewards.pending && !rewards.count && !rewards.completed);
+    CHECK(!game.pets[0].prize_progress.counts[3]);
+    CHECK(rewards.gains[JELLI_ENERGY] > energy && rewards.gains[JELLI_SOCIAL] > social);
+    advance(6000u);
     process();
     CHECK(!rewards.pending && rewards.count >= 3u && rewards.completed == 1u);
     CHECK(game.pets[0].prize_progress.counts[3] == 1u);
@@ -221,12 +227,14 @@ static void snuggle_offers_a_giftable_teddy(void)
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size && jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.prizes.origin_pet[jelli_moments[snuggle].prize - 1u] == 3u);
-    /* Like every present, the teddy goes to another pet, not back to the one that earned it. */
-    CHECK(jelli_prize_gift(&game, jelli_moments[snuggle].prize - 1u) == JELLI_NOT_READY);
+    /* Every pet, including the catcher, can play without consuming a collectible. */
+    CHECK(jelli_prize_gift(&game, jelli_moments[snuggle].prize - 1u) == JELLI_OK);
+    CHECK(jelli_collectible_control(&game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_ACTIVATE, 3u, 1u}) == JELLI_OK);
     CHECK(jelli_prize_gift(&game, jelli_moments[snuggle].prize - 1u) == JELLI_OK);
-    CHECK(!(game.prizes.owned & (1u << (jelli_moments[snuggle].prize - 1u))));
-    CHECK(game.prizes.offered == 9u); /* Gifting earns the friendship bow. */
+    CHECK(game.prizes.owned & (1u << (jelli_moments[snuggle].prize - 1u)));
+    CHECK(!game.prizes.offered); /* Bow requires completed shared play, not launch. */
+    CHECK(jelli_collectible_control(&game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
 }
 
 static void save_and_reload(void)
@@ -262,8 +270,8 @@ static void snuggle_replays_free(unsigned snuggle)
 
 static void snuggle_rewards_once_per_day(void)
 {
-    snuggle_offers_a_giftable_teddy(); /* Rewarded snuggle; teddy caught and gifted to pet 1. */
-    CHECK(jelli_prize_catch(&game) == JELLI_OK); /* Clear the bow so a new offer could show. */
+    snuggle_offers_a_giftable_teddy(); /* Teddy remains owned after play with both pets. */
+    CHECK(!game.prizes.offered);       /* Launching play does not award the bow. */
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_ACTIVATE, 1u, 3u}) == JELLI_OK);
     unsigned snuggle = 0u;
     while (strcmp(jelli_moments[snuggle].name, "SNUGGLE") != 0)
@@ -275,7 +283,7 @@ static void snuggle_rewards_once_per_day(void)
     /* A free replay needs no energy; a rewarded run would. */
     game.pets[2].needs[JELLI_ENERGY] = 0u;
     CHECK(jelli_moment_available(&game, &game.pets[2], snuggle) == JELLI_OK);
-    /* The next local day pays costs and offers the teddy again. */
+    /* The next local day pays costs and rewards bond; the owned teddy is retained. */
     game.pets[2].needs[JELLI_ENERGY] = 1000u;
     game.pets[2].activity_day = (uint16_t)(game.pets[2].activity_day + 1u);
     uint16_t bond = game.pets[2].bond;
@@ -285,7 +293,8 @@ static void snuggle_rewards_once_per_day(void)
     process();
     advance(8000u);
     process();
-    CHECK(game.pets[2].bond > bond && game.prizes.offered == jelli_moments[snuggle].prize);
+    CHECK(game.pets[2].bond > bond && !game.prizes.offered);
+    CHECK(game.prizes.owned & (1u << (jelli_moments[snuggle].prize - 1u)));
 }
 
 int main(void)

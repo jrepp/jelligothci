@@ -33,6 +33,8 @@ typedef enum {
     JELLI_UI_EVOLUTIONS,
     JELLI_UI_PRESENT_ACTION,
     JELLI_UI_FOOD,
+    JELLI_UI_GIFT_SHELF,
+    JELLI_UI_COLLECTIBLE_PLAY,
     JELLI_UI_PAGE_COUNT
 } JelliPetPage;
 
@@ -121,8 +123,17 @@ typedef struct {
     uint8_t night, mood, reaction, care_blocked, ring_page, ring_visible;
     bool ring_moving, clock_edit, ring_clock_edit;
     uint32_t unavailable;
-    uint16_t stat_value, sleep_score, prize_owned, prize_discovered;
+    uint16_t stat_value, sleep_score;
+    uint32_t prize_owned, prize_discovered;
     uint32_t prize_origins[JELLI_PRIZE_COUNT];
+    JelliCollectibleSession collectible;
+    uint16_t collectible_play_ticks, collectible_special;
+    bool collectible_record_rewarded;
+    uint8_t gift_category, gift_page, collectible_confirm;
+    bool collectible_reduced_motion, collectible_menu;
+    uint16_t collectible_win_ms;
+    bool keyboard_focus;
+    uint8_t keyboard_slot;
     uint8_t reward_index, offered_prize, latched_prize, highlighted_prize;
     uint8_t catch_phase;
     uint8_t selected_pet, selected_form, active_entry;
@@ -185,10 +196,11 @@ typedef struct {
     /* Borrowed immutable metadata; no runtime alpha scans or allocation. */
     const JelliAsset *actor_frame;
     JelliPetRewards rewards;
-    uint64_t catch_anchor_ms;
+    uint64_t catch_anchor_ms, collectible_win_anchor;
     uint8_t latched_prize, highlighted_prize, catch_seen;
     uint8_t selected_pet, selected_form;
     uint8_t sound_cue; /* One-based cue; zero defaults to menu confirmation. */
+    uint8_t gift_category, gift_page;
     JelliPetPage present_return;
     JelliGame action_scratch; /* Fixed preflight workspace; never placed on the ESP task stack. */
     uint64_t tile_anchor_ms, idle_anchor_ms, last_animation_phase, last_pet_ticks;
@@ -198,10 +210,13 @@ typedef struct {
     JelliPetPage page;
     int actor_x, actor_y;
     uint8_t actor_scale; /* Pixel multiplier from the active form's creature profile. */
+    uint8_t collectible_confirm;
     uint32_t clicker_pet, routine_random, tuning_revision, tuning_pet;
     JelliResult result;
     uint8_t activity_page;
     uint8_t attempted_slot;
+    bool collectible_reduced_motion, collectible_menu;
+    uint16_t collectible_win_ms;
     uint32_t result_until_ms, last_revision, coo_pet;
     JelliRect actor_bounds;
     JelliParticles particles;
@@ -227,6 +242,8 @@ typedef struct {
     bool sound_pending, sound_played;
     uint8_t night_from, night_target;
     bool atmosphere_ready, sleep_emitted;
+    bool keyboard_focus;
+    uint8_t keyboard_slot;
     uint64_t bubble_emit_ms;
     uint8_t bubble_mode;
     bool bubble_emitted;

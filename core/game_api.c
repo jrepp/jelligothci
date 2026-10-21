@@ -35,3 +35,14 @@ JelliResult jelli_game_check(const JelliGame *game, JelliCommand command, JelliG
     scratch->events = NULL;
     return jelli_game_command_impl(scratch, command);
 }
+
+JelliResult jelli_game_set_volume(JelliGame *game, uint32_t value)
+{
+    if (value > JELLI_VOLUME_MAX)
+        return JELLI_INVALID_TARGET;
+    if (value == game->volume)
+        return JELLI_FULL;
+    game->volume = (uint8_t)value;
+    ++game->revision;
+    return JELLI_OK;
+}

@@ -142,8 +142,10 @@ static void consume(JelliPetRewards *r, JelliGame *game, const JelliEvent *event
     if (event->kind == JELLI_EVENT_EFFECT) {
         if (r->pending && !r->health && r->activity == event->code) {
             add_gains(r, event);
-            prize(r, game);
-            finish(r, pet);
+            if (event->after.activity == JELLI_IDLE) {
+                prize(r, game);
+                finish(r, pet);
+            }
         }
         return;
     }

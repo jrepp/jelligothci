@@ -6,6 +6,7 @@
 #include "jelli/activities.h"
 #include "pet_canvas.h"
 #include "pet_gallery.h"
+#include "pet_collectible_ui.h"
 #include "pet_collection.h"
 #include "pet_food.h"
 #include "pet_menu.h"
@@ -138,6 +139,19 @@ static void menu_button(Canvas *c, const JelliPetUi *ui)
     int left = 233 - width / 2;
     jelli_canvas_centered_sprite(c, button.icon, left + 16, 419, button.scale);
     jelli_canvas_text(c, button.label, left + 40, 407, 2u, PALE);
+}
+
+static void keyboard_focus(Canvas *c, const JelliPetUi *ui, bool asleep)
+{
+    JelliPetUiButton b;
+    if (!ui->keyboard_focus || !jelli_pet_ui_control(ui, ui->keyboard_slot, asleep, &b))
+        return;
+    int x = (int)b.bounds.x - 3, y = (int)b.bounds.y - 3;
+    int w = (int)b.bounds.width + 6, h = (int)b.bounds.height + 6;
+    jelli_canvas_rect(c, x, y, w, 3, GOLD);
+    jelli_canvas_rect(c, x, y + h - 3, w, 3, GOLD);
+    jelli_canvas_rect(c, x, y, 3, h, GOLD);
+    jelli_canvas_rect(c, x + w - 3, y, 3, h, GOLD);
 }
 
 static void settings_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
@@ -293,19 +307,18 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
                 view->assets};
     jelli_pet_draw_background(surface, view, region);
     c.icon_night = view->night;
+    if (ui->menu_open && jelli_pet_collectible_page(ui->page)) {
+        jelli_pet_collectible_draw(&c, ui, game);
+        return;
+    }
     if (ui->menu_open && ui->page >= JELLI_UI_PETS) {
         if (ui->page == JELLI_UI_FOOD)
             jelli_pet_food_draw(&c, ui);
-        else if (ui->page == JELLI_UI_PRESENT_ACTION)
-            jelli_pet_gallery_draw_action(&c, ui, game);
+
         else
             jelli_pet_collection_draw(&c, ui, game);
         menu_button(&c, ui);
-        return;
-    }
-    if (ui->menu_open && ui->page == JELLI_UI_COLLECTION) {
-        jelli_pet_gallery_draw(&c, view);
-        menu_button(&c, ui);
+        keyboard_focus(&c, ui, view->asleep);
         return;
     }
     jelli_pet_effect_draw(&c, ui, JELLI_EFFECT_BEHIND);
@@ -335,6 +348,7 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     jelli_pet_effect_draw(&c, ui, JELLI_EFFECT_FOREGROUND);
     jelli_pet_menu_ring(&c, game, ui);
     menu_button(&c, ui);
+    keyboard_focus(&c, ui, view->asleep);
 }
 
 void jelli_pet_draw(JelliSurface *surface, const JelliGame *game, const JelliPetUi *ui,

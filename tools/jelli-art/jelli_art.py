@@ -44,6 +44,7 @@ import activities  # noqa: E402
 import creation  # noqa: E402
 import effect_data as effects
 import scenes  # noqa: E402
+import music_data  # noqa: E402
 import creatures  # noqa: E402
 import game_preview  # noqa: E402
 import lint_rules  # noqa: E402
@@ -74,7 +75,7 @@ BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
 # touch.js (RFC-007) right after the shell: pointer routing, gestures and touch sizing that panels use.
 PAGE_SCRIPTS = (HERE / "icons.js", SHELL_JS, HERE / "touch.js", HERE / "lint.js", HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
-                HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js", HERE / "creation.js", HERE / "scene_variation.js", HERE / "scenes.js", HERE / "effect_model.js", HERE / "effects.js")
+                HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js", HERE / "creation.js", HERE / "scene_variation.js", HERE / "scenes.js", HERE / "effect_model.js", HERE / "effects.js", HERE / "music.js")
 EDITABLE_CONTENT = ("behaviors", "creatures", "activities")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
@@ -136,7 +137,7 @@ def capabilities():
 def version():
     """Changes whenever the manifest, creature content or any PNG changes on disk."""
     digest = hashlib.sha1()
-    content = [PETS, CREATURE_DATA, *(CONTENT / f"{n}.json" for n in ("behaviors", "activities", "potty", "prizes", "locations", "scenes", "effects"))]
+    content = [PETS, CREATURE_DATA, *(CONTENT / f"{n}.json" for n in ("behaviors", "activities", "potty", "prizes", "locations", "scenes", "effects", "music"))]
     for path in [MANIFEST, *[p for p in [*content, LINT] if p.exists()], *sorted(SOURCE.glob("*/*.png"))]:
         stat = path.stat()
         digest.update(f"{path.name}{stat.st_mtime_ns}{stat.st_size}".encode())
@@ -578,8 +579,42 @@ def save_effects(body):
     return {"ok": True, "base": storage.digest_bytes(data), **git}
 
 
+def music_document(song="morning-tea"):
+    song = music_data.key(song)
+    with LOCK:
+        path = CONTENT / "music" / f"{song}.mod"
+        raw = path.read_bytes() if path.exists() else None
+        doc = music_data.music_mod.decode(raw) if raw is not None else music_data.initial()
+    return {"data": doc, "base": storage.digest_bytes(raw) if raw is not None else None,
+            "editable": CONTENT_WRITABLE, "songs": music_data.CATALOG}
+
+
+def save_music(body):
+    if not CONTENT_WRITABLE:
+        raise StudioError("Music editing requires --content for copied artwork")
+    doc = F(body, "data", dict)
+    song = music_data.key(F(body, "song", str))
+    if "base" not in body or (body["base"] is not None and not isinstance(body["base"], str)):
+        raise StudioError("Music saves require the loaded base hash (or null for a new module)")
+    data = music_data.music_mod.encode(doc)
+    with LOCK:
+        path = storage.confined(CONTENT, f"music/{song}.mod")
+        current = storage.digest(path)
+        if body["base"] != current:
+            raise StaleError("Music changed on disk; reload or confirm overwrite", {"music": current})
+        path.parent.mkdir(parents=True, exist_ok=True)
+        storage.write_file(path, data)
+        git = record([path], "feat(art): edit tracker record in Jelli Art", request_body.artist(body))
+    return {"ok": True, "base": storage.digest_bytes(data), **git}
+
+
 POSTS = {  # path -> handler(body); every field is type-checked so a bad request is a clear 400
     "/api/scenes": save_scenes,
+    "/api/music": save_music,
+    "/api/music/import": lambda b: music_data.import_module(F(b, "file", str)),
+    "/api/music/export": lambda b: music_data.export_module(F(b, "data", dict)),
+    "/api/music/sample": lambda b: music_data.import_sample(F(b, "file", str), F(b, "format", str)),
+    "/api/music/preview": lambda b: music_data.preview(F(b, "data", dict)),
     "/api/effects": save_effects,
     "/api/create": create_content,
     "/api/save": lambda b: save_asset(F(b, "key", str), F(b, "pixels", list), request_body.artist(b),
@@ -598,7 +633,7 @@ POSTS = {  # path -> handler(body); every field is type-checked so a bad request
                                                F(b, "base", str, required=False)),
 }
 GETS = {"/", "/api/data", "/healthz", "/metrics", "/api/git", "/api/version", "/api/refs", "/api/clips", "/api/creatures", "/api/frames",
-        "/api/behaviour", "/api/effects"}
+        "/api/behaviour", "/api/effects", "/api/music"}
 
 
 class StudioServer(ThreadingHTTPServer):
@@ -638,6 +673,8 @@ class Handler(BaseHTTPRequestHandler):
             return None
         if method == "GET" and url.path == "/api/data":
             return self.send(HTTPStatus.OK, payload(query.get("before", ["HEAD"])[0]))
+        if method == "GET" and url.path == "/api/music":
+            return self.send(HTTPStatus.OK, music_document(query.get("song", ["morning-tea"])[0]))
         if method == "GET" and url.path == "/api/effects":
             return self.send(HTTPStatus.OK, effect_document())
         if method == "GET" and url.path == "/api/scenes":

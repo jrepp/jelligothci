@@ -17,4 +17,6 @@ void jelli_debug_clock(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, c
                        unsigned count);
 void jelli_debug_habits(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id,
                         const char *command, unsigned count);
+void jelli_debug_gift(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
+                      unsigned count);
 #endif

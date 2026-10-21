@@ -30,28 +30,28 @@ with tempfile.TemporaryDirectory(prefix="jelli-prizes-") as scratch:
 
     check(ORIGINAL, ASSETS, True)
     prizes, assets = copy.deepcopy(ORIGINAL), copy.deepcopy(ASSETS)
-    for i in range(10, 16):
+    for i in range(len(ORIGINAL["prizes"]), 20):
         prizes["prizes"].append({"id": i, "key": f"test-{i}", "name": f"TEST {i}", "asset": 12000 + i})
         assets["assets"].append({"id": 12000 + i, "key": f"prizes.test-{i}", "kind": "prizes", "width": 32, "height": 32})
     generated = check(prizes, assets, True)
-    assert '"test-15", "TEST 15", 12015u' in generated
-    assert 'jelli_prize_count = 16u' in generated
-    for change in ({"asset": 65000}, {"asset": 6001}, {"id": 16},
-                   {"key": "butterfly"}, {"name": 'BAD"NAME'}, {"asset": 11001}, {"asset": "011001"}, {"asset": "12015"},
-                   {"id": "15"}, {"id": "015"}, {"id": True}, {"asset": False},
-                   {"id": 15.5}, {"asset": 12015.5}):
+    assert '"test-19", "TEST 19", 12019u' in generated
+    assert 'jelli_prize_count = 20u' in generated
+    for change in ({"asset": 65000}, {"asset": 6001}, {"id": 20},
+                   {"key": "butterfly"}, {"name": 'BAD"NAME'}, {"asset": 11001}, {"asset": "011001"}, {"asset": "12019"},
+                   {"id": "19"}, {"id": "019"}, {"id": True}, {"asset": False},
+                   {"id": 19.5}, {"asset": 12019.5}):
         invalid = copy.deepcopy(prizes)
         invalid["prizes"][-1].update(change)
         check(invalid, assets, False)
     overflow = copy.deepcopy(prizes)
-    overflow["prizes"].append({"id": 16, "key": "overflow", "name": "OVERFLOW", "asset": 13000})
+    overflow["prizes"].append({"id": 20, "key": "overflow", "name": "OVERFLOW", "asset": 13000})
     check(overflow, assets, False)
     for field, value in (("kind", "items"), ("width", 64), ("height", 0), ("key", "prizes.wrong"),
-                         ("id", "012015")):
+                         ("id", "012019")):
         invalid_assets = copy.deepcopy(assets)
         invalid_assets["assets"][-1][field] = value
         check(prizes, invalid_assets, False)
-    for slot in (0, 9):
+    for slot in range(len(ORIGINAL["prizes"])):
         invalid = copy.deepcopy(ORIGINAL)
         invalid["prizes"][slot]["key"] = "replacement"
         check(invalid, ASSETS, False)

@@ -2,6 +2,7 @@
 #include "save_codec.h"
 #include "save_tail.h"
 #include "jelli/collection.h"
+#include "collectible_save.h"
 
 #include <string.h>
 
@@ -199,8 +200,8 @@ static void write_game(Writer *writer, const JelliGame *game)
     write_sleep_log(writer, &game->sleep_log);
     put_u16(writer, (uint16_t)game->timezone_minutes);
     put_u16(writer, (uint16_t)game->clock_adjust);
-    put_u16(writer, game->prizes.owned);
-    put_u16(writer, game->prizes.discovered);
+    put_u16(writer, (uint16_t)(game->prizes.owned & UINT16_MAX));
+    put_u16(writer, (uint16_t)(game->prizes.discovered & UINT16_MAX));
     for (unsigned i = 0u; i < JELLI_PRIZE_LEGACY_COUNT; ++i)
         put_u32(writer, game->prizes.origin_pet[i]);
     put_u8(writer, game->prizes.offered);
@@ -218,6 +219,7 @@ static void write_game(Writer *writer, const JelliGame *game)
         put_u8(writer, game->pets[i].food_type);
     put_u8(writer, game->volume);
     jelli_save_write_tail(writer, game);
+    jelli_collectible_save_write(writer, game);
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -272,6 +274,7 @@ static bool read_game(Reader *reader, JelliGame *game)
             game->pets[i].food_type = get_u8(reader);
     game->volume = reader->version >= 7u ? get_u8(reader) : JELLI_VOLUME_DEFAULT;
     jelli_save_read_tail(reader, game);
+    jelli_collectible_save_read(reader, game);
     return !reader->failed;
 }
 
@@ -329,6 +332,8 @@ static bool header_valid(const uint8_t *bytes, size_t size)
 
 static bool migrate_game(JelliGame *game, unsigned version)
 {
+    if (game->collectible.pet_id)
+        game->collectible.paused = true;
     if (version < 8u) {
         jelli_collection_merge_starters(game);
         jelli_collection_normalize(game);

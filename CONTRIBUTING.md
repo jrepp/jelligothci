@@ -115,6 +115,14 @@ as the release input. Do not hand-edit only one version file or bypass failing
 checks to land a change. Automated enforcement and access settings are described
 in the [maintainer runbook](docs-cms/memos/memo-005-contributor-and-maintainer-handoff.md).
 
+Keep generated game include paths inside the game firmware branch; the factory
+profile deliberately skips those generators. SDL test executables that own their
+entry point must follow the desktop host's `SDL_MAIN_HANDLED` convention and call
+`SDL_SetMainReady()` before initializing SDL. In Studio browser tests, wait for
+published UI state after reload: a newer live poll can supersede the awaited
+request while images decode. These failures and their verification are recorded
+in [memo-095](docs-cms/memos/memo-095-collectible-desktop-playtest.md#pr-77-ci-repairs).
+
 Docs-cms holds decisions and evidence; copy an appropriate template and use the
 next ID plus a new UUID. Preserve historical records. Reusable agent skills are
 versioned under `.agents/skills`, but ordinary development does not require an
@@ -153,6 +161,10 @@ connection errors from a smoke probe can be a consequence of an earlier import
 failure. If the workflow is still running, completed job logs are available via
 `gh api repos/{owner}/{repo}/actions/jobs/{job_id}/logs`. Report pending checks
 as pending and keep application fixes separate from infrastructure retries.
+If a known fix has landed in the target branch, fetch it and verify whether the
+PR includes that commit before duplicating the fix or refreshing baselines.
+Synchronize the base when appropriate, inspect the resulting PR diff, and rerun
+current-head checks; an earlier green PR does not establish this head is green.
 
 For UI changes, inspect the pinned renderer's accessibility and screenshot
 results as well as local browser tests. Reproduce suspected inherited failures

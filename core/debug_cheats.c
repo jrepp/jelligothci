@@ -1,5 +1,6 @@
 #include "debug_internal.h"
 #include "game_internal.h"
+#include "jelli/activities.h"
 #include <string.h>
 
 static void heal(JelliPet *pet)
@@ -11,6 +12,8 @@ static void heal(JelliPet *pet)
     pet->health = JELLI_WELL;
     pet->activity = JELLI_IDLE;
     pet->interaction_due = 0u;
+    pet->moment = 0u;
+    jelli_activity_rewards_clear(pet);
     pet->touch_load = 0u;
     pet->reaction = pet->reaction_ticks = 0u;
     pet->hunger_low = pet->hunger_counted = false;

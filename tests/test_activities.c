@@ -51,7 +51,7 @@ static void reading_moment(void)
     game.pets[0].needs[JELLI_AMUSEMENT] = game.pets[0].needs[JELLI_SOCIAL] = 200u;
     CHECK(strcmp(jelli_moments[4].name, "READING") == 0 && jelli_moments[4].prop != 0u);
     CHECK(moment(&game, 4u) == JELLI_OK && game.pets[0].moment == 5u);
-    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] == 200u && game.pets[0].needs[JELLI_SOCIAL] == 200u);
+    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] > 200u && game.pets[0].needs[JELLI_SOCIAL] > 200u);
     CHECK(moment(&game, 4u) == JELLI_BUSY);
     finish_activity(&game);
     CHECK(game.pets[0].moment == 0u && jelli_game_valid(&game));
@@ -197,7 +197,8 @@ static void version_eleven_loads_without_completion(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 14u);
-    size_t newer = 6u + TEST_SAVE_V14_GAME_BYTES; /* v12 pet bytes and the v14 game tail. */
+    size_t newer =
+        6u + TEST_SAVE_NEW_GAME_BYTES(save.game.count); /* v12 pet bytes and the v14 game tail. */
     memmove(bytes + size - 8u - newer, bytes + size - 8u, 8u);
     size -= newer;
     bytes[4] = 11u;

@@ -162,57 +162,59 @@ static void reset_hunger_grace(JelliPet *pet)
         pet->hunger_due = saturating_add(pet->ticks, UINT64_C(6000));
 }
 
-void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
+static void finish_meal(JelliGame *game, JelliPet *pet, bool streamed)
 {
-    JelliEventSnapshot before = jelli_game_observe(game, pet);
-    unsigned activity = (unsigned)pet->activity;
-    unsigned finished = pet->moment ? JELLI_ACTIVITY_CODE_MOMENT + pet->moment - 1u
-                                    : JELLI_ACTIVITY_CODE_CARE + activity;
-    jelli_moment_complete(game, pet);
-    if (pet->moment) {
-        if (!(pet->behavior_flags & JELLI_PET_FLAG_FREE_PLAY))
-            jelli_moment_reward(game, pet);
-        pet->activity = JELLI_IDLE;
-        pet->interaction_due = 0u;
+    if (streamed || game->food > 0u) {
+        bool useful =
+            streamed ? (pet->moment_pulse & 128u) != 0u : pet->needs[JELLI_SATIETY] < 700u;
+        if (!streamed)
+            --game->food;
+        jelli_habits_record_meal(&pet->habits, pet->ticks);
+        const JelliFood *food = &jelli_foods[pet->food_type];
+        if (!streamed)
+            adjust_need(pet, JELLI_SATIETY, food->fullness);
+        jelli_potty_eat(pet);
+        if (food->hydration) {
+            if (!streamed)
+                jelli_hydration_add(pet, food->hydration);
+            jelli_potty_drink(pet);
+        }
+        adjust_need(pet, JELLI_HYGIENE, -10);
+        if (useful && !pet->reward_claimed) {
+            pet->reward_pending = true;
+            if (pet->feeds < UINT16_MAX)
+                ++pet->feeds;
+        }
     }
+}
+
+static void apply_care_effect(JelliGame *game, JelliPet *pet, bool streamed)
+{
     switch ((JelliActivity)pet->activity) {
     case JELLI_EATING:
-        if (game->food > 0u) {
-            bool useful = pet->needs[JELLI_SATIETY] < 700u;
-            --game->food;
-            jelli_habits_record_meal(&pet->habits, pet->ticks);
-            const JelliFood *food = &jelli_foods[pet->food_type];
-            adjust_need(pet, JELLI_SATIETY, food->fullness);
-            jelli_potty_eat(pet);
-            if (food->hydration) {
-                jelli_hydration_add(pet, food->hydration);
-                jelli_potty_drink(pet);
-            }
-            adjust_need(pet, JELLI_HYGIENE, -10);
-            if (useful && !pet->reward_claimed) {
-                pet->reward_pending = true;
-                if (pet->feeds < UINT16_MAX)
-                    ++pet->feeds;
-            }
-        }
+        finish_meal(game, pet, streamed);
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
         break;
     case JELLI_PLAYING:
-        adjust_need(pet, JELLI_AMUSEMENT, 250);
-        adjust_need(pet, JELLI_ENERGY, -50);
-        adjust_need(pet, JELLI_HYGIENE, -20);
+        if (!streamed) {
+            adjust_need(pet, JELLI_AMUSEMENT, 250);
+            adjust_need(pet, JELLI_ENERGY, -50);
+            adjust_need(pet, JELLI_HYGIENE, -20);
+        }
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
         pet->moment = 0u;
         break;
     case JELLI_EXERCISING:
-        adjust_need(pet, JELLI_AMUSEMENT, jelli_exercise.amusement_gain);
+        if (!streamed)
+            adjust_need(pet, JELLI_AMUSEMENT, jelli_exercise.amusement_gain);
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
         break;
     case JELLI_CLEANING:
-        adjust_need(pet, JELLI_HYGIENE, 350);
+        if (!streamed)
+            adjust_need(pet, JELLI_HYGIENE, 350);
         jelli_potty_clean(pet);
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
@@ -223,7 +225,7 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
         pet->interaction_due = 0u;
         break;
     case JELLI_GIVING:
-        if (game->gifts > 0u) {
+        if (!streamed && game->gifts > 0u) {
             --game->gifts;
             pet->bond = (pet->bond > 975u) ? 1000u : (uint16_t)(pet->bond + 25u);
         }
@@ -233,7 +235,25 @@ void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
     case JELLI_IDLE:
         break;
     }
+}
+
+void jelli_game_apply_effect(JelliGame *game, JelliPet *pet)
+{
+    JelliEventSnapshot before = jelli_game_observe(game, pet);
+    unsigned activity = (unsigned)pet->activity;
+    bool streamed = pet->moment_pulse != 0u;
+    unsigned finished = pet->moment ? JELLI_ACTIVITY_CODE_MOMENT + pet->moment - 1u
+                                    : JELLI_ACTIVITY_CODE_CARE + activity;
+    jelli_moment_complete(game, pet);
+    if (pet->moment) {
+        if (!(pet->behavior_flags & JELLI_PET_FLAG_FREE_PLAY))
+            jelli_moment_reward(game, pet);
+        pet->activity = JELLI_IDLE;
+        pet->interaction_due = 0u;
+    }
+    apply_care_effect(game, pet, streamed);
     pet->moment = 0u;
+    jelli_activity_rewards_clear(pet);
     if (activity != JELLI_IDLE) {
         jelli_game_emit(game, JELLI_EVENT_EFFECT, activity, JELLI_OK, 0u, pet, before);
         jelli_behavior_stimulus(game, JELLI_STIM_ACTIVITY_FINISHED, finished);
@@ -303,6 +323,7 @@ void jelli_game_endpoint(JelliGame *game, JelliPet *pet, uint64_t ticks, bool of
     add_clock(pet, ticks);
     if (pet->ticks == previous_ticks)
         return;
+    jelli_activity_rewards_tick(game, pet);
     if (pet->activity != JELLI_IDLE && pet->interaction_due <= pet->ticks)
         jelli_game_apply_effect(game, pet);
     JelliEventSnapshot before = jelli_game_observe(game, pet);

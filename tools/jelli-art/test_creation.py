@@ -100,12 +100,13 @@ class CreationTest(unittest.TestCase):
         self.create(request)
         registry = creation.read(self.content / "prizes.json")["prizes"]
         self.assertNotIn("new-keepsake", {p["key"] for p in registry})
+        expected_id = max(p["id"] for p in registry) + 1
         result = self.create({**request, "key": "new-collectible", "collectible": True})
         registry = creation.read(self.content / "prizes.json")["prizes"]
         self.assertEqual(registry[-1]["key"], "new-collectible")
         asset = next(a for a in creation.read(self.source / "assets.json")["assets"] if a["key"] == result["key"])
         self.assertEqual(registry[-1]["asset"], asset["id"])
-        self.assertEqual(registry[-1]["id"], 10)
+        self.assertEqual(registry[-1]["id"], expected_id)
 
     def test_unregistered_existing_png_is_never_overwritten(self):
         from PIL import Image

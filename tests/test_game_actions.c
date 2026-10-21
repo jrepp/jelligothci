@@ -210,7 +210,7 @@ static void test_preferences(void)
     CHECK(command(&favorite, JELLI_CMD_MOMENT, 1u) == JELLI_OK);
     CHECK(command(&ordinary, JELLI_CMD_MOMENT, 1u) == JELLI_OK);
     CHECK(favorite.pets[0].bond == ordinary.pets[0].bond);
-    CHECK(favorite.pets[0].needs[JELLI_AMUSEMENT] == ordinary.pets[0].needs[JELLI_AMUSEMENT]);
+    CHECK(favorite.pets[0].needs[JELLI_AMUSEMENT] > ordinary.pets[0].needs[JELLI_AMUSEMENT]);
     finish(&favorite);
     finish(&ordinary);
     CHECK(favorite.pets[0].needs[JELLI_AMUSEMENT] > ordinary.pets[0].needs[JELLI_AMUSEMENT]);

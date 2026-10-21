@@ -17,7 +17,7 @@ void jelli_save_write_tail(Writer *writer, const JelliGame *game)
         put_u32(writer, pet->completed_moments);
     }
     /* v14 stored slot 9; v15 reserves all remaining bounded origin slots. */
-    for (unsigned i = JELLI_PRIZE_LEGACY_COUNT; i < JELLI_PRIZE_COUNT; ++i)
+    for (unsigned i = JELLI_PRIZE_LEGACY_COUNT; i < JELLI_PRIZE_V16_COUNT; ++i)
         put_u32(writer, game->prizes.origin_pet[i]);
 }
 
@@ -44,7 +44,7 @@ void jelli_save_read_tail(Reader *reader, JelliGame *game)
         }
     }
     for (unsigned i = JELLI_PRIZE_LEGACY_COUNT;
-         i < (reader->version >= 15u ? JELLI_PRIZE_COUNT : 10u) && reader->version >= 14u; ++i)
+         i < (reader->version >= 15u ? JELLI_PRIZE_V16_COUNT : 10u) && reader->version >= 14u; ++i)
         game->prizes.origin_pet[i] = get_u32(reader);
     /* v13 pays recipe costs at start and rewards at completion. Old in-flight
      * recipes may already have granted rewards; retire them without replay. */

@@ -2,6 +2,7 @@
 #include "jelli/activities.h"
 #include "game_internal.h"
 #include "pet_gallery.h"
+#include "pet_collectible_ui.h"
 #include "pet_collection.h"
 #include "pet_food.h"
 #include "pet_feedback.h"
@@ -195,10 +196,7 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
         jelli_pet_food_select(ui, game, slot);
     } else if (ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS) {
         jelli_pet_collection_select(ui, game, slot);
-    } else if (ui->page == JELLI_UI_PRESENT_ACTION) {
-        jelli_pet_gallery_action(ui, game, slot);
-    } else if (ui->page == JELLI_UI_COLLECTION) {
-        jelli_pet_gallery_select(ui, game, slot);
+
     } else if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u)) {
         int16_t zone = ui->timezone_minutes, adjust = ui->clock_adjust;
         jelli_pet_clock_action(ui, slot);
@@ -237,6 +235,8 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
         x >= 466 || y >= 466)
         return;
     sync_clock(ui, game);
+    if (jelli_pet_collectible_tap(ui, game, x, y))
+        return;
     if (scene_tap(ui, game, x, y))
         return;
     for (unsigned slot = 0u; slot <= JELLI_PRIZE_COUNT; ++slot) {
@@ -271,6 +271,8 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
 void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)
 {
     if (!ui || !game || game->resuming || !jelli_game_valid(game))
+        return;
+    if (jelli_pet_collectible_swipe(ui, game, dx, dy))
         return;
     unsigned code;
     if (dy < 0 && !ui->menu_open) {

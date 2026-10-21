@@ -36,7 +36,7 @@ with tempfile.TemporaryDirectory(prefix='jelli-clock-') as folder:
             except OSError:
                 assert time.monotonic() < deadline, 'Socket not ready'
                 time.sleep(.01)
-        client = module.Client(wire)
+        client = module.Client(wire, timeout=10.0)
         result = client.set_clock(1700000000, -240)
         assert result['clock_known'] and not result['pending']
         assert result['timezone_minutes'] == -240

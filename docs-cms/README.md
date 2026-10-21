@@ -109,6 +109,10 @@ Next increment: [RFC-002: Pet memory and persistent activities](rfcs/rfc-002-pet
 
 ## Proposed game architecture
 
+Gift acquisition, two-gift recipes and proposed activity toys:
+[RFC-012](rfcs/rfc-012-gift-crafting-and-activity-ledger.md) (draft), with
+[gameplay and accessibility review](memos/memo-092-gift-gameplay-and-accessibility-review.md).
+
 [RFC-004: Pet collection and evolution data](rfcs/rfc-004-pet-collection-and-evolution-data.md)
 describes pet slots, unlocks, evolution sets, and touch controls for putting
 away a selected present. [Memo-020](memos/memo-020-pet-collection-and-present-controls.md)
@@ -216,3 +220,9 @@ setup or user commands change.
 - [Docuchango on PyPI](https://pypi.org/project/docuchango/)
 - [Docuchango source](https://github.com/jrepp/docuchango)
 - [uv tool execution](https://docs.astral.sh/uv/concepts/tools/)
+
+Collectible desktop playtest, focus-loss repair and debug ownership edits:
+[memo-095](memos/memo-095-collectible-desktop-playtest.md).
+
+Bounded MOD tracker authoring, sample management and four-channel playback:
+[memo-096](memos/memo-096-music-tracker-authoring.md).

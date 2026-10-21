@@ -145,12 +145,17 @@ void jelli_moment_reward(const JelliGame *game, JelliPet *pet)
         return;
     unsigned id = pet->moment - 1u;
     const JelliMoment *m = &jelli_moments[id];
-    bool useful_meal = m->kind == JELLI_MOMENT_FEED && pet->needs[JELLI_SATIETY] < 700u;
-    unsigned factor = jelli_moment_bonus_percent(pet, id) * jelli_moment_jitter_percent(pet, id);
-    for (unsigned i = 0u; i < JELLI_ACTIVITY_METERS; ++i)
-        if (m->gains[i])
-            reward_meter(pet, i, (unsigned)(((uint32_t)m->gains[i] * factor + 5000u) / 10000u));
-    jelli_game_preference(game, pet);
+    bool useful_meal =
+        m->kind == JELLI_MOMENT_FEED &&
+        (pet->moment_pulse ? (pet->moment_pulse & 128u) != 0u : pet->needs[JELLI_SATIETY] < 700u);
+    if (!pet->moment_pulse) {
+        unsigned factor =
+            jelli_moment_bonus_percent(pet, id) * jelli_moment_jitter_percent(pet, id);
+        for (unsigned i = 0u; i < JELLI_ACTIVITY_METERS; ++i)
+            if (m->gains[i])
+                reward_meter(pet, i, (unsigned)(((uint32_t)m->gains[i] * factor + 5000u) / 10000u));
+        jelli_game_preference(game, pet);
+    }
     if (m->kind == JELLI_MOMENT_FEED) {
         jelli_habits_record_meal(&pet->habits, pet->ticks);
         jelli_potty_eat(pet);

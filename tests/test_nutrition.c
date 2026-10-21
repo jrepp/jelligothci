@@ -1,5 +1,6 @@
 #include "game_fixture.h"
 #include "jelli/nutrition.h"
+#include "jelli/activities.h"
 #include "jelli/save.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +39,7 @@ static void water_and_time(void)
     CHECK(pet->hydration == 400u);
     pet->activity = JELLI_IDLE;
     pet->interaction_due = 0u;
+    jelli_activity_rewards_clear(pet);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_REST, 1u, 0u}) == JELLI_OK);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_WATER, 1u, 0u}) == JELLI_ASLEEP);
 }
@@ -70,7 +72,7 @@ static void food_choices(void)
         pet->needs[JELLI_SATIETY] = 400u;
         pet->hydration = 400u;
         CHECK(jelli_game_command(&save.game, (JelliCommand){JELLI_CMD_FEED, 1u, food}) == JELLI_OK);
-        CHECK(save.game.food == 5u);
+        CHECK(save.game.food == 4u);
         CHECK(jelli_game_command(&save.game, (JelliCommand){JELLI_CMD_FEED, 1u, food}) ==
               JELLI_BUSY);
         uint8_t bytes[JELLI_SAVE_CAPACITY];

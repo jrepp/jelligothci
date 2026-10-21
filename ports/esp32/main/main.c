@@ -174,6 +174,8 @@ void app_main(void)
     ESP_LOGI(TAG, "Pet slice ready: tap menus; NVS checkpoint and RTC session initialized");
     if (!jelli_sound_output_init())
         ESP_LOGW(TAG, "Sound unavailable; game remains playable");
+    jelli_pet_bind_music(
+        &engine, (JelliMusicDriver){NULL, jelli_music_output_control, jelli_music_output_status});
     jelli_network_init(&engine);
     jelli_experiments_init(&board.touch);
     jelli_debug_wire_init(&board.display);

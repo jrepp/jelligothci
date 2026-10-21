@@ -60,6 +60,54 @@
       "key": "teddy-bear",
       "name": "TEDDY BEAR",
       "asset": 11010
+    },
+    {
+      "id": 10,
+      "key": "jelli-chain-cartridge",
+      "name": "JELLI CHAIN",
+      "asset": 11011
+    },
+    {
+      "id": 11,
+      "key": "morning-tea-record",
+      "name": "MORNING TEA",
+      "asset": 11012
+    },
+    {
+      "id": 12,
+      "key": "garden-waltz-record",
+      "name": "GARDEN WALTZ",
+      "asset": 11013
+    },
+    {
+      "id": 13,
+      "key": "porch-picnic-record",
+      "name": "PORCH PICNIC",
+      "asset": 11014
+    },
+    {
+      "id": 14,
+      "key": "tiny-thunder-record",
+      "name": "TINY THUNDER",
+      "asset": 11015
+    },
+    {
+      "id": 15,
+      "key": "neon-heart-record",
+      "name": "NEON HEART",
+      "asset": 11016
+    },
+    {
+      "id": 16,
+      "key": "cloud-club-record",
+      "name": "CLOUD CLUB",
+      "asset": 11017
+    },
+    {
+      "id": 17,
+      "key": "pixel-sunset-record",
+      "name": "PIXEL SUNSET",
+      "asset": 11018
     }
   ]
 }

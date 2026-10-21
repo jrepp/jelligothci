@@ -54,13 +54,13 @@ static void costs_and_interruptions(void)
     unchanged(&before, &game);
     CHECK(reading(&game) == JELLI_OK);
     CHECK(game.pets[0].needs[JELLI_ENERGY] == 422u && game.pets[0].hydration == 440u);
-    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] == 500u && game.pets[0].bond == before.pets[0].bond);
+    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] > 500u && game.pets[0].bond >= before.pets[0].bond);
     before = game;
     CHECK(reading(&game) == JELLI_BUSY);
     unchanged(&before, &game);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_CARE, 1u, 0u}) == JELLI_OK);
     finish(&game);
-    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] <= 500u);
+    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] <= before.pets[0].needs[JELLI_AMUSEMENT]);
     CHECK(game.pets[0].hydration <= 440u && game.pets[0].bond == before.pets[0].bond);
     CHECK(!(game.pets[0].completed_moments & (UINT32_C(1) << 4u)));
     ready(&game);
@@ -157,8 +157,8 @@ static void migrate_old_running_recipe(void)
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 8u);
     /* v12 layout (without the v14 game tail), old immediate-reward semantics. */
-    memmove(bytes + size - 8u - TEST_SAVE_V14_GAME_BYTES, bytes + size - 8u, 8u);
-    size -= TEST_SAVE_V14_GAME_BYTES;
+    memmove(bytes + size - 8u - TEST_SAVE_NEW_GAME_BYTES(save.game.count), bytes + size - 8u, 8u);
+    size -= TEST_SAVE_NEW_GAME_BYTES(save.game.count);
     for (unsigned i = 0u; i < 4u; ++i)
         bytes[8u + i] = (uint8_t)(size >> (i * 8u));
     bytes[4] = 12u;
@@ -172,7 +172,7 @@ static void migrate_old_running_recipe(void)
         bytes[size - 8u + i] = (uint8_t)(~crc >> (i * 8u));
     CHECK(jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.pets[0].moment == 0u && loaded.game.pets[0].activity == JELLI_IDLE);
-    CHECK(loaded.game.pets[0].needs[JELLI_AMUSEMENT] == 500u);
+    CHECK(loaded.game.pets[0].needs[JELLI_AMUSEMENT] == save.game.pets[0].needs[JELLI_AMUSEMENT]);
     CHECK(jelli_game_valid(&loaded.game));
 }
 

@@ -5,6 +5,7 @@
 #include "jelli/pet_effect.h"
 #include "pet_draw.h"
 #include "pet_gallery.h"
+#include "pet_collectible_ui.h"
 #include "pet_collection.h"
 #include <stddef.h>
 
@@ -62,6 +63,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
         (pet->ticks % JELLI_DAY_TICKS + pet->phase_offset % JELLI_DAY_TICKS) % JELLI_DAY_TICKS;
     jelli_pet_timing(ui, pet, animation_ms, &key);
     jelli_pet_gallery_key(ui, game, animation_ms, &key);
+    jelli_pet_collectible_key(ui, game, &key);
     jelli_pet_collection_key(ui, game, &key);
     if (paused) {
         /* Pausing the pet must not strand navigation behind a frozen transition. */
@@ -193,7 +195,13 @@ static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey 
            a->scene_revision == b->scene_revision && a->care_seconds == b->care_seconds &&
            a->volume == b->volume && a->hydration == b->hydration && a->assets == b->assets &&
            same_frame_key(a, b) && same_pet_key(a, b) && jelli_pet_gallery_same(a, b) &&
-           jelli_pet_collection_same(a, b);
+           jelli_pet_collection_same(a, b) && jelli_pet_collectible_same(a, b);
+}
+
+static void page_particles(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui)
+{
+    if (!ui->menu_open || !jelli_pet_collectible_page(ui->page))
+        jelli_pet_draw_particles(surface, game, ui);
 }
 
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,
@@ -213,7 +221,7 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
     jelli_pet_bubbles(ui, view.asleep, time);
     if (ui->rendered && same_render_key(&view, &ui->last_view)) {
         surface->damage = (JelliRect){0};
-        jelli_pet_draw_particles(surface, game, ui);
+        page_particles(surface, game, ui);
         return;
     }
     JelliPetRenderKey previous = ui->last_view;
@@ -241,5 +249,5 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
     ui->last_revision = game->revision;
     ui->last_page = (uint8_t)ui->page;
     ui->rendered = true;
-    jelli_pet_draw_particles(surface, game, ui);
+    page_particles(surface, game, ui);
 }
