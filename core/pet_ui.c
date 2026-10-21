@@ -174,6 +174,12 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
     if (slot == 0u) {
         jelli_pet_ui_back(ui);
         ui->result = JELLI_OK;
+    } else if (ui->page == JELLI_UI_SETTINGS && slot == 7u) {
+        game->activity_music_enabled = !game->activity_music_enabled;
+        ++game->revision;
+        ui->save_requested = true;
+        ui->save_status = JELLI_SAVE_PENDING;
+        ui->result = JELLI_OK;
     } else if (ui->page == JELLI_UI_MOMENTS) {
         if (slot == 6u) {
             ui->activity_page =

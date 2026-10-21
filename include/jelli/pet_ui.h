@@ -128,6 +128,7 @@ typedef struct {
     uint32_t prize_origins[JELLI_PRIZE_COUNT];
     JelliCollectibleSession collectible;
     uint16_t collectible_play_ticks, collectible_special;
+    uint16_t cartridge_plays, cartridge_wins;
     bool collectible_record_rewarded;
     uint8_t gift_category, gift_page, collectible_confirm;
     bool collectible_reduced_motion, collectible_menu;
@@ -157,6 +158,7 @@ typedef struct {
     uint16_t needs[JELLI_NEED_COUNT];
     uint16_t bond, hydration;
     uint8_t volume;
+    bool activity_music_enabled;
     uint16_t food;
     uint16_t gifts;
     uint8_t active;

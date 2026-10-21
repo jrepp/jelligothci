@@ -38,7 +38,7 @@ void jelli_game_init(JelliGame *game)
 {
     if (game == NULL)
         return;
-    *game = (JelliGame){.volume = JELLI_VOLUME_DEFAULT};
+    *game = (JelliGame){.volume = JELLI_VOLUME_DEFAULT, .activity_music_enabled = true};
     game->count = 1u;
     game->food = jelli_collection_start.food;
     game->gifts = jelli_collection_start.gifts;

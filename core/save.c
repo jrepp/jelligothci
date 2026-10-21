@@ -272,6 +272,7 @@ static bool read_game(Reader *reader, JelliGame *game)
     if (reader->version >= 6u)
         for (unsigned i = 0u; i < game->count; ++i)
             game->pets[i].food_type = get_u8(reader);
+    game->activity_music_enabled = true;
     game->volume = reader->version >= 7u ? get_u8(reader) : JELLI_VOLUME_DEFAULT;
     jelli_save_read_tail(reader, game);
     jelli_collectible_save_read(reader, game);

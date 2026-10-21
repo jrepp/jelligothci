@@ -12,7 +12,8 @@ import struct
 RATE = 22050
 LENGTH = RATE * 30
 KEYS = ('morning-tea', 'garden-waltz', 'porch-picnic', 'tiny-thunder',
-        'neon-heart', 'cloud-club', 'pixel-sunset')
+        'neon-heart', 'cloud-club', 'pixel-sunset', 'pocket-arcade', 'garden-drift',
+        'tea-steam', 'bubble-bath', 'moon-pillow', 'little-steps')
 
 
 def compile_song(doc):

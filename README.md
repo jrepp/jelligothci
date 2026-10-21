@@ -33,6 +33,11 @@ selection, sleep/wake, and the clock. Space pauses; Escape quits. The
 [playing guide](docs/playing.md) covers gameplay, saves, debug commands, and
 offline progress.
 
+Cartridges include Jelli Chain and Bubble Lab. Bubble Lab uses swipe movement,
+tap rotation and downward hard drop across three virus-clearing levels. Cartridge
+launch cards show persistent Plays/Wins; the [playing guide](docs/playing.md#bubble-lab)
+explains controls, assists, crafting and the shared checkpoint.
+
 ## Art and content
 
 Edit PNGs under [`assets/slice/`](assets/slice/) or use `make jelli-art`. For

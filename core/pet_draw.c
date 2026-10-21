@@ -170,9 +170,16 @@ static void settings_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui
         if (count > 0 && (size_t)count < sizeof(value))
             jelli_canvas_centered(c, game->volume ? value : "MUTED", 340, 2u, PALE);
     }
-    if (ui->result == JELLI_OK)
+    if (ui->result == JELLI_OK && ui->clock_edit)
         jelli_canvas_centered(c, JELLI_VERSION_LABEL, 390, 1u, PALE);
-    else
+    if (!ui->clock_edit) {
+        JelliPetUiButton music;
+        if (jelli_pet_ui_control(ui, 7u, pet->asleep, &music)) {
+            jelli_canvas_rect(c, 165, 356, 136, 48, TEAL);
+            jelli_canvas_centered(c, music.label, 375, 1u, PALE);
+        }
+    }
+    if (ui->result != JELLI_OK)
         jelli_canvas_caption(c, jelli_pet_menu_hint(ui, game), 280, PALE);
 }
 

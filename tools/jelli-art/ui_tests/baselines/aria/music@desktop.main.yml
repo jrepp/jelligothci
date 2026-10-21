@@ -11,6 +11,12 @@
       - option "Neon Heart · K-pop"
       - option "Cloud Club · House"
       - option "Pixel Sunset · 80s"
+      - option "Pocket Arcade · Game launcher"
+      - option "Garden Drift · Garden / fishing"
+      - option "Tea Steam · Tea / meals"
+      - option "Bubble Bath · Wash / care"
+      - option "Moon Pillow · Sleep / quiet time"
+      - option "Little Steps · Play / exercise"
     - text: Module title
     - textbox "Module title": New score
     - button "Save MOD"

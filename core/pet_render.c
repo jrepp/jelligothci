@@ -48,6 +48,12 @@ static void activity_key(const JelliPet *pet, uint64_t time, JelliPetRenderKey *
     }
 }
 
+static void settings_key(const JelliGame *game, JelliPetRenderKey *key)
+{
+    key->volume = game->volume;
+    key->activity_music_enabled = game->activity_music_enabled;
+}
+
 static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint64_t animation_ms,
                                     bool paused)
 {
@@ -106,7 +112,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
         key.needs[i] = pet->needs[i];
     key.bond = pet->bond;
     key.hydration = pet->hydration;
-    key.volume = game->volume;
+    settings_key(game, &key);
     key.mood = (uint8_t)jelli_pet_mood(pet);
     reaction_key(pet, &key);
     key.food = game->food;
@@ -191,7 +197,8 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->effect_tick == b->effect_tick && a->scene_pixels == b->scene_pixels &&
+    return a->activity_music_enabled == b->activity_music_enabled &&
+           a->effect_tick == b->effect_tick && a->scene_pixels == b->scene_pixels &&
            a->scene_revision == b->scene_revision && a->care_seconds == b->care_seconds &&
            a->volume == b->volume && a->hydration == b->hydration && a->assets == b->assets &&
            same_frame_key(a, b) && same_pet_key(a, b) && jelli_pet_gallery_same(a, b) &&

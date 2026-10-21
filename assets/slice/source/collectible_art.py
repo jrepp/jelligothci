@@ -23,11 +23,12 @@ def build():
         (11016, "neon-heart-record", "friendship-bow", "Neon Heart record"),
         (11017, "cloud-club-record", "butterfly", "Cloud Club record"),
         (11018, "pixel-sunset-record", "moon-charm", "Pixel Sunset record"),
+        (11019, "bubble-lab-cartridge", "bubble-gem", "Bubble Lab cartridge"),
     )
     for asset_id, key, motif, title in recipes:
         image = Image.new("RGBA", (32, 32))
         draw = ImageDraw.Draw(image)
-        if asset_id == 11011:
+        if key.endswith("-cartridge"):
             draw.rectangle((4, 3, 27, 28), fill="#30312b")
             draw.rectangle((6, 4, 25, 25), fill="#87918b")
             draw.rectangle((8, 7, 23, 20), fill="#ded2b9")
@@ -41,8 +42,8 @@ def build():
             draw.ellipse((9, 9, 22, 22), fill="#ded2b9")
         with Image.open(ROOT / "prizes" / f"{motif}.png") as source:
             small = source.convert("RGBA").resize((12, 12), Image.Resampling.NEAREST)
-            image.alpha_composite(small, (10, 8 if asset_id == 11011 else 10))
-        if asset_id != 11011:
+            image.alpha_composite(small, (10, 8 if key.endswith("-cartridge") else 10))
+        if not key.endswith("-cartridge"):
             draw.ellipse((15, 15, 16, 16), fill="#30312b")
         path = f"prizes/{key}.png"
         image.save(ROOT / path)

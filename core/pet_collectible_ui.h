@@ -16,4 +16,10 @@ bool jelli_pet_collectible_same(const JelliPetRenderKey *a, const JelliPetRender
 unsigned jelli_pet_collectible_count(unsigned category);
 unsigned jelli_pet_collectible_prize(unsigned category, unsigned position);
 unsigned jelli_pet_collectible_recipe(unsigned prize);
+bool jelli_pet_bubble_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *button);
+void jelli_pet_bubble_action(JelliPetUi *ui, JelliGame *game, unsigned slot);
+void jelli_pet_bubble_draw(Canvas *canvas, const JelliCollectibleSession *session);
+void jelli_pet_bubble_checkpoint(JelliPetUi *ui, const JelliCollectibleSession *before,
+                                 const JelliCollectibleSession *after);
+void jelli_pet_cartridge_draw(Canvas *canvas, const JelliGame *game, unsigned prize);
 #endif

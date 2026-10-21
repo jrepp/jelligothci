@@ -14,7 +14,13 @@ CATALOG = [
     ('morning-tea', 'Morning Tea', 'Chill'), ('garden-waltz', 'Garden Waltz', 'Classical'),
     ('porch-picnic', 'Porch Picnic', 'Country'), ('tiny-thunder', 'Tiny Thunder', 'Heavy metal'),
     ('neon-heart', 'Neon Heart', 'K-pop'), ('cloud-club', 'Cloud Club', 'House'),
-    ('pixel-sunset', 'Pixel Sunset', '80s')]
+    ('pixel-sunset', 'Pixel Sunset', '80s'),
+    ('pocket-arcade', 'Pocket Arcade', 'Game launcher'),
+    ('garden-drift', 'Garden Drift', 'Garden / fishing'),
+    ('tea-steam', 'Tea Steam', 'Tea / meals'),
+    ('bubble-bath', 'Bubble Bath', 'Wash / care'),
+    ('moon-pillow', 'Moon Pillow', 'Sleep / quiet time'),
+    ('little-steps', 'Little Steps', 'Play / exercise')]
 
 
 def key(value):

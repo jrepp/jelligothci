@@ -85,6 +85,17 @@ static bool routine_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton
     return false;
 }
 
+static bool music_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *button)
+{
+    if (!ui->menu_open || ui->page != JELLI_UI_SETTINGS || ui->clock_edit || slot != 7u)
+        return false;
+    *button = (JelliPetUiButton){.bounds = {165u, 356u, 136u, 48u},
+                                 .label = ui->last_view.activity_music_enabled ? "BG MUSIC ON"
+                                                                               : "BG MUSIC OFF",
+                                 .scale = 1u};
+    return true;
+}
+
 bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
                           JelliPetUiButton *button)
 {
@@ -104,6 +115,8 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
         return true;
     if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot && (ui->clock_edit || slot == 4u))
         return jelli_pet_clock_button(ui->clock_edit, slot, button);
+    if (music_button(ui, slot, button))
+        return true;
     if (routine_button(ui, slot, button))
         return true;
     return jelli_pet_ui_button(ui->page, slot, asleep, ui->menu_open, button);

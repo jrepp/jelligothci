@@ -108,6 +108,12 @@
       "key": "pixel-sunset-record",
       "name": "PIXEL SUNSET",
       "asset": 11018
+    },
+    {
+      "id": 18,
+      "key": "bubble-lab-cartridge",
+      "name": "BUBBLE LAB",
+      "asset": 11019
     }
   ]
 }

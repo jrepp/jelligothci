@@ -4,7 +4,7 @@
 
 static unsigned category_for(unsigned prize)
 {
-    return prize == JELLI_COLLECTIBLE_CHAIN_PRIZE ? 1u
+    return (prize == JELLI_COLLECTIBLE_CHAIN_PRIZE || prize == JELLI_COLLECTIBLE_BUBBLE_PRIZE) ? 1u
            : prize >= JELLI_COLLECTIBLE_RECORD_PRIZE &&
                    prize < JELLI_COLLECTIBLE_RECORD_PRIZE + JELLI_COLLECTIBLE_RECORD_COUNT
                ? 2u
@@ -55,7 +55,8 @@ static bool button(JelliPetUiButton *b, unsigned x, unsigned y, unsigned w, unsi
 
 static bool session_finished(const JelliCollectibleSession *s)
 {
-    return s->mode == JELLI_COLLECTIBLE_CHAIN    ? s->chain.status != JELLI_CHAIN_RUNNING
+    return s->mode == JELLI_COLLECTIBLE_BUBBLE   ? s->bubble.status != JELLI_BUBBLE_RUNNING
+           : s->mode == JELLI_COLLECTIBLE_CHAIN  ? s->chain.status != JELLI_CHAIN_RUNNING
            : s->mode == JELLI_COLLECTIBLE_RECORD ? s->record_cursor >= JELLI_RECORD_SAMPLES
                                                  : s->elapsed_ticks >= 80u;
 }
@@ -64,17 +65,38 @@ static bool session_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton
 {
     if (!slot)
         return button(b, 185u, 414u, 96u, 52u, "BACK");
+    if (ui->last_view.collectible.mode == JELLI_COLLECTIBLE_BUBBLE && !ui->collectible_menu &&
+        !ui->collectible_win_ms)
+        return jelli_pet_bubble_button(ui, slot, b);
     if (!ui->collectible_menu || slot != 1u || ui->collectible_win_ms)
         return false;
-    const char *label = session_finished(&ui->last_view.collectible) ? "REPLAY" : "RESUME";
+    const char *label =
+        session_finished(&ui->last_view.collectible)
+            ? (ui->last_view.collectible.mode == JELLI_COLLECTIBLE_BUBBLE ? "RETRY LEVEL"
+                                                                          : "REPLAY")
+            : "RESUME";
     return button(b, 143u, 190u, 180u, 48u, label);
 }
 
 static bool detail_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *b)
 {
-    if (slot != 1u || !ui->latched_prize || ui->latched_prize > jelli_prize_count)
+    if (!ui->latched_prize || ui->latched_prize > jelli_prize_count)
         return false;
     bool owned = (ui->last_view.prize_owned & (1u << (ui->latched_prize - 1u))) != 0u;
+    bool cartridge = jelli_cartridge_index(ui->latched_prize - 1u) < JELLI_CARTRIDGE_COUNT;
+    if (owned && cartridge) {
+        const JelliCollectibleSession *saved = &ui->last_view.collectible;
+        const char *label =
+            ui->collectible_confirm == 2u ? "REPLACE & PLAY"
+            : saved->pet_id && saved->prize + 1u == ui->latched_prize && !session_finished(saved)
+                ? "RESUME"
+                : "PLAY";
+        if (slot == 1u)
+            return button(b, 137u, 104u, 192u, 192u, label);
+        return slot == 2u && button(b, 113u, 348u, 240u, 52u, label);
+    }
+    if (slot != 1u)
+        return false;
     if (!owned && jelli_pet_collectible_recipe(ui->latched_prize - 1u) == jelli_craft_recipe_count)
         return false;
     const char *label = ui->collectible_confirm == 1u   ? "CONFIRM CRAFT"
@@ -157,6 +179,15 @@ static void primary(JelliPetUi *ui, JelliGame *game)
         ui->collectible_confirm = 0u;
         return;
     }
+    const JelliCollectibleSession *saved = &game->collectible;
+    bool replacing_lab =
+        saved->pet_id &&
+        (saved->mode == JELLI_COLLECTIBLE_BUBBLE || prize == JELLI_COLLECTIBLE_BUBBLE_PRIZE) &&
+        (saved->prize != prize || saved->pet_id != game->pets[game->active].id);
+    if (replacing_lab && ui->collectible_confirm != 2u) {
+        ui->collectible_confirm = 2u;
+        return;
+    }
     command(ui, game, JELLI_CMD_COLLECTIBLE_PLAY, prize);
     ui->collectible_confirm = 0u;
     if (ui->result == JELLI_OK) {
@@ -174,6 +205,8 @@ static void session_action(JelliPetUi *ui, JelliGame *game, unsigned slot)
     if (!slot) {
         command(ui, game, JELLI_CMD_COLLECTIBLE_CONTROL, JELLI_COLLECTIBLE_CLOSE);
         jelli_pet_collectible_back(ui);
+    } else if (slot >= 2u && game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE) {
+        jelli_pet_bubble_action(ui, game, slot);
     } else {
         command(ui, game, JELLI_CMD_COLLECTIBLE_CONTROL,
                 session_finished(&game->collectible) ? JELLI_COLLECTIBLE_RESTART
@@ -205,6 +238,10 @@ static void select(JelliPetUi *ui, JelliGame *game, unsigned slot)
             ui->latched_prize = (uint8_t)(prize + 1u);
             ui->page = JELLI_UI_PRESENT_ACTION;
             ui->collectible_confirm = 0u;
+            if (ui->gift_category == 1u && game->collectible.pet_id &&
+                (game->collectible.prize != prize ||
+                 game->collectible.pet_id != game->pets[game->active].id))
+                ui->collectible_confirm = 2u;
             if (ui->gift_category == 2u && (game->prizes.owned & (1u << prize)))
                 primary(ui, game);
         }
@@ -231,6 +268,10 @@ bool jelli_pet_collectible_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
             return true;
         }
     }
+    if (ui->page == JELLI_UI_COLLECTIBLE_PLAY &&
+        game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE && !game->collectible.paused &&
+        x >= 155 && x < 311 && y >= 87 && y < 347)
+        jelli_pet_bubble_action(ui, game, 3u);
     return true;
 }
 
@@ -241,8 +282,9 @@ bool jelli_pet_collectible_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy
     unsigned ax = dx < 0 ? 0u - (unsigned)dx : (unsigned)dx;
     unsigned ay = dy < 0 ? 0u - (unsigned)dy : (unsigned)dy;
     if (ui->page == JELLI_UI_COLLECTIBLE_PLAY &&
-        game->collectible.mode == JELLI_COLLECTIBLE_CHAIN && !game->collectible.paused &&
-        (dx || dy)) {
+        (game->collectible.mode == JELLI_COLLECTIBLE_CHAIN ||
+         game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE) &&
+        !game->collectible.paused && (dx || dy)) {
         unsigned direction = ay > ax ? (dy < 0 ? JELLI_COLLECTIBLE_UP : JELLI_COLLECTIBLE_DOWN)
                                      : (dx < 0 ? JELLI_COLLECTIBLE_LEFT : JELLI_COLLECTIBLE_RIGHT);
         command(ui, game, JELLI_CMD_COLLECTIBLE_CONTROL, direction);
@@ -256,6 +298,12 @@ void jelli_pet_collectible_key(const JelliPetUi *ui, const JelliGame *game, Jell
     key->collectible = game->collectible;
     const JelliCollectibleProgress *progress = &game->pets[game->active].collectible_progress;
     key->collectible_special = progress->special_unlocked;
+    unsigned cartridge =
+        ui->latched_prize ? jelli_cartridge_index(ui->latched_prize - 1u) : JELLI_CARTRIDGE_COUNT;
+    if (cartridge < JELLI_CARTRIDGE_COUNT) {
+        key->cartridge_plays = game->cartridge_stats[cartridge].plays;
+        key->cartridge_wins = game->cartridge_stats[cartridge].wins;
+    }
     key->collectible_record_rewarded = progress->record_rewarded;
     if (ui->latched_prize && ui->latched_prize <= JELLI_PRIZE_COUNT)
         key->collectible_play_ticks = progress->play_ticks[ui->latched_prize - 1u];
@@ -275,13 +323,15 @@ static bool same_session(const JelliCollectibleSession *x, const JelliCollectibl
            x->active == y->active && x->paused == y->paused &&
            x->record_cursor == y->record_cursor && x->elapsed_ticks == y->elapsed_ticks &&
            x->chain.length == y->chain.length && x->chain.pickup == y->chain.pickup &&
-           x->chain.status == y->chain.status && x->chain.relaxed == y->chain.relaxed &&
+           jelli_bubble_same(&x->bubble, &y->bubble) && x->chain.status == y->chain.status &&
+           x->chain.relaxed == y->chain.relaxed &&
            memcmp(x->chain.body, y->chain.body, sizeof(x->chain.body)) == 0;
 }
 
 bool jelli_pet_collectible_same(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->collectible_special == b->collectible_special &&
+    return a->cartridge_plays == b->cartridge_plays && a->cartridge_wins == b->cartridge_wins &&
+           a->collectible_special == b->collectible_special &&
            a->collectible_record_rewarded == b->collectible_record_rewarded &&
            a->collectible_play_ticks == b->collectible_play_ticks &&
            a->keyboard_focus == b->keyboard_focus && a->keyboard_slot == b->keyboard_slot &&

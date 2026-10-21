@@ -138,6 +138,7 @@ typedef struct {
     JelliSleepLog sleep_log;
     JelliPrizes prizes;
     JelliCollectibleSession collectible;
+    JelliCartridgeStats cartridge_stats[JELLI_CARTRIDGE_COUNT];
     uint64_t ticks, discarded_ms, resume_remaining_ms;
     uint32_t backlog_ms, revision;
     uint16_t food, gifts;
@@ -145,7 +146,7 @@ typedef struct {
     /* Stimuli for the active pet, drained each behaviour second; never saved. */
     uint8_t stimuli[8][2], stimulus_count, stimuli_dropped;
     uint8_t count, active, volume;
-    bool resuming;
+    bool resuming, activity_music_enabled;
     /* Optional borrowed sink; owner outlives commands/advance. Not saved. */
     JelliEventLog *events;
     bool clock_known;

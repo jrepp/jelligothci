@@ -20,6 +20,10 @@ JelliResult jelli_collectible_recipe_available(const JelliGame *game, unsigned r
  * grants the once-per-pet first-listen reward. Muted consumed samples count. */
 JelliResult jelli_collectible_record_progress(JelliGame *game, uint32_t sample_cursor);
 /* Called by admitted live100ms game ticks only, never offline catch-up. */
+JelliResult jelli_collectible_bubble_control(JelliGame *game, unsigned control);
+unsigned jelli_cartridge_index(unsigned prize);
+void jelli_cartridge_count_win(JelliGame *game);
+void jelli_collectible_bubble_step(JelliBubble *lab);
 void jelli_collectible_tick(JelliGame *game);
 bool jelli_collectible_valid(const JelliGame *game);
 bool jelli_collectible_progress_valid(const JelliCollectibleProgress *progress);

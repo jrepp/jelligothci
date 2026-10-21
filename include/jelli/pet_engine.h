@@ -29,7 +29,7 @@ typedef struct {
     uint64_t animation_ms;
     JelliMusicDriver music_driver;
     uint32_t music_serial, music_cursor, music_pet, music_generation;
-    uint8_t music_volume;
+    uint8_t music_volume, music_song;
     bool music_running;
     bool running, paused;
 } JelliPetEngine;

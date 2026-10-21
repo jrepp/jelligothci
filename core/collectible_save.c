@@ -70,6 +70,7 @@ void jelli_collectible_save_write(Writer *writer, const JelliGame *game)
             put_u16(writer, game->pets[i].moment_rewards[j]);
         put_u8(writer, game->pets[i].moment_pulse);
     }
+    jelli_bubble_save_write(writer, game);
 }
 
 void jelli_collectible_save_read(Reader *reader, JelliGame *game)
@@ -112,5 +113,6 @@ void jelli_collectible_save_read(Reader *reader, JelliGame *game)
             game->pets[i].moment_pulse = get_u8(reader);
         }
     }
+    jelli_bubble_save_read(reader, game);
     /* Validation must inspect raw state before normalizing resume policy. */
 }

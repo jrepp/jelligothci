@@ -1,5 +1,6 @@
 #include "jelli/pet_engine.h"
 #include "jelli/collectible.h"
+#include "jelli/activities.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -65,8 +66,64 @@ static void every_record_selects_its_song(void)
         CHECK(audio.last.action == JELLI_MUSIC_START && audio.last.song == song);
     }
 }
+
+static void background_music(void)
+{
+    start();
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
+    engine.ui.menu_open = true;
+    engine.ui.page = JELLI_UI_PRESENT_ACTION;
+    engine.ui.latched_prize = JELLI_COLLECTIBLE_CHAIN_PRIZE + 1u;
+    engine.game.prizes.owned |= UINT32_C(1) << JELLI_COLLECTIBLE_CHAIN_PRIZE;
+    jelli_pet_music_sync(&engine);
+    CHECK(audio.last.action == JELLI_MUSIC_START && audio.last.song == JELLI_MUSIC_LAUNCH);
+    audio.status.cursor = JELLI_MUSIC_SAMPLES;
+    audio.status.finished = true;
+    uint32_t serial = engine.music_serial;
+    jelli_pet_music_progress(&engine);
+    CHECK(!engine.game.collectible.record_cursor);
+    jelli_pet_music_sync(&engine);
+    CHECK(engine.music_serial != serial && audio.last.cursor == 0u);
+    engine.ui.page = JELLI_UI_COLLECTIBLE_PLAY;
+    jelli_pet_music_sync(&engine);
+    CHECK(!engine.music_running && audio.last.action == JELLI_MUSIC_STOP);
+    engine.ui.menu_open = false;
+    JelliPet *pet = &engine.game.pets[engine.game.active];
+    pet->activity = JELLI_CLEANING;
+    jelli_pet_music_sync(&engine);
+    CHECK(audio.last.song == JELLI_MUSIC_WASH && engine.music_running);
+    pet->activity = JELLI_EATING;
+    jelli_pet_music_sync(&engine);
+    CHECK(audio.last.song == JELLI_MUSIC_TEA);
+    engine.game.volume = 0u;
+    jelli_pet_music_sync(&engine);
+    CHECK(audio.last.action == JELLI_MUSIC_VOLUME && audio.last.volume == 0u);
+    engine.game.activity_music_enabled = false;
+    jelli_pet_music_sync(&engine);
+    CHECK(!engine.music_running);
+    engine.game.activity_music_enabled = true;
+    pet->activity = JELLI_IDLE;
+    pet->asleep = true;
+    jelli_pet_music_sync(&engine);
+    CHECK(audio.last.song == JELLI_MUSIC_REST && engine.music_running);
+    pet->asleep = false;
+    jelli_pet_music_sync(&engine);
+    CHECK(!engine.music_running);
+    for (unsigned i = 0u; i < jelli_moment_count; ++i) {
+        pet->moment = (uint8_t)(i + 1u);
+        pet->activity = JELLI_PLAYING;
+        jelli_pet_music_sync(&engine);
+        CHECK(engine.music_running && audio.last.song >= JELLI_MUSIC_GARDEN);
+    }
+    start();
+    engine.game.activity_music_enabled = false;
+    engine.game.volume = 20u;
+    jelli_pet_music_sync(&engine);
+    CHECK(engine.music_running && audio.last.song == 0u && audio.last.volume == 20u);
+}
 int main(void)
 {
+    background_music();
     every_record_selects_its_song();
     start();
     audio.status.cursor = 4410u;

@@ -35,6 +35,36 @@
       "key": "pixel-sunset",
       "name": "Pixel Sunset",
       "style": "80s"
+    },
+    {
+      "key": "pocket-arcade",
+      "name": "Pocket Arcade",
+      "style": "Game launcher"
+    },
+    {
+      "key": "garden-drift",
+      "name": "Garden Drift",
+      "style": "Garden / fishing"
+    },
+    {
+      "key": "tea-steam",
+      "name": "Tea Steam",
+      "style": "Tea / meals"
+    },
+    {
+      "key": "bubble-bath",
+      "name": "Bubble Bath",
+      "style": "Wash / care"
+    },
+    {
+      "key": "moon-pillow",
+      "name": "Moon Pillow",
+      "style": "Sleep / quiet time"
+    },
+    {
+      "key": "little-steps",
+      "name": "Little Steps",
+      "style": "Play / exercise"
     }
   ]
 }
