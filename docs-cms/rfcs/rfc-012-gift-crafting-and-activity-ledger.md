@@ -13,7 +13,7 @@ doc_uuid: 025eec59-4655-42c9-881d-5e954fee7e5d
 
 Expand the gift collection with simple two-gift recipes. Special crafted gifts
 open new activities when used, including Jelli Chain, Bubble Lab, fishing and
-Axoloty Crossing. This is a design ledger for review, not implementation or approval of recipes and balance.
+Axoloty Crossing, plus collectible records for a jukebox activity. This is a design ledger for review, not implementation or approval of recipes and balance.
 The owner requires an acquisition and recipe record for every gift; the tables
 below cover the existing catalog and every proposed first-wave output.
 
@@ -21,6 +21,9 @@ The owner requested a swipe-controlled snake made of Jellis, won by reaching
 seven Jellis long and then eating a star, and a simple falling-pair puzzle inspired
 by Dr. Mario with three levels and a definite win. The owner also requested a
 fishing minigame cartridge and a small Frogger-style cartridge starring Axoloty.
+The owner also requested collectible records playing 30-second songs from small
+PCM samples sequenced in real time, and a Gifts collection submenu making
+cartridges and records visibly collectible.
 Names, ingredients, fishing/crossing win conditions, tuning and persistence
 policies below are proposals. Reuse existing art wherever practical. Traveling and its airplane scene are a separate follow-on
 increment; they do not require a crafted ticket under this proposal.
@@ -58,18 +61,18 @@ thresholds, repeat acquisition and catch behavior.
 | --- | --- | --- | --- |
 | Butterfly / `butterfly` | Chance from a completed garden outing; `garden` in [prize logic](../../core/prizes.c) | None | R05 |
 | Pearl Tooth / `pearl-tooth` | Qualifying brush completions reach progress threshold; `jelli_prize_complete` in [prize logic](../../core/prizes.c) | None | R02, R07 |
-| Breakfast Sun / `breakfast-sun` | Qualifying breakfasts on distinct eligible days reach progress threshold; `breakfast` in [prize logic](../../core/prizes.c) | None | R06 |
-| Tea Sprite / `tea-sprite` | Completed tea activities reach progress threshold; [prize logic](../../core/prizes.c) and [reward processing](../../core/pet_rewards.c) | None | R03 |
-| Movie Star / `movie-star` | Completed movie while awake with sufficient energy; [prize logic](../../core/prizes.c) | None | R01, R04 |
+| Breakfast Sun / `breakfast-sun` | Qualifying breakfasts on distinct eligible days reach progress threshold; `breakfast` in [prize logic](../../core/prizes.c) | None | R06, R09 |
+| Tea Sprite / `tea-sprite` | Completed tea activities reach progress threshold; [prize logic](../../core/prizes.c) and [reward processing](../../core/pet_rewards.c) | None | R03, R09 |
+| Movie Star / `movie-star` | Completed movie while awake with sufficient energy; [prize logic](../../core/prizes.c) | None | R01, R04, R11 |
 | Bubble Gem / `bubble-gem` | Completed wash routine; [reward processing](../../core/pet_rewards.c) and [prize logic](../../core/prizes.c) | None | R02, R08 |
-| Moon Charm / `moon-charm` | Wake after a qualifying recorded linked sleep session; `wake_rewards` in [reward processing](../../core/pet_rewards.c) | None | R04, R07 |
-| Rainbow Seed / `rainbow-seed` | Care sets pending progress; subsequent completed garden travel or outing offers it; [prize logic](../../core/prizes.c) | None | R03, R08 |
-| Friendship Bow / `friendship-bow` | Successfully Give another gift to an eligible pet; giving a bow cannot replace itself; [prize logic](../../core/prizes.c) | None | R01, R05 |
+| Moon Charm / `moon-charm` | Wake after a qualifying recorded linked sleep session; `wake_rewards` in [reward processing](../../core/pet_rewards.c) | None | R04, R07, R10 |
+| Rainbow Seed / `rainbow-seed` | Care sets pending progress; subsequent completed garden travel or outing offers it; [prize logic](../../core/prizes.c) | None | R03, R08, R10 |
+| Friendship Bow / `friendship-bow` | Successfully Give another gift to an eligible pet; giving a bow cannot replace itself; [prize logic](../../core/prizes.c) | None | R01, R05, R11 |
 | Teddy Bear / `teddy-bear` | Completed reward-eligible SNUGGLE under its form/location/daily restrictions; free play does not award it; [activity content](../../content/activities.json) and [reward processing](../../core/pet_rewards.c) | None | R06 |
 
 ## Proposed new gifts and use unlocks
 
-These eight gifts are the proposed shortlist, not approved implementation
+These eleven gifts are the proposed shortlist, not approved implementation
 commitments. The expanded shortlist requires a capacity review before implementation
 (see Content, storage and validation boundaries). Each is acquired by explicitly
 crafting its recipe, with ownership and discovery granted together. No minigame win or new random drop is required to
@@ -85,6 +88,9 @@ obtain these gifts. No output is an ingredient in this wave.
 | Picnic Kit / `picnic-kit` | Craft R06 | None | Unlock a teddy picnic activity with existing food and snuggle poses |
 | Moonpond Fishing Cartridge / `moonpond-fishing-cartridge` | Craft R07 | None | Unlock and launch Moonpond Fishing timing minigame |
 | Axoloty Crossing Cartridge / `axoloty-crossing-cartridge` | Craft R08 | None | Unlock and launch Axoloty Crossing river-crossing minigame |
+| Morning Tea Record / `morning-tea-record` | Craft R09 | None | Unlock jukebox and its bright 30-second Morning Tea song |
+| Moon Garden Record / `moon-garden-record` | Craft R10 | None | Unlock jukebox and its gentle 30-second Moon Garden song |
+| Jelli Parade Record / `jelli-parade-record` | Craft R11 | None | Unlock jukebox and its playful 30-second Jelli Parade song |
 
 ## Proposed recipe ledger
 
@@ -104,6 +110,9 @@ be unlocked. Every ingredient and output appears in the gift ledger above.
 | R06 | Breakfast Sun | Teddy Bear | Picnic Kit | Breakfast becomes a picnic with a friend |
 | R07 | Pearl Tooth | Moon Charm | Moonpond Fishing Cartridge | A pearly lure goes fishing under the moon |
 | R08 | Bubble Gem | Rainbow Seed | Axoloty Crossing Cartridge | Pond bubbles and growing lily pads make a crossing |
+| R09 | Breakfast Sun | Tea Sprite | Morning Tea Record | A sunny breakfast becomes a bright little tune |
+| R10 | Moon Charm | Rainbow Seed | Moon Garden Record | A moonlit garden becomes a gentle lullaby |
+| R11 | Movie Star | Friendship Bow | Jelli Parade Record | Friends share a cheerful show tune |
 
 # Craft, Use and Give
 
@@ -132,6 +141,103 @@ Reject Use while asleep or busy without recording an unlock. Put away never
 consumes a gift. Give retains current transfer/consumption semantics; it does not
 implicitly Use the gift or start an activity. Detail text must explain these
 consequences before either action.
+
+# Gifts collection navigation
+
+Owner intent: cartridges and records need a visible collection display within a
+Gifts submenu so players recognize them as collectibles. Proposed navigation:
+
+- Gifts shows Presents, Cartridges and Records (disks) as labeled destinations,
+  each with a representative icon and an owned/total count derived from content.
+- Cartridges opens a paged shelf of cartridge silhouettes; Records opens a paged
+  shelf of disk sleeves. Keep labels and counts readable on the round display.
+- Each slot distinguishes Undiscovered, Discovered (not owned), Craftable and
+  Owned with text/icons as well as color. Discovery and craftability are separate:
+  a known recipe can be craftable before its output has ever been owned.
+- Selecting a slot opens details with its name, acquisition route, both recipe
+  ingredients and their ownership, ingredient uses, and the unlocked activity or
+  song. Missing gifts still expose their recipe; this proposal favors a readable
+  collection checklist over hidden recipe puzzles.
+- Owned cartridges offer Play game; owned records offer Play record. These are
+  the collection-facing labels for Use, with the same unlock and busy/asleep
+  checks. Craft and Give stay separate, explicit actions. Back restores shelf
+  position; a paged list must remain usable as the catalog expands.
+
+All gifts belong to exactly one collection category; records and cartridges are
+ordinary ledger entries with category metadata, not a second inventory. Proposed
+counts show current ownership, while discovered silhouettes persist after Give.
+A separate Unlocked marker identifies games/songs available after the collectible
+is given away. Existing Activities provides access to those unlocked sessions;
+it must not misrepresent the collectible as still owned.
+
+Crafting reveals the new slot with a brief highlight and the shelf/count visible.
+If persistent “New” badges are desired, budget and version their acknowledgement
+state explicitly; do not infer it from ownership or quietly add save fields.
+Use one reusable cartridge silhouette and one disk/sleeve silhouette with distinct
+labels/motifs. Keep each entry a generous touch target; support swipes for paging
+and equivalent desktop navigation without relying on hover.
+
+# Jukebox records and music
+
+Owner requirement: records launch a jukebox activity with little 30-second songs,
+using small PCM samples and real-time sequencing. Proposed first records are
+Morning Tea (light plucks and soft percussion), Moon Garden (gentle bell tones)
+and Jelli Parade (bouncy bass and taps). Compose original short arrangements;
+share instrument samples across records while giving each song a distinct melody
+and rhythm. These are song concepts, not approved compositions.
+
+Use of a record unlocks that song and opens the jukebox with it selected. Merely
+crafting or acquiring a record does not play it. Proposed durable song unlocks
+follow the same player-wide Use policy as cartridges: giving away the record
+preserves access to its unlocked song. One unlocked record exposes the jukebox
+activity; it does not unlock the other tracks. The jukebox lists unlocked songs
+and links missing records to their collection details.
+
+Play one selected song for 30 seconds including its ending envelope, then show
+Replay, Choose record and Exit. No automatic looping or reward farming. Show a
+spinning disk, song name and elapsed progress using existing music/celebration
+art and happy poses from the [manifest](../../assets/slice/assets.json), with a
+small new disk/sleeve asset if needed. Muting retains visible song progress and
+completion; music respects master volume. Pause freezes the sequence and display,
+resume continues at the same musical position, and Exit stops promptly with a
+short envelope to avoid clicks. Interruptions discard transient playback; no
+offline catch-up or saved audio cursor. Care/sleep interruption remains an open
+policy shared with the minigames.
+
+## Proposed audio implementation boundaries
+
+Current [sound rendering](../../core/sound.c) synthesizes short procedural cues;
+its [public contract](../../include/jelli/sound.h) defines the shared mono PCM
+format, output rate and bounded render block. [Audio asset guidance](../../assets/sound/README.md)
+describes review exports, not an existing sampled-music player. The jukebox needs
+a new bounded sampler/sequencer design; the current cue engine is not evidence
+that music mixing or sample playback already exists.
+
+Store a shared bank of short PCM instrument samples plus compact per-song event
+sequences, not a rendered full-length recording per record. Each sample declares
+format, frame count, root pitch and any validated loop points; each song declares
+its events, tempo/timebase and explicit 30-second endpoint. Propose an initial
+shared-bank target of at most 32 KiB and four simultaneous music voices, subject
+to measured sound quality, flash/RAM and CPU review before adoption. Record actual
+bank, sequence, voice-state and output-buffer costs separately.
+
+Drive event scheduling from the audio sample cursor, not UI frame timing. Use
+bounded fixed-point sample playback/pitch stepping, authored gain envelopes and
+an adequately wide saturating mix before PCM output. Set explicit limits for
+samples, voices, song events and events per render block; reject invalid content
+at authoring time. Preload or use immutable addressable sample data; no filesystem
+IO, allocation or blocking work in the render callback. Long frames must not
+trigger an unbounded event catch-up loop. Test identical output across different
+valid render-block partitions, including events inside a block and the endpoint.
+
+Define music/care-cue priority and gain before integration so taps and pet voices
+cannot unexpectedly replace a song or overflow the mixer. Keep platform audio
+ownership in the existing [SDL](../../ports/sdl/sound_output.c) and
+[ESP32](../../ports/esp32/main/sound_output.c) adapters. Desktop exports can verify
+duration, clipping and deterministic timing; a firmware build and serial output
+do not establish audible quality, underrun freedom or acceptable speaker volume.
+Audition all three songs on desktop and physical hardware, and measure worst-case
+render cost with care sounds before declaring playback ready.
 
 # Minigame designs
 
@@ -260,9 +366,9 @@ or new reward sources.
 Keep stable existing prize IDs and append new entries only after approval.
 [prizes.h](../../include/jelli/prizes.h) owns catalog capacity, masks and provenance;
 [save.c](../../core/save.c) and [save_tail.c](../../core/save_tail.c) own serialization
-and legacy tails. Adding all eight proposed gifts to the existing catalog exceeds
+and legacy tails. Adding all eleven proposed gifts to the existing catalog exceeds
 the current ownership-mask capacity; the earlier six-output shortlist filled it.
-Fishing and Axoloty Crossing remain recorded proposals, not permission to widen
+The expanded cartridge and record collection remains a proposal, not permission to widen
 masks or reuse IDs. Before implementation, approve a smaller shipping subset or
 a versioned capacity expansion covering ownership, discovery and provenance.
 Neither choice establishes room for new unlock state in the bounded
@@ -298,7 +404,9 @@ heap allocation or unbounded searches in the gameplay update/render path.
 4. Deliver Bubble Lab with three solvable levels and explicit final victory.
 5. Deliver Moonpond Fishing and Axoloty Crossing separately after approving their
    rules and resolving gift capacity; reuse art and verify touch controls.
-6. Add the other shortlisted activities separately after their interactions are
+6. Deliver the cartridge/record shelves and jukebox separately after approving
+   collection behavior, song unlock state and measured sampler/sequencer budgets.
+7. Add the other shortlisted activities separately after their interactions are
    approved; treat further gift ideas as backlog until capacity is addressed.
 
 Acceptance for implementation:
@@ -321,6 +429,12 @@ Acceptance for implementation:
 - Axoloty Crossing wins only on the goal landing; water/current failures and
   off-board moves cannot win. Test platform carry, lane reachability, pause,
   stalled frames and retry.
+- Collection counts, slot states and details reflect the same ledger and
+  inventory after crafting, giving, reload and paging. A missing but unlocked
+  record/game remains playable without appearing owned.
+- Each record unlocks only its own song. Test 30-second duration, mute, pause,
+  restart, Exit, cue overlap, event bounds, loop bounds, mix saturation and
+  sample-clock scheduling; separately audition device playback and measure cost.
 - All four games use bounded workspaces and deterministic injected input/time; test
   core behavior and sanitizers, inspect desktop rendering, and separately verify
   physical swipe/tap controls, readability and timing on the target display.
@@ -337,7 +451,8 @@ Give. Both alternatives require an explicit owner choice.
 Still open: recipe/name approval, which shortlist activities ship first, quantity
 or consumption semantics, player-wide versus pet-specific unlocks, crafted origin
 rules, whether crafted Give should earn a Friendship Bow under existing rules,
-care-time interaction, board sizes, timing, match rules and rewards. Preview these
+care-time interaction, board sizes, timing, match rules and rewards; record
+arrangements, collection badges, sample-bank/voice budgets and cue-mixing policy. Preview these
 choices before treating them as production balance. Additional crafted tiers,
 recipe discovery puzzles, rewards for wins and travel souvenirs remain backlog;
 no unledgered gifts or implied airplane-unlock recipe are introduced here.
