@@ -2,6 +2,7 @@
 #include "jelli/sound.h"
 #include "pet_gallery.h"
 #include "pet_collectible_ui.h"
+#include "pet_tune_library.h"
 #include "game_internal.h"
 
 bool jelli_pet_gallery_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *button)
@@ -54,6 +55,7 @@ bool jelli_pet_gallery_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
 
 void jelli_pet_gallery_update(JelliPetUi *ui, JelliGame *game, uint64_t time)
 {
+    jelli_pet_tune_update(ui, game, time);
     jelli_pet_collectible_launch_update(ui, game, time);
     bool winning = jelli_pet_collectible_win_update(ui, game, time);
     if (!winning && ui->page == JELLI_UI_COLLECTIBLE_PLAY && game->collectible.active &&

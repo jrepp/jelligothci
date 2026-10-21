@@ -35,6 +35,7 @@ typedef enum {
     JELLI_UI_FOOD,
     JELLI_UI_GIFT_SHELF,
     JELLI_UI_COLLECTIBLE_PLAY,
+    JELLI_UI_TUNE_PLAY,
     JELLI_UI_PAGE_COUNT
 } JelliPetPage;
 
@@ -130,6 +131,9 @@ typedef struct {
     uint16_t collectible_play_ticks, collectible_special;
     uint8_t collectible_cheer_phase;
     uint16_t cartridge_plays, cartridge_wins;
+    uint16_t tunes_seen, tune_elapsed_ms;
+    uint8_t tune_song;
+    bool tune_paused;
     bool collectible_record_rewarded;
     uint8_t gift_category, gift_page, collectible_confirm;
     bool collectible_reduced_motion, collectible_menu;
@@ -187,6 +191,15 @@ typedef struct {
     bool resuming;
 } JelliPetRenderKey;
 
+/* Transient replay has no collectible checkpoint or reward state. song is one-based. */
+typedef struct {
+    uint64_t anchor_ms;
+    uint32_t pet_id, generation;
+    uint16_t elapsed_ms;
+    uint8_t song;
+    bool paused;
+} JelliTunePlayback;
+
 typedef struct {
     const JelliAssetSet *assets; /* Host-owned override; NULL uses embedded art. */
     const JelliEffectDefinition *effect;
@@ -200,6 +213,7 @@ typedef struct {
     /* Borrowed immutable metadata; no runtime alpha scans or allocation. */
     const JelliAsset *actor_frame;
     JelliPetRewards rewards;
+    JelliTunePlayback tune;
     uint64_t catch_anchor_ms, collectible_win_anchor, collectible_launch_anchor;
     uint32_t collectible_launch_pet;
     uint8_t latched_prize, highlighted_prize, catch_seen;

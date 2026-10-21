@@ -6,6 +6,11 @@
 _Static_assert(sizeof(music_scores) / sizeof(music_scores[0]) == JELLI_MUSIC_TRACK_COUNT,
                "Generated song catalog must match the public track count");
 
+const char *jelli_music_name(unsigned song)
+{
+    return song < JELLI_MUSIC_TRACK_COUNT ? music_names[song] : "";
+}
+
 bool jelli_music_control(JelliMusic *music, JelliMusicCommand command)
 {
     if (!music || command.action < JELLI_MUSIC_START || command.action > JELLI_MUSIC_VOLUME)

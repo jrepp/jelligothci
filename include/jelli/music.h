@@ -11,6 +11,12 @@
 #define JELLI_MUSIC_PLAY 12u
 #define JELLI_MUSIC_BUBBLE 13u
 #define JELLI_MUSIC_WORKOUT 14u
+#define JELLI_MUSIC_SEEN_MASK                                                                      \
+    ((UINT32_C(1) << JELLI_MUSIC_TRACK_COUNT) - (UINT32_C(1) << JELLI_MUSIC_LAUNCH))
+_Static_assert(JELLI_MUSIC_TRACK_COUNT <= 16u, "Tune discovery must fit its persisted bitset");
+/* IDs are append-only and correspond to the authored catalog order. */
+const char *jelli_music_name(unsigned song);
+
 #define JELLI_MUSIC_RATE JELLI_SOUND_RATE
 #define JELLI_MUSIC_SAMPLES (JELLI_MUSIC_RATE * 30u)
 

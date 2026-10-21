@@ -71,6 +71,7 @@ void jelli_collectible_save_write(Writer *writer, const JelliGame *game)
         put_u8(writer, game->pets[i].moment_pulse);
     }
     jelli_bubble_save_write(writer, game);
+    put_u16(writer, game->tunes_seen);
 }
 
 void jelli_collectible_save_read(Reader *reader, JelliGame *game)
@@ -114,5 +115,7 @@ void jelli_collectible_save_read(Reader *reader, JelliGame *game)
         }
     }
     jelli_bubble_save_read(reader, game);
+    if (reader->version >= 19u)
+        game->tunes_seen = get_u16(reader);
     /* Validation must inspect raw state before normalizing resume policy. */
 }

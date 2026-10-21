@@ -123,6 +123,12 @@ integration tests as well as the new focused tests; a launcher test alone does
 not cover gallery crafting. See the
 [PR 81 coverage finding](docs-cms/memos/memo-097-bubble-lab-cartridge.md#pr-81-timed-launch-integration-coverage).
 
+When extending the save codec, update the centralized legacy-fixture offsets in
+[tests/save_layout.h](tests/save_layout.h) alongside the versioned tail. Run old
+migration and corruption cases as well as new-version round trips; malformed test
+fixtures can otherwise hide whether a migration still works. See the
+[tune-library finding](docs-cms/memos/memo-098-encountered-tune-library.md#validation-findings).
+
 Keep generated game include paths inside the game firmware branch; the factory
 profile deliberately skips those generators. SDL test executables that own their
 entry point must follow the desktop host's `SDL_MAIN_HANDLED` convention and call

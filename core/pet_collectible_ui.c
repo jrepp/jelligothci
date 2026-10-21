@@ -1,4 +1,5 @@
 #include "pet_collectible_ui.h"
+#include "pet_tune_library.h"
 #include "jelli/collectible.h"
 #include <string.h>
 
@@ -43,7 +44,8 @@ unsigned jelli_pet_collectible_recipe(unsigned prize)
 bool jelli_pet_collectible_page(unsigned page)
 {
     return page == JELLI_UI_COLLECTION || page == JELLI_UI_GIFT_SHELF ||
-           page == JELLI_UI_PRESENT_ACTION || page == JELLI_UI_COLLECTIBLE_PLAY;
+           page == JELLI_UI_PRESENT_ACTION || page == JELLI_UI_COLLECTIBLE_PLAY ||
+           page == JELLI_UI_TUNE_PLAY;
 }
 
 static bool button(JelliPetUiButton *b, unsigned x, unsigned y, unsigned w, unsigned h,
@@ -114,6 +116,8 @@ bool jelli_pet_collectible_button(const JelliPetUi *ui, unsigned slot, JelliPetU
 {
     if (!ui->menu_open || !jelli_pet_collectible_page(ui->page))
         return false;
+    if (ui->page == JELLI_UI_TUNE_PLAY)
+        return jelli_pet_tune_button(ui, slot, b);
     if (ui->page == JELLI_UI_COLLECTIBLE_PLAY)
         return session_button(ui, slot, b);
     if (!slot)
@@ -124,8 +128,8 @@ bool jelli_pet_collectible_button(const JelliPetUi *ui, unsigned slot, JelliPetU
                button(b, 103u, 116u + (slot - 1u) * 86u, 260u, 68u, labels[slot - 1u]);
     }
     if (ui->page == JELLI_UI_GIFT_SHELF) {
-        if (ui->gift_category == 2u && (slot == 5u || slot == 6u))
-            return button(b, slot == 5u ? 13u : 357u, 185u, 96u, 96u, slot == 5u ? "PREV" : "NEXT");
+        if (ui->gift_category == 2u)
+            return jelli_pet_library_button(ui, slot, b);
         if (slot == 5u || slot == 6u)
             return button(b, slot == 5u ? 103u : 253u, 340u, 110u, 48u,
                           slot == 5u ? "PREV" : "NEXT");
@@ -133,9 +137,7 @@ bool jelli_pet_collectible_button(const JelliPetUi *ui, unsigned slot, JelliPetU
             jelli_pet_collectible_prize(ui->gift_category, ui->gift_page * 4u + slot - 1u);
         if (slot > 4u || prize >= jelli_prize_count)
             return false;
-        if (ui->gift_category == 2u)
-            return button(b, 115u + ((slot - 1u) % 2u) * 120u, 90u + ((slot - 1u) / 2u) * 148u,
-                          116u, 144u, jelli_prizes[prize].name);
+
         return button(b, 93u + ((slot - 1u) % 2u) * 148u, 110u + ((slot - 1u) / 2u) * 112u, 140u,
                       100u, jelli_prizes[prize].name);
     }
@@ -144,6 +146,7 @@ bool jelli_pet_collectible_button(const JelliPetUi *ui, unsigned slot, JelliPetU
 
 void jelli_pet_collectible_back(JelliPetUi *ui)
 {
+    ui->tune.song = 0u;
     ui->collectible_confirm = 0u;
     ui->collectible_launch_pending = false;
     ui->collectible_launch_anchor = 0u;
@@ -236,7 +239,9 @@ static void session_action(JelliPetUi *ui, JelliGame *game, unsigned slot)
 
 static void select(JelliPetUi *ui, JelliGame *game, unsigned slot)
 {
-    if (ui->page == JELLI_UI_COLLECTIBLE_PLAY)
+    if (ui->page == JELLI_UI_TUNE_PLAY)
+        jelli_pet_tune_action(ui, slot);
+    else if (ui->page == JELLI_UI_COLLECTIBLE_PLAY)
         session_action(ui, game, slot);
     else if (!slot)
         jelli_pet_collectible_back(ui);
@@ -245,12 +250,22 @@ static void select(JelliPetUi *ui, JelliGame *game, unsigned slot)
         ui->gift_page = 0u;
         ui->page = JELLI_UI_GIFT_SHELF;
     } else if (ui->page == JELLI_UI_GIFT_SHELF) {
-        unsigned pages = (jelli_pet_collectible_count(ui->gift_category) + 3u) / 4u;
+        unsigned count = ui->gift_category == 2u ? jelli_pet_library_count(game->tunes_seen)
+                                                 : jelli_pet_collectible_count(ui->gift_category);
+        unsigned pages = (count + 3u) / 4u;
         if (!pages)
             return;
         if (slot >= 5u)
             ui->gift_page = (uint8_t)((ui->gift_page + (slot == 5u ? pages - 1u : 1u)) % pages);
         else {
+            if (ui->gift_category == 2u) {
+                unsigned song =
+                    jelli_pet_library_song(game->tunes_seen, ui->gift_page * 4u + slot - 1u);
+                if (song >= JELLI_MUSIC_LAUNCH) {
+                    jelli_pet_tune_start(ui, game, song);
+                    return;
+                }
+            }
             unsigned prize =
                 jelli_pet_collectible_prize(ui->gift_category, ui->gift_page * 4u + slot - 1u);
             ui->latched_prize = (uint8_t)(prize + 1u);
@@ -276,6 +291,7 @@ bool jelli_pet_collectible_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
     /* A host may drain several inputs before rendering; hit-test the current session. */
     ui->last_view.collectible = game->collectible;
     ui->last_view.prize_owned = game->prizes.owned;
+    ui->last_view.tunes_seen = game->tunes_seen;
     ui->rendered = false;
     for (unsigned slot = 0u; slot <= 6u; ++slot) {
         JelliPetUiButton b;
@@ -311,60 +327,4 @@ bool jelli_pet_collectible_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy
     } else if (ui->page == JELLI_UI_GIFT_SHELF && dx && ax >= ay)
         select(ui, game, dx < 0 ? 6u : 5u);
     return true;
-}
-
-void jelli_pet_collectible_key(const JelliPetUi *ui, const JelliGame *game, JelliPetRenderKey *key)
-{
-    key->collectible = game->collectible;
-    const JelliCollectibleProgress *progress = &game->pets[game->active].collectible_progress;
-    key->collectible_special = progress->special_unlocked;
-    unsigned cartridge =
-        ui->latched_prize ? jelli_cartridge_index(ui->latched_prize - 1u) : JELLI_CARTRIDGE_COUNT;
-    if (cartridge < JELLI_CARTRIDGE_COUNT) {
-        key->cartridge_plays = game->cartridge_stats[cartridge].plays;
-        key->cartridge_wins = game->cartridge_stats[cartridge].wins;
-    }
-    key->collectible_record_rewarded = progress->record_rewarded;
-    if (ui->latched_prize && ui->latched_prize <= JELLI_PRIZE_COUNT)
-        key->collectible_play_ticks = progress->play_ticks[ui->latched_prize - 1u];
-    key->keyboard_focus = ui->keyboard_focus;
-    key->keyboard_slot = ui->keyboard_slot;
-    key->gift_category = ui->gift_category;
-    key->gift_page = ui->gift_page;
-    key->collectible_confirm = ui->collectible_confirm;
-    key->collectible_reduced_motion = ui->collectible_reduced_motion;
-    key->collectible_menu = ui->collectible_menu;
-    key->collectible_win_ms = ui->collectible_win_ms;
-    key->collectible_launch_ms = ui->collectible_launch_ms;
-    key->collectible_launch_pending = ui->collectible_launch_pending;
-    key->collectible_cheer_phase = (uint8_t)(game->pets[game->active].reaction_ticks / 2u % 2u);
-}
-
-static bool same_session(const JelliCollectibleSession *x, const JelliCollectibleSession *y)
-{
-    return x->pet_id == y->pet_id && x->prize == y->prize && x->mode == y->mode &&
-           x->active == y->active && x->paused == y->paused &&
-           x->record_cursor == y->record_cursor && x->elapsed_ticks == y->elapsed_ticks &&
-           x->chain.length == y->chain.length && x->chain.pickup == y->chain.pickup &&
-           jelli_bubble_same(&x->bubble, &y->bubble) && x->chain.status == y->chain.status &&
-           x->chain.relaxed == y->chain.relaxed &&
-           memcmp(x->chain.body, y->chain.body, sizeof(x->chain.body)) == 0;
-}
-
-bool jelli_pet_collectible_same(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
-{
-    return a->collectible_cheer_phase == b->collectible_cheer_phase &&
-           a->cartridge_plays == b->cartridge_plays && a->cartridge_wins == b->cartridge_wins &&
-           a->collectible_special == b->collectible_special &&
-           a->collectible_record_rewarded == b->collectible_record_rewarded &&
-           a->collectible_play_ticks == b->collectible_play_ticks &&
-           a->keyboard_focus == b->keyboard_focus && a->keyboard_slot == b->keyboard_slot &&
-           a->gift_category == b->gift_category && a->gift_page == b->gift_page &&
-           a->collectible_confirm == b->collectible_confirm &&
-           a->collectible_reduced_motion == b->collectible_reduced_motion &&
-           a->collectible_menu == b->collectible_menu &&
-           a->collectible_win_ms == b->collectible_win_ms &&
-           a->collectible_launch_ms == b->collectible_launch_ms &&
-           a->collectible_launch_pending == b->collectible_launch_pending &&
-           same_session(&a->collectible, &b->collectible);
 }

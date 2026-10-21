@@ -77,6 +77,9 @@ Device power experiments and measured driver gaps: [memo-044](memos/memo-044-dev
 
 Device sleep and driver capability audit: [memo-054](memos/memo-054-device-power-and-driver-audit.md).
 
+Encountered activity/game tunes and golden rare records:
+[memo-098](memos/memo-098-encountered-tune-library.md).
+
 Current sleep, habits, and collectibles: [memo-018](memos/memo-018-sleep-habits-and-collectible-presents.md).
 
 Hardware optimization continuation and pending board recovery:

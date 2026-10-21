@@ -350,3 +350,28 @@ idle result, or the inventory-giving effect when inventory actually decreased.
 A rejected gift or a started-but-unfinished giving activity never celebrates.
 [The three authored defaults](../content/effects.json) are enabled at the owner's
 request; preview keys are `evolution`, `gift-acquired`, and `present-accepted`.
+
+## Encountered music library
+
+The [music adapter](../core/pet_music.c) chooses the visible activity/game theme
+before applying background-music mute or consulting the audio driver. Its first
+encounter sets a bit in `JelliGame.tunes_seen`, increments revision and requests a
+coalesced save; repeated frames do not rewrite discovery state. Paused and offline
+recovery frames do not discover new tunes. The
+[music contract](../include/jelli/music.h) bounds the bitset and reserves rare
+record IDs from it. Catalog IDs are append-only; the
+[compiler](../tools/audio/build_music.py) checks authored catalog order and exports
+track names from that same catalog.
+
+The [collectible tail codec](../core/collectible_save.c) appends the encounter mask
+under the [current save version](../include/jelli/save.h). Older saves initialize
+it empty, without inferring history from pet state or ownership; invalid rare or
+unsupported bits fail validation before output is published.
+
+[Library playback](../core/pet_tune_library.c) uses small transient UI state and
+the injected animation clock. It never replaces the collectible checkpoint or
+calls record rewards/progress. Focus pause preserves its position; closing,
+switching pets or a care/sleep interruption ends the transient replay. Rare
+records continue through their existing sample-clock progress and bounded reward
+policy. Both use the shared café renderer and existing pet animations. See
+[memo-098](../docs-cms/memos/memo-098-encountered-tune-library.md) for verification.
