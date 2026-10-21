@@ -2671,6 +2671,44 @@
       ],
       "palette": "earth-kit",
       "purpose": "Reusable muted street-edge layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 11011,
+      "key": "prizes.jelli-chain-cartridge",
+      "path": "prizes/jelli-chain-cartridge.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        4,
+        3,
+        28,
+        29
+      ],
+      "purpose": "Jelli Chain cartridge; permanent playable collectible"
+    },
+    {
+      "id": 11012,
+      "key": "prizes.morning-tea-record",
+      "path": "prizes/morning-tea-record.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "purpose": "Morning Tea record; permanent playable collectible"
     }
   ],
   "clips": [
