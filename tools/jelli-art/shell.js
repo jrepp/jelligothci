@@ -150,9 +150,9 @@
     m.activate(); renderView(); savePrefs();
     requestAnimationFrame(() => {
       syncModeOverflow();
-      document.getElementById(`tab-${id}`)?.scrollIntoView({block: 'nearest', inline: 'nearest'});
+      revealActiveMode();
     });
-    if (focus) document.getElementById(`tab-${id}`)?.focus();
+    if (focus) document.getElementById(`tab-${id}`)?.focus({preventScroll: true});
   }
   function buildTabs(list) {
     const nav = document.getElementById('shell-modes'), bar = nav.querySelector('[role=tablist]');
@@ -160,17 +160,32 @@
     nav.classList.toggle('hidden', list.length < 2);
     requestAnimationFrame(syncModeOverflow);
   }
+  // Scroll only the rail: scrollIntoView can move the entire workspace on a phone.
+  function revealActiveMode() {
+    const bar = document.querySelector('#shell-modes [role=tablist]');
+    const tab = bar?.querySelector('[aria-selected=true]');
+    if (!tab) return;
+    const rail = bar.getBoundingClientRect(), active = tab.getBoundingClientRect();
+    const delta = active.left < rail.left ? active.left - rail.left
+      : active.right > rail.right ? active.right - rail.right : 0;
+    if (delta) bar.scrollBy({left: delta, behavior: 'instant'});
+  }
   function syncModeOverflow() {
     const nav = document.getElementById('shell-modes');
     if (!nav) return;
     const bar = nav.querySelector('[role=tablist]');
-    const overflow = bar.scrollWidth > bar.clientWidth + 2;
+    // Account for the arrows already in flow, so a rail that just fits can shed them.
+    const arrows = [.../** @type {NodeListOf<HTMLButtonElement>} */ (nav.querySelectorAll('[data-mode-scroll]'))];
+    const available = bar.clientWidth + arrows.reduce((n, button) => n + (button.hidden ? 0 : button.getBoundingClientRect().width + 2), 0);
+    const overflow = bar.scrollWidth > available + 2;
     for (const button of /** @type {NodeListOf<HTMLButtonElement>} */ (nav.querySelectorAll('[data-mode-scroll]'))) {
       button.hidden = !overflow;
       button.disabled = button.dataset.modeScroll === '-1' ? bar.scrollLeft < 2
         : bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 2;
     }
     nav.classList.toggle('has-overflow', overflow);
+    nav.classList.toggle('can-scroll-back', overflow && bar.scrollLeft > 2);
+    nav.classList.toggle('can-scroll-forward', overflow && bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 2);
   }
   /* Bring tabs, panels, title and the review sub-switch in line with state. Cheap; runs after every render. */
   function sync() {
@@ -204,10 +219,10 @@
     const bar = document.querySelector('#shell-modes [role=tablist]');
     const nav = document.getElementById('shell-modes');
     /** @type {NodeListOf<HTMLButtonElement>} */ (nav.querySelectorAll('[data-mode-scroll]')).forEach(button => {
-      button.addEventListener('click', () => bar.scrollBy({left: Number(button.dataset.modeScroll) * Math.max(160, bar.clientWidth * .7), behavior: 'auto'}));
+      button.addEventListener('click', () => bar.scrollBy({left: Number(button.dataset.modeScroll) * Math.max(160, bar.clientWidth * .7), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'}));
     });
     bar.addEventListener('scroll', syncModeOverflow, {passive: true});
-    new ResizeObserver(syncModeOverflow).observe(bar);
+    new ResizeObserver(() => { syncModeOverflow(); revealActiveMode(); }).observe(bar);
     bar.addEventListener('click', e => { const t = e.target.closest('[role=tab]'); if (t) activateMode(t.dataset.modeId); });
     bar.addEventListener('keydown', e => {
       const tabs = [...bar.querySelectorAll('[role=tab]')], i = tabs.indexOf(document.activeElement);
@@ -303,16 +318,37 @@
   }
 
   /* ---------- page furniture ---------- */
-  /* Marker and tab state changes must not move the page, on any pointer: the unsaved pill keeps a fixed width, tab dots a fixed width, and the tools never wrap. */
+  /* State changes must not move the workspace: status and tab dots reserve space. Tools wrap on phones; the mode rail scrolls independently. */
   const STABLE_CSS = `.shell-unsaved{box-sizing:border-box;inline-size:14em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 .shell-unsaved.shell-clean{display:inline-block;visibility:hidden}
 .shell-tab-dirty,.shell-tab-dirty[hidden]{display:inline-block;width:1.2em;text-align:center}.shell-tab-dirty[hidden]{visibility:hidden}
 .shell-modes{display:flex;align-items:center;gap:2px;overflow:visible;min-width:0;width:100%}
 .shell-modes [role=tablist]{min-width:0;overflow-x:auto;scrollbar-width:none;flex:1}
-.shell-modes [role=tab]{position:relative}
+.shell-modes [role=tab]{position:relative;flex:none;border-radius:9px;border-bottom-color:transparent;isolation:isolate}
+.shell-modes [role=tab]::after{content:"";position:absolute;bottom:2px;left:12px;right:12px;height:3px;background:var(--accent);border-radius:3px;transform:scaleX(0)}
+.shell-modes [role=tab][aria-selected=true]{border-bottom-color:transparent;background:var(--raised);box-shadow:inset 0 0 0 1px var(--line)}
+.shell-modes [role=tab][aria-selected=true]::after{transform:scaleX(1)}
+.shell-modes [role=tab]:focus-visible{outline-offset:-3px}
+.shell-modes [role=tablist]{padding:2px 2px;overscroll-behavior-x:contain}
+.shell-modes.can-scroll-back [role=tablist]{box-shadow:inset 10px 0 10px -12px var(--accent)}
+.shell-modes.can-scroll-forward [role=tablist]{box-shadow:inset -10px 0 10px -12px var(--accent)}
+.shell-modes.can-scroll-back.can-scroll-forward [role=tablist]{box-shadow:inset 10px 0 10px -12px var(--accent),inset -10px 0 10px -12px var(--accent)}
+@media(hover:hover){
+  .shell-modes [role=tab]:hover{background:var(--raised);color:var(--ink)}
+  .shell-tools button:hover,.shell-mode-scroll:not(:disabled):hover{box-shadow:0 2px 0 var(--accent)}
+}
+@media(prefers-reduced-motion:no-preference){
+  .shell-modes [role=tab],.shell-tools button,.shell-mode-scroll{transition:background .18s ease,color .18s ease,box-shadow .18s ease,transform .18s ease}
+  .shell-modes [role=tab]::after{transition:transform .24s cubic-bezier(.2,.8,.2,1)}
+  .shell-modes [role=tab]:active,.shell-tools button:active,.shell-mode-scroll:not(:disabled):active{transform:scale(.96)}
+}
+header{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
 .shell-mode-scroll{flex:none;padding:2px 8px;min-width:28px;font-size:22px;line-height:1;border-color:transparent}
 .shell-mode-scroll[hidden]{display:none}.shell-mode-scroll:disabled{opacity:.3}
 .shell-guide summary{cursor:pointer;line-height:1.5;color:var(--muted)}
+@media(min-width:1440px) and (max-width:1699px){
+  header h1>span:not(.mark),header .live-badge{display:none}
+}
 @media(min-width:900px) and (max-width:1439px){
   header{grid-template-columns:auto minmax(0,1fr) auto}
   header>.shell-modes{grid-column:1/-1;grid-row:2;justify-self:stretch}
@@ -320,8 +356,24 @@
   header>.shell-tools{grid-column:3;grid-row:1}
   header>.header-review{grid-row:3}
 }
-@media(max-width:760px){header h1{display:none}.shell-modes{order:2;flex:1 0 100%}.shell-tools{order:1;width:100%;margin-left:0}.shell-state{order:3}}
-@media(pointer:coarse){.shell-mode-scroll{min-width:44px;min-height:44px}}
+@media(min-width:761px) and (max-width:899px){
+  header{display:grid;grid-template-columns:auto minmax(0,1fr)}
+  header>.shell-tools{grid-column:2;grid-row:1}
+  header>.shell-modes,header>.shell-state,header>.header-review{grid-column:1/-1}
+}
+@media(max-width:760px){
+  header{gap:6px;align-items:stretch}
+  header h1{display:none}
+  header>.shell-modes{order:0;flex:1 0 100%}
+  header>.shell-tools{order:1;width:100%;margin-left:0;flex-wrap:wrap;overflow:visible;gap:6px}
+  header>.shell-state{order:2;max-width:100%;width:100%;gap:6px}
+  header>.header-review{order:3}
+  .shell-state .studio-status#git-status,.shell-state .shell-unsaved{min-width:0;flex:1 1 0;inline-size:0}
+  header .shell-tools button,header .shell-tools select,.shell-modes [role=tab],.shell-mode-scroll{min-height:44px;min-width:44px}
+  header .shell-tools button{padding-inline:10px}
+  header .shell-tools kbd{display:none}
+}
+@media(any-pointer:coarse){.shell-mode-scroll{min-width:44px;min-height:44px}}
 .shell-tools{flex-wrap:nowrap;max-width:100%;overflow-x:auto;scrollbar-width:none;padding-block:2px}.shell-tools>*{flex:none}
 @media (pointer: coarse){.shell-unsaved{inline-size:15em}}`;
   function insertChrome() {
