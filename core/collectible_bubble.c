@@ -224,8 +224,11 @@ void jelli_bubble_tick(JelliBubble *lab)
     ++lab->ticks;
     unsigned delay =
         lab->assist == JELLI_BUBBLE_RELAXED ? JELLI_BUBBLE_RELAXED_TICKS : JELLI_BUBBLE_FALL_TICKS;
-    if (lab->ticks >= delay)
+    if (lab->ticks >= delay) {
+        /* Keep the state valid before entering the public drop validator. */
+        lab->ticks = 0u;
         jelli_bubble_drop(lab);
+    }
 }
 
 bool jelli_bubble_same(const JelliBubble *a, const JelliBubble *b)

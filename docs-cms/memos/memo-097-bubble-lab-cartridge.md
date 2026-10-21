@@ -139,3 +139,21 @@ framebuffer checks additionally verify the shelf's bottom Back disk and label;
 the label region contains pale text pixels over the teal control. No device was
 flashed. Physical display/touch/audio behavior, human fun/accessibility trials and
 musical listening preference remain separate, unverified evidence.
+
+# Relaxed automatic-fall freeze correction
+
+Live desktop playtesting of `482d9fa` exposed a freeze with storage reporting
+`JELLI_STORAGE_INVALID` while the debug interface remained responsive. The relaxed
+fall timer reached its exclusive validation bound before calling the public drop
+function. That function rejected the transient invalid state, leaving subsequent
+simulation and saves unable to proceed. Normal timing and manually initiated
+drops had not exercised this boundary in the initial tests.
+
+The timer now resets before entering the validated drop operation. A regression
+in the [Bubble tests](../../tests/test_bubble.c) first reproduced the invalid game
+state, then passed with the correction. It advances both normal and relaxed runs
+through repeated automatic falls and verifies game validity and save encode/decode
+on every tick. Focused desktop and sanitizer rules, save, launch and celebration
+checks each passed 6/6; the incremental firmware build and documentation checks
+also passed. Live unsaved-state recovery is a separate operation; this code correction
+does not claim that an already-running invalid session has been recovered.

@@ -308,8 +308,35 @@ static void queued_swipes(void)
     CHECK(!game.collectible.bubble.input_count);
 }
 
+static void timed_falls_remain_saveable(void)
+{
+    static JelliSave save, loaded;
+    uint8_t bytes[JELLI_SAVE_CAPACITY];
+    for (unsigned assist = JELLI_BUBBLE_NORMAL; assist <= JELLI_BUBBLE_RELAXED; ++assist) {
+        jelli_game_init(&save.game);
+        save.game.prizes.owned = save.game.prizes.discovered = 1u << JELLI_COLLECTIBLE_BUBBLE_PRIZE;
+        save.game.prizes.origin_pet[JELLI_COLLECTIBLE_BUBBLE_PRIZE] = save.game.pets[0].id;
+        CHECK(jelli_collectible_play(&save.game, JELLI_COLLECTIBLE_BUBBLE_PRIZE) == JELLI_OK);
+        CHECK(jelli_collectible_control(&save.game, JELLI_COLLECTIBLE_NORMAL + assist) == JELLI_OK);
+        unsigned delay =
+            assist == JELLI_BUBBLE_RELAXED ? JELLI_BUBBLE_RELAXED_TICKS : JELLI_BUBBLE_FALL_TICKS;
+        for (unsigned tick = 1u; tick <= delay * 20u; ++tick) {
+            jelli_game_advance(&save.game, 100u);
+            CHECK(jelli_game_valid(&save.game));
+            if (tick < delay)
+                CHECK(save.game.collectible.bubble.y == 0u);
+            if (tick == delay)
+                CHECK(save.game.collectible.bubble.y == 1u && !save.game.collectible.bubble.ticks);
+            size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
+            CHECK(size && jelli_save_decode(&loaded, bytes, size));
+        }
+        CHECK(save.game.collectible.bubble.cursor > 1u);
+    }
+}
+
 int main(void)
 {
+    timed_falls_remain_saveable();
     queued_swipes();
     cartridge_statistics();
     legacy_and_invalid_payload();
