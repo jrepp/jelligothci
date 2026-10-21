@@ -256,3 +256,13 @@ launches after three seconds. Reduced motion uses static art and seated status.
 Back cancels before gameplay or statistics mutate; replacing a different saved
 session still requires explicit confirmation. This transition uses transient UI
 state only and leaves the save schema unchanged.
+
+Final follow-up validation included a fresh ESP32 firmware build with the launcher
+source registered in the port. The image measured 2,114,528 bytes in the 4,194,304-byte
+application partition, leaving 2,079,776 bytes free. Native `sizeof` measurements
+against the prior committed UI header showed `JelliPetUi` increasing from 9,960 to
+9,984 bytes and `JelliPetEngine` from 20,584 to 20,608 bytes; these are desktop ABI
+measurements, not ESP32 structure sizes. The synthesizer remains 24 bytes, and the
+launcher adds no serialized fields, heap allocations or framebuffers. Final focused
+launcher/music tests passed 3/3, sanitizer sound/music/launcher/ending/engine checks
+passed 5/5, and music Studio screenshot checks passed 9/9. No device was flashed.
