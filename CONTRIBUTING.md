@@ -115,6 +115,14 @@ as the release input. Do not hand-edit only one version file or bypass failing
 checks to land a change. Automated enforcement and access settings are described
 in the [maintainer runbook](docs-cms/memos/memo-005-contributor-and-maintainer-handoff.md).
 
+Keep generated game include paths inside the game firmware branch; the factory
+profile deliberately skips those generators. SDL test executables that own their
+entry point must follow the desktop host's `SDL_MAIN_HANDLED` convention and call
+`SDL_SetMainReady()` before initializing SDL. In Studio browser tests, wait for
+published UI state after reload: a newer live poll can supersede the awaited
+request while images decode. These failures and their verification are recorded
+in [memo-095](docs-cms/memos/memo-095-collectible-desktop-playtest.md#pr-77-ci-repairs).
+
 Docs-cms holds decisions and evidence; copy an appropriate template and use the
 next ID plus a new UUID. Preserve historical records. Reusable agent skills are
 versioned under `.agents/skills`, but ordinary development does not require an

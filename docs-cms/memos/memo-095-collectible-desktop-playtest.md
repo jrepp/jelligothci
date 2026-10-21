@@ -161,3 +161,35 @@ its test-clock multiplication. Using an explicit 64-bit time operand retains
 the expected duration and follows the portable arithmetic contract. Desktop and
 sanitizer behavior checks and the firmware build passed before that test-only
 correction; commit hooks verify the corrected arithmetic.
+
+# PR 77 CI repairs
+
+The published head `b2aa4db` failed three checks:
+[factory firmware](https://github.com/jrepp/jelligothci/actions/runs/39555771641),
+[Studio UI](https://github.com/jrepp/jelligothci/actions/runs/39555771543), and
+[Windows packaging](https://github.com/jrepp/jelligothci/actions/runs/39555771546).
+The factory component listed a generated game-header directory even though its
+early return intentionally skips game generators. Removing that include preserves
+the factory boundary rather than creating an unused directory. The SDL tests
+included SDL's Windows entry-point remapping while defining an ordinary C main;
+they now use the desktop host's `SDL_MAIN_HANDLED` convention, with
+`SDL_SetMainReady()` before audio initialization.
+
+The new-pet effects test reproduced locally: creation saved the pet, but a live
+poll could supersede the explicit reload during image decoding. The test now
+waits for the published asset and selector option before asserting hardpoints,
+without adding fixed sleeps or weakening the saved-content assertions.
+The broader creation suite also exposed the same race in source-conflict
+recovery: a second create still submitted stale bases after Reload creation
+sources. Background polling now defers while any reload is pending, including
+when its version request completes during a foreground reload. Foreground
+refreshes retain their existing save-epoch and stale-response protections.
+The regression test holds a foreground data request and invokes the actual poll
+callback, verifying that no competing reload starts and that the awaited payload
+publishes. It and the existing paint-during-reload test passed locally.
+Reusable authoring guidance is in [CONTRIBUTING](../../CONTRIBUTING.md).
+
+Both affected SDL tests passed in desktop and sanitizer builds. Factory firmware
+built successfully and its profile-isolation check passed. Windows compiler
+verification remains a hosted-CI check; no physical-device behavior is inferred
+from these repairs.

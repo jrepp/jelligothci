@@ -78,6 +78,30 @@ def test_reload_preserves_stroke_made_after_request_started(browser, studio):
         context.close()
 
 
+def test_poll_does_not_supersede_foreground_reload(browser, studio):
+    context, page = open_paint(browser, studio)
+    pending = []
+    try:
+        page.add_init_script("""const originalInterval = window.setInterval;
+          window.setInterval = (fn, delay, ...args) => {
+            if (delay === 2000) { window.testPoll = fn; return 0; }
+            return originalInterval(fn, delay, ...args);
+          };""")
+        page.reload()
+        page.wait_for_function("() => !!window.testPoll")
+        page.route("**/api/data?**", lambda route: pending.append(route))
+        with page.expect_request("**/api/data?**"):
+            page.evaluate("() => { D.version = 'stale'; window.reloadDone = false;"
+                          " Studio.reload().then(() => { window.reloadDone = true; }); }")
+        page.evaluate("() => window.testPoll()")
+        assert len(pending) == 1, "Polling must leave the foreground reload in charge"
+        pending.pop().continue_()
+        page.wait_for_function("() => window.reloadDone")
+        assert page.evaluate("D.version") != "stale"
+    finally:
+        context.close()
+
+
 def test_hidden_paint_shortcuts_do_not_change_reviewed_asset(browser, studio):
     context, page = open_paint(browser, studio)
     saves = []

@@ -1,3 +1,4 @@
+#define SDL_MAIN_HANDLED
 #include "sound_output.h"
 #include <SDL.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@
 
 int main(void)
 {
+    SDL_SetMainReady();
     CHECK(SDL_setenv("SDL_AUDIODRIVER", "dummy", 1) == 0);
     CHECK(jelli_sdl_sound_open());
     CHECK(jelli_sdl_music_control(

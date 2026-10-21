@@ -101,8 +101,10 @@ def test_new_pet_hardpoints_join_effect_workspace(creator):
       await Studio.reload();
     }""")
     open_effects(page)
-    assert page.evaluate("D.assets.some(a=>a.form==='celebration-pet')")
-    assert 'celebration-pet' in page.locator('#fx-form').text_content(), page.locator('#fx-status').text_content()
+    # The live-reload poll can supersede the explicit reload while images decode.
+    # Wait for the published asset payload and the effects selector to catch up.
+    page.wait_for_function("D.assets.some(a=>a.form==='celebration-pet')")
+    expect(page.locator('#fx-form option[value="celebration-pet"]')).to_have_count(1)
     page.locator('#fx-form').select_option('celebration-pet')
     page.locator('#fx-point').select_option('1')
     expect(page.locator('#fx-point-y')).to_have_value('-20')

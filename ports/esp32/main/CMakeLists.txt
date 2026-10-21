@@ -10,7 +10,7 @@ if(CONFIG_JELLI_FACTORY_FIRMWARE)
              "validation/factory/suite.c" "validation/boards/pmic_probe.c"
              "validation/boards/inventory.c"
              "debug_usb.c" "../../../core/debug_protocol.c"
-        INCLUDE_DIRS "../../../include" "${CMAKE_CURRENT_BINARY_DIR}/generated"
+        INCLUDE_DIRS "../../../include"
         PRIV_INCLUDE_DIRS "."
         REQUIRES esp32_s3_touch_amoled_1_75 esp_driver_i2c esp_driver_usb_serial_jtag
                  esp_timer esp_psram esp_hw_support esp_app_format)

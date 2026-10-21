@@ -1,3 +1,4 @@
+#define SDL_MAIN_HANDLED
 #include "keyboard.h"
 #include "jelli/collectible.h"
 #include <stdio.h>
