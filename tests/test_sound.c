@@ -36,6 +36,28 @@ static void check_pause(unsigned cue, unsigned start_ms, unsigned duration_ms)
         CHECK(a[i] == 0);
 }
 
+static void subdued_rasp(void)
+{
+    CHECK(JELLI_SOUND_PET == 8u && JELLI_SOUND_RASP == 9u); /* Existing cue IDs stay stable. */
+    size_t count = render(JELLI_SOUND_RASP, a, JELLI_SOUND_BLOCK);
+    CHECK(count == 75u * JELLI_SOUND_RATE / 1000u);
+    int rasp_step = 0;
+    for (size_t i = 1u; i < count; ++i) {
+        int step = abs((int)a[i] - a[i - 1u]);
+        if (step > rasp_step)
+            rasp_step = step;
+    }
+    count = render(JELLI_SOUND_BACK, b, JELLI_SOUND_BLOCK);
+    int tap_step = 0;
+    for (size_t i = 1u; i < count; ++i) {
+        int step = abs((int)b[i] - b[i - 1u]);
+        if (step > tap_step)
+            tap_step = step;
+    }
+    CHECK(rasp_step > 0 && rasp_step < tap_step / 2);
+    CHECK(strcmp(jelli_sound_name(JELLI_SOUND_RASP), "rasp") == 0);
+}
+
 int main(void)
 {
     for (unsigned cue = 0; cue < JELLI_SOUND_COUNT; ++cue) {
@@ -56,6 +78,7 @@ int main(void)
         CHECK(llabs(sum / (int64_t)count) < 100);
         CHECK(jelli_sound_name(cue) != NULL);
     }
+    subdued_rasp();
     check_pause(0u, 110u, 35u); /* Chirp. */
     check_pause(3u, 300u, 50u); /* Hello. */
     check_pause(4u, 220u, 60u); /* Sleepy. */

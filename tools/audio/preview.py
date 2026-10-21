@@ -10,7 +10,8 @@ CUES = [('chirp', 'Two rising digital bubbles'), ('happy', 'A bright four-note g
         ('sparkle', 'A tiny ascending celebration'), ('hello', 'Oo–ah–ee pet babble'),
         ('sleepy', 'A soft descending vowel warble'), ('tap', 'The short Back/Close blip'), ('coo', 'A soft rounded idle coo'),
         ('confirm', 'Two short rising menu confirmation notes'),
-        ('pet', 'A soft voiced pet interaction chirp')]
+        ('pet', 'A soft voiced pet interaction chirp'),
+        ('rasp', 'A subdued low-pass movement rasp')]
 
 
 def main():
@@ -33,10 +34,10 @@ def main():
     html = '''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Jelligotchi · Little digital voices</title><style>
 body{max-width:850px;margin:50px auto;padding:0 24px;background:#f5f1e7;color:#263c37;font:16px/1.6 system-ui}h1{font-size:42px;line-height:1.1}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}article{padding:24px;border:1px solid #d8ded2;border-radius:16px;background:#fffcf4}h2{margin:0}small{display:block;margin-top:12px;color:#63716b}audio{width:100%}</style>
-<h1>Little digital voices.</h1><p>Nine original procedural cues, rendered by the same C synthesizer used on the pet. Hello and Sleepy are vowel-like babble, not text-to-speech. Start with a comfortable listening volume.</p>
+<h1>Little digital voices.</h1><p>Original procedural cues, rendered by the same C synthesizer used on the pet. Hello and Sleepy are vowel-like babble, not text-to-speech. Start with a comfortable listening volume.</p>
 <p>The device stores tiny note/formant programs, not these WAV files. No recording, external voice model, or network service is used.</p><section>'''+''.join(cards)+'</section></html>'
     (args.output / 'preview.html').write_text(html)
-    print(f'Exported nine cues: {args.output / "preview.html"}')
+    print(f'Exported {len(CUES)} cues: {args.output / "preview.html"}')
 
 
 if __name__ == '__main__':

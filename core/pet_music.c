@@ -124,12 +124,23 @@ static uint8_t moment_song(const JelliMoment *moment)
     }
 }
 
+static bool bubble_selected(const JelliPetEngine *engine)
+{
+    const JelliCollectibleSession *session = &engine->game.collectible;
+    return engine->ui.menu_open && engine->ui.page == JELLI_UI_COLLECTIBLE_PLAY &&
+           session->active && session->mode == JELLI_COLLECTIBLE_BUBBLE && !session->paused &&
+           session->pet_id == engine->game.pets[engine->game.active].id &&
+           session->bubble.status == JELLI_BUBBLE_RUNNING;
+}
+
 static uint8_t background_song(const JelliPetEngine *engine)
 {
     const JelliPetUi *ui = &engine->ui;
     const JelliPet *pet = &engine->game.pets[engine->game.active];
     if (!engine->game.activity_music_enabled || engine->paused || engine->game.resuming)
         return UINT8_MAX;
+    if (bubble_selected(engine))
+        return JELLI_MUSIC_BUBBLE;
     if (ui->menu_open) {
         unsigned prize = ui->latched_prize ? ui->latched_prize - 1u : JELLI_PRIZE_COUNT;
         return ui->page == JELLI_UI_PRESENT_ACTION &&
@@ -148,6 +159,8 @@ static uint8_t background_song(const JelliPetEngine *engine)
     case JELLI_EATING:
     case JELLI_GIVING:
         return JELLI_MUSIC_TEA;
+    case JELLI_EXERCISING:
+        return JELLI_MUSIC_WORKOUT;
     case JELLI_CLEANING:
     case JELLI_CARING:
         return JELLI_MUSIC_WASH;

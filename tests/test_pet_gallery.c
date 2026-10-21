@@ -1,4 +1,5 @@
 #include "game_fixture.h"
+#include "../core/pet_gallery.h"
 #include "jelli/pet_engine.h"
 #include "jelli/collectible.h"
 #include <stdio.h>
@@ -84,8 +85,24 @@ static void explicit_craft_retains_pending_offer(void)
     CHECK(game.prizes.owned & (1u << r->second));
     CHECK(game.prizes.offered == offered && !game.collectible.active);
     CHECK(ui.save_requested);
+    unsigned cartridge = jelli_cartridge_index(r->output);
+    CHECK(cartridge < JELLI_CARTRIDGE_COUNT && game.cartridge_stats[cartridge].plays == 0u);
+    uint32_t revision = game.revision;
     press(1u);
+    CHECK(ui.collectible_launch_pending && !game.collectible.active);
+    CHECK(ui.page == JELLI_UI_PRESENT_ACTION && game.revision == revision);
+    jelli_pet_gallery_update(&ui, &game, 1000u);
+    jelli_pet_gallery_update(&ui, &game, 3999u);
+    CHECK(ui.collectible_launch_pending && !game.collectible.active);
+    CHECK(game.revision == revision && game.cartridge_stats[cartridge].plays == 0u);
+    CHECK(game.prizes.offered == offered);
+    jelli_pet_gallery_update(&ui, &game, 4000u);
+    CHECK(!ui.collectible_launch_pending && ui.page == JELLI_UI_COLLECTIBLE_PLAY);
     CHECK(game.collectible.active && game.collectible.prize == r->output);
+    CHECK(game.cartridge_stats[cartridge].plays == 1u && game.prizes.offered == offered);
+    revision = game.revision;
+    jelli_pet_gallery_update(&ui, &game, 7000u);
+    CHECK(game.revision == revision && game.cartridge_stats[cartridge].plays == 1u);
 }
 static void catch_opens_permanent_play(void)
 {

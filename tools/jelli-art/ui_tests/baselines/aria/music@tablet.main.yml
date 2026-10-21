@@ -17,6 +17,8 @@
       - option "Bubble Bath · Wash / care"
       - option "Moon Pillow · Sleep / quiet time"
       - option "Little Steps · Play / exercise"
+      - option "Bubble Rush · Bubble Lab / chiptune"
+      - option "Iron Pulse · Workout / hard techno"
     - text: Module title
     - textbox "Module title": New score
     - button "Save MOD"

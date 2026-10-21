@@ -1,4 +1,6 @@
 #include "game_fixture.h"
+#include "../core/pet_collectible_ui.h"
+#include "jelli/sound.h"
 #include "jelli/pet_engine.h"
 #include "jelli/collectible.h"
 #include <stdio.h>
@@ -51,6 +53,14 @@ static void press(unsigned slot)
                      (int)(b.bounds.y + b.bounds.height / 2u));
     render();
 }
+static void finish_launch(void)
+{
+    CHECK(engine.ui.collectible_launch_pending);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, now);
+    now += 3000u;
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, now);
+    render();
+}
 static void snapshot(const char *path)
 {
     FILE *f;
@@ -80,7 +90,7 @@ static void playable_controls_and_pause(void)
     snapshot("collectible-cartridges.ppm");
     press(1u);
     CHECK(engine.ui.page == JELLI_UI_PRESENT_ACTION);
-    press(1u);
+    finish_launch();
     CHECK(engine.ui.page == JELLI_UI_COLLECTIBLE_PLAY);
     CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_CHAIN);
     CHECK(engine.game.collectible.active && !engine.game.collectible.paused);
@@ -107,7 +117,7 @@ static void playable_controls_and_pause(void)
     CHECK(!engine.game.collectible.active && engine.ui.page == JELLI_UI_GIFT_SHELF);
     CHECK(engine.game.prizes.owned == JELLI_PRIZE_MASK);
     press(1u);
-    press(1u);
+    finish_launch();
     CHECK(!engine.game.collectible.paused);
     JelliPetUiButton hidden;
     for (unsigned slot = 1u; slot <= 6u; ++slot)
@@ -146,7 +156,7 @@ static void bubble_controls_and_checkpoint_replacement(void)
     press(2u);
     CHECK(engine.ui.page == JELLI_UI_PRESENT_ACTION);
     snapshot("bubble-launcher.ppm");
-    press(1u); /* Large cartridge artwork launches with a real tap. */
+    finish_launch(); /* Shelf selection launches automatically after insertion. */
     CHECK(engine.ui.page == JELLI_UI_COLLECTIBLE_PLAY);
     CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_BUBBLE);
     snapshot("bubble-lab.ppm");
@@ -154,7 +164,8 @@ static void bubble_controls_and_checkpoint_replacement(void)
     press(6u);
     CHECK(engine.game.collectible.bubble.assist == JELLI_BUBBLE_MANUAL);
     jelli_pet_ui_swipe(&engine.ui, &engine.game, -80, 0);
-    jelli_pet_ui_tap(&engine.ui, &engine.game, 230, 200);
+    jelli_pet_ui_tap(&engine.ui, &engine.game, 350,
+                     360); /* Newly enlarged well area rotates too. */
     CHECK(engine.game.collectible.bubble.input_count == 2u);
     jelli_collectible_tick(&engine.game);
     jelli_collectible_tick(&engine.game);
@@ -169,7 +180,7 @@ static void bubble_controls_and_checkpoint_replacement(void)
     press(0u);
     JelliBubble checkpoint = engine.game.collectible.bubble;
     press(2u);
-    press(2u); /* Primary RESUME button is an alternative to tapping the art. */
+    finish_launch(); /* Resume follows the same automatic insertion. */
     CHECK(!engine.game.collectible.paused);
     CHECK(jelli_bubble_same(&checkpoint, &engine.game.collectible.bubble));
     press(0u);
@@ -180,6 +191,16 @@ static void bubble_controls_and_checkpoint_replacement(void)
     CHECK(jelli_bubble_same(&checkpoint, &engine.game.collectible.bubble));
     press(1u);
     press(1u);
+    CHECK(engine.ui.collectible_launch_pending);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, now);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, now + 2500u);
+    press(0u); /* Cancelling an accepted replacement still retains the old checkpoint. */
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, now + 3000u);
+    CHECK(jelli_bubble_same(&checkpoint, &engine.game.collectible.bubble));
+    CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_BUBBLE);
+    press(1u);
+    press(1u);
+    finish_launch();
     CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_CHAIN);
     reset();
     press(3u);
@@ -191,8 +212,124 @@ static void bubble_controls_and_checkpoint_replacement(void)
     CHECK(engine.ui.collectible_confirm == 2u && engine.ui.latched_prize == 19u);
     CHECK(engine.ui.page == JELLI_UI_PRESENT_ACTION);
     press(1u);
+    finish_launch();
     CHECK(engine.ui.page == JELLI_UI_COLLECTIBLE_PLAY);
     CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_BUBBLE);
+}
+
+static void automatic_launch_timing_and_cancel(void)
+{
+    reset();
+    press(2u);
+    press(2u);
+    CHECK(engine.ui.collectible_launch_pending && !engine.game.collectible.active);
+    unsigned index = jelli_cartridge_index(JELLI_COLLECTIBLE_BUBBLE_PRIZE);
+    CHECK(engine.game.cartridge_stats[index].plays == 0u);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 0u);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 2699u);
+    CHECK(!engine.game.collectible.active && engine.ui.collectible_launch_ms == 2699u);
+    engine.ui.sound_pending = false;
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 2700u);
+    CHECK(engine.ui.sound_pending && engine.ui.sound_cue == JELLI_SOUND_CONFIRM + 1u);
+    engine.ui.sound_pending = false;
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 2999u);
+    CHECK(!engine.ui.sound_pending && !engine.game.collectible.active);
+    render();
+    snapshot("bubble-launcher-inserted.ppm");
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 3000u);
+    CHECK(engine.ui.page == JELLI_UI_COLLECTIBLE_PLAY);
+    CHECK(engine.game.cartridge_stats[index].plays == 1u);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 6000u);
+    CHECK(engine.game.cartridge_stats[index].plays == 1u);
+    render();
+    press(0u);
+    JelliBubble checkpoint = engine.game.collectible.bubble;
+    press(2u);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 6000u);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 8999u);
+    press(0u);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 9000u);
+    CHECK(engine.ui.page == JELLI_UI_GIFT_SHELF && !engine.game.collectible.active);
+    CHECK(jelli_bubble_same(&checkpoint, &engine.game.collectible.bubble));
+    CHECK(engine.game.cartridge_stats[index].plays == 1u);
+    press(2u);
+    finish_launch();
+    CHECK(jelli_bubble_same(&checkpoint, &engine.game.collectible.bubble));
+    CHECK(engine.game.cartridge_stats[index].plays == 1u);
+}
+
+static void launch_reduced_motion_and_interruption(void)
+{
+    reset();
+    engine.ui.collectible_reduced_motion = true;
+    press(2u);
+    press(2u);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 1000u);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 2500u);
+    CHECK(engine.ui.collectible_launch_ms == 1500u);
+    render();
+    snapshot("bubble-launcher-reduced.ppm");
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 500u); /* Clock reset. */
+    CHECK(engine.ui.collectible_launch_ms == 0u);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 3499u);
+    CHECK(!engine.game.collectible.active);
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 3500u);
+    CHECK(engine.game.collectible.active && !engine.game.collectible.paused);
+    render();
+    press(0u);
+    press(2u);
+    engine.ui.menu_open = false;
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 6000u);
+    CHECK(!engine.ui.collectible_launch_pending && !engine.game.collectible.active);
+    engine.ui.menu_open = true;
+    engine.ui.page = JELLI_UI_GIFT_SHELF;
+    render();
+    press(2u);
+    engine.game.active = 1u;
+    jelli_pet_collectible_launch_update(&engine.ui, &engine.game, 9000u);
+    CHECK(!engine.ui.collectible_launch_pending && !engine.game.collectible.active);
+}
+
+static void bubble_feedback(void)
+{
+    reset();
+    CHECK(jelli_collectible_play(&engine.game, JELLI_COLLECTIBLE_BUBBLE_PRIZE) == JELLI_OK);
+    engine.ui.page = JELLI_UI_COLLECTIBLE_PLAY;
+    engine.game.collectible.bubble.assist = JELLI_BUBBLE_MANUAL;
+    for (unsigned n = 0u; n < 3u; ++n) {
+        CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_LEFT) == JELLI_OK);
+        JelliCollectibleSession before = engine.game.collectible;
+        jelli_collectible_tick(&engine.game);
+        jelli_pet_bubble_checkpoint(&engine.ui, &before, &engine.game.collectible);
+        unsigned cue = jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], 100u + n * 100u);
+        CHECK(cue == (n < 2u ? JELLI_SOUND_BACK + 1u : 0u)); /* Wall rejects the third. */
+    }
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_DOWN) == JELLI_OK);
+    JelliCollectibleSession before = engine.game.collectible;
+    jelli_collectible_tick(&engine.game);
+    jelli_pet_bubble_checkpoint(&engine.ui, &before, &engine.game.collectible);
+    CHECK(jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], 400u) == JELLI_SOUND_CONFIRM + 1u);
+    before = engine.game.collectible;
+    unsigned virus = JELLI_BUBBLE_CELLS;
+    for (unsigned n = 0u; n < JELLI_BUBBLE_CELLS; ++n)
+        if (before.bubble.cells[n] >= 5u) {
+            virus = n;
+            break;
+        }
+    CHECK(virus < JELLI_BUBBLE_CELLS);
+    engine.game.collectible.bubble.cells[virus] = 0u;
+    jelli_pet_bubble_checkpoint(&engine.ui, &before, &engine.game.collectible);
+    CHECK(jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], 401u) == JELLI_SOUND_SPARKLE + 1u);
+    before = engine.game.collectible;
+    jelli_pet_bubble_checkpoint(&engine.ui, &before, &engine.game.collectible);
+    CHECK(!jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], 402u));
+    engine.game.collectible.bubble.status = JELLI_BUBBLE_TOP;
+    engine.game.collectible.paused = true;
+    CHECK(jelli_pet_collectible_win_update(&engine.ui, &engine.game, 1000u));
+    render();
+    snapshot("bubble-loss.ppm");
+    JelliPetUiButton button;
+    CHECK(!jelli_pet_ui_control(&engine.ui, 1u, false, &button));
 }
 
 static void background_music_setting(void)
@@ -212,6 +349,9 @@ static void background_music_setting(void)
 
 int main(void)
 {
+    automatic_launch_timing_and_cancel();
+    launch_reduced_motion_and_interruption();
+    bubble_feedback();
     background_music_setting();
     bubble_controls_and_checkpoint_replacement();
     playable_controls_and_pause();

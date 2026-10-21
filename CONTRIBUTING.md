@@ -115,6 +115,14 @@ as the release input. Do not hand-edit only one version file or bypass failing
 checks to land a change. Automated enforcement and access settings are described
 in the [maintainer runbook](docs-cms/memos/memo-005-contributor-and-maintainer-handoff.md).
 
+When adding a timed UI transition, audit every entry path, including crafting,
+collection selection and resume. Drive the injected clock through the owning
+update function and check just before and at completion: no early gameplay or
+statistics mutation, one completion, and safe cancellation. Run the surrounding
+integration tests as well as the new focused tests; a launcher test alone does
+not cover gallery crafting. See the
+[PR 81 coverage finding](docs-cms/memos/memo-097-bubble-lab-cartridge.md#pr-81-timed-launch-integration-coverage).
+
 Keep generated game include paths inside the game firmware branch; the factory
 profile deliberately skips those generators. SDL test executables that own their
 entry point must follow the desktop host's `SDL_MAIN_HANDLED` convention and call

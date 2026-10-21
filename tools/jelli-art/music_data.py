@@ -20,7 +20,9 @@ CATALOG = [
     ('tea-steam', 'Tea Steam', 'Tea / meals'),
     ('bubble-bath', 'Bubble Bath', 'Wash / care'),
     ('moon-pillow', 'Moon Pillow', 'Sleep / quiet time'),
-    ('little-steps', 'Little Steps', 'Play / exercise')]
+    ('little-steps', 'Little Steps', 'Play / exercise'),
+    ('bubble-rush', 'Bubble Rush', 'Bubble Lab / chiptune'),
+    ('iron-pulse', 'Iron Pulse', 'Workout / hard techno')]
 
 
 def key(value):

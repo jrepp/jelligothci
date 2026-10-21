@@ -178,3 +178,124 @@ unchanged; the screenshot test exposed that incomplete first correction. Existin
 screenshots and comparison thresholds remain unchanged.
 The pinned-image music UI run with `JELLI_UI_SCREENSHOTS=1` passed 9/9, including
 desktop and phone screenshot comparisons and tablet accessibility/layout checks.
+
+# Owner-directed presentation and game feedback follow-up
+
+The owner requested mean-looking viruses, removal of bottom help text, larger
+left-side score/level/virus counters, and a larger well. The
+[Bubble renderer](../../core/pet_bubble.c) now uses a larger cell grid within the
+circular display, with brows, eyes, teeth and spikes alongside color symbols.
+Tap hit-testing follows the enlarged well. The watching pet holds the existing
+medicine and shot sprites and shakes them on actual virus removal or level clear,
+using its existing reaction timer rather than adding checkpoint fields. Reduced
+motion retains static props and expressions. The pace assist remains accessible
+on the right; the bottom contains the radial Back control without help text.
+
+The owner also requested shared movement/drop/clear sounds and automatic endings
+for Bubble Lab and Jelli Chain. Gameplay cues follow successful simulation changes,
+not queued input admission or repeated rendering. Rejected wall moves stay silent;
+virus removal takes priority over the landing cue. Distinct simulation outcomes
+bypass the menu-tap debounce, including the once-only loss cue immediately after a
+move. Chain keeps its eat/win cues and now sounds on successful movement.
+
+The [shared terminal sequence](../../core/pet_collectible_win.c) centers the happy
+pet for a short star celebration on final victory. Loss keeps the pet in place
+with an unhappy expression and tears, then returns automatically to cartridges.
+The owner initially requested approximately 2–3 seconds for victory and one second
+for loss, then explicitly doubled both sequences to five and two seconds. Current
+durations live in the source. Intermediate Bubble levels continue play.
+Reopening a lost Bubble session retains the existing current-level retry semantics;
+no new loss/replay menu, care rewards or checkpoint slot was added.
+
+Bubble Rush is an original four-channel gameplay MOD authored by
+[the dedicated composer](../../tools/audio/create_bubble_music.py), using the
+existing synthesized instrument bank. The [music adapter](../../core/pet_music.c)
+routes it only during active, unpaused Bubble gameplay, respects the activity-music
+preference, stops on terminal states, and awards no record credit. The native
+export was checked against preview output; pinned-image music UI checks with
+screenshots enabled passed 9/9 without relaxing comparisons.
+
+Focused native rules, UI, ending, engine and navigation tests passed 6/6. New
+checks cover expanded-well taps, rejected-move silence, consecutive movement cues,
+drop/virus-clear priority, quiet repeated polling, loss cue debounce, automatic
+return timing, and unchanged play/win counts on loss. Native screenshots were
+inspected for the circular layout, readable counters and held props. Physical
+display/touch/audio behavior remains unverified.
+
+The expanded music routing and UI feedback initially crossed the strict function
+complexity budget. Named private helpers separate track selection, reaction timing
+and Bubble sound feedback; limits remain unchanged. The size gate and focused
+tests were rerun after extraction. Clang-Tidy also caught duplicated loss-return
+branches in Chain feedback; a standalone early guard preserved behavior, and the
+three affected tests plus strict hooks passed before commit `94f53e1`.
+
+The duration follow-up retains the same transitions and one-shot cues. Timing
+regressions verify that both games remain on screen beyond the previous deadline
+and return at the new boundary; paused-clock and reload coverage remains in place.
+
+The owner requested a subdued low-pass rasp for Chain movement. The existing cue
+programs had no equivalent, so the [portable synthesizer](../../core/sound.c) adds
+an appended cue without changing existing IDs. A brief low saw/noise source uses
+a bounded integer low-pass filter and lower gain. The cue reuses otherwise-unused
+formant state, preserving the synth state budget and requiring no sample asset.
+Only Chain movement uses it; Bubble movement and the other game cues retain their
+programs. Debug audition and the [preview exporter](../../tools/audio/preview.py)
+include the new name. Tests verify block continuity, envelope ends, duration,
+reduced high-frequency sample steps, muted/master gain and unchanged cue IDs.
+
+The owner's workout music request adds Iron Pulse, authored by the
+[workout composer](../../tools/audio/create_workout_music.py). The original MOD
+uses synthesized distorted kick/bass, acid-style stab and percussion, routing
+only to exercise through the existing background-music switch. It follows the
+activity-music preference and master volume and adds no collectible record.
+
+The owner subsequently requested automatic cartridge insertion. The
+[launcher](../../core/pet_collectible_launch.c) presents the centered cartridge,
+enlarged title and Plays/Wins, slides it into a slot, emits a shared click cue and
+launches after three seconds. Reduced motion uses static art and seated status.
+Back cancels before gameplay or statistics mutate; replacing a different saved
+session still requires explicit confirmation. This transition uses transient UI
+state only and leaves the save schema unchanged.
+
+Final follow-up validation included a fresh ESP32 firmware build with the launcher
+source registered in the port. The image measured 2,114,528 bytes in the 4,194,304-byte
+application partition, leaving 2,079,776 bytes free. Native `sizeof` measurements
+against the prior committed UI header showed `JelliPetUi` increasing from 9,960 to
+9,984 bytes and `JelliPetEngine` from 20,584 to 20,608 bytes; these are desktop ABI
+measurements, not ESP32 structure sizes. The synthesizer remains 24 bytes, and the
+launcher adds no serialized fields, heap allocations or framebuffers. Final focused
+launcher/music tests passed 3/3, sanitizer sound/music/launcher/ending/engine checks
+passed 5/5, and music Studio screenshot checks passed 9/9. No device was flashed.
+
+
+# PR 81 timed-launch integration coverage
+
+[PR 81](https://github.com/jrepp/jelligothci/pull/81) CI failed the existing
+`pet_gallery` crafting test after automatic insertion was added. That test still
+expected a crafted cartridge to become active immediately after its launch tap.
+The same assertion failed locally before correction. The preceding focused
+launcher/music and sanitizer runs passed but omitted this gallery entry path;
+they were not evidence that the complete integration suite passed.
+
+The [gallery test](../../tests/test_pet_gallery.c) now advances the injected clock
+through the gallery update function, checks that the session, revision, play
+count and pending gift remain unchanged before the three-second boundary, then
+checks activation and exactly one counted play at completion. A later update
+must not count or mutate it again. Runtime launch behavior is unchanged. Other
+cartridge tests were audited: dedicated launcher tests already advance time;
+engine, music and ending fixtures use direct engine setup, which does not have a
+UI insertion delay. Ordinary present playback remains immediate.
+
+The reusable [change-validation guidance](../../CONTRIBUTING.md#make-and-review-a-change)
+now requires timed-transition checks across entry paths and surrounding integration
+coverage, including craft and resume. Physical display/touch/audio behavior is
+not established by this test-only correction.
+
+After rebuilding both configurations, all 70 native C tests passed on desktop
+and all 70 passed with sanitizers, including gallery, launcher, ending, engine
+and SDL smoke/demo coverage. Native tests were selected from CTest's JSON inventory
+by executable location in each build directory. Unchanged Python/Studio suites
+were excluded from this local correction run; the earlier CI failure reported
+only the gallery assertion. Documentation validation and repair checks passed
+without repairs, and the C size gate passed. Required PR checks still need to
+pass on the corrected revision before merge.

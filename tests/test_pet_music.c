@@ -92,6 +92,9 @@ static void background_music(void)
     pet->activity = JELLI_CLEANING;
     jelli_pet_music_sync(&engine);
     CHECK(audio.last.song == JELLI_MUSIC_WASH && engine.music_running);
+    pet->activity = JELLI_EXERCISING;
+    jelli_pet_music_sync(&engine);
+    CHECK(audio.last.song == JELLI_MUSIC_WORKOUT && engine.music_running);
     pet->activity = JELLI_EATING;
     jelli_pet_music_sync(&engine);
     CHECK(audio.last.song == JELLI_MUSIC_TEA);
@@ -121,8 +124,51 @@ static void background_music(void)
     jelli_pet_music_sync(&engine);
     CHECK(engine.music_running && audio.last.song == 0u && audio.last.volume == 20u);
 }
+static void bubble_music(void)
+{
+    start();
+    unsigned prize = JELLI_COLLECTIBLE_BUBBLE_PRIZE;
+    engine.game.prizes.owned |= UINT32_C(1) << prize;
+    engine.game.prizes.discovered |= UINT32_C(1) << prize;
+    engine.game.prizes.origin_pet[prize] = engine.game.pets[0].id;
+    CHECK(jelli_collectible_play(&engine.game, prize) == JELLI_OK);
+    engine.ui.menu_open = true;
+    engine.ui.page = JELLI_UI_COLLECTIBLE_PLAY;
+    jelli_pet_music_sync(&engine);
+    CHECK(engine.music_running && audio.last.song == JELLI_MUSIC_BUBBLE);
+    audio.status.finished = true;
+    uint32_t serial = engine.music_serial;
+    jelli_pet_music_sync(&engine);
+    CHECK(engine.music_serial != serial && audio.last.cursor == 0u);
+    jelli_pet_music_progress(&engine);
+    CHECK(engine.game.collectible.record_cursor == 0u);
+    engine.game.activity_music_enabled = false;
+    jelli_pet_music_sync(&engine);
+    CHECK(!engine.music_running);
+    engine.game.activity_music_enabled = true;
+    jelli_pet_music_sync(&engine);
+    CHECK(engine.music_running);
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_PAUSE) == JELLI_OK);
+    jelli_pet_music_sync(&engine);
+    CHECK(!engine.music_running);
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_RESUME) == JELLI_OK);
+    jelli_pet_music_sync(&engine);
+    CHECK(engine.music_running);
+    engine.game.collectible.bubble.status = JELLI_BUBBLE_TOP;
+    jelli_pet_music_sync(&engine);
+    CHECK(!engine.music_running);
+    engine.game.collectible.bubble.status = JELLI_BUBBLE_WON;
+    jelli_pet_music_sync(&engine);
+    CHECK(!engine.music_running);
+    engine.game.collectible.bubble.status = JELLI_BUBBLE_RUNNING;
+    engine.ui.page = JELLI_UI_GIFT_SHELF;
+    jelli_pet_music_sync(&engine);
+    CHECK(!engine.music_running);
+}
+
 int main(void)
 {
+    bubble_music();
     background_music();
     every_record_selects_its_song();
     start();

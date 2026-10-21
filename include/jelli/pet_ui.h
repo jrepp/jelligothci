@@ -128,11 +128,13 @@ typedef struct {
     uint32_t prize_origins[JELLI_PRIZE_COUNT];
     JelliCollectibleSession collectible;
     uint16_t collectible_play_ticks, collectible_special;
+    uint8_t collectible_cheer_phase;
     uint16_t cartridge_plays, cartridge_wins;
     bool collectible_record_rewarded;
     uint8_t gift_category, gift_page, collectible_confirm;
     bool collectible_reduced_motion, collectible_menu;
-    uint16_t collectible_win_ms;
+    uint16_t collectible_win_ms, collectible_launch_ms;
+    bool collectible_launch_pending;
     bool keyboard_focus;
     uint8_t keyboard_slot;
     uint8_t reward_index, offered_prize, latched_prize, highlighted_prize;
@@ -198,7 +200,8 @@ typedef struct {
     /* Borrowed immutable metadata; no runtime alpha scans or allocation. */
     const JelliAsset *actor_frame;
     JelliPetRewards rewards;
-    uint64_t catch_anchor_ms, collectible_win_anchor;
+    uint64_t catch_anchor_ms, collectible_win_anchor, collectible_launch_anchor;
+    uint32_t collectible_launch_pet;
     uint8_t latched_prize, highlighted_prize, catch_seen;
     uint8_t selected_pet, selected_form;
     uint8_t sound_cue; /* One-based cue; zero defaults to menu confirmation. */
@@ -218,7 +221,8 @@ typedef struct {
     uint8_t activity_page;
     uint8_t attempted_slot;
     bool collectible_reduced_motion, collectible_menu;
-    uint16_t collectible_win_ms;
+    uint16_t collectible_win_ms, collectible_launch_ms;
+    bool collectible_launch_pending;
     uint32_t result_until_ms, last_revision, coo_pet;
     JelliRect actor_bounds;
     JelliParticles particles;

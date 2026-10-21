@@ -143,7 +143,7 @@ static void detail_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
         return;
     bool owned = (game->prizes.owned & (1u << prize)) != 0u;
     if (owned_cartridge(game, prize)) {
-        jelli_pet_cartridge_draw(c, game, prize);
+        jelli_pet_cartridge_draw(c, ui, game, prize);
         control(c, ui, 2u, false);
         return;
     }

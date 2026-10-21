@@ -1,3 +1,4 @@
+#include "jelli/sound.h"
 #include "jelli/debug.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +41,7 @@ int main(void)
     debug.sound_ctx = &requests;
     send(&debug, &engine, "@J1 2 sound 3 35\n", "queued");
     CHECK(requests == 1u && received_cue == 3u && received_volume == 35u);
-    send(&debug, &engine, "@J1 3 sound 9 35\n", "sound_range");
+    send(&debug, &engine, "@J1 3 sound 10 35\n", "sound_range");
     send(&debug, &engine, "@J1 4 sound 3 81\n", "sound_range");
     send(&debug, &engine, "@J1 5 sound 3\n", "sound_range");
     CHECK(requests == 1u);
@@ -52,6 +53,9 @@ int main(void)
     accept = false;
     send(&debug, &engine, "@J1 7 sound 0 0\n", "sound_busy_or_unavailable");
     CHECK(requests == 2u && received_volume == 0u);
+    accept = true;
+    send(&debug, &engine, "@J1 8 sound 9 12\n", "queued");
+    CHECK(requests == 3u && received_cue == JELLI_SOUND_RASP && received_volume == 12u);
     puts("Sound protocol validates ranges, queue rejection, missing host and capture lease.");
     return 0;
 }
