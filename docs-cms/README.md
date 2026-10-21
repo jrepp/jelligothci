@@ -229,3 +229,6 @@ Bounded MOD tracker authoring, sample management and four-channel playback:
 
 Bubble Lab, cartridge launch controls and compact checkpoint validation:
 [memo-097](memos/memo-097-bubble-lab-cartridge.md).
+
+Expanded original drum/bass samples and reference-informed arrangements:
+[memo-099](memos/memo-099-expanded-synth-bank-and-arrangements.md).

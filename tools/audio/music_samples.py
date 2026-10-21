@@ -28,6 +28,43 @@ def lead_samples():
     return leads
 
 
+def rhythm_samples():
+    """Small original one-shots and looped basses, independent of the legacy seeds."""
+    phase = 0.0
+    tight_kick = []
+    for i in range(512):
+        phase += 2 * math.pi * (75 + 150 * math.exp(-i / 55)) / 22050
+        envelope = min(1, i / 8) * (1 - i / 511) ** 2
+        tight_kick.append(round(112 * math.tanh(2.2 * math.sin(phase)) * envelope))
+    metal_hat = []
+    ratios = (1.0, 1.47, 1.91, 2.57, 3.21, 4.13)
+    for i in range(128):
+        metal = sum(1 if math.sin(2 * math.pi * 2400 * ratio * i / 22050) >= 0
+                    else -1 for ratio in ratios)
+        envelope = min(1, i / 3) * (1 - i / 127) ** 2
+        metal_hat.append(round(18 * metal * envelope))
+    noise = random.Random(8703)
+    clap, previous = [], 0.0
+    for i in range(256):
+        current = noise.uniform(-1, 1)
+        high_pass = (current - previous) / 2
+        previous = current
+        burst = sum(math.exp(-(i - onset) / 23) for onset in (0, 34, 72, 116)
+                    if i >= onset)
+        envelope = min(1, i / 4) * (1 - i / 255)
+        clap.append(round(100 * high_pass * burst * envelope))
+    acid_bass = []
+    for i in range(64):
+        phase = 2 * math.pi * i / 64
+        # Harmonic-limited pulse; no discontinuous sampled square-wave edge.
+        pulse = sum(math.sin(k * phase) * math.sin(k * math.pi * .3) / k
+                    for k in range(1, 10))
+        acid_bass.append(round(66 * pulse))
+    return dict(tight_kick=tight_kick, metal_hat=metal_hat, clap=clap,
+                acid_bass=acid_bass,
+                sub_bass=[round(108 * math.sin(2 * math.pi * i / 64)) for i in range(64)])
+
+
 def sample_bank():
     rng = random.Random(731)
     leads = lead_samples()
@@ -55,6 +92,7 @@ def sample_bank():
         envelope = (1-i/511)**2
         snare.append(round((noise.uniform(-78, 78)+30*math.sin(2*math.pi*185*t))*envelope))
     voices.update(kick=kick, snare=snare)
+    voices.update(rhythm_samples())
     assert all(-128 <= x <= 127 for voice in leads + list(voices.values()) for x in voice)
     assert sum(map(len, leads)) + sum(map(len, voices.values())) < 4096
     return leads, voices
