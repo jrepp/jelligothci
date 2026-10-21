@@ -153,6 +153,29 @@ and run axe. The pinned-image verification run passed 37 cases covering all view
 responsive navigation and the palette regressions (snapshot update mode off).
 Full current-revision GitHub validation remains the merge gate.
 
+# PR 75 inherited failures and base synchronization
+
+The documentation branch at `695b3c7` still used the celebration base before
+PR 74. [Run 39545461731](https://github.com/jrepp/jelligothci/actions/runs/39545461731)
+failed the image smoke test: container logs show `ModuleNotFoundError` for
+`effect_data`. Its UI job passed 296 cases and failed the tablet Paint creature
+screenshot, with 3099 changed pixels. These are the dependency and reviewed
+visual changes already addressed by PR 74; the documentation edits do not modify
+studio code or assets.
+
+PR 74 merged into `feat/celebration-effects` as `a0cf712` with all checks green.
+Merge `5d58239` brings that base into PR 75 without rewriting published history.
+No additional screenshot replacement, accessibility exclusion or check bypass
+was used. The static container checker and all 13 packaging fixtures pass on
+the synchronized branch. The focused pinned Linux/ARM64 tablet Paint check
+passed with screenshot comparison enabled (one passed, 305 deselected; update
+mode off). Fresh GitHub checks remain pending; this local result does not
+establish the full Linux/AMD64 UI suite or packaged startup for the new head.
+
+When another branch contains a known CI remedy, check whether it has actually
+landed in the affected PR's base/history before repeating the fix. A base update
+must preserve the intended PR file scope and still receive current-head checks.
+
 # PR 76 base synchronization
 
 PR [76](https://github.com/jrepp/jelligothci/pull/76) reported conflicts after
