@@ -10,39 +10,70 @@ static SDL_AudioDeviceID device;
 static Request requests[4];
 static unsigned read_at, write_at, queued, gain;
 static JelliSynth synth;
+static JelliMusic music;
+static JelliMusicTransition transition;
+static int16_t cue_pcm[JELLI_SOUND_BLOCK], music_pcm[JELLI_SOUND_BLOCK];
 
-/* SDL serializes this callback with SDL_LockAudioDevice. All synth/queue state
- * is owned by the callback; main only enqueues while holding that lock. */
+/* SDL serializes this callback with SDL_LockAudioDevice. All playback state
+ * is owned by the callback; main controls or snapshots it only while locked. */
+static void render_block(size_t count)
+{
+    memset(cue_pcm, 0, sizeof(cue_pcm));
+    memset(music_pcm, 0, sizeof(music_pcm));
+    if (!synth.playing && queued) {
+        Request r = requests[read_at];
+        read_at = (read_at + 1u) % 4u;
+        --queued;
+        gain = r.volume;
+        (void)jelli_sound_start(&synth, r.cue);
+    }
+    bool duck = synth.playing;
+    (void)jelli_sound_render(&synth, cue_pcm, count);
+    (void)jelli_music_render(&music, music_pcm, count);
+    for (size_t i = 0; i < count; ++i)
+        music_pcm[i] = jelli_music_mix(jelli_music_transition_sample(&transition, music_pcm[i]),
+                                       cue_pcm[i], gain, duck);
+}
+
 static void audio_callback(void *unused, Uint8 *stream, int length)
 {
     (void)unused;
     if (length <= 0)
         return;
     memset(stream, 0, (size_t)length);
-    /* memcpy avoids assumptions about the alignment of SDL's byte buffer. */
-    int16_t block[JELLI_SOUND_BLOCK];
     size_t at = 0u, capacity = (size_t)length / sizeof(int16_t);
     while (at < capacity) {
-        if (!synth.playing) {
-            if (!queued)
-                break;
-            Request r = requests[read_at];
-            read_at = (read_at + 1u) % 4u;
-            --queued;
-            gain = r.volume;
-            (void)jelli_sound_start(&synth, r.cue);
-        }
         size_t count = capacity - at;
         if (count > JELLI_SOUND_BLOCK)
             count = JELLI_SOUND_BLOCK;
-        count = jelli_sound_render(&synth, block, count);
-        if (!count)
-            break;
-        for (size_t i = 0; i < count; ++i)
-            block[i] = (int16_t)((int32_t)block[i] * (int32_t)gain / 100);
-        memcpy(stream + at * sizeof(int16_t), block, count * sizeof(int16_t));
+        render_block(count);
+        memcpy(stream + at * sizeof(int16_t), music_pcm, count * sizeof(int16_t));
         at += count;
     }
+}
+
+bool jelli_sdl_music_control(void *ctx, JelliMusicCommand command)
+{
+    (void)ctx;
+    if (!device)
+        return false;
+    SDL_LockAudioDevice(device);
+    bool accepted = jelli_music_control(&music, command);
+    if (accepted)
+        jelli_music_transition_begin(&transition);
+    SDL_UnlockAudioDevice(device);
+    return accepted;
+}
+
+bool jelli_sdl_music_status(void *ctx, JelliMusicStatus *status)
+{
+    (void)ctx;
+    if (!device || !status)
+        return false;
+    SDL_LockAudioDevice(device);
+    *status = jelli_music_status(&music);
+    SDL_UnlockAudioDevice(device);
+    return true;
 }
 
 bool jelli_sdl_sound_open(void)
@@ -84,4 +115,6 @@ void jelli_sdl_sound_close(void)
     device = 0;
     queued = read_at = write_at = 0;
     synth = (JelliSynth){0};
+    music = (JelliMusic){0};
+    transition = (JelliMusicTransition){0};
 }
