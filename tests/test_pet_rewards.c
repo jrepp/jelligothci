@@ -2,6 +2,7 @@
 #include "jelli/activities.h"
 #include "jelli/pet_rewards.h"
 #include "jelli/save.h"
+#include "jelli/collectible.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -221,12 +222,14 @@ static void snuggle_offers_a_giftable_teddy(void)
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size && jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.prizes.origin_pet[jelli_moments[snuggle].prize - 1u] == 3u);
-    /* Like every present, the teddy goes to another pet, not back to the one that earned it. */
-    CHECK(jelli_prize_gift(&game, jelli_moments[snuggle].prize - 1u) == JELLI_NOT_READY);
+    /* Every pet, including the catcher, can play without consuming a collectible. */
+    CHECK(jelli_prize_gift(&game, jelli_moments[snuggle].prize - 1u) == JELLI_OK);
+    CHECK(jelli_collectible_control(&game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_ACTIVATE, 3u, 1u}) == JELLI_OK);
     CHECK(jelli_prize_gift(&game, jelli_moments[snuggle].prize - 1u) == JELLI_OK);
-    CHECK(!(game.prizes.owned & (1u << (jelli_moments[snuggle].prize - 1u))));
-    CHECK(game.prizes.offered == 9u); /* Gifting earns the friendship bow. */
+    CHECK(game.prizes.owned & (1u << (jelli_moments[snuggle].prize - 1u)));
+    CHECK(!game.prizes.offered); /* Bow requires completed shared play, not launch. */
+    CHECK(jelli_collectible_control(&game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
 }
 
 static void save_and_reload(void)

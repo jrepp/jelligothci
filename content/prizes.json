@@ -60,6 +60,18 @@
       "key": "teddy-bear",
       "name": "TEDDY BEAR",
       "asset": 11010
+    },
+    {
+      "id": 10,
+      "key": "jelli-chain-cartridge",
+      "name": "JELLI CHAIN",
+      "asset": 11011
+    },
+    {
+      "id": 11,
+      "key": "morning-tea-record",
+      "name": "MORNING TEA",
+      "asset": 11012
     }
   ]
 }

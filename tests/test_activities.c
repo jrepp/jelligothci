@@ -197,7 +197,8 @@ static void version_eleven_loads_without_completion(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 14u);
-    size_t newer = 6u + TEST_SAVE_V14_GAME_BYTES; /* v12 pet bytes and the v14 game tail. */
+    size_t newer =
+        6u + TEST_SAVE_NEW_GAME_BYTES(save.game.count); /* v12 pet bytes and the v14 game tail. */
     memmove(bytes + size - 8u - newer, bytes + size - 8u, 8u);
     size -= newer;
     bytes[4] = 11u;

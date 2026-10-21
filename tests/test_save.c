@@ -365,14 +365,14 @@ static void rolling_history_round_trip(void)
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 69u - TEST_SAVE_V14_GAME_BYTES -
+    bytes[size - 69u - TEST_SAVE_NEW_GAME_BYTES(save.game.count) -
           (size_t)save.game.count * (4u + TEST_SAVE_V12_PET_BYTES)] =
         4u; /* Owned bit ten is outside the ten prize slots. */
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(unchanged(&loaded, &before));
     size = encode(&save, bytes);
-    bytes[size - 30u - TEST_SAVE_V14_GAME_BYTES -
+    bytes[size - 30u - TEST_SAVE_NEW_GAME_BYTES(save.game.count) -
           (size_t)save.game.count * (4u + TEST_SAVE_V12_PET_BYTES)] = JELLI_PRIZE_COUNT + 1u;
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));

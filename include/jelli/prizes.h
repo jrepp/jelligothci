@@ -24,7 +24,8 @@ typedef enum {
     JELLI_PRIZE_CARE,
     JELLI_PRIZE_SLEEP,
     JELLI_PRIZE_TRAVEL,
-    JELLI_PRIZE_GIFT
+    JELLI_PRIZE_GIFT,
+    JELLI_PRIZE_PLAY
 } JelliPrizeTrigger;
 typedef struct {
     uint16_t counts[JELLI_PRIZE_LEGACY_COUNT];

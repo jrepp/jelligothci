@@ -4,6 +4,7 @@
 #include "jelli/events.h"
 #include "jelli/habits.h"
 #include "jelli/prizes.h"
+#include "jelli/collectible_types.h"
 #include "jelli/sleep_log.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -81,7 +82,10 @@ typedef enum {
     JELLI_CMD_EXERCISE,
     JELLI_CMD_VOLUME,
     JELLI_CMD_REFILL_FOOD,
-    JELLI_CMD_FORM
+    JELLI_CMD_FORM,
+    JELLI_CMD_COLLECTIBLE_PLAY,
+    JELLI_CMD_COLLECTIBLE_CRAFT,
+    JELLI_CMD_COLLECTIBLE_CONTROL
 } JelliCommandKind;
 typedef enum {
     JELLI_OK,
@@ -97,6 +101,7 @@ typedef struct {
     uint32_t id;
     JelliHabits habits;
     JelliPrizeProgress prize_progress;
+    JelliCollectibleProgress collectible_progress;
     uint64_t ticks, stage_ticks, interaction_due, nap_due, awake_until;
     uint64_t wake_override_until, hunger_due;
     uint64_t shot_until, medicine_until;
@@ -130,6 +135,7 @@ typedef struct {
     JelliPet pets[JELLI_PET_CAPACITY];
     JelliSleepLog sleep_log;
     JelliPrizes prizes;
+    JelliCollectibleSession collectible;
     uint64_t ticks, discarded_ms, resume_remaining_ms;
     uint32_t backlog_ms, revision;
     uint16_t food, gifts;
@@ -154,7 +160,9 @@ typedef struct {
     uint32_t actor_id;
     /* FORM: unlocked 0/1 for actor_id (active or stored). VOLUME: 0..100 master level. FEED: food
      * catalog ID (0 is the legacy meal). ACTIVATE: stable ID; TRAVEL: 0/1; BEDTIME: 0..23. MOMENT:
-     * moment ID from content/activities.json. HEALTH: JelliHealthActivity. */
+     * moment ID from content/activities.json. HEALTH: JelliHealthActivity.
+     * COLLECTIBLE_PLAY: zero-based prize. COLLECTIBLE_CRAFT: recipe index.
+     * COLLECTIBLE_CONTROL: JelliCollectibleControl. */
     uint32_t value;
 } JelliCommand;
 
@@ -168,11 +176,12 @@ bool jelli_pet_health_ready(const JelliPet *pet, unsigned activity);
 unsigned jelli_pet_mood(const JelliPet *pet);
 unsigned jelli_pet_favorite(const JelliPet *pet, unsigned minute);
 /* Completion triggers are submitted once by the activity/event owner. SLEEP
- * means a qualified >= six-hour rest; GIFT means a real cross-pet collection gift. */
+ * means a qualified >= six-hour rest; PLAY means a completed shared collectible play. */
 void jelli_prize_complete(JelliGame *game, unsigned trigger);
 /* Offers prize index (0-based) to the active pet, as a moment's authored "prize" does. */
 void jelli_prize_award(JelliGame *game, unsigned index);
 JelliResult jelli_prize_catch(JelliGame *game);
+/* Legacy name retained for callers; now launches permanent shared play without consumption. */
 JelliResult jelli_prize_gift(JelliGame *game, unsigned index);
 bool jelli_game_valid(const JelliGame *game);
 JelliResult jelli_game_command(JelliGame *game, JelliCommand command);

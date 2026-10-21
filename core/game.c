@@ -5,6 +5,7 @@
 #include "jelli/nutrition.h"
 #include "jelli/activities.h"
 #include "jelli/behavior.h"
+#include "jelli/collectible.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -135,7 +136,8 @@ static bool pet_lifecycle_valid(const JelliPet *pet)
 
 static bool pet_valid(const JelliPet *pet)
 {
-    return jelli_prize_progress_valid(&pet->prize_progress) && jelli_habits_valid(&pet->habits) &&
+    return jelli_collectible_progress_valid(&pet->collectible_progress) &&
+           jelli_prize_progress_valid(&pet->prize_progress) && jelli_habits_valid(&pet->habits) &&
            pet->habits.cursor_ticks <= pet->ticks && pet->shot_goal <= 3u &&
            pet->shot_hits <= pet->shot_goal &&
            (pet->shot_goal == 0u ? pet->shot_until == 0u : pet->shot_until > 0u) &&
@@ -219,7 +221,7 @@ bool jelli_game_valid(const JelliGame *game)
     if (game && game->volume > JELLI_VOLUME_MAX)
         return false;
     return game_header_valid(game) && game_pets_valid(game) && prize_sources_valid(game) &&
-           jelli_collection_valid(game);
+           jelli_collection_valid(game) && jelli_collectible_valid(game);
 }
 
 const char *jelli_game_result_name(JelliResult result)

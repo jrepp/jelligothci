@@ -157,8 +157,8 @@ static void migrate_old_running_recipe(void)
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 8u);
     /* v12 layout (without the v14 game tail), old immediate-reward semantics. */
-    memmove(bytes + size - 8u - TEST_SAVE_V14_GAME_BYTES, bytes + size - 8u, 8u);
-    size -= TEST_SAVE_V14_GAME_BYTES;
+    memmove(bytes + size - 8u - TEST_SAVE_NEW_GAME_BYTES(save.game.count), bytes + size - 8u, 8u);
+    size -= TEST_SAVE_NEW_GAME_BYTES(save.game.count);
     for (unsigned i = 0u; i < 4u; ++i)
         bytes[8u + i] = (uint8_t)(size >> (i * 8u));
     bytes[4] = 12u;

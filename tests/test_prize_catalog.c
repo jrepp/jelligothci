@@ -1,5 +1,7 @@
 #include "game_fixture.h"
 #include "jelli/save.h"
+#include "save_layout.h"
+#include "jelli/collectible.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,15 +44,17 @@ static void capacity_award_and_save(void)
     CHECK(save.game.prizes.owned == UINT16_C(0x8000));
     CHECK(save.game.prizes.origin_pet[15] == save.game.pets[0].id);
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
-    CHECK(size && bytes[4] == 15u && jelli_save_decode(&loaded, bytes, size));
+    CHECK(size && bytes[4] == JELLI_SAVE_VERSION && jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.prizes.owned == UINT16_C(0x8000));
     CHECK(loaded.game.prizes.discovered == UINT16_C(0x8000));
     CHECK(loaded.game.prizes.origin_pet[15] == save.game.pets[0].id);
-    CHECK(jelli_prize_gift(&loaded.game, 15u) == JELLI_NOT_READY);
+    CHECK(jelli_prize_gift(&loaded.game, 15u) == JELLI_OK);
+    CHECK(jelli_collectible_control(&loaded.game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
     CHECK(jelli_game_command(&loaded.game, (JelliCommand){JELLI_CMD_ACTIVATE, 1u, 2u}) == JELLI_OK);
     CHECK(jelli_prize_gift(&loaded.game, 15u) == JELLI_OK);
-    CHECK(!loaded.game.prizes.owned && loaded.game.prizes.discovered == UINT16_C(0x8000));
-    CHECK(loaded.game.prizes.offered == 9u); /* Existing friendship bow trigger. */
+    CHECK(loaded.game.prizes.owned == UINT16_C(0x8000) &&
+          loaded.game.prizes.discovered == UINT16_C(0x8000));
+    CHECK(!loaded.game.prizes.offered); /* Only completed shared play earns a bow. */
     jelli_prize_award(&save.game, JELLI_PRIZE_COUNT);
     CHECK(!save.game.prizes.offered);
 }
@@ -65,8 +69,9 @@ static void original_v14_teddy_is_preserved(void)
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 32u);
     /* v14 has exactly one post-legacy origin, regardless of the new registry. */
-    memmove(bytes + size - 32u, bytes + size - 8u, 8u);
-    size -= 24u;
+    size_t extension = 24u + TEST_SAVE_V16_BYTES(save.game.count);
+    memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
+    size -= extension;
     bytes[4] = 14u;
     for (unsigned i = 0u; i < 4u; ++i)
         bytes[8u + i] = (uint8_t)(size >> (i * 8u));

@@ -1,6 +1,7 @@
 #include "jelli/behavior.h"
 #include "game_internal.h"
 #include "jelli/collection.h"
+#include "jelli/collectible.h"
 
 #include <stddef.h>
 
@@ -130,8 +131,9 @@ void jelli_prize_complete(JelliGame *game, unsigned trigger)
     case JELLI_PRIZE_SLEEP:
         offer(game, 6u);
         break;
-    case JELLI_PRIZE_GIFT:
-        offer(game, 8u);
+    case JELLI_PRIZE_PLAY:
+        if (count_completion(pet, 8u))
+            offer(game, 8u);
         break;
     default:
         break;
@@ -165,41 +167,14 @@ JelliResult jelli_prize_catch(JelliGame *game)
     return JELLI_OK;
 }
 
-static JelliResult gift_result(const JelliGame *game, unsigned index)
-{
-    if (index >= jelli_prize_count)
-        return JELLI_INVALID_TARGET;
-    if (game->resuming)
-        return JELLI_BUSY;
-    if (!(game->prizes.owned & (1u << index)))
-        return JELLI_NO_ITEM;
-    const JelliPet *pet = &game->pets[game->active];
-    if (pet->id == game->prizes.origin_pet[index])
-        return JELLI_NOT_READY;
-    if (pet->asleep)
-        return JELLI_ASLEEP;
-    return pet->activity == JELLI_IDLE ? JELLI_OK : JELLI_BUSY;
-}
-
+/* Legacy API now plays permanent collectibles; acquisition provenance never gates play. */
 JelliResult jelli_prize_gift(JelliGame *game, unsigned index)
 {
-    if (!jelli_game_valid(game))
+    if (!game)
         return JELLI_INVALID_TARGET;
-    JelliPet *pet = &game->pets[game->active];
-    JelliEventSnapshot before = jelli_game_observe(game, pet);
-    JelliResult result = gift_result(game, index);
-    if (result == JELLI_OK) {
-        game->prizes.owned &= (uint16_t)~(1u << index);
-        unsigned social = pet->needs[JELLI_SOCIAL] + jelli_habits_social_gain(&pet->habits, 80u);
-        pet->needs[JELLI_SOCIAL] = social > 1000u ? 1000u : (uint16_t)social;
-        pet->need_remainders[JELLI_SOCIAL] = 0u;
-        pet->bond = pet->bond > 970u ? 1000u : (uint16_t)(pet->bond + 30u);
-        /* A bow cannot manufacture its own replacement by being gifted. */
-        if (index != 8u)
-            jelli_prize_complete(game, JELLI_PRIZE_GIFT);
-        jelli_behavior_stimulus(game, JELLI_STIM_PRESENT_GIVEN, index);
-    }
-    unsigned value = index < jelli_prize_count ? index + 1u : 0u;
-    jelli_game_emit(game, JELLI_EVENT_COMMAND, JELLI_CMD_GIFT, result, value, pet, before);
-    return result;
+    return jelli_game_command(
+        game,
+        (JelliCommand){.kind = JELLI_CMD_COLLECTIBLE_PLAY,
+                       .actor_id = game->active < game->count ? game->pets[game->active].id : 0u,
+                       .value = index});
 }
