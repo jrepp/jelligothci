@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.0](https://github.com/jrepp/jelligothci/compare/v0.13.0...v0.14.0) (2026-10-20)
+
+
+### Features
+
+* add Jellipak tooling and complete studio authoring workflows ([e98342a](https://github.com/jrepp/jelligothci/commit/e98342a5731911917b726772b98c734e4a3b0133))
+* add layered scenes and background authoring workflows ([#73](https://github.com/jrepp/jelligothci/issues/73)) ([2782b34](https://github.com/jrepp/jelligothci/commit/2782b3485feed84db9c9b39410340439910ed8b1))
+
 ## [0.13.0](https://github.com/jrepp/jelligothci/compare/v0.12.0...v0.13.0) (2026-10-14)
 
 

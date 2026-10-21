@@ -175,3 +175,23 @@ establish the full Linux/AMD64 UI suite or packaged startup for the new head.
 When another branch contains a known CI remedy, check whether it has actually
 landed in the affected PR's base/history before repeating the fix. A base update
 must preserve the intended PR file scope and still receive current-head checks.
+
+# PR 76 base synchronization
+
+PR [76](https://github.com/jrepp/jelligothci/pull/76) reported conflicts after
+scene authoring landed through the squash merge of PR 73. The scene follow-up
+commit `35f8765` and `main` at `04fc3d8` have identical source trees apart from
+five release metadata/changelog files. Git nevertheless used the older shared
+ancestor and reported overlapping scene and celebration additions.
+
+Merge `main` into the celebration branch, retaining the celebration/navigation
+versions of the conflicted files and the release metadata from `main`. The
+resulting merge changes only those five release files plus this evidence;
+no gameplay, authoring code, or screenshot baseline changes are required.
+The container-layout and release-metadata checks pass. GitHub checks for the
+new merge revision must be distinguished from the green checks on its old head.
+
+When a stacked branch conflicts after its base was squash-merged, compare the
+original base tip against current `main` before resolving: matching trees are
+stronger evidence than similar commit titles. Preserve later branch changes and
+incoming release metadata, then review the complete merge diff.
