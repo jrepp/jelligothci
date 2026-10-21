@@ -87,6 +87,8 @@ static bool detail_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton 
     bool owned = (ui->last_view.prize_owned & (1u << (ui->latched_prize - 1u))) != 0u;
     bool cartridge = jelli_cartridge_index(ui->latched_prize - 1u) < JELLI_CARTRIDGE_COUNT;
     if (owned && cartridge) {
+        if (ui->collectible_launch_pending)
+            return false;
         const JelliCollectibleSession *saved = &ui->last_view.collectible;
         const char *label =
             ui->collectible_confirm == 2u ? "REPLACE & PLAY"
@@ -143,6 +145,9 @@ bool jelli_pet_collectible_button(const JelliPetUi *ui, unsigned slot, JelliPetU
 void jelli_pet_collectible_back(JelliPetUi *ui)
 {
     ui->collectible_confirm = 0u;
+    ui->collectible_launch_pending = false;
+    ui->collectible_launch_anchor = 0u;
+    ui->collectible_launch_ms = 0u;
     ui->collectible_menu = false;
     ui->collectible_win_ms = 0u;
     if (ui->page == JELLI_UI_GIFT_SHELF)
@@ -181,6 +186,17 @@ static void primary(JelliPetUi *ui, JelliGame *game)
         ui->collectible_confirm = 0u;
         return;
     }
+    if (jelli_cartridge_index(prize) < JELLI_CARTRIDGE_COUNT)
+        jelli_pet_collectible_launch(ui, game);
+    else
+        jelli_pet_collectible_open(ui, game);
+}
+
+void jelli_pet_collectible_open(JelliPetUi *ui, JelliGame *game)
+{
+    if (!ui->latched_prize || ui->latched_prize > jelli_prize_count)
+        return;
+    unsigned prize = ui->latched_prize - 1u;
     const JelliCollectibleSession *saved = &game->collectible;
     bool replacing_lab =
         saved->pet_id &&
@@ -244,7 +260,9 @@ static void select(JelliPetUi *ui, JelliGame *game, unsigned slot)
                 (game->collectible.prize != prize ||
                  game->collectible.pet_id != game->pets[game->active].id))
                 ui->collectible_confirm = 2u;
-            if (ui->gift_category == 2u && (game->prizes.owned & (1u << prize)))
+            if ((game->prizes.owned & (1u << prize)) &&
+                (ui->gift_category == 2u ||
+                 (ui->gift_category == 1u && ui->collectible_confirm != 2u)))
                 primary(ui, game);
         }
     } else
@@ -317,6 +335,8 @@ void jelli_pet_collectible_key(const JelliPetUi *ui, const JelliGame *game, Jell
     key->collectible_reduced_motion = ui->collectible_reduced_motion;
     key->collectible_menu = ui->collectible_menu;
     key->collectible_win_ms = ui->collectible_win_ms;
+    key->collectible_launch_ms = ui->collectible_launch_ms;
+    key->collectible_launch_pending = ui->collectible_launch_pending;
     key->collectible_cheer_phase = (uint8_t)(game->pets[game->active].reaction_ticks / 2u % 2u);
 }
 
@@ -344,5 +364,7 @@ bool jelli_pet_collectible_same(const JelliPetRenderKey *a, const JelliPetRender
            a->collectible_reduced_motion == b->collectible_reduced_motion &&
            a->collectible_menu == b->collectible_menu &&
            a->collectible_win_ms == b->collectible_win_ms &&
+           a->collectible_launch_ms == b->collectible_launch_ms &&
+           a->collectible_launch_pending == b->collectible_launch_pending &&
            same_session(&a->collectible, &b->collectible);
 }

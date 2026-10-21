@@ -159,6 +159,8 @@ static uint8_t background_song(const JelliPetEngine *engine)
     case JELLI_EATING:
     case JELLI_GIVING:
         return JELLI_MUSIC_TEA;
+    case JELLI_EXERCISING:
+        return JELLI_MUSIC_WORKOUT;
     case JELLI_CLEANING:
     case JELLI_CARING:
         return JELLI_MUSIC_WASH;

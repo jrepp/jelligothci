@@ -201,8 +201,9 @@ move. Chain keeps its eat/win cues and now sounds on successful movement.
 The [shared terminal sequence](../../core/pet_collectible_win.c) centers the happy
 pet for a short star celebration on final victory. Loss keeps the pet in place
 with an unhappy expression and tears, then returns automatically to cartridges.
-The owner requested approximately 2–3 seconds for victory and one second for loss;
-current durations live in the source. Intermediate Bubble levels continue play.
+The owner initially requested approximately 2–3 seconds for victory and one second
+for loss, then explicitly doubled both sequences to five and two seconds. Current
+durations live in the source. Intermediate Bubble levels continue play.
 Reopening a lost Bubble session retains the existing current-level retry semantics;
 no new loss/replay menu, care rewards or checkpoint slot was added.
 
@@ -224,4 +225,34 @@ display/touch/audio behavior remains unverified.
 The expanded music routing and UI feedback initially crossed the strict function
 complexity budget. Named private helpers separate track selection, reaction timing
 and Bubble sound feedback; limits remain unchanged. The size gate and focused
-tests were rerun after extraction.
+tests were rerun after extraction. Clang-Tidy also caught duplicated loss-return
+branches in Chain feedback; a standalone early guard preserved behavior, and the
+three affected tests plus strict hooks passed before commit `94f53e1`.
+
+The duration follow-up retains the same transitions and one-shot cues. Timing
+regressions verify that both games remain on screen beyond the previous deadline
+and return at the new boundary; paused-clock and reload coverage remains in place.
+
+The owner requested a subdued low-pass rasp for Chain movement. The existing cue
+programs had no equivalent, so the [portable synthesizer](../../core/sound.c) adds
+an appended cue without changing existing IDs. A brief low saw/noise source uses
+a bounded integer low-pass filter and lower gain. The cue reuses otherwise-unused
+formant state, preserving the synth state budget and requiring no sample asset.
+Only Chain movement uses it; Bubble movement and the other game cues retain their
+programs. Debug audition and the [preview exporter](../../tools/audio/preview.py)
+include the new name. Tests verify block continuity, envelope ends, duration,
+reduced high-frequency sample steps, muted/master gain and unchanged cue IDs.
+
+The owner's workout music request adds Iron Pulse, authored by the
+[workout composer](../../tools/audio/create_workout_music.py). The original MOD
+uses synthesized distorted kick/bass, acid-style stab and percussion, routing
+only to exercise through the existing background-music switch. It follows the
+activity-music preference and master volume and adds no collectible record.
+
+The owner subsequently requested automatic cartridge insertion. The
+[launcher](../../core/pet_collectible_launch.c) presents the centered cartridge,
+enlarged title and Plays/Wins, slides it into a slot, emits a shared click cue and
+launches after three seconds. Reduced motion uses static art and seated status.
+Back cancels before gameplay or statistics mutate; replacing a different saved
+session still requires explicit confirmation. This transition uses transient UI
+state only and leaves the save schema unchanged.

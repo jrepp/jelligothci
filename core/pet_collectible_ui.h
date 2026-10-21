@@ -22,5 +22,9 @@ void jelli_pet_bubble_action(JelliPetUi *ui, JelliGame *game, unsigned slot);
 void jelli_pet_bubble_draw(Canvas *canvas, const JelliCollectibleSession *session);
 void jelli_pet_bubble_checkpoint(JelliPetUi *ui, const JelliCollectibleSession *before,
                                  const JelliCollectibleSession *after);
-void jelli_pet_cartridge_draw(Canvas *canvas, const JelliGame *game, unsigned prize);
+void jelli_pet_cartridge_draw(Canvas *canvas, const JelliPetUi *ui, const JelliGame *game,
+                              unsigned prize);
+void jelli_pet_collectible_open(JelliPetUi *ui, JelliGame *game);
+void jelli_pet_collectible_launch(JelliPetUi *ui, const JelliGame *game);
+void jelli_pet_collectible_launch_update(JelliPetUi *ui, JelliGame *game, uint64_t now);
 #endif

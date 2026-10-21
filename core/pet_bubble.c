@@ -133,17 +133,3 @@ void jelli_pet_bubble_checkpoint(JelliPetUi *ui, const JelliCollectibleSession *
         ui->save_status = JELLI_SAVE_PENDING;
     }
 }
-
-void jelli_pet_cartridge_draw(Canvas *canvas, const JelliGame *game, unsigned prize)
-{
-    unsigned index = jelli_cartridge_index(prize);
-    if (index >= JELLI_CARTRIDGE_COUNT)
-        return;
-    jelli_canvas_heading(canvas, jelli_prizes[prize].name, 52, 2u);
-    jelli_canvas_centered_sprite(canvas, jelli_prizes[prize].asset, 233, 202, 4u);
-    char line[40];
-    int n = snprintf(line, sizeof(line), "PLAYS %u   WINS %u", game->cartridge_stats[index].plays,
-                     game->cartridge_stats[index].wins);
-    if (n > 0 && (size_t)n < sizeof(line))
-        jelli_canvas_centered(canvas, line, 305, 2u, PALE);
-}

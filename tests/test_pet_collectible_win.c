@@ -45,8 +45,9 @@ static void finish_and_no_repeated_reward(void)
     CHECK(!ui.collectible_menu && ui.collectible_win_ms == 0u);
     CHECK(jelli_pet_collectible_win_update(&ui, &game, 900u));
     CHECK(ui.collectible_win_ms == 900u);
-    CHECK(jelli_pet_collectible_win_update(&ui, &game, 2499u));
-    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 2500u));
+    CHECK(jelli_pet_collectible_win_update(&ui, &game, 2500u));
+    CHECK(jelli_pet_collectible_win_update(&ui, &game, 4999u));
+    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 5000u));
     CHECK(ui.page == JELLI_UI_GIFT_SHELF && ui.gift_category == 1u && !ui.gift_page);
     CHECK(!game.collectible.active && game.collectible.paused && ui.save_requested);
     CHECK(!jelli_pet_collectible_win_update(&ui, &game, 9000u));
@@ -77,7 +78,7 @@ static void paused_clock_and_reload(void)
     ui = (JelliPetUi){.page = JELLI_UI_COLLECTIBLE_PLAY};
     CHECK(jelli_pet_collectible_win_update(&ui, &game, 50000u));
     CHECK(ui.collectible_win_ms == 0u);
-    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 52500u));
+    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 55000u));
 }
 
 static void reduced_motion_is_static(void)
@@ -117,7 +118,8 @@ static void bubble_final_celebration(void)
     JelliPet before = game.pets[0];
     CHECK(jelli_pet_collectible_win_update(&ui, &game, 1u));
     CHECK(jelli_pet_collectible_win_update(&ui, &game, 900u));
-    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 2501u));
+    CHECK(jelli_pet_collectible_win_update(&ui, &game, 5000u));
+    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 5001u));
     CHECK(ui.page == JELLI_UI_GIFT_SHELF && ui.gift_category == 1u);
     CHECK(memcmp(before.needs, game.pets[0].needs, sizeof(before.needs)) == 0);
 }
@@ -146,8 +148,9 @@ static void losses_return_without_replay_menu(void)
         CHECK(jelli_pet_collectible_win_update(&ui, &game, 1000u));
         CHECK(!jelli_pet_ui_sound(&ui, &game.pets[0], 1000u));
         CHECK(!ui.collectible_menu);
-        CHECK(jelli_pet_collectible_win_update(&ui, &game, 1999u));
-        CHECK(!jelli_pet_collectible_win_update(&ui, &game, 2000u));
+        CHECK(jelli_pet_collectible_win_update(&ui, &game, 2000u));
+        CHECK(jelli_pet_collectible_win_update(&ui, &game, 2999u));
+        CHECK(!jelli_pet_collectible_win_update(&ui, &game, 3000u));
         CHECK(ui.page == JELLI_UI_GIFT_SHELF && !game.collectible.active);
         CHECK(game.cartridge_stats[i].plays == 1u && !game.cartridge_stats[i].wins);
     }

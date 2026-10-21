@@ -88,7 +88,7 @@ void jelli_pet_chain_feedback(JelliPetUi *ui, const JelliCollectibleSession *bef
     else if (after->chain.length > before->chain.length)
         cue = JELLI_SOUND_HAPPY;
     else if (after->chain.body[0] != before->chain.body[0])
-        cue = JELLI_SOUND_BACK;
+        cue = JELLI_SOUND_RASP;
     else
         return;
     ui->sound_pending = true;

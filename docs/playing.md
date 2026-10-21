@@ -533,12 +533,15 @@ history and earned rewards; removing a checkpoint's gift clears that checkpoint
 and stops its music. It does not remove already-unlocked pets. Commands reject
 unknown keys and edits during capture or save recovery.
 
-Owned cartridges open a launch card with a large tappable cartridge and shared
-Plays/Wins totals. Tap the artwork or Play to begin; Resume preserves the same
-run. A replacement action is labeled when opening a different cartridge/pet
-would replace the shared checkpoint. Records still launch directly from their
-shelf. Bottom radial Back returns to the shelf, and desktop focus loss pauses
-play. Resume continues without toggling the separate Space debug pause.
+Owned cartridges automatically show their title and shared Plays/Wins totals,
+then slide into a slot and click into place during a three-second launch sequence.
+The game begins or resumes when insertion finishes; Back cancels beforehand
+without changing the saved run or Plays count. Replacing a different cartridge/pet
+checkpoint still requires the labeled replacement action before insertion. Reduced
+motion keeps the cartridge static with a seated status. Records still launch
+directly from their shelf. Bottom radial Back returns to the shelf, and desktop
+focus loss pauses play. Resume continues without toggling the separate Space
+debug pause.
 
 ### Bubble Lab
 
@@ -561,8 +564,8 @@ all three levels for the centered star celebration and automatic shelf return.
 A full well or exhausted supply shows the sad watching pet briefly, then returns
 to the cartridge shelf. Reopening Bubble Lab retries the current level; completed
 levels and their score remain intact. A misplaced pair can be recovered with later
-matching pairs. Both cartridge games return automatically after a short centered
-win celebration or a sad loss reaction, without a replay menu.
+matching pairs. Both cartridge games return automatically after a five-second centered
+win celebration or a two-second sad loss reaction, without a replay menu.
 
 The pace control cycles Normal, Relax, and Manual. Manual stops automatic falling;
 downward swipes still drop a pair. All modes have the same objectives and scoring.
@@ -600,3 +603,12 @@ virus clear. Angry faces and spikes distinguish viruses; symbols still identify
 matching colors. Successful moves, drops and clears use shared sound cues.
 Bubble Rush, the original MOD gameplay track, follows the Activity Music toggle
 and stops when play pauses or ends; sound effects retain the master-volume control.
+
+Jelli Chain movement uses a quiet low-pass rasp; eating, wins and losses keep their
+separate shared cues. The rasp is synthesized on-device rather than stored as a
+sample. Audition it with `./scripts/jelli-debug sound rasp --volume 12`, or export
+the sound preview sheet with `tools/audio/preview.py`.
+
+Exercise uses Iron Pulse, an original hard-techno MOD with a synthesized kick,
+bass, acid-style stab and percussion. It follows the same Activity Music toggle
+and master volume as the other backgrounds.

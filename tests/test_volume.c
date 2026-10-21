@@ -72,6 +72,8 @@ static void volume_commands(void)
     CHECK(game.volume == 100u && game.pets[0].asleep);
     CHECK(jelli_sound_volume(5u, 50u) == 25u && jelli_sound_volume(6u, 50u) == 18u);
     CHECK(jelli_sound_volume(5u, 65u) == 33u && jelli_sound_volume(6u, 65u) == 23u);
+    CHECK(jelli_sound_volume(JELLI_SOUND_RASP, 50u) == 9u);
+    CHECK(jelli_sound_volume(JELLI_SOUND_RASP, 100u) < jelli_sound_volume(JELLI_SOUND_BACK, 100u));
     for (unsigned cue = 0u; cue < JELLI_SOUND_COUNT; ++cue) {
         CHECK(jelli_sound_volume(cue, 0u) == 0u);
         CHECK(jelli_sound_volume(cue, 100u) <= 80u);

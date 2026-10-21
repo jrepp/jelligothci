@@ -4,8 +4,8 @@
 #include "jelli/sound.h"
 #include "jelli_asset_ids.h"
 
-#define WIN_DURATION_MS 2500u
-#define LOSS_DURATION_MS 1000u
+#define WIN_DURATION_MS 5000u
+#define LOSS_DURATION_MS 2000u
 #define FLOAT_DURATION_MS 900u
 
 bool jelli_pet_collectible_lost(const JelliCollectibleSession *session)

@@ -92,6 +92,9 @@ static void background_music(void)
     pet->activity = JELLI_CLEANING;
     jelli_pet_music_sync(&engine);
     CHECK(audio.last.song == JELLI_MUSIC_WASH && engine.music_running);
+    pet->activity = JELLI_EXERCISING;
+    jelli_pet_music_sync(&engine);
+    CHECK(audio.last.song == JELLI_MUSIC_WORKOUT && engine.music_running);
     pet->activity = JELLI_EATING;
     jelli_pet_music_sync(&engine);
     CHECK(audio.last.song == JELLI_MUSIC_TEA);

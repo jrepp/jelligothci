@@ -34,13 +34,14 @@ static const Note programs[JELLI_SOUND_COUNT][5] = {
     {{980, 1470, 65, 0, 0}, {0}},
     {{320, 410, 150, 360, 950}, {410, 280, 210, 400, 1100}, {0}},
     {{660, 880, 50, 0, 0}, {1320, 1760, 55, 0, 0}, {0}},
-    {{430, 650, 90, 380, 1050}, {650, 480, 80, 460, 1300}, {0}}};
+    {{430, 650, 90, 380, 1050}, {650, 480, 80, 460, 1300}, {0}},
+    {{120, 85, 75, 0, 0}, {0}}};
 _Static_assert(sizeof(JelliSynth) <= 24u, "Synth state exceeds budget");
 
 const char *jelli_sound_name(unsigned cue)
 {
     static const char *const names[] = {"chirp", "happy", "sparkle", "hello", "sleepy",
-                                        "tap",   "coo",   "confirm", "pet"};
+                                        "tap",   "coo",   "confirm", "pet",   "rasp"};
     return cue < JELLI_SOUND_COUNT ? names[cue] : NULL;
 }
 
@@ -51,6 +52,10 @@ bool jelli_sound_start(JelliSynth *s, unsigned cue)
     *s = (JelliSynth){.cue = (uint8_t)cue,
                       .playing = true,
                       .length = (uint32_t)programs[cue][0].duration_ms * JELLI_SOUND_RATE / 1000u};
+    if (cue == JELLI_SOUND_RASP) {
+        s->formant_a = 0xace1u; /* Nonzero deterministic noise seed. */
+        s->formant_b = 32768u;  /* Biased signed filter state; no extra synth storage. */
+    }
     return true;
 }
 
@@ -58,6 +63,20 @@ static int32_t triangle(uint16_t phase)
 {
     int32_t ramp = phase < 32768u ? phase : 65535 - (int32_t)phase;
     return ramp * 2 - 32767;
+}
+
+static int32_t rasp(JelliSynth *s)
+{
+    /* A low saw/noise texture through a one-pole low-pass filter (~300 Hz).
+     * Formant fields are unused by this cue and retain state across audio blocks. */
+    unsigned noise = s->formant_a;
+    unsigned bit = (noise ^ (noise >> 2u) ^ (noise >> 3u) ^ (noise >> 5u)) & 1u;
+    s->formant_a = (uint16_t)((noise >> 1u) | (bit << 15u));
+    int32_t source = ((int32_t)s->phase + s->formant_a - 65536) / 2;
+    int32_t filtered = (int32_t)s->formant_b - 32768;
+    filtered += (source - filtered) / 12;
+    s->formant_b = (uint16_t)(filtered + 32768);
+    return filtered;
 }
 
 static int32_t oscillator(JelliSynth *s, const Note *n)
@@ -69,6 +88,8 @@ static int32_t oscillator(JelliSynth *s, const Note *n)
         (uint32_t)((int32_t)n->start_hz + delta * (int32_t)s->position / (int32_t)s->length);
     uint32_t phase = s->phase + hz * 65536u / JELLI_SOUND_RATE;
     s->phase = (uint16_t)phase;
+    if (s->cue == JELLI_SOUND_RASP)
+        return rasp(s);
     if (!n->vowel_a)
         return (triangle(s->phase) * 3 + sine[s->phase >> 10]) / 4;
     /* Damped formant bursts repeat at the fundamental: a tiny voiced source. */
@@ -116,6 +137,8 @@ unsigned jelli_sound_volume(unsigned cue, unsigned master)
 {
     if (cue >= JELLI_SOUND_COUNT || master > 100u)
         return 0u;
+    if (cue == JELLI_SOUND_RASP)
+        return (master * 9u + 25u) / 50u;
     /* Master 50 preserves the old 25 tap / 18 coo levels; default 65 is +30%. */
     return (master * ((cue == JELLI_SOUND_BACK || cue == JELLI_SOUND_CONFIRM) ? 25u : 18u) + 25u) /
            50u;

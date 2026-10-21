@@ -53,7 +53,8 @@ int main(int argc, char **argv)
 {
     if (argc != 3 || strlen(argv[1]) != 1u || argv[1][0] < '0' ||
         (unsigned)(argv[1][0] - '0') >= JELLI_SOUND_COUNT) {
-        fprintf(stderr, "Usage: jelli_sound_export CUE[0..8] OUTPUT.wav\n");
+        fprintf(stderr, "Usage: jelli_sound_export CUE[0..%u] OUTPUT.wav\n",
+                JELLI_SOUND_COUNT - 1u);
         return 2;
     }
     FILE *file = fopen(argv[2], "wb");

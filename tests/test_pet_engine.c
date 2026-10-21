@@ -139,7 +139,7 @@ static void chain_sounds(JelliSurface surface)
     fake.now += JELLI_CHAIN_STEP_TICKS * UINT64_C(100);
     CHECK(jelli_pet_frame(&engine));
     CHECK(jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], fake.now) ==
-          JELLI_SOUND_BACK + 1u); /* Move. */
+          JELLI_SOUND_RASP + 1u); /* Move. */
     engine.game.collectible.chain = (JelliChain){.body = {6u, 5u, 4u, 3u, 2u, 1u, 0u},
                                                  .length = 7u,
                                                  .direction = JELLI_CHAIN_RIGHT,
