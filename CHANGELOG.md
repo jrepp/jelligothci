@@ -6,9 +6,7 @@
 ### Features
 
 * collect encountered tunes alongside rare records ([306cecb](https://github.com/jrepp/jelligothci/commit/306cecbf77e6e19693a18e032bf8e7c3bef8f294))
-* collect encountered tunes alongside rare records ([ea59aa0](https://github.com/jrepp/jelligothci/commit/ea59aa0d6e5c185cbef0a00039f3d24ec8a0b228))
 * expand synth palette and enrich original MOD arrangements ([637bbd1](https://github.com/jrepp/jelligothci/commit/637bbd15dd50099db1d976e8d5a71869e33be8bc))
-* expand synth palette and enrich original MOD arrangements ([3894f16](https://github.com/jrepp/jelligothci/commit/3894f167bad5dfd5dc88cb1da5fd1a80428d699f))
 
 
 ### Bug Fixes

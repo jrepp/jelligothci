@@ -6,7 +6,6 @@
 ### Features
 
 * expand synth palette and enrich original MOD arrangements ([637bbd1](https://github.com/jrepp/jelligothci/commit/637bbd15dd50099db1d976e8d5a71869e33be8bc))
-* expand synth palette and enrich original MOD arrangements ([3894f16](https://github.com/jrepp/jelligothci/commit/3894f167bad5dfd5dc88cb1da5fd1a80428d699f))
 
 ## [0.14.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.13.0...jelli-art-v0.14.0) (2026-10-21)
 
