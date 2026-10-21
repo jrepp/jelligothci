@@ -131,8 +131,7 @@ static void chain_draw(Canvas *c, const JelliCollectibleSession *s)
     if (n > 0 && (size_t)n < sizeof(score))
         jelli_canvas_centered(c, score, 342, 2u, PALE);
     char length[24];
-    n = snprintf(length, sizeof(length), "%u / 7%s", s->chain.length,
-                 s->chain.length == 7u ? " - EAT THE STAR" : " JELLIS");
+    n = snprintf(length, sizeof(length), "%u JELLIS", s->chain.length);
     if (n > 0 && (size_t)n < sizeof(length))
         jelli_canvas_centered(c, length, 373, 1u, GOLD);
 }
