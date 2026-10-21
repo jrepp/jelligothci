@@ -142,3 +142,22 @@ Waltz opened playback directly; consumed samples advanced from 13,824 to 29,184,
 and Back returned to the record shelf. These observations establish live desktop
 behavior, not physical-device display, touch, or subjective audio quality. The
 firmware was built but not flashed.
+
+
+# Chain sound feedback
+
+The owner requested reuse of existing sounds. The
+[feedback bridge](../../core/pet_feedback.c) observes live Chain transitions:
+happy for a pickup, sparkle for the winning star, and the soft Back tap for a
+collision. Ordinary movement stays quiet. Comparing session identity, generation,
+and running state prevents sound replay when restoring a checkpoint, remaining
+on a won/lost screen, or pausing. The existing host sound path retains master
+volume and mute behavior; no samples or audio driver were added. Engine tests
+exercise actual pickups, movement, wins, pause/resume, and collisions through the
+same frame and sound-consumption path used by the hosts.
+
+The sound regression's first static-analysis run rejected implicit widening of
+its test-clock multiplication. Using an explicit 64-bit time operand retains
+the expected duration and follows the portable arithmetic contract. Desktop and
+sanitizer behavior checks and the firmware build passed before that test-only
+correction; commit hooks verify the corrected arithmetic.

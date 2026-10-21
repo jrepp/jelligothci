@@ -1,5 +1,7 @@
 #include "jelli/pet_engine.h"
 #include "jelli/motion.h"
+#include "jelli/collectible.h"
+#include "jelli/sound.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -115,10 +117,62 @@ static void motion_devices(JelliSurface surface)
     CHECK(jelli_pet_frame(&engine) && engine.motion_result == JELLI_DEVICE_UNAVAILABLE);
 }
 
+static void chain_sounds(JelliSurface surface)
+{
+    Fake fake = {0};
+    JelliPetEngine engine;
+    CHECK(jelli_pet_init(&engine, (JelliPlatform){&fake, now_ms, poll, present, NULL}, surface));
+    engine.game.prizes.owned = engine.game.prizes.discovered = UINT32_C(1)
+                                                               << JELLI_COLLECTIBLE_CHAIN_PRIZE;
+    engine.game.prizes.origin_pet[JELLI_COLLECTIBLE_CHAIN_PRIZE] = engine.game.pets[0].id;
+    CHECK(jelli_collectible_play(&engine.game, JELLI_COLLECTIBLE_CHAIN_PRIZE) == JELLI_OK);
+    engine.ui.menu_open = true;
+    engine.ui.page = JELLI_UI_COLLECTIBLE_PLAY;
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(!jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], fake.now));
+    engine.game.collectible.chain.pickup = 28u;
+    fake.now += JELLI_CHAIN_STEP_TICKS * UINT64_C(100);
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(engine.game.collectible.chain.length == 4u);
+    CHECK(jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], fake.now) == JELLI_SOUND_HAPPY + 1u);
+    CHECK(!jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], fake.now));
+    fake.now += JELLI_CHAIN_STEP_TICKS * UINT64_C(100);
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(!jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], fake.now)); /* Ordinary move. */
+    engine.game.collectible.chain = (JelliChain){.body = {6u, 5u, 4u, 3u, 2u, 1u, 0u},
+                                                 .length = 7u,
+                                                 .direction = JELLI_CHAIN_RIGHT,
+                                                 .pending_direction = JELLI_CHAIN_RIGHT,
+                                                 .pickup = 7u};
+    fake.now += JELLI_CHAIN_STEP_TICKS * UINT64_C(100);
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], fake.now) ==
+          JELLI_SOUND_SPARKLE + 1u);
+    fake.now += 200u;
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(!jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0],
+                              fake.now)); /* Won state stays quiet. */
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_RESTART) == JELLI_OK);
+    engine.game.collectible.chain = (JelliChain){.body = {7u, 6u, 5u},
+                                                 .length = 3u,
+                                                 .direction = JELLI_CHAIN_RIGHT,
+                                                 .pending_direction = JELLI_CHAIN_RIGHT,
+                                                 .pickup = 40u};
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_PAUSE) == JELLI_OK);
+    fake.now += JELLI_CHAIN_STEP_TICKS * UINT64_C(100);
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(!jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], fake.now));
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_RESUME) == JELLI_OK);
+    fake.now += JELLI_CHAIN_STEP_TICKS * UINT64_C(100);
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], fake.now) == JELLI_SOUND_BACK + 1u);
+}
+
 int main(void)
 {
     static uint16_t pixels[JELLI_WIDTH * JELLI_HEIGHT];
     JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
+    chain_sounds(surface);
     motion_devices(surface);
     clock_pause_and_input(surface);
     resume_blocks_final_batch(surface);
