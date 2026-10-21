@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.15.0](https://github.com/jrepp/jelligothci/compare/v0.14.0...v0.15.0) (2026-10-21)
+
+
+### Features
+
+* add authored pet celebrations and scene authoring ([#76](https://github.com/jrepp/jelligothci/issues/76)) ([9e09ade](https://github.com/jrepp/jelligothci/commit/9e09ade53d2687bc807bb10e96efb5d483ac9f47))
+* add collectible games, jukebox records and music studio ([ca39b7e](https://github.com/jrepp/jelligothci/commit/ca39b7e7b206d6fc97b786dfe517397f55660b7d))
+* add collectible players and four-track music studio ([ae06191](https://github.com/jrepp/jelligothci/commit/ae06191d649482b9f28d3413a5b0fa3ed469015d))
+* **core:** add permanent collectible play crafting and checkpoints ([921a704](https://github.com/jrepp/jelligothci/commit/921a704d6a884646809d0f16e236b8d7e2cb5997))
+* reuse existing sounds for Jelli Chain feedback ([53e3439](https://github.com/jrepp/jelligothci/commit/53e3439cbf2b6b62e8783316ae37ada6b0a56d85))
+
+
+### Bug Fixes
+
+* repair collectible PR build checks and studio reload race ([1446950](https://github.com/jrepp/jelligothci/commit/14469502b83acc1fa686d9a734318c84265d940c))
+* simplify Jelli Chain length label ([69b9c0c](https://github.com/jrepp/jelligothci/commit/69b9c0c11ffc12844bd2ad559023feff87d5ef68))
+
 ## [0.14.0](https://github.com/jrepp/jelligothci/compare/v0.13.0...v0.14.0) (2026-10-20)
 
 
