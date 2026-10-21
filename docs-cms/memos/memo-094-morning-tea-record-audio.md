@@ -80,3 +80,7 @@ transition change. Repository documentation validation and repair both passed.
 Cppcheck additionally rejected a transition parameter shadowing the sampler
 function; renaming the parameter resolved it. The SDL adapter test lives with
 the port because generic portable-C analysis intentionally omits SDL headers.
+
+Final branch validation: host 96/96, core-only 43/43, and full ASan/UBSan
+96/96 passed. The audio-specific tests were rerun after the transition and
+adapter-test path changes and passed 3/3 in native and sanitizer builds.
