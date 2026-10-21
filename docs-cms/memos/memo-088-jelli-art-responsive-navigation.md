@@ -73,3 +73,30 @@ iPad Safari gestures, Pencil behavior or touch feel. No physical iPad, firmware
 build, device deployment or screenshot-baseline update was performed for this
 header-only increment. The pinned Linux renderer remains the screenshot
 comparison authority.
+
+# PR image startup failure and authoring guidance
+
+[PR #74 run 39539443992](https://github.com/jrepp/jelligothci/actions/runs/39539443992),
+for head `d4d33ac` and merge revision `95ebdc7`, passed Studio tests but failed
+its image smoke step. The image built successfully; its entrypoint exited with
+`ModuleNotFoundError: No module named 'effect_data'`, causing the subsequent
+health probes to fail. The inherited celebration server import existed in the
+checkout but its shared module was missing from both the container COPY list
+and build-context allowlist.
+
+The remedy adds `tools/assets/effect_data.py` to both packaging lists. A local
+Podman ARM64 image built with the corrected lists starts through the real
+entrypoint against the read-only checkout mount. `/healthz` returned `ok: true`
+with no problems, `/api/data?before=HEAD` returned 130 assets, and `/api/effects`
+returned its data, base, editability and limits. The temporary container was
+removed after verification. This is local container evidence, not a production
+deployment or a replacement for the GitHub Linux image job.
+
+The owner requested that these failures inform agent authoring guidance.
+[AGENTS.md](../../AGENTS.md#scope-and-validation) now routes studio work to
+[CONTRIBUTING.md](../../CONTRIBUTING.md#jelli-art-packaging-and-pr-validation),
+which requires checking shared/transitive imports against packaging, testing
+startup after image builds, inspecting current-revision job logs, and recording
+inherited UI failures without treating their provenance as a passing check.
+The UI job was still running when the packaging correction was prepared;
+remote verification of the correction remains pending.

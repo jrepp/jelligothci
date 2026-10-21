@@ -112,6 +112,38 @@ next ID plus a new UUID. Preserve historical records. Reusable agent skills are
 versioned under `.agents/skills`, but ordinary development does not require an
 agent or installing personal skills.
 
+## Jelli Art packaging and PR validation
+
+When adding a shared Python dependency to the studio, update both the
+[container copy list](tools/jelli-art/Containerfile) and the
+[build-context allowlist](.dockerignore). Follow its transitive imports too:
+checkout tests can import files that are absent from the shipped image.
+Build the image and exercise its real entrypoint, health endpoint and data API
+using the [image job's smoke procedure](.github/workflows/jelli-art.yml).
+A successful image build alone does not establish successful startup.
+
+Before declaring a PR ready, inspect checks for its current head and merge
+revision. Read the failed step and application logs before editing or retrying;
+connection errors from a smoke probe can be a consequence of an earlier import
+failure. If the workflow is still running, completed job logs are available via
+`gh api repos/{owner}/{repo}/actions/jobs/{job_id}/logs`. Report pending checks
+as pending and keep application fixes separate from infrastructure retries.
+
+For UI changes, inspect the pinned renderer's accessibility and screenshot
+results as well as local browser tests. Reproduce suspected inherited failures
+against the base in isolation, preserve the comparison evidence, and report
+unresolved findings. A base reproduction explains provenance; it does not
+waive a failing check. Update visual baselines only after reviewing the actual
+rendered change using the [studio UI baseline procedure](tools/jelli-art/README.md#ui-tests).
+Do not broaden accessibility exclusions or rewrite baselines merely to obtain
+a passing run.
+
+After fixing a PR failure, record the failing run/revision, cause, remedy,
+verification and remaining uncertainty in the owning memo. Recheck the pushed
+revision and distinguish local verification from GitHub results. The container
+startup failure and local Paint baseline findings for PR #74 are recorded in
+[memo-088](docs-cms/memos/memo-088-jelli-art-responsive-navigation.md).
+
 ## Keep documentation grounded in source
 
 Explain behavior, intent, ownership, and how to use or validate a feature.
