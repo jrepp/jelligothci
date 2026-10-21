@@ -195,3 +195,15 @@ When a stacked branch conflicts after its base was squash-merged, compare the
 original base tip against current `main` before resolving: matching trees are
 stronger evidence than similar commit titles. Preserve later branch changes and
 incoming release metadata, then review the complete merge diff.
+
+# Gift-crafting asset reload race
+
+In [run 39546657090](https://github.com/jrepp/jelligothci/actions/runs/39546657090),
+`test_new_pet_hardpoints_join_effect_workspace` inspected the catalog before a
+successor asset reload had published. The test had awaited a superseded explicit
+reload, so that wait did not cover the live-poll reload that followed. PR 77
+commit `14469502b83acc1fa686d9a734318c84265d940c` fixed the test to wait for the
+new asset in the published catalog and retry the option assertion. The corrected
+candidate passed the Studio image/UI checks in
+[run 39573464420](https://github.com/jrepp/jelligothci/actions/runs/39573464420).
+This was a test synchronization race, not a current release regression.

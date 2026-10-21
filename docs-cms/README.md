@@ -237,3 +237,5 @@ Expanded original drum/bass samples and reference-informed arrangements:
 [memo-099](memos/memo-099-expanded-synth-bank-and-arrangements.md).
 Lossless music PCM packing measurements and experimental artifact:
 [memo-101](memos/memo-101-lossless-music-pcm-packing.md).
+Final 0.17.1 / Studio 0.15.1 release evidence:
+[memo-100](memos/memo-100-release-0-17-1-and-studio-0-15-1.md).
