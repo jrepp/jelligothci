@@ -39,6 +39,7 @@
     if (kind === 'pet') {
       fields.innerHTML = `<p>Copy an explicitly selected artwork template into a distinct pet and form. Existing pet identities stay stable. This increment creates a single form with no evolution; choose its unlock prize and behavior.</p>
         ${field('Artwork template', `<select name="template_form" required><option value="">Choose template</option>${options(snapshot.templates, f=>f.art, f=>`${f.name} (${f.art})`)}</select>`)}
+        <fieldset><legend>Palette swap (optional)</legend><p>Choose target colors for the saved template. Unchanged colors, transparency and animation timing are preserved. Keep the template canvas size to preserve pixel geometry. This creates an independent copy; later source edits do not update it.</p><div id="creation-palette">Choose an artwork template to see its colors.</div></fieldset>
         ${field('Canvas', '<select name="size"><option>32</option><option>48</option></select>')}
         ${field('Gameplay policy', '<select name="gameplay_policy" required><option value="">Choose</option><option value="copy-template">Copy template activity costs, eligibility, bonuses and behavior repertoire</option></select>')}
         ${field('Evolution', '<select name="evolution" required><option value="">Choose</option><option value="single-form">Single form, no evolution</option></select>')}
@@ -49,6 +50,7 @@
         <p>Scale values are explicit. The validator checks the full copied pose set at the selected canvas size.</p>`;
       /** @type {HTMLSelectElement} */ (fields.querySelector('[name=template_form]')).onchange = event => {
         const profile = snapshot.profiles.find(p=>p.art===/** @type {HTMLSelectElement} */ (event.target).value);
+        paletteFields(/** @type {HTMLSelectElement} */ (event.target).value);
         if (!profile) return;
         for (const name of ['behavior','scale','icon_scale','portrait_scale']) /** @type {HTMLInputElement | HTMLSelectElement} */ (fields.querySelector(`[name=${name}]`)).value = profile[name];
       };
@@ -72,13 +74,55 @@
       }
     }
   }
+  function paletteFields(art) {
+    const palette = document.getElementById('creation-palette');
+    palette.innerHTML = `<p id="creation-preview-message" role="status"></p><canvas id="creation-palette-preview" width="48" height="48" role="img" aria-label="Palette variant preview of the first saved frame" style="width:144px;height:144px;image-rendering:pixelated"></canvas><div style="display:flex;flex-wrap:wrap;gap:12px">` + (snapshot.template_palettes?.[art] || []).map(color =>
+      field(`Replace ${esc(color)}`, `<input type="color" data-source-color="${esc(color)}" value="${esc(color)}" style="display:block;min-width:44px;min-height:44px">`)).join('') + '</div>';
+    palette.oninput = () => palettePreview(art);
+    palettePreview(art);
+  }
+  function palettePreview(art) {
+    const frame = D.assets.find(asset => asset.form === art);
+    const pixels = frame && decoded[frame.key]?.after;
+    if (!pixels) return;
+    const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('creation-palette-preview'));
+    canvas.hidden = templateDirty(art);
+    canvas.classList.toggle('hidden', canvas.hidden);
+    document.getElementById('creation-preview-message').textContent = canvas.hidden ? 'Save or revert template paint, clips and size edits before previewing or creating a copy.' : '';
+    if (canvas.hidden) return;
+    canvas.width=pixels.w;canvas.height=pixels.h;
+    const context=canvas.getContext('2d'), image=context.createImageData(pixels.w,pixels.h), remap={};
+    for (const element of root.querySelectorAll('[data-source-color]')) {
+      const input=/** @type {HTMLInputElement} */ (element);
+      remap[input.dataset.sourceColor]=input.value.match(/[0-9a-f]{2}/g).map(value=>parseInt(value,16));
+    }
+    image.data.set(pixels.data);
+    for(let index=0;index<image.data.length;index+=4) {
+      const target=remap[hexOf(pixels.data,index)];
+      if(pixels.data[index+3]&&target)image.data.set(target,index);
+    }
+    context.putImageData(image,0,0);
+  }
+  function templateDirty(art) {
+    return D.assets.some(asset => asset.form === art && S.paintDirty(asset.key)) ||
+      (D.clips || []).some(clip => clip.key.startsWith(`${art}.`) && S.cr.clipDirty(clip.key)) || S.sizeDirty?.();
+  }
   async function submit(event) {
     event.preventDefault();
     const form = event.currentTarget, values = Object.fromEntries(new FormData(form));
     const request = {type:kind==='pet'?'pet':'asset',key:values.key,name:values.name,size:Number(values.size)};
     if (kind==='pet') {
+      if (templateDirty(values.template_form)) {
+        document.getElementById('creation-message').textContent='Save or revert template paint, clips and size edits before creating a copy.';
+        return;
+      }
       for (const key of ['template_form','evolution','gameplay_policy','behavior','hint']) request[key]=values[key];
       for (const key of ['scale','icon_scale','portrait_scale','unlock_prize']) request[key]=Number(values[key]);
+      const remap = {};
+      for (const input of form.querySelectorAll('[data-source-color]')) {
+        if (input.value !== input.dataset.sourceColor) remap[input.dataset.sourceColor] = input.value;
+      }
+      if (Object.keys(remap).length) request.palette_map = remap;
     } else {
       request.kind=kind; request.palette=String(values.palette).trim().split(/\s+/);
       request.pivot=[Number(values.pivot_x),Number(values.pivot_y)];
@@ -121,6 +165,7 @@
       unlock_prize:entry?.unlock_prize || '', hint:entry?.hint || ''};
     const form = root.querySelector('form');
     for (const [name, value] of Object.entries(values)) /** @type {HTMLInputElement | HTMLSelectElement} */ (form.elements.namedItem(name)).value = String(value);
+    paletteFields(art);
     document.getElementById('creation-message').textContent = `Duplicating ${source.name}: saved frames, clips, sizes and gameplay settings. This copy is a separate single-form pet. Review its name and unlock prize, then create it.`;
     /** @type {HTMLInputElement} */ (form.elements.namedItem('key')).focus();
   }});

@@ -12,6 +12,7 @@ import animation
 import creatures
 import profiles
 import storage
+import palette_swap
 
 
 class CreationError(ValueError):
@@ -45,6 +46,9 @@ def data(repo, source, content):
             "templates": pets["forms"], "entries": pets["entries"], "evolution_sets": pets["evolution_sets"], "profiles": profiles_doc["profiles"],
             "behaviors": [b["name"] for b in profiles_doc["behaviors"]],
             "palette": manifest["palette"],
+            "template_palettes": {form["art"]: list(dict.fromkeys(
+                color for asset in manifest["assets"] if asset.get("form") == form["art"]
+                for color in creatures.palette_colours(manifest, asset))) for form in pets["forms"]},
             "background_palette": manifest.get("palettes", {}).get("earth-kit", manifest["palette"]),
             "prizes": read(content / "prizes.json")["prizes"] if (content / "prizes.json").exists() else [],
             "kinds": {k: list(v[2]) for k, v in KINDS.items()}}
@@ -119,14 +123,29 @@ def pet_candidate(manifest, docs, images, used, reserved_keys, request, source):
     hint = request.get("hint", "")
     if not isinstance(hint, str) or not re.fullmatch(r"[A-Z0-9 ]{1,24}", hint):
         raise CreationError("Unlock hint needs 1..24 uppercase letters, digits or spaces")
+    remap = request.get("palette_map")
+    if remap is not None:
+        colors = {color for asset in manifest["assets"] if asset.get("form") == template["art"]
+                  for color in creatures.palette_colours(manifest, asset)}
+        try:
+            palette_swap.validate_mapping(remap, colors)
+        except ValueError as error:
+            raise CreationError(str(error)) from error
     mapping = {}
     for old in list(manifest["assets"]):
         if old.get("form") != template["art"]:
             continue
         image = Image.open(storage.confined(source, old["path"])).convert("RGBA")
         image = image.resize((size, size), Image.Resampling.NEAREST)
+        palette = {"palette": old["palette"]} if "palette" in old else {}
+        if remap is not None:
+            image = palette_swap.remap_image(image, remap)
+            palette = {"palette": list(dict.fromkeys(remap.get(c, c) for c in creatures.palette_colours(manifest, old)))}
         new = append_asset(manifest, images, used, reserved_keys, "creatures", f"{key}-{old['pose']}", image,
-                           form=key, pose=old["pose"], **({"palette": old["palette"]} if "palette" in old else {}))
+                           form=key, pose=old["pose"], **palette)
+        new["pivot"] = [round(v * size / old["width"]) for v in old["pivot"]]
+        if remap is not None:
+            new["palette_source"] = {"asset": old["key"], "map": copy.deepcopy(remap)}
         mapping[old["key"]] = new
     for old in list(manifest["clips"]):
         if not old["key"].startswith(template["art"] + "."):
