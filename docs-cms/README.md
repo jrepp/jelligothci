@@ -108,7 +108,8 @@ Next increment: [RFC-002: Pet memory and persistent activities](rfcs/rfc-002-pet
 ## Proposed game architecture
 
 Gift acquisition, two-gift recipes and proposed activity toys:
-[RFC-012](rfcs/rfc-012-gift-crafting-and-activity-ledger.md) (draft).
+[RFC-012](rfcs/rfc-012-gift-crafting-and-activity-ledger.md) (draft), with
+[gameplay and accessibility review](memos/memo-092-gift-gameplay-and-accessibility-review.md).
 
 [RFC-004: Pet collection and evolution data](rfcs/rfc-004-pet-collection-and-evolution-data.md)
 describes pet slots, unlocks, evolution sets, and touch controls for putting
