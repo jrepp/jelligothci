@@ -5,6 +5,7 @@
 !tools/assets/compare_slice.py
 !tools/assets/lint_rules.py
 !tools/assets/scene_data.py
+!tools/assets/effect_data.py
 !tools/jelli-art/
 tools/jelli-art/__pycache__/
 tools/jelli-art/ui_tests/
