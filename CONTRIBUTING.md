@@ -153,6 +153,10 @@ connection errors from a smoke probe can be a consequence of an earlier import
 failure. If the workflow is still running, completed job logs are available via
 `gh api repos/{owner}/{repo}/actions/jobs/{job_id}/logs`. Report pending checks
 as pending and keep application fixes separate from infrastructure retries.
+If a known fix has landed in the target branch, fetch it and verify whether the
+PR includes that commit before duplicating the fix or refreshing baselines.
+Synchronize the base when appropriate, inspect the resulting PR diff, and rerun
+current-head checks; an earlier green PR does not establish this head is green.
 
 For UI changes, inspect the pinned renderer's accessibility and screenshot
 results as well as local browser tests. Reproduce suspected inherited failures

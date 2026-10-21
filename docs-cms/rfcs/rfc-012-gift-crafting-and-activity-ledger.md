@@ -24,8 +24,15 @@ fishing minigame cartridge and a small Frogger-style cartridge starring Axoloty.
 The owner also requested collectible records playing 30-second songs from small
 PCM samples sequenced in real time, and a Gifts collection submenu making
 cartridges and records visibly collectible.
-Names, ingredients, fishing/crossing win conditions, tuning and persistence
-policies below are proposals. Reuse existing art wherever practical. Traveling and its airplane scene are a separate follow-on
+Owner decisions after the [design review](../memos/memo-092-gift-gameplay-and-accessibility-review.md):
+collectibles cannot be given away; every pet can play every owned collectible;
+compact game checkpoints preserve progress; selected pet/collectible combinations
+unlock special content through accumulated play time. Bubble Lab uses bottom-only
+support, tap rotation, color matching to clear viruses, a top-out loss, and three
+levels with increasing virus counts. Bubble Lab, Jelli Chain and jukebox show the
+active pet cheering at lower left; songs provide distinct fun animations and
+morale boosts. These decisions guide this draft; they do not implement or approve
+the remaining recipes, thresholds, layouts, reward values or storage budgets. Reuse existing art wherever practical. Traveling and its airplane scene are a separate follow-on
 increment; they do not require a crafted ticket under this proposal.
 
 # Existing behavior and scope
@@ -42,7 +49,7 @@ changes land; later generate its acquisition and reverse-recipe views from conte
 [Reward processing](../../core/pet_rewards.c) connects completed routines and
 activities to offers, including sleep rewards. [Activity content](../../content/activities.json)
 owns form, location, daily-reward and activity availability constraints.
-An offer is not ownership: the player must catch it. Offers are suppressed while
+The following describes current implementation, not the revised design: an offer is not ownership: the player must catch it. Offers are suppressed while
 another offer is pending or the gift is already owned. Discovery persists after
 Give, and the existing origin-pet restriction applies to Give. Existing
 [pet discovery unlocks](../../content/pets.json) are separate from new toy activities.
@@ -52,10 +59,11 @@ Give, and the existing origin-pet restriction applies to Give. Existing
 Every row states acquisition, the recipe that creates it, and all recipes using
 it. “None” means no recipe in this proposal, not an unresearched field. Recipe IDs
 are local design identifiers, not allocated runtime IDs. Existing gifts retain
-their current acquisition routes. Follow the linked functions for eligibility,
+their current acquisition routes except Friendship Bow, whose Give dependency
+is explicitly replaced below. Follow the linked functions for implemented eligibility,
 thresholds, repeat acquisition and catch behavior.
 
-## Existing gifts
+## Existing gifts and proposed acquisition change
 
 | Gift / catalog key | How acquired before catching the offer | Created by recipe | Used in recipes |
 | --- | --- | --- | --- |
@@ -67,10 +75,10 @@ thresholds, repeat acquisition and catch behavior.
 | Bubble Gem / `bubble-gem` | Completed wash routine; [reward processing](../../core/pet_rewards.c) and [prize logic](../../core/prizes.c) | None | R02, R08 |
 | Moon Charm / `moon-charm` | Wake after a qualifying recorded linked sleep session; `wake_rewards` in [reward processing](../../core/pet_rewards.c) | None | R04, R07, R10 |
 | Rainbow Seed / `rainbow-seed` | Care sets pending progress; subsequent completed garden travel or outing offers it; [prize logic](../../core/prizes.c) | None | R03, R08, R10 |
-| Friendship Bow / `friendship-bow` | Successfully Give another gift to an eligible pet; giving a bow cannot replace itself; [prize logic](../../core/prizes.c) | None | R01, R05, R11 |
-| Teddy Bear / `teddy-bear` | Completed reward-eligible SNUGGLE under its form/location/daily restrictions; free play does not award it; [activity content](../../content/activities.json) and [reward processing](../../core/pet_rewards.c) | None | R06 |
+| Friendship Bow / `friendship-bow` | Proposed: qualifying shared play with a pet, independent of owning a cartridge; exact activity/threshold pending. Replaces the implemented Give trigger in [prize logic](../../core/prizes.c) | None | R01, R05 |
+| Teddy Bear / `teddy-bear` | Completed reward-eligible SNUGGLE under its form/location/daily restrictions; free play does not award it; [activity content](../../content/activities.json) and [reward processing](../../core/pet_rewards.c) | None | R06, R11 |
 
-## Proposed new gifts and use unlocks
+## Proposed new gifts and Play activities
 
 These eleven gifts are the proposed shortlist, not approved implementation
 commitments. The expanded shortlist requires a capacity review before implementation
@@ -78,25 +86,26 @@ commitments. The expanded shortlist requires a capacity review before implementa
 crafting its recipe, with ownership and discovery granted together. No minigame win or new random drop is required to
 obtain these gifts. No output is an ingredient in this wave.
 
-| Proposed gift / candidate key | How acquired / created by | Used in recipes | Proposed result of Use |
+| Proposed gift / candidate key | How acquired / created by | Used in recipes | Proposed result of Play |
 | --- | --- | --- | --- |
-| Jelli Chain Cartridge / `jelli-chain-cartridge` | Craft R01 | None | Unlock and launch Jelli Chain snake minigame |
-| Bubble Lab Cartridge / `bubble-lab-cartridge` | Craft R02 | None | Unlock and launch Bubble Lab falling-pair minigame |
-| Teacup Garden / `teacup-garden` | Craft R03 | None | Unlock a tiny tending activity: water the cup, watch a sprout bloom |
-| Pocket Planetarium / `pocket-planetarium` | Craft R04 | None | Unlock a quiet stargazing activity with drifting stars |
-| Ribbon Kite / `ribbon-kite` | Craft R05 | None | Unlock a kite-flying activity with a bobbing ribbon |
-| Picnic Kit / `picnic-kit` | Craft R06 | None | Unlock a teddy picnic activity with existing food and snuggle poses |
-| Moonpond Fishing Cartridge / `moonpond-fishing-cartridge` | Craft R07 | None | Unlock and launch Moonpond Fishing timing minigame |
-| Axoloty Crossing Cartridge / `axoloty-crossing-cartridge` | Craft R08 | None | Unlock and launch Axoloty Crossing river-crossing minigame |
-| Morning Tea Record / `morning-tea-record` | Craft R09 | None | Unlock jukebox and its bright 30-second Morning Tea song |
-| Moon Garden Record / `moon-garden-record` | Craft R10 | None | Unlock jukebox and its gentle 30-second Moon Garden song |
-| Jelli Parade Record / `jelli-parade-record` | Craft R11 | None | Unlock jukebox and its playful 30-second Jelli Parade song |
+| Jelli Chain Cartridge / `jelli-chain-cartridge` | Craft R01 | None | Launch Jelli Chain snake minigame |
+| Bubble Lab Cartridge / `bubble-lab-cartridge` | Craft R02 | None | Launch Bubble Lab falling-pair minigame |
+| Teacup Garden / `teacup-garden` | Craft R03 | None | Play a tiny tending activity: water the cup, watch a sprout bloom |
+| Pocket Planetarium / `pocket-planetarium` | Craft R04 | None | Play a quiet stargazing activity with drifting stars |
+| Ribbon Kite / `ribbon-kite` | Craft R05 | None | Play a kite-flying activity with a bobbing ribbon |
+| Picnic Kit / `picnic-kit` | Craft R06 | None | Play a teddy picnic activity with existing food and snuggle poses |
+| Moonpond Fishing Cartridge / `moonpond-fishing-cartridge` | Craft R07 | None | Launch Moonpond Fishing timing minigame |
+| Axoloty Crossing Cartridge / `axoloty-crossing-cartridge` | Craft R08 | None | Launch Axoloty Crossing river-crossing minigame |
+| Morning Tea Record / `morning-tea-record` | Craft R09 | None | Open jukebox with its bright 30-second Morning Tea song |
+| Moon Garden Record / `moon-garden-record` | Craft R10 | None | Open jukebox with its gentle 30-second Moon Garden song |
+| Jelli Parade Record / `jelli-parade-record` | Craft R11 | None | Open jukebox with its playful 30-second Jelli Parade song |
 
 ## Proposed recipe ledger
 
 Pairs are unordered: A + B and B + A resolve to the same unique output. Exactly
 two distinct owned gift types are required; no self-pairs or three-item recipes.
-All recipe ingredients have existing acquisition routes independent of new crafts.
+All recipe ingredients must have acquisition routes independent of new crafts;
+the replacement Friendship Bow route must work before the first cartridge.
 There are no output-to-input cycles, and no activity requires its own reward to
 be unlocked. Every ingredient and output appears in the gift ledger above.
 
@@ -112,70 +121,75 @@ be unlocked. Every ingredient and output appears in the gift ledger above.
 | R08 | Bubble Gem | Rainbow Seed | Axoloty Crossing Cartridge | Pond bubbles and growing lily pads make a crossing |
 | R09 | Breakfast Sun | Tea Sprite | Morning Tea Record | A sunny breakfast becomes a bright little tune |
 | R10 | Moon Charm | Rainbow Seed | Moon Garden Record | A moonlit garden becomes a gentle lullaby |
-| R11 | Movie Star | Friendship Bow | Jelli Parade Record | Friends share a cheerful show tune |
+| R11 | Movie Star | Teddy Bear | Jelli Parade Record | A teddy joins a cheerful show tune |
 
-# Craft, Use and Give
+# Craft and Play
 
-Proposed first-wave policy: crafting checks ownership of both ingredients but
-keeps them, and outputs are reusable. This avoids introducing item quantities or
-forcing players to lose hard-earned gifts before trying a toy. Ingredient
-consumption is an explicit owner decision, not implied by “combine.” Reject a
-craft when the output is already owned; do not create stacks or extra rewards.
-If an output is later given away, its recipe can recreate it while both
-ingredients are owned. Recipe discovery and activity unlocks grant no repeat
-rewards from this loop.
+Owner decision: no collectible in this ledger can be given away or consumed by
+Play. This includes original presents, crafted toys, cartridges and records.
+Remove Give from this collection flow; do not route Play through the existing
+reward-bearing Give command. Existing Give behavior described above is historical
+implementation requiring an explicit migration, not a retained gameplay option.
+Propose nonconsuming two-gift crafting: retain both ingredients, grant permanent
+ownership/discovery of the result, reject an already-owned output, and never
+create stacks or repeat craft rewards. Thus no craft/give/recraft loop exists.
 
-Present details offer distinct Craft, Use, Give and Put away actions as applicable.
-Craft first selects a compatible second owned gift, shows both ingredients and
-the result, and commits only on explicit confirmation. Unsupported pairs show
-“No recipe” without state changes. Cancel retains inventory. Revalidate ownership
-at commit; preserve an existing pending catch offer. Proposed crafting grants the
-result directly rather than replacing that offer. Record origin as the active
-crafter's pet ID, preserving the existing prohibition on giving to the origin pet.
+Craft selects a compatible owned second gift, previews ingredients and output,
+and requires explicit confirmation. Unsupported pairs show “No recipe.” Cancel
+changes nothing. Revalidate ownership on confirmation and preserve pending catch
+offers; grant crafted results directly without replacing those offers. Keep
+existing provenance for migration/history without using it to restrict Play.
 
-Acquiring or crafting a toy does not launch gameplay. The first successful Use
-records a durable activity unlock and launches that activity. Proposed unlocks
-are player-wide and remain after Give; later launches are available in Activities
-without owning the toy. Repeat Use launches again without duplicate unlocks.
-Reject Use while asleep or busy without recording an unlock. Put away never
-consumes a gift. Give retains current transfer/consumption semantics; it does not
-implicitly Use the gift or start an activity. Detail text must explain these
-consequences before either action.
+Every pet can play every owned collectible, regardless of origin, form or prior
+play. Ownership exposes the activity/song to the whole player collection; first
+Play does not create another ownership-like unlock state. Acquiring an item never
+autoplays it. Play is the sole use action; Craft acquires missing items and Back
+closes details. Activities and collection details lead to the same sessions.
+Sleeping/busy pets prompt a clear return-to-care or resume path, without losing
+ownership or restricting permanent access. Existing presents need a short,
+nonconsuming play interaction specified before their migration ships.
+
+## Pet-specific play discoveries
+
+Owner requirement: some pet/collectible combinations produce special unlocks
+through accumulated play time. These are optional bonuses, never prerequisites
+for another pet to play the base collectible. Propose an authored eligibility
+table with pet identity/form policy, collectible key, required active-play time,
+unique output, and acquisition/recipe ledger entry for every resulting gift.
+Exact pairs, thresholds and outputs remain pending; no unledgered reward ships.
+Show progress and a hint on eligible details rather than hiding an unexplained
+requirement. Decide whether eligibility follows an individual pet or a form before
+allocating persistent counters; evolution must not silently erase earned time.
+
+Count only foreground, unpaused gameplay or actual record playback; no offline,
+menu, paused or stalled-frame accumulation. Assists, muted music and reduced
+motion receive equal credit. Persist bounded accumulated time and one-time grants
+atomically; switching pets, reloading or replaying a completion cannot duplicate
+credit. Cap counters at their authored thresholds. Do not require wins or perfect
+input for this time-based progression, and do not add idle grinding as a substitute
+for enjoyable sessions.
 
 # Gifts collection navigation
 
-Owner intent: cartridges and records need a visible collection display within a
-Gifts submenu so players recognize them as collectibles. Proposed navigation:
+Gifts exposes Presents, Cartridges and Records (disks), with labeled icons and
+permanent Collected/Total counts derived from content. Each gift belongs to one
+category in one inventory. Paged cartridge and disk shelves show readable names
+and motifs, with one primary action: Play if owned, Craft if ingredients are
+available, otherwise See recipe. Ownership is permanent; there is no separate
+“given away but playable” state or competing unlocked-media count.
 
-- Gifts shows Presents, Cartridges and Records (disks) as labeled destinations,
-  each with a representative icon and an owned/total count derived from content.
-- Cartridges opens a paged shelf of cartridge silhouettes; Records opens a paged
-  shelf of disk sleeves. Keep labels and counts readable on the round display.
-- Each slot distinguishes Undiscovered, Discovered (not owned), Craftable and
-  Owned with text/icons as well as color. Discovery and craftability are separate:
-  a known recipe can be craftable before its output has ever been owned.
-- Selecting a slot opens details with its name, acquisition route, both recipe
-  ingredients and their ownership, ingredient uses, and the unlocked activity or
-  song. Missing gifts still expose their recipe; this proposal favors a readable
-  collection checklist over hidden recipe puzzles.
-- Owned cartridges offer Play game; owned records offer Play record. These are
-  the collection-facing labels for Use, with the same unlock and busy/asleep
-  checks. Craft and Give stay separate, explicit actions. Back restores shelf
-  position; a paged list must remain usable as the catalog expands.
+Missing slots expose recipes and useful missing-ingredient acquisition hints.
+Details show acquisition, ingredients, reverse recipes and optional pet-specific
+play discovery progress. Keep that information off the shelf's primary cards.
+A brief craft reveal connects the new item to its shelf and count, then offers
+Play without autoplay. Back restores the previous page. Any optional persistent
+New badge requires separately budgeted acknowledgment state.
 
-All gifts belong to exactly one collection category; records and cartridges are
-ordinary ledger entries with category metadata, not a second inventory. Proposed
-counts show current ownership, while discovered silhouettes persist after Give.
-A separate Unlocked marker identifies games/songs available after the collectible
-is given away. Existing Activities provides access to those unlocked sessions;
-it must not misrepresent the collectible as still owned.
-
-Crafting reveals the new slot with a brief highlight and the shelf/count visible.
-If persistent “New” badges are desired, budget and version their acknowledgement
-state explicitly; do not infer it from ownership or quietly add save fields.
-Use one reusable cartridge silhouette and one disk/sleeve silhouette with distinct
-labels/motifs. Keep each entry a generous touch target; support swipes for paging
-and equivalent desktop navigation without relying on hover.
+Provide generous separated tap targets, explicit previous/next buttons alongside
+swipe paging, visible keyboard focus, and non-hover desktop navigation. Keep the
+primary action inside the round safe area. Prototype one card and details screen
+at actual size before committing to badge, text or page density. Reuse cartridge
+and disk silhouettes with distinct labels/motifs; never distinguish solely by color.
 
 # Jukebox records and music
 
@@ -186,23 +200,35 @@ and Jelli Parade (bouncy bass and taps). Compose original short arrangements;
 share instrument samples across records while giving each song a distinct melody
 and rhythm. These are song concepts, not approved compositions.
 
-Use of a record unlocks that song and opens the jukebox with it selected. Merely
-crafting or acquiring a record does not play it. Proposed durable song unlocks
-follow the same player-wide Use policy as cartridges: giving away the record
-preserves access to its unlocked song. One unlocked record exposes the jukebox
-activity; it does not unlock the other tracks. The jukebox lists unlocked songs
-and links missing records to their collection details.
+Owning a record makes its song playable by every pet in the jukebox; missing
+records link to collection details. Play opens the selected song explicitly.
+Play for 30 seconds including the ending envelope, then offer Replay, Choose
+record and Exit without automatic looping. Show song name, progress and the
+active pet at lower left, cheering/listening without covering controls. Each song
+has a distinct fun animation: proposed Morning Tea gentle sways, Moon Garden
+star-watching poses, and Jelli Parade a little march. Reuse existing poses and
+music/celebration art from the [manifest](../../assets/slice/assets.json).
 
-Play one selected song for 30 seconds including its ending envelope, then show
-Replay, Choose record and Exit. No automatic looping or reward farming. Show a
-spinning disk, song name and elapsed progress using existing music/celebration
-art and happy poses from the [manifest](../../assets/slice/assets.json), with a
-small new disk/sleeve asset if needed. Muting retains visible song progress and
-completion; music respects master volume. Pause freezes the sequence and display,
-resume continues at the same musical position, and Exit stops promptly with a
-short envelope to avoid clicks. Interruptions discard transient playback; no
-offline catch-up or saved audio cursor. Care/sleep interruption remains an open
-policy shared with the minigames.
+Owner requirement: songs grant morale boosts. The precise mapping to existing
+needs/habits in [pet rewards](../../core/pet_rewards.c) and
+[derived pet mood](../../core/personality.c), amount, eligibility window and cap require
+source review and balance approval. Current mood is derived, not an independent
+morale field; do not invent a new stat implicitly.
+Propose a modest completion award with persistent per-pet eligibility/cap, shared
+across records, so track switching, restart and reload cannot farm boosts. Partial
+play and duplicate completion callbacks do not grant completion rewards. Muted,
+assisted and reduced-motion playback remain equally eligible. Keep reward state
+and completion atomic; exact cooldown/window and clock behavior remain pending.
+
+Music respects master volume. Mute retains progress, completion and optional
+beat/phrase visuals; these offer a visual experience without claiming equivalence
+to hearing a song. Reduced motion replaces spinning/bouncing with static poses,
+text and restrained progress changes. Pause freezes the sequence and visual time;
+resume requires Ready and uses a short envelope to avoid clicks. Menus/focus loss
+and care interruption pause safely. Propose replay from the beginning after a
+process restart rather than saving audio voice state; already-earned play-time
+credit survives and replay never duplicates a completion award. Explain this
+record-specific restart behavior, distinct from game checkpoints.
 
 ## Proposed audio implementation boundaries
 
@@ -251,14 +277,20 @@ adds one Jelli. When length reaches seven, replace the ordinary pickup with one
 star in a free reachable cell and stop further growth. Eating it completes the
 session. Do not count the star as an eighth Jelli. The grid must leave a valid
 route to the terminal star; use bounded free-cell selection, never an unbounded
-random retry loop.
+random retry loop. Reachability must account for moving body, heading and
+no-reversal rules; a free-cell flood fill alone is not proof. Prefer authored
+guaranteed board/pickup patterns with bounded validation before runtime search.
 
 Swipes choose cardinal heading; prohibit immediate reversal into the next segment
 and accept at most one queued turn per movement step. Keyboard directions mirror
 swipes on desktop. Contact with a wall or body ends the attempt with Retry and
 Exit; retry resets the board, not ownership or unlocks. Pause freezes movement,
 and resume discards stale gestures. Grid size, start length, speed and difficulty
-remain proposed tuning to verify on the round display.
+remain proposed tuning to verify on the round display. Offer same-device large
+tap-direction controls and relaxed speed; keep head/goal distinct under finger
+occlusion. Show length out of seven, the next objective, a prominent score and
+the active pet cheering at lower left, outside the board. Score rules are proposed
+and must not penalize assists or gate collection access.
 
 Reuse `creatures.baby-idle-a`, `creatures.baby-idle-b` and
 `creatures.baby-happy` for the chain, `effects.orb` for pickups and `effects.star`
@@ -272,28 +304,48 @@ Owner requirement: a simple Dr. Mario-style falling-pair game with exactly three
 levels and a definite completion condition. Use original Jelli presentation and
 existing art rather than reproducing another game's characters or interface.
 
-Proposed rules: paired bubble pieces fall into a small well containing stationary
-bubble targets. Left/right swipes move the pair, tap rotates, and downward swipe
-soft-drops. Desktop keys provide equivalent actions. A horizontal or vertical run
-of four matching symbols clears matching pieces and targets. Unsupported pieces
-fall; resolve bounded cascades before spawning another pair. Targets stay fixed
-until cleared. Reject rotations/moves that overlap the wall or occupied cells.
-A blocked spawn ends the attempt; Retry restarts the current level.
+Owner decisions: paired medicine pieces fall into a well of stationary viruses;
+tap rotates, matching colors clear viruses, reaching the top is game over, and
+exactly three levels increase the virus count. Pieces attach/support only below,
+never from a neighbor at the side. Use original medicine/shot decorations at the
+sides, a prominent score, and the active pet cheering at lower left. Reserve a
+safe board area first: decorations and the pet cannot obscure cells or controls.
 
-Clear every target to finish a level. Finish levels one, two and three in order
-to win the whole game, then show a clear “Lab complete” result and Replay/Exit.
-Proposed progression: level one teaches a single pattern, level two introduces a
-second pattern and offset targets, and level three combines three patterns and
-more targets. Author small solvable layouts and a bounded piece sequence per
-level; do not rely on random luck to make a level completable. Exact board size,
-target counts and fall timing need touch/readability trials. Three levels are a
-requirement; these layouts and matching rules are proposed choices.
+Propose left/right swipes plus large tap controls, a separate Rotate button as an
+alternative to tapping the board, and downward swipe/Drop button for soft drop.
+Keyboard actions mirror all controls. Offer relaxed fall speed and manual-drop
+assistance with the same objectives and rewards. A first-level interactive example
+teaches one clear, with persistent Help. Reject overlapping rotations/moves;
+preview the resulting orientation so taps do not produce unexplained failures.
 
-Reuse `effects.orb`, `prizes.bubble-gem`, `prizes.pearl-tooth`, `effects.star`
-and existing happy Jelli poses from the [manifest](../../assets/slice/assets.json).
-Distinguish piece types with symbols as well as colors. Palette variants may help
-reuse art, but the minigame must remain readable without color discrimination;
-the character palette authoring work is a separate increment.
+Proposed matching rule: a horizontal or vertical run of four matching colors
+clears matching medicine and viruses. Give each color a redundant symbol. Viruses
+stay fixed until cleared. The falling pair is controlled together before landing;
+once locked, each half supports independently from below, with no lateral bond.
+A surviving half after a clear falls vertically until supported from below or by
+the floor. Resolve gravity and bounded cascades before spawning another pair.
+Define top-out as a locked piece occupying the marked top danger row or an
+obstructed spawn; finish any resulting clear/cascade first, then test victory
+before top-out. Exact danger-row geometry needs a readable prototype.
+
+Clear all viruses to finish each level; finish levels one through three to show
+“Lab complete.” Retry restarts the current level, retaining previously completed
+levels. Author a strictly increasing virus count and solvable patterns; exact
+counts and board dimensions remain tuning. Provide several small authored variants
+for replay, not random impossible wells. A bounded authored sequence must specify
+exhaustion: propose a clearly announced Retry level when no further pieces remain,
+never a silent stalled board. Test recovery after ordinary mistakes as well as a
+perfect solution; reject sequences that make reasonable play routinely dead-end.
+Checkpoint the board and level as described below.
+
+Propose score from virus clears and cascades, with a readable breakdown and no
+speed/assist penalty; exact values and any saved best score require approval and
+storage budgeting. Reuse `effects.orb`, `prizes.bubble-gem`, `prizes.pearl-tooth`,
+`effects.star` and happy poses from the [manifest](../../assets/slice/assets.json).
+Reuse `health.medicine` and `health.shot` for side decorations. Use simple
+virus silhouettes and redundant symbols; asset reuse must not make falling pieces and viruses
+indistinguishable at actual size.
+
 
 ## Moonpond Fishing
 
@@ -309,6 +361,11 @@ Replay/Exit. No overall countdown or limited bait in the first version. Each cas
 has a bounded wait and one readable bite window; misses allow another cast.
 Pause freezes both wait and bite timing, and resume discards stale presses.
 Fish are session progress, not new collectible gifts or crafting ingredients.
+Offer a persistent bite-until-confirm assist as well as a longer bite window;
+early taps do not dismiss an assisted bite that has not happened yet. Keep catch
+progress visible and present a small three-fish tableau with varied fish reactions,
+so a catch has a payoff beyond a counter. Bounded short waits, anticipation and
+reveal variety need replay testing, not progressively tighter reflex demands.
 Timing and catch count remain tuning proposals for display and touch trials.
 
 Reuse `effects.orb` for the bobber, existing ripple/celebration effects where
@@ -330,7 +387,12 @@ missing a platform or drifting beyond the board returns to the near bank with
 Retry/Exit, without losing gifts. Explain this as being swept back by the current,
 not an axolotl drowning. Bank tiles are safe waiting places. Author a short,
 repeatable lane schedule with reachable crossing windows; no random impossible
-layouts, timer pressure or lives in the first version. Lane count, platform speeds
+layouts, overall countdown or lives in the first version. Moving platforms still
+create timing pressure: provide slower movement, large tap-direction alternatives
+and an optional step-paced assist that advances the world deliberately with the
+player, while preserving platform/support and goal rules. Prototype fairness of
+that assist before adopting its exact cadence. Offer a few short authored lane
+patterns for replay without increasing the required one-crossing win. Lane count, platform speeds
 and input cadence remain proposals to verify on the round display.
 
 Accept at most one queued step per movement interval, reject steps outside the
@@ -344,22 +406,78 @@ with integer sampling and existing celebration effects. Add only simple platform
 silhouettes and pond tiles where necessary. Distinguish safe platforms, water
 and the goal by shape as well as color; preview Axoloty at the actual play size.
 
-## Shared session behavior and rewards
+## Shared session behavior, checkpoints and access
 
-Propose no new gift drops or permanent stat rewards for the first playable
-minigames. A win gives a short existing celebration; deciding any progression
-reward is separate balance work. Explicit Exit always returns to pet care, and
-loss never removes a gift. Pause on menus/focus loss. Do not progress a board in
-offline catch-up. Initially save unlocks only; interruption discards a transient
-attempt and explains that restarting begins a new attempt. Review care-time
-progression and sleep interruption before implementation so games cannot silently
-bypass existing activity or clock rules.
+A win gives a brief celebration; loss never removes a gift. No minigame win is
+required to obtain the base cartridges. Optional accumulated-play discoveries and
+jukebox morale are the explicit reward exceptions above; do not silently add
+other care-stat rewards. Assists are available before and during a session without
+inferior completion labels or collectible penalties.
 
-Other proposed activities should reuse the cup, seed, moon, star, butterfly,
-bow, teddy and food assets in the [manifest](../../assets/slice/assets.json), adding
-only indispensable combined-gift silhouettes or small props. Reuse pose sequences
-and celebration effects. These are unlock concepts, not approved timed routines
-or new reward sources.
+Always expose Pause, Help and Exit through generous controls outside the board.
+Pause freezes gameplay on menus, focus loss and care/sleep interruptions, discards
+stale input, and resumes only after a deliberate Ready action with a proposed
+short countdown that can be disabled in favor of a second confirmation. Explain
+failures using text/icon cues, not sound/color alone. Keep decorative reduced
+motion independent of game pace; remove cheering bounces and flashing clears
+while retaining readable game-state changes.
+
+Owner requirement: compact game checkpoints. Propose one resumable slot per game,
+associated with its participating pet; switching pets must explicitly resume that
+session or start a new one without silently overwriting it. Every pet remains free
+to start any owned game. Menus retain exact in-memory state. Persist at safe action
+boundaries, level completion and graceful Exit/interruption; explain Resume versus
+Restart. A process crash may roll back to the last completed checkpoint, never
+silently erase completed levels. Restart requires confirmation if progress exists.
+Care time continues under existing clock rules; a care/sleep event pauses play and
+saves a checkpoint before returning to care. No offline game movement or play-time
+credit; exact interruption priority and checkpoint frequency require integration
+review without inventing a way to freeze needs indefinitely.
+
+Proposed packed payload targets (not measured save capacity): Jelli Chain at most
+64 bytes for chain cells/heading/pickup/phase/score; Bubble Lab at most 192 bytes
+for packed board/level/active pair/sequence cursor/score; fishing at most 32 bytes
+for cast phase/catches/timing/variant; Axoloty at most 48 bytes for cell/platform
+phase/layout. Total game payload target is 336 bytes, excluding headers, version,
+pet association, integrity data and all play-time/reward counters. These are design
+budgets to test, not permission to expand the existing save contract. Select board
+sizes and packed encodings only after worst-case validation. Never serialize raw
+pointers, audio voices or platform timer values. Store deterministic phase/remaining
+time and versioned content identity; invalid or outdated checkpoints recover with
+an explained safe restart while preserving collection and earned progression.
+
+Use shape plus color, readable score/objective text, visible keyboard focus,
+non-audio feedback and touch-only alternatives throughout. Test round-screen safe
+areas, contrast, finger occlusion and target separation at actual size. Keyboard
+controls do not establish blind access to visual grids; evaluate assistive/audio
+navigation separately and document remaining limitations, without claiming an
+accessibility conformance result from these design intentions.
+
+## Fun and acquisition prototype gates
+
+This is a gentle care-keepsake collection, not a deep consumable crafting economy.
+Keep visible recipes and satisfying craft reveals; do not add grind to manufacture
+length. Audit the fresh-player and established-save route to each game/song,
+including irregular schedules, unavailable sleep linking and missed offers.
+Propose a reliably approachable first toy and an alternate non-time-of-day path
+for schedule-gated ingredients if trials show exclusion; exact alternate routes
+need ledger entries and balance review, not silent changes to current rewards.
+Friendship Bow's replacement shared-play route must be available without any new
+craft or special pet-form prerequisite.
+
+Before building the full unlock system, prototype one game, one shelf/details
+card and one original 30-second record. Observe whether novices can explain the
+objective, find Pause/Exit, correct a mistake, resume and voluntarily replay.
+Report session lengths, mistaken inputs, retry causes and obscured cells, including
+touch-only, keyboard-only, relaxed/manual modes, muted and reduced-motion trials.
+Involve players with varied dexterity/vision where available. Test snake planning,
+Bubble Lab's distinction between medicine and viruses, fishing anticipation,
+Crossing route variety, and song recognition/replay appeal. Completion rates alone
+are not evidence of fun. Audition hardware separately from desktop music exports.
+
+Teacup Garden, Planetarium, Kite and Picnic remain backlog interaction concepts.
+Specify their nonconsuming Play interactions before approval, reuse existing props
+and poses, and do not imply new timed routines or reward sources.
 
 # Content, storage and validation boundaries
 
@@ -371,7 +489,7 @@ the current ownership-mask capacity; the earlier six-output shortlist filled it.
 The expanded cartridge and record collection remains a proposal, not permission to widen
 masks or reuse IDs. Before implementation, approve a smaller shipping subset or
 a versioned capacity expansion covering ownership, discovery and provenance.
-Neither choice establishes room for new unlock state in the bounded
+Neither choice establishes room for checkpoints, play-time counters or reward state in the bounded
 [save contract](../../include/jelli/save.h).
 Do not add backlog gifts by increasing a count without reviewing bit widths,
 mask shifts, serialized layout, UI paging and worst-case checkpoint size.
@@ -384,75 +502,80 @@ record must explain each base gift's trigger or each crafted gift's creating
 recipe; a catalog entry without an acquisition route fails authoring validation.
 The ledger should expose both directions without duplicating mutable tuning.
 
-Crafting, discovery, provenance and unlock updates must checkpoint atomically and
-be idempotent under repeated input. New unlock state requires explicit versioning
-and migration: preserve old gift ownership/discovery and origin IDs, start new
-activity unlocks absent, and never infer a Use from historical discovery. Preserve
-unsupported saves rather than truncating them. Measure worst-case game state,
-encoded bytes and minigame workspace before selecting fixed runtime bounds.
+Crafting, discovery, checkpoint and reward updates must be atomic and idempotent.
+Version the migration: preserve existing ownership/discovery/provenance; do not
+turn historically discovered-but-given-away gifts into owned items without an
+explicit migration decision. Owned collectibles become playable by every pet;
+no first-Use unlock bit is required. Start new special-play counters and rewards
+at zero, never infer historical play. Preserve unsupported saves rather than
+truncating them. Measure worst-case game state, encoded bytes, counter cardinality
+and workspaces including migration overlap before selecting runtime bounds.
 Follow [engine/host contracts](../../docs/development.md) and the
 [bounded-memory proposal](rfc-009-bounded-memory-systems-and-adoption.md); no IO,
-heap allocation or unbounded searches in the gameplay update/render path.
+heap allocation or unbounded searches in gameplay update/render paths.
 
 # Incremental adoption and acceptance
 
-1. Review this ledger: choose the recipes, ingredient consumption, unlock scope,
-   Give behavior and minigame rules. This document changes no gameplay defaults.
-2. Implement the approved bounded recipe/acquisition catalog, generated ledger
-   checks and save migration; add Craft/Use UI with one inert toy fixture first.
-3. Deliver Jelli Chain with the required seven-Jelli/star win, reusing art.
-4. Deliver Bubble Lab with three solvable levels and explicit final victory.
-5. Deliver Moonpond Fishing and Axoloty Crossing separately after approving their
-   rules and resolving gift capacity; reuse art and verify touch controls.
-6. Deliver the cartridge/record shelves and jukebox separately after approving
-   collection behavior, song unlock state and measured sampler/sequencer budgets.
-7. Add the other shortlisted activities separately after their interactions are
-   approved; treat further gift ideas as backlog until capacity is addressed.
+1. Prototype one game, one collection card and one original track; record usability,
+   fun and hardware audio evidence before approving the full system.
+2. Approve the shipping subset, unique recipes, replacement Bow acquisition,
+   migration, checkpoint encodings and reward/time-counter budgets.
+3. Implement bounded content validation and collection/Craft/Play with one inert
+   fixture, then Jelli Chain and its seven-Jelli/star finish.
+4. Deliver Bubble Lab's three levels with increased virus counts and checkpoints.
+5. Deliver fishing and Axoloty separately after touch/assist/readability trials.
+6. Deliver jukebox with distinct animations and the approved morale policy; add
+   optional pet/play-time discoveries only with complete ledger entries and bounds.
+7. Keep the other activity toys in backlog pending interaction approval.
 
 Acceptance for implementation:
 
-- Every gift has an acquisition route, creating recipe or explicit None, and
-  complete reverse recipe references; every recipe links exactly two ingredients
-  to one output. Validate consistency automatically against authored content.
-- Reversed ingredient order works identically; invalid, missing, duplicate and
-  cyclic recipes fail validation. Failed or canceled crafts change no state.
-- Repeated confirmation, Use, reload and catch cannot duplicate rewards or lose
-  provenance; pending offers survive crafting. Old saves preserve existing gifts.
-- Give, Use, Craft and Put away remain separate, with clear asleep/busy behavior.
-- Snake cannot win at six, or merely by reaching seven; it wins only after the
-  seven-Jelli chain eats its star. Test turns, collisions, pause, retry and Exit.
-- Bubble Lab wins a level only when every target is gone and wins the game only
-  after all three levels. Test rotation rejection, clears, cascades, blocked
-  spawns, restart and authored solvability.
-- Fishing wins only after the proposed catch target; early/late taps do not
-  increment it. Test repeated input, bounded bite windows, pause and retry.
-- Axoloty Crossing wins only on the goal landing; water/current failures and
-  off-board moves cannot win. Test platform carry, lane reachability, pause,
-  stalled frames and retry.
-- Collection counts, slot states and details reflect the same ledger and
-  inventory after crafting, giving, reload and paging. A missing but unlocked
-  record/game remains playable without appearing owned.
-- Each record unlocks only its own song. Test 30-second duration, mute, pause,
-  restart, Exit, cue overlap, event bounds, loop bounds, mix saturation and
-  sample-clock scheduling; separately audition device playback and measure cost.
-- All four games use bounded workspaces and deterministic injected input/time; test
-  core behavior and sanitizers, inspect desktop rendering, and separately verify
-  physical swipe/tap controls, readability and timing on the target display.
+- Every gift has acquisition, creation and complete reverse recipe references;
+  eleven proposed recipes have eleven distinct unordered pairs and outputs.
+  Invalid references, duplicates, cycles and unsupported capacity fail validation.
+- Craft cancellation/failure changes nothing; repeat confirmation/catch/reload
+  cannot duplicate gifts or rewards. Preserve pending offers and historical saves.
+- No collection action invokes Give. Every pet can Play every owned collectible;
+  duplicate crafting fails and shelf counts never fall through ordinary play.
+- Friendship Bow can be acquired without giving or owning a new cartridge. Audit
+  new-player/schedule-limited paths to the first toy and record.
+- Snake wins only when a seven-Jelli chain eats its star. Test legal moving-body
+  reachability, turn queue, collisions, score display, pet placement and checkpoints.
+- Bubble Lab clears matching colors with redundant symbols, uses bottom-only
+  support, handles halves/cascades/top-out/sequence exhaustion, and wins only after
+  three increasingly populated virus levels. Test checkpoints and mistake recovery.
+- Fishing requires its catch target; verify normal timing and persistent-bite
+  assistance, no held-input double action, cast recovery and checkpoints.
+- Crossing wins only at the goal; verify carry/support/order, slow/step assistance,
+  reachable patterns, stalled frames and checkpoint restoration.
+- Pause/Ready/Resume/Restart/Exit, sleep/focus interruption and process restart
+  have explicit tested outcomes. No offline movement or accumulated-play credit.
+- Song duration remains 30 seconds including envelopes. Test mute, pause, replay,
+  distinct animations, optional visual phrases, cue overlap, bounded mixing and
+  sample-clock timing; independently audition and measure device playback.
+- Morale and special-play awards obey approved eligibility/caps across track or
+  pet switches, reloads and repeated callbacks. Assists/mute receive equal credit;
+  time counters saturate and never accrue during paused/offline/stalled time.
+- Validate checkpoint formats, worst-case bytes, content-version recovery and
+  migration separately from runtime RAM. No proposed byte target is assumed to fit.
+- Use deterministic injected input/time, core tests and sanitizers, desktop visual
+  inspection, and separate physical touch/readability/audio evidence. Complete
+  the fun/accessibility prototype gates above before calling the design validated.
 
 # Tradeoffs and open decisions
 
-Nonconsuming recipes make experimentation gentle but shorten collection pacing.
-Consuming recipes would need deliberate reacquisition and confirmation policy;
-stacked inventory is outside this increment. Permanent Use unlocks allow a toy to
-be given away safely, but need saved unlock state and an Activities entry point.
-Ownership-gated replay would be simpler storage-wise but could remove access after
-Give. Both alternatives require an explicit owner choice.
+Owner decisions are permanent collectible ownership without Give, universal pet
+access, compact game checkpoints, optional pet/collectible play-time discoveries,
+Bubble Lab's clarified rules/presentation and song-specific animations/morale.
+These supersede the earlier Give/recraft and first-Use unlock proposals. The RFC
+remains Draft; none of these documentation changes implement game behavior.
 
-Still open: recipe/name approval, which shortlist activities ship first, quantity
-or consumption semantics, player-wide versus pet-specific unlocks, crafted origin
-rules, whether crafted Give should earn a Friendship Bow under existing rules,
-care-time interaction, board sizes, timing, match rules and rewards; record
-arrangements, collection badges, sample-bank/voice budgets and cue-mixing policy. Preview these
-choices before treating them as production balance. Additional crafted tiers,
-recipe discovery puzzles, rewards for wins and travel souvenirs remain backlog;
-no unledgered gifts or implied airplane-unlock recipe are introduced here.
+Still proposed: nonconsuming recipe details (including revised R11), exact Bow
+shared-play acquisition, shipping subset, base-present Play interactions, any
+alternate schedule-friendly acquisition, special discovery pairs/outputs/time
+thresholds and pet identity policy, morale mapping/value/eligibility/caps, scores,
+board dimensions/timings, assist cadence, checkpoint frequency/encoding/budget,
+care interruption ordering, old discovered-only gift migration, sample-bank/voice
+budgets, arrangements and cue mixing. Validate these with source review, packed
+save measurements and playtests. New tiers, hidden recipes and travel souvenirs
+remain backlog; no unledgered gift or airplane-unlock recipe is introduced.

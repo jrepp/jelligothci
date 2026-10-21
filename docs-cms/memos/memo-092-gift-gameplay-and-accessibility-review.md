@@ -189,3 +189,45 @@ physical-device millimeter specification.
 explains why adjustment or alternatives matter and includes exceptions.
 These are design references, not a finding that every game timer violates WCAG
 or that this native device has passed a web compliance standard.
+
+
+# Owner-directed revision after review
+
+The findings above preserve the review of `64902e3`; they are not a description
+of the revised RFC. The owner subsequently requested all review feedback be
+incorporated and decided: collectibles cannot be given away; every pet can Play
+every collectible; compact game checkpoints preserve sessions; selected
+pet/collectible combinations unlock special content through accumulated play time.
+The owner clarified Bubble Lab's bottom-only support, tap rotation, top-out loss,
+color-matched virus clearing, increasing virus counts across three levels,
+medicine/shot decorations and prominent score. Bubble Lab, Jelli Chain and jukebox
+show the active pet cheering at lower left. Songs provide distinct animations
+and morale boosts. These are design decisions, not implemented behavior.
+
+[RFC-012](../rfcs/rfc-012-gift-crafting-and-activity-ledger.md) now reconciles the
+review as follows:
+
+| Review finding | Draft remedy | Verification still required |
+| --- | --- | --- |
+| Duplicate pair | Proposed R11 now uses Movie Star + Teddy Bear; reciprocal recipe references changed | Check unique unordered pairs and reverse references on every ledger revision |
+| Give/recraft farming | No ledger gift can be given away; permanent ownership, duplicate-craft rejection and Play replace Give semantics | Migrate legacy commands/ownership; verify no hidden reward-bearing Give route remains |
+| Friendship Bow dependency | Proposed shared-play acquisition independent of new cartridges replaces the historical Give trigger | Approve exact trigger/threshold and check fresh-player reachability |
+| Confusing shelf states | Permanent Collected/Total count, one Play/Craft/See recipe action, universal pet access | Actual-size shelf and details prototype, migration for previously given-away items |
+| Motor and sensory barriers | Same-device tap alternatives, relaxed/manual/step assistance, persistent fishing bites, Ready resume, reduced decorative motion, redundant symbols and visual feedback | Touch-only and varied dexterity/vision trials; blind-grid access remains unresolved |
+| Lost interrupted progress | Compact per-game checkpoint proposal with explicit pause, Exit, restart, care and content-version behavior | Encode/measure worst-case bytes and checkpoint wear/frequency; verify process-restart recovery |
+| Snake reachability and Bubble Lab ambiguity | Moving-body reachability requirement; bottom-only independent halves, clear/cascade/top-out order and explicit finite-sequence exhaustion | Authored solvability plus ordinary-mistake recovery, device readability |
+| Thin collection/replay experience | Acquisition audit, satisfying craft reveal, fish tableau/reactions, optional authored crossing/puzzle variants and distinct song animations | Voluntary replay and comprehension observations, no claim of proven fun |
+| Scope ahead of evidence | One game/card/track prototype gate; other activity toys remain backlog; explicit storage and audio measurement gates | Approve shipping subset only after evidence |
+| New time/reward exploits | Proposed bounded active-play credit, one-time atomic discoveries, equal assist/mute credit, capped song completion eligibility | Approve exact pet identity/thresholds/output ledger and morale mapping; test switching/reloads/stalls |
+
+The proposed packed game payload targets total 336 bytes before metadata and
+progress/reward counters; they are not measured capacity or approval to expand
+saves. The implementation's [mood](../../core/personality.c) is derived, so the
+requested morale boost still needs an explicit mapping and balance decision.
+Exact time thresholds, discovery gifts, sample budgets and reward caps remain
+proposed or pending rather than invented implementation requirements.
+
+This revision removes the confirmed recipe conflict and the proposed Give loop
+at the design level. It does not prove gameplay enjoyment, accessibility,
+checkpoint fit or audible quality. No playtest, device measurement, firmware
+change or gameplay implementation was performed for this documentation revision.
