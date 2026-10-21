@@ -163,4 +163,18 @@ the engine memory, a guarded repair reset only the timer, paused the session and
 requested a save. The debug interface then reported `SAVED`, and the save slot's
 modification time advanced. The desktop could then restart with the corrected
 binary and preserved board. This recovery evidence does not establish physical
-device behavior or replace the automatic-fall regression.
+device behavior or replace the automatic-fall regression. The corrected desktop
+then resumed this recovered relaxed session for 35 simulation ticks, remained
+responsive, reported `SAVED`, and returned through Back to the Resume launcher.
+
+# Music catalog layout regression
+
+PR screenshot checks caught longer background-track options expanding the native
+music selector and shifting adjacent controls. Earlier focused UI runs had not
+enabled screenshot comparison. The [music UI](../../tools/jelli-art/music.js) now
+bounds the entire song field to its prior footprint, allowing it to shrink with
+its container. Bounding only the select left its grid label's intrinsic width
+unchanged; the screenshot test exposed that incomplete first correction. Existing
+screenshots and comparison thresholds remain unchanged.
+The pinned-image music UI run with `JELLI_UI_SCREENSHOTS=1` passed 9/9, including
+desktop and phone screenshot comparisons and tablet accessibility/layout checks.
