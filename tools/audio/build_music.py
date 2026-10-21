@@ -13,7 +13,7 @@ RATE = 22050
 LENGTH = RATE * 30
 KEYS = ('morning-tea', 'garden-waltz', 'porch-picnic', 'tiny-thunder',
         'neon-heart', 'cloud-club', 'pixel-sunset', 'pocket-arcade', 'garden-drift',
-        'tea-steam', 'bubble-bath', 'moon-pillow', 'little-steps')
+        'tea-steam', 'bubble-bath', 'moon-pillow', 'little-steps', 'bubble-rush')
 
 
 def compile_song(doc):

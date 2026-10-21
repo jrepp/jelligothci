@@ -1,10 +1,21 @@
 #include "pet_collectible_ui.h"
 #include "jelli/collectible.h"
 #include "jelli/creature.h"
+#include "jelli/sound.h"
 #include "jelli_asset_ids.h"
 
-#define WIN_DURATION_MS 4500u
+#define WIN_DURATION_MS 2500u
+#define LOSS_DURATION_MS 1000u
 #define FLOAT_DURATION_MS 900u
+
+bool jelli_pet_collectible_lost(const JelliCollectibleSession *session)
+{
+    return (session->mode == JELLI_COLLECTIBLE_CHAIN &&
+            session->chain.status == JELLI_CHAIN_LOST) ||
+           (session->mode == JELLI_COLLECTIBLE_BUBBLE &&
+            (session->bubble.status == JELLI_BUBBLE_TOP ||
+             session->bubble.status == JELLI_BUBBLE_EMPTY));
+}
 
 bool jelli_pet_collectible_win_update(JelliPetUi *ui, JelliGame *game, uint64_t now)
 {
@@ -13,18 +24,26 @@ bool jelli_pet_collectible_win_update(JelliPetUi *ui, JelliGame *game, uint64_t 
         ui->page == JELLI_UI_COLLECTIBLE_PLAY && session->active &&
         ((session->mode == JELLI_COLLECTIBLE_CHAIN && session->chain.status == JELLI_CHAIN_WON) ||
          (session->mode == JELLI_COLLECTIBLE_BUBBLE && session->bubble.status == JELLI_BUBBLE_WON));
-    if (!winning) {
+    bool losing = ui->page == JELLI_UI_COLLECTIBLE_PLAY && session->active &&
+                  jelli_pet_collectible_lost(session);
+    if (!winning && !losing) {
         ui->collectible_win_anchor = 0u;
         ui->collectible_win_ms = 0u;
         return false;
+    }
+    unsigned duration = losing ? LOSS_DURATION_MS : WIN_DURATION_MS;
+    if (!ui->collectible_win_anchor && losing) {
+        ui->sound_pending = true;
+        ui->sound_played = false; /* Simulation outcomes bypass the menu-tap debounce. */
+        ui->sound_cue = JELLI_SOUND_SLEEPY + 1u;
     }
     /* Anchor+1 distinguishes a first frame at time zero from an unstarted sequence. */
     if (!ui->collectible_win_anchor || now < ui->collectible_win_anchor - 1u)
         ui->collectible_win_anchor = now == UINT64_MAX ? UINT64_MAX : now + 1u;
     uint64_t elapsed = now - (ui->collectible_win_anchor - 1u);
-    ui->collectible_win_ms = (uint16_t)(elapsed > WIN_DURATION_MS ? WIN_DURATION_MS : elapsed);
+    ui->collectible_win_ms = (uint16_t)(elapsed > duration ? duration : elapsed);
     ui->collectible_menu = false;
-    if (elapsed < WIN_DURATION_MS)
+    if (elapsed < duration)
         return true;
     if (jelli_collectible_control(game, JELLI_COLLECTIBLE_CLOSE) != JELLI_OK)
         return true;

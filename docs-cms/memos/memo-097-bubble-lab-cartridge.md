@@ -178,3 +178,50 @@ unchanged; the screenshot test exposed that incomplete first correction. Existin
 screenshots and comparison thresholds remain unchanged.
 The pinned-image music UI run with `JELLI_UI_SCREENSHOTS=1` passed 9/9, including
 desktop and phone screenshot comparisons and tablet accessibility/layout checks.
+
+# Owner-directed presentation and game feedback follow-up
+
+The owner requested mean-looking viruses, removal of bottom help text, larger
+left-side score/level/virus counters, and a larger well. The
+[Bubble renderer](../../core/pet_bubble.c) now uses a larger cell grid within the
+circular display, with brows, eyes, teeth and spikes alongside color symbols.
+Tap hit-testing follows the enlarged well. The watching pet holds the existing
+medicine and shot sprites and shakes them on actual virus removal or level clear,
+using its existing reaction timer rather than adding checkpoint fields. Reduced
+motion retains static props and expressions. The pace assist remains accessible
+on the right; the bottom contains the radial Back control without help text.
+
+The owner also requested shared movement/drop/clear sounds and automatic endings
+for Bubble Lab and Jelli Chain. Gameplay cues follow successful simulation changes,
+not queued input admission or repeated rendering. Rejected wall moves stay silent;
+virus removal takes priority over the landing cue. Distinct simulation outcomes
+bypass the menu-tap debounce, including the once-only loss cue immediately after a
+move. Chain keeps its eat/win cues and now sounds on successful movement.
+
+The [shared terminal sequence](../../core/pet_collectible_win.c) centers the happy
+pet for a short star celebration on final victory. Loss keeps the pet in place
+with an unhappy expression and tears, then returns automatically to cartridges.
+The owner requested approximately 2–3 seconds for victory and one second for loss;
+current durations live in the source. Intermediate Bubble levels continue play.
+Reopening a lost Bubble session retains the existing current-level retry semantics;
+no new loss/replay menu, care rewards or checkpoint slot was added.
+
+Bubble Rush is an original four-channel gameplay MOD authored by
+[the dedicated composer](../../tools/audio/create_bubble_music.py), using the
+existing synthesized instrument bank. The [music adapter](../../core/pet_music.c)
+routes it only during active, unpaused Bubble gameplay, respects the activity-music
+preference, stops on terminal states, and awards no record credit. The native
+export was checked against preview output; pinned-image music UI checks with
+screenshots enabled passed 9/9 without relaxing comparisons.
+
+Focused native rules, UI, ending, engine and navigation tests passed 6/6. New
+checks cover expanded-well taps, rejected-move silence, consecutive movement cues,
+drop/virus-clear priority, quiet repeated polling, loss cue debounce, automatic
+return timing, and unchanged play/win counts on loss. Native screenshots were
+inspected for the circular layout, readable counters and held props. Physical
+display/touch/audio behavior remains unverified.
+
+The expanded music routing and UI feedback initially crossed the strict function
+complexity budget. Named private helpers separate track selection, reaction timing
+and Bubble sound feedback; limits remain unchanged. The size gate and focused
+tests were rerun after extraction.

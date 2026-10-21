@@ -1,6 +1,7 @@
 #include "../core/pet_collectible_ui.h"
 #include "jelli/collectible.h"
 #include "jelli/save.h"
+#include "jelli/sound.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,8 +45,8 @@ static void finish_and_no_repeated_reward(void)
     CHECK(!ui.collectible_menu && ui.collectible_win_ms == 0u);
     CHECK(jelli_pet_collectible_win_update(&ui, &game, 900u));
     CHECK(ui.collectible_win_ms == 900u);
-    CHECK(jelli_pet_collectible_win_update(&ui, &game, 4499u));
-    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 4500u));
+    CHECK(jelli_pet_collectible_win_update(&ui, &game, 2499u));
+    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 2500u));
     CHECK(ui.page == JELLI_UI_GIFT_SHELF && ui.gift_category == 1u && !ui.gift_page);
     CHECK(!game.collectible.active && game.collectible.paused && ui.save_requested);
     CHECK(!jelli_pet_collectible_win_update(&ui, &game, 9000u));
@@ -76,7 +77,7 @@ static void paused_clock_and_reload(void)
     ui = (JelliPetUi){.page = JELLI_UI_COLLECTIBLE_PLAY};
     CHECK(jelli_pet_collectible_win_update(&ui, &game, 50000u));
     CHECK(ui.collectible_win_ms == 0u);
-    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 54500u));
+    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 52500u));
 }
 
 static void reduced_motion_is_static(void)
@@ -116,13 +117,45 @@ static void bubble_final_celebration(void)
     JelliPet before = game.pets[0];
     CHECK(jelli_pet_collectible_win_update(&ui, &game, 1u));
     CHECK(jelli_pet_collectible_win_update(&ui, &game, 900u));
-    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 4501u));
+    CHECK(!jelli_pet_collectible_win_update(&ui, &game, 2501u));
     CHECK(ui.page == JELLI_UI_GIFT_SHELF && ui.gift_category == 1u);
     CHECK(memcmp(before.needs, game.pets[0].needs, sizeof(before.needs)) == 0);
 }
 
+static void losses_return_without_replay_menu(void)
+{
+    const unsigned prizes[] = {JELLI_COLLECTIBLE_CHAIN_PRIZE, JELLI_COLLECTIBLE_BUBBLE_PRIZE};
+    for (unsigned i = 0u; i < 2u; ++i) {
+        jelli_game_init(&game);
+        jelli_pet_ui_init(&ui);
+        game.prizes.owned = game.prizes.discovered = 1u << prizes[i];
+        game.prizes.origin_pet[prizes[i]] = game.pets[0].id;
+        CHECK(jelli_collectible_play(&game, prizes[i]) == JELLI_OK);
+        if (i)
+            game.collectible.bubble.status = JELLI_BUBBLE_TOP;
+        else
+            game.collectible.chain.status = JELLI_CHAIN_LOST;
+        game.collectible.paused = true;
+        ui.page = JELLI_UI_COLLECTIBLE_PLAY;
+        ui.menu_open = true;
+        ui.sound_played = true;
+        ui.last_sound_ms = 999u; /* A recent move cannot swallow the loss sound. */
+        CHECK(jelli_game_valid(&game));
+        CHECK(jelli_pet_collectible_win_update(&ui, &game, 1000u));
+        CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 1000u) == JELLI_SOUND_SLEEPY + 1u);
+        CHECK(jelli_pet_collectible_win_update(&ui, &game, 1000u));
+        CHECK(!jelli_pet_ui_sound(&ui, &game.pets[0], 1000u));
+        CHECK(!ui.collectible_menu);
+        CHECK(jelli_pet_collectible_win_update(&ui, &game, 1999u));
+        CHECK(!jelli_pet_collectible_win_update(&ui, &game, 2000u));
+        CHECK(ui.page == JELLI_UI_GIFT_SHELF && !game.collectible.active);
+        CHECK(game.cartridge_stats[i].plays == 1u && !game.cartridge_stats[i].wins);
+    }
+}
+
 int main(void)
 {
+    losses_return_without_replay_menu();
     bubble_final_celebration();
     finish_and_no_repeated_reward();
     paused_clock_and_reload();

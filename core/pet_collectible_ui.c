@@ -65,6 +65,8 @@ static bool session_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton
 {
     if (!slot)
         return button(b, 185u, 414u, 96u, 52u, "BACK");
+    if (jelli_pet_collectible_lost(&ui->last_view.collectible))
+        return false;
     if (ui->last_view.collectible.mode == JELLI_COLLECTIBLE_BUBBLE && !ui->collectible_menu &&
         !ui->collectible_win_ms)
         return jelli_pet_bubble_button(ui, slot, b);
@@ -270,7 +272,7 @@ bool jelli_pet_collectible_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
     }
     if (ui->page == JELLI_UI_COLLECTIBLE_PLAY &&
         game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE && !game->collectible.paused &&
-        x >= 155 && x < 311 && y >= 87 && y < 347)
+        x >= 174 && x < 366 && y >= 50 && y < 370)
         jelli_pet_bubble_action(ui, game, 3u);
     return true;
 }
@@ -315,6 +317,7 @@ void jelli_pet_collectible_key(const JelliPetUi *ui, const JelliGame *game, Jell
     key->collectible_reduced_motion = ui->collectible_reduced_motion;
     key->collectible_menu = ui->collectible_menu;
     key->collectible_win_ms = ui->collectible_win_ms;
+    key->collectible_cheer_phase = (uint8_t)(game->pets[game->active].reaction_ticks / 2u % 2u);
 }
 
 static bool same_session(const JelliCollectibleSession *x, const JelliCollectibleSession *y)
@@ -330,7 +333,8 @@ static bool same_session(const JelliCollectibleSession *x, const JelliCollectibl
 
 bool jelli_pet_collectible_same(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->cartridge_plays == b->cartridge_plays && a->cartridge_wins == b->cartridge_wins &&
+    return a->collectible_cheer_phase == b->collectible_cheer_phase &&
+           a->cartridge_plays == b->cartridge_plays && a->cartridge_wins == b->cartridge_wins &&
            a->collectible_special == b->collectible_special &&
            a->collectible_record_rewarded == b->collectible_record_rewarded &&
            a->collectible_play_ticks == b->collectible_play_ticks &&

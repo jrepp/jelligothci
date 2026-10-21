@@ -558,8 +558,11 @@ After landing, each medicine half falls independently. Only the floor or a cell
 below supports it; a side neighbor never does. Clears and gravity resolve before
 testing the danger row or blocked spawn. Clear every virus to advance, then finish
 all three levels for the centered star celebration and automatic shelf return.
-A full well or exhausted supply offers Retry Level; completed levels and their
-score remain intact. A misplaced pair can be recovered with later matching pairs.
+A full well or exhausted supply shows the sad watching pet briefly, then returns
+to the cartridge shelf. Reopening Bubble Lab retries the current level; completed
+levels and their score remain intact. A misplaced pair can be recovered with later
+matching pairs. Both cartridge games return automatically after a short centered
+win celebration or a sad loss reaction, without a replay menu.
 
 The pace control cycles Normal, Relax, and Manual. Manual stops automatic falling;
 downward swipes still drop a pair. All modes have the same objectives and scoring.
@@ -591,3 +594,9 @@ Garden Drift outdoors, Tea Steam for meals/tea, Bubble Bath for washing/care,
 Moon Pillow for quiet/sleep moments, and Little Steps for play/exercise. They loop
 without collectible rewards and stop when the activity or launcher ends. The
 [MOD catalog](../content/music.json) can be edited in Jelli Art.
+
+Bubble Lab's watching pet holds the medicine and shot and shakes them after a
+virus clear. Angry faces and spikes distinguish viruses; symbols still identify
+matching colors. Successful moves, drops and clears use shared sound cues.
+Bubble Rush, the original MOD gameplay track, follows the Activity Music toggle
+and stops when play pauses or ends; sound effects retain the master-volume control.

@@ -80,15 +80,18 @@ void jelli_pet_chain_feedback(JelliPetUi *ui, const JelliCollectibleSession *bef
         after->mode != JELLI_COLLECTIBLE_CHAIN || before->pet_id != after->pet_id ||
         before->generation != after->generation || before->chain.status != JELLI_CHAIN_RUNNING)
         return;
+    if (after->chain.status == JELLI_CHAIN_LOST)
+        return; /* The one-shot terminal sequence owns the sad cue. */
     unsigned cue;
     if (after->chain.status == JELLI_CHAIN_WON)
         cue = JELLI_SOUND_SPARKLE;
-    else if (after->chain.status == JELLI_CHAIN_LOST)
-        cue = JELLI_SOUND_BACK;
     else if (after->chain.length > before->chain.length)
         cue = JELLI_SOUND_HAPPY;
+    else if (after->chain.body[0] != before->chain.body[0])
+        cue = JELLI_SOUND_BACK;
     else
         return;
     ui->sound_pending = true;
+    ui->sound_played = false; /* Distinct game steps are not repeated menu taps. */
     ui->sound_cue = (uint8_t)(cue + 1u);
 }

@@ -65,6 +65,11 @@
       "key": "little-steps",
       "name": "Little Steps",
       "style": "Play / exercise"
+    },
+    {
+      "key": "bubble-rush",
+      "name": "Bubble Rush",
+      "style": "Bubble Lab / chiptune"
     }
   ]
 }

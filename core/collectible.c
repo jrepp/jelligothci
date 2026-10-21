@@ -255,11 +255,11 @@ void jelli_collectible_tick(JelliGame *game)
             special_reaction(&game->pets[game->active]);
     }
     if (s->mode == JELLI_COLLECTIBLE_BUBBLE) {
-        unsigned score = s->bubble.score;
+        unsigned viruses = jelli_bubble_viruses(&s->bubble), level = s->bubble.level;
         jelli_collectible_bubble_step(&s->bubble);
         if (s->bubble.status == JELLI_BUBBLE_WON)
             jelli_cartridge_count_win(game);
-        if (s->bubble.score > score)
+        if (s->bubble.level > level || jelli_bubble_viruses(&s->bubble) < viruses)
             special_reaction(&game->pets[game->active]);
     }
     if (finished(s)) {

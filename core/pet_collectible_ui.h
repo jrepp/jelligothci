@@ -8,6 +8,7 @@ bool jelli_pet_collectible_tap(JelliPetUi *ui, JelliGame *game, int x, int y);
 bool jelli_pet_collectible_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy);
 void jelli_pet_collectible_back(JelliPetUi *ui);
 void jelli_pet_collectible_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game);
+bool jelli_pet_collectible_lost(const JelliCollectibleSession *session);
 bool jelli_pet_collectible_win_update(JelliPetUi *ui, JelliGame *game, uint64_t now);
 void jelli_pet_collectible_win_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game);
 void jelli_pet_collectible_session_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game);

@@ -1,4 +1,6 @@
 #include "game_fixture.h"
+#include "../core/pet_collectible_ui.h"
+#include "jelli/sound.h"
 #include "jelli/pet_engine.h"
 #include "jelli/collectible.h"
 #include <stdio.h>
@@ -154,7 +156,8 @@ static void bubble_controls_and_checkpoint_replacement(void)
     press(6u);
     CHECK(engine.game.collectible.bubble.assist == JELLI_BUBBLE_MANUAL);
     jelli_pet_ui_swipe(&engine.ui, &engine.game, -80, 0);
-    jelli_pet_ui_tap(&engine.ui, &engine.game, 230, 200);
+    jelli_pet_ui_tap(&engine.ui, &engine.game, 350,
+                     360); /* Newly enlarged well area rotates too. */
     CHECK(engine.game.collectible.bubble.input_count == 2u);
     jelli_collectible_tick(&engine.game);
     jelli_collectible_tick(&engine.game);
@@ -195,6 +198,48 @@ static void bubble_controls_and_checkpoint_replacement(void)
     CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_BUBBLE);
 }
 
+static void bubble_feedback(void)
+{
+    reset();
+    CHECK(jelli_collectible_play(&engine.game, JELLI_COLLECTIBLE_BUBBLE_PRIZE) == JELLI_OK);
+    engine.ui.page = JELLI_UI_COLLECTIBLE_PLAY;
+    engine.game.collectible.bubble.assist = JELLI_BUBBLE_MANUAL;
+    for (unsigned n = 0u; n < 3u; ++n) {
+        CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_LEFT) == JELLI_OK);
+        JelliCollectibleSession before = engine.game.collectible;
+        jelli_collectible_tick(&engine.game);
+        jelli_pet_bubble_checkpoint(&engine.ui, &before, &engine.game.collectible);
+        unsigned cue = jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], 100u + n * 100u);
+        CHECK(cue == (n < 2u ? JELLI_SOUND_BACK + 1u : 0u)); /* Wall rejects the third. */
+    }
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_DOWN) == JELLI_OK);
+    JelliCollectibleSession before = engine.game.collectible;
+    jelli_collectible_tick(&engine.game);
+    jelli_pet_bubble_checkpoint(&engine.ui, &before, &engine.game.collectible);
+    CHECK(jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], 400u) == JELLI_SOUND_CONFIRM + 1u);
+    before = engine.game.collectible;
+    unsigned virus = JELLI_BUBBLE_CELLS;
+    for (unsigned n = 0u; n < JELLI_BUBBLE_CELLS; ++n)
+        if (before.bubble.cells[n] >= 5u) {
+            virus = n;
+            break;
+        }
+    CHECK(virus < JELLI_BUBBLE_CELLS);
+    engine.game.collectible.bubble.cells[virus] = 0u;
+    jelli_pet_bubble_checkpoint(&engine.ui, &before, &engine.game.collectible);
+    CHECK(jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], 401u) == JELLI_SOUND_SPARKLE + 1u);
+    before = engine.game.collectible;
+    jelli_pet_bubble_checkpoint(&engine.ui, &before, &engine.game.collectible);
+    CHECK(!jelli_pet_ui_sound(&engine.ui, &engine.game.pets[0], 402u));
+    engine.game.collectible.bubble.status = JELLI_BUBBLE_TOP;
+    engine.game.collectible.paused = true;
+    CHECK(jelli_pet_collectible_win_update(&engine.ui, &engine.game, 1000u));
+    render();
+    snapshot("bubble-loss.ppm");
+    JelliPetUiButton button;
+    CHECK(!jelli_pet_ui_control(&engine.ui, 1u, false, &button));
+}
+
 static void background_music_setting(void)
 {
     reset();
@@ -212,6 +257,7 @@ static void background_music_setting(void)
 
 int main(void)
 {
+    bubble_feedback();
     background_music_setting();
     bubble_controls_and_checkpoint_replacement();
     playable_controls_and_pause();

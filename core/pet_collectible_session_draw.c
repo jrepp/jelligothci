@@ -25,23 +25,46 @@ static void controls(Canvas *c, const JelliPetUi *ui)
     }
 }
 
+static unsigned cheer_beat(const JelliPetUi *ui, const JelliGame *game, bool celebrate)
+{
+    if (ui->collectible_reduced_motion || game->collectible.paused)
+        return 0u;
+    if (game->collectible.mode == JELLI_COLLECTIBLE_RECORD)
+        return game->collectible.record_cursor / 11025u % 2u;
+    if (!celebrate)
+        return 0u;
+    unsigned ticks = game->collectible.elapsed_ticks;
+    if (game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE ||
+        game->collectible.mode == JELLI_COLLECTIBLE_CHAIN)
+        ticks = game->pets[game->active].reaction_ticks;
+    return ticks / 2u % 2u;
+}
+
 static void cheer(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
 {
     const JelliPet *pet = &game->pets[game->active];
-    bool celebrate = game->collectible.mode != JELLI_COLLECTIBLE_CHAIN ||
-                     pet->reaction == JELLI_REACTION_TOUCH_HAPPY;
-    const JelliClip *clip =
-        jelli_creature_clip(pet->form, celebrate ? JELLI_POSE_HAPPY : JELLI_POSE_IDLE);
+    bool lost = jelli_pet_collectible_lost(&game->collectible);
+    bool celebrate = !lost && ((game->collectible.mode != JELLI_COLLECTIBLE_CHAIN &&
+                                game->collectible.mode != JELLI_COLLECTIBLE_BUBBLE) ||
+                               pet->reaction == JELLI_REACTION_TOUCH_HAPPY);
+    const JelliClip *clip = jelli_creature_clip(pet->form, lost        ? JELLI_POSE_UNWELL
+                                                           : celebrate ? JELLI_POSE_HAPPY
+                                                                       : JELLI_POSE_IDLE);
     if (!clip || !clip->count)
         return;
-    unsigned beat = ui->collectible_reduced_motion || game->collectible.paused ? 0u
-                    : game->collectible.mode == JELLI_COLLECTIBLE_RECORD
-                        ? game->collectible.record_cursor / 11025u % 2u
-                    : celebrate ? game->collectible.elapsed_ticks / 2u % 2u
-                                : 0u;
+    unsigned beat = cheer_beat(ui, game, celebrate);
     unsigned frame = beat % clip->count;
     jelli_canvas_centered_sprite(c, clip->frames[frame], 94 + (beat ? 3 : 0),
                                  363 - (celebrate && beat ? 8 : 0), 3u);
+    if (game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE) {
+        int shake = beat ? 7 : 0;
+        jelli_canvas_centered_sprite(c, JELLI_ASSET_HEALTH_MEDICINE, 64, 353 - shake, 2u);
+        jelli_canvas_centered_sprite(c, JELLI_ASSET_HEALTH_SHOT, 134, 353 + shake, 2u);
+    }
+    if (lost) {
+        jelli_canvas_disk(c, 72, 368, 4, 0x4e9fu);
+        jelli_canvas_disk(c, 115, 371, 4, 0x4e9fu);
+    }
     bool special =
         (pet->collectible_progress.special_unlocked & (1u << game->collectible.prize)) != 0u;
     if (celebrate && game->collectible.mode == JELLI_COLLECTIBLE_CHAIN)
@@ -209,7 +232,7 @@ static void paused_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
 void jelli_pet_collectible_session_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
 {
     const JelliCollectibleSession *s = &game->collectible;
-    if (ui->collectible_win_ms) {
+    if (ui->collectible_win_anchor && !jelli_pet_collectible_lost(s)) {
         jelli_pet_collectible_win_draw(c, ui, game);
         controls(c, ui);
         return;
@@ -229,7 +252,7 @@ void jelli_pet_collectible_session_draw(Canvas *c, const JelliPetUi *ui, const J
         jelli_canvas_centered(c, "A LITTLE SHARED MOMENT", 298, 1u, PALE);
     }
     cheer(c, ui, game);
-    if (ui->collectible_menu)
+    if (ui->collectible_menu && !jelli_pet_collectible_lost(s))
         paused_draw(c, ui, game);
     controls(c, ui);
 }
