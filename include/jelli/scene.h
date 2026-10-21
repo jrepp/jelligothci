@@ -17,6 +17,9 @@ typedef struct {
     int16_t x, y;
     uint8_t tilt_x, tilt_y, travel;
     bool repeat_x, visible;
+    int8_t ambient_speed; /* Source pixels/second; independent of travel. */
+    uint16_t ambient_cycle_ms, bounce_ms;
+    uint8_t bounce;
 } JelliSceneLayer;
 
 typedef struct {
@@ -24,6 +27,7 @@ typedef struct {
     uint16_t fill;
     uint8_t count;
     JelliSceneLayer layers[JELLI_SCENE_LAYER_CAPACITY];
+    uint8_t activity; /* Stable activity ID + 1; zero means no automatic binding. */
 } JelliSceneDefinition;
 
 /* Borrowed native-endian RGB565 and MSB-first binary coverage. Capacities count
@@ -46,6 +50,7 @@ typedef struct {
     int32_t phase[JELLI_SCENE_LAYER_CAPACITY];
     int16_t x[JELLI_SCENE_LAYER_CAPACITY], y[JELLI_SCENE_LAYER_CAPACITY];
     uint16_t pixels[JELLI_SCENE_SIZE * JELLI_SCENE_SIZE];
+    int16_t ambient_x[JELLI_SCENE_LAYER_CAPACITY], ambient_y[JELLI_SCENE_LAYER_CAPACITY];
     uint32_t revision;
     bool dirty, ready;
 } JelliScene;
@@ -58,6 +63,8 @@ bool jelli_scene_init(JelliScene *scene, const JelliSceneDefinition *definition)
  * art left. Zero elapsed travel remains zero; callers own clocks and pacing. */
 void jelli_scene_advance(JelliScene *scene, int16_t tilt_x, int16_t tilt_y,
                          int32_t travel_delta_q8);
+/* Absolute elapsed presentation time; bounded modulo arithmetic, no catch-up loop. */
+void jelli_scene_animate(JelliScene *scene, uint64_t elapsed_ms);
 bool jelli_scene_images_valid(const JelliSceneDefinition *definition, const JelliSceneImage *images,
                               size_t count);
 /* Validates the complete set before writing. Failure preserves the previous

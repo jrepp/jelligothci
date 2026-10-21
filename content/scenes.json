@@ -258,6 +258,70 @@
         }
       ],
       "seed": 0
+    },
+    {
+      "key": "airplane",
+      "name": "Airplane cabin",
+      "fill": "#8ac3d1",
+      "activity": 24,
+      "layers": [
+        {
+          "asset": "backgrounds.airplane-sky",
+          "name": "Sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.airplane-clouds",
+          "name": "Clouds",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true,
+          "motion": {
+            "speed": -2,
+            "cycle_ms": 32000,
+            "bounce": 0,
+            "bounce_ms": 1000
+          }
+        },
+        {
+          "asset": "backgrounds.airplane-cabin",
+          "name": "Cabin",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.airplane-visitor",
+          "name": "Visitor",
+          "x": 80,
+          "y": 44,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true,
+          "motion": {
+            "speed": -16,
+            "cycle_ms": 12000,
+            "bounce": 3,
+            "bounce_ms": 600
+          }
+        }
+      ]
     }
   ]
 }

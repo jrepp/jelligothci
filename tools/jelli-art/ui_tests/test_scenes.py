@@ -244,13 +244,14 @@ def test_scene_keyboard_history_and_accessibility(creator):
     from test_views import AXE
     page=creator['page']
     open_scenes(page)
+    count = page.locator('#scene-select option').count()
     page.locator('#scene-copy').click()
-    expect(page.locator('#scene-select option')).to_have_count(4)
+    expect(page.locator('#scene-select option')).to_have_count(count + 1)
     page.locator('#scene-copy').focus()
     page.keyboard.press('ControlOrMeta+z')
-    expect(page.locator('#scene-select option')).to_have_count(3)
+    expect(page.locator('#scene-select option')).to_have_count(count)
     page.keyboard.press('ControlOrMeta+Shift+z')
-    expect(page.locator('#scene-select option')).to_have_count(4)
+    expect(page.locator('#scene-select option')).to_have_count(count + 1)
     page.locator('[data-number="x"]').fill('13')
     page.keyboard.press('ControlOrMeta+s')
     expect(page.locator('#scene-status')).to_have_text('Saved')
@@ -261,3 +262,33 @@ def test_scene_keyboard_history_and_accessibility(creator):
     violations=page.evaluate("""async () => (await axe.run(document.querySelector('#scenes'),
       {runOnly:{type:'tag',values:['wcag2a','wcag2aa']}})).violations.filter(v=>['serious','critical'].includes(v.impact))""")
     assert violations==[], violations
+
+
+def test_airplane_ambient_motion_and_palette_visitor(creator):
+    page = creator['page']
+    open_scenes(page)
+    page.locator('#scene-select').select_option('airplane')
+    page.locator('#scene-pet').uncheck()
+    page.locator('#scene-speed').fill('0')
+    before = page.locator('#scene-canvas').evaluate('(c)=>c.toDataURL()')
+    page.locator('#scene-play').click()
+    page.wait_for_function('(before)=>document.querySelector("#scene-canvas").toDataURL()!==before', arg=before)
+    page.locator('#scene-play').click()
+    frozen = page.locator('#scene-canvas').evaluate('(c)=>c.toDataURL()')
+    page.wait_for_timeout(250)
+    assert page.locator('#scene-canvas').evaluate('(c)=>c.toDataURL()') == frozen
+    page.locator('[data-layer="3"]').click()
+    page.get_by_text('Ambient motion', exact=True).click()
+    page.locator('[data-motion="bounce"]').fill('4')
+    page.locator('[data-motion="bounce"]').press('Tab')
+    page.locator('#scene-save').click()
+    expect(page.locator('#scene-status')).to_have_text('Saved')
+    doc = json.loads((creator['content'] / 'scenes.json').read_text())
+    airplane = next(s for s in doc['scenes'] if s['key'] == 'airplane')
+    assert airplane['activity'] == 24
+    assert airplane['layers'][-1]['motion']['bounce'] == 4
+    page.locator('#scene-copy').click()
+    page.locator('#scene-save').click()
+    expect(page.locator('#scene-status')).to_have_text('Saved')
+    doc = json.loads((creator['content'] / 'scenes.json').read_text())
+    assert 'activity' not in doc['scenes'][-1]

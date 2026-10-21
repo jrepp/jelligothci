@@ -210,6 +210,8 @@ typedef struct {
     bool effect_bound;
     JelliScene *scene; /* Optional caller-owned scene cache; outlives this binding. */
     const JelliAssetSet *scene_assets;
+    JelliScene *activity_scene; /* Optional caller-owned cache, never allocated by the UI. */
+    uint64_t scene_anchor_ms, scene_elapsed_ms;
     /* Borrowed immutable metadata; no runtime alpha scans or allocation. */
     const JelliAsset *actor_frame;
     JelliPetRewards rewards;
@@ -257,6 +259,7 @@ typedef struct {
     int16_t timezone_minutes, clock_adjust;
     bool save_requested, time_unavailable;
     uint8_t save_status;
+    bool scene_automatic, scene_clock_started;
     bool rendered, menu_open, clock_known;
     uint8_t stat_offset;
     bool sound_pending, sound_played;

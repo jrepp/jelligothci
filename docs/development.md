@@ -184,7 +184,8 @@ Per-layer fractional phases wrap by image width; quantization uses floor(x + 0.5
 [Pet scene selection](../include/jelli/pet_scene.h) is an optional presentation
 override, independent of saved locations. It validates every image before publishing
 and retains the previous complete cache if assets become unavailable. Clearing the
-override restores the flat location background. Pixel changes in a live asset set
+override restores automatic activity selection when bound, or the flat location
+background otherwise. Pixel changes in a live asset set
 must invalidate the UI as normal hot reload does. Render keys include the composed
 cache revision; quantized background changes cause a full redraw, and unchanged
 motion causes no extra damage. Actor/particle restoration samples the same cache.
@@ -201,7 +202,22 @@ and Space to pause. CLI `--tilt-x` / `--tilt-y` accept percentages;
 `--travel-speed` is signed source pixels per second. Defaults are neutral and still.
 The SDL adapter drops elapsed travel beyond its bounded stall window. Jelli Art's
 **Test saved scene in game** also runs this compositor with explicit scenario inputs.
-Firmware compiles the APIs but does not select a scene or acquire orientation yet.
+SDL, the preview tool and firmware bind a caller-owned activity scene cache.
+A scene may bind one stable activity ID; automatic selection clears on activity end,
+while explicit scene overrides take priority. No saved location IDs change.
+The [Traveling activity](../content/activities.json) selects the airplane cabin.
+Its manually initiated presentation has no rewards, costs or random selection;
+its duration remains an authored, adjustable presentation choice.
+
+Optional layer `motion` fields in the [schema](../tools/assets/scene_data.py) add
+independent ambient speed, cycle duration and triangular bounce. Non-repeating
+visitor artwork travels off screen between cycles; repeating clouds scroll behind
+the cabin's transparent porthole. The injected presentation clock freezes when
+paused, drops stall backlog, and resets after clock reversal. Integer modulo bounds
+all motion arithmetic; no per-frame allocation, RNG or spawn queue is added.
+Jelli Art's Ambient motion inspector previews the same transforms while Play travel
+runs, including at zero travel speed. Firmware still does not acquire orientation.
+See [airplane runtime evidence](../docs-cms/memos/memo-091-airplane-traveling.md).
 See [runtime measurements and validation](../docs-cms/memos/memo-080-background-scene-runtime.md).
 
 ## Bounded working storage

@@ -27,8 +27,14 @@ def validate(doc, manifest):
         raise ValueError(f"Choose 1..{MAX_SCENES} scenes")
     assets = {a["key"]: a for a in manifest["assets"]}
     keys = set()
+    activities = set()
     for scene in doc["scenes"]:
-        fields(scene, "key name fill layers", "Scene", "seed")
+        fields(scene, "key name fill layers", "Scene", "seed activity")
+        if "activity" in scene:
+            integer(scene["activity"], 0, 31, "Activity ID")
+            if scene["activity"] in activities:
+                raise ValueError("Only one scene may bind an activity")
+            activities.add(scene["activity"])
         integer(scene.get("seed", 0), 0, 65535, "Scene seed")
         if not isinstance(scene["key"], str) or not KEY.fullmatch(scene["key"]) or scene["key"] in keys:
             raise ValueError("Scene keys must be unique lowercase identities")
@@ -40,7 +46,14 @@ def validate(doc, manifest):
         if not isinstance(scene["layers"], list) or not 1 <= len(scene["layers"]) <= MAX_LAYERS:
             raise ValueError(f"Choose 1..{MAX_LAYERS} layers")
         for layer in scene["layers"]:
-            fields(layer, "asset x y tilt_x tilt_y travel repeat_x visible", "Layer", "name random")
+            fields(layer, "asset x y tilt_x tilt_y travel repeat_x visible", "Layer", "name random motion")
+            if "motion" in layer:
+                motion = layer["motion"]
+                fields(motion, "speed cycle_ms bounce bounce_ms", "Ambient motion")
+                integer(motion["speed"], -32, 32, "Ambient speed")
+                integer(motion["cycle_ms"], 1, 60000, "Ambient cycle")
+                integer(motion["bounce"], 0, 8, "Bounce height")
+                integer(motion["bounce_ms"], 200, 4000, "Bounce period")
             if "name" in layer and (not isinstance(layer["name"], str) or
                                     not layer["name"].strip() or len(layer["name"]) > 48):
                 raise ValueError("Layer names need 1..48 characters")
@@ -108,16 +121,21 @@ def resolve_layer(scene, layer):
     return result
 
 
-def emit(doc, manifest):
+def emit(doc, manifest, activities=None):
     """Resolve keys once at build time; the renderer never parses JSON."""
     validate(doc, manifest)
+    if activities is not None:
+        ids = {m["id"] for m in activities["moments"]}
+        for scene in doc["scenes"]:
+            if "activity" in scene and scene["activity"] not in ids:
+                raise ValueError("Scene binding references an unknown activity")
     assets = {a["key"]: a for a in manifest["assets"]}
     lines = ['#include "jelli/scene.h"', 'const JelliSceneDefinition jelli_scene_definitions[] = {']
     for scene in doc["scenes"]:
         r, g, b = bytes.fromhex(scene["fill"][1:])
         fill = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
         lines.append(f'    {{.key = {json.dumps(scene["key"])}, .fill = {fill}u, '
-                     f'.count = {len(scene["layers"])}u, .layers = {{')
+                     f'.activity = {scene.get("activity", -1) + 1}u, .count = {len(scene["layers"])}u, .layers = {{')
         for authored in scene["layers"]:
             layer = resolve_layer(scene, authored)
             asset = assets[layer["asset"]]
@@ -125,6 +143,9 @@ def emit(doc, manifest):
                       str(layer["x"]), str(layer["y"]), f'{layer["tilt_x"]}u',
                       f'{layer["tilt_y"]}u', f'{layer["travel"]}u',
                       str(layer["repeat_x"]).lower(), str(layer["visible"]).lower()]
+            motion = layer.get("motion", {"speed": 0, "cycle_ms": 0, "bounce": 0, "bounce_ms": 0})
+            values.extend([str(motion["speed"]), str(motion["cycle_ms"]),
+                           str(motion["bounce_ms"]), str(motion["bounce"])])
             lines.append("        {" + ", ".join(values) + "},")
         lines.append("    }},")
     lines.extend(["};", f'const unsigned jelli_scene_definition_count = {len(doc["scenes"])}u;'])
