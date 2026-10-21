@@ -155,5 +155,12 @@ state, then passed with the correction. It advances both normal and relaxed runs
 through repeated automatic falls and verifies game validity and save encode/decode
 on every tick. Focused desktop and sanitizer rules, save, launch and celebration
 checks each passed 6/6; the incremental firmware build and documentation checks
-also passed. Live unsaved-state recovery is a separate operation; this code correction
-does not claim that an already-running invalid session has been recovered.
+also passed.
+
+The live process was inspected separately with LLDB: the preserved running board
+had score 180, supply cursor 8, relaxed assistance and timer 16. After backing up
+the engine memory, a guarded repair reset only the timer, paused the session and
+requested a save. The debug interface then reported `SAVED`, and the save slot's
+modification time advanced. The desktop could then restart with the corrected
+binary and preserved board. This recovery evidence does not establish physical
+device behavior or replace the automatic-fall regression.
