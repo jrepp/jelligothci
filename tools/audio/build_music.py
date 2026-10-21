@@ -5,6 +5,7 @@ uses rational tick timing; phase is Q16 and never depends on render blocks.
 """
 from fractions import Fraction
 from pathlib import Path
+import json
 import argparse
 import importlib.util
 import struct
@@ -111,6 +112,11 @@ def build(root, output):
              'typedef struct { const int8_t *pcm; uint16_t length, loop_start, loop_length; } MusicSample;',
              'typedef struct { const MusicSpan *spans; uint16_t count; } MusicChannel;',
              'typedef struct { MusicSample samples[31]; MusicChannel channels[4]; } MusicScore;']
+    catalog = json.loads((root / "content/music.json").read_text())["songs"]
+    if tuple(song["key"] for song in catalog) != tuple(KEYS):
+        raise ValueError("Music IDs must match the append-only compiled catalog")
+    lines.append("static const char *const music_names[] = {" +
+                 ",".join(json.dumps(song["name"]) for song in catalog) + "};")
     scores = []
     for song, key in enumerate(KEYS):
         doc = codec.decode((root / 'content/music' / (key + '.mod')).read_bytes())

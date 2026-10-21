@@ -543,6 +543,28 @@ directly from their shelf. Bottom radial Back returns to the shelf, and desktop
 focus loss pauses play. Resume continues without toggling the separate Space
 debug pause.
 
+### Tunes and rare records
+
+Records now includes the activity and game tunes you have encountered, alongside
+rare collectible records. Rare records have a golden border and still need their
+normal acquisition or crafting route; missing records retain their recipe details.
+Encountered tunes appear as plain disks marked TUNE. Tap either available entry to
+play it directly in the café with your pet. Previous/Next and bottom Back retain
+the usual shelf navigation.
+
+Encountering a tune counts even with background music off, master volume muted,
+or no audio device. The library remembers encounters across restarts. Existing
+saves begin with no encountered tunes because older versions did not record that
+history; revisit an activity or game to discover its music. The current tracks
+come from the [music catalog](../content/music.json).
+
+Only rare collectible records provide morale benefits. Replaying an encountered
+tune gives no morale, gifts, special-record unlocks or play-time credit, and keeps
+your saved cartridge session intact. Library replay starts afresh after restarting
+the app. Focus loss pauses it; Resume continues, and sleep/care interruptions return
+to the shelf. Explicit library playback uses master volume independently of the
+background-music toggle.
+
 ### Bubble Lab
 
 Craft the Bubble Lab cartridge from its recipe in the unowned cartridge card.

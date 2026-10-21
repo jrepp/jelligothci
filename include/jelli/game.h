@@ -138,6 +138,7 @@ typedef struct {
     JelliSleepLog sleep_log;
     JelliPrizes prizes;
     JelliCollectibleSession collectible;
+    uint16_t tunes_seen; /* Append-only background music IDs; rare records remain prizes. */
     JelliCartridgeStats cartridge_stats[JELLI_CARTRIDGE_COUNT];
     uint64_t ticks, discarded_ms, resume_remaining_ms;
     uint32_t backlog_ms, revision;

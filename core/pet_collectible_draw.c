@@ -1,4 +1,5 @@
 #include "pet_collectible_ui.h"
+#include "pet_tune_library.h"
 #include "jelli/collectible.h"
 #include <stdio.h>
 #include <string.h>
@@ -38,6 +39,8 @@ static unsigned collected(const JelliGame *game, unsigned category)
         unsigned prize = jelli_pet_collectible_prize(category, i);
         count += (game->prizes.owned & (1u << prize)) ? 1u : 0u;
     }
+    if (category == 2u)
+        count += jelli_pet_library_count(game->tunes_seen) - JELLI_COLLECTIBLE_RECORD_COUNT;
     return count;
 }
 
@@ -49,34 +52,22 @@ static void categories_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *ga
         control(c, ui, i + 1u, false);
         char count[24];
         int n = snprintf(count, sizeof(count), "COLLECTED %u/%u", collected(game, i),
-                         jelli_pet_collectible_count(i));
+                         i == 2u ? jelli_pet_library_count(game->tunes_seen)
+                                 : jelli_pet_collectible_count(i));
         if (n > 0 && (size_t)n < sizeof(count))
             jelli_canvas_centered(c, count, 162 + (int)i * 86, 1u, PALE);
     }
 }
 
-static void record_card(Canvas *c, const JelliPetUiButton *b, unsigned prize, bool owned)
-{
-    int x = (int)b->bounds.x, y = (int)b->bounds.y;
-    c->dim = !owned;
-    jelli_canvas_centered_sprite(c, jelli_prizes[prize].asset, x + 58, y + 45, 3u);
-    c->dim = false;
-    const char *name = jelli_prizes[prize].name;
-    const char *space = strchr(name, ' ');
-    size_t first = space ? (size_t)(space - name) : strlen(name);
-    char word[25];
-    if (first >= sizeof(word))
-        return;
-    memcpy(word, name, first);
-    word[first] = '\0';
-    jelli_canvas_text(c, word, x + 58 - (int)first * 8, y + 90, 2u, PALE);
-    if (space)
-        jelli_canvas_text(c, space + 1, x + 58 - (int)strlen(space + 1) * 8, y + 114, 2u, PALE);
-}
-
 static void shelf_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
 {
     unsigned category = ui->gift_category < 3u ? ui->gift_category : 0u;
+    if (category == 2u) {
+        jelli_pet_library_draw(c, ui, game);
+        control(c, ui, 5u, false);
+        control(c, ui, 6u, false);
+        return;
+    }
     jelli_canvas_heading(c, categories[category], 40, 2u);
     char count[24];
     int n = snprintf(count, sizeof(count), "%u/%u COLLECTED - %u/%u", collected(game, category),
@@ -90,10 +81,7 @@ static void shelf_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
             continue;
         unsigned prize = jelli_pet_collectible_prize(category, ui->gift_page * 4u + slot - 1u);
         bool owned = (game->prizes.owned & (1u << prize)) != 0u;
-        if (category == 2u) {
-            record_card(c, &b, prize, owned);
-            continue;
-        }
+
         jelli_canvas_rect(c, (int)b.bounds.x, (int)b.bounds.y, 140, 100, INK);
         jelli_canvas_rect(c, (int)b.bounds.x + 2, (int)b.bounds.y + 2, 136, 96, BG);
         c->dim = !owned;
@@ -206,6 +194,11 @@ static void focus(Canvas *c, const JelliPetUi *ui)
 void jelli_pet_collectible_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
 {
     jelli_canvas_rect(c, 0, 0, JELLI_WIDTH, JELLI_HEIGHT, BG);
+    if (ui->page == JELLI_UI_TUNE_PLAY) {
+        jelli_pet_tune_draw(c, ui, game);
+        focus(c, ui);
+        return;
+    }
     if (ui->page == JELLI_UI_COLLECTIBLE_PLAY) {
         jelli_pet_collectible_session_draw(c, ui, game);
         focus(c, ui);

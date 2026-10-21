@@ -196,7 +196,10 @@ static void legacy_and_invalid_payload(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     test_game_pair(&save.game);
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
-    CHECK(size > 61u);
+    CHECK(size > 63u);
+    memmove(bytes + size - 10u, bytes + size - 8u, 8u);
+    size -= 2u;
+    bytes[4] = 18u;
     memmove(bytes + size - 61u, bytes + size - 8u, 8u);
     size -= 53u;
     bytes[4] = 17u;
@@ -207,7 +210,10 @@ static void legacy_and_invalid_payload(void)
     save.game.prizes.origin_pet[JELLI_COLLECTIBLE_BUBBLE_PRIZE] = save.game.pets[0].id;
     CHECK(jelli_collectible_play(&save.game, JELLI_COLLECTIBLE_BUBBLE_PRIZE) == JELLI_OK);
     size = jelli_save_encode(&save, bytes, sizeof(bytes));
-    CHECK(size);
+    CHECK(size > 10u);
+    memmove(bytes + size - 10u, bytes + size - 8u, 8u);
+    size -= 2u;
+    bytes[4] = 18u;
     bytes[size - 61u] = 1u; /* Earlier v18 prototype lacks cartridge statistics. */
     memmove(bytes + size - 17u, bytes + size - 8u, 8u);
     size -= 9u;
@@ -216,7 +222,10 @@ static void legacy_and_invalid_payload(void)
     CHECK(jelli_bubble_same(&loaded.game.collectible.bubble, &save.game.collectible.bubble));
     CHECK(!loaded.game.cartridge_stats[1].plays);
     size = jelli_save_encode(&save, bytes, sizeof(bytes));
-    CHECK(size);
+    CHECK(size > 10u);
+    memmove(bytes + size - 10u, bytes + size - 8u, 8u);
+    size -= 2u;
+    bytes[4] = 18u;
     bytes[size - 61u] = 4u; /* Unknown content identity preserves output. */
     repair(bytes, size);
     loaded.sequence = 123u;

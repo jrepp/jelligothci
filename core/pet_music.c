@@ -1,6 +1,7 @@
 #include "jelli/pet_engine.h"
 #include "jelli/collectible.h"
 #include "jelli/activities.h"
+#include "pet_tune_library.h"
 #include <string.h>
 
 void jelli_pet_bind_music(JelliPetEngine *engine, JelliMusicDriver driver)
@@ -137,7 +138,7 @@ static uint8_t background_song(const JelliPetEngine *engine)
 {
     const JelliPetUi *ui = &engine->ui;
     const JelliPet *pet = &engine->game.pets[engine->game.active];
-    if (!engine->game.activity_music_enabled || engine->paused || engine->game.resuming)
+    if (engine->paused || engine->game.resuming)
         return UINT8_MAX;
     if (bubble_selected(engine))
         return JELLI_MUSIC_BUBBLE;
@@ -169,13 +170,65 @@ static uint8_t background_song(const JelliPetEngine *engine)
     }
 }
 
+static void discover_tune(JelliPetEngine *engine, unsigned song)
+{
+    if (song < JELLI_MUSIC_LAUNCH || song >= JELLI_MUSIC_TRACK_COUNT)
+        return;
+    uint16_t bit = (uint16_t)(UINT32_C(1) << song);
+    if (engine->game.tunes_seen & bit)
+        return;
+    engine->game.tunes_seen |= bit;
+    ++engine->game.revision;
+    engine->ui.save_requested = true;
+    engine->ui.save_status = JELLI_SAVE_PENDING;
+}
+
+static void tune_sync(JelliPetEngine *engine)
+{
+    JelliTunePlayback *tune = &engine->ui.tune;
+    unsigned song = tune->song - 1u;
+    if (engine->paused || engine->game.resuming) {
+        tune->paused = true;
+        tune->anchor_ms = 0u;
+    }
+    bool wanted = engine->ui.menu_open && engine->ui.page == JELLI_UI_TUNE_PLAY && !tune->paused &&
+                  tune->pet_id == engine->game.pets[engine->game.active].id &&
+                  !engine->game.pets[engine->game.active].asleep &&
+                  engine->game.pets[engine->game.active].activity == JELLI_IDLE &&
+                  song >= JELLI_MUSIC_LAUNCH && song < JELLI_MUSIC_TRACK_COUNT &&
+                  (engine->game.tunes_seen & (UINT32_C(1) << song));
+    if (!wanted) {
+        if (engine->music_running && send_command(engine, JELLI_MUSIC_STOP, 0u, engine->music_song))
+            engine->music_running = false;
+        return;
+    }
+    uint32_t cursor = (uint32_t)((uint64_t)tune->elapsed_ms * JELLI_MUSIC_RATE / 1000u);
+    if (!engine->music_running || engine->music_song != song || engine->music_pet != tune->pet_id ||
+        engine->music_generation != tune->generation) {
+        if (send_command(engine, JELLI_MUSIC_START, cursor, (uint8_t)song)) {
+            engine->music_running = true;
+            engine->music_pet = tune->pet_id;
+            engine->music_generation = tune->generation;
+        }
+    } else if (engine->music_volume != engine->game.volume)
+        (void)send_command(engine, JELLI_MUSIC_VOLUME, cursor, (uint8_t)song);
+}
+
 void jelli_pet_music_sync(JelliPetEngine *engine)
 {
+    if (engine->ui.tune.song) {
+        tune_sync(engine);
+        return;
+    }
     if (record_selected(engine) && !engine->game.collectible.paused) {
         record_sync(engine);
         return;
     }
     uint8_t song = background_song(engine);
+    /* Encounter follows the visible activity, even with music muted or no audio driver. */
+    discover_tune(engine, song);
+    if (!engine->game.activity_music_enabled)
+        song = UINT8_MAX;
     if (song == UINT8_MAX) {
         if (engine->music_running && send_command(engine, JELLI_MUSIC_STOP, 0u, engine->music_song))
             engine->music_running = false;

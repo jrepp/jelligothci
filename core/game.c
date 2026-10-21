@@ -6,6 +6,7 @@
 #include "jelli/activities.h"
 #include "jelli/behavior.h"
 #include "jelli/collectible.h"
+#include "jelli/music.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -153,7 +154,8 @@ static bool game_header_valid(const JelliGame *game)
            jelli_prizes_valid(&game->prizes) && game->count >= 1u &&
            game->count <= JELLI_PET_CAPACITY && game->active < game->count &&
            game->food <= JELLI_STACK_LIMIT && game->gifts <= JELLI_STACK_LIMIT &&
-           game->backlog_ms <= 2000u && game->resume_remaining_ms <= JELLI_OFFLINE_CAP_MS &&
+           !(game->tunes_seen & ~JELLI_MUSIC_SEEN_MASK) && game->backlog_ms <= 2000u &&
+           game->resume_remaining_ms <= JELLI_OFFLINE_CAP_MS &&
            (!game->resuming || game->resume_remaining_ms != 0u) &&
            (game->resuming || game->resume_remaining_ms == 0u);
 }
