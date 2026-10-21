@@ -222,7 +222,7 @@ static void silent_play_and_interruption(void)
     engine.ui.collectible_reduced_motion = true;
     jelli_pet_music_sync(&engine); /* No audio driver: visual playback remains available. */
     jelli_pet_gallery_update(&engine.ui, &engine.game, 0u);
-    jelli_pet_gallery_update(&engine.ui, &engine.game, 30000u);
+    jelli_pet_gallery_update(&engine.ui, &engine.game, 35000u); /* Overshoot clamps at the end. */
     CHECK(engine.ui.tune.paused && engine.ui.tune.elapsed_ms == 30000u);
     engine.game.pets[0].asleep = true;
     jelli_pet_gallery_update(&engine.ui, &engine.game, 30001u);

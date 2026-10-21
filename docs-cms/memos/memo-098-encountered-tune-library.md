@@ -71,6 +71,19 @@ resolution. This is desktop rendering evidence, not physical display/touch or
 audio-listening evidence. No live desktop process, user save or physical device
 was modified.
 
+PR84 CI then exposed a strict GCC `-Wconversion` failure in the tune timer:
+compound assignment promoted the addition to `int` before implicitly narrowing
+back to `uint16_t`, despite a cast on the increment. Earlier AppleClang desktop
+and sanitizer builds had accepted that expression. Debian GCC 12.2 reproduced
+the exact failure with the project warning flags. The remedy explicitly casts
+the final duration-bounded sum at assignment, preserving the timer behavior.
+The regression now also overshoots the duration to check clamping; existing
+coverage checks the exact boundary and pause/resume behavior. Both corrected
+source and test compile with those GCC flags, and the four focused tune-library,
+music, gallery and collectible-UI tests pass in desktop and sanitizer builds.
+The updated PR revision still requires its own CI result; local verification
+alone does not establish that the required checks pass.
+
 # Verification and resource measurements
 
 - Core configuration: 47/47 tests passed after the shared fixture correction.

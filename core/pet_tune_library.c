@@ -173,7 +173,9 @@ void jelli_pet_tune_update(JelliPetUi *ui, const JelliGame *game, uint64_t now)
         ui->tune.anchor_ms = now == UINT64_MAX ? UINT64_MAX : now + 1u;
     uint64_t elapsed = now - (ui->tune.anchor_ms - 1u);
     unsigned remaining = JELLI_TUNE_DURATION_MS - ui->tune.elapsed_ms;
-    ui->tune.elapsed_ms += (uint16_t)(elapsed > remaining ? remaining : elapsed);
+    /* Clamp before narrowing the final sum; integer promotion also applies to +=. */
+    ui->tune.elapsed_ms =
+        (uint16_t)(ui->tune.elapsed_ms + (elapsed > remaining ? remaining : elapsed));
     ui->tune.anchor_ms = now == UINT64_MAX ? UINT64_MAX : now + 1u;
     if (ui->tune.elapsed_ms >= JELLI_TUNE_DURATION_MS)
         ui->tune.paused = true;
