@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.14.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.13.0...jelli-art-v0.14.0) (2026-10-21)
+
+
+### Features
+
+* add Bubble Lab cartridge and activity soundtracks ([ba25282](https://github.com/jrepp/jelligothci/commit/ba2528293194cb68fc1e024ff47d363772695920))
+* animate cartridge launches and refine activity audio ([2831daa](https://github.com/jrepp/jelligothci/commit/2831daaf1c3944e558dc71ffc0434aa35e1d6338))
+
 ## [0.13.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.12.0...jelli-art-v0.13.0) (2026-10-21)
 
 
