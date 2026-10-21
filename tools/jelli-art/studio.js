@@ -1173,8 +1173,11 @@
       const active = hex === null ? state.tool === 'eraser' : state.tool !== 'eraser' && state.color === hex && here;
       if (active && hex && lowContrast(hex, a)) { b.classList.add('faint'); title += ` · hard to see on the ${backdropFor(a)} backdrop`; b.title = title; }
       if (state.color2 === hex) { b.classList.add('second'); title += ' · secondary colour'; b.title = title; }
-      b.setAttribute('aria-pressed', String(active)); b.setAttribute('role', 'button'); b.setAttribute('aria-label', title);
-      b.innerHTML = `<span class="sw ${hex ? '' : 'eraser-sw'}" style="${hex ? `background:${hex}` : ''}"></span><span>${title.split(' · ')[0]}</span><span>${sub}</span>`;
+      const [chipName, ...chipDetails] = title.split(' · ');
+      // Include the visible usage count so voice-control names match the chip's text.
+      b.setAttribute('aria-pressed', String(active)); b.setAttribute('role', 'button');
+      b.setAttribute('aria-label', [`${chipName} ${sub}`, ...chipDetails].join(' · '));
+      b.innerHTML = `<span class="sw ${hex ? '' : 'eraser-sw'}" style="${hex ? `background:${hex}` : ''}"></span><span>${chipName}</span> <span>${sub}</span>`;
       b.onclick = e => {
         if (chipNoClick) { chipNoClick = false; return; }  // the click that ends a long press
         if (e.shiftKey && hex) { state.isolate = state.isolate === hex ? null : hex; return draw(); }

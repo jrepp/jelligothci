@@ -128,3 +128,27 @@ these hooks do not establish browser behavior, third-party dependency presence,
 OS compatibility or successful packaged startup. The full image smoke test
 remains in CI. Authoring instructions are in
 [CONTRIBUTING.md](../../CONTRIBUTING.md#jelli-art-packaging-and-pr-validation).
+
+# Final UI gate remediation
+
+The completed pinned CI UI job in run 39539443992 reported 292 passing cases
+and 11 failures: ten expected screenshot changes and a tablet Paint palette
+accessible-name mismatch. Local screenshot comparison had been disabled, so
+local results did not establish the visual gate. The image job on the follow-up
+[run 39540426054](https://github.com/jrepp/jelligothci/actions/runs/39540426054)
+passed after packaging the missing dependency.
+
+All ten reference screenshots were compared visually with the failed run's
+Linux/AMD64 artifacts before copying the reviewed PNGs into the baselines.
+They reflect the responsive header and inherited scene preview changes.
+The palette fix includes visible usage counts in accessible names and adds an
+actual text separator between the name and count spans; changing only the ARIA
+label still failed because the visible text nodes were concatenated. The final
+focused palette tests passed on desktop, tablet and phone. Accessibility trees
+were regenerated in the pinned Playwright image, and the axe baseline only
+removes resolved violations; no new exclusions were accepted.
+
+The additional regression checks assert the visible count and accessible name
+and run axe. The pinned-image verification run passed 37 cases covering all view checks,
+responsive navigation and the palette regressions (snapshot update mode off).
+Full current-revision GitHub validation remains the merge gate.

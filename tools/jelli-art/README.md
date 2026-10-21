@@ -73,6 +73,11 @@ Panels use `window.JelliShell`, which exists when their script loads:
 | `registerMode({id, label, view})` | Adds a tab that shows `state.view === view`. A button added to `#views` gets a tab automatically. |
 | `activateMode(id)`, `openHelp()`, `setTheme('auto'\|'dark'\|'light'\|'contrast')`, `showGuide(bool)` | Switch mode, open the overlay, change the theme, show or hide the guide. |
 
+When authoring controls, include their visible label and any visible count in
+an explicit accessible name. Keep word separators between adjacent text spans;
+visual line breaks alone do not guarantee separated accessible text. Check the
+real rendered control with axe rather than adding an exclusion for a mismatch.
+
 Space or Enter on a button reached with the keyboard activates it. After a
 click, holding Space still peeks at the before image. An element with
 `role="button"` that has no `onkeydown` handler also gets Enter and Space. For
