@@ -15,10 +15,10 @@ def compose():
     leads, bank = sample_bank()
     voices = [('Arcade lead', leads[3][::4], 37, True),
               ('Spark arps', leads[6][::4], 19, True),
-              ('Bounce bass', bank['bass'], 37, True),
-              ('Kick', bank['kick'], 48, False),
+              ('Sine sub bass', bank['sub_bass'], 31, True),
+              ('Tight drive kick', bank['tight_kick'], 48, False),
               ('Snare', bank['snare'], 39, False),
-              ('Hat', bank['brush'], 15, False)]
+              ('Metal hat', bank['metal_hat'], 15, False)]
     samples = [dict(name=n, pcm=p, volume=v, loop_start=0,
                     loop_length=len(p) if loop else 0) for n, p, v, loop in voices]
     samples += [dict(name='', pcm=[], volume=0, loop_start=0, loop_length=0)
@@ -44,9 +44,13 @@ def compose():
                 cells[0].update(effect=12, param=18)
             elif row % 4 == 3:
                 cells[0].update(effect=12, param=0)
-            cells[1].update(sample=2, period=chord[(row + phrase) % 3] // 2)
+            # Answer the existing hook's rests, then thicken the later phrases.
+            if phrase >= 2 or row % 2 == 0 or not note:
+                cells[1].update(sample=2, period=chord[(row + phrase) % 3] // 2)
             if row % 4 == 0:
                 cells[2].update(sample=3, period=chord[0] * (2 if row % 16 < 8 else 1))
+            elif row % 16 == 14:
+                cells[2].update(sample=3, period=chord[2] * 2, effect=12, param=25)
             elif row % 4 == 3:
                 cells[2].update(effect=12, param=0)
             drum = 4 if row % 16 in (0, 10) else 5 if row % 16 == 8 else 6

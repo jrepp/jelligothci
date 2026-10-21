@@ -51,6 +51,29 @@ SONGS = (('morning-tea', 'Morning Tea', 120, 0, 22,
   (0, 0, 5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0, 5, 0)))
 
 
+def classical_row(row, index, pattern, melody):
+    """Original phrase contrast over broken chords; preserve the existing pitch vocabulary."""
+    row[0] = dict(sample=0, period=0, effect=0, param=0)
+    spacing = 4 if pattern == 0 else 2
+    if index % spacing == 0:
+        row[0].update(sample=1, period=melody[index // 2])
+    if index % 16 == 14:
+        row[0] = dict(sample=0, period=0, effect=12, param=0)
+    chords = ((856, 678, 570), (508, 428, 339), (640, 508, 428), (570, 453, 381))
+    chord = chords[index // 16]
+    if index % 2 == 0:
+        row[1].update(sample=2, period=chord[(0, 2, 1, 2)[index // 2 % 4]],
+                      effect=12, param=25)
+    # A quiet sustained upper chord tone balances the active bass figure.
+    row[2] = dict(sample=0, period=0, effect=0, param=0)
+    if index % 16 == 0:
+        row[2].update(sample=1, period=chord[0] // 2, effect=12, param=13)
+    elif index % 16 == 12:
+        row[2].update(effect=12, param=0)
+    if row[3]['sample']:
+        row[3].update(effect=12, param=8)
+
+
 def compose(song):
     key, title, tempo, lead, kick_volume, melody, bass, drums, brush = song
     leads, bank = music_samples.sample_bank()
@@ -81,6 +104,8 @@ def compose(song):
                 row[2].update(sample=drums[index % 16], period=160)
             if brush[index % 16]:
                 row[3].update(sample=brush[index % 16], period=160)
+            if key == 'garden-waltz':
+                classical_row(row, index, pattern_index, melody)
             if index == 0 and pattern_index == 0:
                 row[2].update(effect=15, param=tempo)
                 row[3].update(effect=15, param=6)
@@ -94,9 +119,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output-dir', type=Path, required=True,
                         help='Explicit destination for generated starter MODs')
+    parser.add_argument('--song', choices=[song[0] for song in SONGS],
+                        help='Regenerate only the selected original starter')
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for song in SONGS:
+        if args.song and song[0] != args.song:
+            continue
         key, data = compose(song)
         (args.output_dir / f'{key}.mod').write_bytes(data)
 

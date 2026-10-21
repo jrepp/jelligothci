@@ -752,6 +752,12 @@ pitch, and the UI states this before import. Odd sample lengths receive a silent
 padding byte. Loops use even byte offsets/lengths; zero disables looping. The
 codec enforces per-sample and combined sample budgets.
 
+Iron Pulse exposes the original Tight drive kick, Metal hat, Clap, Acid pulse bass
+and Sine sub bass in this same sample manager. Bubble Rush also uses the new kick,
+hat and sub-bass. These are synthesized PCM instruments embedded in the authored
+MOD files; select their slots to audition or edit them. Their source is
+[`tools/audio/music_samples.py`](../audio/music_samples.py).
+
 Import MOD replaces the unsaved editor document after confirmation when needed;
 Export MOD downloads the current edits without saving. **Save MOD** uses the
 normal hash conflict confirmation, dirty indicator, recoverable local draft and

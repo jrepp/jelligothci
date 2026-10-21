@@ -70,3 +70,19 @@ def test_music_mod_export_sample_manager_and_accessibility(creator):
     page.keyboard.press('q');expect(page.locator('#mu-grid [data-row="5"][data-channel="2"]')).to_be_focused()
     page.locator('#mu-copy').click();page.locator('#mu-new').click();page.locator('#mu-paste').click()
     expect(page.locator('#mu-pattern')).to_have_value('2')
+
+
+def test_music_workout_new_sample_palette(creator):
+    page=creator['page'];open_music(page)
+    page.locator('#mu-song').select_option('iron-pulse')
+    expect(page.locator('#mu-title')).to_have_value('Iron Pulse')
+    doc=music_mod.decode((creator['content']/'music/iron-pulse.mod').read_bytes())
+    for name in ('Tight drive kick', 'Metal hat', 'Clap', 'Acid pulse bass', 'Sine sub bass'):
+        slot=next(i for i,sample in enumerate(doc['samples'],1) if sample['name']==name)
+        page.locator('#mu-sample').select_option(str(slot))
+        expect(page.locator('#mu-sample-name')).to_have_value(name)
+        expect(page.locator('#mu-loop-length')).to_have_value(str(doc['samples'][slot-1]['loop_length']))
+    page.locator('#mu-sample-play').click()
+    expect(page.locator('#mu-playing')).to_have_text('Auditioning sample')
+    page.locator('#mu-stop').click()
+    expect(page.locator('#mu-playing')).to_have_text('Stopped')

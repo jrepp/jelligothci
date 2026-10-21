@@ -5,7 +5,6 @@ Explicit regeneration only. Twenty bars at160BPM fill the30-second engine loop:
 Compact instruments derive from the existing original synthesized PCM bank.
 """
 import argparse
-import math
 from pathlib import Path
 import sys
 from music_samples import sample_bank
@@ -16,12 +15,12 @@ import music_mod
 
 def compose():
     leads, bank = sample_bank()
-    kick = [round(110 * math.tanh(v / 48)) for v in bank['kick']]
-    bass = [round(105 * math.tanh(v / 44)) for v in bank['bass']]
-    voices = [('Iron kick', kick, 54, False), ('Rumble bass', bass, 30, True),
+    voices = [('Tight drive kick', bank['tight_kick'], 54, False),
+              ('Acid pulse bass', bank['acid_bass'], 28, True),
               ('Acid stab', leads[3][::4], 24, True),
-              ('Closed hat', bank['brush'], 21, False),
-              ('Steel snare', bank['snare'], 35, False)]
+              ('Metal hat', bank['metal_hat'], 20, False),
+              ('Clap', bank['clap'], 35, False),
+              ('Sine sub bass', bank['sub_bass'], 24, True)]
     samples = [dict(name=n, pcm=p, volume=v, loop_start=0,
                     loop_length=len(p) if loop else 0) for n, p, v, loop in voices]
     samples += [dict(name='', pcm=[], volume=0, loop_start=0, loop_length=0)
@@ -36,17 +35,22 @@ def compose():
             breakdown = phrase == 4 and row < 32
             if row % 4 == 0 and not breakdown:
                 cells[0].update(sample=1, period=214)
-            if row % 4 in (1, 2, 3) and not breakdown:
-                cells[1].update(sample=2, period=856 if row % 16 < 12 else 808,
-                                effect=12, param=32 if row % 4 == 2 else 19)
+            # Let the original acid ostinato establish itself before bass joins.
+            bass_active = not breakdown and not (phrase == 0 and row < 16)
+            if row % 4 in (1, 2, 3) and bass_active:
+                sub = phrase in (1, 3) and row % 16 < 8
+                cells[1].update(sample=6 if sub else 2,
+                                period=856 if row % 16 < 12 else 808,
+                                effect=12, param=(24 if sub else 30) if row % 4 == 2 else 17)
             elif row % 4 == 0:
                 cells[1].update(effect=12, param=0)
             if row % 8 in (0, 3, 6):
-                note = riffs[phrase % 2][row // 8]
+                tail = 1 if row % 16 == 14 else 0
+                note = riffs[phrase % 2][(row // 8 + tail) % 8]
                 cells[2].update(sample=3, period=note,
                                 effect=12, param=16 if breakdown else 26)
             else:
-                cells[2].update(effect=12, param=4)
+                cells[2].update(effect=12, param=0 if row % 8 == 7 else 4)
             if row % 8 == 4 or (phrase == 4 and row >= 56 and row % 2 == 0):
                 cells[3].update(sample=5, period=214)
             elif row % 2 == 0:
