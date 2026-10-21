@@ -189,6 +189,13 @@ rendered change using the [studio UI baseline procedure](tools/jelli-art/README.
 Do not broaden accessibility exclusions or rewrite baselines merely to obtain
 a passing run.
 
+Changes to the C UI page enum also change Studio's embedded-game page picker,
+whose catalog is read from [the engine header](include/jelli/pet_ui.h). Run the
+focused game-view UI cases in the pinned renderer with screenshots enabled even
+when no JavaScript changes. Review all three viewport ARIA snapshots; update
+only the intentional options and retain unchanged screenshot baselines. See the
+[tune-library coverage finding](docs-cms/memos/memo-098-encountered-tune-library.md#studio-game-page-snapshot-coverage).
+
 After fixing a PR failure, record the failing run/revision, cause, remedy,
 verification and remaining uncertainty in the owning memo. Recheck the pushed
 revision and distinguish local verification from GitHub results. The container

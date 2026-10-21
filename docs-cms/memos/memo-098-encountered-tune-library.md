@@ -108,3 +108,26 @@ and 20,640 for `JelliPetEngine` (32 bytes larger each). The transient tune state
 is 24 bytes; added render-key state accounts for the remainder. These are dated
 desktop ABI measurements, not ESP32 type sizes. No new heap allocations, sample
 buffers or framebuffers are introduced.
+
+# Studio game-page snapshot coverage
+
+The optional Studio UI run [39579237822](https://github.com/jrepp/jelligothci/actions/runs/39579237822)
+on candidate `519b032` failed exactly the desktop, tablet and phone game-view
+ARIA comparisons; its other 314 tests passed. The library's `JELLI_UI_TUNE_PLAY`
+page intentionally adds a “tune play” option because
+[Studio's catalog](../../tools/jelli-art/game_preview.py) reads the C page enum.
+The original feature validation omitted these Studio cases because no browser
+source changed. Native game tests do not cover this generated browser contract.
+
+The remedy adds that single option after “collectible play” in each of the three
+ARIA snapshots. No screenshot baselines, accessibility exclusions or application
+behavior changed. [Contributor guidance](../../CONTRIBUTING.md#jelli-art-packaging-and-pr-validation)
+now calls for focused embedded-game UI tests when C page enums change.
+
+The focused `test_view and game` selection passed all four selected cases in the
+pinned Playwright container with `JELLI_UI_SCREENSHOTS=1`: all three viewport
+comparisons and the related game accessibility case. Update mode was disabled,
+so existing screenshots were compared without being rewritten. This is browser
+rendering evidence, not physical device evidence. The pushed fix still requires
+its own CI results, including the Studio UI job, before the follow-up release;
+prior published tags remain unchanged.

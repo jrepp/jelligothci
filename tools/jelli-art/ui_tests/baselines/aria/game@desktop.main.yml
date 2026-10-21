@@ -123,6 +123,7 @@
         - option "food"
         - option "gift shelf"
         - option "collectible play"
+        - option "tune play"
       - checkbox "Ring menu open"
       - text: Ring menu open
       - checkbox "Set the clock"
