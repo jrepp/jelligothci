@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.14.0...jelli-art-v0.15.0) (2026-10-21)
+
+
+### Features
+
+* expand synth palette and enrich original MOD arrangements ([637bbd1](https://github.com/jrepp/jelligothci/commit/637bbd15dd50099db1d976e8d5a71869e33be8bc))
+
 ## [0.14.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.13.0...jelli-art-v0.14.0) (2026-10-21)
 
 

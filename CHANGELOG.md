@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.17.0](https://github.com/jrepp/jelligothci/compare/v0.16.0...v0.17.0) (2026-10-21)
+
+
+### Features
+
+* collect encountered tunes alongside rare records ([306cecb](https://github.com/jrepp/jelligothci/commit/306cecbf77e6e19693a18e032bf8e7c3bef8f294))
+* expand synth palette and enrich original MOD arrangements ([637bbd1](https://github.com/jrepp/jelligothci/commit/637bbd15dd50099db1d976e8d5a71869e33be8bc))
+
+
+### Bug Fixes
+
+* make tune timer narrowing explicit ([cd8d2c0](https://github.com/jrepp/jelligothci/commit/cd8d2c064c62ab831ae1e10ac8b1bf2fc6fc000f))
+
 ## [0.16.0](https://github.com/jrepp/jelligothci/compare/v0.15.0...v0.16.0) (2026-10-21)
 
 
