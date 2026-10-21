@@ -6,7 +6,6 @@
 ### Bug Fixes
 
 * **studio:** include tune playback in game accessibility snapshots ([3e9c128](https://github.com/jrepp/jelligothci/commit/3e9c128017b5366eb3f9304e93503b733c03198d))
-* **studio:** include tune playback in game accessibility snapshots ([3953b77](https://github.com/jrepp/jelligothci/commit/3953b773c552f44a6a1fb609b6fe64c3881f5dac))
 
 ## [0.15.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.14.0...jelli-art-v0.15.0) (2026-10-21)
 
