@@ -266,3 +266,36 @@ measurements, not ESP32 structure sizes. The synthesizer remains 24 bytes, and t
 launcher adds no serialized fields, heap allocations or framebuffers. Final focused
 launcher/music tests passed 3/3, sanitizer sound/music/launcher/ending/engine checks
 passed 5/5, and music Studio screenshot checks passed 9/9. No device was flashed.
+
+
+# PR 81 timed-launch integration coverage
+
+[PR 81](https://github.com/jrepp/jelligothci/pull/81) CI failed the existing
+`pet_gallery` crafting test after automatic insertion was added. That test still
+expected a crafted cartridge to become active immediately after its launch tap.
+The same assertion failed locally before correction. The preceding focused
+launcher/music and sanitizer runs passed but omitted this gallery entry path;
+they were not evidence that the complete integration suite passed.
+
+The [gallery test](../../tests/test_pet_gallery.c) now advances the injected clock
+through the gallery update function, checks that the session, revision, play
+count and pending gift remain unchanged before the three-second boundary, then
+checks activation and exactly one counted play at completion. A later update
+must not count or mutate it again. Runtime launch behavior is unchanged. Other
+cartridge tests were audited: dedicated launcher tests already advance time;
+engine, music and ending fixtures use direct engine setup, which does not have a
+UI insertion delay. Ordinary present playback remains immediate.
+
+The reusable [change-validation guidance](../../CONTRIBUTING.md#make-and-review-a-change)
+now requires timed-transition checks across entry paths and surrounding integration
+coverage, including craft and resume. Physical display/touch/audio behavior is
+not established by this test-only correction.
+
+After rebuilding both configurations, all 70 native C tests passed on desktop
+and all 70 passed with sanitizers, including gallery, launcher, ending, engine
+and SDL smoke/demo coverage. Native tests were selected from CTest's JSON inventory
+by executable location in each build directory. Unchanged Python/Studio suites
+were excluded from this local correction run; the earlier CI failure reported
+only the gallery assertion. Documentation validation and repair checks passed
+without repairs, and the C size gate passed. Required PR checks still need to
+pass on the corrected revision before merge.
