@@ -11,6 +11,10 @@
   "game@desktop-light": {},
   "game@phone": {},
   "game@tablet": {},
+  "music@desktop": {},
+  "music@desktop-light": {},
+  "music@phone": {},
+  "music@tablet": {},
   "paint-creature@desktop": {
     "label-content-name-mismatch": [
       "button[data-i=\"0\"]",

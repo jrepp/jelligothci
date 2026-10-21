@@ -30,7 +30,7 @@ POSE_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 POSE_MAX = 40
 DEFAULT_MS = 450
 # tools/assets/live_assets.py and build_slice.py limits; the checkout's values win when present.
-LIVE_LIMITS = {"MAX_ASSETS": 192, "LIVE_PIXEL_CAPACITY": 196608, "LIVE_MASK_CAPACITY": 24576}
+LIVE_LIMITS = {"MAX_ASSETS": 192, "LIVE_PIXEL_CAPACITY": 229376, "LIVE_MASK_CAPACITY": 28672}
 
 
 class FrameError(ValueError):

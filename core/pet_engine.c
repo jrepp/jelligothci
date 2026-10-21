@@ -103,6 +103,7 @@ bool jelli_pet_frame(JelliPetEngine *engine)
     uint64_t elapsed = now >= engine->last_ms ? now - engine->last_ms : 0;
     engine->last_ms = now;
     sample_motion(engine, now);
+    jelli_pet_music_progress(engine);
     bool was_resuming = engine->game.resuming;
     rewards(engine); /* Includes commands submitted through the external debug interface. */
     advance(engine, elapsed);
@@ -122,8 +123,12 @@ bool jelli_pet_frame(JelliPetEngine *engine)
             rewards(engine);
         }
     }
-    if (!engine->running)
+    if (!engine->running) {
+        engine->paused = true;
+        jelli_pet_music_sync(engine);
         return false;
+    }
+    jelli_pet_music_sync(engine);
     jelli_pet_celebrations(&engine->celebrations, &engine->ui, &engine->game, &engine->events,
                            jelli_effect_triggers, engine->animation_ms,
                            was_resuming || engine->game.resuming, engine->paused);

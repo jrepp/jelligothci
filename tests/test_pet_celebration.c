@@ -1,6 +1,7 @@
 #include "jelli/debug.h"
 #include "game_fixture.h"
 #include "jelli/pet_effect.h"
+#include "jelli/collectible.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -121,7 +122,7 @@ static void live_events(void)
     jelli_prize_complete(&engine.game, JELLI_PRIZE_WASH);
     CHECK(engine.game.prizes.offered);
     jelli_pet_ui_tap(&engine.ui, &engine.game, 233, 110);
-    CHECK(engine.ui.menu_open && engine.ui.page == JELLI_UI_COLLECTION);
+    CHECK(engine.ui.menu_open && engine.ui.page == JELLI_UI_PRESENT_ACTION);
     process(61000u, false, false);
     CHECK(engine.celebrations.pending && !engine.ui.effect);
     engine.ui.menu_open = false;
@@ -139,15 +140,16 @@ static void acceptance(void)
     engine.game.events = &engine.events;
     jelli_prize_complete(&engine.game, JELLI_PRIZE_WASH);
     CHECK(jelli_prize_catch(&engine.game) == JELLI_OK);
-    CHECK(jelli_prize_gift(&engine.game, 5u) == JELLI_NOT_READY);
+    CHECK(jelli_prize_gift(&engine.game, 5u) == JELLI_OK);
     process(0u, false, false);
     CHECK(!engine.ui.effect);
-    /* A different recipient accepts the collected present immediately. */
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
+    /* Play is permanent and origin-independent; it is not gift acceptance. */
     engine.game.prizes.origin_pet[5] = 2u;
     CHECK(jelli_prize_gift(&engine.game, 5u) == JELLI_OK);
     process(10u, false, false);
-    CHECK(engine.ui.effect);
-    jelli_pet_effect_stop(&engine.ui);
+    CHECK(!engine.ui.effect && (engine.game.prizes.owned & (1u << 5u)));
+    CHECK(jelli_collectible_control(&engine.game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
     process(20u, false, false);
     CHECK(!engine.ui.effect);
     /* Legacy inventory gifting celebrates completion, never its start. */
@@ -156,7 +158,11 @@ static void acceptance(void)
           JELLI_OK);
     process(30u, false, false);
     CHECK(!engine.ui.effect);
-    for (unsigned i = 0u; i < 50u; ++i)
+    for (unsigned i = 0u; i < 20u; ++i)
+        jelli_game_advance(&engine.game, 100u);
+    process(2030u, false, false);
+    CHECK(!engine.ui.effect); /* Reward pulses never celebrate completion. */
+    for (unsigned i = 0u; i < 30u; ++i)
         jelli_game_advance(&engine.game, 100u);
     process(5030u, false, false);
     CHECK(engine.ui.effect);

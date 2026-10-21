@@ -200,8 +200,8 @@ static void write_game(Writer *writer, const JelliGame *game)
     write_sleep_log(writer, &game->sleep_log);
     put_u16(writer, (uint16_t)game->timezone_minutes);
     put_u16(writer, (uint16_t)game->clock_adjust);
-    put_u16(writer, game->prizes.owned);
-    put_u16(writer, game->prizes.discovered);
+    put_u16(writer, (uint16_t)(game->prizes.owned & UINT16_MAX));
+    put_u16(writer, (uint16_t)(game->prizes.discovered & UINT16_MAX));
     for (unsigned i = 0u; i < JELLI_PRIZE_LEGACY_COUNT; ++i)
         put_u32(writer, game->prizes.origin_pet[i]);
     put_u8(writer, game->prizes.offered);

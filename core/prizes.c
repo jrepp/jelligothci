@@ -155,8 +155,8 @@ JelliResult jelli_prize_catch(JelliGame *game)
     if (!game->prizes.offered)
         return JELLI_NOT_READY;
     unsigned index = game->prizes.offered - 1u;
-    game->prizes.owned |= (uint16_t)(1u << index);
-    game->prizes.discovered |= (uint16_t)(1u << index);
+    game->prizes.owned |= (uint32_t)(1u << index);
+    game->prizes.discovered |= (uint32_t)(1u << index);
     /* Discovery persists, but each newly earned copy belongs to its catcher.
      * A later copy must not inherit permission to gift itself from an old one. */
     game->prizes.origin_pet[index] = game->prizes.offered_pet;

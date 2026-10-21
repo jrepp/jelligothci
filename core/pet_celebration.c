@@ -15,7 +15,7 @@ static unsigned binding(const JelliEvent *event, const uint8_t *bindings)
         event->after.activity == JELLI_IDLE)
         return bindings[JELLI_EFFECT_PRESENT_ACCEPTED];
     if (event->kind == JELLI_EVENT_EFFECT && event->code == JELLI_GIVING &&
-        event->before.gifts > event->after.gifts)
+        event->before.activity == JELLI_GIVING && event->after.activity == JELLI_IDLE)
         return bindings[JELLI_EFFECT_PRESENT_ACCEPTED];
     return 0u;
 }

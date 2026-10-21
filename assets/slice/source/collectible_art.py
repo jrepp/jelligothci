@@ -17,6 +17,12 @@ def build():
     recipes = (
         (11011, "jelli-chain-cartridge", "movie-star", "Jelli Chain cartridge"),
         (11012, "morning-tea-record", "tea-sprite", "Morning Tea record"),
+        (11013, "garden-waltz-record", "rainbow-seed", "Garden Waltz record"),
+        (11014, "porch-picnic-record", "breakfast-sun", "Porch Picnic record"),
+        (11015, "tiny-thunder-record", "bubble-gem", "Tiny Thunder record"),
+        (11016, "neon-heart-record", "friendship-bow", "Neon Heart record"),
+        (11017, "cloud-club-record", "butterfly", "Cloud Club record"),
+        (11018, "pixel-sunset-record", "moon-charm", "Pixel Sunset record"),
     )
     for asset_id, key, motif, title in recipes:
         image = Image.new("RGBA", (32, 32))
@@ -36,13 +42,15 @@ def build():
         with Image.open(ROOT / "prizes" / f"{motif}.png") as source:
             small = source.convert("RGBA").resize((12, 12), Image.Resampling.NEAREST)
             image.alpha_composite(small, (10, 8 if asset_id == 11011 else 10))
-        if asset_id == 11012:
+        if asset_id != 11011:
             draw.ellipse((15, 15, 16, 16), fill="#30312b")
         path = f"prizes/{key}.png"
         image.save(ROOT / path)
         entry = dict(id=asset_id, key=f"prizes.{key}", path=path, kind="prizes",
                      width=32, height=32, pivot=[16, 16],
-                     bounds=list(image.getbbox()), purpose=f"{title}; permanent playable collectible")
+                     bounds=list(image.getbbox()),
+                     palette=sorted({f"#{r:02x}{g:02x}{b:02x}" for r, g, b, a in image.getdata() if a}),
+                     purpose=f"{title}; permanent playable collectible")
         manifest["assets"] = [a for a in manifest["assets"] if a["id"] != asset_id]
         manifest["assets"].append(entry)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")

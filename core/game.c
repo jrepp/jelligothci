@@ -92,6 +92,8 @@ static bool pet_needs_valid(const JelliPet *pet)
 
 static bool pet_activity_valid(const JelliPet *pet)
 {
+    if (!jelli_activity_rewards_valid(pet))
+        return false;
     if (pet->activity == JELLI_IDLE && pet->interaction_due != 0u)
         return false;
     if (pet->activity != JELLI_IDLE && pet->interaction_due < pet->ticks)
@@ -163,9 +165,9 @@ static bool pet_reservation_valid(const JelliGame *game, uint8_t index)
         return pet->activity == JELLI_IDLE;
     if (pet->asleep && pet->activity != JELLI_IDLE)
         return false;
-    if (pet->activity == JELLI_EATING && game->food == 0u)
+    if (pet->activity == JELLI_EATING && game->food == 0u && !pet->moment_pulse)
         return false;
-    if (pet->activity == JELLI_GIVING && game->gifts == 0u)
+    if (pet->activity == JELLI_GIVING && game->gifts == 0u && !pet->moment_pulse)
         return false;
     return true;
 }

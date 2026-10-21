@@ -511,7 +511,7 @@ tools/jelli-art/typecheck/check.sh                             # JSDoc type chec
 
 The **Studio tests** job in `.github/workflows/jelli-art.yml` runs
 `test_paint_tools.js`, `test_server.py`, `test_creatures.py`,
-`test_animation.py`, `test_game_preview.py`, `test_creation.py`, `test_scenes.py` and `test_tidy.py` (Tidy gives the
+`test_animation.py`, `test_game_preview.py`, `test_creation.py`, `test_scenes.py`, `test_music.py` and `test_tidy.py` (Tidy gives the
 same pixels in every process) and the JSDoc type check on every pull request,
 and a release image is built only after they pass.
 
@@ -719,3 +719,59 @@ schema, persistence and authoring paths.
 acceptance to saved effects. Three distinct authored defaults are enabled; missing
 `triggers` in older documents disables playback. The shared validator rejects unknown events and effect references.
 Bindings participate in the same undo, draft and guarded-save flow as timelines.
+
+
+## Music tracker
+
+The **Music** workspace edits the record modules in
+[`content/music/`](../../content/music/). Each is a standard four-channel,
+31-sample ProTracker `M.K.` MOD file. The studio supports the same bounded subset
+as the game compiler: note and sample events, sample volume/loops, `Cxx` volume,
+and `Fxx` speed/tempo. Unsupported effects, finetuning and oversized imports
+produce errors before any saved module changes. The exact bounds and validation
+live in [`music_mod.py`](music_mod.py); this is not a general MOD player.
+
+Select a record and pattern, click a tracker cell, and enter notes with Z–M
+or Q–U (the upper keyboard row adds an octave). Arrow keys move between rows and
+channels; Page Up/Down moves a block; Home/End selects the first/last row. Octave
+and Row step control entry. Delete clears a cell. The cell inspector offers
+native selects for note, sample and effect without keyboard shortcuts. Pattern
+copy/paste, new patterns, the order list and undo support building arrangements.
+
+F5 plays from the beginning, Space pauses/resumes and F8 or Escape stops.
+Ctrl/Cmd+S saves, Ctrl/Cmd+Z undoes, and Ctrl/Cmd+Shift+C/V copies/pastes a pattern.
+Playback shortcuts are inactive while typing in form fields. The four-channel
+mixer independently mutes and scales preview channels; mixer settings are local
+to the browser. Sample volumes and effect commands are part of the MOD.
+Preview stops when leaving the workspace or hiding the browser.
+
+The sample manager selects any MOD sample slot, displays its waveform, auditions
+it, and edits its name, volume and loop range. Import uncompressed eight-bit mono
+WAV or signed eight-bit PCM. MOD has no sample-rate field: data plays at tracker
+pitch, and the UI states this before import. Odd sample lengths receive a silent
+padding byte. Loops use even byte offsets/lengths; zero disables looping. The
+codec enforces per-sample and combined sample budgets.
+
+Import MOD replaces the unsaved editor document after confirmation when needed;
+Export MOD downloads the current edits without saving. **Save MOD** uses the
+normal hash conflict confirmation, dirty indicator, recoverable local draft and
+studio git recording. **Reload saved** asks before discarding edits. Rebuild the
+desktop or firmware to hear saved modules in the game. A checkout lacking a
+record starts with an empty module and creates its file on the first save.
+
+The bounded compiler [`tools/audio/build_music.py`](../audio/build_music.py)
+generates immutable PCM and event spans consumed by
+[`core/music.c`](../../core/music.c). Runtime playback lasts 30 seconds, repeating
+the module's order list as needed. Preview uses the same integer phase and timing;
+[`test_music_export.py`](../../tests/test_music_export.py) compares full native
+and preview PCM. The game does not parse MOD files or allocate while playing.
+Original starter modules can be reproduced with
+[`tools/audio/create_music.py`](../audio/create_music.py), which requires an
+explicit output directory and uses original synthesized samples.
+
+`GET /api/music?song=<record-key>` returns a module, its hash and editing
+capability. `POST /api/music` takes `song`, `data`, `base`, and optional `artist`;
+an external change returns 409 without touching the file. Import/export endpoints
+convert the validated editor document and standard MOD bytes. The preview endpoint
+returns four bounded PCM16 WAV stems for the browser mixer; audition does not
+write files or change the loaded save hash.

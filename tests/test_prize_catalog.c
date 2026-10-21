@@ -15,10 +15,10 @@
     } while (0)
 
 /* Link a full authored registry in place of the production catalog: exercise the
- * uint16 ownership boundary without adding gameplay content to production. */
+ * extended ownership boundary without adding gameplay content to production. */
 const unsigned jelli_prize_count = JELLI_PRIZE_COUNT;
 const JelliPrizeDefinition jelli_prizes[JELLI_PRIZE_COUNT] = {
-    [15] = {"test-present", "TEST PRESENT", 12000u}};
+    [19] = {"test-present", "TEST PRESENT", 12000u}};
 
 static void repair_checksum(uint8_t *bytes, size_t size)
 {
@@ -38,22 +38,22 @@ static void capacity_award_and_save(void)
     JelliSave save = {0}, loaded;
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     test_game_pair(&save.game);
-    jelli_prize_award(&save.game, 15u);
-    CHECK(save.game.prizes.offered == 16u);
+    jelli_prize_award(&save.game, 19u);
+    CHECK(save.game.prizes.offered == 20u);
     CHECK(jelli_prize_catch(&save.game) == JELLI_OK);
-    CHECK(save.game.prizes.owned == UINT16_C(0x8000));
-    CHECK(save.game.prizes.origin_pet[15] == save.game.pets[0].id);
+    CHECK(save.game.prizes.owned == UINT32_C(0x80000));
+    CHECK(save.game.prizes.origin_pet[19] == save.game.pets[0].id);
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size && bytes[4] == JELLI_SAVE_VERSION && jelli_save_decode(&loaded, bytes, size));
-    CHECK(loaded.game.prizes.owned == UINT16_C(0x8000));
-    CHECK(loaded.game.prizes.discovered == UINT16_C(0x8000));
-    CHECK(loaded.game.prizes.origin_pet[15] == save.game.pets[0].id);
-    CHECK(jelli_prize_gift(&loaded.game, 15u) == JELLI_OK);
+    CHECK(loaded.game.prizes.owned == UINT32_C(0x80000));
+    CHECK(loaded.game.prizes.discovered == UINT32_C(0x80000));
+    CHECK(loaded.game.prizes.origin_pet[19] == save.game.pets[0].id);
+    CHECK(jelli_prize_gift(&loaded.game, 19u) == JELLI_OK);
     CHECK(jelli_collectible_control(&loaded.game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
     CHECK(jelli_game_command(&loaded.game, (JelliCommand){JELLI_CMD_ACTIVATE, 1u, 2u}) == JELLI_OK);
-    CHECK(jelli_prize_gift(&loaded.game, 15u) == JELLI_OK);
-    CHECK(loaded.game.prizes.owned == UINT16_C(0x8000) &&
-          loaded.game.prizes.discovered == UINT16_C(0x8000));
+    CHECK(jelli_prize_gift(&loaded.game, 19u) == JELLI_OK);
+    CHECK(loaded.game.prizes.owned == UINT32_C(0x80000) &&
+          loaded.game.prizes.discovered == UINT32_C(0x80000));
     CHECK(!loaded.game.prizes.offered); /* Only completed shared play earns a bow. */
     jelli_prize_award(&save.game, JELLI_PRIZE_COUNT);
     CHECK(!save.game.prizes.offered);

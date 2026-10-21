@@ -113,9 +113,11 @@ typedef struct {
     uint16_t hydration, hydration_remainder;
     uint8_t form, location, shot_goal, shot_hits;
     uint8_t collection_entry, reached_forms, food_type;
-    uint8_t moment;     /* Running moment ID + 1 while its activity lasts; 0 otherwise. */
-    uint16_t digesting; /* Meals and drinks not yet felt as potty urge (0..1000). */
-    uint16_t potty;     /* Potty urge (0..1000); a potty break clears it. */
+    uint16_t moment_rewards[7]; /* Pre-rolled meter totals for the active activity. */
+    uint8_t moment_pulse;       /* Paid pulse count; bit 7 remembers a useful meal. */
+    uint8_t moment;             /* Running moment ID + 1 while its activity lasts; 0 otherwise. */
+    uint16_t digesting;         /* Meals and drinks not yet felt as potty urge (0..1000). */
+    uint16_t potty;             /* Potty urge (0..1000); a potty break clears it. */
     /* Brief session-only touch memory; care changes still persist. */
     uint16_t touch_load;
     uint8_t reaction, reaction_ticks, wake_mood;

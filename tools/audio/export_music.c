@@ -21,16 +21,18 @@ static bool header(FILE *file)
 
 int main(int argc, char **argv)
 {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: jelli_music_export output.wav\n");
+    if (argc < 2 || argc > 3 ||
+        (argc == 3 && (argv[2][0] < '0' || argv[2][0] > '6' || argv[2][1] != '\0'))) {
+        fprintf(stderr, "Usage: jelli_music_export output.wav [song 0..6]\n");
         return 2;
     }
     FILE *file = fopen(argv[1], "wb");
     if (!file)
         return 1;
+    uint8_t song = argc == 3 ? (uint8_t)(argv[2][0] - '0') : 0;
     JelliMusic music = {0};
-    (void)jelli_music_control(&music,
-                              (JelliMusicCommand){.action = JELLI_MUSIC_START, .volume = 80});
+    (void)jelli_music_control(
+        &music, (JelliMusicCommand){.action = JELLI_MUSIC_START, .volume = 80, .song = song});
     int16_t block[JELLI_SOUND_BLOCK];
     bool ok = header(file);
     while (ok && music.playing) {

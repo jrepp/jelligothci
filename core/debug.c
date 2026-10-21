@@ -187,6 +187,8 @@ static void dispatch_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t
         if (++debug->capture_id == 0u)
             ++debug->capture_id;
         jelli_debug_state(debug, engine, id);
+    } else if (!strcmp(words[2], "gift")) {
+        jelli_debug_gift(debug, engine, id, words, count);
     } else if (!strcmp(words[2], "cheat")) {
         jelli_debug_cheat(debug, engine, id, words, count);
     } else if (!strcmp(words[2], "events")) {

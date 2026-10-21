@@ -56,7 +56,13 @@ static size_t collection(char *out, size_t capacity, const JelliPetRenderKey *v)
             return 0u;
         used += (size_t)size;
     }
-    size = snprintf(out + used, capacity - used, "]}},\"buttons\":[");
+    const JelliCollectibleSession *session = &v->collectible;
+    size = snprintf(out + used, capacity - used,
+                    "]},\"collectible\":{\"active\":%s,\"paused\":%s,\"prize\":%u,"
+                    "\"mode\":%u,\"cursor\":%" PRIu32 ",\"ticks\":%u,\"head\":%u}},\"buttons\":[",
+                    truth(session->active), truth(session->paused), (unsigned)session->prize,
+                    (unsigned)session->mode, session->record_cursor,
+                    (unsigned)session->elapsed_ticks, (unsigned)session->chain.body[0]);
     return size < 0 || (size_t)size >= capacity - used ? 0u : used + (size_t)size;
 }
 
@@ -86,26 +92,28 @@ static size_t creature(char *out, size_t capacity, const JelliPetEngine *engine)
 
 static const char *page_name(unsigned page)
 {
-    static const char *const pages[JELLI_UI_PAGE_COUNT] = {[JELLI_UI_HOME] = "home",
-                                                           [JELLI_UI_CARE] = "care",
-                                                           [JELLI_UI_MORE] = "more",
-                                                           [JELLI_UI_COLLECTION] = "collection",
-                                                           [JELLI_UI_SETTINGS] = "settings",
-                                                           [JELLI_UI_MOMENTS] = "moments",
-                                                           [JELLI_UI_HEALTH] = "health",
-                                                           [JELLI_UI_BRUSH] = "brush",
-                                                           [JELLI_UI_MEDICINE] = "medicine",
-                                                           [JELLI_UI_SHOT] = "shot",
-                                                           [JELLI_UI_WASH] = "wash",
-                                                           [JELLI_UI_STRETCH] = "stretch",
-                                                           [JELLI_UI_POTTY] = "potty",
-                                                           [JELLI_UI_PETS] = "pets",
-                                                           [JELLI_UI_PET_DETAIL] = "pet_detail",
-                                                           [JELLI_UI_EVOLUTIONS] = "evolutions",
-                                                           [JELLI_UI_PRESENT_ACTION] =
-                                                               "present_action",
-                                                           [JELLI_UI_FOOD] = "food"};
-    return page < JELLI_UI_PAGE_COUNT ? pages[page] : "unknown";
+    static const char *const pages[JELLI_UI_PAGE_COUNT] = {
+        [JELLI_UI_HOME] = "home",
+        [JELLI_UI_CARE] = "care",
+        [JELLI_UI_MORE] = "more",
+        [JELLI_UI_COLLECTION] = "collection",
+        [JELLI_UI_SETTINGS] = "settings",
+        [JELLI_UI_MOMENTS] = "moments",
+        [JELLI_UI_HEALTH] = "health",
+        [JELLI_UI_BRUSH] = "brush",
+        [JELLI_UI_MEDICINE] = "medicine",
+        [JELLI_UI_SHOT] = "shot",
+        [JELLI_UI_WASH] = "wash",
+        [JELLI_UI_STRETCH] = "stretch",
+        [JELLI_UI_POTTY] = "potty",
+        [JELLI_UI_PETS] = "pets",
+        [JELLI_UI_PET_DETAIL] = "pet_detail",
+        [JELLI_UI_EVOLUTIONS] = "evolutions",
+        [JELLI_UI_PRESENT_ACTION] = "present_action",
+        [JELLI_UI_FOOD] = "food",
+        [JELLI_UI_GIFT_SHELF] = "gift_shelf",
+        [JELLI_UI_COLLECTIBLE_PLAY] = "collectible_play"};
+    return page < JELLI_UI_PAGE_COUNT && pages[page] ? pages[page] : "unknown";
 }
 
 void jelli_debug_state(JelliDebug *debug, const JelliPetEngine *engine, uint32_t id)

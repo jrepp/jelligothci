@@ -1,0 +1,822 @@
+- main:
+  - tabpanel "Music":
+    - heading "Music tracker" [level=2]
+    - paragraph: Four PCM channels · standard ProTracker MOD · 30-second record preview
+    - text: Record
+    - combobox "Record":
+      - option "Morning Tea · Chill" [selected]
+      - option "Garden Waltz · Classical"
+      - option "Porch Picnic · Country"
+      - option "Tiny Thunder · Heavy metal"
+      - option "Neon Heart · K-pop"
+      - option "Cloud Club · House"
+      - option "Pixel Sunset · 80s"
+    - text: Module title
+    - textbox "Module title": New score
+    - button "Save MOD"
+    - button "Reload saved"
+    - button "Undo" [disabled]
+    - status: New module — save to create
+    - button "Play (F5)"
+    - button "Pause"
+    - button "Stop (F8)"
+    - button "Export MOD"
+    - text: Import MOD
+    - button "Import MOD"
+    - status: Stopped
+    - text: Preview progress
+    - progressbar "Preview progress"
+    - group: Four-channel mixer (preview only)
+    - text: Pattern
+    - combobox "Pattern":
+      - option "00" [selected]
+    - text: Octave
+    - spinbutton "Octave": "2"
+    - text: Row step
+    - spinbutton "Row step": "1"
+    - button "Copy pattern"
+    - button "Paste pattern"
+    - button "New pattern"
+    - text: Order list (decimal pattern numbers)
+    - textbox "Order list (decimal pattern numbers)": "0"
+    - paragraph: Arrow keys move. Z–M and Q–U enter notes; the upper keyboard row adds an octave. Delete clears a cell. Space pauses/resumes; F5 plays; F8 stops. Ctrl/Cmd+Shift+C/V copies/pastes a pattern.
+    - table "Four-channel pattern":
+      - rowgroup:
+        - row "Row Channel 1 Channel 2 Channel 3 Channel 4":
+          - columnheader "Row"
+          - columnheader "Channel 1"
+          - columnheader "Channel 2"
+          - columnheader "Channel 3"
+          - columnheader "Channel 4"
+      - rowgroup:
+        - row "00 --- 00 000, row 0, channel 1 --- 00 000, row 0, channel 2 --- 00 000, row 0, channel 3 --- 00 000, row 0, channel 4":
+          - rowheader "00"
+          - cell "--- 00 000, row 0, channel 1":
+            - button "--- 00 000, row 0, channel 1" [pressed]: "--- 00 000"
+          - cell "--- 00 000, row 0, channel 2":
+            - button "--- 00 000, row 0, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 0, channel 3":
+            - button "--- 00 000, row 0, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 0, channel 4":
+            - button "--- 00 000, row 0, channel 4": "--- 00 000"
+        - row "01 --- 00 000, row 1, channel 1 --- 00 000, row 1, channel 2 --- 00 000, row 1, channel 3 --- 00 000, row 1, channel 4":
+          - rowheader "01"
+          - cell "--- 00 000, row 1, channel 1":
+            - button "--- 00 000, row 1, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 1, channel 2":
+            - button "--- 00 000, row 1, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 1, channel 3":
+            - button "--- 00 000, row 1, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 1, channel 4":
+            - button "--- 00 000, row 1, channel 4": "--- 00 000"
+        - row "02 --- 00 000, row 2, channel 1 --- 00 000, row 2, channel 2 --- 00 000, row 2, channel 3 --- 00 000, row 2, channel 4":
+          - rowheader "02"
+          - cell "--- 00 000, row 2, channel 1":
+            - button "--- 00 000, row 2, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 2, channel 2":
+            - button "--- 00 000, row 2, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 2, channel 3":
+            - button "--- 00 000, row 2, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 2, channel 4":
+            - button "--- 00 000, row 2, channel 4": "--- 00 000"
+        - row "03 --- 00 000, row 3, channel 1 --- 00 000, row 3, channel 2 --- 00 000, row 3, channel 3 --- 00 000, row 3, channel 4":
+          - rowheader "03"
+          - cell "--- 00 000, row 3, channel 1":
+            - button "--- 00 000, row 3, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 3, channel 2":
+            - button "--- 00 000, row 3, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 3, channel 3":
+            - button "--- 00 000, row 3, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 3, channel 4":
+            - button "--- 00 000, row 3, channel 4": "--- 00 000"
+        - row "04 --- 00 000, row 4, channel 1 --- 00 000, row 4, channel 2 --- 00 000, row 4, channel 3 --- 00 000, row 4, channel 4":
+          - rowheader "04"
+          - cell "--- 00 000, row 4, channel 1":
+            - button "--- 00 000, row 4, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 4, channel 2":
+            - button "--- 00 000, row 4, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 4, channel 3":
+            - button "--- 00 000, row 4, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 4, channel 4":
+            - button "--- 00 000, row 4, channel 4": "--- 00 000"
+        - row "05 --- 00 000, row 5, channel 1 --- 00 000, row 5, channel 2 --- 00 000, row 5, channel 3 --- 00 000, row 5, channel 4":
+          - rowheader "05"
+          - cell "--- 00 000, row 5, channel 1":
+            - button "--- 00 000, row 5, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 5, channel 2":
+            - button "--- 00 000, row 5, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 5, channel 3":
+            - button "--- 00 000, row 5, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 5, channel 4":
+            - button "--- 00 000, row 5, channel 4": "--- 00 000"
+        - row "06 --- 00 000, row 6, channel 1 --- 00 000, row 6, channel 2 --- 00 000, row 6, channel 3 --- 00 000, row 6, channel 4":
+          - rowheader "06"
+          - cell "--- 00 000, row 6, channel 1":
+            - button "--- 00 000, row 6, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 6, channel 2":
+            - button "--- 00 000, row 6, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 6, channel 3":
+            - button "--- 00 000, row 6, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 6, channel 4":
+            - button "--- 00 000, row 6, channel 4": "--- 00 000"
+        - row "07 --- 00 000, row 7, channel 1 --- 00 000, row 7, channel 2 --- 00 000, row 7, channel 3 --- 00 000, row 7, channel 4":
+          - rowheader "07"
+          - cell "--- 00 000, row 7, channel 1":
+            - button "--- 00 000, row 7, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 7, channel 2":
+            - button "--- 00 000, row 7, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 7, channel 3":
+            - button "--- 00 000, row 7, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 7, channel 4":
+            - button "--- 00 000, row 7, channel 4": "--- 00 000"
+        - row "08 --- 00 000, row 8, channel 1 --- 00 000, row 8, channel 2 --- 00 000, row 8, channel 3 --- 00 000, row 8, channel 4":
+          - rowheader "08"
+          - cell "--- 00 000, row 8, channel 1":
+            - button "--- 00 000, row 8, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 8, channel 2":
+            - button "--- 00 000, row 8, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 8, channel 3":
+            - button "--- 00 000, row 8, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 8, channel 4":
+            - button "--- 00 000, row 8, channel 4": "--- 00 000"
+        - row "09 --- 00 000, row 9, channel 1 --- 00 000, row 9, channel 2 --- 00 000, row 9, channel 3 --- 00 000, row 9, channel 4":
+          - rowheader "09"
+          - cell "--- 00 000, row 9, channel 1":
+            - button "--- 00 000, row 9, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 9, channel 2":
+            - button "--- 00 000, row 9, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 9, channel 3":
+            - button "--- 00 000, row 9, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 9, channel 4":
+            - button "--- 00 000, row 9, channel 4": "--- 00 000"
+        - row "0A --- 00 000, row 10, channel 1 --- 00 000, row 10, channel 2 --- 00 000, row 10, channel 3 --- 00 000, row 10, channel 4":
+          - rowheader "0A"
+          - cell "--- 00 000, row 10, channel 1":
+            - button "--- 00 000, row 10, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 10, channel 2":
+            - button "--- 00 000, row 10, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 10, channel 3":
+            - button "--- 00 000, row 10, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 10, channel 4":
+            - button "--- 00 000, row 10, channel 4": "--- 00 000"
+        - row "0B --- 00 000, row 11, channel 1 --- 00 000, row 11, channel 2 --- 00 000, row 11, channel 3 --- 00 000, row 11, channel 4":
+          - rowheader "0B"
+          - cell "--- 00 000, row 11, channel 1":
+            - button "--- 00 000, row 11, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 11, channel 2":
+            - button "--- 00 000, row 11, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 11, channel 3":
+            - button "--- 00 000, row 11, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 11, channel 4":
+            - button "--- 00 000, row 11, channel 4": "--- 00 000"
+        - row "0C --- 00 000, row 12, channel 1 --- 00 000, row 12, channel 2 --- 00 000, row 12, channel 3 --- 00 000, row 12, channel 4":
+          - rowheader "0C"
+          - cell "--- 00 000, row 12, channel 1":
+            - button "--- 00 000, row 12, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 12, channel 2":
+            - button "--- 00 000, row 12, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 12, channel 3":
+            - button "--- 00 000, row 12, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 12, channel 4":
+            - button "--- 00 000, row 12, channel 4": "--- 00 000"
+        - row "0D --- 00 000, row 13, channel 1 --- 00 000, row 13, channel 2 --- 00 000, row 13, channel 3 --- 00 000, row 13, channel 4":
+          - rowheader "0D"
+          - cell "--- 00 000, row 13, channel 1":
+            - button "--- 00 000, row 13, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 13, channel 2":
+            - button "--- 00 000, row 13, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 13, channel 3":
+            - button "--- 00 000, row 13, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 13, channel 4":
+            - button "--- 00 000, row 13, channel 4": "--- 00 000"
+        - row "0E --- 00 000, row 14, channel 1 --- 00 000, row 14, channel 2 --- 00 000, row 14, channel 3 --- 00 000, row 14, channel 4":
+          - rowheader "0E"
+          - cell "--- 00 000, row 14, channel 1":
+            - button "--- 00 000, row 14, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 14, channel 2":
+            - button "--- 00 000, row 14, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 14, channel 3":
+            - button "--- 00 000, row 14, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 14, channel 4":
+            - button "--- 00 000, row 14, channel 4": "--- 00 000"
+        - row "0F --- 00 000, row 15, channel 1 --- 00 000, row 15, channel 2 --- 00 000, row 15, channel 3 --- 00 000, row 15, channel 4":
+          - rowheader "0F"
+          - cell "--- 00 000, row 15, channel 1":
+            - button "--- 00 000, row 15, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 15, channel 2":
+            - button "--- 00 000, row 15, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 15, channel 3":
+            - button "--- 00 000, row 15, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 15, channel 4":
+            - button "--- 00 000, row 15, channel 4": "--- 00 000"
+        - row "10 --- 00 000, row 16, channel 1 --- 00 000, row 16, channel 2 --- 00 000, row 16, channel 3 --- 00 000, row 16, channel 4":
+          - rowheader "10"
+          - cell "--- 00 000, row 16, channel 1":
+            - button "--- 00 000, row 16, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 16, channel 2":
+            - button "--- 00 000, row 16, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 16, channel 3":
+            - button "--- 00 000, row 16, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 16, channel 4":
+            - button "--- 00 000, row 16, channel 4": "--- 00 000"
+        - row "11 --- 00 000, row 17, channel 1 --- 00 000, row 17, channel 2 --- 00 000, row 17, channel 3 --- 00 000, row 17, channel 4":
+          - rowheader "11"
+          - cell "--- 00 000, row 17, channel 1":
+            - button "--- 00 000, row 17, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 17, channel 2":
+            - button "--- 00 000, row 17, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 17, channel 3":
+            - button "--- 00 000, row 17, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 17, channel 4":
+            - button "--- 00 000, row 17, channel 4": "--- 00 000"
+        - row "12 --- 00 000, row 18, channel 1 --- 00 000, row 18, channel 2 --- 00 000, row 18, channel 3 --- 00 000, row 18, channel 4":
+          - rowheader "12"
+          - cell "--- 00 000, row 18, channel 1":
+            - button "--- 00 000, row 18, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 18, channel 2":
+            - button "--- 00 000, row 18, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 18, channel 3":
+            - button "--- 00 000, row 18, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 18, channel 4":
+            - button "--- 00 000, row 18, channel 4": "--- 00 000"
+        - row "13 --- 00 000, row 19, channel 1 --- 00 000, row 19, channel 2 --- 00 000, row 19, channel 3 --- 00 000, row 19, channel 4":
+          - rowheader "13"
+          - cell "--- 00 000, row 19, channel 1":
+            - button "--- 00 000, row 19, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 19, channel 2":
+            - button "--- 00 000, row 19, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 19, channel 3":
+            - button "--- 00 000, row 19, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 19, channel 4":
+            - button "--- 00 000, row 19, channel 4": "--- 00 000"
+        - row "14 --- 00 000, row 20, channel 1 --- 00 000, row 20, channel 2 --- 00 000, row 20, channel 3 --- 00 000, row 20, channel 4":
+          - rowheader "14"
+          - cell "--- 00 000, row 20, channel 1":
+            - button "--- 00 000, row 20, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 20, channel 2":
+            - button "--- 00 000, row 20, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 20, channel 3":
+            - button "--- 00 000, row 20, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 20, channel 4":
+            - button "--- 00 000, row 20, channel 4": "--- 00 000"
+        - row "15 --- 00 000, row 21, channel 1 --- 00 000, row 21, channel 2 --- 00 000, row 21, channel 3 --- 00 000, row 21, channel 4":
+          - rowheader "15"
+          - cell "--- 00 000, row 21, channel 1":
+            - button "--- 00 000, row 21, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 21, channel 2":
+            - button "--- 00 000, row 21, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 21, channel 3":
+            - button "--- 00 000, row 21, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 21, channel 4":
+            - button "--- 00 000, row 21, channel 4": "--- 00 000"
+        - row "16 --- 00 000, row 22, channel 1 --- 00 000, row 22, channel 2 --- 00 000, row 22, channel 3 --- 00 000, row 22, channel 4":
+          - rowheader "16"
+          - cell "--- 00 000, row 22, channel 1":
+            - button "--- 00 000, row 22, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 22, channel 2":
+            - button "--- 00 000, row 22, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 22, channel 3":
+            - button "--- 00 000, row 22, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 22, channel 4":
+            - button "--- 00 000, row 22, channel 4": "--- 00 000"
+        - row "17 --- 00 000, row 23, channel 1 --- 00 000, row 23, channel 2 --- 00 000, row 23, channel 3 --- 00 000, row 23, channel 4":
+          - rowheader "17"
+          - cell "--- 00 000, row 23, channel 1":
+            - button "--- 00 000, row 23, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 23, channel 2":
+            - button "--- 00 000, row 23, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 23, channel 3":
+            - button "--- 00 000, row 23, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 23, channel 4":
+            - button "--- 00 000, row 23, channel 4": "--- 00 000"
+        - row "18 --- 00 000, row 24, channel 1 --- 00 000, row 24, channel 2 --- 00 000, row 24, channel 3 --- 00 000, row 24, channel 4":
+          - rowheader "18"
+          - cell "--- 00 000, row 24, channel 1":
+            - button "--- 00 000, row 24, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 24, channel 2":
+            - button "--- 00 000, row 24, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 24, channel 3":
+            - button "--- 00 000, row 24, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 24, channel 4":
+            - button "--- 00 000, row 24, channel 4": "--- 00 000"
+        - row "19 --- 00 000, row 25, channel 1 --- 00 000, row 25, channel 2 --- 00 000, row 25, channel 3 --- 00 000, row 25, channel 4":
+          - rowheader "19"
+          - cell "--- 00 000, row 25, channel 1":
+            - button "--- 00 000, row 25, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 25, channel 2":
+            - button "--- 00 000, row 25, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 25, channel 3":
+            - button "--- 00 000, row 25, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 25, channel 4":
+            - button "--- 00 000, row 25, channel 4": "--- 00 000"
+        - row "1A --- 00 000, row 26, channel 1 --- 00 000, row 26, channel 2 --- 00 000, row 26, channel 3 --- 00 000, row 26, channel 4":
+          - rowheader "1A"
+          - cell "--- 00 000, row 26, channel 1":
+            - button "--- 00 000, row 26, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 26, channel 2":
+            - button "--- 00 000, row 26, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 26, channel 3":
+            - button "--- 00 000, row 26, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 26, channel 4":
+            - button "--- 00 000, row 26, channel 4": "--- 00 000"
+        - row "1B --- 00 000, row 27, channel 1 --- 00 000, row 27, channel 2 --- 00 000, row 27, channel 3 --- 00 000, row 27, channel 4":
+          - rowheader "1B"
+          - cell "--- 00 000, row 27, channel 1":
+            - button "--- 00 000, row 27, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 27, channel 2":
+            - button "--- 00 000, row 27, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 27, channel 3":
+            - button "--- 00 000, row 27, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 27, channel 4":
+            - button "--- 00 000, row 27, channel 4": "--- 00 000"
+        - row "1C --- 00 000, row 28, channel 1 --- 00 000, row 28, channel 2 --- 00 000, row 28, channel 3 --- 00 000, row 28, channel 4":
+          - rowheader "1C"
+          - cell "--- 00 000, row 28, channel 1":
+            - button "--- 00 000, row 28, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 28, channel 2":
+            - button "--- 00 000, row 28, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 28, channel 3":
+            - button "--- 00 000, row 28, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 28, channel 4":
+            - button "--- 00 000, row 28, channel 4": "--- 00 000"
+        - row "1D --- 00 000, row 29, channel 1 --- 00 000, row 29, channel 2 --- 00 000, row 29, channel 3 --- 00 000, row 29, channel 4":
+          - rowheader "1D"
+          - cell "--- 00 000, row 29, channel 1":
+            - button "--- 00 000, row 29, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 29, channel 2":
+            - button "--- 00 000, row 29, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 29, channel 3":
+            - button "--- 00 000, row 29, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 29, channel 4":
+            - button "--- 00 000, row 29, channel 4": "--- 00 000"
+        - row "1E --- 00 000, row 30, channel 1 --- 00 000, row 30, channel 2 --- 00 000, row 30, channel 3 --- 00 000, row 30, channel 4":
+          - rowheader "1E"
+          - cell "--- 00 000, row 30, channel 1":
+            - button "--- 00 000, row 30, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 30, channel 2":
+            - button "--- 00 000, row 30, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 30, channel 3":
+            - button "--- 00 000, row 30, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 30, channel 4":
+            - button "--- 00 000, row 30, channel 4": "--- 00 000"
+        - row "1F --- 00 000, row 31, channel 1 --- 00 000, row 31, channel 2 --- 00 000, row 31, channel 3 --- 00 000, row 31, channel 4":
+          - rowheader "1F"
+          - cell "--- 00 000, row 31, channel 1":
+            - button "--- 00 000, row 31, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 31, channel 2":
+            - button "--- 00 000, row 31, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 31, channel 3":
+            - button "--- 00 000, row 31, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 31, channel 4":
+            - button "--- 00 000, row 31, channel 4": "--- 00 000"
+        - row "20 --- 00 000, row 32, channel 1 --- 00 000, row 32, channel 2 --- 00 000, row 32, channel 3 --- 00 000, row 32, channel 4":
+          - rowheader "20"
+          - cell "--- 00 000, row 32, channel 1":
+            - button "--- 00 000, row 32, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 32, channel 2":
+            - button "--- 00 000, row 32, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 32, channel 3":
+            - button "--- 00 000, row 32, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 32, channel 4":
+            - button "--- 00 000, row 32, channel 4": "--- 00 000"
+        - row "21 --- 00 000, row 33, channel 1 --- 00 000, row 33, channel 2 --- 00 000, row 33, channel 3 --- 00 000, row 33, channel 4":
+          - rowheader "21"
+          - cell "--- 00 000, row 33, channel 1":
+            - button "--- 00 000, row 33, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 33, channel 2":
+            - button "--- 00 000, row 33, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 33, channel 3":
+            - button "--- 00 000, row 33, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 33, channel 4":
+            - button "--- 00 000, row 33, channel 4": "--- 00 000"
+        - row "22 --- 00 000, row 34, channel 1 --- 00 000, row 34, channel 2 --- 00 000, row 34, channel 3 --- 00 000, row 34, channel 4":
+          - rowheader "22"
+          - cell "--- 00 000, row 34, channel 1":
+            - button "--- 00 000, row 34, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 34, channel 2":
+            - button "--- 00 000, row 34, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 34, channel 3":
+            - button "--- 00 000, row 34, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 34, channel 4":
+            - button "--- 00 000, row 34, channel 4": "--- 00 000"
+        - row "23 --- 00 000, row 35, channel 1 --- 00 000, row 35, channel 2 --- 00 000, row 35, channel 3 --- 00 000, row 35, channel 4":
+          - rowheader "23"
+          - cell "--- 00 000, row 35, channel 1":
+            - button "--- 00 000, row 35, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 35, channel 2":
+            - button "--- 00 000, row 35, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 35, channel 3":
+            - button "--- 00 000, row 35, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 35, channel 4":
+            - button "--- 00 000, row 35, channel 4": "--- 00 000"
+        - row "24 --- 00 000, row 36, channel 1 --- 00 000, row 36, channel 2 --- 00 000, row 36, channel 3 --- 00 000, row 36, channel 4":
+          - rowheader "24"
+          - cell "--- 00 000, row 36, channel 1":
+            - button "--- 00 000, row 36, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 36, channel 2":
+            - button "--- 00 000, row 36, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 36, channel 3":
+            - button "--- 00 000, row 36, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 36, channel 4":
+            - button "--- 00 000, row 36, channel 4": "--- 00 000"
+        - row "25 --- 00 000, row 37, channel 1 --- 00 000, row 37, channel 2 --- 00 000, row 37, channel 3 --- 00 000, row 37, channel 4":
+          - rowheader "25"
+          - cell "--- 00 000, row 37, channel 1":
+            - button "--- 00 000, row 37, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 37, channel 2":
+            - button "--- 00 000, row 37, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 37, channel 3":
+            - button "--- 00 000, row 37, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 37, channel 4":
+            - button "--- 00 000, row 37, channel 4": "--- 00 000"
+        - row "26 --- 00 000, row 38, channel 1 --- 00 000, row 38, channel 2 --- 00 000, row 38, channel 3 --- 00 000, row 38, channel 4":
+          - rowheader "26"
+          - cell "--- 00 000, row 38, channel 1":
+            - button "--- 00 000, row 38, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 38, channel 2":
+            - button "--- 00 000, row 38, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 38, channel 3":
+            - button "--- 00 000, row 38, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 38, channel 4":
+            - button "--- 00 000, row 38, channel 4": "--- 00 000"
+        - row "27 --- 00 000, row 39, channel 1 --- 00 000, row 39, channel 2 --- 00 000, row 39, channel 3 --- 00 000, row 39, channel 4":
+          - rowheader "27"
+          - cell "--- 00 000, row 39, channel 1":
+            - button "--- 00 000, row 39, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 39, channel 2":
+            - button "--- 00 000, row 39, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 39, channel 3":
+            - button "--- 00 000, row 39, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 39, channel 4":
+            - button "--- 00 000, row 39, channel 4": "--- 00 000"
+        - row "28 --- 00 000, row 40, channel 1 --- 00 000, row 40, channel 2 --- 00 000, row 40, channel 3 --- 00 000, row 40, channel 4":
+          - rowheader "28"
+          - cell "--- 00 000, row 40, channel 1":
+            - button "--- 00 000, row 40, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 40, channel 2":
+            - button "--- 00 000, row 40, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 40, channel 3":
+            - button "--- 00 000, row 40, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 40, channel 4":
+            - button "--- 00 000, row 40, channel 4": "--- 00 000"
+        - row "29 --- 00 000, row 41, channel 1 --- 00 000, row 41, channel 2 --- 00 000, row 41, channel 3 --- 00 000, row 41, channel 4":
+          - rowheader "29"
+          - cell "--- 00 000, row 41, channel 1":
+            - button "--- 00 000, row 41, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 41, channel 2":
+            - button "--- 00 000, row 41, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 41, channel 3":
+            - button "--- 00 000, row 41, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 41, channel 4":
+            - button "--- 00 000, row 41, channel 4": "--- 00 000"
+        - row "2A --- 00 000, row 42, channel 1 --- 00 000, row 42, channel 2 --- 00 000, row 42, channel 3 --- 00 000, row 42, channel 4":
+          - rowheader "2A"
+          - cell "--- 00 000, row 42, channel 1":
+            - button "--- 00 000, row 42, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 42, channel 2":
+            - button "--- 00 000, row 42, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 42, channel 3":
+            - button "--- 00 000, row 42, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 42, channel 4":
+            - button "--- 00 000, row 42, channel 4": "--- 00 000"
+        - row "2B --- 00 000, row 43, channel 1 --- 00 000, row 43, channel 2 --- 00 000, row 43, channel 3 --- 00 000, row 43, channel 4":
+          - rowheader "2B"
+          - cell "--- 00 000, row 43, channel 1":
+            - button "--- 00 000, row 43, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 43, channel 2":
+            - button "--- 00 000, row 43, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 43, channel 3":
+            - button "--- 00 000, row 43, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 43, channel 4":
+            - button "--- 00 000, row 43, channel 4": "--- 00 000"
+        - row "2C --- 00 000, row 44, channel 1 --- 00 000, row 44, channel 2 --- 00 000, row 44, channel 3 --- 00 000, row 44, channel 4":
+          - rowheader "2C"
+          - cell "--- 00 000, row 44, channel 1":
+            - button "--- 00 000, row 44, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 44, channel 2":
+            - button "--- 00 000, row 44, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 44, channel 3":
+            - button "--- 00 000, row 44, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 44, channel 4":
+            - button "--- 00 000, row 44, channel 4": "--- 00 000"
+        - row "2D --- 00 000, row 45, channel 1 --- 00 000, row 45, channel 2 --- 00 000, row 45, channel 3 --- 00 000, row 45, channel 4":
+          - rowheader "2D"
+          - cell "--- 00 000, row 45, channel 1":
+            - button "--- 00 000, row 45, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 45, channel 2":
+            - button "--- 00 000, row 45, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 45, channel 3":
+            - button "--- 00 000, row 45, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 45, channel 4":
+            - button "--- 00 000, row 45, channel 4": "--- 00 000"
+        - row "2E --- 00 000, row 46, channel 1 --- 00 000, row 46, channel 2 --- 00 000, row 46, channel 3 --- 00 000, row 46, channel 4":
+          - rowheader "2E"
+          - cell "--- 00 000, row 46, channel 1":
+            - button "--- 00 000, row 46, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 46, channel 2":
+            - button "--- 00 000, row 46, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 46, channel 3":
+            - button "--- 00 000, row 46, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 46, channel 4":
+            - button "--- 00 000, row 46, channel 4": "--- 00 000"
+        - row "2F --- 00 000, row 47, channel 1 --- 00 000, row 47, channel 2 --- 00 000, row 47, channel 3 --- 00 000, row 47, channel 4":
+          - rowheader "2F"
+          - cell "--- 00 000, row 47, channel 1":
+            - button "--- 00 000, row 47, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 47, channel 2":
+            - button "--- 00 000, row 47, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 47, channel 3":
+            - button "--- 00 000, row 47, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 47, channel 4":
+            - button "--- 00 000, row 47, channel 4": "--- 00 000"
+        - row "30 --- 00 000, row 48, channel 1 --- 00 000, row 48, channel 2 --- 00 000, row 48, channel 3 --- 00 000, row 48, channel 4":
+          - rowheader "30"
+          - cell "--- 00 000, row 48, channel 1":
+            - button "--- 00 000, row 48, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 48, channel 2":
+            - button "--- 00 000, row 48, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 48, channel 3":
+            - button "--- 00 000, row 48, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 48, channel 4":
+            - button "--- 00 000, row 48, channel 4": "--- 00 000"
+        - row "31 --- 00 000, row 49, channel 1 --- 00 000, row 49, channel 2 --- 00 000, row 49, channel 3 --- 00 000, row 49, channel 4":
+          - rowheader "31"
+          - cell "--- 00 000, row 49, channel 1":
+            - button "--- 00 000, row 49, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 49, channel 2":
+            - button "--- 00 000, row 49, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 49, channel 3":
+            - button "--- 00 000, row 49, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 49, channel 4":
+            - button "--- 00 000, row 49, channel 4": "--- 00 000"
+        - row "32 --- 00 000, row 50, channel 1 --- 00 000, row 50, channel 2 --- 00 000, row 50, channel 3 --- 00 000, row 50, channel 4":
+          - rowheader "32"
+          - cell "--- 00 000, row 50, channel 1":
+            - button "--- 00 000, row 50, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 50, channel 2":
+            - button "--- 00 000, row 50, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 50, channel 3":
+            - button "--- 00 000, row 50, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 50, channel 4":
+            - button "--- 00 000, row 50, channel 4": "--- 00 000"
+        - row "33 --- 00 000, row 51, channel 1 --- 00 000, row 51, channel 2 --- 00 000, row 51, channel 3 --- 00 000, row 51, channel 4":
+          - rowheader "33"
+          - cell "--- 00 000, row 51, channel 1":
+            - button "--- 00 000, row 51, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 51, channel 2":
+            - button "--- 00 000, row 51, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 51, channel 3":
+            - button "--- 00 000, row 51, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 51, channel 4":
+            - button "--- 00 000, row 51, channel 4": "--- 00 000"
+        - row "34 --- 00 000, row 52, channel 1 --- 00 000, row 52, channel 2 --- 00 000, row 52, channel 3 --- 00 000, row 52, channel 4":
+          - rowheader "34"
+          - cell "--- 00 000, row 52, channel 1":
+            - button "--- 00 000, row 52, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 52, channel 2":
+            - button "--- 00 000, row 52, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 52, channel 3":
+            - button "--- 00 000, row 52, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 52, channel 4":
+            - button "--- 00 000, row 52, channel 4": "--- 00 000"
+        - row "35 --- 00 000, row 53, channel 1 --- 00 000, row 53, channel 2 --- 00 000, row 53, channel 3 --- 00 000, row 53, channel 4":
+          - rowheader "35"
+          - cell "--- 00 000, row 53, channel 1":
+            - button "--- 00 000, row 53, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 53, channel 2":
+            - button "--- 00 000, row 53, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 53, channel 3":
+            - button "--- 00 000, row 53, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 53, channel 4":
+            - button "--- 00 000, row 53, channel 4": "--- 00 000"
+        - row "36 --- 00 000, row 54, channel 1 --- 00 000, row 54, channel 2 --- 00 000, row 54, channel 3 --- 00 000, row 54, channel 4":
+          - rowheader "36"
+          - cell "--- 00 000, row 54, channel 1":
+            - button "--- 00 000, row 54, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 54, channel 2":
+            - button "--- 00 000, row 54, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 54, channel 3":
+            - button "--- 00 000, row 54, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 54, channel 4":
+            - button "--- 00 000, row 54, channel 4": "--- 00 000"
+        - row "37 --- 00 000, row 55, channel 1 --- 00 000, row 55, channel 2 --- 00 000, row 55, channel 3 --- 00 000, row 55, channel 4":
+          - rowheader "37"
+          - cell "--- 00 000, row 55, channel 1":
+            - button "--- 00 000, row 55, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 55, channel 2":
+            - button "--- 00 000, row 55, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 55, channel 3":
+            - button "--- 00 000, row 55, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 55, channel 4":
+            - button "--- 00 000, row 55, channel 4": "--- 00 000"
+        - row "38 --- 00 000, row 56, channel 1 --- 00 000, row 56, channel 2 --- 00 000, row 56, channel 3 --- 00 000, row 56, channel 4":
+          - rowheader "38"
+          - cell "--- 00 000, row 56, channel 1":
+            - button "--- 00 000, row 56, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 56, channel 2":
+            - button "--- 00 000, row 56, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 56, channel 3":
+            - button "--- 00 000, row 56, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 56, channel 4":
+            - button "--- 00 000, row 56, channel 4": "--- 00 000"
+        - row "39 --- 00 000, row 57, channel 1 --- 00 000, row 57, channel 2 --- 00 000, row 57, channel 3 --- 00 000, row 57, channel 4":
+          - rowheader "39"
+          - cell "--- 00 000, row 57, channel 1":
+            - button "--- 00 000, row 57, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 57, channel 2":
+            - button "--- 00 000, row 57, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 57, channel 3":
+            - button "--- 00 000, row 57, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 57, channel 4":
+            - button "--- 00 000, row 57, channel 4": "--- 00 000"
+        - row "3A --- 00 000, row 58, channel 1 --- 00 000, row 58, channel 2 --- 00 000, row 58, channel 3 --- 00 000, row 58, channel 4":
+          - rowheader "3A"
+          - cell "--- 00 000, row 58, channel 1":
+            - button "--- 00 000, row 58, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 58, channel 2":
+            - button "--- 00 000, row 58, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 58, channel 3":
+            - button "--- 00 000, row 58, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 58, channel 4":
+            - button "--- 00 000, row 58, channel 4": "--- 00 000"
+        - row "3B --- 00 000, row 59, channel 1 --- 00 000, row 59, channel 2 --- 00 000, row 59, channel 3 --- 00 000, row 59, channel 4":
+          - rowheader "3B"
+          - cell "--- 00 000, row 59, channel 1":
+            - button "--- 00 000, row 59, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 59, channel 2":
+            - button "--- 00 000, row 59, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 59, channel 3":
+            - button "--- 00 000, row 59, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 59, channel 4":
+            - button "--- 00 000, row 59, channel 4": "--- 00 000"
+        - row "3C --- 00 000, row 60, channel 1 --- 00 000, row 60, channel 2 --- 00 000, row 60, channel 3 --- 00 000, row 60, channel 4":
+          - rowheader "3C"
+          - cell "--- 00 000, row 60, channel 1":
+            - button "--- 00 000, row 60, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 60, channel 2":
+            - button "--- 00 000, row 60, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 60, channel 3":
+            - button "--- 00 000, row 60, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 60, channel 4":
+            - button "--- 00 000, row 60, channel 4": "--- 00 000"
+        - row "3D --- 00 000, row 61, channel 1 --- 00 000, row 61, channel 2 --- 00 000, row 61, channel 3 --- 00 000, row 61, channel 4":
+          - rowheader "3D"
+          - cell "--- 00 000, row 61, channel 1":
+            - button "--- 00 000, row 61, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 61, channel 2":
+            - button "--- 00 000, row 61, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 61, channel 3":
+            - button "--- 00 000, row 61, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 61, channel 4":
+            - button "--- 00 000, row 61, channel 4": "--- 00 000"
+        - row "3E --- 00 000, row 62, channel 1 --- 00 000, row 62, channel 2 --- 00 000, row 62, channel 3 --- 00 000, row 62, channel 4":
+          - rowheader "3E"
+          - cell "--- 00 000, row 62, channel 1":
+            - button "--- 00 000, row 62, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 62, channel 2":
+            - button "--- 00 000, row 62, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 62, channel 3":
+            - button "--- 00 000, row 62, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 62, channel 4":
+            - button "--- 00 000, row 62, channel 4": "--- 00 000"
+        - row "3F --- 00 000, row 63, channel 1 --- 00 000, row 63, channel 2 --- 00 000, row 63, channel 3 --- 00 000, row 63, channel 4":
+          - rowheader "3F"
+          - cell "--- 00 000, row 63, channel 1":
+            - button "--- 00 000, row 63, channel 1": "--- 00 000"
+          - cell "--- 00 000, row 63, channel 2":
+            - button "--- 00 000, row 63, channel 2": "--- 00 000"
+          - cell "--- 00 000, row 63, channel 3":
+            - button "--- 00 000, row 63, channel 3": "--- 00 000"
+          - cell "--- 00 000, row 63, channel 4":
+            - button "--- 00 000, row 63, channel 4": "--- 00 000"
+    - 'group "Selected cell: row 0, channel 1"':
+      - text: "Selected cell: row 0, channel 1 Note"
+      - combobox "Note":
+        - option "No note" [selected]
+        - option "C-1"
+        - option "C#1"
+        - option "D-1"
+        - option "D#1"
+        - option "E-1"
+        - option "F-1"
+        - option "F#1"
+        - option "G-1"
+        - option "G#1"
+        - option "A-1"
+        - option "A#1"
+        - option "B-1"
+        - option "C-2"
+        - option "C#2"
+        - option "D-2"
+        - option "D#2"
+        - option "E-2"
+        - option "F-2"
+        - option "F#2"
+        - option "G-2"
+        - option "G#2"
+        - option "A-2"
+        - option "A#2"
+        - option "B-2"
+        - option "C-3"
+        - option "C#3"
+        - option "D-3"
+        - option "D#3"
+        - option "E-3"
+        - option "F-3"
+        - option "F#3"
+        - option "G-3"
+        - option "G#3"
+        - option "A-3"
+        - option "A#3"
+        - option "B-3"
+      - text: Sample
+      - combobox "Sample":
+        - option "Keep current" [selected]
+        - option "01 (empty)"
+        - option "02 (empty)"
+        - option "03 (empty)"
+        - option "04 (empty)"
+        - option "05 (empty)"
+        - option "06 (empty)"
+        - option "07 (empty)"
+        - option "08 (empty)"
+        - option "09 (empty)"
+        - option "0A (empty)"
+        - option "0B (empty)"
+        - option "0C (empty)"
+        - option "0D (empty)"
+        - option "0E (empty)"
+        - option "0F (empty)"
+        - option "10 (empty)"
+        - option "11 (empty)"
+        - option "12 (empty)"
+        - option "13 (empty)"
+        - option "14 (empty)"
+        - option "15 (empty)"
+        - option "16 (empty)"
+        - option "17 (empty)"
+        - option "18 (empty)"
+        - option "19 (empty)"
+        - option "1A (empty)"
+        - option "1B (empty)"
+        - option "1C (empty)"
+        - option "1D (empty)"
+        - option "1E (empty)"
+        - option "1F (empty)"
+      - text: Effect
+      - combobox "Effect":
+        - option "None" [selected]
+        - option "C — volume"
+        - option "F — speed/tempo"
+      - text: Value (decimal)
+      - spinbutton "Value (decimal)": "0"
+      - button "Clear cell"
+      - paragraph: "C: volume 0–64. F: speed 1–31 ticks/row, or tempo 32–255 BPM. Other effects and finetuning are rejected on import."
+    - complementary "Sample manager":
+      - group "Sample manager":
+        - text: Sample manager Instrument
+        - combobox "Instrument":
+          - option "01 (empty)" [selected]
+          - option "02 (empty)"
+          - option "03 (empty)"
+          - option "04 (empty)"
+          - option "05 (empty)"
+          - option "06 (empty)"
+          - option "07 (empty)"
+          - option "08 (empty)"
+          - option "09 (empty)"
+          - option "0A (empty)"
+          - option "0B (empty)"
+          - option "0C (empty)"
+          - option "0D (empty)"
+          - option "0E (empty)"
+          - option "0F (empty)"
+          - option "10 (empty)"
+          - option "11 (empty)"
+          - option "12 (empty)"
+          - option "13 (empty)"
+          - option "14 (empty)"
+          - option "15 (empty)"
+          - option "16 (empty)"
+          - option "17 (empty)"
+          - option "18 (empty)"
+          - option "19 (empty)"
+          - option "1A (empty)"
+          - option "1B (empty)"
+          - option "1C (empty)"
+          - option "1D (empty)"
+          - option "1E (empty)"
+          - option "1F (empty)"
+        - paragraph: 0 bytes · 0 / 32768 total
+        - text: Sample name
+        - textbox "Sample name"
+        - text: Volume
+        - spinbutton "Volume": "64"
+        - text: Loop start
+        - spinbutton "Loop start": "0"
+        - text: Loop length
+        - spinbutton "Loop length": "0"
+        - button "Audition sample"
+        - text: Replace sample (8-bit mono WAV / signed PCM)
+        - button "Replace sample (8-bit mono WAV / signed PCM)"
+        - paragraph: "At most 8192 bytes each. Loop positions use bytes; lengths are even. Zero disables looping. MOD stores no sample rate: imported data plays at tracker pitch."

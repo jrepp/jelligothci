@@ -51,7 +51,7 @@ static void reading_moment(void)
     game.pets[0].needs[JELLI_AMUSEMENT] = game.pets[0].needs[JELLI_SOCIAL] = 200u;
     CHECK(strcmp(jelli_moments[4].name, "READING") == 0 && jelli_moments[4].prop != 0u);
     CHECK(moment(&game, 4u) == JELLI_OK && game.pets[0].moment == 5u);
-    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] == 200u && game.pets[0].needs[JELLI_SOCIAL] == 200u);
+    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] > 200u && game.pets[0].needs[JELLI_SOCIAL] > 200u);
     CHECK(moment(&game, 4u) == JELLI_BUSY);
     finish_activity(&game);
     CHECK(game.pets[0].moment == 0u && jelli_game_valid(&game));

@@ -390,5 +390,11 @@ JelliResult jelli_game_command_impl(JelliGame *game, JelliCommand command)
         return jelli_collectible_command(game, command);
     if (game->collectible.active && command.kind != JELLI_CMD_VOLUME)
         return JELLI_BUSY;
-    return dispatch_action(game, command, pet);
+    uint64_t previous_due = pet->interaction_due;
+    uint8_t previous_activity = pet->activity;
+    JelliResult result = dispatch_action(game, command, pet);
+    if (result == JELLI_OK &&
+        (pet->interaction_due != previous_due || pet->activity != previous_activity))
+        jelli_activity_rewards_begin(game, pet);
+    return result;
 }

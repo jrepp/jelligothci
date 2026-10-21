@@ -97,7 +97,7 @@ class Client:
 
     def press(self, button):
         state = self.state()
-        deadline = time.monotonic() + 3.0
+        deadline = time.monotonic() + self.timeout
         while state.get("transitioning"):
             if time.monotonic() >= deadline:
                 raise DebugError("Menu transition has not settled; resume the game before pressing")
@@ -260,6 +260,9 @@ def main():
     events.add_argument("--after", type=int, choices=range(0x100000000), default=0, metavar="SEQUENCE")
     effect = commands.add_parser("effect", help="Replay an authored effect on the home view; session only")
     effect.add_argument("key", help="Saved effect key, or stop")
+    gift = commands.add_parser("gift", help="Grant/remove permanent collectibles; key or all")
+    gift.add_argument("action", choices=("grant", "remove"))
+    gift.add_argument("key")
     cheat = commands.add_parser("cheat", help="Explicit debug edits; recorded as cheat events")
     cheat.add_argument("name", choices=("fullness", "energy", "clean", "fun", "connection", "bond", "food", "gifts", "heal"))
     cheat.add_argument("value", type=int, nargs="?")
@@ -333,6 +336,10 @@ def main():
             if not args.key or not args.key.isascii() or not all(c.isalnum() or c in "_-" for c in args.key):
                 parser.error("effect needs an authored key or stop")
             result = client.request("effect stop" if args.key == "stop" else "effect play " + args.key)
+        elif args.command == "gift":
+            if not args.key.isascii() or not args.key or not all(c.isalnum() or c == "-" for c in args.key):
+                parser.error("gift requires a catalog key or all")
+            result = client.request(f"gift {args.action} {args.key}")
         elif args.command == "cheat":
             result = client.request("cheat " + args.name + ("" if args.name == "heal" else f" {args.value}"))
         elif args.command == "clock":

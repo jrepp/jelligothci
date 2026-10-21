@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
                             "--frames", "2000"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
         wire = connect(path, app)
-        debug = module.Client(wire)
+        debug = module.Client(wire, timeout=10.0)
         assert debug.state()["visual"]["page"] == "home"
         debug.request("swipe 2")
         assert debug.state()["visual"]["stat_index"] == 1
@@ -76,7 +76,7 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         capture = debug.request("capture")
         wire.close()  # Abandon capture: disconnect should release it immediately.
         wire = connect(path, app)
-        debug = module.Client(wire)
+        debug = module.Client(wire, timeout=10.0)
         resumed = debug.state()
         assert resumed["capture"] == 0
         assert resumed["ticks"] - capture["ticks"] < 5
@@ -88,7 +88,7 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         wire.write(b"@J1 4 tap ")
         wire.close()
         wire = connect(path, app)
-        assert module.Client(wire).state()["capture"] == 0
+        assert module.Client(wire, timeout=10.0).state()["capture"] == 0
         wire.close()
     finally:
         app.terminate()
@@ -97,7 +97,7 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
     app = subprocess.Popen([binary, "--headless", "--debug-socket", str(path), "--frames", "50"],
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     wire = connect(path, app)
-    assert module.Client(wire).state()["rendered"]
+    assert module.Client(wire, timeout=10.0).state()["rendered"]
     wire.close()
     app.communicate(timeout=3)
     assert app.returncode == 0 and not path.exists()

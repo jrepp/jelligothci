@@ -31,6 +31,7 @@ format() {
 generated_includes() {
     local dir="$repo_dir/build/lint-generated"
     python3 "$repo_dir/tools/assets/asset_ids.py" "$dir/jelli_asset_ids.h"
+    python3 "$repo_dir/tools/audio/build_music.py" --root "$repo_dir" --output "$dir/music_data.h"
     printf '%s' "$dir"
 }
 analyze() {

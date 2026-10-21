@@ -4,9 +4,12 @@
 
 #define JELLI_CHAIN_GRID 8u
 #define JELLI_CHAIN_LENGTH 7u
+#define JELLI_CHAIN_STEP_TICKS 6u
+#define JELLI_CHAIN_RELAXED_TICKS 11u
 #define JELLI_COLLECTIBLE_PROGRESS_TICKS 600u
 #define JELLI_COLLECTIBLE_CHAIN_PRIZE 10u
 #define JELLI_COLLECTIBLE_RECORD_PRIZE 11u
+#define JELLI_COLLECTIBLE_RECORD_COUNT 7u
 #define JELLI_RECORD_RATE 22050u
 #define JELLI_RECORD_SAMPLES 661500u
 
@@ -40,12 +43,13 @@ typedef struct {
     uint8_t body[JELLI_CHAIN_LENGTH];
     uint8_t length, direction, pending_direction, pickup, status, step_ticks;
     bool turned, relaxed;
+    uint8_t buffered_direction; /* Zero or direction+1; second queued turn. */
 } JelliChain;
 
 typedef struct {
     uint16_t play_ticks[JELLI_PRIZE_COUNT];
     uint16_t special_unlocked;
-    bool record_rewarded;
+    uint8_t record_rewarded; /* One completion bit per record. */
 } JelliCollectibleProgress;
 
 /* One resumable checkpoint; opening another item/pet replaces it explicitly. */

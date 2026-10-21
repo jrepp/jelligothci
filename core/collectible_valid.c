@@ -12,8 +12,13 @@ bool jelli_collectible_progress_valid(const JelliCollectibleProgress *progress)
              progress->play_ticks[i] != JELLI_COLLECTIBLE_PROGRESS_TICKS))
             return false;
     }
-    return !progress->record_rewarded ||
-           progress->play_ticks[JELLI_COLLECTIBLE_RECORD_PRIZE] >= 300u;
+    if (progress->record_rewarded >= (1u << JELLI_COLLECTIBLE_RECORD_COUNT))
+        return false;
+    for (unsigned i = 0u; i < JELLI_COLLECTIBLE_RECORD_COUNT; ++i)
+        if ((progress->record_rewarded & (1u << i)) &&
+            progress->play_ticks[JELLI_COLLECTIBLE_RECORD_PRIZE + i] < 300u)
+            return false;
+    return true;
 }
 
 static bool session_empty(const JelliCollectibleSession *s)
@@ -29,13 +34,15 @@ static bool session_mode_valid(const JelliCollectibleSession *s)
                jelli_chain_valid(&s->chain) &&
                (s->chain.status == JELLI_CHAIN_RUNNING || s->paused);
     if (s->mode == JELLI_COLLECTIBLE_RECORD)
-        return s->prize == JELLI_COLLECTIBLE_RECORD_PRIZE &&
+        return s->prize >= JELLI_COLLECTIBLE_RECORD_PRIZE &&
+               s->prize < JELLI_COLLECTIBLE_RECORD_PRIZE + JELLI_COLLECTIBLE_RECORD_COUNT &&
                s->record_cursor <= JELLI_RECORD_SAMPLES &&
                s->elapsed_ticks == s->record_cursor / (JELLI_RECORD_RATE / 10u) &&
                (s->record_cursor != JELLI_RECORD_SAMPLES || s->paused);
     return s->mode == JELLI_COLLECTIBLE_GENERIC && s->prize != JELLI_COLLECTIBLE_CHAIN_PRIZE &&
-           s->prize != JELLI_COLLECTIBLE_RECORD_PRIZE && !s->record_cursor &&
-           s->elapsed_ticks <= 80u && (s->elapsed_ticks != 80u || s->paused);
+           (s->prize < JELLI_COLLECTIBLE_RECORD_PRIZE ||
+            s->prize >= JELLI_COLLECTIBLE_RECORD_PRIZE + JELLI_COLLECTIBLE_RECORD_COUNT) &&
+           !s->record_cursor && s->elapsed_ticks <= 80u && (s->elapsed_ticks != 80u || s->paused);
 }
 
 bool jelli_collectible_valid(const JelliGame *game)

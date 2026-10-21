@@ -59,7 +59,7 @@ static void gradual_hour_and_night(void)
     CHECK(game.pets[0].needs[JELLI_HYGIENE] == 825u);
 }
 
-static void mess_only_on_completed_actions(void)
+static void meal_mess_and_upfront_play_cost(void)
 {
     JelliGame game;
     jelli_game_init(&game);
@@ -71,8 +71,9 @@ static void mess_only_on_completed_actions(void)
     advance_live(&game, 100u);
     CHECK(game.pets[0].needs[JELLI_HYGIENE] == 690u);
     CHECK(command(&game, JELLI_CMD_PLAY) == JELLI_OK);
+    CHECK(game.pets[0].needs[JELLI_HYGIENE] == 670u);
     advance_live(&game, 7900u);
-    CHECK(game.pets[0].needs[JELLI_HYGIENE] == 690u);
+    CHECK(game.pets[0].needs[JELLI_HYGIENE] == 670u);
     advance_live(&game, 100u);
     CHECK(game.pets[0].needs[JELLI_HYGIENE] == 670u);
     CHECK(command(&game, JELLI_CMD_FEED) == JELLI_OK);
@@ -123,9 +124,10 @@ static void mess_clamps_at_zero(void)
 int main(void)
 {
     gradual_hour_and_night();
-    mess_only_on_completed_actions();
+    meal_mess_and_upfront_play_cost();
     unaligned_completion_and_sleep_match();
     mess_clamps_at_zero();
-    puts("PASS: gradual needs, completed-activity mess, clamps and live/offline consistency");
+    puts("PASS: gradual needs, meal mess and upfront play costs, clamps and live/offline "
+         "consistency");
     return 0;
 }

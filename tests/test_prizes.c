@@ -181,8 +181,8 @@ static void all_nine_and_deterministic_outing(void)
     CHECK(!game.prizes.offered);
     jelli_prize_award(&game, JELLI_PRIZE_COUNT);
     CHECK(!game.prizes.offered);
-    CHECK(jelli_collectible_craft(&game, 0u) == JELLI_OK);
-    CHECK(jelli_collectible_craft(&game, 1u) == JELLI_OK);
+    for (unsigned recipe = 0u; recipe < jelli_craft_recipe_count; ++recipe)
+        CHECK(jelli_collectible_craft(&game, recipe) == JELLI_OK);
     CHECK(game.prizes.discovered == JELLI_PRIZE_MASK && game.prizes.owned == JELLI_PRIZE_MASK);
     CHECK(game.pets[0].prize_progress.counts[1] == 3u);
     CHECK(game.pets[1].prize_progress.counts[1] == 0u);

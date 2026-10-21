@@ -59,10 +59,15 @@ static bool chain_header_valid(const JelliChain *chain)
 {
     if (!chain || chain->length < 3u || chain->length > JELLI_CHAIN_LENGTH ||
         chain->direction > JELLI_CHAIN_LEFT || chain->pending_direction > JELLI_CHAIN_LEFT ||
+        chain->buffered_direction > 4u ||
+        (chain->buffered_direction &&
+         (!chain->turned ||
+          chain->buffered_direction - 1u == (chain->pending_direction + 2u) % 4u)) ||
         chain->status > JELLI_CHAIN_LOST || chain->pickup >= JELLI_CHAIN_GRID * JELLI_CHAIN_GRID ||
         (!chain->turned && chain->pending_direction != chain->direction) ||
         (chain->turned && chain->pending_direction == (chain->direction + 2u) % 4u) ||
-        chain->step_ticks >= (chain->relaxed ? 8u : 4u) ||
+        chain->step_ticks >=
+            (chain->relaxed ? JELLI_CHAIN_RELAXED_TICKS : JELLI_CHAIN_STEP_TICKS) ||
         (chain->status == JELLI_CHAIN_WON && chain->length != JELLI_CHAIN_LENGTH))
         return false;
     return true;
@@ -91,12 +96,21 @@ bool jelli_chain_valid(const JelliChain *chain)
 bool jelli_chain_turn(JelliChain *chain, unsigned direction)
 {
     if (!jelli_chain_valid(chain) || chain->status != JELLI_CHAIN_RUNNING ||
-        direction > JELLI_CHAIN_LEFT || chain->turned || direction == (chain->direction + 2u) % 4u)
+        direction > JELLI_CHAIN_LEFT)
         return false;
-    if (direction == chain->direction)
+    unsigned last = chain->buffered_direction ? chain->buffered_direction - 1u
+                    : chain->turned           ? chain->pending_direction
+                                              : chain->direction;
+    if (direction == last)
         return true;
-    chain->pending_direction = (uint8_t)direction;
-    chain->turned = true;
+    if (direction == (last + 2u) % 4u || chain->buffered_direction)
+        return false;
+    if (chain->turned)
+        chain->buffered_direction = (uint8_t)(direction + 1u);
+    else {
+        chain->pending_direction = (uint8_t)direction;
+        chain->turned = true;
+    }
     return true;
 }
 
@@ -105,7 +119,10 @@ static void move_chain(JelliChain *chain)
     int x = (int)(chain->body[0] % JELLI_CHAIN_GRID);
     int y = (int)(chain->body[0] / JELLI_CHAIN_GRID);
     chain->direction = chain->pending_direction;
-    chain->turned = false;
+    chain->turned = chain->buffered_direction != 0u;
+    if (chain->turned)
+        chain->pending_direction = (uint8_t)(chain->buffered_direction - 1u);
+    chain->buffered_direction = 0u;
     x += chain->direction == JELLI_CHAIN_RIGHT ? 1 : chain->direction == JELLI_CHAIN_LEFT ? -1 : 0;
     y += chain->direction == JELLI_CHAIN_DOWN ? 1 : chain->direction == JELLI_CHAIN_UP ? -1 : 0;
     if (x < 0 || y < 0 || x >= (int)JELLI_CHAIN_GRID || y >= (int)JELLI_CHAIN_GRID) {
@@ -139,7 +156,8 @@ void jelli_chain_tick(JelliChain *chain)
     if (!jelli_chain_valid(chain) || chain->status != JELLI_CHAIN_RUNNING)
         return;
     ++chain->step_ticks;
-    if (chain->step_ticks >= (chain->relaxed ? 8u : 4u)) {
+    if (chain->step_ticks >=
+        (chain->relaxed ? JELLI_CHAIN_RELAXED_TICKS : JELLI_CHAIN_STEP_TICKS)) {
         chain->step_ticks = 0u;
         move_chain(chain);
     }

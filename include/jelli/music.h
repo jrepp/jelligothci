@@ -2,6 +2,7 @@
 #define JELLI_MUSIC_H
 #include "jelli/sound.h"
 
+#define JELLI_MUSIC_TRACK_COUNT 7u
 #define JELLI_MUSIC_RATE JELLI_SOUND_RATE
 #define JELLI_MUSIC_SAMPLES (JELLI_MUSIC_RATE * 30u)
 
@@ -17,7 +18,7 @@ typedef enum {
 typedef struct {
     JelliMusicAction action;
     uint32_t cursor, serial;
-    uint8_t volume;
+    uint8_t volume, song;
 } JelliMusicCommand;
 
 typedef struct {
@@ -27,11 +28,12 @@ typedef struct {
 
 typedef struct {
     uint32_t cursor, serial;
-    uint8_t volume;
+    uint8_t volume, song;
     bool playing;
 } JelliMusic;
 
-/* One original record, Morning Tea. START/SEEK cursor is an exact sample offset.
+/* Seven original tracks. START atomically selects song 0..TRACK_COUNT-1.
+ * START/SEEK cursor is an exact sample offset.
  * START/VOLUME use master volume 0..100. Other fields are ignored for other actions.
  * serial is a caller token echoed after the command is applied (including mute).
  * Invalid commands leave state unchanged. STOP rewinds; PAUSE retains position.
@@ -39,7 +41,7 @@ typedef struct {
 bool jelli_music_control(JelliMusic *music, JelliMusicCommand command);
 JelliMusicStatus jelli_music_status(const JelliMusic *music);
 /* Writes at most JELLI_SOUND_BLOCK samples; returns produced samples. Seek is
- * exact and O(1); no replay from the beginning and no hidden oscillator state. */
+ * exact with bounded span lookup; no replay or hidden oscillator state. */
 size_t jelli_music_render(JelliMusic *music, int16_t *output, size_t capacity);
 /* Existing care cues keep their gain; music ducks while any care cue is active.
  * Samples are signed PCM16; saturation makes every input combination defined. */

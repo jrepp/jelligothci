@@ -121,6 +121,8 @@
         - option "evolutions"
         - option "present action"
         - option "food"
+        - option "gift shelf"
+        - option "collectible play"
       - checkbox "Ring menu open"
       - text: Ring menu open
       - checkbox "Set the clock"

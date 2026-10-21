@@ -27,7 +27,8 @@ static void ticks(JelliGame *game, unsigned count)
 
 static void chain_step(JelliChain *chain)
 {
-    for (unsigned i = 0u; i < (chain->relaxed ? 8u : 4u); ++i)
+    for (unsigned i = 0u; i < (chain->relaxed ? JELLI_CHAIN_RELAXED_TICKS : JELLI_CHAIN_STEP_TICKS);
+         ++i)
         jelli_chain_tick(chain);
     CHECK(jelli_chain_valid(chain));
 }
@@ -38,10 +39,14 @@ static void chain_rules(void)
     jelli_chain_init(&chain, false);
     CHECK(!jelli_chain_turn(&chain, JELLI_CHAIN_LEFT));
     CHECK(jelli_chain_turn(&chain, JELLI_CHAIN_UP));
-    CHECK(!jelli_chain_turn(&chain, JELLI_CHAIN_LEFT));
+    CHECK(jelli_chain_turn(&chain, JELLI_CHAIN_LEFT));
+    CHECK(!jelli_chain_turn(&chain, JELLI_CHAIN_RIGHT));
+    CHECK(!jelli_chain_turn(&chain, JELLI_CHAIN_DOWN)); /* Full bounded queue. */
     CHECK(!jelli_chain_turn(&chain, 9u));
     chain_step(&chain);
-    CHECK(chain.body[0] == 19u && !chain.turned);
+    CHECK(chain.body[0] == 19u && chain.turned);
+    chain_step(&chain);
+    CHECK(chain.body[0] == 18u && !chain.turned);
     chain = (JelliChain){.body = {9u, 8u, 16u, 17u},
                          .length = 4u,
                          .direction = JELLI_CHAIN_RIGHT,
@@ -51,7 +56,7 @@ static void chain_rules(void)
     chain_step(&chain); /* The departing tail cell is legal when not growing. */
     CHECK(chain.body[0] == 17u && chain.status == JELLI_CHAIN_RUNNING);
     jelli_chain_init(&chain, true);
-    for (unsigned i = 0u; i < 7u; ++i)
+    for (unsigned i = 0u; i < JELLI_CHAIN_RELAXED_TICKS - 1u; ++i)
         jelli_chain_tick(&chain);
     CHECK(chain.body[0] == 27u);
     jelli_chain_tick(&chain);
@@ -172,9 +177,12 @@ static void record_samples_and_reward_once(void)
     CHECK(jelli_collectible_play(&game, 11u) == JELLI_OK);
     ticks(&game, 350u);
     CHECK(game.collectible.record_cursor == 0u && game.collectible.elapsed_ticks == 0u);
+    uint16_t morale = game.pets[0].needs[JELLI_AMUSEMENT];
+    CHECK(jelli_collectible_record_progress(&game, JELLI_RECORD_RATE / 10u) == JELLI_OK);
+    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] > morale);
     CHECK(jelli_collectible_record_progress(&game, JELLI_RECORD_SAMPLES - 1u) == JELLI_OK);
     CHECK(!game.pets[0].collectible_progress.record_rewarded);
-    uint16_t morale = game.pets[0].needs[JELLI_AMUSEMENT];
+    CHECK(game.pets[0].needs[JELLI_AMUSEMENT] < morale + 30u);
     CHECK(jelli_collectible_record_progress(&game, JELLI_RECORD_SAMPLES) == JELLI_OK);
     CHECK(game.collectible.paused && game.collectible.active);
     CHECK(game.pets[0].needs[JELLI_AMUSEMENT] == morale + 30u);
@@ -228,6 +236,40 @@ static void repair(uint8_t *bytes, size_t size)
         bytes[size - 8u + i] = (uint8_t)(~crc >> (i * 8u));
 }
 
+static void buffered_checkpoint_and_pickup(void)
+{
+    JelliSave save = {0}, loaded = {0};
+    uint8_t bytes[JELLI_SAVE_CAPACITY];
+    jelli_game_init(&save.game);
+    own(&save.game, JELLI_COLLECTIBLE_CHAIN_PRIZE);
+    CHECK(jelli_collectible_play(&save.game, JELLI_COLLECTIBLE_CHAIN_PRIZE) == JELLI_OK);
+    CHECK(jelli_chain_turn(&save.game.collectible.chain, JELLI_CHAIN_UP));
+    CHECK(jelli_chain_turn(&save.game.collectible.chain, JELLI_CHAIN_LEFT));
+    size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
+    CHECK(size && jelli_save_decode(&loaded, bytes, size));
+    chain_step(&loaded.game.collectible.chain);
+    CHECK(loaded.game.collectible.chain.body[0] == 19u);
+    chain_step(&loaded.game.collectible.chain);
+    CHECK(loaded.game.collectible.chain.body[0] == 18u);
+    jelli_chain_init(&save.game.collectible.chain, false);
+    save.game.collectible.chain.pickup = 28u;
+    ticks(&save.game, JELLI_CHAIN_STEP_TICKS);
+    CHECK(save.game.collectible.chain.length == 4u);
+    CHECK(save.game.pets[0].reaction == JELLI_REACTION_TOUCH_HAPPY);
+    CHECK(save.game.pets[0].reaction_ticks > 0u);
+    size = jelli_save_encode(&save, bytes, sizeof(bytes));
+    CHECK(size);
+    bytes[size - 8u - TEST_SAVE_V16_BYTES(save.game.count)] = 1u;
+    size_t removed = 1u + TEST_SAVE_V17_BYTES(save.game.count);
+    memmove(bytes + size - 8u - removed, bytes + size - 8u, 8u);
+    size -= removed; /* v16 schema1 has neither extension nor second turn. */
+    bytes[4] = 16u;
+    repair(bytes, size);
+    CHECK(jelli_save_decode(&loaded, bytes, size));
+    CHECK(loaded.game.collectible.chain.length == 4u);
+    CHECK(!loaded.game.collectible.chain.buffered_direction);
+}
+
 static void legacy_and_corrupt_checkpoint(void)
 {
     JelliSave save = {0}, loaded = {0};
@@ -238,7 +280,7 @@ static void legacy_and_corrupt_checkpoint(void)
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size);
     size_t extra = TEST_SAVE_V16_BYTES(save.game.count);
-    bytes[size - 8u - extra] = 2u; /* Unknown independently versioned checkpoint. */
+    bytes[size - 8u - extra] = 3u; /* Unknown independently versioned checkpoint. */
     repair(bytes, size);
     loaded.sequence = 99u;
     CHECK(!jelli_save_decode(&loaded, bytes, size) && loaded.sequence == 99u);
@@ -257,6 +299,7 @@ static void legacy_and_corrupt_checkpoint(void)
 int main(void)
 {
     chain_rules();
+    buffered_checkpoint_and_pickup();
     reachable_star_and_win();
     permanent_play_crafting_and_bow();
     pause_resume_and_bounded_time();

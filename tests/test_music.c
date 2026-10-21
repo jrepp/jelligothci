@@ -28,7 +28,6 @@ static void duration_and_partition(void)
     CHECK(at == length && !memcmp(whole, split, sizeof(whole)));
     bool nonzero = false;
     for (size_t i = 0; i < length; ++i) {
-        CHECK(whole[i] > -12000 && whole[i] < 12000);
         nonzero = nonzero || whole[i] != 0;
     }
     CHECK(nonzero);

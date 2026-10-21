@@ -5,20 +5,28 @@
 #include <stddef.h>
 
 _Static_assert(sizeof(JelliCollectibleSession) <= 40u, "Checkpoint working storage exceeds budget");
-_Static_assert(sizeof(JelliCollectibleProgress) <= 36u,
+_Static_assert(sizeof(JelliCollectibleProgress) <= 44u,
                "Per-pet collectible progress exceeds budget");
 
 const JelliCraftRecipe jelli_craft_recipes[] = {
     {.key = "R01", .first = 8u, .second = 4u, .output = JELLI_COLLECTIBLE_CHAIN_PRIZE},
-    {.key = "R09", .first = 2u, .second = 3u, .output = JELLI_COLLECTIBLE_RECORD_PRIZE}};
+    {.key = "R09", .first = 2u, .second = 3u, .output = JELLI_COLLECTIBLE_RECORD_PRIZE},
+    {.key = "R12", .first = 0u, .second = 7u, .output = 12u},
+    {.key = "R13", .first = 2u, .second = 8u, .output = 13u},
+    {.key = "R14", .first = 4u, .second = 5u, .output = 14u},
+    {.key = "R15", .first = 3u, .second = 8u, .output = 15u},
+    {.key = "R16", .first = 0u, .second = 5u, .output = 16u},
+    {.key = "R17", .first = 4u, .second = 7u, .output = 17u}};
 const unsigned jelli_craft_recipe_count =
     sizeof(jelli_craft_recipes) / sizeof(jelli_craft_recipes[0]);
 
 static uint8_t mode_for(unsigned prize)
 {
-    return prize == JELLI_COLLECTIBLE_CHAIN_PRIZE    ? JELLI_COLLECTIBLE_CHAIN
-           : prize == JELLI_COLLECTIBLE_RECORD_PRIZE ? JELLI_COLLECTIBLE_RECORD
-                                                     : JELLI_COLLECTIBLE_GENERIC;
+    return prize == JELLI_COLLECTIBLE_CHAIN_PRIZE ? JELLI_COLLECTIBLE_CHAIN
+           : prize >= JELLI_COLLECTIBLE_RECORD_PRIZE &&
+                   prize < JELLI_COLLECTIBLE_RECORD_PRIZE + JELLI_COLLECTIBLE_RECORD_COUNT
+               ? JELLI_COLLECTIBLE_RECORD
+               : JELLI_COLLECTIBLE_GENERIC;
 }
 
 JelliResult jelli_collectible_available(const JelliGame *game, unsigned prize)
@@ -56,8 +64,8 @@ JelliResult jelli_collectible_craft(JelliGame *game, unsigned recipe)
     if (result != JELLI_OK)
         return result;
     unsigned output = jelli_craft_recipes[recipe].output;
-    game->prizes.owned |= (uint16_t)(1u << output);
-    game->prizes.discovered |= (uint16_t)(1u << output);
+    game->prizes.owned |= (uint32_t)(1u << output);
+    game->prizes.discovered |= (uint32_t)(1u << output);
     game->prizes.origin_pet[output] = game->pets[game->active].id;
     if (game->prizes.offered == output + 1u) {
         game->prizes.offered = 0u;
@@ -186,8 +194,12 @@ void jelli_collectible_tick(JelliGame *game)
     credit_play(game, 1u);
     if (s->elapsed_ticks < JELLI_COLLECTIBLE_PROGRESS_TICKS)
         ++s->elapsed_ticks;
-    if (s->mode == JELLI_COLLECTIBLE_CHAIN)
+    if (s->mode == JELLI_COLLECTIBLE_CHAIN) {
+        unsigned length = s->chain.length;
         jelli_chain_tick(&s->chain);
+        if (s->chain.length > length || s->chain.status == JELLI_CHAIN_WON)
+            special_reaction(&game->pets[game->active]);
+    }
     if (finished(s)) {
         s->paused = true;
         if (s->mode == JELLI_COLLECTIBLE_GENERIC)
@@ -208,19 +220,13 @@ JelliResult jelli_collectible_record_progress(JelliGame *game, uint32_t sample_c
     if (sample_cursor < s->record_cursor)
         return JELLI_INVALID_TARGET;
     unsigned ticks = sample_cursor / (JELLI_RECORD_RATE / 10u);
+    unsigned before_ticks = game->pets[game->active].collectible_progress.play_ticks[s->prize];
     credit_play(game, ticks - s->elapsed_ticks);
+    jelli_collectible_record_reward(game, before_ticks);
     s->elapsed_ticks = (uint16_t)ticks;
     s->record_cursor = sample_cursor;
-    if (sample_cursor == JELLI_RECORD_SAMPLES) {
-        JelliPet *pet = &game->pets[game->active];
-        if (!pet->collectible_progress.record_rewarded) {
-            unsigned gain = pet->needs[JELLI_AMUSEMENT] + 30u;
-            pet->needs[JELLI_AMUSEMENT] = (uint16_t)(gain > 1000u ? 1000u : gain);
-            pet->need_remainders[JELLI_AMUSEMENT] = 0u;
-            pet->collectible_progress.record_rewarded = true;
-        }
+    if (sample_cursor == JELLI_RECORD_SAMPLES)
         s->paused = true;
-    }
     ++game->revision;
     return JELLI_OK;
 }
