@@ -46,6 +46,8 @@ Opt-in gameplay bindings and device replay preparation:
 [memo-086](memos/memo-086-celebration-gameplay-follow-up.md).
 Three event-specific celebrations and USB deployment:
 [memo-087](memos/memo-087-event-celebrations-and-device-validation.md).
+Responsive Jelli Art navigation and interaction polish:
+[memo-088](memos/memo-088-jelli-art-responsive-navigation.md).
 Generated asset final-newline packaging regression:
 [memo-084](memos/memo-084-generated-assets-final-newline.md).
 

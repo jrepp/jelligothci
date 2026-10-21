@@ -13,53 +13,29 @@
   "game@tablet": {},
   "paint-creature@desktop": {
     "label-content-name-mismatch": [
-      ".second",
       "button[data-i=\"0\"]",
       "button[data-i=\"1\"]",
       "button[data-i=\"2\"]",
       "button[data-i=\"3\"]",
-      "div[aria-label=\"Choose a custom colour\"]",
-      "div[data-chip=\"#000000\"]",
-      "div[data-chip=\"body:#d9265d\"]",
-      "div[data-chip=\"body:#ff5994\"]",
-      "div[data-chip=\"body:#ffadca\"]",
-      "div[data-chip=\"body:#ffcbdd\"]",
-      "div[data-chip=\"body:#ffe3ed\"]",
-      "div[data-chip=\"body:#ffffff\"]"
+      "div[aria-label=\"Choose a custom colour\"]"
     ]
   },
   "paint-creature@desktop-light": {
     "label-content-name-mismatch": [
-      ".second",
       "button[data-i=\"0\"]",
       "button[data-i=\"1\"]",
       "button[data-i=\"2\"]",
       "button[data-i=\"3\"]",
-      "div[aria-label=\"Choose a custom colour\"]",
-      "div[data-chip=\"#000000\"]",
-      "div[data-chip=\"body:#d9265d\"]",
-      "div[data-chip=\"body:#ff5994\"]",
-      "div[data-chip=\"body:#ffadca\"]",
-      "div[data-chip=\"body:#ffcbdd\"]",
-      "div[data-chip=\"body:#ffe3ed\"]",
-      "div[data-chip=\"body:#ffffff\"]"
+      "div[aria-label=\"Choose a custom colour\"]"
     ]
   },
   "paint-creature@phone": {
     "label-content-name-mismatch": [
-      ".second",
       "button[data-i=\"0\"]",
       "button[data-i=\"1\"]",
       "button[data-i=\"2\"]",
       "button[data-i=\"3\"]",
-      "div[aria-label=\"Choose a custom colour\"]",
-      "div[data-chip=\"#000000\"]",
-      "div[data-chip=\"body:#d9265d\"]",
-      "div[data-chip=\"body:#ff5994\"]",
-      "div[data-chip=\"body:#ffadca\"]",
-      "div[data-chip=\"body:#ffcbdd\"]",
-      "div[data-chip=\"body:#ffe3ed\"]",
-      "div[data-chip=\"body:#ffffff\"]"
+      "div[aria-label=\"Choose a custom colour\"]"
     ]
   },
   "paint-creature@tablet": {
@@ -72,29 +48,17 @@
   },
   "paint-icon@desktop": {
     "label-content-name-mismatch": [
-      ".faint",
-      ".second",
-      "div[aria-label=\"Choose a custom colour\"]",
-      "div[data-chip=\"coral:#fa8c99\"]",
-      "div[data-chip=\"mint jelly:#43bca2\"]"
+      "div[aria-label=\"Choose a custom colour\"]"
     ]
   },
   "paint-icon@desktop-light": {
     "label-content-name-mismatch": [
-      ".faint",
-      ".second",
-      "div[aria-label=\"Choose a custom colour\"]",
-      "div[data-chip=\"coral:#fa8c99\"]",
-      "div[data-chip=\"mint jelly:#43bca2\"]"
+      "div[aria-label=\"Choose a custom colour\"]"
     ]
   },
   "paint-icon@phone": {
     "label-content-name-mismatch": [
-      ".faint",
-      ".second",
-      "div[aria-label=\"Choose a custom colour\"]",
-      "div[data-chip=\"coral:#fa8c99\"]",
-      "div[data-chip=\"mint jelly:#43bca2\"]"
+      "div[aria-label=\"Choose a custom colour\"]"
     ]
   },
   "paint-icon@tablet": {},
