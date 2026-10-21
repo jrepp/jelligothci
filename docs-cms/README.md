@@ -232,3 +232,5 @@ Bubble Lab, cartridge launch controls and compact checkpoint validation:
 
 Expanded original drum/bass samples and reference-informed arrangements:
 [memo-099](memos/memo-099-expanded-synth-bank-and-arrangements.md).
+Lossless music PCM packing measurements and experimental artifact:
+[memo-101](memos/memo-101-lossless-music-pcm-packing.md).
