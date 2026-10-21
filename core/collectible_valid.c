@@ -27,22 +27,32 @@ static bool session_empty(const JelliCollectibleSession *s)
            !s->mode && !s->prize && !s->chain.length;
 }
 
-static bool session_mode_valid(const JelliCollectibleSession *s)
+static bool other_mode_valid(const JelliCollectibleSession *s)
 {
-    if (s->mode == JELLI_COLLECTIBLE_CHAIN)
-        return s->prize == JELLI_COLLECTIBLE_CHAIN_PRIZE && !s->record_cursor &&
-               jelli_chain_valid(&s->chain) &&
-               (s->chain.status == JELLI_CHAIN_RUNNING || s->paused);
     if (s->mode == JELLI_COLLECTIBLE_RECORD)
         return s->prize >= JELLI_COLLECTIBLE_RECORD_PRIZE &&
                s->prize < JELLI_COLLECTIBLE_RECORD_PRIZE + JELLI_COLLECTIBLE_RECORD_COUNT &&
                s->record_cursor <= JELLI_RECORD_SAMPLES &&
                s->elapsed_ticks == s->record_cursor / (JELLI_RECORD_RATE / 10u) &&
                (s->record_cursor != JELLI_RECORD_SAMPLES || s->paused);
-    return s->mode == JELLI_COLLECTIBLE_GENERIC && s->prize != JELLI_COLLECTIBLE_CHAIN_PRIZE &&
+    return s->mode == JELLI_COLLECTIBLE_GENERIC && s->prize != JELLI_COLLECTIBLE_BUBBLE_PRIZE &&
+           s->prize != JELLI_COLLECTIBLE_CHAIN_PRIZE &&
            (s->prize < JELLI_COLLECTIBLE_RECORD_PRIZE ||
             s->prize >= JELLI_COLLECTIBLE_RECORD_PRIZE + JELLI_COLLECTIBLE_RECORD_COUNT) &&
            !s->record_cursor && s->elapsed_ticks <= 80u && (s->elapsed_ticks != 80u || s->paused);
+}
+
+static bool session_mode_valid(const JelliCollectibleSession *s)
+{
+    if (s->mode == JELLI_COLLECTIBLE_BUBBLE)
+        return s->prize == JELLI_COLLECTIBLE_BUBBLE_PRIZE && !s->record_cursor &&
+               jelli_bubble_valid(&s->bubble) &&
+               (s->bubble.status == JELLI_BUBBLE_RUNNING || s->paused);
+    if (s->mode == JELLI_COLLECTIBLE_CHAIN)
+        return s->prize == JELLI_COLLECTIBLE_CHAIN_PRIZE && !s->record_cursor &&
+               jelli_chain_valid(&s->chain) &&
+               (s->chain.status == JELLI_CHAIN_RUNNING || s->paused);
+    return other_mode_valid(s);
 }
 
 bool jelli_collectible_valid(const JelliGame *game)

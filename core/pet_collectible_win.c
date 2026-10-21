@@ -9,9 +9,10 @@
 bool jelli_pet_collectible_win_update(JelliPetUi *ui, JelliGame *game, uint64_t now)
 {
     const JelliCollectibleSession *session = &game->collectible;
-    bool winning = ui->page == JELLI_UI_COLLECTIBLE_PLAY && session->active &&
-                   session->mode == JELLI_COLLECTIBLE_CHAIN &&
-                   session->chain.status == JELLI_CHAIN_WON;
+    bool winning =
+        ui->page == JELLI_UI_COLLECTIBLE_PLAY && session->active &&
+        ((session->mode == JELLI_COLLECTIBLE_CHAIN && session->chain.status == JELLI_CHAIN_WON) ||
+         (session->mode == JELLI_COLLECTIBLE_BUBBLE && session->bubble.status == JELLI_BUBBLE_WON));
     if (!winning) {
         ui->collectible_win_anchor = 0u;
         ui->collectible_win_ms = 0u;
@@ -73,7 +74,11 @@ void jelli_pet_collectible_win_draw(Canvas *c, const JelliPetUi *ui, const Jelli
         jelli_canvas_centered_sprite(c, clip->frames[frame], x, y, scale);
     }
     jelli_canvas_centered(c, "STAR PLAYER!", 64, 2u, PALE);
-    jelli_canvas_centered(c, "7 JELLIS - YOU DID IT!", 354, 1u, PALE);
+    jelli_canvas_centered(c,
+                          game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE
+                              ? "LAB COMPLETE - ALL 3 LEVELS!"
+                              : "7 JELLIS - YOU DID IT!",
+                          354, 1u, PALE);
     jelli_canvas_disk(c, 233, 462, 48, TEAL);
     jelli_canvas_centered(c, "BACK", 432, 2u, PALE);
 }

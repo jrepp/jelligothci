@@ -17,7 +17,8 @@ class ModTests(unittest.TestCase):
 
     def test_all_builtins_round_trip_four_channels(self):
         files = list((ROOT/'content/music').glob('*.mod'))
-        self.assertEqual(len(files), 7)
+        from music_data import CATALOG
+        self.assertEqual({p.stem for p in files}, {song[0] for song in CATALOG})
         for path in files:
             raw = path.read_bytes()
             doc = mod.decode(raw)

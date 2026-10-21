@@ -7,7 +7,7 @@
 
 static void controls(Canvas *c, const JelliPetUi *ui)
 {
-    for (unsigned slot = 0; slot <= 5u; ++slot) {
+    for (unsigned slot = 0; slot <= 6u; ++slot) {
         JelliPetUiButton b;
         if (!jelli_pet_collectible_button(ui, slot, &b))
             continue;
@@ -198,6 +198,8 @@ static void paused_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
     else if ((s->mode == JELLI_COLLECTIBLE_RECORD && s->record_cursor >= JELLI_RECORD_SAMPLES) ||
              (s->mode == JELLI_COLLECTIBLE_GENERIC && s->elapsed_ticks >= 80u))
         title = "LOVELY PLAY!";
+    if (s->mode == JELLI_COLLECTIBLE_BUBBLE && s->bubble.status != JELLI_BUBBLE_RUNNING)
+        title = s->bubble.status == JELLI_BUBBLE_EMPTY ? "SUPPLY FINISHED" : "WELL IS FULL";
     if (s->mode == JELLI_COLLECTIBLE_RECORD && ui->result == JELLI_NOT_READY)
         title = "AUDIO NOT READY";
     jelli_canvas_rect(c, 125, 145, 216, 165, BG);
@@ -212,7 +214,9 @@ void jelli_pet_collectible_session_draw(Canvas *c, const JelliPetUi *ui, const J
         controls(c, ui);
         return;
     }
-    if (s->mode == JELLI_COLLECTIBLE_CHAIN)
+    if (s->mode == JELLI_COLLECTIBLE_BUBBLE)
+        jelli_pet_bubble_draw(c, s);
+    else if (s->mode == JELLI_COLLECTIBLE_CHAIN)
         chain_draw(c, s);
     else if (s->mode == JELLI_COLLECTIBLE_RECORD)
         record_draw(c, ui, game);

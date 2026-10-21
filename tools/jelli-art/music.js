@@ -28,7 +28,7 @@
   #mu-grid th:first-child{width:30px}#mu-grid td{padding:0}#mu-grid td button{font:inherit;white-space:nowrap;padding:5px 1px;width:100%;min-height:32px;border-radius:0;border:0;background:transparent}
   #mu-grid tr:nth-child(4n+1){background:var(--line)}#mu-grid button[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:-2px;background:var(--bg)}
   .mu-mix{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.mu-mix input[type=range]{width:100%;min-width:0}#mu-wave{width:100%;height:80px;background:var(--bg);border:1px solid var(--line)}
-  #mu-time{width:min(100%,460px)}.mu-help{color:var(--muted);font-size:13px}#mu-sample{width:100%}
+  #music .mu-song-label{width:min(100%,187px)}#mu-song{width:100%}#mu-time{width:min(100%,460px)}.mu-help{color:var(--muted);font-size:13px}#mu-sample{width:100%}
   @container music (max-width:850px){.mu-layout{grid-template-columns:1fr}.mu-scroll{max-height:420px}}
   @container music (max-width:390px){#mu-grid{font-size:10px}.mu-mix{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>`);
@@ -66,7 +66,7 @@
     if(!work){root.innerHTML='<h2>Music tracker</h2><p>Loading records…</p>';return;}
     const c=cell(),sample=work.samples[instrument-1],sampleNames=work.samples.map((s,i)=>[i+1,`${hex(i+1)} ${s.name||'(empty)'}`]);
     root.innerHTML=`<h2>Music tracker</h2><p>Four PCM channels · standard ProTracker MOD · 30-second record preview</p>
-    <div class="mu-controls"><label>Record<select id="mu-song">${options(catalog.map(s=>[s[0],`${s[1]} · ${s[2]}`]),song)}</select></label><label>Module title<input id="mu-title" maxlength="20" pattern="[ -~]*" value="${esc(work.title)}" ${editable?'':'disabled'}></label><button id="mu-save">Save MOD</button><button id="mu-reload">Reload saved</button><button id="mu-undo">Undo</button><span id="mu-status" role="status"></span></div>
+    <div class="mu-controls"><label class="mu-song-label">Record<select id="mu-song">${options(catalog.map(s=>[s[0],`${s[1]} · ${s[2]}`]),song)}</select></label><label>Module title<input id="mu-title" maxlength="20" pattern="[ -~]*" value="${esc(work.title)}" ${editable?'':'disabled'}></label><button id="mu-save">Save MOD</button><button id="mu-reload">Reload saved</button><button id="mu-undo">Undo</button><span id="mu-status" role="status"></span></div>
     <div class="mu-controls"><button id="mu-play">Play (F5)</button><button id="mu-pause">Pause</button><button id="mu-stop">Stop (F8)</button><button id="mu-export">Export MOD</button><label>Import MOD<input id="mu-import" type="file" accept=".mod" ${editable?'':'disabled'}></label><span id="mu-playing" role="status">Stopped</span></div>
     <label>Preview progress<progress id="mu-time" max="30" value="0"></progress></label>
     <details id="mu-mixer" ${mixerOpen?'open':''}><summary>Four-channel mixer (preview only)</summary><fieldset><legend class="sr-only">Mixer channels</legend><div class="mu-mix">${levels.map((v,i)=>`<div><label>Channel ${i+1} gain<input type="range" min="0" max="64" value="${v}" data-level="${i}"></label><label class="mu-check"><input type="checkbox" data-mute="${i}" ${muted[i]?'checked':''}>Mute ${i+1}</label></div>`).join('')}</div></fieldset></details>

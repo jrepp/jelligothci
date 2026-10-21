@@ -7,6 +7,7 @@ from test_creation import creator  # noqa: F401
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import music_mod
+from music_data import CATALOG
 
 
 def open_music(page):
@@ -16,7 +17,7 @@ def open_music(page):
 
 def test_music_tracker_notes_draft_save_and_preview(creator):
     page=creator['page'];open_music(page)
-    expect(page.locator('#mu-song option')).to_have_count(7)
+    expect(page.locator('#mu-song option')).to_have_count(len(CATALOG))
     page.locator('#mu-song').select_option('tiny-thunder')
     expect(page.locator('#mu-title')).to_have_value('Tiny Thunder')
     page.locator('#mu-grid [data-row="2"][data-channel="0"]').click()

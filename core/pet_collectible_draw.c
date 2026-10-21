@@ -98,14 +98,17 @@ static void shelf_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
         jelli_canvas_rect(c, (int)b.bounds.x + 2, (int)b.bounds.y + 2, 136, 96, BG);
         c->dim = !owned;
         jelli_canvas_centered_sprite(c, jelli_prizes[prize].asset, (int)b.bounds.x + 70,
-                                     (int)b.bounds.y + 33, 1u);
+                                     (int)b.bounds.y + (category == 1u ? 39 : 33),
+                                     category == 1u ? 3u : 1u);
         c->dim = false;
         const char *name = b.label;
         int width = 0;
         for (const char *p = name; *p; ++p)
             width += 8;
-        jelli_canvas_text(c, name, (int)b.bounds.x + 70 - width / 2, (int)b.bounds.y + 62, 1u,
-                          PALE);
+        jelli_canvas_text(c, name, (int)b.bounds.x + 70 - width / 2,
+                          (int)b.bounds.y + (category == 1u ? 83 : 62), 1u, PALE);
+        if (category == 1u)
+            continue;
         unsigned recipe = jelli_pet_collectible_recipe(prize);
         const char *action = owned ? "PLAY"
                              : jelli_collectible_recipe_available(game, recipe) == JELLI_OK
@@ -127,12 +130,23 @@ static const char *acquisition(unsigned prize)
     return prize < sizeof(hints) / sizeof(hints[0]) ? hints[prize] : "COMBINE TWO GIFTS";
 }
 
+static bool owned_cartridge(const JelliGame *game, unsigned prize)
+{
+    return (game->prizes.owned & (1u << prize)) &&
+           jelli_cartridge_index(prize) < JELLI_CARTRIDGE_COUNT;
+}
+
 static void detail_draw(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
 {
     unsigned prize = ui->latched_prize ? ui->latched_prize - 1u : JELLI_PRIZE_COUNT;
     if (prize >= jelli_prize_count || prize >= JELLI_PRIZE_COUNT)
         return;
     bool owned = (game->prizes.owned & (1u << prize)) != 0u;
+    if (owned_cartridge(game, prize)) {
+        jelli_pet_cartridge_draw(c, game, prize);
+        control(c, ui, 2u, false);
+        return;
+    }
     jelli_canvas_heading(c, "COLLECTIBLE", 40, 2u);
     jelli_canvas_centered(c, jelli_prizes[prize].name, 82, 1u, MINT);
     jelli_canvas_centered_sprite(c, jelli_prizes[prize].asset, 233, 145, 2u);

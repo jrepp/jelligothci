@@ -16,7 +16,8 @@
 /* From version 4: collection binding 2, hydration 4, food type 1, then the tail above. */
 #define TEST_SAVE_V4_PET_BYTES (7u + TEST_SAVE_TAIL_PET_BYTES)
 /* v16: schema2 + session34 bytes +35 bytes per pet. */
-#define TEST_SAVE_V17_BYTES(count) (20u + (size_t)(count) * 24u)
+#define TEST_SAVE_V18_BYTES 53u
+#define TEST_SAVE_V17_BYTES(count) (TEST_SAVE_V18_BYTES + 20u + (size_t)(count) * 24u)
 #define TEST_SAVE_V16_BYTES(count) (35u + (size_t)(count) * 35u + TEST_SAVE_V17_BYTES(count))
 #define TEST_SAVE_NEW_GAME_BYTES(count) (TEST_SAVE_V14_GAME_BYTES + TEST_SAVE_V16_BYTES(count))
 #endif

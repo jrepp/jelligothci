@@ -76,6 +76,7 @@ static void playable_controls_and_pause(void)
     snapshot("collectible-categories.ppm");
     press(2u);
     CHECK(engine.ui.page == JELLI_UI_GIFT_SHELF);
+    CHECK(pixels[430u * JELLI_WIDTH + 233u] != pixels[400u * JELLI_WIDTH + 233u]);
     snapshot("collectible-cartridges.ppm");
     press(1u);
     CHECK(engine.ui.page == JELLI_UI_PRESENT_ACTION);
@@ -138,8 +139,81 @@ static void confirm_and_cancel_replacement(void)
     press(0u);
     CHECK(engine.ui.page == JELLI_UI_GIFT_SHELF && !engine.game.collectible.active);
 }
+static void bubble_controls_and_checkpoint_replacement(void)
+{
+    reset();
+    press(2u);
+    press(2u);
+    CHECK(engine.ui.page == JELLI_UI_PRESENT_ACTION);
+    snapshot("bubble-launcher.ppm");
+    press(1u); /* Large cartridge artwork launches with a real tap. */
+    CHECK(engine.ui.page == JELLI_UI_COLLECTIBLE_PLAY);
+    CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_BUBBLE);
+    snapshot("bubble-lab.ppm");
+    press(6u);
+    press(6u);
+    CHECK(engine.game.collectible.bubble.assist == JELLI_BUBBLE_MANUAL);
+    jelli_pet_ui_swipe(&engine.ui, &engine.game, -80, 0);
+    jelli_pet_ui_tap(&engine.ui, &engine.game, 230, 200);
+    CHECK(engine.game.collectible.bubble.input_count == 2u);
+    jelli_collectible_tick(&engine.game);
+    jelli_collectible_tick(&engine.game);
+    CHECK(engine.game.collectible.bubble.x == 1u && engine.game.collectible.bubble.vertical == 1u);
+    jelli_pet_ui_swipe(&engine.ui, &engine.game, 0, 80);
+    jelli_collectible_tick(&engine.game);
+    CHECK(engine.game.collectible.bubble.cursor == 2u);
+    render();
+    JelliPetUiButton hidden;
+    for (unsigned slot = 2u; slot <= 5u; ++slot)
+        CHECK(!jelli_pet_ui_control(&engine.ui, slot, false, &hidden));
+    press(0u);
+    JelliBubble checkpoint = engine.game.collectible.bubble;
+    press(2u);
+    press(2u); /* Primary RESUME button is an alternative to tapping the art. */
+    CHECK(!engine.game.collectible.paused);
+    CHECK(jelli_bubble_same(&checkpoint, &engine.game.collectible.bubble));
+    press(0u);
+    press(1u); /* Chain card explicitly labels replacement before launching. */
+    CHECK(engine.ui.collectible_confirm == 2u);
+    CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_BUBBLE);
+    press(0u); /* Cancel leaves the checkpoint intact. */
+    CHECK(jelli_bubble_same(&checkpoint, &engine.game.collectible.bubble));
+    press(1u);
+    press(1u);
+    CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_CHAIN);
+    reset();
+    press(3u);
+    press(1u);
+    press(0u);
+    press(0u);
+    press(2u);
+    press(2u);
+    CHECK(engine.ui.collectible_confirm == 2u && engine.ui.latched_prize == 19u);
+    CHECK(engine.ui.page == JELLI_UI_PRESENT_ACTION);
+    press(1u);
+    CHECK(engine.ui.page == JELLI_UI_COLLECTIBLE_PLAY);
+    CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_BUBBLE);
+}
+
+static void background_music_setting(void)
+{
+    reset();
+    engine.ui.page = JELLI_UI_SETTINGS;
+    render();
+    now += 1000u;
+    render();
+    CHECK(engine.game.activity_music_enabled);
+    press(7u);
+    CHECK(!engine.game.activity_music_enabled && engine.ui.save_requested);
+    snapshot("activity-music-setting.ppm");
+    press(7u);
+    CHECK(engine.game.activity_music_enabled);
+}
+
 int main(void)
 {
+    background_music_setting();
+    bubble_controls_and_checkpoint_replacement();
     playable_controls_and_pause();
     confirm_and_cancel_replacement();
     puts("PASS: permanent Play, tap controls, pause/ready, checkpoint replacement and native "

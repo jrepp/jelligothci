@@ -2913,6 +2913,39 @@
         "#fff4cf"
       ],
       "purpose": "Pixel Sunset record; permanent playable collectible"
+    },
+    {
+      "id": 11019,
+      "key": "prizes.bubble-lab-cartridge",
+      "path": "prizes/bubble-lab-cartridge.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        4,
+        3,
+        28,
+        29
+      ],
+      "palette": [
+        "#187b79",
+        "#291b35",
+        "#30312b",
+        "#43bca2",
+        "#5c5047",
+        "#85e4b6",
+        "#87918b",
+        "#a47bdb",
+        "#d0bda0",
+        "#ded2b9",
+        "#fff4cf",
+        "#ffffff"
+      ],
+      "purpose": "Bubble Lab cartridge; permanent playable collectible"
     }
   ],
   "clips": [

@@ -19,17 +19,33 @@ static bool header(FILE *file)
            fwrite("data", 1, 4, file) == 4 && integer(file, bytes, 4);
 }
 
+static bool song_index(const char *text, uint8_t *song)
+{
+    if (text[0] < '0' || text[0] > '9')
+        return false;
+    unsigned value = (unsigned)(text[0] - '0');
+    if (text[1]) {
+        if (text[1] < '0' || text[1] > '9' || text[2])
+            return false;
+        value = value * 10u + (unsigned)(text[1] - '0');
+    }
+    if (value >= JELLI_MUSIC_TRACK_COUNT)
+        return false;
+    *song = (uint8_t)value;
+    return true;
+}
+
 int main(int argc, char **argv)
 {
-    if (argc < 2 || argc > 3 ||
-        (argc == 3 && (argv[2][0] < '0' || argv[2][0] > '6' || argv[2][1] != '\0'))) {
-        fprintf(stderr, "Usage: jelli_music_export output.wav [song 0..6]\n");
+    uint8_t song = 0u;
+    if (argc < 2 || argc > 3 || (argc == 3 && !song_index(argv[2], &song))) {
+        fprintf(stderr, "Usage: jelli_music_export output.wav [song 0..%u]\n",
+                JELLI_MUSIC_TRACK_COUNT - 1u);
         return 2;
     }
     FILE *file = fopen(argv[1], "wb");
     if (!file)
         return 1;
-    uint8_t song = argc == 3 ? (uint8_t)(argv[2][0] - '0') : 0;
     JelliMusic music = {0};
     (void)jelli_music_control(
         &music, (JelliMusicCommand){.action = JELLI_MUSIC_START, .volume = 80, .song = song});

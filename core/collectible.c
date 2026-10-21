@@ -4,7 +4,8 @@
 #include "jelli/collection.h"
 #include <stddef.h>
 
-_Static_assert(sizeof(JelliCollectibleSession) <= 40u, "Checkpoint working storage exceeds budget");
+_Static_assert(sizeof(JelliCollectibleSession) <= 120u,
+               "Checkpoint working storage exceeds budget");
 _Static_assert(sizeof(JelliCollectibleProgress) <= 44u,
                "Per-pet collectible progress exceeds budget");
 
@@ -16,13 +17,15 @@ const JelliCraftRecipe jelli_craft_recipes[] = {
     {.key = "R14", .first = 4u, .second = 5u, .output = 14u},
     {.key = "R15", .first = 3u, .second = 8u, .output = 15u},
     {.key = "R16", .first = 0u, .second = 5u, .output = 16u},
-    {.key = "R17", .first = 4u, .second = 7u, .output = 17u}};
+    {.key = "R17", .first = 4u, .second = 7u, .output = 17u},
+    {.key = "R02", .first = 1u, .second = 5u, .output = JELLI_COLLECTIBLE_BUBBLE_PRIZE}};
 const unsigned jelli_craft_recipe_count =
     sizeof(jelli_craft_recipes) / sizeof(jelli_craft_recipes[0]);
 
 static uint8_t mode_for(unsigned prize)
 {
-    return prize == JELLI_COLLECTIBLE_CHAIN_PRIZE ? JELLI_COLLECTIBLE_CHAIN
+    return prize == JELLI_COLLECTIBLE_BUBBLE_PRIZE  ? JELLI_COLLECTIBLE_BUBBLE
+           : prize == JELLI_COLLECTIBLE_CHAIN_PRIZE ? JELLI_COLLECTIBLE_CHAIN
            : prize >= JELLI_COLLECTIBLE_RECORD_PRIZE &&
                    prize < JELLI_COLLECTIBLE_RECORD_PRIZE + JELLI_COLLECTIBLE_RECORD_COUNT
                ? JELLI_COLLECTIBLE_RECORD
@@ -91,6 +94,27 @@ static void special_reaction(JelliPet *pet)
         (uint8_t)(jelli_behavior_touch_ticks_max < 10u ? jelli_behavior_touch_ticks_max : 10u);
 }
 
+unsigned jelli_cartridge_index(unsigned prize)
+{
+    return prize == JELLI_COLLECTIBLE_CHAIN_PRIZE    ? 0u
+           : prize == JELLI_COLLECTIBLE_BUBBLE_PRIZE ? 1u
+                                                     : JELLI_CARTRIDGE_COUNT;
+}
+
+static void count_play(JelliGame *game, unsigned prize)
+{
+    unsigned index = jelli_cartridge_index(prize);
+    if (index < JELLI_CARTRIDGE_COUNT && game->cartridge_stats[index].plays < UINT16_MAX)
+        ++game->cartridge_stats[index].plays;
+}
+
+void jelli_cartridge_count_win(JelliGame *game)
+{
+    unsigned index = jelli_cartridge_index(game->collectible.prize);
+    if (index < JELLI_CARTRIDGE_COUNT && game->cartridge_stats[index].wins < UINT16_MAX)
+        ++game->cartridge_stats[index].wins;
+}
+
 JelliResult jelli_collectible_play(JelliGame *game, unsigned prize)
 {
     JelliResult result = jelli_collectible_available(game, prize);
@@ -108,8 +132,11 @@ JelliResult jelli_collectible_play(JelliGame *game, unsigned prize)
                                        .mode = mode_for(prize),
                                        .active = true,
                                        .generation = generation};
+        count_play(game, prize);
         if (s->mode == JELLI_COLLECTIBLE_CHAIN)
             jelli_chain_init(&s->chain, false);
+        if (s->mode == JELLI_COLLECTIBLE_BUBBLE)
+            jelli_bubble_init(&s->bubble, JELLI_BUBBLE_NORMAL);
     }
     if (pet->collectible_progress.special_unlocked & (1u << prize))
         special_reaction(pet);
@@ -119,18 +146,45 @@ JelliResult jelli_collectible_play(JelliGame *game, unsigned prize)
 
 static bool finished(const JelliCollectibleSession *s)
 {
-    return s->mode == JELLI_COLLECTIBLE_CHAIN    ? s->chain.status != JELLI_CHAIN_RUNNING
+    return s->mode == JELLI_COLLECTIBLE_BUBBLE   ? s->bubble.status != JELLI_BUBBLE_RUNNING
+           : s->mode == JELLI_COLLECTIBLE_CHAIN  ? s->chain.status != JELLI_CHAIN_RUNNING
            : s->mode == JELLI_COLLECTIBLE_RECORD ? s->record_cursor == JELLI_RECORD_SAMPLES
                                                  : s->elapsed_ticks >= 80u;
 }
 
+static JelliResult assist_control(JelliGame *game, unsigned control)
+{
+    JelliCollectibleSession *s = &game->collectible;
+    if (s->mode == JELLI_COLLECTIBLE_BUBBLE)
+        return jelli_collectible_bubble_control(game, control);
+    if (s->mode != JELLI_COLLECTIBLE_CHAIN || control == JELLI_COLLECTIBLE_MANUAL)
+        return JELLI_NOT_READY;
+    s->chain.relaxed = control == JELLI_COLLECTIBLE_RELAXED;
+    s->chain.step_ticks = 0u;
+    ++game->revision;
+    return JELLI_OK;
+}
+
+static void restart_session(JelliCollectibleSession *s)
+{
+    s->generation = s->generation == UINT32_MAX ? 1u : s->generation + 1u;
+    s->elapsed_ticks = 0u;
+    s->record_cursor = 0u;
+    if (s->mode == JELLI_COLLECTIBLE_CHAIN)
+        jelli_chain_init(&s->chain, s->chain.relaxed);
+    if (s->mode == JELLI_COLLECTIBLE_BUBBLE)
+        jelli_bubble_retry(&s->bubble);
+}
+
 JelliResult jelli_collectible_control(JelliGame *game, unsigned control)
 {
-    if (!jelli_game_valid(game) || control > JELLI_COLLECTIBLE_RELAXED)
+    if (!jelli_game_valid(game) || control > JELLI_COLLECTIBLE_MANUAL)
         return JELLI_INVALID_TARGET;
     JelliCollectibleSession *s = &game->collectible;
     if (game->resuming || !s->active || s->pet_id != game->pets[game->active].id)
         return JELLI_NOT_READY;
+    if (s->mode == JELLI_COLLECTIBLE_BUBBLE && control <= JELLI_COLLECTIBLE_LEFT)
+        return jelli_collectible_bubble_control(game, control);
     if (control <= JELLI_COLLECTIBLE_LEFT)
         return !s->paused && s->mode == JELLI_COLLECTIBLE_CHAIN &&
                        jelli_chain_turn(&s->chain, control)
@@ -138,25 +192,22 @@ JelliResult jelli_collectible_control(JelliGame *game, unsigned control)
                    : JELLI_NOT_READY;
     if (control == JELLI_COLLECTIBLE_CLOSE || control == JELLI_COLLECTIBLE_PAUSE) {
         s->paused = true;
+        s->bubble.input_count = 0u;
         s->active = control != JELLI_COLLECTIBLE_CLOSE;
-    } else if (control == JELLI_COLLECTIBLE_NORMAL || control == JELLI_COLLECTIBLE_RELAXED) {
-        if (s->mode != JELLI_COLLECTIBLE_CHAIN)
-            return JELLI_NOT_READY;
-        s->chain.relaxed = control == JELLI_COLLECTIBLE_RELAXED;
-        s->chain.step_ticks = 0u;
+    } else if (control >= JELLI_COLLECTIBLE_NORMAL) {
+        return assist_control(game, control);
     } else {
         JelliResult result = jelli_collectible_available(game, s->prize);
         if (result != JELLI_OK)
             return result;
         if (control == JELLI_COLLECTIBLE_RESTART) {
-            s->generation = s->generation == UINT32_MAX ? 1u : s->generation + 1u;
-            s->elapsed_ticks = 0u;
-            s->record_cursor = 0u;
-            if (s->mode == JELLI_COLLECTIBLE_CHAIN)
-                jelli_chain_init(&s->chain, s->chain.relaxed);
+            if (s->mode != JELLI_COLLECTIBLE_BUBBLE || s->bubble.status == JELLI_BUBBLE_WON)
+                count_play(game, s->prize);
+            restart_session(s);
         } else if (finished(s)) {
             return JELLI_NOT_READY;
         }
+        s->bubble.input_count = 0u;
         s->paused = false;
     }
     ++game->revision;
@@ -187,6 +238,7 @@ void jelli_collectible_tick(JelliGame *game)
     const JelliPet *pet = &game->pets[game->active];
     if (s->pet_id != pet->id || pet->asleep || pet->activity != JELLI_IDLE) {
         s->paused = true;
+        s->bubble.input_count = 0u;
         return;
     }
     if (s->mode == JELLI_COLLECTIBLE_RECORD)
@@ -197,7 +249,17 @@ void jelli_collectible_tick(JelliGame *game)
     if (s->mode == JELLI_COLLECTIBLE_CHAIN) {
         unsigned length = s->chain.length;
         jelli_chain_tick(&s->chain);
+        if (s->chain.status == JELLI_CHAIN_WON)
+            jelli_cartridge_count_win(game);
         if (s->chain.length > length || s->chain.status == JELLI_CHAIN_WON)
+            special_reaction(&game->pets[game->active]);
+    }
+    if (s->mode == JELLI_COLLECTIBLE_BUBBLE) {
+        unsigned score = s->bubble.score;
+        jelli_collectible_bubble_step(&s->bubble);
+        if (s->bubble.status == JELLI_BUBBLE_WON)
+            jelli_cartridge_count_win(game);
+        if (s->bubble.score > score)
             special_reaction(&game->pets[game->active]);
     }
     if (finished(s)) {

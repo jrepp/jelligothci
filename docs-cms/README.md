@@ -226,3 +226,6 @@ Collectible desktop playtest, focus-loss repair and debug ownership edits:
 
 Bounded MOD tracker authoring, sample management and four-channel playback:
 [memo-096](memos/memo-096-music-tracker-authoring.md).
+
+Bubble Lab, cartridge launch controls and compact checkpoint validation:
+[memo-097](memos/memo-097-bubble-lab-cartridge.md).

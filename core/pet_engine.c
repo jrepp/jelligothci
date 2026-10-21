@@ -1,6 +1,7 @@
 #include "jelli/pet_engine.h"
 #include "pet_gallery.h"
 #include "pet_feedback.h"
+#include "pet_collectible_ui.h"
 #include <string.h>
 
 _Static_assert(sizeof(JelliPetEngine) <= 32768u, "Pet state exceeds 32 KiB budget");
@@ -132,6 +133,7 @@ bool jelli_pet_frame(JelliPetEngine *engine)
     }
     if (!was_resuming && !engine->paused)
         jelli_pet_chain_feedback(&engine->ui, &previous_collectible, &engine->game.collectible);
+    jelli_pet_bubble_checkpoint(&engine->ui, &previous_collectible, &engine->game.collectible);
     jelli_pet_music_sync(engine);
     jelli_pet_celebrations(&engine->celebrations, &engine->ui, &engine->game, &engine->events,
                            jelli_effect_triggers, engine->animation_ms,

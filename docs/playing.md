@@ -533,9 +533,61 @@ history and earned rewards; removing a checkpoint's gift clears that checkpoint
 and stops its music. It does not remove already-unlocked pets. Commands reject
 unknown keys and edits during capture or save recovery.
 
-Collectible Play starts or resumes immediately. Chain uses swipes or desktop
-arrow keys. Both players use bottom radial Back to return to their shelf. Owned
-records launch directly from the Records shelf, whose Previous/Next controls sit
-at the sides. Desktop focus loss pauses play; Resume continues without toggling
-the separate Space debug pause. Chain wins show a star celebration and return to
-the cartridge shelf automatically.
+Owned cartridges open a launch card with a large tappable cartridge and shared
+Plays/Wins totals. Tap the artwork or Play to begin; Resume preserves the same
+run. A replacement action is labeled when opening a different cartridge/pet
+would replace the shared checkpoint. Records still launch directly from their
+shelf. Bottom radial Back returns to the shelf, and desktop focus loss pauses
+play. Resume continues without toggling the separate Space debug pause.
+
+### Bubble Lab
+
+Craft the Bubble Lab cartridge from its recipe in the unowned cartridge card.
+Ingredients remain owned, and every pet can play an owned cartridge. The current
+recipe is defined in [the crafting table](../core/collectible.c).
+
+Clear the stationary, spiky viruses by making horizontal or vertical lines of
+four matching symbols/colors. Medicine arrives as pairs: swipe left/right to
+move, tap the well to rotate, and swipe down to drop to the next support.
+Desktop arrows mirror swipes, with Up rotating. Quick gestures queue in order;
+[the bounded input controller](../core/collectible_bubble_control.c) consumes one
+per simulation tick. Full queues reject further gestures; pause and retry discard
+queued input. A blocked rotation or move leaves the pair in place.
+
+After landing, each medicine half falls independently. Only the floor or a cell
+below supports it; a side neighbor never does. Clears and gravity resolve before
+testing the danger row or blocked spawn. Clear every virus to advance, then finish
+all three levels for the centered star celebration and automatic shelf return.
+A full well or exhausted supply offers Retry Level; completed levels and their
+score remain intact. A misplaced pair can be recovered with later matching pairs.
+
+The pace control cycles Normal, Relax, and Manual. Manual stops automatic falling;
+downward swipes still drop a pair. All modes have the same objectives and scoring.
+The [rule implementation](../core/collectible_bubble.c) owns well dimensions,
+authored layouts, supply, timing, score and cascade limits. Symbols supplement
+color; medicine has smooth edges while fixed viruses have spikes. Existing mute
+and reduced-motion behavior is preserved.
+
+There is one shared saved collectible session, not a separate slot per game or
+pet. Back, completed placements, level transitions and interruptions request
+checkpoints. Reopening the same cartridge with the same pet resumes it; replacing
+it is explicit on the launcher. Restarting the process resumes paused, without
+offline movement. Malformed or unsupported saves are preserved by the existing
+host recovery policy rather than silently discarded.
+
+Plays count new full runs; Resume and Bubble Lab's current-level retries do not
+add plays. Wins count the terminal success transition once. Statistics belong to
+the cartridge across pets, saturate at the codec's bounds, and start empty when
+upgrading older saves. Old in-progress runs can therefore earn a tracked win
+without a tracked start. No historical wins are inferred and no care-stat rewards
+or special pet pairing is added by Bubble Lab.
+
+Settings has a separate Music On/Off control beside master volume for background
+activity and cartridge-launch music. It persists across restarts and defaults on
+for older saves. Record playback and sound effects retain their existing controls.
+
+Background themes follow the activity: Pocket Arcade on cartridge launch cards,
+Garden Drift outdoors, Tea Steam for meals/tea, Bubble Bath for washing/care,
+Moon Pillow for quiet/sleep moments, and Little Steps for play/exercise. They loop
+without collectible rewards and stop when the activity or launcher ends. The
+[MOD catalog](../content/music.json) can be edited in Jelli Art.

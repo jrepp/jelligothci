@@ -2,7 +2,13 @@
 #define JELLI_MUSIC_H
 #include "jelli/sound.h"
 
-#define JELLI_MUSIC_TRACK_COUNT 7u
+#define JELLI_MUSIC_TRACK_COUNT 13u
+#define JELLI_MUSIC_LAUNCH 7u
+#define JELLI_MUSIC_GARDEN 8u
+#define JELLI_MUSIC_TEA 9u
+#define JELLI_MUSIC_WASH 10u
+#define JELLI_MUSIC_REST 11u
+#define JELLI_MUSIC_PLAY 12u
 #define JELLI_MUSIC_RATE JELLI_SOUND_RATE
 #define JELLI_MUSIC_SAMPLES (JELLI_MUSIC_RATE * 30u)
 
@@ -32,7 +38,7 @@ typedef struct {
     bool playing;
 } JelliMusic;
 
-/* Seven original tracks. START atomically selects song 0..TRACK_COUNT-1.
+/* Record tracks followed by background scores. START selects 0..TRACK_COUNT-1.
  * START/SEEK cursor is an exact sample offset.
  * START/VOLUME use master volume 0..100. Other fields are ignored for other actions.
  * serial is a caller token echoed after the command is applied (including mute).
