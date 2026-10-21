@@ -51,3 +51,22 @@ repos:
         entry: python3 scripts/check-workflow-pins.py
         files: '^(\.github/workflows/|scripts/check-workflow-pins\.py$|tools/jelli-art/ui_tests/run\.sh$)'
         pass_filenames: false
+      - id: studio-types
+        name: Jelli Art JavaScript type checks
+        language: system
+        entry: env JELLI_TS_UPDATE=0 tools/jelli-art/typecheck/check.sh
+        files: '^(tools/jelli-art/.*\.(js|ts)$|tools/jelli-art/typecheck/|toolchain\.env$|\.pre-commit-config\.yaml$)'
+        pass_filenames: false
+        require_serial: true
+      - id: studio-container
+        name: Jelli Art container layout (no build)
+        language: system
+        entry: python3 scripts/check-studio-container.py
+        files: '^(tools/jelli-art/|tools/assets/|\.dockerignore$|scripts/(check|test)-studio-container\.py$|\.pre-commit-config\.yaml$)'
+        pass_filenames: false
+      - id: studio-container-tests
+        name: Container checker regression tests
+        language: system
+        entry: python3 scripts/test-studio-container.py
+        files: '^(scripts/(check|test)-studio-container\.py$|\.pre-commit-config\.yaml$)'
+        pass_filenames: false

@@ -100,3 +100,31 @@ startup after image builds, inspecting current-revision job logs, and recording
 inherited UI failures without treating their provenance as a passing check.
 The UI job was still running when the packaging correction was prepared;
 remote verification of the correction remains pending.
+
+# Fast commit-time prevention
+
+The owner requested JavaScript type checking and container checks without an
+image build on every commit. The [hook configuration](../../.pre-commit-config.yaml)
+now runs the existing pinned JSDoc check for studio JavaScript/type configuration
+changes and a standard-library-only container layout checker for studio,
+shared-asset and packaging changes. The type hook explicitly disables baseline
+rewrite mode. File filters keep unrelated commits from invoking these checks.
+
+The [packaging checker](../../scripts/check-studio-container.py) reads the actual
+COPY list and build-context allowlist, checks known local Python dependencies
+in the shipped layout, literal bundled browser files, and startup/health scripts.
+Its [regression fixtures](../../scripts/test-studio-container.py) reproduce the
+missing COPY entry and missing allowlist entry independently, plus transitive
+imports and other packaging omissions. It rejects unsupported packaging syntax
+rather than claiming to model Docker's full grammar. It neither imports the
+application nor invokes a container engine.
+
+Both hooks passed against the current checkout. The isolated packaging
+regression fixtures passed and run as a separate hook when the checker changes.
+A temporary JavaScript type error was rejected by the actual type hook even with
+`JELLI_TS_UPDATE=1`; the baseline remained byte-for-byte unchanged. The probe was
+removed afterward. The JSDoc check retains the existing error baseline;
+these hooks do not establish browser behavior, third-party dependency presence,
+OS compatibility or successful packaged startup. The full image smoke test
+remains in CI. Authoring instructions are in
+[CONTRIBUTING.md](../../CONTRIBUTING.md#jelli-art-packaging-and-pr-validation).

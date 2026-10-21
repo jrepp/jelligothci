@@ -59,7 +59,7 @@ PNGs. Core-only builds do not run the asset generator.
 make hooks-install
 make test          # expect engine and headless SDL tests to pass
 make core-test     # verifies the core without SDL
-make hooks-check   # C formatting, analysis, size limits, docs, version/action pins
+make hooks-check   # run every configured hook
 make run           # pet care UI; desktop saves under build/
 make run-shapes    # original color/motion diagnostic
 ```
@@ -67,6 +67,14 @@ make run-shapes    # original color/motion diagnostic
 Hooks are installed per checkout. Stage newly added source files before checking
 all tracked files; Git-based checks cannot discover untracked files. Tools
 usually print their first-use download progress into the terminal.
+
+Studio commits also run the JavaScript/JSDoc type check and a static container
+layout check; their file triggers live in [.pre-commit-config.yaml](.pre-commit-config.yaml).
+The type check needs Node.js with `npx`, caches the pinned TypeScript package
+under `.tools/`, and rejects errors beyond the existing baseline. The hook
+forces check mode even if `JELLI_TS_UPDATE` is set; baseline updates remain an
+explicit authoring action. Changes to the packaging checker also run its isolated regression fixtures.
+Unrelated commits skip these studio hooks.
 
 ## Core-only path, including Windows
 
@@ -121,6 +129,23 @@ checkout tests can import files that are absent from the shipped image.
 Build the image and exercise its real entrypoint, health endpoint and data API
 using the [image job's smoke procedure](.github/workflows/jelli-art.yml).
 A successful image build alone does not establish successful startup.
+
+The commit-time [container checker](scripts/check-studio-container.py) uses
+Python's standard library without building an image or importing the app. It
+checks COPY/context inclusion, known local Python imports (including transitive
+imports), literal bundled browser files, and entrypoint/health-script presence.
+It supports this repository's explicit COPY paths and literal-path allowlist;
+unsupported syntax fails with a request to extend the checker. It does not
+verify installed third-party packages, dynamic imports, operating-system
+libraries or runtime startup. Keep the image smoke test in CI.
+
+Run either hook independently:
+
+```sh
+./scripts/pre-commit run studio-types --all-files
+./scripts/pre-commit run studio-container --all-files
+python3 scripts/test-studio-container.py  # packaging-check regression fixtures
+```
 
 Before declaring a PR ready, inspect checks for its current head and merge
 revision. Read the failed step and application logs before editing or retrying;
