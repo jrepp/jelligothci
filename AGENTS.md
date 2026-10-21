@@ -52,6 +52,11 @@ Use the checks for the changed layer described in
 ownership, and platform details in [docs/development.md](docs/development.md)
 and the project skills rather than duplicating their full contracts here.
 
+For Jelli Art authoring or PR failures, follow the
+[studio packaging and PR validation guidance](CONTRIBUTING.md#jelli-art-packaging-and-pr-validation).
+Inspect the latest run for the current PR revision; local passes and failures
+reproduced on the base do not establish that the PR's required checks pass.
+
 ## Progress notifications
 
 When a planned stage of multi-step work completes (a design approved, a PR

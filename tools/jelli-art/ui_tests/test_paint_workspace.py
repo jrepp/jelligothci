@@ -115,3 +115,13 @@ def test_phone_mode_overflow_has_visible_navigation_controls(open_view):
     page.get_by_role('tab', name='New', exact=True).click()
     expect(page.locator('#creation-form')).to_be_visible()
     expect(page.get_by_role('tab', name='New', exact=True)).to_have_attribute('aria-selected', 'true')
+
+
+@pytest.mark.parametrize("viewport", ["desktop", "tablet", "phone"])
+def test_palette_chip_name_includes_visible_usage(open_view, viewport):
+    page = open_view("paint-icon", viewport)
+    chip = page.locator('div[data-chip="mint jelly:#43bca2"]')
+    expect(chip).to_have_accessible_name("sea 36 px · #43bca2 · used by 34 assets")
+    # The visible count is part of the name, not hidden from accessibility checks.
+    expect(chip).to_contain_text("36 px")
+    axe_check(page, f"paint-icon@{viewport}", json.loads((BASELINES / "axe.json").read_text()))

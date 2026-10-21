@@ -136,7 +136,9 @@ static void press(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char *
 static bool input_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **words,
                           unsigned count)
 {
-    if (!strcmp(words[2], "press"))
+    if (!strcmp(words[2], "effect"))
+        jelli_debug_effect(debug, engine, id, words, count);
+    else if (!strcmp(words[2], "press"))
         press(debug, engine, id, words, count);
     else if (!strcmp(words[2], "swipe"))
         swipe(debug, engine, id, words, count);

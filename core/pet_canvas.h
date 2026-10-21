@@ -30,4 +30,5 @@ void jelli_canvas_centered_sprite(Canvas *c, uint32_t id, int x, int y, unsigned
 unsigned jelli_canvas_fit_scale(uint32_t id, unsigned target_px);
 void jelli_canvas_heading(Canvas *c, const char *value, int y, unsigned scale);
 void jelli_canvas_caption(Canvas *c, const char *value, int y, uint16_t color);
+void jelli_pet_effect_draw(Canvas *canvas, const JelliPetUi *ui, unsigned layer);
 #endif

@@ -1,0 +1,804 @@
+{
+  "version": 1,
+  "triggers": {
+    "evolution": "evolution",
+    "present-caught": "gift-acquired",
+    "present-accepted": "present-accepted"
+  },
+  "hardpoints": [
+    {
+      "key": "ground",
+      "name": "Ground",
+      "positions": {
+        "axolotl": [
+          0,
+          0
+        ],
+        "axolotl-baby": [
+          0,
+          0
+        ],
+        "baby": [
+          0,
+          0
+        ],
+        "grown": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "key": "head",
+      "name": "Head",
+      "positions": {
+        "axolotl": [
+          0,
+          -24
+        ],
+        "axolotl-baby": [
+          0,
+          -20
+        ],
+        "baby": [
+          0,
+          -20
+        ],
+        "grown": [
+          0,
+          -20
+        ]
+      }
+    },
+    {
+      "key": "mouth",
+      "name": "Mouth",
+      "positions": {
+        "axolotl": [
+          0,
+          -9
+        ],
+        "axolotl-baby": [
+          0,
+          -9
+        ],
+        "baby": [
+          0,
+          -9
+        ],
+        "grown": [
+          0,
+          -9
+        ]
+      }
+    },
+    {
+      "key": "left-hand",
+      "name": "Left hand",
+      "positions": {
+        "axolotl": [
+          -10,
+          -8
+        ],
+        "axolotl-baby": [
+          -10,
+          -8
+        ],
+        "baby": [
+          -10,
+          -8
+        ],
+        "grown": [
+          -10,
+          -8
+        ]
+      }
+    },
+    {
+      "key": "right-hand",
+      "name": "Right hand",
+      "positions": {
+        "axolotl": [
+          10,
+          -8
+        ],
+        "axolotl-baby": [
+          10,
+          -8
+        ],
+        "baby": [
+          10,
+          -8
+        ],
+        "grown": [
+          10,
+          -8
+        ]
+      }
+    },
+    {
+      "key": "chest",
+      "name": "Chest",
+      "positions": {
+        "axolotl": [
+          0,
+          -7
+        ],
+        "axolotl-baby": [
+          0,
+          -7
+        ],
+        "baby": [
+          0,
+          -7
+        ],
+        "grown": [
+          0,
+          -7
+        ]
+      }
+    }
+  ],
+  "effects": [
+    {
+      "key": "celebrate",
+      "name": "Celebration",
+      "duration_ms": 3000,
+      "tracks": [
+        {
+          "name": "Rainbow halo",
+          "layer": "behind-pet",
+          "anchor": "head",
+          "start_ms": 0,
+          "duration_ms": 2000,
+          "x": 0,
+          "y": 0,
+          "end_x": 0,
+          "end_y": -70,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.rainbow",
+              "duration_ms": 180
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 100
+            }
+          ]
+        },
+        {
+          "name": "Left star burst",
+          "layer": "front-pet",
+          "anchor": "left-hand",
+          "start_ms": 250,
+          "duration_ms": 2000,
+          "x": 0,
+          "y": 0,
+          "end_x": -80,
+          "end_y": -70,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.star",
+              "duration_ms": 180
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 100
+            }
+          ]
+        },
+        {
+          "name": "Right heart burst",
+          "layer": "front-pet",
+          "anchor": "right-hand",
+          "start_ms": 500,
+          "duration_ms": 2000,
+          "x": 0,
+          "y": 0,
+          "end_x": 80,
+          "end_y": -70,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.heart",
+              "duration_ms": 180
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 100
+            }
+          ]
+        },
+        {
+          "name": "Final flourish",
+          "layer": "foreground",
+          "anchor": "head",
+          "start_ms": 750,
+          "duration_ms": 2000,
+          "x": 0,
+          "y": 0,
+          "end_x": 50,
+          "end_y": -70,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.music",
+              "duration_ms": 180
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 100
+            }
+          ]
+        }
+      ],
+      "cues": [
+        {
+          "name": "Anticipation",
+          "pose": "curious",
+          "start_ms": 0,
+          "duration_ms": 500
+        },
+        {
+          "name": "Celebrate",
+          "pose": "happy",
+          "start_ms": 500,
+          "duration_ms": 2000
+        },
+        {
+          "name": "Settle",
+          "pose": "content",
+          "start_ms": 2500,
+          "duration_ms": 500
+        }
+      ]
+    },
+    {
+      "key": "evolution",
+      "name": "Evolution \u2014 a new chapter",
+      "duration_ms": 3600,
+      "tracks": [
+        {
+          "name": "Gathering light",
+          "layer": "behind-pet",
+          "anchor": "chest",
+          "start_ms": 0,
+          "duration_ms": 650,
+          "x": -100,
+          "y": 35,
+          "end_x": 0,
+          "end_y": -30,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.orb",
+              "duration_ms": 650
+            }
+          ]
+        },
+        {
+          "name": "Gathering light right",
+          "layer": "behind-pet",
+          "anchor": "chest",
+          "start_ms": 120,
+          "duration_ms": 530,
+          "x": 100,
+          "y": 35,
+          "end_x": 0,
+          "end_y": -30,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.orb",
+              "duration_ms": 530
+            }
+          ]
+        },
+        {
+          "name": "Rainbow reveal",
+          "layer": "behind-pet",
+          "anchor": "head",
+          "start_ms": 650,
+          "duration_ms": 2200,
+          "x": 0,
+          "y": 20,
+          "end_x": 0,
+          "end_y": -35,
+          "scale": 5,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.rainbow",
+              "duration_ms": 2200
+            }
+          ]
+        },
+        {
+          "name": "Left rising stars",
+          "layer": "front-pet",
+          "anchor": "left-hand",
+          "start_ms": 650,
+          "duration_ms": 1800,
+          "x": 0,
+          "y": 0,
+          "end_x": -65,
+          "end_y": -100,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.star",
+              "duration_ms": 160
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 90
+            }
+          ]
+        },
+        {
+          "name": "Right rising stars",
+          "layer": "front-pet",
+          "anchor": "right-hand",
+          "start_ms": 800,
+          "duration_ms": 1800,
+          "x": 0,
+          "y": 0,
+          "end_x": 65,
+          "end_y": -100,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.star",
+              "duration_ms": 160
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 90
+            }
+          ]
+        },
+        {
+          "name": "Crowning star",
+          "layer": "foreground",
+          "anchor": "head",
+          "start_ms": 1100,
+          "duration_ms": 1900,
+          "x": 0,
+          "y": -30,
+          "end_x": 0,
+          "end_y": -75,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.star",
+              "duration_ms": 1900
+            }
+          ]
+        },
+        {
+          "name": "Last glimmer left",
+          "layer": "front-pet",
+          "anchor": "chest",
+          "start_ms": 2200,
+          "duration_ms": 800,
+          "x": -90,
+          "y": -20,
+          "end_x": -115,
+          "end_y": -60,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.orb",
+              "duration_ms": 800
+            }
+          ]
+        },
+        {
+          "name": "Last glimmer right",
+          "layer": "front-pet",
+          "anchor": "chest",
+          "start_ms": 2350,
+          "duration_ms": 800,
+          "x": 90,
+          "y": -20,
+          "end_x": 115,
+          "end_y": -60,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.orb",
+              "duration_ms": 800
+            }
+          ]
+        }
+      ],
+      "cues": [
+        {
+          "name": "Wonder",
+          "pose": "curious",
+          "start_ms": 0,
+          "duration_ms": 650
+        },
+        {
+          "name": "New form joy",
+          "pose": "happy",
+          "start_ms": 650,
+          "duration_ms": 2350
+        },
+        {
+          "name": "Proud settle",
+          "pose": "content",
+          "start_ms": 3000,
+          "duration_ms": 600
+        }
+      ]
+    },
+    {
+      "key": "gift-acquired",
+      "name": "New gift \u2014 discovery",
+      "duration_ms": 2800,
+      "tracks": [
+        {
+          "name": "Gift arrives",
+          "layer": "front-pet",
+          "anchor": "head",
+          "start_ms": 0,
+          "duration_ms": 650,
+          "x": 0,
+          "y": -85,
+          "end_x": 0,
+          "end_y": -30,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "props.gift-closed",
+              "duration_ms": 650
+            }
+          ]
+        },
+        {
+          "name": "Gift discovered",
+          "layer": "front-pet",
+          "anchor": "head",
+          "start_ms": 650,
+          "duration_ms": 1200,
+          "x": 0,
+          "y": -30,
+          "end_x": 0,
+          "end_y": -30,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "props.gift-closed",
+              "duration_ms": 1200
+            }
+          ]
+        },
+        {
+          "name": "Gift drifts away",
+          "layer": "front-pet",
+          "anchor": "head",
+          "start_ms": 1850,
+          "duration_ms": 550,
+          "x": 0,
+          "y": -30,
+          "end_x": 55,
+          "end_y": -65,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "props.gift-closed",
+              "duration_ms": 550
+            }
+          ]
+        },
+        {
+          "name": "Discovery halo",
+          "layer": "behind-pet",
+          "anchor": "head",
+          "start_ms": 450,
+          "duration_ms": 1550,
+          "x": 0,
+          "y": -20,
+          "end_x": 0,
+          "end_y": -25,
+          "scale": 4,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.rainbow",
+              "duration_ms": 1550
+            }
+          ]
+        },
+        {
+          "name": "Left discovery sparkle",
+          "layer": "front-pet",
+          "anchor": "head",
+          "start_ms": 650,
+          "duration_ms": 1500,
+          "x": -20,
+          "y": -30,
+          "end_x": -100,
+          "end_y": -65,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.star",
+              "duration_ms": 160
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 90
+            }
+          ]
+        },
+        {
+          "name": "Right discovery sparkle",
+          "layer": "front-pet",
+          "anchor": "head",
+          "start_ms": 800,
+          "duration_ms": 1500,
+          "x": 20,
+          "y": -30,
+          "end_x": 100,
+          "end_y": -65,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "effects.star",
+              "duration_ms": 160
+            },
+            {
+              "asset": "effects.orb",
+              "duration_ms": 90
+            }
+          ]
+        },
+        {
+          "name": "Excited note",
+          "layer": "foreground",
+          "anchor": "right-hand",
+          "start_ms": 950,
+          "duration_ms": 1250,
+          "x": 25,
+          "y": 0,
+          "end_x": 65,
+          "end_y": -65,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.music",
+              "duration_ms": 1250
+            }
+          ]
+        }
+      ],
+      "cues": [
+        {
+          "name": "Notice the gift",
+          "pose": "curious",
+          "start_ms": 0,
+          "duration_ms": 650
+        },
+        {
+          "name": "Treasure found",
+          "pose": "happy",
+          "start_ms": 650,
+          "duration_ms": 1550
+        },
+        {
+          "name": "Enjoy discovery",
+          "pose": "content",
+          "start_ms": 2200,
+          "duration_ms": 600
+        }
+      ]
+    },
+    {
+      "key": "present-accepted",
+      "name": "Present accepted \u2014 thank you",
+      "duration_ms": 3000,
+      "tracks": [
+        {
+          "name": "Present reaches pet",
+          "layer": "front-pet",
+          "anchor": "ground",
+          "start_ms": 0,
+          "duration_ms": 650,
+          "x": -135,
+          "y": 4,
+          "end_x": -35,
+          "end_y": 4,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "props.gift-closed",
+              "duration_ms": 650
+            }
+          ]
+        },
+        {
+          "name": "Unwrap the present",
+          "layer": "front-pet",
+          "anchor": "ground",
+          "start_ms": 650,
+          "duration_ms": 1300,
+          "x": -35,
+          "y": 4,
+          "end_x": -35,
+          "end_y": 4,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "props.gift-open",
+              "duration_ms": 1300
+            }
+          ]
+        },
+        {
+          "name": "Warm glow",
+          "layer": "behind-pet",
+          "anchor": "chest",
+          "start_ms": 650,
+          "duration_ms": 1700,
+          "x": 0,
+          "y": 0,
+          "end_x": 0,
+          "end_y": -25,
+          "scale": 4,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.rainbow",
+              "duration_ms": 1700
+            }
+          ]
+        },
+        {
+          "name": "First thank-you heart",
+          "layer": "front-pet",
+          "anchor": "left-hand",
+          "start_ms": 700,
+          "duration_ms": 1600,
+          "x": 0,
+          "y": 0,
+          "end_x": -50,
+          "end_y": -85,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.heart",
+              "duration_ms": 1600
+            }
+          ]
+        },
+        {
+          "name": "Second thank-you heart",
+          "layer": "front-pet",
+          "anchor": "right-hand",
+          "start_ms": 950,
+          "duration_ms": 1600,
+          "x": 0,
+          "y": 0,
+          "end_x": 50,
+          "end_y": -85,
+          "scale": 3,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.heart",
+              "duration_ms": 1600
+            }
+          ]
+        },
+        {
+          "name": "Little floating heart",
+          "layer": "foreground",
+          "anchor": "head",
+          "start_ms": 1250,
+          "duration_ms": 1350,
+          "x": 0,
+          "y": -15,
+          "end_x": 15,
+          "end_y": -75,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.heart",
+              "duration_ms": 1350
+            }
+          ]
+        },
+        {
+          "name": "Happy note",
+          "layer": "front-pet",
+          "anchor": "right-hand",
+          "start_ms": 1550,
+          "duration_ms": 1000,
+          "x": 30,
+          "y": -10,
+          "end_x": 70,
+          "end_y": -65,
+          "scale": 2,
+          "easing": "smooth",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "effects.music",
+              "duration_ms": 1000
+            }
+          ]
+        }
+      ],
+      "cues": [
+        {
+          "name": "Curious recipient",
+          "pose": "curious",
+          "start_ms": 0,
+          "duration_ms": 650
+        },
+        {
+          "name": "Delighted acceptance",
+          "pose": "happy",
+          "start_ms": 650,
+          "duration_ms": 1750
+        },
+        {
+          "name": "Grateful settle",
+          "pose": "content",
+          "start_ms": 2400,
+          "duration_ms": 600
+        }
+      ]
+    }
+  ]
+}

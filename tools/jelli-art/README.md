@@ -32,14 +32,18 @@ static page that `tools/assets/compare_slice.py` writes. It provides:
   info and done toasts of the mode left behind; warnings, problems and save
   results (`notify(text, {keep: true})`) stay.
 - An unsaved changes button that lists edits and opens their mode. The page
-  warns before closing with unsaved edits. Its pill has a fixed width on every
-  pointer (the full text is in its `title`), as have the tab dots and the
-  repository status, so nothing in the header or Paint's title row moves when
-  state changes.
-- Header layout: row 1 in every mode holds the mark, the mode tabs, the
-  save-state cluster (live badge, repository status, Unsaved) and the tools
-  (Settings, Shortcuts, Guide, Theme). Row 2 (before and after refs, Detail or
-  Sheet, compare with, lint totals) shows only in Review. `shell.js` sets
+  warns before closing with unsaved edits. Its pill, tab dots and repository
+  status reserve space, with flexible status widths on phones and full text
+  in `title`, so state changes do not move the workspace.
+- Header layout: wide desktops put modes, save state and tools on one row;
+  narrower screens give the mode rail its own row. Phones lead with modes,
+  followed by wrapping tools and save state, so every tool remains visible.
+  Overflow arrows and edge highlights reveal additional modes; keyboard
+  navigation and resizing keep the selected mode in view without scrolling
+  the workspace. Active underlines and hover/press feedback respect reduced
+  motion. The additional row of before/after refs, Detail or Sheet, compare
+  with and lint totals shows only in Review. The responsive rules live in
+  [shell.js](shell.js). `shell.js` sets
   `html[data-mode]` to the active mode id (`review`, `paint`, `creature`, ...);
   mode-specific CSS keys off it. The body is `100dvh` tall where supported.
 - **Settings** is a popover (`popover` attribute) in the tools. `addSetting(node)`
@@ -68,6 +72,11 @@ Panels use `window.JelliShell`, which exists when their script loads:
 | `registerViewRoot(id)`, `showOnly(id)` | A panel registers its root element when it adds it; its `renderView` override calls `showOnly(id)`, which shows that root and hides every other registered one (`detail` and `sheet` are built in), so a hidden view is also out of the Tab order. |
 | `registerMode({id, label, view})` | Adds a tab that shows `state.view === view`. A button added to `#views` gets a tab automatically. |
 | `activateMode(id)`, `openHelp()`, `setTheme('auto'\|'dark'\|'light'\|'contrast')`, `showGuide(bool)` | Switch mode, open the overlay, change the theme, show or hide the guide. |
+
+When authoring controls, include their visible label and any visible count in
+an explicit accessible name. Keep word separators between adjacent text spans;
+visual line breaks alone do not guarantee separated accessible text. Check the
+real rendered control with axe rather than adding an exclusion for a mismatch.
 
 Space or Enter on a button reached with the keyboard activates it. After a
 click, holding Space still peeks at the before image. An element with
@@ -689,3 +698,24 @@ The same CMake validators run in core-only, desktop and firmware builds and
 reject broken asset, pet, location, activity and prerequisite references.
 The [balance audit](../../docs-cms/memos/memo-041-activity-balance-and-location-integrity.md)
 records the full recipe table and initial pet tuning.
+
+
+## Celebration effects
+
+**Effects** edits [celebration timelines and pet hardpoints](../../docs/artwork.md#author-celebration-effects).
+It reuses the shell, drafts, guarded saves, creature clip drawing, touch number
+controls and Paint. **New → Effect sprite** creates artwork for sprite tracks.
+`GET /api/effects` returns the document, base hash, editability and capacities.
+`POST /api/effects` requires `data` and its loaded `base` (null for a new file),
+validates under the shared write lock and atomically saves `content/effects.json`.
+Stale saves return 409. Copied artwork requires an explicit content directory.
+The schema/compiler is [effect_data.py](../assets/effect_data.py); the frontend
+sampler mirrors integer timing in the core. **Test saved effect in game** uses
+the actual C runtime. `test_effects.py` and `ui_tests/test_effects.py` cover the
+schema, persistence and authoring paths.
+
+
+**Automatic celebrations** binds evolution, successful present catches and pet
+acceptance to saved effects. Three distinct authored defaults are enabled; missing
+`triggers` in older documents disables playback. The shared validator rejects unknown events and effect references.
+Bindings participate in the same undo, draft and guarded-save flow as timelines.

@@ -308,3 +308,45 @@ Use `make core-test` for fake transport and service tests, `make test` for the
 SDL integration, and `make sanitize` for memory/undefined-behavior checks.
 The existing C analysis and size gates include portable drivers. Firmware
 profile isolation is checked with `tools/debug/check_firmware_profile.py`.
+
+
+## Authored celebration playback
+
+The [effect sampler](../include/jelli/effect.h) consumes generated immutable
+[content](../content/effects.json), using absolute elapsed animation time and
+half-open intervals. It returns bounded sprite samples and the active creature
+pose cue. The [pet adapter](../include/jelli/pet_effect.h) starts/stops one cosmetic
+sequence without changing game state or saves; opening menus, changing the pet
+or form, or a backward clock cancels playback. Active effects participate in
+full redraw and region restoration. Hosts pass the engine animation clock so
+pause does not advance effects.
+
+Hardpoints are per-form source-pixel offsets from the ground anchor; track motion
+is in native display pixels. The shared compiler resolves point and artwork keys
+at build time. Jelli Art and the saved-content preview use that same validator.
+See [ADR-015](../docs-cms/adr/adr-015-authored-celebration-timelines.md) and
+[validation evidence](../docs-cms/memos/memo-085-celebration-authoring-and-runtime.md).
+
+
+[Gameplay delivery](../include/jelli/pet_celebration.h) consumes the bounded event
+ring once per frame after input/reward processing. Generated optional bindings
+map evolution status, successful present-catch input events and successful present
+acceptance to one-based effect
+indices; zero disables delivery. The queue owns at most one pending effect for
+the active pet/form, with a 32-byte state budget and no extra framebuffer. Latest
+eligible event wins; existing playback is not interrupted. Menus and pause defer
+playback, while identity changes, clock reversal, expiry, and offline resume
+clear pending work. Event sequence rollover starts a fresh cursor. Event overflow
+uses the existing ring policy; dropped history is never reconstructed.
+
+The shared debug protocol accepts `effect play KEY` and `effect stop` on the
+home view. Capture, pause, resume and open menus reject replay with `busy`;
+unknown keys preserve current playback. Replay changes presentation only.
+`./scripts/jelli-debug effect celebrate` uses this path on either host.
+See [follow-up evidence](../docs-cms/memos/memo-086-celebration-gameplay-follow-up.md).
+
+Present acceptance consumes a successful collected-present gift command with an
+idle result, or the inventory-giving effect when inventory actually decreased.
+A rejected gift or a started-but-unfinished giving activity never celebrates.
+[The three authored defaults](../content/effects.json) are enabled at the owner's
+request; preview keys are `evolution`, `gift-acquired`, and `present-accepted`.

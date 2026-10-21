@@ -46,6 +46,12 @@ scene in game** to preview the C compositor. Desktop synthetic motion controls a
 documented in [layered background presentation](docs/development.md#layered-background-presentation);
 physical device tilt and walking-activity integration remain pending.
 
+Jelli Art’s **Effects** workspace authors celebration timelines with layered
+sprite tracks, timed creature poses and per-form hardpoints. See
+[celebration authoring](docs/artwork.md#author-celebration-effects).
+Use `build/desktop/jelligotchi --effect celebrate` after building to try the
+starter sequence; automatic gameplay triggers are not enabled.
+
 ## ESP32
 
 ```sh

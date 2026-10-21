@@ -8,5 +8,6 @@
     - tab "Test in game" [selected]
     - tab "Activities"
     - tab "Scenes"
+    - tab "Effects"
     - tab "New"
   - button "More modes": ›

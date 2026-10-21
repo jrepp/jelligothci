@@ -14,6 +14,7 @@ static void usage(const char *name)
            "--save enables two-slot local persistence. Omit it for an unsaved session.\n"
            "--demo requires --headless and scripts care using 100 ms/frame.\n"
            "Other headless runs use 8 ms/frame. --wall-ms supplies a fake headless clock.\n"
+           "--effect KEY plays an authored celebration (e.g. celebrate).\n"
            "--scene KEY enables layered backgrounds (e.g. market-street).\n"
            "--tilt-x N / --tilt-y N: -100..100 percent; --travel-speed N: -32..32 px/s.\n"
            "With a scene: arrows tilt, A/D travel, R resets travel. Space freezes motion.\n",
@@ -61,6 +62,8 @@ static bool value_option(const char *key, const char *value, JelliOptions *optio
         options->asset_pack = value;
     else if (!strcmp(key, "--save"))
         options->save_path = value;
+    else if (!strcmp(key, "--effect"))
+        options->effect = value;
     else if (!strcmp(key, "--scene"))
         options->scene = value;
     else if (!strcmp(key, "--tilt-x") || !strcmp(key, "--tilt-y") || !strcmp(key, "--travel-speed"))
@@ -84,7 +87,7 @@ static bool value_option(const char *key, const char *value, JelliOptions *optio
 static bool valid_mode(const JelliOptions *options)
 {
     bool pet_options = options->save_path || options->demo || options->debug_socket ||
-                       options->asset_pack || options->scene;
+                       options->asset_pack || options->scene || options->effect;
     return (options->pet || !pet_options) && (!options->demo || options->headless) &&
            (!options->scene_motion || options->scene);
 }

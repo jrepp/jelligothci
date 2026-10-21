@@ -39,6 +39,15 @@ Named scene layers and seeded authored variation:
 [memo-082](memos/memo-082-scene-names-and-variation.md).
 Scene editing recovery, preview and authoring affordances:
 [memo-083](memos/memo-083-scene-authoring-affordances.md).
+Celebration orchestration, named layers and per-form hardpoints:
+[ADR-015](adr/adr-015-authored-celebration-timelines.md), with implementation in
+[memo-085](memos/memo-085-celebration-authoring-and-runtime.md).
+Opt-in gameplay bindings and device replay preparation:
+[memo-086](memos/memo-086-celebration-gameplay-follow-up.md).
+Three event-specific celebrations and USB deployment:
+[memo-087](memos/memo-087-event-celebrations-and-device-validation.md).
+Responsive Jelli Art navigation and interaction polish:
+[memo-088](memos/memo-088-jelli-art-responsive-navigation.md).
 Generated asset final-newline packaging regression:
 [memo-084](memos/memo-084-generated-assets-final-newline.md).
 

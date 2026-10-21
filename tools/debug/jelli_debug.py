@@ -258,6 +258,8 @@ def main():
     ota.add_argument("action", nargs="?", choices=("start", "reboot"))
     events = commands.add_parser("events", help="Read discrete action/state events")
     events.add_argument("--after", type=int, choices=range(0x100000000), default=0, metavar="SEQUENCE")
+    effect = commands.add_parser("effect", help="Replay an authored effect on the home view; session only")
+    effect.add_argument("key", help="Saved effect key, or stop")
     cheat = commands.add_parser("cheat", help="Explicit debug edits; recorded as cheat events")
     cheat.add_argument("name", choices=("fullness", "energy", "clean", "fun", "connection", "bond", "food", "gifts", "heal"))
     cheat.add_argument("value", type=int, nargs="?")
@@ -327,6 +329,10 @@ def main():
                 parser.error("power run requires a mode; other power commands do not accept one")
             result = client.request("power" + (f" {args.action}" if args.action else "") +
                                     (f" {args.mode}" if args.mode else ""))
+        elif args.command == "effect":
+            if not args.key or not args.key.isascii() or not all(c.isalnum() or c in "_-" for c in args.key):
+                parser.error("effect needs an authored key or stop")
+            result = client.request("effect stop" if args.key == "stop" else "effect play " + args.key)
         elif args.command == "cheat":
             result = client.request("cheat " + args.name + ("" if args.name == "heal" else f" {args.value}"))
         elif args.command == "clock":

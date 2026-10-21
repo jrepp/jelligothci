@@ -87,6 +87,7 @@ def catalogue(repo, content):
     return {"pages": [{"id": v, "name": n, "ring": v < ring_limit and v != collection} for v, n in pages],
             "entries": entries, "states": states, "moments": moments, "needs": list(NEEDS),
             "locations": (behaviors.read_json(Path(content) / "locations.json") or {}).get("locations", []),
+            "effects": (behaviors.read_json(Path(content) / "effects.json") or {}).get("effects", []),
             "scenes": (behaviors.read_json(Path(content) / "scenes.json") or {}).get("scenes", []),
             "prizes": (behaviors.read_json(Path(content) / "prizes.json") or {}).get("prizes", []),
             "limits": {"frames": MAX_FRAMES, "step_ms": MAX_STEP_MS, "start_ms": MAX_START_MS,
@@ -153,6 +154,7 @@ def parse_scenario(raw, cat):
     state = _named(raw, "behavior", cat["states"], errors)
     moment = _named(raw, "moment", cat["moments"], errors)
     location = _named(raw, "location", [p["key"] for p in cat.get("locations", [])], errors)
+    effect = _named(raw, "effect", [e["key"] for e in cat.get("effects", [])], errors)
     scene = _named(raw, "scene", [s["key"] for s in cat.get("scenes", [])], errors)
     present = _named(raw, "present", [p["key"] for p in cat.get("prizes", [])], errors)
     present_state = raw.get("present_state", "none")
@@ -196,6 +198,8 @@ def parse_scenario(raw, cat):
             "--behavior", 0 if state is None else state + 1, "--moment", 0 if moment is None else moment + 1,
             *[x for key in ("potty", "minute", "start_ms", "step_ms", "frames", "advance_s") for x in (f"--{key}", s[key])],
             *[x for key in ("menu", "mess", "asleep", "live") for x in (f"--{key}", int(s[key]))]]
+    if effect is not None:
+        argv += ["--effect", cat["effects"][effect]["key"]]
     if scene is not None:
         argv += ["--scene", cat["scenes"][scene]["key"],
                  *[x for key in ("tilt_x", "tilt_y", "travel_speed") for x in (f"--{key}", s[key])]]

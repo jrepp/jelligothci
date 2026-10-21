@@ -84,53 +84,53 @@
       - button "Swap main and secondary colours": ⇄
     - group "mint jelly":
       - text: mint jelly
-      - 'button "foam · #cff5cf · used by 10 assets"': foam —
+      - 'button "foam — · #cff5cf · used by 10 assets"': foam —
       - button "Change foam in every sprite": ✎
-      - 'button "mint · #85e4b6 · used by 36 assets"': mint —
+      - 'button "mint — · #85e4b6 · used by 36 assets"': mint —
       - button "Change mint in every sprite": ✎
-      - 'button "sea · #43bca2 · used by 34 assets"': sea 36 px
+      - 'button "sea 36 px · #43bca2 · used by 34 assets"': sea 36 px
       - button "Change sea in every sprite": ✎
-      - 'button "teal · #187b79 · used by 23 assets"': teal —
+      - 'button "teal — · #187b79 · used by 23 assets"': teal —
       - button "Change teal in every sprite": ✎
     - group "lilac jelly":
       - text: lilac jelly
-      - 'button "white · #ffffff · used by 41 assets"': white —
+      - 'button "white — · #ffffff · used by 41 assets"': white —
       - button "Change white in every sprite": ✎
-      - 'button "haze · #d2b8f3 · used by 14 assets"': haze —
+      - 'button "haze — · #d2b8f3 · used by 14 assets"': haze —
       - button "Change haze in every sprite": ✎
-      - 'button "lilac · #a47bdb · used by 33 assets"': lilac —
+      - 'button "lilac — · #a47bdb · used by 33 assets"': lilac —
       - button "Change lilac in every sprite": ✎
-      - 'button "violet · #7655a3 · used by 19 assets"': violet —
+      - 'button "violet — · #7655a3 · used by 19 assets"': violet —
       - button "Change violet in every sprite": ✎
     - group "coral":
       - text: coral
-      - 'button "cream · #fff4cf · used by 62 assets"': cream —
+      - 'button "cream — · #fff4cf · used by 62 assets"': cream —
       - button "Change cream in every sprite": ✎
-      - 'button "coral · #fa8c99 · used by 37 assets"': coral 30 px
+      - 'button "coral 30 px · #fa8c99 · used by 37 assets"': coral 30 px
       - button "Change coral in every sprite": ✎
-      - 'button "rose · #d84f70 · used by 17 assets"': rose —
+      - 'button "rose — · #d84f70 · used by 17 assets"': rose —
       - button "Change rose in every sprite": ✎
     - group "gold":
       - text: gold
-      - 'button "cream · #fff4cf · used by 62 assets"': cream —
+      - 'button "cream — · #fff4cf · used by 62 assets"': cream —
       - button "Change cream in every sprite": ✎
-      - 'button "gold · #f5c764 · used by 30 assets"': gold —
+      - 'button "gold — · #f5c764 · used by 30 assets"': gold —
       - button "Change gold in every sprite": ✎
-      - 'button "tan · #ae7855 · used by 15 assets"': tan —
+      - 'button "tan — · #ae7855 · used by 15 assets"': tan —
       - button "Change tan in every sprite": ✎
     - group "recess":
       - text: recess
-      - 'button "mauve · #72516b · used by 2 assets"': mauve —
+      - 'button "mauve — · #72516b · used by 2 assets"': mauve —
       - button "Change mauve in every sprite": ✎
-      - 'button "plum · #49334f · used by 6 assets"': plum —
+      - 'button "plum — · #49334f · used by 6 assets"': plum —
       - button "Change plum in every sprite": ✎
     - group "other":
       - text: other
-      - 'button "ink · #291b35 · used by 83 assets · hard to see on the ring backdrop" [pressed]': ink 47 px
+      - 'button "ink 47 px · #291b35 · used by 83 assets · hard to see on the ring backdrop" [pressed]': ink 47 px
       - button "Change ink in every sprite": ✎
     - group "more":
       - text: more
-      - button "eraser · transparent · secondary colour": eraser right-click
+      - button "eraser right-click · transparent · secondary colour": eraser right-click
       - button "Choose a custom colour": custom pick…
     - group: About the colours
     - text: before /tmp/jelli-ui-tests/before compare with

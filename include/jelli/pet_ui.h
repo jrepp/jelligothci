@@ -8,6 +8,7 @@
 #include "jelli/tunables.h"
 #include "jelli/pet_rewards.h"
 #include "jelli/scene.h"
+#include "jelli/effect.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -113,6 +114,7 @@ typedef struct {
     const JelliAssetSet *assets;
     const uint16_t *scene_pixels;
     uint32_t scene_revision;
+    uint16_t effect_tick;
     uint32_t phase;       /* Idle pose from the creature's beat schedule; nothing else. */
     bool wake_surprised;  /* Opening window of a happy wake. */
     uint8_t exercise_bob; /* Barbell frame 0/1 while exercising. */
@@ -172,7 +174,13 @@ typedef struct {
 
 typedef struct {
     const JelliAssetSet *assets; /* Host-owned override; NULL uses embedded art. */
-    JelliScene *scene;           /* Optional caller-owned scene cache; outlives this binding. */
+    const JelliEffectDefinition *effect;
+    JelliEffectSample effect_sample;
+    uint64_t effect_anchor_ms;
+    uint32_t effect_pet;
+    uint8_t effect_form;
+    bool effect_bound;
+    JelliScene *scene; /* Optional caller-owned scene cache; outlives this binding. */
     const JelliAssetSet *scene_assets;
     /* Borrowed immutable metadata; no runtime alpha scans or allocation. */
     const JelliAsset *actor_frame;

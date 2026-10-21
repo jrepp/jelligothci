@@ -24,7 +24,7 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   /* Extension points for behaviour.js: profile scale, simulated panel source, per-tick and play hooks. */
   const cr = S.cr = {tickHooks: [], playHooks: [], scaleFor: null, panelSource: null, step: null,
-    renderBehaviour: null, formDirty: null, save: null};
+    renderBehaviour: null, formDirty: null, save: null, drawSprite: null, resolvedClip: null, onFrame: null, restartSimulation: null, renderTimeline: null};
   const scaleOf = form => cr.scaleFor?.(form) || SCALE;
 
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="creature" aria-pressed="false">Creature</button>');
@@ -156,6 +156,8 @@
     const x = cx - Math.floor((anchor[0] * scale + 128) / 256), y = floor - Math.floor((anchor[1] * scale + 128) / 256);
     ctx.drawImage(p.img, x, y, p.w * scale, p.h * scale);
   }
+  cr.drawSprite = drawSprite;
+  cr.resolvedClip = resolved;
   function drawPanel(view, key) {
     const {ctx, css} = view, k = DPR * css / PANEL;
     ctx.setTransform(k, 0, 0, k, 0, 0); ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, PANEL, PANEL);

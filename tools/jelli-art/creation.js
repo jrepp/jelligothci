@@ -18,7 +18,7 @@
     if (!snapshot) { root.innerHTML = '<h2>New</h2><p>Creation is unavailable for this served checkout.</p>'; return; }
     root.innerHTML = `<h2>New</h2><p>Create saved artwork, then paint it and test the saved scene in the engine.</p>
       <form id="creation-form" style="max-width:640px">
-      ${field('Create', `<select name="kind"><option value="pet">Pet and form</option><option value="icons">Icon artwork</option><option value="props">Prop artwork</option><option value="prizes">Present artwork</option><option value="backgrounds">Background artwork</option></select>`)}
+      ${field('Create', `<select name="kind"><option value="pet">Pet and form</option><option value="effects">Effect sprite</option><option value="icons">Icon artwork</option><option value="props">Prop artwork</option><option value="prizes">Present artwork</option><option value="backgrounds">Background artwork</option></select>`)}
       ${field('Identity', '<input name="key" required pattern="[a-z][a-z0-9-]{0,39}" maxlength="40" placeholder="my-pet">')}
       ${field('Display name', '<input name="name" required pattern="[A-Z0-9 ]{1,16}" maxlength="16" placeholder="MY PET">')}
       <div id="creation-fields"></div><button type="submit">Create and paint</button>

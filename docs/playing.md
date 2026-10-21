@@ -504,3 +504,14 @@ refills the inventory when it is empty.
 
 The [complete menu audit](../docs-cms/memos/memo-030-menu-clarity-audit.md) records
 all pages, their actions, and the remaining physical-device verification.
+
+
+## Replay an authored celebration
+
+On the home view of a game-profile host, run
+`./scripts/jelli-debug effect celebrate` (add `--port PORT` before `effect` for
+USB), or `./scripts/jelli-debug effect stop`. Replay is presentation-only; it
+neither earns a reward nor changes a save. Open menus, paused simulation, resume
+catch-up and screenshot capture return `busy`; return home or finish the capture
+before retrying. Authored gameplay bindings are configured in
+[the Effects workspace](artwork.md#author-celebration-effects).

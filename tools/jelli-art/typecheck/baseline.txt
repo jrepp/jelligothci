@@ -16,7 +16,6 @@ tools/jelli-art/creature.js: TS2339: Property 'dataset' does not exist on type '
 tools/jelli-art/creature.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
 tools/jelli-art/creature.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
 tools/jelli-art/creature.js: TS2339: Property 'disabled' does not exist on type 'HTMLElement'.
-tools/jelli-art/creature.js: TS2339: Property 'onFrame' does not exist on type '{ tickHooks: any[]; playHooks: any[]; scaleFor: any; panelSource: any; step: any; renderBehaviour: any; formDirty: any; save: any; }'.
 tools/jelli-art/creature.js: TS2339: Property 'onchange' does not exist on type 'Element'.
 tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
 tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
@@ -27,8 +26,6 @@ tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type '
 tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
 tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
 tools/jelli-art/creature.js: TS2339: Property 'onclick' does not exist on type 'Element'.
-tools/jelli-art/creature.js: TS2339: Property 'renderTimeline' does not exist on type '{ tickHooks: any[]; playHooks: any[]; scaleFor: any; panelSource: any; step: any; renderBehaviour: any; formDirty: any; save: any; }'.
-tools/jelli-art/creature.js: TS2339: Property 'restartSimulation' does not exist on type '{ tickHooks: any[]; playHooks: any[]; scaleFor: any; panelSource: any; step: any; renderBehaviour: any; formDirty: any; save: any; }'.
 tools/jelli-art/flipbook.js: TS2339: Property 'dataset' does not exist on type 'Element'.
 tools/jelli-art/flipbook.js: TS2339: Property 'dataset' does not exist on type 'Element'.
 tools/jelli-art/flipbook.js: TS2339: Property 'dataset' does not exist on type 'Element'.
