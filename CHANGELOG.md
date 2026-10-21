@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/jrepp/jelligothci/compare/v0.17.0...v0.17.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **studio:** include tune playback in game accessibility snapshots ([3e9c128](https://github.com/jrepp/jelligothci/commit/3e9c128017b5366eb3f9304e93503b733c03198d))
+
 ## [0.17.0](https://github.com/jrepp/jelligothci/compare/v0.16.0...v0.17.0) (2026-10-21)
 
 
