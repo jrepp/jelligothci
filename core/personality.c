@@ -44,22 +44,30 @@ unsigned jelli_pet_favorite(const JelliPet *pet, unsigned minute)
     return count ? p->windows[count - 1u].moment : 0u;
 }
 
-void jelli_game_preference(const JelliGame *game, JelliPet *pet)
+unsigned jelli_game_preference_gain(const JelliGame *game, const JelliPet *pet, unsigned meter)
 {
     unsigned minute = game->clock_known
                           ? game->clock_minute
                           : (unsigned)((pet->ticks % JELLI_DAY_TICKS + pet->phase_offset) %
                                        JELLI_DAY_TICKS / 600u);
     if (!pet->moment || pet->moment - 1u != jelli_pet_favorite(pet, minute))
-        return;
+        return 0u;
     const JelliFavoriteProfile *p = favorite_profile(pet);
     bool strong = minute >= p->strong_from_minute && minute < p->strong_until_minute;
     unsigned bonus = strong ? p->strong_bonus : p->bonus;
-    pet->needs[JELLI_AMUSEMENT] = adjusted(pet->needs[JELLI_AMUSEMENT],
-                                           (int)jelli_habits_social_gain(&pet->habits, bonus), 0u);
-    pet->needs[JELLI_SOCIAL] = adjusted(
-        pet->needs[JELLI_SOCIAL], (int)jelli_habits_social_gain(&pet->habits, bonus / 2u), 0u);
-    pet->bond = adjusted(pet->bond, (int)jelli_favorite_bond, 0u);
+    if (meter == JELLI_ACTIVITY_BOND)
+        return jelli_favorite_bond;
+    if (meter == JELLI_AMUSEMENT || meter == JELLI_SOCIAL)
+        return jelli_habits_social_gain(&pet->habits, meter == JELLI_SOCIAL ? bonus / 2u : bonus);
+    return 0u;
+}
+
+void jelli_game_preference(const JelliGame *game, JelliPet *pet)
+{
+    for (unsigned i = 0u; i < JELLI_NEED_COUNT; ++i)
+        pet->needs[i] = adjusted(pet->needs[i], (int)jelli_game_preference_gain(game, pet, i), 0u);
+    pet->bond =
+        adjusted(pet->bond, (int)jelli_game_preference_gain(game, pet, JELLI_ACTIVITY_BOND), 0u);
 }
 
 JelliResult jelli_game_touch(JelliPet *pet)

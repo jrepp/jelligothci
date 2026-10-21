@@ -1,0 +1,14 @@
+- navigation "Modes":
+  - button "Earlier modes": ‹
+  - tablist "Modes":
+    - tab "Review"
+    - tab "Paint"
+    - tab "Creature"
+    - tab "Behaviour"
+    - tab "Test in game"
+    - tab "Activities"
+    - tab "Scenes"
+    - tab "Effects"
+    - tab "Music" [selected]
+    - tab "New"
+  - button "More modes": ›

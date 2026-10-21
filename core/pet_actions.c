@@ -2,6 +2,7 @@
 #include "jelli/pet_ui.h"
 #include "jelli/activities.h"
 #include "pet_gallery.h"
+#include "pet_collectible_ui.h"
 #include "pet_collection.h"
 #include "pet_food.h"
 
@@ -133,6 +134,8 @@ static JelliResult menu_available(JelliPetUi *ui, const JelliGame *game, unsigne
 
 JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsigned slot)
 {
+    if (ui->menu_open && jelli_pet_collectible_page(ui->page))
+        return JELLI_OK; /* These pages explain missing items in details. */
     if (slot && ui->page == JELLI_UI_FOOD)
         return jelli_pet_food_available(ui, game, slot);
     if (slot && ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS)

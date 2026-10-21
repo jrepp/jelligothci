@@ -113,7 +113,7 @@ def pet_candidate(manifest, docs, images, used, reserved_keys, request, source):
     if request.get("behavior") not in {b["name"] for b in config["behaviors"]}:
         raise CreationError("Choose an existing behavior template")
     prize_ids = {p["id"] + 1 for p in docs.get("prizes", {}).get("prizes", [])}
-    unlock = integer(request.get("unlock_prize"), "Unlock prize", 1, 16)
+    unlock = integer(request.get("unlock_prize"), "Unlock prize", 1, 20)
     if unlock not in prize_ids:
         raise CreationError("Choose an existing collectible unlock prize")
     hint = request.get("hint", "")
@@ -276,8 +276,8 @@ def create(repo, source, content, request, bases):
             if kind != "prizes" or "prizes" not in docs:
                 raise CreationError("Collectible registration requires prize artwork and a prize registry")
             prizes = docs["prizes"]["prizes"]
-            if len(prizes) >= 16:
-                raise CreationError("No available collectible IDs (capacity 16)")
+            if len(prizes) >= 20:
+                raise CreationError("No available collectible IDs (capacity 20)")
             prizes.append({"id": len(prizes), "key": key, "name": name, "asset": asset["id"]})
     else:
         raise CreationError("Choose pet or a supported artwork kind")

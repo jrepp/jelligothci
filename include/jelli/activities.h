@@ -89,7 +89,7 @@ unsigned jelli_moment_suggested(unsigned hour);
 JelliResult jelli_moment_available(const JelliGame *game, const JelliPet *pet, unsigned id);
 uint16_t jelli_activity_day(const JelliGame *game, const JelliPet *pet);
 const char *jelli_moment_hint(const JelliGame *game, const JelliPet *pet, unsigned id);
-/* Costs are fixed and paid once on acceptance; rewards are paid on completion. */
+/* Costs and reward totals are fixed on acceptance; meter gains arrive in pulses. */
 unsigned jelli_activity_cost(const JelliPet *pet, unsigned index, unsigned base);
 unsigned jelli_moment_cost(const JelliPet *pet, unsigned id, unsigned index);
 unsigned jelli_moment_location(const JelliPet *pet, unsigned id);
@@ -99,6 +99,10 @@ void jelli_moment_charge(JelliGame *game, JelliPet *pet, unsigned id);
 bool jelli_moment_free_play(const JelliGame *game, const JelliPet *pet, unsigned id);
 /* Spends today's daily reward for id (no-op for other moments). */
 void jelli_moment_claim(const JelliGame *game, JelliPet *pet, unsigned id);
+void jelli_activity_rewards_begin(JelliGame *game, JelliPet *pet);
+void jelli_activity_rewards_tick(JelliGame *game, JelliPet *pet);
+bool jelli_activity_rewards_valid(const JelliPet *pet);
+void jelli_activity_rewards_clear(JelliPet *pet);
 void jelli_moment_reward(const JelliGame *game, JelliPet *pet);
 unsigned jelli_moment_bonus_percent(const JelliPet *pet, unsigned id);
 unsigned jelli_moment_jitter_percent(const JelliPet *pet, unsigned id);

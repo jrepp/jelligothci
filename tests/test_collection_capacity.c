@@ -1,5 +1,7 @@
 #include "jelli/collection.h"
 #include "jelli/save.h"
+#include "save_layout.h"
+#include "jelli/collectible.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,14 +50,15 @@ static void existing_discovery_unlocks_appended_family(void)
     CHECK(before_size);
     /* Corrupt unused slot 15's origin, with a valid checksum: reconciliation
      * must not turn malformed input into an accepted save or publish output. */
-    bytes[size - 12u] = 1u;
+    bytes[size - 12u - TEST_SAVE_V16_BYTES(save.game.count)] = 1u;
     repair_record(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     CHECK(jelli_save_encode(&loaded, after, sizeof(after)) == before_size);
     CHECK(memcmp(before, after, before_size) == 0);
     size = jelli_save_encode(&save, bytes, sizeof(bytes));
-    memmove(bytes + size - 32u, bytes + size - 8u, 8u);
-    size -= 24u;
+    size_t extension = 24u + TEST_SAVE_V16_BYTES(save.game.count);
+    memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
+    size -= extension;
     bytes[4] = 14u;
     repair_record(bytes, size);
     CHECK(jelli_save_decode(&loaded, bytes, size));

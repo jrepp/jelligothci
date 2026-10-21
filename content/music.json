@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "songs": [
+    {
+      "key": "morning-tea",
+      "name": "Morning Tea",
+      "style": "Chill"
+    },
+    {
+      "key": "garden-waltz",
+      "name": "Garden Waltz",
+      "style": "Classical"
+    },
+    {
+      "key": "porch-picnic",
+      "name": "Porch Picnic",
+      "style": "Country"
+    },
+    {
+      "key": "tiny-thunder",
+      "name": "Tiny Thunder",
+      "style": "Heavy metal"
+    },
+    {
+      "key": "neon-heart",
+      "name": "Neon Heart",
+      "style": "K-pop"
+    },
+    {
+      "key": "cloud-club",
+      "name": "Cloud Club",
+      "style": "House"
+    },
+    {
+      "key": "pixel-sunset",
+      "name": "Pixel Sunset",
+      "style": "80s"
+    }
+  ]
+}

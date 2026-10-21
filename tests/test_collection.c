@@ -2,6 +2,7 @@
 #include "game_fixture.h"
 #include "jelli/collection.h"
 #include "jelli/save.h"
+#include "jelli/collectible.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +37,8 @@ static void unlock_and_persist(void)
     CHECK(game->count == 2u && game->pets[index].id == id);
     CHECK(jelli_game_command(game, (JelliCommand){JELLI_CMD_ACTIVATE, UINT32_MAX, id}) == JELLI_OK);
     CHECK(jelli_prize_gift(game, 5u) == JELLI_OK);
-    CHECK(!(game->prizes.owned & 32u) && (game->prizes.discovered & 32u));
+    CHECK((game->prizes.owned & 32u) && (game->prizes.discovered & 32u));
+    CHECK(jelli_collectible_control(game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
     jelli_collection_unlock(game);
     CHECK(game->count == 2u);
     uint64_t stored_ticks = game->pets[0].ticks;
@@ -55,7 +57,7 @@ static void unlock_and_persist(void)
     CHECK(game->count == 9u && jelli_game_valid(game));
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
-    CHECK(size > 0u && size <= 4096u && bytes[4] == JELLI_SAVE_VERSION);
+    CHECK(size > 0u && size <= JELLI_SAVE_CAPACITY && bytes[4] == JELLI_SAVE_VERSION);
     CHECK(jelli_save_decode(&loaded, bytes, size));
     CHECK(loaded.game.count == 9u && loaded.game.new_pets == game->new_pets);
     CHECK(loaded.game.pets[index].id == id && loaded.game.pets[index].reached_forms == 12u);
@@ -93,8 +95,8 @@ static void legacy_and_invalid_records(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&source, bytes, sizeof(bytes));
     CHECK(size != 0u);
-    size_t extension =
-        3u + TEST_SAVE_V14_GAME_BYTES + (size_t)source.game.count * TEST_SAVE_V4_PET_BYTES;
+    size_t extension = 3u + TEST_SAVE_NEW_GAME_BYTES(source.game.count) +
+                       (size_t)source.game.count * TEST_SAVE_V4_PET_BYTES;
     memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
     size -= extension;
     bytes[4] = 3u;
@@ -108,10 +110,10 @@ static void legacy_and_invalid_records(void)
     size = jelli_save_encode(&loaded, bytes, sizeof(bytes));
     CHECK(size != 0u);
     JelliSave before = loaded;
-    bytes[size - 8u - TEST_SAVE_V14_GAME_BYTES -
+    bytes[size - 8u - TEST_SAVE_NEW_GAME_BYTES(loaded.game.count) -
           (1u + loaded.game.count * TEST_SAVE_V4_PET_BYTES)] =
         9u; /* First entry now duplicates an invalid NEW mask below. */
-    bytes[size - 8u - TEST_SAVE_V14_GAME_BYTES -
+    bytes[size - 8u - TEST_SAVE_NEW_GAME_BYTES(loaded.game.count) -
           (3u + loaded.game.count * TEST_SAVE_V4_PET_BYTES)] = 1u;
     repair(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
@@ -120,8 +122,9 @@ static void legacy_and_invalid_records(void)
     CHECK(jelli_save_encode(&loaded, after_bytes, sizeof(after_bytes)) == before_size);
     CHECK(before_size != 0u && memcmp(before_bytes, after_bytes, before_size) == 0);
     size = jelli_save_encode(&source, bytes, sizeof(bytes));
-    bytes[size - 8u - TEST_SAVE_V14_GAME_BYTES - (1u + source.game.count * TEST_SAVE_V4_PET_BYTES) +
-          2u] = 1u; /* Duplicate collection binding. */
+    bytes[size - 8u - TEST_SAVE_NEW_GAME_BYTES(source.game.count) -
+          (1u + source.game.count * TEST_SAVE_V4_PET_BYTES) + 2u] =
+        1u; /* Duplicate collection binding. */
     repair(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
 }
@@ -140,8 +143,8 @@ static void reversible_forms_and_merge(void)
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size != 0u);
-    size_t extension =
-        TEST_SAVE_V14_GAME_BYTES + TEST_SAVE_TAIL_PET_BYTES * (size_t)save.game.count;
+    size_t extension = TEST_SAVE_NEW_GAME_BYTES(save.game.count) +
+                       TEST_SAVE_TAIL_PET_BYTES * (size_t)save.game.count;
     memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
     size -= extension;
     bytes[4] = 7u;

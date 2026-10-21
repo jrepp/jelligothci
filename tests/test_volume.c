@@ -40,13 +40,13 @@ static void saved_volume(void)
         CHECK(loaded.game.volume == volume);
     }
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
-    bytes[size - 9u - TEST_SAVE_V14_GAME_BYTES -
+    bytes[size - 9u - TEST_SAVE_NEW_GAME_BYTES(save.game.count) -
           TEST_SAVE_TAIL_PET_BYTES * (size_t)save.game.count] = 101u;
     repair(bytes, size);
     CHECK(!jelli_save_decode(&loaded, bytes, size));
     /* A v6 save has no volume byte; its exact legacy payload remains valid. */
-    size_t extension =
-        1u + TEST_SAVE_V14_GAME_BYTES + TEST_SAVE_TAIL_PET_BYTES * (size_t)save.game.count;
+    size_t extension = 1u + TEST_SAVE_NEW_GAME_BYTES(save.game.count) +
+                       TEST_SAVE_TAIL_PET_BYTES * (size_t)save.game.count;
     memmove(bytes + size - 8u - extension, bytes + size - 8u, 8u);
     size -= extension;
     bytes[4] = 6u;

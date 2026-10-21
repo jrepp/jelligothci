@@ -6,6 +6,7 @@
 #include "jelli/activities.h"
 #include "jelli/behavior.h"
 #include "jelli/nutrition.h"
+#include "jelli/collectible.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -324,17 +325,6 @@ static JelliResult moment(JelliGame *game, JelliPet *pet, uint32_t choice)
     return JELLI_OK;
 }
 
-static JelliResult set_volume(JelliGame *game, uint32_t value)
-{
-    if (value > JELLI_VOLUME_MAX)
-        return JELLI_INVALID_TARGET;
-    if (value == game->volume)
-        return JELLI_FULL;
-    game->volume = (uint8_t)value;
-    ++game->revision;
-    return JELLI_OK;
-}
-
 static JelliResult start_exercise(JelliPet *pet)
 {
     return bedtime_pending(pet) ? JELLI_BUSY : jelli_start_exercise(pet);
@@ -342,7 +332,8 @@ static JelliResult start_exercise(JelliPet *pet)
 
 static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliPet *pet)
 {
-    switch (command.kind) {
+    /* Legacy command subset; collectible commands dispatch before this helper. */
+    switch ((unsigned)command.kind) {
     case JELLI_CMD_FORM:
         return jelli_collection_set_form(game, command.actor_id, command.value);
     case JELLI_CMD_EXERCISE:
@@ -376,13 +367,14 @@ static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliP
     case JELLI_CMD_HEALTH:
         return healthy_click(pet, command.value);
     case JELLI_CMD_VOLUME:
-        return set_volume(game, command.value);
+        return jelli_game_set_volume(game, command.value);
     case JELLI_CMD_REFILL_FOOD:
         return jelli_refill_food(game);
     case JELLI_CMD_ACTIVATE:
         return activate_pet(game, command, pet);
+    default:
+        return JELLI_INVALID_TARGET;
     }
-    return JELLI_INVALID_TARGET;
 }
 
 JelliResult jelli_game_command_impl(JelliGame *game, JelliCommand command)
@@ -394,5 +386,15 @@ JelliResult jelli_game_command_impl(JelliGame *game, JelliCommand command)
     JelliPet *pet = &game->pets[game->active];
     if (pet->id != command.actor_id && command.kind != JELLI_CMD_FORM)
         return JELLI_INVALID_TARGET;
-    return dispatch_action(game, command, pet);
+    if (command.kind >= JELLI_CMD_COLLECTIBLE_PLAY)
+        return jelli_collectible_command(game, command);
+    if (game->collectible.active && command.kind != JELLI_CMD_VOLUME)
+        return JELLI_BUSY;
+    uint64_t previous_due = pet->interaction_due;
+    uint8_t previous_activity = pet->activity;
+    JelliResult result = dispatch_action(game, command, pet);
+    if (result == JELLI_OK &&
+        (pet->interaction_due != previous_due || pet->activity != previous_activity))
+        jelli_activity_rewards_begin(game, pet);
+    return result;
 }

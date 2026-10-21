@@ -220,3 +220,9 @@ setup or user commands change.
 - [Docuchango on PyPI](https://pypi.org/project/docuchango/)
 - [Docuchango source](https://github.com/jrepp/docuchango)
 - [uv tool execution](https://docs.astral.sh/uv/concepts/tools/)
+
+Collectible desktop playtest, focus-loss repair and debug ownership edits:
+[memo-095](memos/memo-095-collectible-desktop-playtest.md).
+
+Bounded MOD tracker authoring, sample management and four-channel playback:
+[memo-096](memos/memo-096-music-tracker-authoring.md).

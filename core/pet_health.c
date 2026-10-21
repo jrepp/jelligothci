@@ -1,6 +1,7 @@
 #include "jelli_asset_ids.h"
 #include "jelli/pet_ui.h"
 #include "pet_gallery.h"
+#include "pet_collectible_ui.h"
 #include "pet_collection.h"
 #include "pet_food.h"
 
@@ -69,21 +70,8 @@ uint32_t jelli_pet_health_icon(unsigned activity)
     return activity < JELLI_HEALTH_COUNT ? health_items[activity].icon : 0u;
 }
 
-bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
-                          JelliPetUiButton *button)
+static bool routine_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *button)
 {
-    if (!ui || !button)
-        return false;
-    if (ui->menu_open && ui->page == JELLI_UI_MOMENTS && slot)
-        return jelli_pet_activity_button(ui->activity_page, slot, asleep, button);
-    if (ui->menu_open && ui->page == JELLI_UI_FOOD && slot)
-        return jelli_pet_food_button(slot, button);
-    if (jelli_pet_collection_button(ui, slot, button))
-        return true;
-    if (jelli_pet_gallery_button(ui, slot, button))
-        return true;
-    if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot && (ui->clock_edit || slot == 4u))
-        return jelli_pet_clock_button(ui->clock_edit, slot, button);
     if (jelli_pet_page_is_routine(ui->page) && slot == 1u && ui->menu_open) {
         unsigned activity = jelli_pet_health_action(ui);
         unsigned top = ui->actor_bounds.y > 196u ? ui->actor_bounds.y - 104u : 92u;
@@ -94,6 +82,30 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
                                      .circular = true};
         return true;
     }
+    return false;
+}
+
+bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
+                          JelliPetUiButton *button)
+{
+    if (!ui || !button)
+        return false;
+    if (ui->menu_open && jelli_pet_collectible_page(ui->page))
+        return jelli_pet_collectible_button(ui, slot, button);
+    if (ui->menu_open && slot) {
+        if (ui->page == JELLI_UI_MOMENTS)
+            return jelli_pet_activity_button(ui->activity_page, slot, asleep, button);
+        if (ui->page == JELLI_UI_FOOD)
+            return jelli_pet_food_button(slot, button);
+    }
+    if (jelli_pet_collection_button(ui, slot, button))
+        return true;
+    if (jelli_pet_gallery_button(ui, slot, button))
+        return true;
+    if (ui->menu_open && ui->page == JELLI_UI_SETTINGS && slot && (ui->clock_edit || slot == 4u))
+        return jelli_pet_clock_button(ui->clock_edit, slot, button);
+    if (routine_button(ui, slot, button))
+        return true;
     return jelli_pet_ui_button(ui->page, slot, asleep, ui->menu_open, button);
 }
 
@@ -208,6 +220,10 @@ void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game)
 
 void jelli_pet_ui_back(JelliPetUi *ui)
 {
+    if (ui->menu_open && jelli_pet_collectible_page(ui->page)) {
+        jelli_pet_collectible_back(ui);
+        return;
+    }
     if (ui->menu_open && ui->page >= JELLI_UI_PETS) {
         if (ui->page == JELLI_UI_FOOD)
             ui->page = JELLI_UI_CARE;

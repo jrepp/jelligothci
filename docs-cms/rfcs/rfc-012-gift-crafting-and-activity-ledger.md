@@ -35,6 +35,49 @@ morale boosts. These decisions guide this draft; they do not implement or approv
 the remaining recipes, thresholds, layouts, reward values or storage budgets. Reuse existing art wherever practical. Traveling and its airplane scene are a separate follow-on
 increment; they do not require a crafted ticket under this proposal.
 
+# Owner-directed design patterns
+
+The following patterns capture the owner's iterative desktop playtest direction
+for this feature. Apply them to subsequent cartridges and records. They supersede
+earlier menu, timing, and presentation suggestions where those disagree; the
+remaining proposed games, recipes, and balance decisions retain Draft status.
+These are design requirements, not a claim that every proposed game is implemented.
+
+| Pattern | Required behavior | Current example and implementation reference |
+| --- | --- | --- |
+| Collect, keep, play | Collectibles remain owned; every pet can play every owned item. Keep acquisition, creating recipes, and reverse recipes in the ledger. Special pet pairings reward time spent playing, without restricting basic access. | [Collectible rules](../../core/collectible.c), [gift catalog](../../content/prizes.json) |
+| Enter play directly | Selecting an owned record on its shelf launches the player immediately. Avoid a redundant detail screen, Play button, or preflight menu. Missing items open recipe/acquisition details. Use direct launch as the default for future playable collections; do not silently change unrelated menus. | [Collection interaction](../../core/pet_collectible_ui.c) |
+| Let the collection look collectible | Give cartridge/record artwork substantial space. Records use enlarged disks and larger names centered beneath them; omit repetitive Play labels on owned cards. Keep collected counts and missing-item discoverability. | [Shelf rendering](../../core/pet_collectible_draw.c) |
+| Use the established navigation | Place Back on the standard bottom radial control, returning to the appropriate collection. On the record shelf, Previous and Next sit at 9 and 3 o'clock. Reserve custom overlays for a real pause, retry, or recovery state. | [Player and shelf controls](../../core/pet_collectible_ui.c) |
+| Give play the space | Keep chrome sparse. Show the score prominently and supporting progress directly below it; avoid redundant title subtitles, oversized menu buttons, and instructional controls covering the playfield. | Chain score then length, larger board and subdued grid in [session rendering](../../core/pet_collectible_session_draw.c) |
+| Match input to the game | Chain uses swipes, with arrow keys on desktop; no on-screen direction pad. Buffer quick successive turns for consecutive simulation steps. Pace movement for readable, forgiving input. | [Chain controller](../../core/collectible_chain.c); slower timing is defined in [the contract](../../include/jelli/collectible_types.h) |
+| Reuse recognizable character art | Build Chain from actual animated Jellis. Lilac identifies the head; do not add a yellow ring or background when the character already differentiates it. Vary animations, and reuse garden props and existing effects. | [Creature rendering](../../core/pet_collectible_session_draw.c) and [asset manifest](../../assets/slice/assets.json) |
+| Make the pet a participant | Keep the selected pet conspicuous at lower left, approximately three times the initial small presentation. Celebrate pickups and respond to music using existing poses. Keep the pet clear of the board, names, and navigation. Apply this direction to Bubble Lab as well. | Chain, jukebox, and the Bubble Lab requirements below |
+| Pay benefits while the activity happens | Determine the full benefit, including authored random variation, at acceptance. Give a visible opening portion, then distribute the remainder in roughly regular pulses with bounded timing and amount variation. Preserve totals, pause behavior, and checkpoint progress; prevent restart/cancellation farming. | [Activity pulse scheduler](../../core/activity_rewards.c), [record listening benefits](../../core/collectible_rewards.c) |
+| Make a win feel earned | A Chain win floats the pet to center for a full star celebration, then returns to the cartridge shelf automatically. Future games need an equally clear win moment and deliberate return destination; do not leave the player navigating a completion menu. Back remains available. | [Chain win sequence](../../core/pet_collectible_win.c) |
+| Give music a setting, not a timer | Show a jukebox in a café vignette, retain the cactus, and drift existing music-note effects through the former progress-bar area. Use a subtle progress indication without counting seconds or the “A little song for you” subtitle. | [Jukebox renderer](../../core/pet_collectible_session_draw.c) |
+| Keep checkpoints compact | Store only the small internal state needed to continue play. Save pre-rolled benefits and progress rather than rerolling after reload; keep presentation timelines separate from gameplay rewards. | [Checkpoint codec](../../core/collectible_save.c), [activity rewards](../../core/activity_rewards.c) |
+| Ground authoring in the player | The music sub-application is a four-track PCM tracker with sample management, mixer, preview, and editing hotkeys. Use standard MOD files within the player's supported subset, compile them for runtime, and reject unsupported features clearly. A full runtime MOD loader is unnecessary. | [Music studio guide](../../tools/jelli-art/README.md), [verification](../memos/memo-096-music-tracker-authoring.md) |
+
+## Applying the patterns to another game
+
+Start with the collectible's acquisition/recipe row and its direct entry and
+return destinations. Reuse the bottom navigation and existing artwork before
+adding custom controls. Define the minimal input model, the small checkpoint,
+what the pet does during ordinary play, how gains become visible during play,
+and what happens at the win condition. Check those decisions against the table
+above before implementation; a draft game's existence does not authorize its
+balance or unrelated systems.
+
+Validate at native round-screen size and with touch and desktop input. Check
+readable titles, separated hit targets, visible focus, input buffering, and
+unobstructed gameplay. Verify pause/reload/restart cannot duplicate benefits,
+that intermediate pulses cannot trigger completion prizes, and that the final
+celebration returns to the correct shelf. Reduced motion keeps the outcome and
+reward legible with restrained/static effects; muted songs retain the same
+progress and eligibility. Report desktop, firmware-build, and physical-device
+evidence separately. See [playtest findings](../memos/memo-095-collectible-desktop-playtest.md).
+
 # Existing behavior and scope
 
 [The prize catalog](../../content/prizes.json) is authoritative for implemented
@@ -67,15 +110,15 @@ thresholds, repeat acquisition and catch behavior.
 
 | Gift / catalog key | How acquired before catching the offer | Created by recipe | Used in recipes |
 | --- | --- | --- | --- |
-| Butterfly / `butterfly` | Chance from a completed garden outing; `garden` in [prize logic](../../core/prizes.c) | None | R05 |
+| Butterfly / `butterfly` | Chance from a completed garden outing; `garden` in [prize logic](../../core/prizes.c) | None | R05, R12, R16 |
 | Pearl Tooth / `pearl-tooth` | Qualifying brush completions reach progress threshold; `jelli_prize_complete` in [prize logic](../../core/prizes.c) | None | R02, R07 |
-| Breakfast Sun / `breakfast-sun` | Qualifying breakfasts on distinct eligible days reach progress threshold; `breakfast` in [prize logic](../../core/prizes.c) | None | R06, R09 |
-| Tea Sprite / `tea-sprite` | Completed tea activities reach progress threshold; [prize logic](../../core/prizes.c) and [reward processing](../../core/pet_rewards.c) | None | R03, R09 |
-| Movie Star / `movie-star` | Completed movie while awake with sufficient energy; [prize logic](../../core/prizes.c) | None | R01, R04, R11 |
-| Bubble Gem / `bubble-gem` | Completed wash routine; [reward processing](../../core/pet_rewards.c) and [prize logic](../../core/prizes.c) | None | R02, R08 |
+| Breakfast Sun / `breakfast-sun` | Qualifying breakfasts on distinct eligible days reach progress threshold; `breakfast` in [prize logic](../../core/prizes.c) | None | R06, R09, R13 |
+| Tea Sprite / `tea-sprite` | Completed tea activities reach progress threshold; [prize logic](../../core/prizes.c) and [reward processing](../../core/pet_rewards.c) | None | R03, R09, R15 |
+| Movie Star / `movie-star` | Completed movie while awake with sufficient energy; [prize logic](../../core/prizes.c) | None | R01, R04, R11, R14, R17 |
+| Bubble Gem / `bubble-gem` | Completed wash routine; [reward processing](../../core/pet_rewards.c) and [prize logic](../../core/prizes.c) | None | R02, R08, R14, R16 |
 | Moon Charm / `moon-charm` | Wake after a qualifying recorded linked sleep session; `wake_rewards` in [reward processing](../../core/pet_rewards.c) | None | R04, R07, R10 |
-| Rainbow Seed / `rainbow-seed` | Care sets pending progress; subsequent completed garden travel or outing offers it; [prize logic](../../core/prizes.c) | None | R03, R08, R10 |
-| Friendship Bow / `friendship-bow` | Proposed: qualifying shared play with a pet, independent of owning a cartridge; exact activity/threshold pending. Replaces the implemented Give trigger in [prize logic](../../core/prizes.c) | None | R01, R05 |
+| Rainbow Seed / `rainbow-seed` | Care sets pending progress; subsequent completed garden travel or outing offers it; [prize logic](../../core/prizes.c) | None | R03, R08, R10, R12, R17 |
+| Friendship Bow / `friendship-bow` | Proposed: qualifying shared play with a pet, independent of owning a cartridge; exact activity/threshold pending. Replaces the implemented Give trigger in [prize logic](../../core/prizes.c) | None | R01, R05, R13, R15 |
 | Teddy Bear / `teddy-bear` | Completed reward-eligible SNUGGLE under its form/location/daily restrictions; free play does not award it; [activity content](../../content/activities.json) and [reward processing](../../core/pet_rewards.c) | None | R06, R11 |
 
 ## Proposed new gifts and Play activities
@@ -122,6 +165,28 @@ be unlocked. Every ingredient and output appears in the gift ledger above.
 | R09 | Breakfast Sun | Tea Sprite | Morning Tea Record | A sunny breakfast becomes a bright little tune |
 | R10 | Moon Charm | Rainbow Seed | Moon Garden Record | A moonlit garden becomes a gentle lullaby |
 | R11 | Movie Star | Teddy Bear | Jelli Parade Record | A teddy joins a cheerful show tune |
+
+## Implemented additional record recipes
+
+The owner subsequently requested six more musical styles. These records and
+recipes are implemented in the [prize catalog](../../content/prizes.json),
+[recipe table](../../core/collectible.c), and [song catalog](../../content/music.json).
+They retain their ingredients, are playable by every pet, and are never given
+away. The earlier Moon Garden and Jelli Parade rows remain proposals.
+
+| Gift / key | Acquired by / creating recipe | Ingredients | Used in recipes | Activity |
+| --- | --- | --- | --- | --- |
+| Garden Waltz / `garden-waltz-record` | Craft R12 | Butterfly + Rainbow Seed | None | Classical jukebox song |
+| Porch Picnic / `porch-picnic-record` | Craft R13 | Breakfast Sun + Friendship Bow | None | Country jukebox song |
+| Tiny Thunder / `tiny-thunder-record` | Craft R14 | Movie Star + Bubble Gem | None | Heavy metal jukebox song |
+| Neon Heart / `neon-heart-record` | Craft R15 | Tea Sprite + Friendship Bow | None | K-pop jukebox song |
+| Cloud Club / `cloud-club-record` | Craft R16 | Butterfly + Bubble Gem | None | House jukebox song |
+| Pixel Sunset / `pixel-sunset-record` | Craft R17 | Movie Star + Rainbow Seed | None | 80s jukebox song |
+
+Morning Tea supplies the chill style. The tracker edits the canonical MOD source;
+only the supported four-channel subset is compiled into the player. All songs
+use the same bounded playback duration. See the
+[Music studio guide](../../tools/jelli-art/README.md) for actual format constraints.
 
 # Craft and Play
 
@@ -174,8 +239,8 @@ for enjoyable sessions.
 Gifts exposes Presents, Cartridges and Records (disks), with labeled icons and
 permanent Collected/Total counts derived from content. Each gift belongs to one
 category in one inventory. Paged cartridge and disk shelves show readable names
-and motifs, with one primary action: Play if owned, Craft if ingredients are
-available, otherwise See recipe. Ownership is permanent; there is no separate
+and motifs, with direct record launch when owned, Craft if ingredients are
+available, otherwise See recipe. Owned record cards omit an extra Play label. Ownership is permanent; there is no separate
 “given away but playable” state or competing unlocked-media count.
 
 Missing slots expose recipes and useful missing-ingredient acquisition hints.
@@ -185,8 +250,9 @@ A brief craft reveal connects the new item to its shelf and count, then offers
 Play without autoplay. Back restores the previous page. Any optional persistent
 New badge requires separately budgeted acknowledgment state.
 
-Provide generous separated tap targets, explicit previous/next buttons alongside
-swipe paging, visible keyboard focus, and non-hover desktop navigation. Keep the
+Provide generous separated tap targets, radial Previous/Next at 9 and 3 o'clock
+on the record shelf, bottom radial Back, swipe paging, visible keyboard focus,
+and non-hover desktop navigation. Keep the
 primary action inside the round safe area. Prototype one card and details screen
 at actual size before committing to badge, text or page density. Reuse cartridge
 and disk silhouettes with distinct labels/motifs; never distinguish solely by color.
@@ -201,34 +267,30 @@ share instrument samples across records while giving each song a distinct melody
 and rhythm. These are song concepts, not approved compositions.
 
 Owning a record makes its song playable by every pet in the jukebox; missing
-records link to collection details. Play opens the selected song explicitly.
-Play for 30 seconds including the ending envelope, then offer Replay, Choose
-record and Exit without automatic looping. Show song name, progress and the
+records link to collection details. Selecting an owned record starts it directly.
+Play for 30 seconds including the ending envelope without automatic looping.
+Use bottom radial Back and offer Replay on completion without extra Choose/Exit
+menus. Show the song name, a subtle progress line without a seconds counter, and the
 active pet at lower left, cheering/listening without covering controls. Each song
 has a distinct fun animation: proposed Morning Tea gentle sways, Moon Garden
 star-watching poses, and Jelli Parade a little march. Reuse existing poses and
 music/celebration art from the [manifest](../../assets/slice/assets.json).
 
-Owner requirement: songs grant morale boosts. The precise mapping to existing
-needs/habits in [pet rewards](../../core/pet_rewards.c) and
-[derived pet mood](../../core/personality.c), amount, eligibility window and cap require
-source review and balance approval. Current mood is derived, not an independent
-morale field; do not invent a new stat implicitly.
-Propose a modest completion award with persistent per-pet eligibility/cap, shared
-across records, so track switching, restart and reload cannot farm boosts. Partial
-play and duplicate completion callbacks do not grant completion rewards. Muted,
-assisted and reduced-motion playback remain equally eligible. Keep reward state
-and completion atomic; exact cooldown/window and clock behavior remain pending.
+Owner requirement: songs grant morale boosts during playback. The current
+[reward implementation](../../core/collectible_rewards.c) divides a bounded benefit
+into jittered pulses, including an early gain. Permanent per-pet listening progress
+and one-time record reward state prevent replay, track switching, or reload from
+duplicating already-earned portions. Do not add a second completion payout. Exact
+future balance remains separate from the approved gradual-feedback pattern.
+Muted and reduced-motion playback remain equally eligible.
 
 Music respects master volume. Mute retains progress, completion and optional
 beat/phrase visuals; these offer a visual experience without claiming equivalence
 to hearing a song. Reduced motion replaces spinning/bouncing with static poses,
 text and restrained progress changes. Pause freezes the sequence and visual time;
-resume requires Ready and uses a short envelope to avoid clicks. Menus/focus loss
-and care interruption pause safely. Propose replay from the beginning after a
-process restart rather than saving audio voice state; already-earned play-time
-credit survives and replay never duplicates a completion award. Explain this
-record-specific restart behavior, distinct from game checkpoints.
+resume uses the saved consumed-sample cursor and a short envelope to avoid clicks.
+Focus loss and care interruption pause safely; Back closes to the record shelf.
+Checkpoint restoration must preserve reward progress and never reroll a benefit.
 
 ## Proposed audio implementation boundaries
 
@@ -281,16 +343,18 @@ random retry loop. Reachability must account for moving body, heading and
 no-reversal rules; a free-cell flood fill alone is not proof. Prefer authored
 guaranteed board/pickup patterns with bounded validation before runtime search.
 
-Swipes choose cardinal heading; prohibit immediate reversal into the next segment
-and accept at most one queued turn per movement step. Keyboard directions mirror
-swipes on desktop. Contact with a wall or body ends the attempt with Retry and
-Exit; retry resets the board, not ownership or unlocks. Pause freezes movement,
-and resume discards stale gestures. Grid size, start length, speed and difficulty
-remain proposed tuning to verify on the round display. Offer same-device large
-tap-direction controls and relaxed speed; keep head/goal distinct under finger
-occlusion. Show length out of seven, the next objective, a prominent score and
-the active pet cheering at lower left, outside the board. Score rules are proposed
-and must not penalize assists or gate collection access.
+Swipes choose cardinal heading; prohibit reversal into the next segment and
+buffer successive turns for consecutive movement steps. Arrow keys mirror swipes
+on desktop; do not add on-screen direction buttons. Contact with a wall or body
+ends the attempt with Replay and standard bottom Back. Retry resets the board,
+not ownership or unlocks. Focus loss pauses movement and shows Resume. Current
+pace and queue limits live in the [controller](../../core/collectible_chain.c).
+Show a prominent score with length immediately below it, and the large active
+pet at lower left. Use actual animated Jellis, Lilac as the head without a yellow
+ring, a quiet grid, and garden props outside the enlarged board. Pickups make the
+watching pet celebrate. On winning, float that pet to center for stars, then return
+to the cartridge shelf automatically. Assists must not gate collection access.
+
 
 Reuse `creatures.baby-idle-a`, `creatures.baby-idle-b` and
 `creatures.baby-happy` for the chain, `effects.orb` for pickups and `effects.star`
@@ -408,19 +472,19 @@ and the goal by shape as well as color; preview Axoloty at the actual play size.
 
 ## Shared session behavior, checkpoints and access
 
-A win gives a brief celebration; loss never removes a gift. No minigame win is
+A win gives a clear celebration and returns to its collection; loss never removes a gift. No minigame win is
 required to obtain the base cartridges. Optional accumulated-play discoveries and
 jukebox morale are the explicit reward exceptions above; do not silently add
 other care-stat rewards. Assists are available before and during a session without
 inferior completion labels or collectible penalties.
 
-Always expose Pause, Help and Exit through generous controls outside the board.
-Pause freezes gameplay on menus, focus loss and care/sleep interruptions, discards
-stale input, and resumes only after a deliberate Ready action with a proposed
-short countdown that can be disabled in favor of a second confirmation. Explain
-failures using text/icon cues, not sound/color alone. Keep decorative reduced
-motion independent of game pace; remove cheering bounces and flashing clears
-while retaining readable game-state changes.
+Use standard bottom radial Back rather than persistent custom Pause/Help/Exit
+menus. Keep in-play controls minimal, with Resume or Replay only when the current
+state needs them. Focus loss and care/sleep interruptions pause gameplay safely;
+resume deliberately, without adding a second Ready confirmation or countdown by
+default. Explain failures with text/icon cues, not sound/color alone. Keep
+decorative reduced motion independent of game pace; replace large movement and
+flashing clears with restrained/static feedback while retaining legible outcomes.
 
 Owner requirement: compact game checkpoints. Propose one resumable slot per game,
 associated with its participating pet; switching pets must explicitly resume that
@@ -428,7 +492,7 @@ session or start a new one without silently overwriting it. Every pet remains fr
 to start any owned game. Menus retain exact in-memory state. Persist at safe action
 boundaries, level completion and graceful Exit/interruption; explain Resume versus
 Restart. A process crash may roll back to the last completed checkpoint, never
-silently erase completed levels. Restart requires confirmation if progress exists.
+silently erase completed levels. Avoid routine confirmation menus; keep checkpoint replacement behavior clear.
 Care time continues under existing clock rules; a care/sleep event pauses play and
 saves a checkpoint before returning to care. No offline game movement or play-time
 credit; exact interruption priority and checkpoint frequency require integration
@@ -467,7 +531,7 @@ craft or special pet-form prerequisite.
 
 Before building the full unlock system, prototype one game, one shelf/details
 card and one original 30-second record. Observe whether novices can explain the
-objective, find Pause/Exit, correct a mistake, resume and voluntarily replay.
+objective, find Back, correct a mistake, resume and voluntarily replay.
 Report session lengths, mistaken inputs, retry causes and obscured cells, including
 touch-only, keyboard-only, relaxed/manual modes, muted and reduced-motion trials.
 Involve players with varied dexterity/vision where available. Test snake planning,
@@ -548,7 +612,7 @@ Acceptance for implementation:
   assistance, no held-input double action, cast recovery and checkpoints.
 - Crossing wins only at the goal; verify carry/support/order, slow/step assistance,
   reachable patterns, stalled frames and checkpoint restoration.
-- Pause/Ready/Resume/Restart/Exit, sleep/focus interruption and process restart
+- Back/Resume/Replay, automatic win return, sleep/focus interruption and process restart
   have explicit tested outcomes. No offline movement or accumulated-play credit.
 - Song duration remains 30 seconds including envelopes. Test mute, pause, replay,
   distinct animations, optional visual phrases, cue overlap, bounded mixing and

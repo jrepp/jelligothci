@@ -1,5 +1,6 @@
 #include "game_fixture.h"
 #include "jelli/game.h"
+#include "jelli/collectible.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -108,36 +109,17 @@ static void real_gifting_and_history(void)
     game.events = &events;
     jelli_prize_complete(&game, JELLI_PRIZE_WASH);
     catch_index(&game, 5u);
-    CHECK(jelli_prize_gift(&game, 5u) == JELLI_NOT_READY);
+    CHECK(jelli_prize_gift(&game, 5u) == JELLI_OK);
+    CHECK(jelli_collectible_control(&game, JELLI_COLLECTIBLE_CLOSE) == JELLI_OK);
     CHECK(jelli_prize_gift(&game, JELLI_PRIZE_COUNT) == JELLI_INVALID_TARGET);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_ACTIVATE, 1u, 2u}) == JELLI_OK);
-    game.pets[1].asleep = true;
-    game.pets[1].nap_due = 100u;
-    CHECK(jelli_prize_gift(&game, 5u) == JELLI_ASLEEP);
-    game.pets[1].asleep = false;
-    game.pets[1].nap_due = 0u;
-    game.pets[1].needs[JELLI_SOCIAL] = 950u;
-    game.pets[1].bond = 980u;
     CHECK(jelli_prize_gift(&game, 5u) == JELLI_OK);
-    CHECK(game.pets[1].needs[JELLI_SOCIAL] == 1000u && game.pets[1].bond == 1000u);
-    CHECK(!(game.prizes.owned & (1u << 5)) && (game.prizes.discovered & (1u << 5)));
+    CHECK((game.prizes.owned & (1u << 5)) && (game.prizes.discovered & (1u << 5)));
     CHECK(game.prizes.origin_pet[5] == 1u && game.gifts == 3u);
-    CHECK(jelli_prize_gift(&game, 5u) == JELLI_NO_ITEM);
-    catch_index(&game, 8u);
-    const JelliEvent *event = jelli_events_at(&events, events.count - 2u);
-    CHECK(event && event->code == JELLI_CMD_GIFT && event->value == 6u &&
+    const JelliEvent *event = jelli_events_at(&events, events.count - 1u);
+    CHECK(event && event->code == JELLI_CMD_COLLECTIBLE_PLAY && event->value == 5u &&
           event->result == JELLI_OK);
-    jelli_prize_complete(&game, JELLI_PRIZE_WASH);
-    catch_index(&game, 5u);
-    CHECK(game.prizes.origin_pet[5] == 2u); /* Newly earned copy has a new source. */
-    CHECK(jelli_prize_gift(&game, 5u) == JELLI_NOT_READY);
-    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_ACTIVATE, 2u, 1u}) == JELLI_OK);
-    CHECK(jelli_prize_gift(&game, 5u) == JELLI_OK);
-    CHECK(jelli_prize_gift(&game, 5u) == JELLI_NO_ITEM);
-    CHECK(game.prizes.discovered & (1u << 5));
-    CHECK(jelli_prize_gift(&game, 8u) == JELLI_OK);
-    CHECK(!game.prizes.offered); /* Giving the bow cannot mint another bow. */
-    CHECK(jelli_prize_gift(&game, 8u) == JELLI_NO_ITEM);
+    CHECK(!game.prizes.offered);
 }
 
 static void invalid_state_is_rejected(void)
@@ -190,16 +172,17 @@ static void all_nine_and_deterministic_outing(void)
     jelli_prize_complete(&game, JELLI_PRIZE_SLEEP);
     catch_index(&game, 6u);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_ACTIVATE, 1u, 2u}) == JELLI_OK);
-    CHECK(jelli_prize_gift(&game, 5u) == JELLI_OK);
+    for (unsigned i = 0u; i < 3u; ++i)
+        jelli_prize_complete(&game, JELLI_PRIZE_PLAY);
     catch_index(&game, 8u);
-    jelli_prize_complete(&game, JELLI_PRIZE_WASH);
-    catch_index(&game, 5u);
     jelli_prize_award(&game, 9u); /* The teddy bear comes from an authored moment's "prize". */
     catch_index(&game, 9u);
     jelli_prize_award(&game, jelli_prize_count);
     CHECK(!game.prizes.offered);
     jelli_prize_award(&game, JELLI_PRIZE_COUNT);
     CHECK(!game.prizes.offered);
+    for (unsigned recipe = 0u; recipe < jelli_craft_recipe_count; ++recipe)
+        CHECK(jelli_collectible_craft(&game, recipe) == JELLI_OK);
     CHECK(game.prizes.discovered == JELLI_PRIZE_MASK && game.prizes.owned == JELLI_PRIZE_MASK);
     CHECK(game.pets[0].prize_progress.counts[1] == 3u);
     CHECK(game.pets[1].prize_progress.counts[1] == 0u);

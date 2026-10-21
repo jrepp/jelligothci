@@ -419,7 +419,7 @@ Older firmware cannot read v9; keep a backup before downgrading.
 ## Food, water, and exercise
 
 Care → Feed opens a grid of meals, fruit, and soup. Each costs a shared food
-item when eating finishes. When food runs out, tap GET FOOD to refill portions.
+item when eating starts. When food runs out, tap GET FOOD to refill portions.
 Labels stay readable even when actions are disabled. Care → Water fills
 hydration without spending food. Swipe the home stat tile to Hydration.
 
@@ -515,3 +515,27 @@ neither earns a reward nor changes a save. Open menus, paused simulation, resume
 catch-up and screenshot capture return `busy`; return home or finish the capture
 before retrying. Authored gameplay bindings are configured in
 [the Effects workspace](artwork.md#author-celebration-effects).
+
+### Collectible debug edits
+
+`gift` edits permanent collectible ownership; `cheat gifts` still edits gift
+currency. Use a key from [the prize catalog](../content/prizes.json) or `all`:
+
+```sh
+./scripts/jelli-debug --socket /tmp/jelli-collectible-playtest.sock gift grant all
+./scripts/jelli-debug --socket /tmp/jelli-collectible-playtest.sock gift remove morning-tea-record
+./scripts/jelli-debug --socket /tmp/jelli-collectible-playtest.sock gift grant jelli-chain-cartridge
+```
+
+The same commands work with `--port` on firmware containing this handler.
+Edits request a save and emit cheat events. Removal retains discovery, play
+history and earned rewards; removing a checkpoint's gift clears that checkpoint
+and stops its music. It does not remove already-unlocked pets. Commands reject
+unknown keys and edits during capture or save recovery.
+
+Collectible Play starts or resumes immediately. Chain uses swipes or desktop
+arrow keys. Both players use bottom radial Back to return to their shelf. Owned
+records launch directly from the Records shelf, whose Previous/Next controls sit
+at the sides. Desktop focus loss pauses play; Resume continues without toggling
+the separate Space debug pause. Chain wins show a star celebration and return to
+the cartridge shelf automatically.

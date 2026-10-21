@@ -1,4 +1,5 @@
 #include "jelli/debug.h"
+#include "jelli/collectible.h"
 #include <stdio.h>
 #include <inttypes.h>
 #include <stdlib.h>
@@ -178,6 +179,33 @@ static int reply_capacity_tests(void)
     return 0;
 }
 
+static int gift_tests(void)
+{
+    jelli_game_init(&engine.game);
+    request("@J1 60 gift grant missing\n");
+    CHECK(contains("unknown_gift") && !engine.game.prizes.owned);
+    request("@J1 61 gift grant morning-tea-record\n");
+    CHECK(contains("updated") && jelli_game_valid(&engine.game));
+    CHECK(jelli_collectible_play(&engine.game, JELLI_COLLECTIBLE_RECORD_PRIZE) == JELLI_OK);
+    engine.ui.page = JELLI_UI_COLLECTIBLE_PLAY;
+    request("@J1 62 gift remove morning-tea-record\n");
+    CHECK(contains("updated") && !engine.game.collectible.active);
+    CHECK(!engine.game.prizes.owned && engine.game.prizes.discovered);
+    CHECK(engine.ui.page == JELLI_UI_PRESENT_ACTION && jelli_game_valid(&engine.game));
+    request("@J1 63 gift grant all\n");
+    CHECK(engine.game.prizes.owned == JELLI_PRIZE_MASK && engine.ui.save_requested);
+    request("@J1 64 gift remove all\n");
+    CHECK(!engine.game.prizes.owned && jelli_game_valid(&engine.game));
+    CHECK(engine.game.prizes.discovered == JELLI_PRIZE_MASK);
+    debug.captured = true;
+    request("@J1 65 gift grant all\n");
+    CHECK(contains("busy") && !engine.game.prizes.owned);
+    debug.captured = false;
+    request("@J1 66 gift remove\n");
+    CHECK(contains("gift_syntax"));
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     JelliPlatform platform = {.now_ms = now, .present = present};
@@ -207,6 +235,7 @@ int main(int argc, char **argv)
     CHECK(capture_tests() == 0);
     CHECK(tunable_tests() == 0);
     CHECK(cheat_tests() == 0);
+    CHECK(gift_tests() == 0);
     CHECK(reply_capacity_tests() == 0); /* Last: it opens a ring and advances the clock. */
     printf("debug state: %zu bytes\n", sizeof(JelliDebug));
     return 0;

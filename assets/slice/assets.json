@@ -2671,6 +2671,248 @@
       ],
       "palette": "earth-kit",
       "purpose": "Reusable muted street-edge layer; source geometry in background_kit.py"
+    },
+    {
+      "id": 11011,
+      "key": "prizes.jelli-chain-cartridge",
+      "path": "prizes/jelli-chain-cartridge.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        4,
+        3,
+        28,
+        29
+      ],
+      "palette": [
+        "#291b35",
+        "#30312b",
+        "#5c5047",
+        "#87918b",
+        "#ae7855",
+        "#d0bda0",
+        "#ded2b9",
+        "#f5c764",
+        "#fff4cf"
+      ],
+      "purpose": "Jelli Chain cartridge; permanent playable collectible"
+    },
+    {
+      "id": 11012,
+      "key": "prizes.morning-tea-record",
+      "path": "prizes/morning-tea-record.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "palette": [
+        "#291b35",
+        "#30312b",
+        "#626955",
+        "#85e4b6",
+        "#87918b",
+        "#a47bdb",
+        "#ded2b9",
+        "#f5c764",
+        "#fff4cf"
+      ],
+      "purpose": "Morning Tea record; permanent playable collectible"
+    },
+    {
+      "id": 11013,
+      "key": "prizes.garden-waltz-record",
+      "path": "prizes/garden-waltz-record.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "palette": [
+        "#291b35",
+        "#30312b",
+        "#626955",
+        "#85e4b6",
+        "#87918b",
+        "#ae7855",
+        "#ded2b9",
+        "#f5c764",
+        "#fa8c99"
+      ],
+      "purpose": "Garden Waltz record; permanent playable collectible"
+    },
+    {
+      "id": 11014,
+      "key": "prizes.porch-picnic-record",
+      "path": "prizes/porch-picnic-record.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "palette": [
+        "#291b35",
+        "#30312b",
+        "#626955",
+        "#87918b",
+        "#ae7855",
+        "#ded2b9",
+        "#f5c764",
+        "#fff4cf"
+      ],
+      "purpose": "Porch Picnic record; permanent playable collectible"
+    },
+    {
+      "id": 11015,
+      "key": "prizes.tiny-thunder-record",
+      "path": "prizes/tiny-thunder-record.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "palette": [
+        "#187b79",
+        "#291b35",
+        "#30312b",
+        "#43bca2",
+        "#626955",
+        "#85e4b6",
+        "#87918b",
+        "#a47bdb",
+        "#ded2b9",
+        "#ffffff"
+      ],
+      "purpose": "Tiny Thunder record; permanent playable collectible"
+    },
+    {
+      "id": 11016,
+      "key": "prizes.neon-heart-record",
+      "path": "prizes/neon-heart-record.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "palette": [
+        "#291b35",
+        "#30312b",
+        "#626955",
+        "#87918b",
+        "#d84f70",
+        "#ded2b9",
+        "#fa8c99",
+        "#fff4cf"
+      ],
+      "purpose": "Neon Heart record; permanent playable collectible"
+    },
+    {
+      "id": 11017,
+      "key": "prizes.cloud-club-record",
+      "path": "prizes/cloud-club-record.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "palette": [
+        "#291b35",
+        "#30312b",
+        "#626955",
+        "#7655a3",
+        "#87918b",
+        "#a47bdb",
+        "#d84f70",
+        "#ded2b9",
+        "#f5c764",
+        "#fa8c99",
+        "#fff4cf"
+      ],
+      "purpose": "Cloud Club record; permanent playable collectible"
+    },
+    {
+      "id": 11018,
+      "key": "prizes.pixel-sunset-record",
+      "path": "prizes/pixel-sunset-record.png",
+      "kind": "prizes",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        2,
+        2,
+        30,
+        30
+      ],
+      "palette": [
+        "#291b35",
+        "#30312b",
+        "#626955",
+        "#7655a3",
+        "#87918b",
+        "#a47bdb",
+        "#ae7855",
+        "#ded2b9",
+        "#f5c764",
+        "#fff4cf"
+      ],
+      "purpose": "Pixel Sunset record; permanent playable collectible"
     }
   ],
   "clips": [

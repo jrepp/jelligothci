@@ -71,3 +71,24 @@ unsigned jelli_pet_ui_sound(JelliPetUi *ui, const JelliPet *pet, uint64_t now_ms
     ui->coo_anchor_ms = now_ms; /* One cue after stalls; never catch up in bursts. */
     return 7u;
 }
+
+void jelli_pet_chain_feedback(JelliPetUi *ui, const JelliCollectibleSession *before,
+                              const JelliCollectibleSession *after)
+{
+    if (!ui->menu_open || ui->page != JELLI_UI_COLLECTIBLE_PLAY || !before->active ||
+        before->paused || !after->active || before->mode != JELLI_COLLECTIBLE_CHAIN ||
+        after->mode != JELLI_COLLECTIBLE_CHAIN || before->pet_id != after->pet_id ||
+        before->generation != after->generation || before->chain.status != JELLI_CHAIN_RUNNING)
+        return;
+    unsigned cue;
+    if (after->chain.status == JELLI_CHAIN_WON)
+        cue = JELLI_SOUND_SPARKLE;
+    else if (after->chain.status == JELLI_CHAIN_LOST)
+        cue = JELLI_SOUND_BACK;
+    else if (after->chain.length > before->chain.length)
+        cue = JELLI_SOUND_HAPPY;
+    else
+        return;
+    ui->sound_pending = true;
+    ui->sound_cue = (uint8_t)(cue + 1u);
+}

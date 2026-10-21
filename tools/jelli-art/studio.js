@@ -191,9 +191,14 @@
 
   /* ---------- loading and live reload ---------- */
   const pendingSaves = new Set(), paintSaveErrors = new Map();
-  let reloadSequence = 0, writeEpoch = 0;
+  let reloadSequence = 0, writeEpoch = 0, pendingReloads = 0;
   Object.assign(S, {paintSaving: key => pendingSaves.has(key)});
   async function reload() {
+    pendingReloads++;
+    try { await reloadPayload(); }
+    finally { pendingReloads--; }
+  }
+  async function reloadPayload() {
     const sequence = ++reloadSequence, epoch = writeEpoch;
     let keep = [];
     const published = await loadPayload(await api('GET', `/api/data?before=${encodeURIComponent(state.before)}`), () => {
@@ -286,10 +291,12 @@
     queued = git.pending_commits || 0;
   }
   async function poll() {
-    if (document.hidden || stroke || rec?.busy() || document.querySelector('dialog[open]')) return;  // no reload under an open dialog
+    if (pendingReloads || document.hidden || stroke || rec?.busy() || document.querySelector('dialog[open]')) return;  // no reload under an open dialog
     if (D.git?.enabled) api('GET', '/api/git').then(g => { D.git = g; renderGit(g); }).catch(() => {});
     const {version} = await api('GET', '/api/version').catch(() => ({}));
-    if (!version || version === D.version) return;
+    // A foreground reload may start while the version request is in flight.
+    // Background polling must not invalidate the refresh awaited by creation/save.
+    if (pendingReloads || !version || version === D.version) return;
     await reload(); rerender();
     status(Object.keys(edits).some(dirty) ? 'Files changed on disk; your unsaved edits were kept' : 'Updated from disk', 'warn');
   }

@@ -8,6 +8,7 @@
 #include "debug_socket.h"
 #include "asset_reload.h"
 #include "sound_output.h"
+#include "keyboard.h"
 #include "scene_preview.h"
 #include "jelli/pet_effect.h"
 #include <errno.h>
@@ -29,6 +30,7 @@ typedef struct {
     SDL_Renderer *renderer;
     SDL_Texture *texture;
     bool headless, failed, pet;
+    JelliPetEngine *pet_engine;
     uint64_t virtual_ms;
 } Desktop;
 
@@ -39,6 +41,20 @@ static uint64_t now_ms(void *ctx)
     const Desktop *d = ctx;
     return d->headless ? d->virtual_ms : SDL_GetTicks64();
 }
+static bool global_key(Desktop *d, const SDL_Event *event, JelliInput *input)
+{
+    if (event->type != SDL_KEYDOWN || event->key.repeat)
+        return false;
+    SDL_Keycode key = event->key.keysym.sym;
+    if (key == SDLK_ESCAPE || key == SDLK_SPACE) {
+        *input = (JelliInput){.kind = key == SDLK_ESCAPE ? JELLI_QUIT : JELLI_TOGGLE_PAUSE};
+        return true;
+    }
+    if (key == SDLK_m)
+        jelli_motion_publish(&d->motion, JELLI_DEVICE_OK, (JelliMotionSample){now_ms(d), true});
+    return false;
+}
+
 static bool poll_input(void *ctx, JelliInput *input)
 {
     Desktop *d = ctx;
@@ -48,19 +64,13 @@ static bool poll_input(void *ctx, JelliInput *input)
             *input = (JelliInput){.kind = JELLI_QUIT};
             return true;
         }
-        if (event.type == SDL_KEYDOWN && !event.key.repeat) {
-            if (event.key.keysym.sym == SDLK_ESCAPE) {
-                *input = (JelliInput){.kind = JELLI_QUIT};
-                return true;
-            }
-            if (event.key.keysym.sym == SDLK_SPACE) {
-                *input = (JelliInput){.kind = JELLI_TOGGLE_PAUSE};
-                return true;
-            }
-        }
-        if (event.type == SDL_KEYDOWN && !event.key.repeat && event.key.keysym.sym == SDLK_m)
-            jelli_motion_publish(&d->motion, JELLI_DEVICE_OK, (JelliMotionSample){now_ms(d), true});
+        if (jelli_sdl_keyboard(d->pet_engine, &event, input))
+            return true;
+        if (global_key(d, &event, input))
+            return true;
         if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+            if (d->pet_engine)
+                d->pet_engine->ui.keyboard_focus = false;
             /* SDL's logical-size renderer transforms mouse events for us. */
             uint8_t contacts = 1;
             jelli_touch_guard_apply(&d->touch_guard, false, &contacts);
@@ -76,6 +86,7 @@ static bool poll_input(void *ctx, JelliInput *input)
         if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
             uint8_t contacts = 0;
             jelli_touch_guard_apply(&d->touch_guard, true, &contacts);
+            jelli_sdl_focus_lost(d->pet_engine);
         }
     }
     return false;
@@ -240,6 +251,9 @@ int main(int argc, char **argv)
             goto cleanup;
         jelli_pet_bind_devices(&pet, (JelliMotionDriver){&d.motion, jelli_motion_poll},
                                (JelliDisplayDriver){0});
+        d.pet_engine = &pet;
+        jelli_pet_bind_music(
+            &pet, (JelliMusicDriver){NULL, jelli_sdl_music_control, jelli_sdl_music_status});
         if (!open_presentation(&pet, &options))
             goto cleanup;
     } else if (!jelli_init(&shapes, platform, surface))

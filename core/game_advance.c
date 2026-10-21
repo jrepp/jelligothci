@@ -1,4 +1,5 @@
 #include "game_internal.h"
+#include "jelli/collectible.h"
 
 #include <limits.h>
 
@@ -27,7 +28,10 @@ static void advance_ticks(JelliGame *game, uint64_t ticks, bool offline)
 {
     JelliPet *pet = &game->pets[game->active];
     for (uint64_t i = 0u; i < ticks; ++i) {
+        uint64_t previous = pet->ticks;
         jelli_game_endpoint(game, pet, 1u, offline);
+        if (!offline && pet->ticks != previous)
+            jelli_collectible_tick(game);
         game->ticks = saturating_add(game->ticks, 1u);
     }
 }
@@ -56,6 +60,8 @@ void jelli_game_resume_begin(JelliGame *game, uint64_t elapsed_ms)
     if (!jelli_game_valid(game) || game->resuming)
         return;
     uint64_t admitted = elapsed_ms;
+    if (game->collectible.pet_id)
+        game->collectible.paused = true;
     if (admitted > JELLI_OFFLINE_CAP_MS) {
         game->discarded_ms = saturating_add(game->discarded_ms, admitted - JELLI_OFFLINE_CAP_MS);
         admitted = JELLI_OFFLINE_CAP_MS;
