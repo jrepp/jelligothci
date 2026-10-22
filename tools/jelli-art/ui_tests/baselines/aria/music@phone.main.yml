@@ -1,7 +1,6 @@
 - main:
   - tabpanel "Music":
     - heading "Music tracker" [level=2]
-    - paragraph: Four PCM channels · standard ProTracker MOD · 30-second record preview
     - text: Record
     - combobox "Record":
       - option "Morning Tea · Chill" [selected]
@@ -19,35 +18,22 @@
       - option "Little Steps · Play / exercise"
       - option "Bubble Rush · Bubble Lab / chiptune"
       - option "Iron Pulse · Workout / hard techno"
-    - text: Module title
-    - textbox "Module title": New score
     - button "Save MOD"
-    - button "Reload saved"
     - button "Undo" [disabled]
     - status: New module — save to create
     - button "Play (F5)"
     - button "Pause"
     - button "Stop (F8)"
-    - button "Export MOD"
-    - text: Import MOD
-    - button "Import MOD"
     - status: Stopped
+    - group: Record settings & files
     - text: Preview progress
     - progressbar "Preview progress"
     - group: Four-channel mixer (preview only)
     - text: Pattern
     - combobox "Pattern":
       - option "00" [selected]
-    - text: Octave
-    - spinbutton "Octave": "2"
-    - text: Row step
-    - spinbutton "Row step": "1"
-    - button "Copy pattern"
-    - button "Paste pattern"
-    - button "New pattern"
-    - text: Order list (decimal pattern numbers)
-    - textbox "Order list (decimal pattern numbers)": "0"
-    - paragraph: Arrow keys move. Z–M and Q–U enter notes; the upper keyboard row adds an octave. Delete clears a cell. Space pauses/resumes; F5 plays; F8 stops. Ctrl/Cmd+Shift+C/V copies/pastes a pattern.
+    - group: Arrange patterns
+    - group: Keyboard shortcuts
     - table "Four-channel pattern":
       - rowgroup:
         - row "Row Channel 1 Channel 2 Channel 3 Channel 4":
@@ -698,7 +684,35 @@
           - cell "--- 00 000, row 63, channel 4":
             - button "--- 00 000, row 63, channel 4": "--- 00 000"
     - 'group "Selected cell: row 0, channel 1"':
-      - text: "Selected cell: row 0, channel 1 Note"
+      - text: "Selected cell: row 0, channel 1"
+      - button "Previous row": ↑ Row
+      - button "Next row": ↓ Row
+      - button "Previous channel": ← Channel
+      - button "Next channel": Channel →
+      - text: Octave
+      - spinbutton "Octave": "2"
+      - text: Row step
+      - spinbutton "Row step": "1"
+      - text: Entry instrument
+      - combobox "Entry instrument":
+        - option "01 (empty)" [selected]
+      - button "Hear instrument" [disabled]
+      - group: Browse sample library
+      - paragraph: Tap a note to enter it and advance by Row step. Octave sets the note pad pitch.
+      - group "Enter notes":
+        - button "Enter C-2": C-2
+        - button "Enter C#2": C#2
+        - button "Enter D-2": D-2
+        - button "Enter D#2": D#2
+        - button "Enter E-2": E-2
+        - button "Enter F-2": F-2
+        - button "Enter F#2": F#2
+        - button "Enter G-2": G-2
+        - button "Enter G#2": G#2
+        - button "Enter A-2": A-2
+        - button "Enter A#2": A#2
+        - button "Enter B-2": B-2
+      - text: Note
       - combobox "Note":
         - option "No note" [selected]
         - option "C-1"

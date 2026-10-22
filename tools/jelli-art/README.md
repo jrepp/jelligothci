@@ -736,7 +736,13 @@ or Q–U (the upper keyboard row adds an octave). Arrow keys move between rows a
 channels; Page Up/Down moves a block; Home/End selects the first/last row. Octave
 and Row step control entry. Delete clears a cell. The cell inspector offers
 native selects for note, sample and effect without keyboard shortcuts. Pattern
-copy/paste, new patterns, the order list and undo support building arrangements.
+copy/paste, new patterns and the order list live under **Arrange patterns**.
+**Record settings & files** holds the title, reload and MOD import/export.
+
+On a phone, swipe the pattern grid horizontally to reach every channel. The
+selected-cell note pad enters notes using **Entry instrument**, **Octave** and
+**Row step**; row/channel buttons move without entering notes. Touch entry and
+keyboard entry share undo. Editing preserves grid scroll and control focus.
 
 F5 plays from the beginning, Space pauses/resumes and F8 or Escape stops.
 Ctrl/Cmd+S saves, Ctrl/Cmd+Z undoes, and Ctrl/Cmd+Shift+C/V copies/pastes a pattern.
@@ -751,6 +757,20 @@ WAV or signed eight-bit PCM. MOD has no sample-rate field: data plays at tracker
 pitch, and the UI states this before import. Odd sample lengths receive a silent
 padding byte. Loops use even byte offsets/lengths; zero disables looping. The
 codec enforces per-sample and combined sample budgets.
+
+Open **Browse sample library** beside **Entry instrument** to filter by category
+or search by name. **Preview sound** auditions the selection at the current
+Octave without editing the module; **Hear instrument** previews the loaded slot.
+**Use in empty slot** loads the sound into an unused empty slot and selects it
+for note entry. **Replace instrument** changes the selected slot in every pattern.
+Both actions support Undo and return focus to the note pad. Referenced empty slots
+are preserved, and adding is unavailable when no unused empty slot remains.
+
+The original synthesized preset catalog lives in
+[`tracker_library()`](../audio/music_samples.py), with MOD data exposed by
+`tracker_presets()`. Loading checks the combined sample budget before editing;
+save to keep the sound in the MOD. Existing records retain their samples until
+explicitly replaced.
 
 Iron Pulse exposes the original Tight drive kick, Metal hat, Clap, Acid pulse bass
 and Sine sub bass in this same sample manager. Bubble Rush also uses the new kick,

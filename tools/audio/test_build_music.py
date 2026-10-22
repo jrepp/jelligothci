@@ -9,7 +9,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 from build_music import compile_song, render_pcm
-from music_samples import sample_bank
+from music_samples import sample_bank, tracker_presets
 
 
 def module():
@@ -23,6 +23,22 @@ def module():
 
 
 class SampleBankTests(unittest.TestCase):
+    def test_authoring_presets_render_with_their_loop_contract(self):
+        rendered = set()
+        for sample in tracker_presets():
+            with self.subTest(sample=sample['name']):
+                doc = module()
+                doc['samples'][0] = sample
+                for cell in doc['patterns'][0][0][1:]:
+                    cell.update(sample=0, period=0)
+                doc['patterns'][0][0][0]['period'] = 214
+                with patch('build_music.LENGTH', 22050):
+                    pcm = render_pcm(doc)
+                self.assertTrue(any(pcm[:4410]))
+                self.assertEqual(any(pcm[-200:]), bool(sample['loop_length']))
+                rendered.add(hashlib.sha256(pcm).digest())
+        self.assertEqual(len(rendered), len(tracker_presets()))
+
     def test_legacy_samples_and_budget(self):
         leads, bank = sample_bank()
         legacy = leads + [bank[name] for name in ('keys', 'bass', 'brush', 'kick', 'snare')]
