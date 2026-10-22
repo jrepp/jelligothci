@@ -31,7 +31,7 @@
   S.clipsDirty = () => oldDirty?.() || dirty();
   shell.registerDirty('scenes', {label:'Scenes', mode:'scenes', check:dirty});
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="scenes" aria-pressed="false">Scenes</button>');
-  document.querySelector('main').insertAdjacentHTML('beforeend', '<section id="scenes" class="hidden"></section>');
+  document.querySelector('main').insertAdjacentHTML('beforeend', '<section id="scenes" class="hidden studio-form"></section>');
   shell.registerViewRoot('scenes');
   const root = document.getElementById('scenes');
   // The shared shortcut router skips form fields; saving must still work there.
@@ -46,9 +46,7 @@
     .scene-layout{display:grid;grid-template-columns:200px minmax(240px,1fr) 240px;gap:20px;align-items:start}
     .scene-layout section,.scene-layout aside{min-width:0}
     .scene-layout fieldset{min-width:0;margin:0}
-    .scene-layout label{display:grid;gap:4px;margin:10px 0}
-    .scene-layout input,.scene-layout select{width:100%;min-width:0;box-sizing:border-box}
-    .scene-layout input[type=checkbox]{width:auto}
+    .scene-layout label{margin:10px 0}.scene-controls input[type=range]{width:100%}
     .scene-layout button{min-height:44px}
     .scene-list{display:grid;gap:6px;margin:12px 0}
     .scene-list button{text-align:left;overflow-wrap:anywhere;display:flex;align-items:center;gap:8px;min-width:0}
@@ -184,7 +182,7 @@
     const s = scene(), l = layer();
     root.innerHTML = `<h2>Background scenes</h2>
       <p class="scene-help">Build places from reusable artwork. Preview tilt and travel here, then save and test the scene in the engine.</p>
-      <div class="scene-actions"><button id="scene-save">Save</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
+      <div class="scene-actions sf-actions"><button id="scene-save">Save</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
       <div class="scene-layout"><section aria-label="Scenes and layers">
       <label>Scene<select id="scene-select">${options(work.scenes.map(s=>[s.key,s.name]),s.key)}</select></label>
       <button id="scene-copy" ${work.scenes.length>=limits.scenes?'disabled':''}>Duplicate scene</button>

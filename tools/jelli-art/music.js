@@ -15,13 +15,13 @@
   const dirty=()=>!!work&&JSON.stringify(work)!==JSON.stringify(loaded);
   const cell=()=>work.patterns[pattern][row][channel];
   document.getElementById('views').insertAdjacentHTML('beforeend','<button data-view="music" aria-pressed="false">Music</button>');
-  document.querySelector('main').insertAdjacentHTML('beforeend','<section id="music" class="hidden" aria-label="Music tracker"></section>');H.registerViewRoot('music');
+  document.querySelector('main').insertAdjacentHTML('beforeend','<section id="music" class="hidden studio-form" aria-label="Music tracker"></section>');H.registerViewRoot('music');
   const root=document.getElementById('music'),f=id=>/** @type {HTMLInputElement} */(root.querySelector(`#mu-${id}`));
   H.registerDirty('music',{label:'Tracker module',mode:'music',check:dirty});const oldDirty=S.clipsDirty;S.clipsDirty=()=>oldDirty?.()||dirty();
   document.head.insertAdjacentHTML('beforeend',`<style>
   html[data-mode=music] .layout{grid-template-columns:minmax(0,1fr)}html[data-mode=music] .layout>aside{display:none}html[data-mode=music] main{grid-column:1}
   #music{padding:12px;container:music/inline-size}#music h2{margin:0 0 10px}.mu-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:10px 0}
-  #music label{display:grid;gap:4px;min-width:0}#music button,#music select,#music input{min-height:40px;max-width:100%;box-sizing:border-box}#music input[type=number]{width:80px}
+  #music label{min-width:0}#music button,#music select,#music input{max-width:100%;box-sizing:border-box}#music button,#music select,#music input:not([type=checkbox]):not([type=range]){min-height:40px}#music input[type=number]{width:80px}
   #music .mu-check{display:flex;align-items:center;gap:5px}#music fieldset{min-width:0;border:1px solid var(--line);border-radius:8px;margin:12px 0;padding:10px}
   .mu-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px}.mu-layout>*{min-width:0}.mu-scroll{max-height:580px;overflow:auto;border:1px solid var(--line);border-radius:6px}
   #mu-grid{border-collapse:collapse;width:100%;table-layout:fixed;font:12px ui-monospace,monospace}#mu-grid th{position:sticky;top:0;background:var(--panel,var(--bg));z-index:1;padding:6px 2px}
@@ -31,6 +31,7 @@
   #music .mu-song-label{width:min(100%,187px)}#mu-song{width:100%}#mu-time{width:min(100%,460px)}.mu-help{color:var(--muted);font-size:13px}#mu-sample{width:100%}
   @container music (max-width:850px){.mu-layout{grid-template-columns:1fr}.mu-scroll{max-height:420px}}
   @container music (max-width:390px){#mu-grid{font-size:10px}.mu-mix{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(any-pointer:coarse){#music button,#music select,#music input:not([type=checkbox]):not([type=radio]){min-height:44px}#mu-grid td button{min-height:32px}}
   </style>`);
   function stop(){generation++;for(const source of sources){source.onended=null;source.stop();source.disconnect();}sources=[];for(const gain of gains)gain.disconnect();gains=[];clearInterval(timer);paused=false;if(f('playing'))f('playing').textContent='Stopped';if(f('pause'))f('pause').textContent='Pause';if(f('time'))f('time').value='0';}
   function status(){H.sync();if(!work)return;f('status').textContent=busy?'Working…':dirty()?'Unsaved changes':base===null?'New module — save to create':'Saved';f('save').disabled=busy||!editable||(!dirty()&&base!==null);f('play').disabled=busy;f('reload').disabled=busy;f('undo').disabled=!undo.length||!editable;}
@@ -66,7 +67,7 @@
     if(!work){root.innerHTML='<h2>Music tracker</h2><p>Loading records…</p>';return;}
     const c=cell(),sample=work.samples[instrument-1],sampleNames=work.samples.map((s,i)=>[i+1,`${hex(i+1)} ${s.name||'(empty)'}`]);
     root.innerHTML=`<h2>Music tracker</h2><p>Four PCM channels · standard ProTracker MOD · 30-second record preview</p>
-    <div class="mu-controls"><label class="mu-song-label">Record<select id="mu-song">${options(catalog.map(s=>[s[0],`${s[1]} · ${s[2]}`]),song)}</select></label><label>Module title<input id="mu-title" maxlength="20" pattern="[ -~]*" value="${esc(work.title)}" ${editable?'':'disabled'}></label><button id="mu-save">Save MOD</button><button id="mu-reload">Reload saved</button><button id="mu-undo">Undo</button><span id="mu-status" role="status"></span></div>
+    <div class="mu-controls sf-actions"><label class="mu-song-label">Record<select id="mu-song">${options(catalog.map(s=>[s[0],`${s[1]} · ${s[2]}`]),song)}</select></label><label>Module title<input id="mu-title" maxlength="20" pattern="[ -~]*" value="${esc(work.title)}" ${editable?'':'disabled'}></label><button id="mu-save">Save MOD</button><button id="mu-reload">Reload saved</button><button id="mu-undo">Undo</button><span id="mu-status" role="status"></span></div>
     <div class="mu-controls"><button id="mu-play">Play (F5)</button><button id="mu-pause">Pause</button><button id="mu-stop">Stop (F8)</button><button id="mu-export">Export MOD</button><label>Import MOD<input id="mu-import" type="file" accept=".mod" ${editable?'':'disabled'}></label><span id="mu-playing" role="status">Stopped</span></div>
     <label>Preview progress<progress id="mu-time" max="30" value="0"></progress></label>
     <details id="mu-mixer" ${mixerOpen?'open':''}><summary>Four-channel mixer (preview only)</summary><fieldset><legend class="sr-only">Mixer channels</legend><div class="mu-mix">${levels.map((v,i)=>`<div><label>Channel ${i+1} gain<input type="range" min="0" max="64" value="${v}" data-level="${i}"></label><label class="mu-check"><input type="checkbox" data-mute="${i}" ${muted[i]?'checked':''}>Mute ${i+1}</label></div>`).join('')}</div></fieldset></details>

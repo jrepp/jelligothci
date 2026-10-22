@@ -18,7 +18,7 @@
   S.clipsDirty=()=>oldDirty?.()||dirty();
   shell.registerDirty('effects',{label:'Effects & hardpoints',mode:'effects',check:dirty});
   document.getElementById('views').insertAdjacentHTML('beforeend','<button data-view="effects" aria-pressed="false">Effects</button>');
-  document.querySelector('main').insertAdjacentHTML('beforeend','<section id="effects" class="hidden"></section>');
+  document.querySelector('main').insertAdjacentHTML('beforeend','<section id="effects" class="hidden studio-form"></section>');
   shell.registerViewRoot('effects');
   const root=document.getElementById('effects');
   const el=id=>/** @type {HTMLInputElement} */(root.querySelector(`#fx-${id}`));
@@ -28,7 +28,7 @@
     #effects{container:effects/inline-size;padding:12px}
     #effects h2{margin:0 0 8px}.fx-stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.fx-stage h3{margin:0 0 8px}
     .fx-layout{display:grid;grid-template-columns:minmax(280px,1fr) 300px;gap:20px;align-items:start}
-    .fx-layout>*{min-width:0}.fx-layout label{display:grid;gap:4px;margin:8px 0}
+    .fx-layout>*{min-width:0}.fx-layout label{margin:8px 0}
     #effects input[type=range]{width:100%}
     #effects input,#effects select{min-width:0;max-width:100%;box-sizing:border-box}
     #effects fieldset{min-width:0}.fx-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
@@ -40,7 +40,7 @@
     #effects [aria-pressed=true]{outline:2px solid var(--accent)}.fx-note{color:var(--muted);font-size:13px}
     .fx-frame{display:grid;grid-template-columns:minmax(0,1fr) 75px;gap:6px;margin:8px 0}
     .fx-frame img{width:32px;height:32px;image-rendering:pixelated}
-    @container effects (max-width:520px){.fx-stage{grid-template-columns:1fr}}
+    @container effects (max-width:520px){.fx-stage,.fx-fields{grid-template-columns:1fr}}
     @container effects (max-width:760px){.fx-layout{grid-template-columns:1fr}.fx-row{grid-template-columns:100px minmax(0,1fr)}}
   </style>`);
   function remember() {
@@ -128,7 +128,7 @@
     if(!work){root.innerHTML='<h2>Celebration effects</h2><button id="fx-load">Load effects</button>';on('load',()=>load());return;}
     index=Math.min(index,Math.max(0,effect()[kind].length-1));
     root.innerHTML=`<h2>Celebration effects</h2><p class="fx-note">Choreograph creature poses and layered sprite animation. Hardpoints are shared across celebrations and authored for each pet form.</p>
-      <div class="fx-actions"><button id="fx-save">Save</button><button id="fx-undo">Undo</button><button id="fx-redo">Redo</button><button id="fx-reload">Reload saved</button><button id="fx-engine">Test saved effect in game</button><span id="fx-status" role="status"></span></div>
+      <div class="fx-actions sf-actions"><button id="fx-save">Save</button><button id="fx-undo">Undo</button><button id="fx-redo">Redo</button><button id="fx-reload">Reload saved</button><button id="fx-engine">Test saved effect in game</button><span id="fx-status" role="status"></span></div>
       <div class="fx-layout"><section aria-label="Celebration preview and timeline">
       <div class="fx-fields"><label>Celebration<select id="fx-select">${opts(work.effects.map(e=>[e.key,e.name]),effect().key)}</select></label>
       <label>Preview pet<select id="fx-form">${opts(forms().map(f=>[f,f]),form)}</select></label>

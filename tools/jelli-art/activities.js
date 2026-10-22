@@ -23,9 +23,10 @@
   /** @type {any} */ (window).JelliDesign.watch(root);
   document.head.insertAdjacentHTML('beforeend', `<style>
     #activities{container:ac/inline-size}
-    .ac-grid{display:grid;grid-template-columns:190px minmax(260px,600px) 220px;gap:24px}
-    .ac-list{display:grid;gap:6px;align-content:start}.ac-fields label{display:block;margin:12px 0}
-    .ac-fields input,.ac-fields select{margin-left:8px;max-width:260px}.ac-fields input[type=number]{width:90px}
+    .ac-grid{display:grid;grid-template-columns:190px minmax(0,600px) 220px;gap:20px}
+    .ac-grid>*{min-width:0}.ac-list{display:grid;gap:6px;align-content:start}
+    .ac-fields>.sf-field{margin:12px 0}.ac-fields fieldset label{margin:8px 0}
+    .ac-fields fieldset{min-width:0}.ac-fields input[type=number]{font-variant-numeric:tabular-nums}
     #ac-preview{image-rendering:pixelated;background:#171b26;border-radius:50%;width:220px;height:220px}
     /* The view's own width decides (RFC-007): list beside the fields with the preview above them, and under 800 px
      * one column with the preview pinned on top. */
@@ -35,10 +36,11 @@
     }
     @container ac (max-width:800px){
       .ac-grid{display:flex;flex-direction:column;gap:16px}.ac-grid>*{min-width:0}.ac-list{grid-template-columns:repeat(3,1fr)}
-      .ac-grid>aside{order:-1;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;border:0;flex-direction:row;align-items:center;gap:12px}
-      .ac-grid>aside p{display:none}.ac-grid>aside label{display:flex;align-items:center;gap:8px}
+      .ac-grid>aside{order:-1;align-self:stretch;width:100%;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;border:0;display:grid;grid-template-columns:minmax(0,1fr) 130px;align-items:center;gap:12px}
+      .ac-grid>aside p{display:none}.ac-grid>aside label{min-width:0;margin:0}
       #ac-preview{width:130px;height:130px}
     }
+    @container ac (max-width:520px){.ac-list{grid-template-columns:repeat(2,minmax(0,1fr))}.ac-list button{min-width:0;overflow-wrap:anywhere}}
   </style>`);
   function sync() {
     if (base === D.activity_sha) return;
@@ -47,10 +49,10 @@
   }
   const opts = (values, chosen) => values.map(([v,n]) => `<option value="${esc(v)}" ${String(chosen)===String(v)?'selected':''}>${esc(n)}</option>`).join('');
   function field(label, key, type='number', extra='') {
-    return `<label>${label}<input data-field="${key}" type="${type}" value="${esc(work.moments[selected][key])}" ${extra}></label>`;
+    return `<label class="sf-field">${label}<input data-field="${key}" type="${type}" value="${esc(work.moments[selected][key])}" ${extra}></label>`;
   }
   function selectField(label,key,values) {
-    return `<label>${label}<select data-field="${key}">${opts(values,work.moments[selected][key]??'')}</select></label>`;
+    return `<label class="sf-field">${label}<select data-field="${key}">${opts(values,work.moments[selected][key]??'')}</select></label>`;
   }
   const meters = ['satiety','energy','hygiene','amusement','social','hydration','bond'];
   const timeString = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
@@ -61,10 +63,10 @@
     const sprites = D.assets.filter(a => ['menus','icons','health','props','effects','prizes'].includes(a.kind)).map(a=>[a.id,a.key]);
     root.innerHTML = `<h2>Activities</h2><p>Share one activity, icon and animation across any pets. Random activities rotate hourly. Unlocks use local time; completion prerequisites reset daily.</p>
       <p id="ac-save-status" class="save-state" role="status" data-save-state="${saveState}">${saveState==='saving'?'Saving…':saveState==='error'?'Save failed':stale?'The activity file changed on disk while you were editing. Save asks before it overwrites the newer file; Reload saved loads it instead.':dirty()?'Unsaved activity changes':'Saved activity recipes'}</p>
-      <button id="ac-save" class="primary" title="Save activities (⌘S / Ctrl+S)" ${saveState==='saving'||!dirty()||!D.behavior_editable?'disabled':''}>${window.JelliIcons.svg("save")}Save activities</button>
-      <button id="ac-revert">${window.JelliIcons.svg("reload")}Reload saved</button> <button id="ac-add" ${work.moments.length>=32?'disabled':''}>Add activity</button><p>New activities copy visible recipe fields, with no custom pose or prize and rewards on every run. Choose these policies explicitly below.</p>
+      <div class="studio-form"><div class="sf-actions"><button id="ac-save" class="primary" title="Save activities (⌘S / Ctrl+S)" ${saveState==='saving'||!dirty()||!D.behavior_editable?'disabled':''}>${window.JelliIcons.svg("save")}Save activities</button>
+      <button id="ac-revert">${window.JelliIcons.svg("reload")}Reload saved</button><button id="ac-add" ${work.moments.length>=32?'disabled':''}>Add activity</button></div></div><p>New activities copy visible recipe fields, with no custom pose or prize and rewards on every run. Choose these policies explicitly below.</p>
       <div class="ac-grid"><nav class="ac-list" aria-label="Activity recipes">${work.moments.map((a,i)=>`<button data-activity="${i}" aria-pressed="${i===selected}">${esc(a.name)}</button>`).join('')}</nav>
-      <div class="ac-fields"><h3>${esc(m.name)}</h3>
+      <div class="ac-fields studio-form"><h3>${esc(m.name)}</h3>
       ${field('Name','name','text',selected<loaded.moments.length?'readonly':'maxlength="12"')}
       ${selectField('Activity kind','kind',[['play','Play / relaxation'],['feed','Meal']])}
       ${field('Duration (seconds)','duration_s','number','min="1" max="3600"')}
@@ -90,7 +92,7 @@
       <p>Bond is slow progress: most recipes provide 0.1–0.4 points; other meters change by whole points.</p>
       <p>Reward ranges include jitter and this pet’s activity bonus. Existing sleep-habit effects on fun/connection and favorite-time extras also apply; meters cap at 100.</p>
       <div id="ac-effects"></div></div>
-      <aside><label>Preview pet<select id="ac-form">${opts(forms.map(f=>[f.id,f.name]),previewForm)}</select></label><canvas id="ac-preview" width="220" height="220" aria-label="Approximate activity animation thumbnail"></canvas><p>Approximate animation thumbnail. Actor and prop sizes and motion differ from the engine. Save and use Test in game to verify actual placement and location.</p></aside></div>`;
+      <aside class="studio-form"><label>Preview pet<select id="ac-form">${opts(forms.map(f=>[f.id,f.name]),previewForm)}</select></label><canvas id="ac-preview" width="220" height="220" aria-label="Approximate activity animation thumbnail"></canvas><p>Approximate animation thumbnail. Actor and prop sizes and motion differ from the engine. Save and use Test in game to verify actual placement and location.</p></aside></div>`;
     /** @type {NodeListOf<HTMLButtonElement>} */ (root.querySelectorAll('button[data-activity]')).forEach(b => b.onclick=()=>{selected=Number(b.dataset.activity);render();});
     const formSelect = /** @type {HTMLSelectElement} */ (root.querySelector('#ac-form'));
     formSelect.onchange=()=>{previewForm=Number(formSelect.value);render();};
