@@ -1,11 +1,11 @@
 #!/usr/bin/env -S uv run
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0", "lz4==4.4.5"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0", "lz4==4.4.5"]
 # ///
 """Jellipak design experiment: independently decodable indexed asset blocks.
 
-Run: ./scripts/uv run --python 3.12 tools/assets/measure_jellipak.py
+Run: ./scripts/uv run --script tools/assets/measure_jellipak.py
 No generated firmware or loader is changed. JSON on stdout is deterministic at
 one source revision and records every asset plus aggregate payload byte counts.
 """

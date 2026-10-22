@@ -2,7 +2,7 @@
 # consumes Jellipak through the residency layer. Running it always revalidates
 # sources and the native decoder; the compiler preserves identical output bytes.
 add_custom_target(jellipak_assets
-  COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+  COMMAND "${JELLI_ASSET_UV}" run --script
           "${CMAKE_CURRENT_SOURCE_DIR}/tools/assets/jellipak.py" build
           --output "${CMAKE_CURRENT_BINARY_DIR}/generated/jellipak.jpak"
           --report "${CMAKE_CURRENT_BINARY_DIR}/generated/jellipak-report.json"

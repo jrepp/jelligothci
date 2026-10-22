@@ -1,3 +1,7 @@
+# /// script
+# requires-python = ">=3.15,<3.16"
+# dependencies = []
+# ///
 """Standard MOD round trips and bounded hostile input rejection."""
 import copy
 from pathlib import Path

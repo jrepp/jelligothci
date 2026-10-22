@@ -74,7 +74,7 @@ jobs:
           cmake -S . -B build/windows -A x64 -DCMAKE_PREFIX_PATH="$PWD/build/sdl-install" -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
           cmake --build build/windows --config Release --parallel 3
           ctest --test-dir build/windows -C Release --output-on-failure --no-tests=error
-          uv run --python 3.12 tools/assets/build_slice.py
+          uv run --script tools/assets/build_slice.py
           python scripts/package-windows.py --binary build/windows/Release/jelligotchi.exe --dll build/sdl-install/bin/SDL2.dll --license build/sdl-source/LICENSE.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -98,7 +98,7 @@ jobs:
           cmake -S . -B build/package -DCMAKE_BUILD_TYPE=Release
           cmake --build build/package --parallel 3
           ctest --test-dir build/package --output-on-failure
-          ./scripts/uv run --python 3.12 tools/assets/build_slice.py
+          ./scripts/uv run --script tools/assets/build_slice.py
           python3 scripts/package-release.py --binary build/package/jelligotchi
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:

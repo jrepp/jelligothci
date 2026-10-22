@@ -1,12 +1,12 @@
 # Jelli Art UI tests. playwright must match the pinned Playwright image in
 # .github/workflows/jelli-art.yml and run.sh (its browsers live in /ms-playwright).
 # Regenerate requirements.txt after changing a pin:
-#   ./scripts/uv pip compile --python-version 3.12 --universal --generate-hashes \
+#   ./scripts/uv pip compile --python-version 3.15 --universal --generate-hashes \
 #     tools/jelli-art/ui_tests/requirements.in -o tools/jelli-art/ui_tests/requirements.txt
 playwright==1.63.0
 pytest==9.1.1
 pytest-playwright==0.10.0
-Pillow==12.0.0
+Pillow==13.0.0
 # Real creation/clone browser tests run the shared content generators. The pinned
 # Playwright image has no CMake; match JELLI_CMAKE_VERSION in toolchain.env.
 cmake==4.4.4

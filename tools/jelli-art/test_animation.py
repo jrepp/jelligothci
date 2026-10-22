@@ -1,10 +1,10 @@
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0"]
 # ///
 """Jelli Art animation timeline: new, duplicated and retired creature frames, and clip timing.
 
-Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_animation.py
+Run: ./scripts/uv run --script tools/jelli-art/test_animation.py
 """
 import json
 import shutil

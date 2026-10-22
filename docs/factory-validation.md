@@ -17,7 +17,7 @@ Close other serial clients before flashing or capture.
 ./scripts/esp ports
 # Set JELLI_DEBUG_PORT from current discovery, then flash separately:
 ./scripts/esp factory -p "$JELLI_DEBUG_PORT" flash
-./scripts/uv run --python 3.12 tools/debug/factory_capture.py \
+./scripts/uv run --script tools/debug/factory_capture.py \
   --port "$JELLI_DEBUG_PORT" --fixture bench-unattended \
   --output build/factory-run-001
 # Restore the normal application after capturing results:

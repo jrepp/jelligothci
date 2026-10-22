@@ -1,6 +1,6 @@
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0"]
 # ///
 """End-to-end tests for the Jelli Art server, without a browser.
 
@@ -10,7 +10,7 @@ a small scratch checkout (art, content and the validators it needs) with a bare
 "origin", and exercise commits, queued retries, crash recovery, pushes, push
 repair and the container entrypoint.
 
-Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_server.py
+Run: ./scripts/uv run --script tools/jelli-art/test_server.py
 """
 import base64
 import faulthandler

@@ -1,10 +1,10 @@
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0"]
 # ///
 """Tidy outline (POST /api/tidy) and the icon re-ink pass give the same pixels in every process.
 
-Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_tidy.py
+Run: ./scripts/uv run --script tools/jelli-art/test_tidy.py
 """
 import hashlib
 import os

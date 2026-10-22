@@ -1,3 +1,7 @@
+# /// script
+# requires-python = ">=3.15,<3.16"
+# dependencies = []
+# ///
 """Known tracker timing, loop, C-volume and four-channel mixing semantics."""
 import struct
 import hashlib

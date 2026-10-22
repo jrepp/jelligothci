@@ -15,7 +15,7 @@ function(jelli_generate_pet_assets output_variable)
   add_custom_command(
     OUTPUT "${generated}" "${ids}"
     BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/generated/jelli_scene_resources.json"
-    COMMAND "${jelli_uv}" run --python 3.12
+    COMMAND "${jelli_uv}" run --script
             "${jelli_root}/tools/assets/embed_slice.py" --output "${generated}"
     DEPENDS "${jelli_root}/tools/assets/embed_slice.py" "${jelli_root}/tools/assets/asset_ids.py"
             "${jelli_root}/tools/assets/build_slice.py"

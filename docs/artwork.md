@@ -282,7 +282,7 @@ and the live-art tool with its support files.
 # macOS/Linux: uses the bundled pinned uv bootstrap wrapper
 ./scripts/jelli-art-live
 # Windows: install uv, then from the extracted directory
-uv run --python 3.12 tools/assets/live_assets.py
+./scripts/uv run --script tools/assets/live_assets.py
 ```
 
 The launcher discovers the bundled executable. First tool use downloads Python
@@ -292,7 +292,7 @@ source art. Embedded fallback images remain available if no override is loaded.
 ## Preview and release validation
 
 ```sh
-./scripts/uv run --python 3.12 tools/assets/build_slice.py
+./scripts/uv run --script tools/assets/build_slice.py
 open build/assets/preview.html    # macOS; otherwise open in a browser
 ```
 
@@ -401,7 +401,7 @@ The axolotl was added this way, without species-specific C:
 1. **Frames.** Write an import spec like `assets/slice/source/axolotl-import.json`:
    form name, `first_id`, source cell size, a 32x32 or 48x48 canvas, pivot, and a
    palette name. Then run
-   `./scripts/uv run --python 3.12 tools/assets/import_creature.py SPEC SOURCE_DIR`.
+   `./scripts/uv run --script tools/assets/import_creature.py SPEC SOURCE_DIR`.
    Every source cell becomes one pixel, and all frames keep their shared placement.
    IDs are `first_id` plus list position, so append new frames and never reorder.
    Jelli Art's timeline can also add frames; it appends a `"studio": true` entry
@@ -415,7 +415,7 @@ The axolotl was added this way, without species-specific C:
 4. **Behaviour and size.** In `content/creatures.json`, add a profile for the
    form's `art` with actor, icon and portrait scales, and pick or write a
    behaviour: ordered `{when, pose}` rules, idle beats and a quiet cycle.
-5. Run `./scripts/uv run --python 3.12 tools/assets/build_slice.py`, then
+5. Run `./scripts/uv run --script tools/assets/build_slice.py`, then
    `make test`. The generators reject missing poses, foreign frames, unknown
    conditions, and actors too large for the panel.
 
@@ -430,8 +430,8 @@ review checklist. To compare art pixel by pixel against a git revision or anothe
 asset directory:
 
 ```sh
-./scripts/uv run --python 3.12 tools/assets/compare_slice.py              # HEAD vs working tree
-./scripts/uv run --python 3.12 tools/assets/compare_slice.py --before v0.2.0
+./scripts/uv run --script tools/assets/compare_slice.py              # HEAD vs working tree
+./scripts/uv run --script tools/assets/compare_slice.py --before v0.2.0
 open build/assets/compare.html
 ```
 

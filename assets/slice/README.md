@@ -13,7 +13,7 @@ unverified.
 From the repository root:
 
 ```sh
-./scripts/uv run --python 3.12 tools/assets/build_slice.py
+./scripts/uv run --script tools/assets/build_slice.py
 open build/assets/preview.html  # macOS; otherwise open this file in a browser
 ```
 
@@ -22,7 +22,7 @@ pose controls, a round-panel mockup, native/3x/4x sheet scales, dark/checker
 backgrounds, a font sample, and per-image downloads. It respects reduced-motion
 preferences. Its gestures and rewards are visual previews, not a game simulation.
 
-The script uses repository-local uv, Python 3.12, and Pillow 12.0.0 via inline
+The script uses repository-local uv, Python 3.15, and Pillow 13.0.0 via inline
 script metadata. First use may download those tools. No global install is needed.
 Generated previews, contact sheets, raw pixels, and reports stay under `build/`.
 The HTML template is tracked in `tools/assets/preview.html` and embeds the current
@@ -91,7 +91,7 @@ for the asset pipeline design.
 To reproduce candidate PNGs without overwriting reviewed source art:
 
 ```sh
-./scripts/uv run --python 3.12 assets/slice/source/authoring.py
+./scripts/uv run --script assets/slice/source/authoring.py
 ```
 
 Candidates go to `build/assets/reimport/`. Review and explicitly copy desired
@@ -112,9 +112,9 @@ with one closed 1px outline and no stray specks. The original generator recipe n
 longer reproduces the shipped creature and prop PNGs; `polish.py` does.
 
 ```sh
-./scripts/uv run --python 3.12 assets/slice/source/polish.py          # candidates in build/assets/polish
-./scripts/uv run --python 3.12 tools/assets/compare_slice.py --before assets/slice --after build/assets/polish
-./scripts/uv run --python 3.12 assets/slice/source/polish.py --apply  # write owned PNGs + manifest bounds
+./scripts/uv run --script assets/slice/source/polish.py          # candidates in build/assets/polish
+./scripts/uv run --script tools/assets/compare_slice.py --before assets/slice --after build/assets/polish
+./scripts/uv run --script assets/slice/source/polish.py --apply  # write owned PNGs + manifest bounds
 ```
 
 Assets saved from Jelli Art (`make jelli-art`) are recorded in
@@ -219,7 +219,7 @@ Additional location scenes use the existing 16-gray pixel recipe. Reproduce only
 Park/Pond/Beach/Library (preserving other art) with:
 
 ```sh
-./scripts/uv run --python 3.12 assets/slice/source/location_art.py
+./scripts/uv run --script assets/slice/source/location_art.py
 ```
 
 Their IDs are 10003–10006. `content/locations.json` binds stable saved location

@@ -8,7 +8,8 @@ The supported bootstrap workflow runs on macOS and Linux (or Linux under WSL).
 It needs Git, Bash, Python 3.10–3.13 with venv support, and standard platform
 build prerequisites. On macOS install Xcode command-line tools; on Linux use
 the prerequisites in [Espressif's setup guide](https://docs.espressif.com/projects/esp-idf/en/v5.5/esp32s3/get-started/linux-macos-setup.html).
-Python 3.14 is intentionally not selected by the wrapper.
+Python 3.14 and 3.15 are intentionally not selected by the ESP-IDF bootstrap
+wrapper; it uses the SDK supported range above.
 ESP-IDF requires the checkout path to contain no whitespace.
 
 ```sh
@@ -264,7 +265,7 @@ Then run the capture tool:
 ```sh
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" power
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" power locks
-./scripts/uv run --python 3.12 tools/debug/power_experiment.py \
+./scripts/uv run --script tools/debug/power_experiment.py \
   --port "$JELLI_DEBUG_PORT" --output build/power-trial-01 delay pause off panel audio
 ```
 
