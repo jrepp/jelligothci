@@ -586,7 +586,8 @@ def music_document(song="morning-tea"):
         raw = path.read_bytes() if path.exists() else None
         doc = music_data.music_mod.decode(raw) if raw is not None else music_data.initial()
     return {"data": doc, "base": storage.digest_bytes(raw) if raw is not None else None,
-            "editable": CONTENT_WRITABLE, "songs": music_data.CATALOG}
+            "editable": CONTENT_WRITABLE, "songs": music_data.CATALOG,
+            "sample_presets": music_data.sample_presets()}
 
 
 def save_music(body):

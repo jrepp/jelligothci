@@ -98,6 +98,106 @@ def sample_bank():
     return leads, voices
 
 
+def tracker_presets():
+    """Return MOD-compatible samples without the library's browsing metadata."""
+    return [preset['sample'] for preset in tracker_library()]
+
+
+def tracker_library():
+    """Original authoring sounds, independent of the shipped song/legacy bank.
+
+    Melodic waveforms use 32 samples per cycle (approximately C2 at tracker C2).
+    Percussion is synthesized at the PAL C3 playback rate. MOD retains the
+    waveform and loop settings, not a WAV sample rate. All noise is seeded.
+    """
+    presets = []
+
+    def add(name, values, volume, loop=False, category='Percussion'):
+        sample = dict(name=name, pcm=[round(value) for value in values],
+                      volume=volume, loop_start=0,
+                      loop_length=len(values) if loop else 0)
+        presets.append(dict(id=name.lower().replace(' ', '-'), name=name,
+                            category=category, sample=sample))
+
+    def tone(i, harmonics):
+        phase = 2 * math.pi * i / 32
+        return sum(amplitude * math.sin(harmonic * phase)
+                   for harmonic, amplitude in harmonics)
+
+    add('Velvet keys', [tone(i, ((1, 78), (2, 18), (3, 7))) for i in range(32)], 36, True, 'Keys')
+    add('Hollow flute', [tone(i, ((1, 84), (3, 12), (5, 5))) for i in range(32)], 34, True, 'Leads')
+    add('Warm reed', [tone(i, ((1, 62), (2, 22), (3, 13), (4, 7)))
+                      for i in range(32)], 32, True, 'Leads')
+    for name, harmonics, length, decay, volume in (
+            ('Glass bell', ((1, 68), (3, 24), (7, 12)), 2048, 700, 40),
+            ('Pocket pluck', ((1, 62), (2, 26), (3, 14), (5, 8)), 1024, 260, 40)):
+        add(name, [tone(i, harmonics) * min(1, i / 8) * math.exp(-i / decay)
+                   * (1 - i / (length - 1)) for i in range(length)], volume,
+            category='Mallets' if name == 'Glass bell' else 'Keys')
+
+    rate = 3546895 / 214
+    phase = 0.0
+    kick = []
+    for i in range(1024):
+        phase += 2 * math.pi * (52 + 170 * math.exp(-i / 45)) / rate
+        kick.append(112 * math.sin(phase) * min(1, i / 4) * (1 - i / 1023) ** 2)
+    add('Round kick', kick, 48)
+    add('Wood rim', [(70 * math.sin(2 * math.pi * 1700 * i / rate)
+                      + 35 * math.sin(2 * math.pi * 2390 * i / rate))
+                     * min(1, i / 2) * (1 - i / 255) ** 3 for i in range(256)], 42)
+    for name, length, seed, volume in (('Seed shaker', 512, 2241, 34),
+                                       ('Air hat', 1536, 2242, 26)):
+        noise = random.Random(seed)
+        previous = 0.0
+        values = []
+        for i in range(length):
+            current = noise.uniform(-1, 1)
+            values.append(60 * (current - previous) * min(1, i / 4)
+                          * (1 - i / (length - 1)) ** 2)
+            previous = current
+        add(name, values, volume)
+
+    for name, category, harmonics, volume in (
+            ('Deep sine bass', 'Bass', ((1, 104),), 38),
+            ('Rubber bass', 'Bass', ((1, 80), (2, 16), (3, -10)), 36),
+            ('Buzz bass', 'Bass', ((1, 60), (2, 24), (3, 16), (4, 9)), 32),
+            ('Soft organ', 'Keys', ((1, 58), (2, 25), (4, 18)), 34),
+            ('Dream keys', 'Keys', ((1, 70), (3, -18), (5, 8)), 32),
+            ('Arcade lead', 'Leads', ((1, 68), (3, 20), (5, 12), (7, 7)), 30),
+            ('Silver lead', 'Leads', ((1, 62), (2, -20), (4, 12)), 32)):
+        add(name, [tone(i, harmonics) for i in range(32)], volume, True, category)
+
+    for name, harmonics, length, decay, volume in (
+            ('Thumb piano', ((1, 88), (3, 14), (6, 7)), 1536, 400, 38),
+            ('Wood marimba', ((1, 90), (4, 17)), 1024, 280, 40),
+            ('Ice chime', ((1, 58), (5, 24), (9, 12)), 2048, 850, 34)):
+        add(name, [tone(i, harmonics) * min(1, i / 8) * math.exp(-i / decay)
+                   * (1 - i / (length - 1)) for i in range(length)], volume,
+            category='Mallets')
+
+    for name, frequency, length, volume in (
+            ('Low tom', 105, 1536, 44), ('High tom', 185, 1024, 40)):
+        phase = 0.0
+        values = []
+        for i in range(length):
+            phase += 2 * math.pi * frequency * (1 + .65 * math.exp(-i / 70)) / rate
+            values.append((94 * math.sin(phase) + 12 * math.sin(2 * phase))
+                          * min(1, i / 4) * (1 - i / (length - 1)) ** 3)
+        add(name, values, volume)
+
+    noise = random.Random(2243)
+    add('Paper snare', [(noise.uniform(-65, 65) + 37 * math.sin(2 * math.pi * 190 * i / rate))
+                        * min(1, i / 4) * (1 - i / 1023) ** 2 for i in range(1024)], 42)
+    noise = random.Random(2244)
+    add('Hand clap', [noise.uniform(-76, 76)
+                      * sum(math.exp(-(i - onset) / 65) for onset in (0, 52, 105) if i >= onset)
+                      * min(1, i / 4) * (1 - i / 767) ** 2 for i in range(768)], 40)
+    add('Copper cowbell', [(64 * math.sin(2 * math.pi * 540 * i / rate)
+                           + 35 * math.sin(2 * math.pi * 800 * i / rate))
+                          * min(1, i / 4) * (1 - i / 767) ** 2 for i in range(768)], 36)
+    return presets
+
+
 def rows(values, indent='    '):
     return '\n'.join(indent+', '.join(f'{v:4d}' for v in values[i:i+16])+','
                      for i in range(0, len(values), 16))

@@ -9,6 +9,7 @@ import wave
 import music_mod
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'audio'))
 import build_music
+from music_samples import tracker_library
 
 CATALOG = [
     ('morning-tea', 'Morning Tea', 'Chill'), ('garden-waltz', 'Garden Waltz', 'Classical'),
@@ -35,6 +36,10 @@ def initial():
     return {'title': 'New score', 'restart': 0, 'orders': [0],
             'samples': [{'name': '', 'volume': 64, 'loop_start': 0, 'loop_length': 0, 'pcm': []} for _ in range(31)],
             'patterns': [[[{'sample': 0, 'period': 0, 'effect': 0, 'param': 0} for _ in range(4)] for _ in range(64)]]}
+
+
+def sample_presets():
+    return tracker_library()
 
 
 def binary(value, limit):
