@@ -175,13 +175,13 @@ views cover sections 3–5. Scripted art uses the recipe:
 ```sh
 # 1. Edit the recipe (creatures, props, keepsakes) or paint a PNG (other icons).
 # 2. Render candidates without touching the sources:
-./scripts/uv run --python 3.12 assets/slice/source/polish.py
+./scripts/uv run --script assets/slice/source/polish.py
 # 3. Review before/after against the current sources:
-./scripts/uv run --python 3.12 tools/assets/compare_slice.py --before assets/slice --after build/assets/polish
+./scripts/uv run --script tools/assets/compare_slice.py --before assets/slice --after build/assets/polish
 open build/assets/compare.html
 # 4. Apply, validate, and check the game:
-./scripts/uv run --python 3.12 assets/slice/source/polish.py --apply
-./scripts/uv run --python 3.12 tools/assets/build_slice.py
+./scripts/uv run --script assets/slice/source/polish.py --apply
+./scripts/uv run --script tools/assets/build_slice.py
 make test
 ```
 

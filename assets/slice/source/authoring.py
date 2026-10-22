@@ -1,6 +1,6 @@
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0"]
 # ///
 """Reproduce candidate PNGs into build/assets/reimport, never over source artwork."""
 from pathlib import Path

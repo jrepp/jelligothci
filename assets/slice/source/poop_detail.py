@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0"]
 # ///
 """Hand-placed detail for the reduced poop mess (props/poop-1.png, props/poop-2.png).
 

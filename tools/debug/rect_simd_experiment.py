@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.12"
+# requires-python = ">=3.15,<3.16"
 # dependencies = ["pyserial==3.5"]
 # ///
 """Compare current clipped scanline rectangles with the power-only SIMD candidate."""

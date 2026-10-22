@@ -1,10 +1,10 @@
 # /// script
-# requires-python = ">=3.12,<3.13"
+# requires-python = ">=3.15,<3.16"
 # dependencies = ["lz4==4.4.5"]
 # ///
 """Optional pinned reference-encoder interoperability corpus, outside offline tests.
 
-Run with scripts/uv run --python 3.12 tests/test_jellipak_lz4.py VERIFIER.
+Run with scripts/uv run --script tests/test_jellipak_lz4.py VERIFIER.
 This validates the C decoder against Python LZ4's independent encoder and CRCs;
 it does not establish art fidelity, final pack savings, or device performance.
 """

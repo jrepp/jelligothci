@@ -1,3 +1,7 @@
+# /// script
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0"]
+# ///
 """Reject invalid creature behaviour and render profiles before they reach C."""
 import copy
 import json

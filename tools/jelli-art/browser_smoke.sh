@@ -24,7 +24,7 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/jelli-art-smoke.XXXXXX")
 cp -R "$repo/assets/slice" "$work/slice"
 cp -R "$repo/content" "$work/content"
 
-"$repo/scripts/uv" run --python 3.12 "$here/jelli_art.py" --assets "$work/slice" --content "$work/content" \
+"$repo/scripts/uv" run --script "$here/jelli_art.py" --assets "$work/slice" --content "$work/content" \
     --no-open --port "$port" >"$work/server.log" 2>&1 &
 server=$!
 cleanup() {
@@ -91,7 +91,7 @@ ab mouse move "$(($1 - 30))" "$(($2 + 40))" >/dev/null
 ab mouse down >/dev/null
 ab mouse up >/dev/null
 ab wait --fn "Studio.paintDirty('$key')" >/dev/null || fail "the second stroke did not register"
-"$repo/scripts/uv" run --python 3.12 --with Pillow==12.0.0 python -c "
+"$repo/scripts/uv" run --python 3.15 --with Pillow==13.0.0 python -c "
 from PIL import Image; import sys
 im = Image.open(sys.argv[1]).convert('RGBA'); w, h = im.size
 x, y = next((x, y) for y in range(h) for x in range(w) if im.getpixel((x, y))[3])

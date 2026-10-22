@@ -189,23 +189,23 @@ if(BUILD_TESTING)
     add_executable(jelli_pet_health_tests tests/test_pet_health.c)
     target_link_libraries(jelli_pet_health_tests PRIVATE jelli_pet)
     add_test(NAME pet_health COMMAND jelli_pet_health_tests)
-    add_test(NAME sprite_geometry COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+    add_test(NAME sprite_geometry COMMAND "${JELLI_ASSET_UV}" run --script
       "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_sprite_geometry.py")
-    add_test(NAME creature_content COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
+    add_test(NAME creature_content COMMAND "${JELLI_ASSET_UV}" run --script --with Pillow==13.0.0
       "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_creature_content.py")
-    add_test(NAME jellipak_build COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+    add_test(NAME jellipak_build COMMAND "${JELLI_ASSET_UV}" run --script
       "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_jellipak_build.py" $<TARGET_FILE:jelli_jellipak_verify>)
-    add_test(NAME jelli_art_creatures COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+    add_test(NAME jelli_art_creatures COMMAND "${JELLI_ASSET_UV}" run --script
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_creatures.py")
-    add_test(NAME jelli_art_animation COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+    add_test(NAME jelli_art_animation COMMAND "${JELLI_ASSET_UV}" run --script
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_animation.py")
-    add_test(NAME jelli_art_server COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+    add_test(NAME jelli_art_server COMMAND "${JELLI_ASSET_UV}" run --script
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_server.py")
     foreach(music_test music music_mod)
-      add_test(NAME jelli_art_${music_test} COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+      add_test(NAME jelli_art_${music_test} COMMAND "${JELLI_ASSET_UV}" run --script
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_${music_test}.py")
     endforeach()
-    add_test(NAME music_build COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+    add_test(NAME music_build COMMAND "${JELLI_ASSET_UV}" run --script
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/audio/test_build_music.py")
     set_tests_properties(jelli_art_server PROPERTIES TIMEOUT 300 RUN_SERIAL TRUE) # Real servers and scratch git repos.
     find_program(JELLI_NODE node)
@@ -214,15 +214,15 @@ if(BUILD_TESTING)
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_paint_tools.js")
     endif()
     # Builds the engine again in a scratch tree for the real-render cases.
-    add_test(NAME jelli_art_creation COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
+    add_test(NAME jelli_art_creation COMMAND "${JELLI_ASSET_UV}" run --script --with Pillow==13.0.0
       "${PROJECT_SOURCE_DIR}/tools/jelli-art/test_creation.py")
-    add_test(NAME jelli_art_effects COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+    add_test(NAME jelli_art_effects COMMAND "${JELLI_ASSET_UV}" run --script
       "${PROJECT_SOURCE_DIR}/tools/jelli-art/test_effects.py")
-    add_test(NAME jelli_art_scenes COMMAND "${JELLI_ASSET_UV}" run --python 3.12
+    add_test(NAME jelli_art_scenes COMMAND "${JELLI_ASSET_UV}" run --script
       "${PROJECT_SOURCE_DIR}/tools/jelli-art/test_scenes.py")
-    add_test(NAME jelli_art_activity_policies COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
+    add_test(NAME jelli_art_activity_policies COMMAND "${JELLI_ASSET_UV}" run --script --with Pillow==13.0.0
       "${PROJECT_SOURCE_DIR}/tools/jelli-art/test_activity_policies.py")
-    add_test(NAME jelli_art_game_preview COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
+    add_test(NAME jelli_art_game_preview COMMAND "${JELLI_ASSET_UV}" run --script --with Pillow==13.0.0
       "${CMAKE_CURRENT_SOURCE_DIR}/tools/jelli-art/test_game_preview.py")
     set_tests_properties(jelli_art_game_preview PROPERTIES TIMEOUT 600)
     add_test(NAME game_preview_smoke COMMAND jelli_game_preview --out . --entry 3 --form 2 --mess 1 --frames 2)
@@ -270,9 +270,9 @@ if(BUILD_TESTING)
       endif()
       add_test(NAME debug_cli COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_debug_cli.py $<TARGET_FILE:jelli_debug_tests>)
-      add_test(NAME live_assets COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
+      add_test(NAME live_assets COMMAND "${JELLI_ASSET_UV}" run --script --with Pillow==13.0.0
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_live_assets.py)
-      add_test(NAME full_asset_pack COMMAND "${JELLI_ASSET_UV}" run --python 3.12 --with Pillow==12.0.0
+      add_test(NAME full_asset_pack COMMAND "${JELLI_ASSET_UV}" run --script --with Pillow==13.0.0
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_full_asset_pack.py $<TARGET_FILE:jelligotchi>)
       set_tests_properties(full_asset_pack PROPERTIES TIMEOUT 30)
       add_test(NAME pet_session COMMAND ${Python3_EXECUTABLE}

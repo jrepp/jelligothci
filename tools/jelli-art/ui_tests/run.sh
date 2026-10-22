@@ -34,8 +34,8 @@ if [[ "${JELLI_UI_LOCAL:-}" == 1 ]]; then
     # Browsers go in the repository's .tools/, not a global cache.
     export PLAYWRIGHT_BROWSERS_PATH="$repo_dir/.tools/ms-playwright"
     cd "$repo_dir"
-    ./scripts/uv run --python 3.12 --no-project --with-requirements "$requirements" python -m playwright install chromium >&2
-    exec ./scripts/uv run --python 3.12 --no-project --with-requirements "$requirements" pytest tools/jelli-art/ui_tests "$@"
+    ./scripts/uv run --python 3.15 --no-project --with-requirements "$requirements" python -m playwright install chromium >&2
+    exec ./scripts/uv run --python 3.15 --no-project --with-requirements "$requirements" pytest tools/jelli-art/ui_tests "$@"
 fi
 
 engine="$(command -v podman || command -v docker || true)"

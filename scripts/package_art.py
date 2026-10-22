@@ -29,7 +29,7 @@ def stage_art(folder):
         f'{len(registered_prizes)} registered prizes).\n'
         'Open preview.html for the standalone art sheet.\n'
         'macOS/Linux live art: ./scripts/jelli-art-live\n'
-        'Windows live art: uv run --python 3.12 tools/assets/live_assets.py\n'
+        'Windows live art: ./scripts/uv run --script tools/assets/live_assets.py\n'
         'Windows requires uv; macOS/Linux uses the bundled pinned uv wrapper.\n'
         'First art-tool run downloads Python and Pillow; playing the game needs neither.\n'
         'Save PNG edits at their original dimensions. Live reload validates binary alpha,\n'

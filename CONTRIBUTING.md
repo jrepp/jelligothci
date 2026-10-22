@@ -36,21 +36,23 @@ Use a path without whitespace if you will build firmware. Do not copy another
 checkout's `.tools`, Python environments, CMake caches, or generated SDK config;
 some contain absolute paths. Downloads require network access on first use.
 
-For the complete macOS/Linux workflow, install a C compiler and SDK headers,
-CMake 3.21+, Ninja, Make, Bash, curl, and Python 3.10-3.13 with venv support.
-SDL2 2.0.18+ is needed for the desktop host, not the core. Examples:
+For macOS/Linux, install a C compiler and SDK headers, CMake 3.21+, Ninja, Make,
+Bash, curl, and SDL2 2.0.18+ for the desktop host. Repository Python tooling uses
+pinned uv and its managed Python 3.15 interpreter. ESP-IDF bootstrap separately
+requires system Python 3.10–3.13 with venv support. Examples:
 
 ```sh
 # macOS: Xcode command-line tools must be installed as well.
 brew install cmake ninja sdl2 python@3.13
-# Ubuntu/Debian: choose an available Python 3.10-3.13 for ESP-IDF.
+# Ubuntu/Debian: choose an available Python 3.10-3.13 for ESP-IDF bootstrap.
 # sudo apt-get install build-essential cmake ninja-build libsdl2-dev git curl python3 python3-venv
 ```
 
-Distribution packages may supply a newer unsupported Python. Check its version;
-set `JELLI_PYTHON` to a compatible executable for ESP-IDF. Package-manager tools
-and host compilers are prerequisites, not artifacts managed by this repository.
-Pinned Python utilities and ESP-IDF tools are managed locally by the wrappers.
+Distribution packages may supply a newer unsupported Python for ESP-IDF. Check its
+version and set `JELLI_PYTHON` to a compatible executable when needed. Package
+manager tools and host compilers are prerequisites, not repository artifacts. The
+`./scripts/uv` and `./scripts/esp` wrappers keep their tools and environments under
+`.tools/`.
 Rendered builds fetch the Python and Pillow versions declared in the
 [asset generator](tools/assets/build_slice.py) through uv to embed the tracked
 PNGs. Core-only builds do not run the asset generator.

@@ -8,7 +8,7 @@ Style rules: [pixel art guide](../../docs/pixel-art-guide.md).
 
 ```sh
 make jelli-art                      # http://127.0.0.1:8765/, edits this checkout
-./scripts/uv run --python 3.12 tools/jelli-art/jelli_art.py --help
+./scripts/uv run --script tools/jelli-art/jelli_art.py --help
 ```
 
 Local runs only write PNGs, `assets.json` bounds, `clips` and creature frame
@@ -336,8 +336,8 @@ candidate and the checkout's `activities.json` and `pets.json`. `creature_data.p
 Changed files are written in one commit. The container image installs `cmake`.
 
 ```sh
-./scripts/uv run --python 3.12 tools/jelli-art/test_creatures.py
-./scripts/uv run --python 3.12 tools/jelli-art/test_animation.py
+./scripts/uv run --script tools/jelli-art/test_creatures.py
+./scripts/uv run --script tools/jelli-art/test_animation.py
 ```
 
 `testdata/behavior_engine_cases.json` holds 300 outcomes recorded from the real
@@ -387,7 +387,7 @@ failure returns 200 with `ok: false`, `stage` and `messages`. A missing
 toolchain or a full render queue returns 503.
 
 ```sh
-./scripts/uv run --python 3.12 tools/jelli-art/test_game_preview.py
+./scripts/uv run --script tools/jelli-art/test_game_preview.py
 ```
 
 The real-render cases skip when cmake or a compiler is missing.
@@ -504,7 +504,7 @@ git recording. A stale base returns 409 without writing. Copied artwork without
 an explicit content root cannot save scenes.
 
 ```sh
-./scripts/uv run --python 3.12 tools/jelli-art/test_server.py   # HTTP end to end, no browser
+./scripts/uv run --script tools/jelli-art/test_server.py   # HTTP end to end, no browser
 tools/jelli-art/browser_smoke.sh [port]                        # optional, needs agent-browser
 tools/jelli-art/typecheck/check.sh                             # JSDoc type check (needs node)
 ```

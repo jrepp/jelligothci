@@ -22,7 +22,7 @@ macOS may require approval in Privacy & Security. Releases never flash hardware.
 Opening the app starts an unsaved session; use the bundled CLI with `--save` for persistence.
 
 To reproduce packages on macOS after `make test`, build the preview with
-`./scripts/uv run --python 3.12 tools/assets/build_slice.py`, then run
+`./scripts/uv run --script tools/assets/build_slice.py`, then run
 `python3 scripts/package-release.py`. Downloads appear in `build/release/`.
 Manual publication also accepts an existing `dev-` tag for development releases,
 without changing the Release Please-managed semantic version.

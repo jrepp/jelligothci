@@ -1,10 +1,10 @@
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0", "lz4==4.4.5"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0", "lz4==4.4.5"]
 # ///
 """Artwork compiler integration checks, with an independent wire/pixel oracle.
 
-Run scripts/uv run --python 3.12 tests/test_jellipak_build.py VERIFIER.
+Run scripts/uv run --script tests/test_jellipak_build.py VERIFIER.
 """
 from pathlib import Path
 import struct

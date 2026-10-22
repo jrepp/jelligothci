@@ -5,9 +5,11 @@ Run commands from the repository root unless stated otherwise.
 ## Desktop
 
 Prerequisites: a C compiler, CMake 3.21+, Ninja, SDL2 2.0.18+, and Make (optional).
-SDL and ESP32 builds embed the PNG assets through repository-local uv, Python
-3.12, and Pillow 12.0.0; first use needs Bash, curl, and network access. The
-SDL-free C core build still needs only CMake and a compiler.
+SDL and ESP32 builds embed PNG assets through the repository-pinned uv wrapper,
+Python 3.15, and Pillow 13.0.0. The wrapper reads each script’s PEP 723 metadata
+with `uv run --script` and downloads the required managed interpreter. First use
+needs Bash, curl, and network access. ESP-IDF bootstrap separately uses system
+Python 3.10–3.13. The SDL-free C core build still needs only CMake and a compiler.
 
 ```sh
 # macOS
@@ -115,7 +117,8 @@ The canvas is borrowed under the display mutex and restored from the unchanged
 engine buffer before unlocking. Rendering pauses during this bounded diagnostic;
 these are primitive timings, not game or panel FPS.
 
-The CLI runs through repository-local uv, Python 3.12, and pinned pyserial 3.5.
+The CLI runs through pinned repository uv, Python 3.15 from its PEP 723
+metadata, and pinned pyserial 3.5.
 `state` reports the last rendered view and visible buttons. `press` accepts a
 current label or one-based index; it checks that the page has not changed.
 Inputs use the normal care rules. A delivered input can still be rejected by the

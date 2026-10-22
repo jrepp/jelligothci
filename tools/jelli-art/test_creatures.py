@@ -1,11 +1,11 @@
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0"]
 # ///
 """Jelli Art creature edits: clips (build_slice decides), creatures.json (creature_data decides),
 behaviors.json (cmake/JelliBehaviors.cmake decides) and the stimulus simulator (core/behavior.c).
 
-Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_creatures.py
+Run: ./scripts/uv run --script tools/jelli-art/test_creatures.py
 """
 import json
 import shutil

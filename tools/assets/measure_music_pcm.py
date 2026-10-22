@@ -1,11 +1,11 @@
 #!/usr/bin/env -S uv run
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0", "lz4==4.4.5"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0", "lz4==4.4.5"]
 # ///
 """Lossless PCM packing experiment; no runtime codecs or authored files change.
 
-Run ./scripts/uv run --python 3.12 tools/assets/measure_music_pcm.py
+Run ./scripts/uv run --script tools/assets/measure_music_pcm.py
 The proposed metadata uses eight u32 fields per nonempty sample reference:
 track, slot, blob, length, loop start, loop length, volume, finetune (zero).
 Names remain authoring data. Container costs use existing JPAK v1 sizes.

@@ -18,7 +18,7 @@ run-live: build
 	./scripts/jelli-art-live -- --save build/pet-save --debug-socket build/jelli-debug.sock
 
 jelli-art:
-	./scripts/uv run --python 3.12 tools/jelli-art/jelli_art.py
+	./scripts/uv run --script tools/jelli-art/jelli_art.py
 
 run-shapes: build
 	./build/desktop/jelligotchi --shapes

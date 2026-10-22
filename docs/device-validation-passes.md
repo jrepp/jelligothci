@@ -91,7 +91,7 @@ inventory. It does not add a separate renderer or fake core to factory firmware.
 ./scripts/esp validate
 ./scripts/esp ports
 ./scripts/esp validate -p "$JELLI_DEBUG_PORT" flash
-./scripts/uv run --python 3.12 tools/debug/touch_experiment.py \
+./scripts/uv run --script tools/debug/touch_experiment.py \
   --port "$JELLI_DEBUG_PORT" --output build/touch-run-001 --repetitions 10
 make esp-build
 make esp-flash PORT="$JELLI_DEBUG_PORT"
@@ -137,7 +137,7 @@ measurements. The normal image contains the guard but no synthetic runner.
 ./scripts/esp validate
 ./scripts/esp ports
 ./scripts/esp validate -p "$JELLI_DEBUG_PORT" flash
-./scripts/uv run --python 3.12 tools/debug/panel_experiment.py \
+./scripts/uv run --script tools/debug/panel_experiment.py \
   --port "$JELLI_DEBUG_PORT" --output build/panel-run-001 --repetitions 10
 make esp-build
 make esp-flash PORT="$JELLI_DEBUG_PORT"
@@ -186,7 +186,7 @@ brightness defaults are enabled in normal firmware by this pass.
 After building and flashing the factory image, run:
 
 ```sh
-./scripts/uv run --python 3.12 tools/debug/rtc_experiment.py \
+./scripts/uv run --script tools/debug/rtc_experiment.py \
   --port "$JELLI_DEBUG_PORT" --output build/rtc-run-001 --repetitions 10
 ```
 
@@ -209,11 +209,11 @@ trust metadata. See [memo-051](../docs-cms/memos/memo-051-rtc-progression-valida
 Build/flash the power profile, then use the shared station client:
 
 ```sh
-./scripts/uv run --python 3.12 tools/debug/imu_experiment.py \
+./scripts/uv run --script tools/debug/imu_experiment.py \
   --port "$JELLI_DEBUG_PORT" --output build/imu-identity-001 --repetitions 10 identity
-./scripts/uv run --python 3.12 tools/debug/imu_experiment.py \
+./scripts/uv run --script tools/debug/imu_experiment.py \
   --port "$JELLI_DEBUG_PORT" --output build/imu-quiet-001 --repetitions 10 quiet-int2
-./scripts/uv run --python 3.12 tools/debug/imu_experiment.py \
+./scripts/uv run --script tools/debug/imu_experiment.py \
   --port "$JELLI_DEBUG_PORT" --output build/imu-motion-001 --repetitions 1 motion-int2
 ```
 
@@ -264,7 +264,7 @@ copy, check, swap, stage or transfer. Normal firmware rejects these commands.
 Capture the current scene with:
 
 ```sh
-./scripts/uv run --python 3.12 tools/debug/pipeline_experiment.py \
+./scripts/uv run --script tools/debug/pipeline_experiment.py \
   --port "$JELLI_DEBUG_PORT" --output build/pipeline-run-001 \
   --scene home-idle --seconds 10
 ```

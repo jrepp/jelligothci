@@ -1,12 +1,12 @@
 # /// script
-# requires-python = ">=3.12,<3.13"
-# dependencies = ["Pillow==12.0.0"]
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0"]
 # ///
 """Jelli Art Test in game: scenario validation, build output, the endpoint, and a real render.
 
 The end-to-end tests build tools/game-preview/preview.c against the real engine
 from scratch copies of assets/slice and content/; they skip without cmake and a
-C compiler. Run: ./scripts/uv run --python 3.12 tools/jelli-art/test_game_preview.py
+C compiler. Run: ./scripts/uv run --script tools/jelli-art/test_game_preview.py
 """
 import base64
 import io
