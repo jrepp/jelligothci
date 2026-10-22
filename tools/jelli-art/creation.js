@@ -12,6 +12,7 @@
   let kind = 'pet', snapshot, pendingCreated;
   const options = (items, value, label) => items.map(item => `<option value="${esc(value(item))}">${esc(label(item))}</option>`).join('');
   const field = (label, html) => `<label style="display:block;margin:12px 0">${label} ${html}</label>`;
+  const hexOf = (data, index) => '#' + Array.from(data.subarray(index, index + 3), value => value.toString(16).padStart(2, '0')).join('');
   function render() {
     if (root.querySelector('form')) return;
     snapshot = D.creation;
