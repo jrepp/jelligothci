@@ -320,7 +320,9 @@ reproduction, and current asset details.
 
 Choose **Scenes** to assemble a background from shared artwork. **Find background**
 filters by name, activity or scene key. **Previous background** and **Next background**
-step through the matches. Switching keeps unsaved edits and remembers the selected
+step through the matches. Edited backgrounds are marked in the selector, and the
+navigator counts unsaved backgrounds. **Save backgrounds** saves the whole scene
+document. Switching keeps unsaved edits and remembers the selected
 layer for each background; **Reload saved** retains the current background when it
 still exists. The navigator stays above the preview on phones.
 
@@ -339,7 +341,8 @@ composition. Unsaved pixel edits retain the normal Paint save workflow.
 
 Use the arrow buttons to nudge a layer one source pixel at a time; these changes
 support Undo. Inline checks identify invalid fields, missing artwork, empty scenes
-and activity scenes without moving layers. Empty or out-of-range values block
+activity scenes without moving layers, and a selected layer outside the neutral
+preview. Offscreen placement is advisory because tilt can intentionally reveal art. Empty or out-of-range values block
 switching backgrounds/layers and scene actions that rebuild the controls until corrected,
 so unfinished input is not silently discarded. Reload and Undo remain available for
 recovery. Save-time validation names the affected scene and layer.
