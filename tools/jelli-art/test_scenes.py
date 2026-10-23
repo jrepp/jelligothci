@@ -30,6 +30,29 @@ class SceneTests(unittest.TestCase):
         self.assertEqual(self.doc["scenes"][0]["layers"][0]["asset"],
                          self.doc["scenes"][1]["layers"][0]["asset"])
 
+    def test_activity_bindings_cover_catalog_and_are_bounded(self):
+        moments = json.loads((ROOT / "content/activities.json").read_text())["moments"]
+        scene_data.validate_bindings(self.doc, moments)
+        bindings = [s["activity"] for s in self.doc["scenes"] if "activity" in s]
+        self.assertEqual(set(bindings), {m["name"] for m in moments} | {"WORKOUT"})
+        for update in ({"activity": "BREAKFAST", "speed": 1},
+                       {"activity": "UNKNOWN", "speed": 0},
+                       {"activity": "UNKNOWN", "speed": 33},
+                       {"activity": "UNKNOWN", "speed": True}, {"speed": 1}):
+            doc = copy.deepcopy(self.doc)
+            doc["scenes"][0].update(update)
+            with self.subTest(update=update), self.assertRaises(ValueError):
+                scene_data.validate(doc, self.manifest)
+        doc = copy.deepcopy(self.doc)
+        doc["scenes"][0].update(activity="UNKNOWN", speed=1)
+        with self.assertRaises(ValueError):
+            scene_data.validate_bindings(doc, moments)
+
+    def test_validation_identifies_scene_and_layer(self):
+        self.doc["scenes"][1]["layers"][1]["x"] = 257
+        with self.assertRaisesRegex(ValueError, r"Scene 2 .*Layer 2: x"):
+            scene_data.validate(self.doc, self.manifest)
+
     def test_generated_asset_translation_unit_ends_with_newline(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "jelli_assets.c"
@@ -138,6 +161,7 @@ process.stdout.write(JSON.stringify(cases.map(([s,l])=>ctx.resolveSceneLayer(s,l
         with tempfile.TemporaryDirectory() as temp, patch.object(studio, "CONTENT", Path(temp)), \
                 patch.object(studio, "read_manifest", return_value=self.manifest), \
                 patch.object(studio, "record", return_value={}):
+            shutil.copy2(ROOT / "content/activities.json", Path(temp) / "activities.json")
             path = Path(temp) / "scenes.json"
             result = studio.save_scenes({"data":self.doc, "base":None})
             before = path.read_bytes()
@@ -158,6 +182,7 @@ process.stdout.write(JSON.stringify(cases.map(([s,l])=>ctx.resolveSceneLayer(s,l
     def test_read_hash_describes_exact_document_snapshot(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(studio, "CONTENT", Path(temp)), \
                 patch.object(studio, "read_manifest", return_value=self.manifest):
+            shutil.copy2(ROOT / "content/activities.json", Path(temp) / "activities.json")
             path = Path(temp) / "scenes.json"
             original = json.dumps(self.doc).encode()
             path.write_bytes(original)

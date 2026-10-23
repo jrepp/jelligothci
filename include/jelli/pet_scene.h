@@ -13,4 +13,8 @@ void jelli_pet_scene_clear(JelliPetUi *ui);
  * Hosts replacing pixels in-place must set ui->rendered=false, as live reload does. */
 void jelli_pet_scene_prepare(JelliPetUi *ui);
 
+/* Automatic Activities-menu backdrop. An explicit caller-owned override wins.
+ * Uses presentation time only; never changes location, rewards or saved state. */
+void jelli_pet_activity_scene(JelliPetUi *ui, const JelliGame *game, uint64_t time, bool paused);
+
 #endif

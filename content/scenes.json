@@ -258,6 +258,1851 @@
         }
       ],
       "seed": 0
+    },
+    {
+      "key": "activity-breakfast",
+      "name": "Morning kitchen",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "BREAKFAST",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-room",
+          "name": "Panelled room",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Wooden floor",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-0",
+          "name": "Morning kitchen details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-tea",
+      "name": "Arbor tea garden",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "TEA",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Terrace",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-0",
+          "name": "Arbor tea garden details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-going-out",
+      "name": "Neighbourhood outing",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "GOING OUT",
+      "speed": 8,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-town",
+          "name": "Distant town",
+          "x": 0,
+          "y": -20,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-street-fronts",
+          "name": "Shopfronts",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 45,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-sidewalk",
+          "name": "Walking lane",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 80,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-street-edge",
+          "name": "Curbside details",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 100,
+          "repeat_x": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-movie",
+      "name": "Little cinema",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "MOVIE",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-room",
+          "name": "Panelled room",
+          "x": 8,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Wooden floor",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-1",
+          "name": "Little cinema details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-reading",
+      "name": "Library nook",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "READING",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-room",
+          "name": "Panelled room",
+          "x": 8,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Wooden floor",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-1",
+          "name": "Library nook details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-lunch",
+      "name": "Picnic pavilion",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "LUNCH",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-2",
+          "name": "Picnic pavilion details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-7",
+          "name": "Shared potted greenery",
+          "x": -24,
+          "y": 8,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-dinner",
+      "name": "Lantern supper",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "DINNER",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-room",
+          "name": "Panelled room",
+          "x": -8,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Wooden floor",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-2",
+          "name": "Lantern supper details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-dessert",
+      "name": "Patisserie window",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "DESSERT",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-room",
+          "name": "Panelled room",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Wooden floor",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-3",
+          "name": "Patisserie window details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-yoga",
+      "name": "Stone meditation garden",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "YOGA",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Terrace",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-3",
+          "name": "Stone meditation garden details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-jogging",
+      "name": "Park running trail",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "JOGGING",
+      "speed": 12,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 40,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 90,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-markings",
+          "name": "Sports ground markings",
+          "x": 0,
+          "y": 38,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 100,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-4",
+          "name": "Park running trail details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-fishing",
+      "name": "Reed-lined fishing dock",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "FISHING",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-water",
+          "name": "Moving water",
+          "x": 0,
+          "y": 23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 100,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-4",
+          "name": "Reed-lined fishing dock details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-day-dreaming",
+      "name": "Cloud meadow",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "DAY DREAMING",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-5",
+          "name": "Cloud meadow details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-nap",
+      "name": "Hammock grove",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "NAP",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-5",
+          "name": "Hammock grove details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-chess",
+      "name": "Chess terrace",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "CHESS",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Terrace",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-6",
+          "name": "Chess terrace details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-7",
+          "name": "Shared potted greenery",
+          "x": -24,
+          "y": 8,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-drawing",
+      "name": "Garden art easel",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "DRAWING",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-6",
+          "name": "Garden art easel details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-thinking",
+      "name": "Quiet study",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "THINKING",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-room",
+          "name": "Panelled room",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Wooden floor",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-7",
+          "name": "Quiet study details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-gardening",
+      "name": "Potting garden",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "GARDENING",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-7",
+          "name": "Potting garden details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-soccer",
+      "name": "Meadow football pitch",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "SOCCER",
+      "speed": 4,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 40,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-markings",
+          "name": "Sports ground markings",
+          "x": 0,
+          "y": 38,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-8",
+          "name": "Meadow football pitch details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-volleyball",
+      "name": "Beach volleyball",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "VOLLEYBALL",
+      "speed": 3,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-water",
+          "name": "Moving water",
+          "x": 0,
+          "y": 23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 100,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-sand",
+          "name": "Sand",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-8",
+          "name": "Beach volleyball details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-swimming",
+      "name": "Open-water swimming",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "SWIMMING",
+      "speed": 6,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-water",
+          "name": "Moving water",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 100,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-9",
+          "name": "Open-water swimming details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-baseball",
+      "name": "Village ballpark",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "BASEBALL",
+      "speed": 3,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 40,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-markings",
+          "name": "Sports ground markings",
+          "x": 0,
+          "y": 38,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-9",
+          "name": "Village ballpark details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-bug-catching",
+      "name": "Butterfly trail",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "BUG CATCHING",
+      "speed": 5,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-hills",
+          "name": "Distant hills",
+          "x": 0,
+          "y": -12,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 15,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.kit-trees",
+          "name": "Shared grove",
+          "x": 0,
+          "y": -23,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 40,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-turf",
+          "name": "Grass",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 90,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-10",
+          "name": "Butterfly trail details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-science",
+      "name": "Window-side laboratory",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "SCIENCE",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-room",
+          "name": "Panelled room",
+          "x": 8,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Wooden floor",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-10",
+          "name": "Window-side laboratory details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-snuggle",
+      "name": "Cushion corner",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "SNUGGLE",
+      "speed": 1,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-room",
+          "name": "Panelled room",
+          "x": -8,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Wooden floor",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-11",
+          "name": "Cushion corner details",
+          "x": 40,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "key": "activity-workout",
+      "name": "Sunlit workout studio",
+      "fill": "#c9cbb8",
+      "seed": 0,
+      "activity": "WORKOUT",
+      "speed": 2,
+      "layers": [
+        {
+          "asset": "backgrounds.kit-sky",
+          "name": "Shared sky",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-clouds",
+          "name": "Drifting clouds",
+          "x": 0,
+          "y": 1,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 60,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-room",
+          "name": "Panelled room",
+          "x": 0,
+          "y": 0,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-floor",
+          "name": "Wooden floor",
+          "x": 0,
+          "y": 32,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": true,
+          "visible": true
+        },
+        {
+          "asset": "backgrounds.act-pair-11",
+          "name": "Sunlit workout studio details",
+          "x": -24,
+          "y": 7,
+          "tilt_x": 0,
+          "tilt_y": 0,
+          "travel": 0,
+          "repeat_x": false,
+          "visible": true
+        }
+      ]
     }
   ]
 }

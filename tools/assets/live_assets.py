@@ -42,7 +42,10 @@ def asset_image(source, asset):
     require(source in path.parents, f"Asset path escapes source: {asset['path']}")
     dimensions = DIMENSIONS.get(asset["kind"])
     require(dimensions is not None, f"Unknown asset kind: {asset['kind']}")
-    require((asset["width"], asset["height"]) in dimensions,
+    size = (asset["width"], asset["height"])
+    valid = (all(type(n) is int and 1 <= n <= 256 for n in size)
+             if asset["kind"] == "backgrounds" else size in dimensions)
+    require(valid,
             f"Manifest dimensions changed: {asset['path']}")
     with Image.open(path) as opened:
         require(opened.format == "PNG", f"Expected PNG: {asset['path']}")

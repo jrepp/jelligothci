@@ -522,6 +522,7 @@ def scene_data():
         doc = json.loads(raw) if raw is not None else scenes.initial(manifest)
         if doc is not None:
             scenes.validate(doc, manifest)
+            scenes.validate_bindings(doc, json.loads((CONTENT / "activities.json").read_text())["moments"])
     return {"data": doc,
             "base": storage.digest_bytes(raw) if raw is not None else None, "editable": CONTENT_WRITABLE,
             "limits": {"scenes": scenes.MAX_SCENES, "layers": scenes.MAX_LAYERS}}
@@ -539,6 +540,7 @@ def save_scenes(body):
         if body["base"] != current:
             raise StaleError("Scenes changed on disk; reload or confirm overwrite", {"scenes": current})
         scenes.validate(doc, read_manifest())
+        scenes.validate_bindings(doc, json.loads((CONTENT / "activities.json").read_text())["moments"])
         data = storage.json_bytes(doc)
         storage.write_file(path, data)
         git = record([path], "feat(art): edit background scenes in Jelli Art", request_body.artist(body))
