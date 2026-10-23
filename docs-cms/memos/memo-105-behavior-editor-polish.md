@@ -40,3 +40,11 @@ commit `0ceb707b6ad9156c22144554ca6e974535651e71`, reported verified with reason
 `valid`, and the checkout fast-forwarded to it. Signing settings were not changed.
 The local agent's availability remains unverified; the combined branch has its own
 CI run before landing.
+
+A desktop CI run for the background follow-up
+([run 39914246220](https://github.com/jrepp/jelligothci/actions/runs/39914246220))
+timed out downloading SDL dependencies from the Ubuntu package mirror before any
+project test ran. Its failed job was retried once without changing dependency pins
+or timeouts; the retry result remains to be checked before merging. Superseded
+behavior-branch CI runs were cancelled to free runner capacity, while the current
+revision remains subject to all required checks.
