@@ -31,3 +31,12 @@ state/recipe selection, stepper recovery, optional bonus inheritance and simulat
 bounds. Existing creation, draft/recovery, save-isolation and view/accessibility
 checks are included in validation. Type checking retains the existing baseline.
 Runtime behavior selection, authored catalogs and firmware are unchanged.
+
+# Integration observation
+
+The local SSH signing agent returned an error while committing the integration
+merge. The incomplete local merge was aborted; GitHub's branch-merge API created
+commit `0ceb707b6ad9156c22144554ca6e974535651e71`, reported verified with reason
+`valid`, and the checkout fast-forwarded to it. Signing settings were not changed.
+The local agent's availability remains unverified; the combined branch has its own
+CI run before landing.
