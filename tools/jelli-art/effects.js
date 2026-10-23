@@ -133,7 +133,7 @@
       <div class="fx-fields"><label>Celebration<select id="fx-select">${opts(work.effects.map(e=>[e.key,e.name]),effect().key)}</select></label>
       <label>Preview pet<select id="fx-form">${opts(forms().map(f=>[f,f]),form)}</select></label>
       </div><div class="fx-stage"><div><canvas id="fx-canvas" width="466" height="466" role="img" aria-label="Celebration and attachment preview"></canvas>
-      <div class="fx-actions"><button id="fx-play">${playing?'Pause':'Play'}</button><button id="fx-restart">Replay</button><button id="fx-back" aria-label="Step back 50 milliseconds">−50 ms</button><button id="fx-next" aria-label="Step forward 50 milliseconds">+50 ms</button><output id="fx-time"></output></div>
+      <div class="fx-actions"><button id="fx-paint-pet">Paint pet & attachments</button><button id="fx-play">${playing?'Pause':'Play'}</button><button id="fx-restart">Replay</button><button id="fx-back" aria-label="Step back 50 milliseconds">−50 ms</button><button id="fx-next" aria-label="Step forward 50 milliseconds">+50 ms</button><output id="fx-time"></output></div>
       <label>Timeline (milliseconds)<input id="fx-scrub" type="range" min="0" max="${effect().duration_ms}" step="1" value="${time}"></label>
       </div><div><h3>Timeline</h3><div id="fx-timeline">${timeline()}</div></div></div>
       <fieldset ${!editable||loading?'disabled':''}><legend>Timeline authoring</legend><div class="fx-actions"><button id="fx-add-track" ${effect().tracks.length>=16?'disabled':''}>Add sprite track</button><button id="fx-add-cue" ${effect().cues.length>=16?'disabled':''}>Add creature cue</button><button id="fx-copy" ${work.effects.length>=32?'disabled':''}>Duplicate celebration</button></div>
@@ -157,6 +157,7 @@
     el('guides').onchange=()=>{showPoints=el('guides').checked;};
     el('name').oninput=()=>{effect().name=el('name').value;status();};
     el('duration').oninput=()=>{if(el('duration').value&&el('duration').checkValidity()){effect().duration_ms=Number(el('duration').value);el('scrub').max=el('duration').value;time=Math.min(time,effect().duration_ms);updateTimeline();status();}};
+    on('paint-pet',()=>{const a=D.assets.find(a=>a.kind==='creatures'&&a.form===form);if(a){attachmentOpen=paintGuides=true;S.openPaint(a.key,{label:'celebration',back:()=>shell.activateMode('effects')});}});
     el('point-name').oninput=()=>{work.hardpoints[point].name=el('point-name').value;status();};
     ['x','y'].forEach((axis,i)=>{el(`point-${axis}`).oninput=()=>{const f=el(`point-${axis}`);if(f.value&&f.checkValidity()){work.hardpoints[point].positions[form][i]=Number(f.value);status();}};});
     on('place',()=>{placing=!placing;showPoints=true;render();});
@@ -172,7 +173,7 @@
     if(el('loop'))el('loop').onchange=()=>{item().loop=el('loop').checked;status();};
     root.querySelectorAll('[data-frame-asset]').forEach(n=>{const f=/** @type {HTMLSelectElement} */(n);f.onchange=()=>{item().frames[Number(f.dataset.frameAsset)].asset=f.value;status();};});
     root.querySelectorAll('[data-frame-hold]').forEach(n=>{const f=/** @type {HTMLInputElement} */(n);f.oninput=()=>{if(f.value&&f.checkValidity()){item().frames[Number(f.dataset.frameHold)].duration_ms=Number(f.value);status();}};});
-    root.querySelectorAll('[data-paint]').forEach(n=>n.addEventListener('click',()=>{state.key=item().frames[Number(n.getAttribute('data-paint'))].asset;shell.activateMode('paint');}));
+    root.querySelectorAll('[data-paint]').forEach(n=>n.addEventListener('click',()=>{S.openPaint(item().frames[Number(n.getAttribute('data-paint'))].asset,{label:'celebration',back:()=>shell.activateMode('effects')});}));
     root.querySelectorAll('[data-remove-frame]').forEach(n=>n.addEventListener('click',()=>{item().frames.splice(Number(n.getAttribute('data-remove-frame')),1);render();}));
     on('add-frame',()=>{item().frames.push(clone(item().frames.at(-1)));render();});
     on('play',()=>{if(time>=effect().duration_ms)time=0;playing=!playing;el('play').textContent=playing?'Pause':'Play';last=0;});
@@ -210,13 +211,63 @@
     root.querySelectorAll('.fx-playhead').forEach(n=>{/** @type {HTMLElement} */(n).style.left=`${time/effect().duration_ms*100}%`;});
     raf=requestAnimationFrame(draw);
   }
+  /* Paint is another view of these same hardpoints, not a second metadata store. */
+  let paintPlacing = false, paintGuides = false, attachmentOpen = false, reference = '', referenceAlpha = 0.5;
+  const anchorFor = a => S.cr.groundAnchor(decoded[a.key]?.after)?.map(v => v / 256);
+  const paintPoints = a => work?.hardpoints.filter(p => p.positions[a.form]) || [];
+  S.renderAttachments = (parent, a) => {
+    const points = paintPoints(a); if (!points.length || a.kind !== 'creatures') return;
+    point = Math.min(point, points.length - 1);
+    const selected = points[point], position = selected.positions[a.form];
+    const panel = document.createElement('details'); panel.id = 'paint-attachments'; panel.open = attachmentOpen;
+    panel.innerHTML = `<summary>Attachments <span class="lbl">metadata${dirty() ? ' · unsaved' : ''}</span></summary>
+      <label><input id="paint-attachment-guides" type="checkbox" ${paintGuides ? 'checked' : ''}> Show attachment guides</label>
+      <label>Attachment<select id="paint-attachment-point">${opts(points.map((p,i)=>[String(i),p.name]),String(point))}</select></label>
+      <div class="paint-layer-actions"><button id="paint-attachment-place" aria-pressed="${paintPlacing}" ${!editable||loading?'disabled':''}>${paintPlacing?'Finish placing':'Place on canvas'}</button></div>
+      <div class="paint-attachment-coordinates"><label>X <input id="paint-attachment-x" type="number" min="-64" max="64" step="1" required value="${position[0]}" ${!editable||loading?'disabled':''}></label><label>Y <input id="paint-attachment-y" type="number" min="-64" max="64" step="1" required value="${position[1]}" ${!editable||loading?'disabled':''}></label></div>
+      <label>Preview artwork<select id="paint-attachment-art"><option value="">Guide only</option>${opts(art().map(a=>[a.key,a.key]),reference)}</select></label>
+      <label>Reference opacity <input id="paint-attachment-alpha" type="range" min="0.15" max="0.9" step="0.05" value="${referenceAlpha}"></label>
+      <p class="studio-note">Shared by every celebration for ${esc(a.form)}. Positions are relative to the pet’s feet. Reference artwork is not painted into the asset.</p>
+      <div class="paint-layer-actions"><button id="paint-attachment-save" ${!editable||loading||saving||!dirty()?'disabled':''}>${saving?'Saving…':'Save attachments & effects'}</button><button id="paint-attachment-undo" ${!undo.length||!editable||loading?'disabled':''}>Undo placement</button></div>`;
+    parent.append(panel);
+    panel.ontoggle=()=>{attachmentOpen=panel.open;if(!panel.open){paintPlacing=false;S.redraw();}};
+    const field=id=>/** @type {HTMLInputElement} */(panel.querySelector(`#paint-attachment-${id}`));
+    field('guides').onchange=()=>{paintGuides=field('guides').checked;if(!paintGuides)paintPlacing=false;S.renderLayers();S.redraw();};
+    field('point').onchange=()=>{point=Number(field('point').value);paintGuides=true;S.renderLayers();S.redraw();};
+    field('place').onclick=()=>{paintPlacing=!paintPlacing;paintGuides=true;S.renderLayers();S.redraw();};
+    ['x','y'].forEach((axis,i)=>{field(axis).onchange=()=>{const n=field(axis);if(!n.checkValidity()){n.reportValidity();return;}selected.positions[a.form][i]=Number(n.value);status();S.renderLayers();S.redraw();};});
+    field('art').onchange=()=>{reference=field('art').value;paintGuides=true;S.redraw();};
+    field('alpha').oninput=()=>{referenceAlpha=Number(field('alpha').value);S.redraw();};
+    field('save').onclick=async()=>{const invalid=/** @type {HTMLInputElement} */(panel.querySelector('input:invalid'));if(invalid){invalid.reportValidity();return;}await save();S.renderLayers();};
+    field('undo').onclick=()=>{history(true);S.renderLayers();S.redraw();};
+  };
+  S.placeAttachment = (a,x,y) => {
+    if(!paintPlacing||!attachmentOpen||!paintPoints(a).length||!editable||loading)return false;
+    const anchor=anchorFor(a);if(!anchor)return true;
+    paintPoints(a)[point].positions[a.form]=[x-anchor[0],y-anchor[1]].map(v=>Math.max(-64,Math.min(64,Math.round(v))));
+    status();S.renderLayers();S.redraw();return true;
+  };
+  S.drawAttachments = (ctx,a,z) => {
+    if(!paintGuides||a.kind!=='creatures')return;
+    const anchor=anchorFor(a);if(!anchor)return;
+    const points=paintPoints(a);ctx.save();
+    points.forEach((p,i)=>{
+      const [x,y]=p.positions[a.form],px=(anchor[0]+x)*z,py=(anchor[1]+y)*z;
+      if(i===point&&reference&&decoded[reference]?.after){
+        const r=decoded[reference].after;let sx=0,sy=0,n=0;
+        for(let y=0;y<r.h;y++)for(let x=0;x<r.w;x++)if(r.data[(y*r.w+x)*4+3]){sx+=x+0.5;sy+=y+0.5;n++;}
+        if(n){ctx.globalAlpha=referenceAlpha;ctx.drawImage(r.img,px-sx/n*z,py-sy/n*z,r.w*z,r.h*z);ctx.globalAlpha=1;}
+      }
+      ctx.strokeStyle=i===point?'#ffffff':'#e8b87a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px-6,py);ctx.lineTo(px+6,py);ctx.moveTo(px,py-6);ctx.lineTo(px,py+6);ctx.stroke();
+    });ctx.restore();
+  };
   const reload=S.reload;
   S.reload=async()=>{await reload();await loadingTask;if(work&&!dirty())await load();};
   const boot=S.boot;S.boot=async()=>{await boot();await load();const d=window.JelliDrafts?.restore('effects','effects',base);
     if(work&&d?.data?.version===1&&d.data.effects?.length){work=clone(d.data);base=d.base;checkpoint=clone(work);shell.notify('Restored unsaved effects and hardpoints.',{tone:'warn'});}
     window.JelliDrafts?.track('effects','effects',{dirty,base:()=>base,data:()=>work});if(state.view==='effects')render();};
   const previous=renderView,keys=S.keydown;
-  renderView=()=>{cancelAnimationFrame(raf);if(state.view!=='effects'){playing=false;return previous();}shell.showOnly('effects');render();};
+  renderView=()=>{cancelAnimationFrame(raf);if(state.view!=='effects'){playing=false;root.classList.add('hidden');return previous();}shell.showOnly('effects');render();};
   const key=e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();e.stopPropagation();save();return;}
     if(!e.target.closest('input,textarea,select')&&(e.metaKey||e.ctrlKey)&&['z','y'].includes(e.key.toLowerCase())){e.preventDefault();e.stopPropagation();history(e.key.toLowerCase()==='z'&&!e.shiftKey);}};
   root.addEventListener('keydown',key);

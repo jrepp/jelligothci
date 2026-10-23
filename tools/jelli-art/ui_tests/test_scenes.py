@@ -341,8 +341,8 @@ def test_shared_art_navigation_and_paint_return(creator):
     expect(page.locator('#scene-asset')).to_have_value('backgrounds.kit-sky')
     expect(page.locator('#scene-art-info')).to_contain_text('Used in')
     page.locator('#scene-paint').click()
-    expect(page.locator('#scene-return')).to_have_text('Back to Garden walk')
-    page.locator('#scene-return').click()
+    expect(page.locator('#paint-back')).to_have_text('← Back to Garden walk')
+    page.locator('#paint-back').click()
     expect(page.locator('#scene-select')).to_have_value('garden-walk')
     expect(page.locator('#scene-asset')).to_have_value('backgrounds.kit-sky')
 

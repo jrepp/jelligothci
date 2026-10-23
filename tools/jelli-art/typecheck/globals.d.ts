@@ -5,6 +5,9 @@ export {};
 
 declare global {
   /** One sprite from GET /api/data (tools/assets/compare_slice.py collect()). */
+  interface PaintLayer { name: string; visible: boolean; locked: boolean; data: Uint8ClampedArray; }
+  interface PaintDocument { version: number; active: number; layers: PaintLayer[]; }
+
   interface StudioAsset {
     key: string;
     kind: string;
@@ -77,6 +80,7 @@ declare global {
       TAP_UP_MS: number; TAP_MOVE_PX: number; LONG_PRESS_MS: number; LONG_PRESS_MOVE_PX: number }>;
     kind(e: PointerEvent): "pen" | "touch" | "mouse";
     coarse(): boolean;
+    drawerOn(): boolean;
     pencilOnly(): boolean;
     setPencilOnly(on: boolean): void;
     onPencilOnly(fn: (on: boolean) => void): () => void;
@@ -151,6 +155,17 @@ declare global {
     JelliShell: JelliShellApi;
     JelliTouch: JelliTouchApi;
     JelliDrafts: any;
+    JelliLayers: {
+      limit: number;
+      create(p: {data: Uint8ClampedArray}): PaintDocument;
+      pack(doc: PaintDocument): any;
+      unpack(raw: any): PaintDocument;
+      snapshot(doc: PaintDocument): Uint8Array;
+      restore(bytes: Uint8Array): PaintDocument;
+      composite(doc: PaintDocument, p: DecodedImage): DecodedImage;
+      encode(data: Uint8ClampedArray): string;
+      decode(data: string): Uint8ClampedArray;
+    };
     JelliPaint: any;
     JelliLint: any;
     JelliAnimation: any;

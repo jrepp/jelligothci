@@ -9,7 +9,7 @@
   let selected = 0, layerIndex = 0, saving = false, loading = false, frame = 0, previousTime = 0;
   let travel = 0, tiltX = 0, tiltY = 0, playing = false, speed = 8, showPet = true;
   let solo = false, variationOpen = false, undo = [], redo = [], checkpoint = null;
-  let query = '', paintOrigin = null;
+  let query = '';
   const positions = new Map();
   const matches = () => work.scenes.filter(s => `${s.name} ${s.activity||''} ${s.key}`.toLowerCase().includes(query.toLowerCase().trim()));
   function validFields() {
@@ -347,7 +347,7 @@
     });
     input('#scene-fill').oninput = () => { s.fill=input('#scene-fill').value; status(); };
     input('#scene-asset').onchange = () => { l.asset=input('#scene-asset').value; status(); };
-    button('#scene-paint').onclick = () => { paintOrigin={key:s.key,asset:l.asset};state.key=l.asset; shell.activateMode('paint'); };
+    button('#scene-paint').onclick = () => { S.openPaint(l.asset, {label:s.name, back:()=>{navigate(s.key,l.asset);shell.activateMode('scenes');}}); };
     root.querySelectorAll('[data-number]').forEach(el => {
       const field = /** @type {HTMLInputElement} */ (el);
       field.oninput = () => {
@@ -399,12 +399,6 @@
     document.getElementById('scene-return')?.remove();
     if (state.view !== 'scenes') {
       root.classList.add('hidden');const result=previous();
-      if(state.view==='detail'&&state.mode==='paint'&&paintOrigin&&state.key===paintOrigin.asset){
-        const back=document.createElement('button');back.id='scene-return';
-        back.textContent=`Back to ${work.scenes.find(s=>s.key===paintOrigin.key)?.name||'background'}`;
-        back.style.minHeight='44px';document.getElementById('stage').before(back);
-        back.onclick=()=>{navigate(paintOrigin.key,paintOrigin.asset);shell.activateMode('scenes');};
-      }
       return result;
     }
     shell.showOnly('scenes'); render();

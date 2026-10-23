@@ -147,6 +147,7 @@ def test_pencil_only_switch_on_the_quick_bar(paint):
     assert button.get_attribute("aria-pressed") == "false"
     button.tap()
     assert button.get_attribute("aria-pressed") == "true" and page.evaluate("() => JelliTouch.pencilOnly()")
+    page.locator(".paint-hint-details>summary").click()
     assert "Pencil only is on" in page.locator("#paint-hint").inner_text()
     button.tap()
     assert not page.evaluate("() => JelliTouch.pencilOnly()")
@@ -253,6 +254,7 @@ def test_finger_long_press_picks_and_keeps_the_tool(paint):
         page = paint(pencil_only=pencil_only)
         px, py, hex_ = page.evaluate("""() => { const p = decoded[state.key].after;
             for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) { const h = pixel(p, x, y); if (h && h !== state.color && (byKey[state.key].palette || D.palette).map(h => h.toLowerCase()).includes(h)) return [x, y, h]; } }""")
+        page.locator("#paint-tools-more").tap()
         page.locator("#tools [data-tool=line]").tap()
         before = data(page)
         long_press(page, screen(page, px, py))
@@ -314,6 +316,7 @@ def test_quick_bar_is_hidden_with_a_mouse_unless_asked(open_view):
     page = open_view(VIEW, "desktop")
     bar = page.locator("#paint-qbar")
     assert not bar.is_visible()
+    page.locator(".paint-hint-details>summary").click()
     assert "Right-click paints the secondary colour" in page.locator("#paint-hint").inner_text()
     properties = page.locator("#paint-more")
     if not properties.evaluate("el => el.open"):
@@ -381,6 +384,7 @@ def test_select_copy_modifier_copies_the_selection(paint):
 def test_constrain_modifier_matches_shift(open_view, paint):
     mouse = ready(open_view(VIEW, LAND))
     x, y = blank_run(mouse)
+    mouse.locator("#paint-tools-more").click()
     mouse.locator("#tools [data-tool=line]").click()
     start, end = (x, y), (x + 9, y + 5)
     mouse.keyboard.down("Shift")
@@ -392,6 +396,7 @@ def test_constrain_modifier_matches_shift(open_view, paint):
     expected = data(mouse)
 
     page = paint()
+    page.locator("#paint-tools-more").tap()
     page.locator("#tools [data-tool=line]").tap()
     assert page.locator("#qb-constrain").inner_text() == "Snap"
     touch_start(page, [centre(page, "#qb-constrain")])  # held
@@ -480,6 +485,7 @@ def test_long_press_on_a_colour_opens_the_menu(open_view, view):
 
 def test_help_lists_the_paint_gestures_and_the_hint_uses_touch_wording(paint):
     page = paint(PORT)
+    page.locator(".paint-hint-details>summary").click()
     assert "Two-finger tap undoes" in page.locator("#paint-hint").inner_text()
     page.evaluate("() => JelliShell.openHelp()")
     section = page.locator("dialog[open] section", has=page.get_by_role("heading", name="Touch and Pencil"))

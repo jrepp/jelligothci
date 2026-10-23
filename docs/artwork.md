@@ -16,7 +16,11 @@ the repository's pinned tools, and it only listens on your own computer.
    **Changed only** narrows the list to sprites that differ from the before
    image; when none do, **Show all** turns it off.
    Press **?** for the keyboard shortcuts.
-2. Choose the **Paint** tab at the top. The tools are pencil, eraser, fill,
+2. Open **Paint** beside the artwork in Review, a creature frame, a background
+   layer, a behavior look or a celebration. **Back** returns to that editor;
+   **Browse assets** opens the library and **Workspace** reveals global navigation
+   and settings. The top-level Paint tab remains available. **More tools** expands
+   the tool rail. The tools are pencil, eraser, fill,
    colour picker, shade, line, rectangle, ellipse, select and magic wand.
    **Filled** fills rectangles and ellipses. Shift while dragging snaps lines
    to the clean ratios (flat, 3:1, 2:1, 1:1, 1:2, 1:3 and upright), with every
@@ -94,17 +98,32 @@ the repository's pinned tools, and it only listens on your own computer.
 Use the compact tool rail to choose a tool; the options beside it change with
 the tool. **Hand** (`H`) pans the canvas without painting. Selection commands
 appear when needed, and **Properties** holds advanced transforms and view
-options. On narrow screens, **List** opens the asset browser as a drawer.
+options. **Canvas options** contains backdrop and overlay controls. On narrow
+screens, **Browse assets** opens the library as a drawer with **Return to Paint**.
 
 7. **Save** (⌘S / Ctrl+S) writes the PNG. With `make run-live` running, the game
    shows it straight away. Each save is recorded with **Your name**, which you
    set under **Settings** in the header; if it is empty, the studio asks once
-   before the first save. In Paint, "Compare with" is in the **before** pane
+   before the first save. In Paint, **History & comparison** reveals the **before**
+   pane and its "Compare with" control
    beside the canvas, and picks what the before image is: your last save, the
    art in the game now (`main`), a game release, or a recent commit that changed
    art. Review shows it in the header's second row, with the before and after
    refs and the lint totals; those are Review-only, so every other mode has a
    single header row that does not change height when you start editing.
+
+**Layers** keeps artwork independently editable: add or duplicate a layer, name
+it, move it up/down, hide it or lock it. Paint tools affect only the selected
+visible, unlocked layer. Saves retain the editable stack in PNG metadata and
+export the visible composite to the game; drafts and undo retain the whole stack.
+External PNG tools that strip metadata remove that editable stack.
+
+**Onion skin** is a reference overlay. Creature assets also have **Attachments**:
+choose a named hardpoint, place it on the canvas or enter X/Y, and optionally
+preview attachment artwork with reference opacity. **Save attachments & effects**
+writes the existing per-form hardpoint metadata separately from the asset. These
+positions affect every celebration for that form; reference artwork is never
+flattened into the PNG. See the [layer contract](../docs-cms/adr/adr-016-asset-focused-paint-layers.md).
 
 Save commands keep their name and disk icon. The adjacent status distinguishes
 Unsaved, Saving, Saved and Save failed. Continuing to edit during a save keeps

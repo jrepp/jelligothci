@@ -57,6 +57,7 @@
     - textbox "Caption, upper case, at most 16" [disabled]: OOH?
     - text: Effect
     - button "effects.idea" [disabled]
+    - button "Paint effects.idea" [disabled]: Paint
     - text: Prop
     - button "none" [disabled]
     - group: Effects, requests & ending conditions

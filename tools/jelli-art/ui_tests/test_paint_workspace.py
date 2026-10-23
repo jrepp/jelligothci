@@ -39,6 +39,7 @@ def test_paint_workspace_controls_fit_and_remain_keyboard_accessible(open_view, 
 
 def test_paint_options_follow_the_selected_tool_and_selection(open_view):
     page = open_view("paint-creature", "desktop")
+    page.locator('#paint-tools-more').click()
     page.locator('#tools [data-tool=rect]').click()
     expect(page.locator('#paint-context #filled')).to_be_visible()
     expect(page.locator('#paint-context #perfect')).to_be_hidden()

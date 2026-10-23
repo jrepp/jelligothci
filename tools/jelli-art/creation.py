@@ -11,6 +11,7 @@ from PIL import Image
 import animation
 import creatures
 import profiles
+import paint_layers
 import storage
 
 
@@ -124,7 +125,7 @@ def pet_candidate(manifest, docs, images, used, reserved_keys, request, source):
         if old.get("form") != template["art"]:
             continue
         image = Image.open(storage.confined(source, old["path"])).convert("RGBA")
-        image = image.resize((size, size), Image.Resampling.NEAREST)
+        image = paint_layers.resize(image, (size, size))
         new = append_asset(manifest, images, used, reserved_keys, "creatures", f"{key}-{old['pose']}", image,
                            form=key, pose=old["pose"], **({"palette": old["palette"]} if "palette" in old else {}))
         mapping[old["key"]] = new

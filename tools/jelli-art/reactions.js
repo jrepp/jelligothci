@@ -420,7 +420,7 @@
     el.querySelector('button')?.focus();
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('bv-picker')?.classList.add('hidden'); });
-  const pickButton = (attr, value) => `<button class="bv-pickbtn" ${attr}>${value && byKey[value] ? `<img alt="" src="${byKey[value].after}">${esc(value)}` : 'none'}</button>`;
+  const pickButton = (attr, value) => `<button class="bv-pickbtn" ${attr}>${value && byKey[value] ? `<img alt="" src="${byKey[value].after}">${esc(value)}` : 'none'}</button>${value && byKey[value] ? `<button data-paint-art="${esc(value)}" aria-label="Paint ${esc(value)}">Paint</button>` : ''}`;
 
   /* ---------- rendering ---------- */
   const opt = (list, value, any) => (any !== undefined ? `<option value=""${value === undefined || value === '' ? ' selected' : ''}>${esc(any)}</option>` : '') +
@@ -511,6 +511,7 @@
       const x = bw.states[si];
       if (!e.target.value) delete x.request; else x.request = {command: e.target.value, ...(e.target.value === 'health' ? {health: x.request?.health || lists.health[0]} : {}), bond: x.request?.bond ?? 10};
     });
+    body.querySelectorAll('[data-paint-art]').forEach(b=>b.addEventListener('click',()=>S.openPaint(b.getAttribute('data-paint-art'),{label:'behaviour',back:()=>window.JelliShell.activateMode('behaviour')})));
     for (const f of ['effect', 'prop']) body.querySelector(`[data-pick="${f}"]`).onclick = e => openPicker(e.currentTarget, lookOf(s.name)?.[f], key => edit((bw, c) => {
       let l = ensureLooks(c).find(x => x.state === s.name);
       if (!l) { l = {state: s.name, pose: 'idle', caption: ''}; c.state_presentation.push(l); }

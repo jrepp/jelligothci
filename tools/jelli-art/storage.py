@@ -23,6 +23,8 @@ import threading
 import time
 from pathlib import Path
 
+from PIL.PngImagePlugin import PngInfo
+
 try:
     import fcntl
 except ImportError:  # Windows: saves are still serialised within the process
@@ -61,7 +63,10 @@ def json_bytes(value):
 
 def png_bytes(image):
     buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
+    metadata = PngInfo()
+    if "jelli.paint" in image.info:
+        metadata.add_itxt("jelli.paint", image.info["jelli.paint"], zip=True)
+    image.save(buffer, format="PNG", pnginfo=metadata)
     return buffer.getvalue()
 
 

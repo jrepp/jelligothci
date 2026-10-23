@@ -1,7 +1,9 @@
 - main:
   - tabpanel "Review":
     - heading "creatures.grown-happy" [level=2]
-    - text: 32×32 · ID 1010 · device 6× 0 px changed specks 0 → 0 colours 8 → 8 / max 8 lint pass Compare
+    - text: 32×32 · ID 1010 · device 6× 0 px changed specks 0 → 0 colours 8 → 8 / max 8 lint pass
+    - button "Paint this artwork"
+    - text: Compare
     - group "Compare":
       - button "Side by side" [pressed]
       - button "Swipe"
