@@ -34,8 +34,9 @@
         control.setAttribute('aria-label', label.textContent.trim());
     }
   };
-  const {words: W, help} = /** @type {any} */ (window).JelliDesign;
+  const {words: W, help, guardFields, validFields} = /** @type {any} */ (window).JelliDesign;
   /** @type {any} */ (window).JelliDesign.watch(document.getElementById('behaviour'));
+  guardFields(document.getElementById('behaviour'),'#bv-revert');
   const REACT_HELP = `Each reaction answers one stimulus. Weight is its share among the reactions that fit; chance is the roll after it is picked. "when" limits it by place, day or night, mood range and a minimum bond. Earlier and Later change the order.`;
   const LOOK_HELP = `Effect is a sprite drawn above the head, scaled to about 40 px. Prop is a sprite drawn at 3x over the lower body. The caption is upper case, up to 16 characters.`;
   const BAR_HELP = `Save behaviour validates with the engine and saves both files (also Cmd or Ctrl S). Play previews animates the previews from elapsed time. Potty mess shows the mess beside the pet.`;
@@ -424,7 +425,7 @@
   /* ---------- rendering ---------- */
   const opt = (list, value, any) => (any !== undefined ? `<option value=""${value === undefined || value === '' ? ' selected' : ''}>${esc(any)}</option>` : '') +
     list.map(v => `<option value="${esc(v)}"${String(v) === String(value) ? ' selected' : ''}>${esc(v)}</option>`).join('');
-  const num = (path, value, lo, hi, type = 'int', extra = '') => `<input type="number" data-b="${path}" data-t="${type}" min="${lo}" max="${hi}" value="${value ?? ''}" ${extra}>`;
+  const num = (path, value, lo, hi, type = 'int', extra = '') => `<input type="number" ${type==='int'?'required':''} data-b="${path}" data-t="${type}" min="${lo}" max="${hi}" value="${value ?? ''}" ${extra}>`;
   const minuteText = m => Number.isInteger(m) ? `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}` : '?';
   function render() {
     const el = document.getElementById('behaviour'); if (!el || state.view !== 'behaviour') return;
@@ -728,7 +729,7 @@
   /* ---------- save: both files, validated together by the engine ---------- */
   let saveState = 'idle';
   S.saveContent = async () => {
-    if (saveState === 'saving') return;
+    if (saveState === 'saving' || !validFields(document.getElementById('behaviour'))) return;
     sync();
     const docs = {}, bases = {};
     if (bdirty()) { docs.behaviors = clone(bwork); bases.behaviors = bbase; }

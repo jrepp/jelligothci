@@ -64,7 +64,34 @@
       #cr-behaviour label:has(>input[type=checkbox]),#behaviour label:has(>input[type=checkbox]),#activities label:has(>input[type=checkbox]),#game label:has(>input[type=checkbox]){
         display:flex;width:fit-content;align-items:center;gap:8px;min-height:var(--tap);min-width:var(--tap)}
     }</style>`);
-  /** @type {any} */ (window).JelliDesign = {words, help, watch};
+  const guarded = new WeakSet();
+  function validFields(root) {
+    const field=root?.querySelector('input:invalid,select:invalid');
+    if(!field)return true;
+    field.closest('details')?.setAttribute('open','');
+    field.reportValidity();field.focus();
+    window.Studio?.status(`${nameOf(field)}: ${field.validationMessage}`, 'warn');
+    return false;
+  }
+  function guardFields(root, recovery) {
+    if(guarded.has(root))return;guarded.add(root);
+    const previous=new WeakMap();
+    root.addEventListener('focusin',e=>{
+      const t=e.target;if(t.matches('input,select'))previous.set(t,{value:t.value,checked:t.checked});
+    });
+    root.addEventListener('change',e=>{
+      const bad=root.querySelector('input:invalid,select:invalid');if(!bad)return;
+      const t=e.target, old=previous.get(t);
+      if(t!==bad&&old){t.value=old.value;if(t.type==='checkbox')t.checked=old.checked;}
+      e.stopImmediatePropagation();validFields(root);
+    },true);
+    root.addEventListener('click',e=>{
+      const control=e.target.closest('button');
+      if(!control||control.closest('.jd-step')||control.matches(recovery))return;
+      if(!validFields(root)){e.preventDefault();e.stopImmediatePropagation();}
+    },true);
+  }
+  /** @type {any} */ (window).JelliDesign = {words, help, watch, validFields, guardFields};
 })();
 (() => {
   const S = window.Studio, cr = S?.cr;
@@ -296,7 +323,7 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
   const ordinal = n => `${n}${[11, 12, 13].includes(n % 100) ? 'th' : ({1: 'st', 2: 'nd', 3: 'rd'})[n % 10] || 'th'}`;
   const range = (lo, hi) => Array.from({length: hi - lo + 1}, (_, i) => lo + i);
   let host = null;
-  cr.renderBehaviour = el => { if (host !== el) /** @type {any} */ (window).JelliDesign.watch(el); host = el; render(); };
+  cr.renderBehaviour = el => { if (host !== el) { const design=/** @type {any} */(window).JelliDesign;design.watch(el);design.guardFields(el,'#bh-revert'); } host = el; render(); };
   function render() {
     if (!host || !host.isConnected) return;
     sync();
@@ -344,7 +371,7 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
       <div class="bh-row"><button id="bh-sim" aria-pressed="${sim.on}" title="Show what the rules pick in the panel preview above">Simulate on panel</button>
         <div class="bh-cond" id="bh-conds" role="group" aria-label="Conditions that hold">${lim.conditions.map(c => `<button data-cond="${esc(c)}" aria-pressed="${sim.conds.has(c)}" title="${esc(CONDITION_HELP[c] || c)}">${esc(c)}</button>`).join('')}</div>
         <button id="bh-idle" title="No condition holds">idle</button>
-        <label for="bh-pet">Pet ID</label><input type="number" id="bh-pet" min="0" max="999" value="${sim.petId}" style="width:70px"></div>
+        <label for="bh-pet">Pet ID</label><input type="number" required id="bh-pet" min="0" max="999" value="${sim.petId}" style="width:70px"></div>
       <p class="studio-note" id="bh-result" aria-live="polite"></p>
       <div class="lbl">Idle timeline · ${lim.beat_ms} ms per beat · dashed beats are quieted</div>
       <div class="bh-timeline" id="bh-timeline" tabindex="0" role="region" aria-label="Idle timeline"></div>
@@ -397,7 +424,7 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
       restartSim(); render();
     };
     $('#bh-idle').onclick = () => { sim.conds.clear(); restartSim(); render(); };
-    $('#bh-pet').oninput = e => { const v = Number(e.target.value); if (Number.isInteger(v) && v >= 0) { sim.petId = v; timeline?.cells.forEach(c => { c.drawn = null; }); cr.redraw(); } };
+    $('#bh-pet').oninput = e => { const v = Number(e.target.value); if (e.target.checkValidity() && Number.isInteger(v)) { sim.petId = v; timeline?.cells.forEach(c => { c.drawn = null; }); cr.redraw(); } };
     $('#bh-revert').onclick = async () => {
       // Stale: the file changed on disk, so reverting reloads all of it, and the looks edited in the Behaviour view go too.
       const also = stale && looksDirty() ? ' The file changed on disk, so this also discards your unsaved looks in the Behaviour view.' : '';
@@ -439,6 +466,7 @@ Copy as new copies this behaviour under a new name for this form only; Delete is
     refresh() { render(); cr.renderForms(); cr.redraw(); }};
   let saveState = 'idle';
   async function save() {
+    if(!(/** @type {any} */(window).JelliDesign.validFields(host)))return;
     if (!sizeDirty() || saveState === 'saving' || S.creatureDoc.saving) return;
     const issues = allIssues();
     if (issues.length) return S.status(`Fix the behaviour and size messages before saving: ${issues[0]}`, 'bad', true);

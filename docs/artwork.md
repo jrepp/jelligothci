@@ -186,6 +186,13 @@ gives the form its own clip; **Remove clip** goes back to the fallback.
 
 ### Behaviour and reactions
 
+Behavior, activity-recipe and creature-simulator numeric fields keep unfinished
+input visible. Required values cannot be blank, and bounds are checked before
+rebuilding the editor or saving. Correct the focused field to continue switching
+states, recipes or tabs. Mobile plus/minus controls remain available for correction;
+Revert and Reload saved remain available for recovery. Optional reaction conditions
+and inherited activity bonuses may still be blank.
+
 Choose **Behaviour** at the top. Start with **Behaviours**, which explains what the pet does and how it looks.
 It sets how long the state lasts and its cooldown, its need and bond changes,
 the stimuli that end it early, and an optional request with its bond reward.
