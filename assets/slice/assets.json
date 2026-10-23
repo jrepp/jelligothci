@@ -2946,6 +2946,386 @@
         "#ffffff"
       ],
       "purpose": "Bubble Lab cartridge; permanent playable collectible"
+    },
+    {
+      "id": 10016,
+      "key": "backgrounds.act-clouds",
+      "path": "backgrounds/activity-clouds.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 16,
+      "pivot": [
+        32,
+        8
+      ],
+      "bounds": [
+        2,
+        3,
+        54,
+        13
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable clouds activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10017,
+      "key": "backgrounds.act-room",
+      "path": "backgrounds/activity-room.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 32,
+      "pivot": [
+        32,
+        16
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        32
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable room activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10018,
+      "key": "backgrounds.act-floor",
+      "path": "backgrounds/activity-floor.png",
+      "kind": "backgrounds",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        0,
+        0,
+        32,
+        32
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable floor activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10019,
+      "key": "backgrounds.act-water",
+      "path": "backgrounds/activity-water.png",
+      "kind": "backgrounds",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        0,
+        0,
+        32,
+        32
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable water activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10020,
+      "key": "backgrounds.act-pair-0",
+      "path": "backgrounds/activity-pair-0.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        1,
+        0,
+        48,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-0 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10021,
+      "key": "backgrounds.act-pair-1",
+      "path": "backgrounds/activity-pair-1.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        0,
+        0,
+        47,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-1 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10022,
+      "key": "backgrounds.act-pair-2",
+      "path": "backgrounds/activity-pair-2.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        1,
+        0,
+        47,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-2 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10023,
+      "key": "backgrounds.act-pair-3",
+      "path": "backgrounds/activity-pair-3.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        0,
+        0,
+        48,
+        23
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-3 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10024,
+      "key": "backgrounds.act-pair-4",
+      "path": "backgrounds/activity-pair-4.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        0,
+        1,
+        47,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-4 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10025,
+      "key": "backgrounds.act-pair-5",
+      "path": "backgrounds/activity-pair-5.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        2,
+        1,
+        48,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-5 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10026,
+      "key": "backgrounds.act-pair-6",
+      "path": "backgrounds/activity-pair-6.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        1,
+        3,
+        48,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-6 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10027,
+      "key": "backgrounds.act-pair-7",
+      "path": "backgrounds/activity-pair-7.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        4,
+        1,
+        47,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-7 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10028,
+      "key": "backgrounds.act-pair-8",
+      "path": "backgrounds/activity-pair-8.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        1,
+        0,
+        48,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-8 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10029,
+      "key": "backgrounds.act-pair-9",
+      "path": "backgrounds/activity-pair-9.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        2,
+        0,
+        48,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-9 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10030,
+      "key": "backgrounds.act-pair-10",
+      "path": "backgrounds/activity-pair-10.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        1,
+        1,
+        48,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-10 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10031,
+      "key": "backgrounds.act-pair-11",
+      "path": "backgrounds/activity-pair-11.png",
+      "kind": "backgrounds",
+      "width": 48,
+      "height": 24,
+      "pivot": [
+        24,
+        12
+      ],
+      "bounds": [
+        1,
+        1,
+        47,
+        24
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable pair-11 activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10032,
+      "key": "backgrounds.act-turf",
+      "path": "backgrounds/activity-turf.png",
+      "kind": "backgrounds",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        0,
+        0,
+        32,
+        32
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable turf activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10033,
+      "key": "backgrounds.act-sand",
+      "path": "backgrounds/activity-sand.png",
+      "kind": "backgrounds",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        16
+      ],
+      "bounds": [
+        0,
+        0,
+        32,
+        32
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable sand activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 10034,
+      "key": "backgrounds.act-markings",
+      "path": "backgrounds/activity-markings.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 16,
+      "pivot": [
+        32,
+        8
+      ],
+      "bounds": [
+        0,
+        3,
+        64,
+        13
+      ],
+      "palette": "earth-kit",
+      "purpose": "Reusable markings activity layer; native geometry in activity_backgrounds.py"
     }
   ],
   "clips": [

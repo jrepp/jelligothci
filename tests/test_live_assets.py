@@ -15,6 +15,15 @@ import live_assets
 
 
 class LiveAssetsTest(unittest.TestCase):
+    def test_background_layers_accept_bounded_small_geometry(self):
+        asset = {"kind": "backgrounds", "path": "layer.png", "width": 48, "height": 24}
+        Image.new("RGBA", (48, 24), (100, 150, 200, 255)).save(self.source / "layer.png")
+        self.assertEqual(live_assets.asset_image(self.source.resolve(), asset).size, (48, 24))
+        for width in (0, 257, True):
+            asset["width"] = width
+            with self.assertRaises(ValueError):
+                live_assets.asset_image(self.source.resolve(), asset)
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)

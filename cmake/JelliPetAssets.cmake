@@ -22,7 +22,7 @@ function(jelli_generate_pet_assets output_variable)
             "${jelli_root}/tools/assets/sprite_geometry.py"
             "${jelli_root}/tools/assets/creature_data.py"
             "${jelli_root}/tools/assets/effect_data.py" "${jelli_root}/content/effects.json"
-            "${jelli_root}/tools/assets/scene_data.py" "${jelli_root}/content/scenes.json"
+            "${jelli_root}/tools/assets/scene_data.py" "${jelli_root}/content/scenes.json" "${jelli_root}/content/activities.json"
             "${jelli_root}/assets/slice/assets.json" "${jelli_root}/content/pets.json" "${jelli_root}/content/creatures.json" "${jelli_root}/content/behaviors.json" "${jelli_root}/toolchain.env" ${art_inputs}
     COMMENT "Embedding validated slice artwork"
     VERBATIM

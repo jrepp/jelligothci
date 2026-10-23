@@ -143,7 +143,9 @@ def load_assets():
         full = (SOURCE / path).resolve()
         require(SOURCE.resolve() in full.parents, f"Path escapes source root: {path}")
         image = Image.open(full).convert("RGBA")
-        require(image.size in expected[asset["kind"]], f"Wrong dimensions: {key}")
+        valid_size = (all(1 <= n <= 256 for n in image.size) if asset["kind"] == "backgrounds"
+                      else image.size in expected[asset["kind"]])
+        require(valid_size, f"Wrong dimensions: {key}")
         require(image.size == (asset["width"], asset["height"]), f"Manifest dimensions: {key}")
         require(set(image.getchannel("A").getdata()) <= {0, 255}, f"Nonbinary alpha: {key}")
         asset_palette = {tuple(bytes.fromhex(c[1:])) for c in palette_colours(manifest, asset)}

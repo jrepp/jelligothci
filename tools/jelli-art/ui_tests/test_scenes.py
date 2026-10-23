@@ -244,13 +244,14 @@ def test_scene_keyboard_history_and_accessibility(creator):
     from test_views import AXE
     page=creator['page']
     open_scenes(page)
+    count = page.locator('#scene-select option').count()
     page.locator('#scene-copy').click()
-    expect(page.locator('#scene-select option')).to_have_count(4)
+    expect(page.locator('#scene-select option')).to_have_count(count + 1)
     page.locator('#scene-copy').focus()
     page.keyboard.press('ControlOrMeta+z')
-    expect(page.locator('#scene-select option')).to_have_count(3)
+    expect(page.locator('#scene-select option')).to_have_count(count)
     page.keyboard.press('ControlOrMeta+Shift+z')
-    expect(page.locator('#scene-select option')).to_have_count(4)
+    expect(page.locator('#scene-select option')).to_have_count(count + 1)
     page.locator('[data-number="x"]').fill('13')
     page.keyboard.press('ControlOrMeta+s')
     expect(page.locator('#scene-status')).to_have_text('Saved')
@@ -261,3 +262,86 @@ def test_scene_keyboard_history_and_accessibility(creator):
     violations=page.evaluate("""async () => (await axe.run(document.querySelector('#scenes'),
       {runOnly:{type:'tag',values:['wcag2a','wcag2aa']}})).violations.filter(v=>['serious','critical'].includes(v.impact))""")
     assert violations==[], violations
+
+
+def test_activity_binding_and_copy(creator):
+    page = creator["page"]
+    open_scenes(page)
+    # Edit an existing activity binding in the current copied checkout.
+    page.locator("#scene-select").select_option("activity-breakfast")
+    page.locator("#scene-activity-speed").fill("3")
+    page.locator("#scene-activity-speed").press("Tab")
+    page.locator("#scene-save").click()
+    expect(page.locator("#scene-status")).to_have_text("Saved")
+    doc = json.loads((creator["content"] / "scenes.json").read_text())
+    bound = next(s for s in doc["scenes"] if s.get("activity") == "BREAKFAST")
+    assert bound["speed"] == 3
+    page.locator("#scene-copy").click()
+    expect(page.locator("#scene-activity")).to_have_value("")
+    page.locator("#scene-save").click()
+    expect(page.locator("#scene-status")).to_have_text("Saved")
+    doc = json.loads((creator["content"] / "scenes.json").read_text())
+    assert "activity" not in doc["scenes"][-1]
+
+
+@pytest.mark.parametrize("width,height", [(1440,1000), (390,844)])
+def test_background_navigation_keeps_edits_and_layer(creator, width, height):
+    page = creator["page"]
+    page.set_viewport_size({"width":width,"height":height})
+    open_scenes(page)
+    page.locator('#scene-select').select_option('activity-reading')
+    page.locator('[data-layer="2"]').click()
+    page.locator('#scene-layer-name').fill('Library wall')
+    page.locator('#scene-next').click()
+    page.locator('#scene-prev').click()
+    expect(page.locator('#scene-select')).to_have_value('activity-reading')
+    expect(page.locator('#scene-layer-name')).to_have_value('Library wall')
+    page.locator('#scene-search').fill('fishing')
+    expect(page.locator('#scene-count')).to_contain_text('1 matching')
+    page.locator('#scene-select').select_option('activity-fishing')
+    page.locator('#scene-search').fill('no matching scene')
+    expect(page.locator('#scene-count')).to_contain_text('No matches')
+    expect(page.locator('#scene-select')).to_have_value('activity-fishing')
+    page.locator('#scene-search').fill('')
+    page.locator('#scene-save').click()
+    expect(page.locator('#scene-status')).to_have_text('Saved')
+    page.locator('#scene-reload').click()
+    expect(page.locator('#scene-select')).to_have_value('activity-fishing')
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+
+
+def test_invalid_fields_block_navigation_and_nudges_are_undoable(creator):
+    page=creator['page']
+    open_scenes(page)
+    field=page.locator('[data-number="x"]')
+    field.fill('')
+    expect(page.locator('#scene-validation')).to_contain_text('Horizontal position')
+    page.locator('#scene-next').click()
+    expect(page.locator('#scene-select')).to_have_value('market-street')
+    expect(field).to_have_value('')
+    page.locator('[data-layer="1"]').click()
+    expect(page.locator('[data-layer="0"]')).to_have_attribute('aria-pressed','true')
+    field.fill('0')
+    page.get_by_role('button',name='Move layer right one pixel',exact=True).click()
+    expect(field).to_have_value('1')
+    page.locator('#scene-undo').click()
+    expect(field).to_have_value('0')
+    page.locator('#scene-select').select_option('activity-breakfast')
+    page.locator('#scene-activity-speed').fill('33')
+    page.locator('#scene-next').click()
+    expect(page.locator('#scene-select')).to_have_value('activity-breakfast')
+    expect(page.locator('#scene-activity-speed')).to_have_value('33')
+
+
+def test_shared_art_navigation_and_paint_return(creator):
+    page=creator['page']
+    open_scenes(page)
+    page.locator('#scene-related').select_option('garden-walk')
+    expect(page.locator('#scene-select')).to_have_value('garden-walk')
+    expect(page.locator('#scene-asset')).to_have_value('backgrounds.kit-sky')
+    expect(page.locator('#scene-art-info')).to_contain_text('Used in')
+    page.locator('#scene-paint').click()
+    expect(page.locator('#scene-return')).to_have_text('Back to Garden walk')
+    page.locator('#scene-return').click()
+    expect(page.locator('#scene-select')).to_have_value('garden-walk')
+    expect(page.locator('#scene-asset')).to_have_value('backgrounds.kit-sky')

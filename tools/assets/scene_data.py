@@ -27,51 +27,73 @@ def validate(doc, manifest):
         raise ValueError(f"Choose 1..{MAX_SCENES} scenes")
     assets = {a["key"]: a for a in manifest["assets"]}
     keys = set()
-    for scene in doc["scenes"]:
-        fields(scene, "key name fill layers", "Scene", "seed")
-        integer(scene.get("seed", 0), 0, 65535, "Scene seed")
-        if not isinstance(scene["key"], str) or not KEY.fullmatch(scene["key"]) or scene["key"] in keys:
-            raise ValueError("Scene keys must be unique lowercase identities")
-        keys.add(scene["key"])
-        if not isinstance(scene["name"], str) or not 1 <= len(scene["name"].strip()) <= 48:
-            raise ValueError("Scene names need 1..48 characters")
-        if not isinstance(scene["fill"], str) or not re.fullmatch(r"#[0-9a-f]{6}", scene["fill"]):
-            raise ValueError("Scene fill needs a lowercase #rrggbb color")
-        if not isinstance(scene["layers"], list) or not 1 <= len(scene["layers"]) <= MAX_LAYERS:
-            raise ValueError(f"Choose 1..{MAX_LAYERS} layers")
-        for layer in scene["layers"]:
-            fields(layer, "asset x y tilt_x tilt_y travel repeat_x visible", "Layer", "name random")
-            if "name" in layer and (not isinstance(layer["name"], str) or
-                                    not layer["name"].strip() or len(layer["name"]) > 48):
-                raise ValueError("Layer names need 1..48 characters")
-            if "random" in layer:
-                variation = layer["random"]
-                fields(variation, "seed x y travel chance", "Layer variation")
-                integer(variation["seed"], 0, 65535, "Layer seed")
-                for axis in ("x", "y"):
-                    integer(variation[axis], 0, 16, "Position variation")
-                integer(variation["travel"], 0, 100, "Travel variation")
-                integer(variation["chance"], 0, 100, "Appearance chance")
-                if variation["travel"] and not layer["repeat_x"]:
-                    raise ValueError("Travel variation requires horizontal repeat")
-            if not isinstance(layer["asset"], str):
-                raise ValueError("Choose a background asset")
-            asset = assets.get(layer["asset"])
-            if not asset or asset["kind"] != "backgrounds":
-                raise ValueError("Layers must reference registered background artwork")
-            integer(asset["width"], 1, 256, "Layer width")
-            integer(asset["height"], 1, 256, "Layer height")
-            for name in ("x", "y"):
-                integer(layer[name], -256, 256, name)
-            for name in ("tilt_x", "tilt_y"):
-                integer(layer[name], 0, 16, name)
-            integer(layer["travel"], 0, 100, "Travel percent")
-            for name in ("repeat_x", "visible"):
-                if type(layer[name]) is not bool:
-                    raise ValueError(f"{name} must be true or false")
-            if layer["travel"] and not layer["repeat_x"]:
-                raise ValueError("Travel layers must repeat horizontally")
+    activities = set()
+    for scene_index, scene in enumerate(doc["scenes"], 1):
+        try:
+            fields(scene, "key name fill layers", "Scene", "seed activity speed")
+            if "activity" in scene or "speed" in scene:
+                activity = scene.get("activity")
+                if (not isinstance(activity, str) or not re.fullmatch(r"[A-Z0-9 ]{1,12}", activity)
+                        or activity in activities):
+                    raise ValueError("Activity bindings need unique stable activity names")
+                activities.add(activity)
+                integer(scene.get("speed"), 1, 32, "Activity travel speed")
+            integer(scene.get("seed", 0), 0, 65535, "Scene seed")
+            if not isinstance(scene["key"], str) or not KEY.fullmatch(scene["key"]) or scene["key"] in keys:
+                raise ValueError("Scene keys must be unique lowercase identities")
+            keys.add(scene["key"])
+            if not isinstance(scene["name"], str) or not 1 <= len(scene["name"].strip()) <= 48:
+                raise ValueError("Scene names need 1..48 characters")
+            if not isinstance(scene["fill"], str) or not re.fullmatch(r"#[0-9a-f]{6}", scene["fill"]):
+                raise ValueError("Scene fill needs a lowercase #rrggbb color")
+            if not isinstance(scene["layers"], list) or not 1 <= len(scene["layers"]) <= MAX_LAYERS:
+                raise ValueError(f"Choose 1..{MAX_LAYERS} layers")
+            for layer_index, layer in enumerate(scene["layers"], 1):
+                try:
+                    fields(layer, "asset x y tilt_x tilt_y travel repeat_x visible", "Layer", "name random")
+                    if "name" in layer and (not isinstance(layer["name"], str) or
+                                            not layer["name"].strip() or len(layer["name"]) > 48):
+                        raise ValueError("Layer names need 1..48 characters")
+                    if "random" in layer:
+                        variation = layer["random"]
+                        fields(variation, "seed x y travel chance", "Layer variation")
+                        integer(variation["seed"], 0, 65535, "Layer seed")
+                        for axis in ("x", "y"):
+                            integer(variation[axis], 0, 16, "Position variation")
+                        integer(variation["travel"], 0, 100, "Travel variation")
+                        integer(variation["chance"], 0, 100, "Appearance chance")
+                        if variation["travel"] and not layer["repeat_x"]:
+                            raise ValueError("Travel variation requires horizontal repeat")
+                    if not isinstance(layer["asset"], str):
+                        raise ValueError("Choose a background asset")
+                    asset = assets.get(layer["asset"])
+                    if not asset or asset["kind"] != "backgrounds":
+                        raise ValueError("Layers must reference registered background artwork")
+                    integer(asset["width"], 1, 256, "Layer width")
+                    integer(asset["height"], 1, 256, "Layer height")
+                    for name in ("x", "y"):
+                        integer(layer[name], -256, 256, name)
+                    for name in ("tilt_x", "tilt_y"):
+                        integer(layer[name], 0, 16, name)
+                    integer(layer["travel"], 0, 100, "Travel percent")
+                    for name in ("repeat_x", "visible"):
+                        if type(layer[name]) is not bool:
+                            raise ValueError(f"{name} must be true or false")
+                    if layer["travel"] and not layer["repeat_x"]:
+                        raise ValueError("Travel layers must repeat horizontally")
+                except ValueError as error:
+                    raise ValueError(f"Layer {layer_index}: {error}") from error
+        except ValueError as error:
+            name = scene.get("name", "Unnamed") if isinstance(scene, dict) else "Invalid scene"
+            raise ValueError(f"Scene {scene_index} ({name}): {error}") from error
     return doc
+
+
+def validate_bindings(doc, moments):
+    names = {m["name"] for m in moments} | {"WORKOUT"}
+    for scene in doc["scenes"]:
+        if "activity" in scene and scene["activity"] not in names:
+            raise ValueError(f"Scene {scene['name']}: unknown activity {scene['activity']}")
 
 
 def initial(manifest):
@@ -126,7 +148,8 @@ def emit(doc, manifest):
                       f'{layer["tilt_y"]}u', f'{layer["travel"]}u',
                       str(layer["repeat_x"]).lower(), str(layer["visible"]).lower()]
             lines.append("        {" + ", ".join(values) + "},")
-        lines.append("    }},")
+        binding = json.dumps(scene["activity"]) if "activity" in scene else "NULL"
+        lines.append(f'    }}, .activity = {binding}, .speed = {scene.get("speed", 0)}u}},')
     lines.extend(["};", f'const unsigned jelli_scene_definition_count = {len(doc["scenes"])}u;'])
     return "\n".join(lines)
 

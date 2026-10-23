@@ -184,8 +184,8 @@ Per-layer fractional phases wrap by image width; quantization uses floor(x + 0.5
 [Pet scene selection](../include/jelli/pet_scene.h) is an optional presentation
 override, independent of saved locations. It validates every image before publishing
 and retains the previous complete cache if assets become unavailable. Clearing the
-override restores the flat location background. Pixel changes in a live asset set
-must invalidate the UI as normal hot reload does. Render keys include the composed
+override restores automatic activity scenery, or the flat location background when
+idle. Pixel changes in a live asset set must invalidate the UI as normal hot reload does. Render keys include the composed
 cache revision; quantized background changes cause a full redraw, and unchanged
 motion causes no extra damage. Actor/particle restoration samples the same cache.
 Night shading and circular clipping happen after composition.
@@ -201,7 +201,13 @@ and Space to pause. CLI `--tilt-x` / `--tilt-y` accept percentages;
 `--travel-speed` is signed source pixels per second. Defaults are neutral and still.
 The SDL adapter drops elapsed travel beyond its bounded stall window. Jelli Art's
 **Test saved scene in game** also runs this compositor with explicit scenario inputs.
-Firmware compiles the APIs but does not select a scene or acquire orientation yet.
+All hosts select activity scenery through [the activity presenter](../core/pet_activity_scene.c).
+[Scene definitions](../content/scenes.json) bind stable activity names and WORKOUT
+with bounded source-pixel travel speeds. The UI owns one persistent compositor
+cache; explicit preview scenes take precedence. Activity completion and resume
+clear automatic scenery without changing saved locations. Motion uses presentation
+time, preserves fractional progress, pauses with rendering, and drops stall backlog
+beyond 250 ms. Firmware uses this same path; orientation input remains unimplemented.
 See [runtime measurements and validation](../docs-cms/memos/memo-080-background-scene-runtime.md).
 
 ## Bounded working storage

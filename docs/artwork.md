@@ -311,12 +311,43 @@ reproduction, and current asset details.
 
 ### Compose background scenes
 
-Choose **Scenes** to assemble a background from shared artwork. Select a layer,
+Choose **Scenes** to assemble a background from shared artwork. **Find background**
+filters by name, activity or scene key. **Previous background** and **Next background**
+step through the matches. Switching keeps unsaved edits and remembers the selected
+layer for each background; **Reload saved** retains the current background when it
+still exists. The navigator stays above the preview on phones.
+
+Select a layer,
 set its position, tilt amplitude and travel percentage, then use **Move back** or
 **Move forward** to change its order. **Art library** adds another instance of an
 existing background; **Paint artwork** opens its shared pixels in Paint. Editing
 that artwork affects every scene that references it. **Duplicate scene** copies
-the composition while retaining the shared art references.
+the composition while retaining the shared art references. Copies start without an
+activity binding so they cannot silently replace an activity's setting.
+
+The layer inspector shows artwork dimensions and how many backgrounds share it.
+**Shared artwork backgrounds** opens another user of that artwork with the matching
+layer selected. **Paint artwork** offers a **Back to…** button to return to the
+composition. Unsaved pixel edits retain the normal Paint save workflow.
+
+Use the arrow buttons to nudge a layer one source pixel at a time; these changes
+support Undo. Inline checks identify invalid fields, missing artwork, empty scenes
+and activity scenes without moving layers. Empty or out-of-range values block
+switching backgrounds/layers and scene actions that rebuild the controls until corrected,
+so unfinished input is not silently discarded. Reload and Undo remain available for
+recovery. Save-time validation names the affected scene and layer.
+
+**Activity background** binds a scene to an activity or workout; **Activity speed**
+sets its automatic sideways travel in source pixels per second. Each activity can
+have one binding. Quiet activities use slow clouds or water while furniture stays
+still; walking and sports can use faster scenery. Explicit game-preview scene
+selection overrides these automatic bindings.
+
+The [activity artwork recipe](../assets/slice/source/activity_backgrounds.py) reuses
+the landscape kit and adds paired motif strips and repeating ground tiles. For a
+paired strip, placing it at x=40 shows its left motif; x=-24 shows its right motif,
+with the other half outside the viewport. Background layers may be smaller than a
+full scene (bounded to 1..256 pixels per dimension).
 
 Layer thumbnails help identify shared pieces. **Duplicate layer** copies the selected
 layer's settings and seed; change its layer seed if you want independent variation.
