@@ -4,7 +4,9 @@
  * The pixel logic (rasterisers, selection transforms, history) is paint_tools.js (window.JelliPaint). */
 'use strict';
 (() => {
-  const S = window.Studio = {}, T = window.JelliPaint, JT = window.JelliTouch;
+  /** @type {typeof window.Studio} */
+  const S = window.Studio = {};
+  const T = window.JelliPaint, L = window.JelliLayers, JT = window.JelliTouch;
   const LOCKED = new Set(['font']);
   const SHAPES = new Set(['line', 'rect', 'ellipse']);
   /* [id, name, key, what it does] */
@@ -206,30 +208,36 @@
       // only at publication, and ignore responses overtaken by a newer load or save.
       if (sequence !== reloadSequence || epoch !== writeEpoch || pendingSaves.size) return false;
       if (stroke) release();
-      keep = Object.entries(edits).filter(([key]) => dirty(key)).map(([key]) => [key, work(key).data.slice()]);
+      keep = Object.keys(edits).filter(dirty);
     });
     if (!published) return;
     state.float = null; stroke = null;
-    const kept = new Set(keep.map(([key]) => key));
     for (const key of Object.keys(edits)) {
-      if (!decoded[key]?.after) { delete edits[key]; continue; }
-      const data = decoded[key].after.data, e = edits[key];
-      e.saved = data.slice();
-      if (!kept.has(key)) e.base = byKey[key].sha;
-      if (!kept.has(key) && !T.current(e.hist).every((v, i) => v === data[i])) e.hist = T.history(data, 'Loaded from disk');
-    }
-    for (const [key, data] of keep) if (decoded[key]?.after && decoded[key].after.data.length === data.length) {
-      decoded[key].after.data.set(data); refresh(key); draft(key);
+      if (!decoded[key]?.after || !keep.includes(key)) delete edits[key];
+      else { refresh(key); draft(key); }
     }
   }
+
   /* Unsaved paint from a previous visit (drafts.js); a stale one saves only after a confirm (409).
    * The history starts at the file on disk, then a "Restored draft" step, so Undo shows what is on disk. */
   function restoreDrafts() {
     const back = [];
     for (const {key} of window.JelliDrafts?.list('paint') || []) {
-      const p = work(key), d = JelliDrafts.restore('paint', key, byKey[key]?.sha), data = d && JelliDrafts.decodeBytes(d.data);
-      if (!p || !data || data.length !== p.data.length) { JelliDrafts.drop('paint', key); continue; }
-      const e = ensure(key); e.base = d.base; p.data.set(data); T.record(e.hist, 'Restored draft', p.data); refresh(key);
+      const p = decoded[key]?.after, d = JelliDrafts.restore('paint', key, byKey[key]?.sha);
+      if (!p || !d) continue;
+      const e = ensure(key);
+      try {
+        if (d.data?.version === 1) {
+          const doc = L.unpack(d.data);
+          if (!doc.layers.length || doc.layers.length > L.limit || doc.layers.some(l => l.data.length !== p.data.length)) throw new Error('Invalid draft');
+          e.doc = doc;
+        } else {
+          const data = JelliDrafts.decodeBytes(d.data);
+          if (!data || data.length !== p.data.length) throw new Error('Invalid draft');
+          e.doc = L.create({...p, data});
+        }
+      } catch { JelliDrafts.drop('paint', key); continue; }
+      e.base = d.base; T.record(e.hist, 'Restored draft', L.snapshot(e.doc)); refresh(key);
       back.push(key + (d.stale ? ' (changed on disk since)' : ''));
     }
     if (!back.length) return;
@@ -303,9 +311,38 @@
   function rerender() { renderTotals(); renderKinds(); renderList(); renderView(); }
 
   /* ---------- pixel buffer helpers ---------- */
-  const work = key => decoded[key]?.after;
-  const dirty = key => { const e = edits[key], p = work(key); if (!e || !p) return false; for (let i = 0; i < p.data.length; i++) if (p.data[i] !== e.saved[i]) return true; return false; };
-  const ensure = key => (edits[key] ||= {saved: work(key).data.slice(), hist: T.history(work(key).data), base: byKey[key]?.sha});
+  const signature = doc => JSON.stringify({...L.pack(doc), active: 0});
+  const ensure = key => {
+    if (edits[key]) return edits[key];
+    const p = decoded[key].after, doc = byKey[key]?.paint_document ? L.unpack(byKey[key].paint_document) : L.create(p);
+    const saved = L.snapshot(doc);
+    return edits[key] = {doc, saved, savedSignature: signature(doc), hist: T.history(saved, 'Opened', 40), base: byKey[key]?.sha};
+  };
+  const work = key => {
+    const p = decoded[key]?.after; if (!p) return p;
+    const doc = ensure(key).doc;
+    return {...p, data: doc.layers[doc.active].data};
+  };
+  const composite = key => L.composite(ensure(key).doc, decoded[key].after);
+  const dirty = key => !!edits[key] && signature(edits[key].doc) !== edits[key].savedSignature;
+  const writable = () => {
+    const d = ensure(state.key).doc, l = d.layers[d.active];
+    if (l.locked || !l.visible) { announce('Select a visible, unlocked layer to paint'); return false; }
+    return true;
+  };
+  Object.assign(S, {
+    layerDocument: () => ensure(state.key).doc,
+    changeLayers: (label, change) => {
+      if (stroke) release();
+      state.float = state.sel = state.selMask = null;
+      change(ensure(state.key).doc); done(label); S.renderLayers?.();
+    },
+    selectLayer: index => {
+      if (stroke) release();
+      state.float = state.sel = state.selMask = null;
+      ensure(state.key).doc.active = index; draw(); renderToolbarState(); S.renderLayers?.();
+    }
+  });
   /* Assets may carry their own palette (a name in manifest.palettes or an inline list). */
   const ownPalette = a => !!a.palette_name && a.palette_name !== 'shared';
   const paletteOf = a => (a.palette || D.palette).map(h => h.toLowerCase());
@@ -319,7 +356,8 @@
   const measure = (p, a) => window.JelliLint.measure(p, a.kind, inkOf(a));  // lint.js: compare_slice.py's rules
   /* Push the working buffer to its canvas, metrics, thumbnail and change count. */
   function refresh(key) {
-    const a = byKey[key], p = work(key), before = decoded[key].before;
+    const a = byKey[key], p = composite(key), before = decoded[key].before;
+    decoded[key].after.data.set(p.data);
     p.img.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(p.data), p.w, p.h), 0, 0);
     a.after_metrics = measure(p, a);
     a.after = p.img.toDataURL('image/png');
@@ -329,7 +367,7 @@
   function draft(key) {
     if (!window.JelliDrafts) return;
     if (!dirty(key)) return JelliDrafts.drop('paint', key);
-    JelliDrafts.later('paint', key, edits[key].base, () => JelliDrafts.encodeBytes(work(key).data));
+    JelliDrafts.later('paint', key, edits[key].base, () => L.pack(edits[key].doc));
   }
   function commit() {
     const a = asset(); refresh(a.key); draft(a.key);
@@ -341,12 +379,13 @@
   let selSeen = null;
   const noteSel = () => { selSeen = selNow(); };
   /* Finish an action: record it in the asset's history (no-ops are skipped) and redraw. */
-  function done(label) { T.record(ensure(state.key).hist, label, work(state.key).data, {before: selSeen, after: selNow()}); noteSel(); commit(); }
+  function done(label) { T.record(ensure(state.key).hist, label, L.snapshot(ensure(state.key).doc), {before: selSeen, after: selNow()}); noteSel(); commit(); }
   /* Jump to history entry i. Undo puts back the selection the next step started from, redo the one entry i left. */
   function restore(i) {
     const e = edits[state.key], from = e?.hist.at, data = e && T.jump(e.hist, i); if (!data) return;
     const s = i < from ? e.hist.entries[i + 1].before : e.hist.entries[i].after;
-    work(state.key).data.set(data); state.float = null; stroke = null;
+    e.doc = L.restore(data); state.float = null; stroke = null;
+    S.renderLayers?.();
     state.sel = s ? {...s.sel} : null; state.selMask = s?.mask || null; noteSel(); commit();
     announce(`History: ${e.hist.entries[i].label}`);
   }
@@ -412,9 +451,11 @@
   /* Start the tool at a pixel. pointer: false for the keyboard cursor. secondary: the right button (secondary colour,
    * or a deeper shade); deeper: Shift with the shade tool; shift: Shift with the magic wand (select everywhere). */
   function press(x, y, tool, {secondary = false, deeper = false, alt = false, pointer = true, held = false, shift = false} = {}) {
+    if (S.placeAttachment?.(asset(), x, y)) return;
     if (tool === 'hand') return announce('Hand tool: drag to pan the canvas');
     if (tool === 'picker') return pick(x, y, secondary);
     // Right-click with Select paints the secondary colour (it used to erase); Shift+Enter at the keyboard cursor stays a select.
+    if (!writable()) return;
     if (tool === 'select' && secondary && pointer) tool = 'pencil';
     if (tool === 'select') return pressSelect(x, y, alt, pointer);
     if (tool === 'shade') return pressShade(x, y, secondary || deeper, pointer, held);
@@ -522,6 +563,7 @@
   function deselect() { state.float = null; state.sel = null; state.selMask = null; afterSelect(); }
   function afterSelect(text) { noteSel(); draw(); renderToolbarState(); renderReadout(); announce(text || (state.sel ? `Selected ${state.sel.w} by ${state.sel.h}` : 'Selection cleared')); }
   function deleteSel() {
+    if (!writable()) return;
     const r = selRect(); if (!r) return false;
     const p = work(state.key);
     if (state.float) { p.data.set(state.float.base); state.float = null; } else T.clearMasked(p, state.selMask ? state.sel : r, state.selMask);
@@ -534,6 +576,7 @@
   }
   function cutSel() { if (!selRect()) return status('Select an area to cut', 'warn'); copySel(); deleteSel(); }
   function paste() {
+    if (!writable()) return;
     if (!clipboard) return status('Copy something first (⌘C / Ctrl+C)', 'warn');
     const a = asset(), p = work(state.key), off = T.offPalette(clipboard, paletteOf(a));
     if (off.length && !state.custom) return status(`The copied pixels use ${off.join(', ')}, which ${paletteWhere(a)} lacks; choose custom to paste them anyway`, 'bad', true);
@@ -545,6 +588,7 @@
   }
   /* Flip or rotate the selection (about its centre), or the whole sprite. */
   function transform(label, fn) {
+    if (!writable()) return;
     if (!view) return;
     const p = work(state.key);
     if (selRect()) {
@@ -561,6 +605,7 @@
   let wrapNoted = false;
   /* Alt+arrows: move the selection, or with Wrap on (or no selection) shift the pixels inside it or the sprite. */
   function nudge(dx, dy) {
+    if (!writable()) return;
     if (!view) return;
     const p = work(state.key), r = selRect();
     if (r && (!state.wrap || state.selMask)) {  // a magic-wand selection always moves; Wrap shifts rectangles
@@ -572,6 +617,7 @@
     done(r ? 'Shift selection' : 'Shift sprite');
   }
   function replaceColour() {
+    if (!writable()) return;
     const from = document.getElementById('replace-from')?.value; if (!from || !view) return;
     const to = state.tool === 'eraser' ? null : paintHex(); if (to === undefined) return;
     const p = work(state.key), r = selRect(); state.float = null;
@@ -593,7 +639,8 @@
   function cell(e) { return [Math.floor(e.offsetX / view.z), Math.floor(e.offsetY / view.z)]; }
   function draw() {
     if (!view) return;
-    const {ctx, a, z} = view, p = work(a.key);
+    const {ctx, a, z} = view, p = composite(a.key);
+    decoded[a.key].after.data.set(p.data);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, a.width * z, a.height * z);
     fillBackdrop(ctx, a.width, a.height, z, backdropFor(a));
     drawPixels(ctx, state.peek ? decoded[a.key].before : p, z);
@@ -601,7 +648,8 @@
     drawGrid(ctx, a.width, a.height, z);
     drawIssues(ctx, a.after_metrics, z);
     if (state.guides) drawGuides(ctx, a, z);
-    S.overlay?.(ctx, a, z);  // flipbook.js: a clip frame's eye and ground guides
+    S.overlay?.(ctx, a, z);
+    S.drawAttachments?.(ctx, a, z);  // flipbook.js: a clip frame's eye and ground guides
     const ax = axisOf(a); ctx.fillStyle = 'rgba(133,228,182,.8)';
     if (state.mirror) ctx.fillRect(Math.round(ax.x2 * z / 2) - 1, 0, 2, a.height * z);
     if (state.mirrorV) ctx.fillRect(0, Math.round(ax.y2 * z / 2) - 1, a.width * z, 2);
@@ -622,7 +670,7 @@
   function drawTiles() {
     const side = view.c.closest('.paint-work')?.querySelector('.paint-side'); let box = side?.querySelector('#paint-tiles');
     if (!side || !state.tiled) { box?.remove(); return; }
-    const a = view.a, p = work(a.key), s = Math.max(1, Math.floor(192 / (3 * Math.max(a.width, a.height)))), id = `${a.key}@${s}`;
+    const a = view.a, p = composite(a.key), s = Math.max(1, Math.floor(192 / (3 * Math.max(a.width, a.height)))), id = `${a.key}@${s}`;
     if (!box || box.dataset.key !== id) {
       box?.remove(); box = document.createElement('div'); box.className = 'pane'; box.id = 'paint-tiles'; box.dataset.key = id;
       box.innerHTML = '<div class="lbl"><span>tiled 3×3</span><span>seams show while Wrap nudges</span></div>';
@@ -770,6 +818,7 @@
   }
   const flushRefit = () => { if (refitWait) { refitWait = false; refit(); } };
   S.renderStage = (a, z) => {
+    S.restoreCanvasOptions?.();
     const stage = document.getElementById('stage'), old = view; closeMenu(); homeCompare();
     // A manual zoom/backdrop rebuild may arrive before pointerup. Finish the current
     // gesture against its original canvas before detaching its listeners.
@@ -792,7 +841,7 @@
     const {scroller, side, dock, fresh} = skeleton(a);
     sk.fresh = false;
     if (!fresh) dock.hidden = !S.renderDock?.(dock, a);
-    document.getElementById('paint-title').textContent = `paint · ${z}×`;
+    document.getElementById('paint-title').textContent = `${a.key} · ${a.width} × ${a.height} · ${z}×`;
     const [c, ctx] = makeCanvas(a.width * z, a.height * z); c.style.cursor = state.tool === 'hand' ? 'grab' : 'crosshair'; c.style.touchAction = 'none';
     Object.assign(c, {tabIndex: 0}); c.setAttribute('role', 'application'); c.setAttribute('aria-roledescription', 'pixel canvas');
     c.setAttribute('aria-label', `${a.key}, ${a.width} by ${a.height} pixels`); c.setAttribute('aria-describedby', 'paint-hint');
@@ -801,8 +850,10 @@
     side.textContent = '';
     if (workspaceControls) { sk.work.prepend(workspaceControls.rail); side.append(workspaceControls.inspector); }
     const legend = document.getElementById('legend'); if (legend) side.append(legend);
+    const layers = document.createElement('section'); layers.id = 'paint-layers'; side.prepend(layers); S.renderLayers?.();
     const colours = document.getElementById('palette-block'); if (colours) side.append(colours);
-    const refs = document.createElement('div'); refs.className = 'paint-refs'; side.append(refs);
+    const details = document.createElement('details'); details.className = 'paint-reference-details'; details.innerHTML = '<summary>History & comparison</summary>'; side.append(details);
+    const refs = document.createElement('div'); refs.className = 'paint-refs'; details.append(refs);
     const ref = decoded[a.key].before;
     if (ref) {
       const rz = Math.max(1, Math.min(4, Math.floor(96 / Math.max(a.width, a.height)))), box = document.createElement('div'); box.className = 'pane';
@@ -816,12 +867,12 @@
     hist.innerHTML = '<div class="lbl" id="paint-hist-label"><span>history</span><span>click a step to go back</span></div><ol class="paint-hist" id="paint-history" aria-labelledby="paint-hist-label"></ol>';
     hist.querySelector('ol').onclick = e => { const b = e.target.closest('[data-step]'); if (b) restore(Number(b.dataset.step)); };
     refs.append(hist);
-    side.insertAdjacentHTML('beforeend', `<p class="studio-note paint-hint" id="paint-hint">${hintHtml()}</p>`);
+    side.insertAdjacentHTML('beforeend', `<details class="paint-hint-details"><summary>Canvas help</summary><p class="studio-note paint-hint" id="paint-hint">${hintHtml()}</p></details>`);
     wireCanvas(c, scroller, a);
     if (anchor) { scroller.scrollLeft = anchor.px * z - anchor.ox; scroller.scrollTop = anchor.py * z - anchor.oy; anchor = null; }
     else if (scroll) [scroller.scrollLeft, scroller.scrollTop] = scroll;
     if (hadFocus) { pointing = true; c.focus({preventScroll: true}); pointing = false; }  // a rebuild keeps the cursor as it was
-    renderQuick(); draw(); renderReadout(); renderHistory();
+    renderQuick(); draw(); renderReadout(); renderHistory(); S.mountCanvasOptions?.();
   };
   const DESKTOP_HINT = `Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms; Hand (H) or middle-drag pans.
       Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. <kbd>?</kbd> lists every shortcut.`;
@@ -1049,7 +1100,7 @@
       <div id="paint-selection-context" class="paint-selection-context" role="toolbar" aria-label="Selection actions"><span class="lbl" id="paint-selection-label">Selection</span><div class="seg" role="group" aria-label="Selection">${btn('sel-all', 'All', 'Select the whole sprite', '⌘A')}${btn('sel-copy', 'Copy', 'Copy the selection, or the whole sprite', '⌘C')}${btn('sel-cut', 'Cut', 'Cut the selection', '⌘X')}${btn('sel-paste', 'Paste', 'Paste as a floating selection', '⌘V')}${btn('sel-delete', 'Delete', 'Clear selected pixels', 'Delete')}${btn('sel-none', 'Deselect', 'Drop the selection', 'Escape')}</div></div>
       <div class="paint-toolrail" id="paint-toolrail" role="toolbar" aria-label="Paint tools"><div class="seg" id="tools" role="group" aria-label="Tools">${TOOLS.map(([id, name, key, what]) =>
         `<button data-tool="${id}" title="${name} (${key}): ${what}" aria-label="${name}" aria-keyshortcuts="${key}"><span class="paint-tool-icon" aria-hidden="true">${toolIcon(id)}</span><span class="paint-tool-name">${name}</span><kbd aria-hidden="true">${key}</kbd></button>`).join('')}</div></div>
-      <details class="paint-more" id="paint-more"${store.get('paint-more', true) ? ' open' : ''}><summary>Properties <span class="lbl">transform · symmetry · view</span></summary>
+      <details class="paint-more" id="paint-more"${store.get('paint-more', false) ? ' open' : ''}><summary>Properties <span class="lbl">transform · symmetry · view</span></summary>
       <div class="paint-tools" role="toolbar" aria-label="More paint tools">
       <div><div class="lbl">Transform</div><div class="seg" role="group" aria-label="Transform">${btn('flip-h', '⇋', 'Flip left/right: the selection, or the whole sprite', '⇧H', ' aria-label="Flip horizontally"')}${btn('flip-v', '⇅', 'Flip top/bottom: the selection, or the whole sprite', '⇧V', ' aria-label="Flip vertically"')}${btn('rot-cw', '↻', 'Rotate 90° clockwise', '⇧R', ' aria-label="Rotate clockwise"')}${btn('rot-ccw', '↺', 'Rotate 90° anticlockwise', '', ' aria-label="Rotate anticlockwise"')}</div></div>
       <div><div class="lbl">Nudge</div><div class="seg" role="group" aria-label="Nudge">${[['ArrowLeft', '←', 'left'], ['ArrowUp', '↑', 'up'], ['ArrowDown', '↓', 'down'], ['ArrowRight', '→', 'right']].map(([k, g, w]) =>
@@ -1077,8 +1128,8 @@
     const tidyButton = extra.querySelector('#tidy');
     tidyButton.onclick = tidy;
     if (ownPalette(asset())) { tidyButton.disabled = true; tidyButton.title = 'Tidy inks with the shared palette; this sprite has its own palette'; }
-    on('revert', () => { const e = edits[state.key]; if (e && dirty(state.key)) { state.float = null; work(state.key).data.set(e.saved); done('Revert'); } });
-    on('reset', () => { const b = decoded[state.key].before; if (b) { state.float = null; work(state.key).data.set(b.data); done('Use before'); } });
+    on('revert', () => { const e = edits[state.key]; if (e && dirty(state.key)) { state.float = null; e.doc = L.restore(e.saved); done('Revert'); S.renderLayers?.(); } });
+    on('reset', () => { const b = decoded[state.key].before; if (b && writable()) { state.float = null; work(state.key).data.set(b.data); done('Use before'); } });
     on('save', save);
     const inspector = extra.querySelector('#paint-more'), groups = [...inspector.querySelector('.paint-tools').children];
     /** @type {[string, number[]][]} */
@@ -1244,8 +1295,8 @@
       if (!pal.includes(state.color) && state.color && !counts[state.color])
         chip(state.color, `custom · ${state.color} · not in ${where}`, state.color.slice(1), ' off', true, extras);
       const custom = document.createElement('div'); custom.className = 'paint-chip'; custom.title = 'Paint with any colour, outside the palette';
-      custom.tabIndex = 0; custom.setAttribute('role', 'button'); custom.setAttribute('aria-label', 'Choose a custom colour'); custom.dataset.chip = 'custom';
-      custom.innerHTML = `<span class="sw" style="background:conic-gradient(#fa8c99,#f5c764,#85e4b6,#a47bdb,#fa8c99)"></span><span>custom</span><span>pick…</span><input type="color" value="${state.color || '#ffffff'}" hidden>`;
+      custom.tabIndex = 0; custom.setAttribute('role', 'button'); custom.setAttribute('aria-label', 'Custom pick… choose a colour'); custom.dataset.chip = 'custom';
+      custom.innerHTML = `<span class="sw" style="background:conic-gradient(#fa8c99,#f5c764,#85e4b6,#a47bdb,#fa8c99)"></span><span>Custom pick…</span><input type="color" value="${state.color || '#ffffff'}" hidden>`;
       const input = custom.querySelector('input'); custom.onclick = e => { if (e.target !== input) input.click(); };
       custom.oncontextmenu = e => e.preventDefault();  // the secondary takes palette colours only
       input.onchange = e => { state.color = e.target.value.toLowerCase(); state.custom = true; state.ramp = null; state.tool = 'pencil'; S.renderPalette(el, a); renderToolbarState(); draw(); };
@@ -1297,26 +1348,26 @@
     {keys: ['Z'], description: 'Fit content: zoom to the drawn pixels'},
     {keys: ['G'], description: 'Pixel grid'}, {keys: ['Shift+G'], description: 'Centre and tile-centre guides'},
     {keys: ['Space'], description: 'Hold to peek at the before image (until the keyboard cursor is in use)'},
-    {keys: ['Mod+Z'], description: 'Undo; the history list jumps to any of the last 100 steps'}, {keys: ['Mod+Shift+Z', 'Mod+Y'], description: 'Redo'},
+    {keys: ['Mod+Z'], description: 'Undo; the history list jumps to any of the last 40 steps'}, {keys: ['Mod+Shift+Z', 'Mod+Y'], description: 'Redo'},
     {keys: ['Mod+S'], description: 'Save the asset'}]);
 
   /* ---------- server-backed actions ---------- */
   async function save() {
-    const a = asset(), p = work(a.key);
+    const a = asset(), p = composite(a.key);
     if (!dirty(a.key) || pendingSaves.has(a.key)) return;
     if (!p.data.some((v, i) => i % 4 === 3 && v)) return status('An asset needs at least one pixel', 'bad');
-    const submitted = p.data.slice(), pixels = [];
+    const submitted = L.snapshot(ensure(a.key).doc), document = L.pack(ensure(a.key).doc), pixels = [];
     for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) pixels.push(pixel(p, x, y));
     paintSaveErrors.delete(a.key); pendingSaves.add(a.key); ++writeEpoch; renderToolbarState();
     try {
-      const e = edits[a.key], send = base => api('POST', '/api/save', {key: a.key, pixels, artist: state.artist, base});
+      const e = edits[a.key], send = base => api('POST', '/api/save', {key: a.key, pixels, artist: state.artist, base, document});
       const res = await send(e.base ?? a.sha).catch(async err => {
         if (err.status !== 409 || !await askOverwrite(a.key)) throw err;
         return send(err.body.current);
       });
       // Only the submitted pixels reached disk; painting may have continued while
       // awaiting the request or conflict dialog. Keep those later edits and drafts.
-      e.saved = submitted; e.base = a.sha = res.sha; a.hand_painted = true; D.version = res.version;
+      e.saved = submitted; e.savedSignature = signature(L.restore(submitted)); a.paint_document = document; e.base = a.sha = res.sha; a.hand_painted = true; D.version = res.version;
       draft(a.key);
       if (asset()?.key === a.key) renderHeader(a);
       renderList();
@@ -1334,6 +1385,7 @@
     return ask(text, {title: 'File changed on disk', confirmLabel: 'Overwrite', danger: true});
   }
   async function tidy() {
+    if (!writable()) return;
     const a = asset(), p = work(a.key), pixels = [];
     for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) pixels.push(pixel(p, x, y));
     try {

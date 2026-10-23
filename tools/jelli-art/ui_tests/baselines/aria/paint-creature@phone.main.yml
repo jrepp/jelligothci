@@ -1,27 +1,15 @@
 - main:
   - tabpanel "Paint":
-    - heading "creatures.axolotl-idle-2" [level=2]
-    - group "Sprite details, scrolls sideways":
-      - text: "48×48 · ID 1102 · device 6× 0 px changed specks 15 → 15 open edges 4 → 4 colours 7 → 7 / max 8 lint fails: specks, open edges"
-      - button "Waive…"
+    - navigation "Paint asset navigation":
+      - button "← Back to review"
+      - strong: creatures.axolotl-idle-2
+      - button "Browse assets"
     - text: Zoom · 7×
     - group "Zoom · 7×":
       - button "Zoom out": −
       - button "Fit"
       - button "Device"
       - button "Zoom in": +
-    - text: Backdrop
-    - group "Backdrop":
-      - button "scene" [pressed]
-      - button "black"
-      - button "ring"
-      - button "panel"
-      - button "checker"
-      - button "paper"
-    - text: Overlays
-    - group "Overlays":
-      - button "Grid" [pressed]
-      - button "Issues"
     - toolbar "Paint commands":
       - group "History":
         - button "Undo" [disabled]
@@ -34,21 +22,15 @@
       - group "Drawing options":
         - button "Pixel-perfect"
         - button "Mirror"
-      - text: Alt-click picks a colour
     - toolbar "Paint tools":
       - group "Tools":
         - button "Pencil" [pressed]
         - button "Eraser"
         - button "Fill"
-        - button "Pick colour"
-        - button "Shade"
-        - button "Line"
-        - button "Rectangle"
-        - button "Ellipse"
         - button "Select"
-        - button "Magic wand"
         - button "Hand"
-    - text: paint · 7× Hover or focus the canvas
+      - button "More tools"
+    - text: creatures.axolotl-idle-2 · 48 × 48 · 7× Hover or focus the canvas
     - application "creatures.axolotl-idle-2, 48 by 48 pixels"
     - region "Flip-book":
       - img "axolotl.idle preview, with unsaved paint"
@@ -71,36 +53,22 @@
         - listitem:
           - button "4 · idle-4 450 ms"
       - group: Onion & guides
-    - group:
-      - text: Properties
-      - group:
-        - text: Transform & selection Transform
-        - group "Transform":
-          - button "Flip horizontally": ⇋
-          - button "Flip vertically": ⇅
-          - button "Rotate clockwise": ↻
-          - button "Rotate anticlockwise": ↺
-        - text: Nudge
-        - group "Nudge":
-          - button "Nudge left": ←
-          - button "Nudge up": ↑
-          - button "Nudge down": ↓
-          - button "Nudge right": →
-          - button "Wrap"
-        - text: Replace colour
-        - group "Replace colour":
-          - combobox "Replace colour":
-            - 'option "body #ffcbdd · 346 px" [selected]'
-            - 'option "outline #000000 · 148 px"'
-            - 'option "body shadow #ffadca · 92 px"'
-            - 'option "gill #ff5994 · 43 px"'
-            - 'option "body light #ffe3ed · 17 px"'
-            - 'option "gill deep #d9265d · 4 px"'
-            - 'option "white #ffffff · 2 px"'
-          - button "→ paint colour"
-      - group: Symmetry
-      - group: View & input
-      - group: Clean up & restore
+    - heading "Layers 1/8" [level=3]
+    - list "Artwork layers, top first":
+      - listitem:
+        - button "Select Artwork" [pressed]: Artwork
+        - button "Show Artwork" [pressed]: ◉
+        - button "Lock Artwork": □
+    - textbox "Layer name": Artwork
+    - button "+ Layer"
+    - button "Duplicate"
+    - button "Move layer up" [disabled]: ↑
+    - button "Move layer down" [disabled]: ↓
+    - button "Delete layer" [disabled]
+    - checkbox "Onion skin reference · not exported" [checked]
+    - text: Onion skin reference · not exported
+    - group: Attachments metadata
+    - group: Properties
     - heading "Paint colours · axolotl" [level=3]
     - group "Main and secondary colours":
       - 'button "Main #000000. Choose a colour from the palette"':
@@ -130,15 +98,8 @@
     - group "more":
       - text: more
       - button "eraser right-click · transparent · secondary colour": eraser right-click
-      - button "Choose a custom colour": custom pick…
+      - button "Custom pick… choose a colour": Custom pick…
     - group: About the colours
-    - text: before /tmp/jelli-ui-tests/before compare with
-    - combobox "compare with":
-      - option "/tmp/jelli-ui-tests/before" [selected]
-      - option "Last save (HEAD)"
-    - img "creatures.axolotl-idle-2 before (/tmp/jelli-ui-tests/before)"
-    - text: history click a step to go back
-    - list "history click a step to go back":
-      - listitem:
-        - button "1. Opened"
-    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms; Hand (H) or middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."
+    - group: History & comparison
+    - group: Canvas help
+    - group: Canvas options

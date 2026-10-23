@@ -176,7 +176,7 @@ Evidence from studio 0.6.0 on `main` (4eab889):
 
 - Changing game data formats or the engine.
 - Collaboration, accounts or a server rewrite.
-- Layers (including memo-043's sketch layer), pressure brushes or vector
+- Original scope: layers (including memo-043's sketch layer), pressure brushes or vector
   tools.
 - A new visual brand.
 
@@ -439,3 +439,11 @@ are delivered by F4–F11.
 - memo-043.
 - The code inventory and measurements can be reproduced from `main` at
   4eab889.
+
+## Asset-layer scope extension (2026-10-23)
+
+The owner subsequently requested contextual, asset-focused Paint with editable
+layers and onion/attachment references, and selected separate attachment metadata.
+This authorizes the scoped layer work described in
+[ADR-016](../adr/adr-016-asset-focused-paint-layers.md); the earlier sketch-layer
+exclusion remains historical context for the original workspace increment.

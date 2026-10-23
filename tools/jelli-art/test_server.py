@@ -195,6 +195,28 @@ def wait_for(predicate, timeout=30, message="condition"):
     raise AssertionError(f"timed out waiting for {message}")
 
 
+class LayerStorageTest(unittest.TestCase):
+    def test_palette_and_resize_preserve_hidden_layer_pixels(self):
+        import base64
+        import io
+        import paint_layers
+        import storage
+        image = Image.new("RGBA", (2, 1), (10, 20, 30, 255))
+        encoded = base64.b64encode(image.tobytes()).decode()
+        doc = {"version": 1, "active": 0, "layers": [
+            {"name": "Paint", "visible": True, "locked": False, "data": encoded},
+            {"name": "Sketch", "visible": False, "locked": True, "data": encoded}]}
+        image.info[paint_layers.KEY] = json.dumps(doc)
+        self.assertTrue(paint_layers.remap(image, (10, 20, 30), (40, 50, 60)))
+        image.putdata([(40, 50, 60, 255)] * 2)
+        resized = paint_layers.resize(image, (4, 2))
+        saved = Image.open(io.BytesIO(storage.png_bytes(resized)))
+        result = paint_layers.read(saved)
+        self.assertEqual(len(result["layers"]), 2)
+        self.assertFalse(result["layers"][1]["visible"])
+        self.assertEqual(base64.b64decode(result["layers"][1]["data"]), bytes((40, 50, 60, 255)) * 8)
+
+
 class ServerTest(unittest.TestCase):
     """One server on scratch copies; each test edits different assets."""
 
@@ -227,6 +249,34 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(after["sha"], reply["sha"])
         self.assertTrue(after["hand_painted"])
         self.assertEqual(self.server.get("/api/version")["version"], reply["version"])
+
+    def test_layered_asset_roundtrip_validation_and_stale_metadata(self):
+        import base64
+        asset, path = self.asset()
+        with Image.open(path) as image:
+            raw = image.convert("RGBA").tobytes()
+        layers = {"version": 1, "active": 1, "layers": [
+            {"name": "Artwork", "visible": True, "locked": True, "data": base64.b64encode(raw).decode()},
+            {"name": "Hidden sketch", "visible": False, "locked": False, "data": base64.b64encode(raw).decode()}]}
+        pixels = pixels_of(path)
+        body = {"key": asset["key"], "pixels": pixels, "base": asset["sha"], "document": layers}
+        result = self.server.post("/api/save", body)
+        self.assertEqual(pixels_of(path), pixels)
+        after = next(a for a in self.server.get("/api/data")["assets"] if a["key"] == asset["key"])
+        self.assertEqual(after["paint_document"], layers)
+        # A name-only change has the same stale protection as a painted pixel.
+        layers["layers"][1]["name"] = "Renamed sketch"
+        body["base"] = result["sha"]
+        newer = self.server.post("/api/save", body)
+        self.assertNotEqual(newer["sha"], result["sha"])
+        self.server.post("/api/save", body, expect=409)
+        body["base"] = newer["sha"]
+        layers["layers"][0]["visible"] = False
+        self.server.post("/api/save", body, expect=400)
+        self.assertEqual(pixels_of(path), pixels)
+        # An older client must not silently flatten an existing layer document.
+        body.pop("document")
+        self.server.post("/api/save", body, expect=400)
 
     def test_paint_stale_base_is_refused_and_nothing_changes(self):
         asset, path = self.asset()

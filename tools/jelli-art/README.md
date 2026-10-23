@@ -487,6 +487,26 @@ Other code can call `put`, `restore`,
 `drop`, `list`, `later`, `flush` and `track`; the header comment of `drafts.js`
 documents each call and its keys.
 
+## Asset-focused Paint
+
+Open **Paint** beside the artwork in Review, a creature frame, a background layer,
+a behavior look or a celebration. **Back** returns to that authoring context;
+**Browse assets** opens the library. The canvas, everyday tools and layer stack
+stay prominent; additional tools, properties, comparison/history and canvas
+options are disclosures.
+
+The Layers panel adds, duplicates, renames, orders, hides and locks paint layers.
+Tools affect the selected visible, unlocked layer. Undo and drafts retain layers,
+and Save writes their flattened composite plus editable PNG metadata. Onion skin
+is a reference layer. For creature art, **Attachments** shows the existing named
+hardpoints: choose one, use **Place on canvas** or X/Y, and preview artwork at that
+point with reference opacity. **Save attachments & effects** writes the effects
+metadata separately from the Paint Save action. These positions are shared across
+celebrations for that creature form; preview artwork is never flattened into it.
+
+Storage limits and compatibility are described in
+[ADR-016](../../docs-cms/adr/adr-016-asset-focused-paint-layers.md).
+
 ## Tests
 
 The **Scenes** view composes registered background artwork with independent tilt

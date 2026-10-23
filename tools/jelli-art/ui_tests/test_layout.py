@@ -11,6 +11,7 @@ Run: tools/jelli-art/ui_tests/run.sh -k test_layout
 import json
 
 import pytest
+from playwright.sync_api import expect
 
 from conftest import DATA, NOTES, VIEWS, settle
 from touch import fit_box, pen_stroke
@@ -124,6 +125,7 @@ def test_row_two_is_review_only_and_lint_totals_leave_paint(page_at):
     for sel in (".refs", "#totals"):
         assert not page.evaluate(visible, f"header {sel}"), f"{sel} should be Review-only"
     # The one compare-with control moves into Paint's before pane (bound to the same select), so nothing is lost.
+    page.locator(".paint-reference-details>summary").click()
     assert page.evaluate(visible, "#stage #before-ref")
     assert page.locator("header #before-ref").count() == 0
     page.evaluate("() => JelliShell.activateMode('review')")
@@ -414,16 +416,16 @@ def test_an_empty_name_is_asked_for_once_before_the_first_save(page_at):
     assert [s["artist"] for s in sent] == ["Grace", "Grace"]
 
 
-def test_a_scrolling_stats_row_is_keyboard_reachable(page_at):
+def test_focused_asset_navigation_is_keyboard_reachable(page_at):
     page = page_at("1440x900")
     page.set_viewport_size({"width": 700, "height": 900})
-    page.wait_for_timeout(150)
-    stats = page.evaluate("() => { const e = document.getElementById('asset-stats'); return {over: e.scrollWidth > e.clientWidth + 1, tabindex: e.getAttribute('tabindex'), role: e.getAttribute('role')}; }")
-    assert stats["over"], "the Paint stat pills should overflow their row at 700 px"
-    assert stats["tabindex"] == "0" and stats["role"] == "group", stats
-    page.set_viewport_size({"width": 1920, "height": 1080})
-    page.wait_for_timeout(150)
-    assert page.evaluate("() => document.getElementById('asset-stats').getAttribute('tabindex')") is None
+    expect(page.locator('#asset-stats')).to_be_hidden()
+    expect(page.locator('#paint-navigation strong')).to_have_text(page.evaluate('state.key'))
+    page.locator('#paint-back').focus()
+    page.keyboard.press('Tab')
+    expect(page.locator('#paint-browse')).to_be_focused()
+    page.locator('#paint-back').click()
+    expect(page.locator('#asset-stats')).to_be_visible()
 
 
 def test_skipping_the_name_still_saves_and_does_not_nag(page_at):
