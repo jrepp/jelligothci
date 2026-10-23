@@ -345,3 +345,30 @@ def test_shared_art_navigation_and_paint_return(creator):
     page.locator('#scene-return').click()
     expect(page.locator('#scene-select')).to_have_value('garden-walk')
     expect(page.locator('#scene-asset')).to_have_value('backgrounds.kit-sky')
+
+
+def test_background_edit_markers_and_offscreen_hint(creator):
+    page=creator['page']
+    open_scenes(page)
+    page.locator('#scene-name').fill('Edited street')
+    expect(page.locator('#scene-select option:checked')).to_contain_text('edited')
+    expect(page.locator('#scene-count')).to_contain_text('1 edited')
+    page.locator('#scene-select').select_option('activity-reading')
+    page.locator('#scene-repeat').uncheck()
+    page.locator('[data-number="x"]').fill('100')
+    expect(page.locator('#scene-validation')).to_contain_text('outside the neutral preview')
+    page.locator('#scene-save').click()
+    expect(page.locator('#scene-status')).to_have_text('Saved')
+    expect(page.locator('#scene-count')).to_contain_text('0 edited')
+
+
+def test_mobile_stepper_can_repair_invalid_background_field(creator):
+    page=creator['page']
+    # The tap-stepper controls also exist on fine pointers, hidden by CSS.
+    open_scenes(page)
+    field=page.locator('[data-number="x"]')
+    field.fill('')
+    field.locator('..').get_by_role('button',name='Increase Horizontal position',include_hidden=True).dispatch_event('click')
+    expect(field).to_have_value('1')
+    page.locator('#scene-next').click()
+    expect(page.locator('#scene-select')).to_have_value('garden-walk')

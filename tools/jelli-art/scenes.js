@@ -27,13 +27,14 @@
     if(!matches().includes(scene()))query='';
     render();input('#scene-select').focus();
   }
+  const edited = s => JSON.stringify(s)!==JSON.stringify(loaded?.scenes.find(old=>old.key===s.key));
   function navigator() {
     const list=matches(), at=list.indexOf(scene());
     const choices=list.includes(scene())?list:[scene(),...list];
-    input('#scene-select').innerHTML=options(choices.map(s=>[s.key,`${s.name}${s.activity?' · '+s.activity:''}`]),scene().key);
+    input('#scene-select').innerHTML=options(choices.map(s=>[s.key,`${s.name}${s.activity?' · '+s.activity:''}${edited(s)?' · edited':''}`]),scene().key);
     button('#scene-prev').disabled=at<=0;
     button('#scene-next').disabled=at<0||at===list.length-1;
-    root.querySelector('#scene-count').textContent=list.length?`${list.length} matching backgrounds`:'No matches — current background kept open';
+    root.querySelector('#scene-count').textContent=list.length?`${list.length} matching backgrounds · ${work.scenes.filter(edited).length} edited`:'No matches — current background kept open';
   }
   function checks() {
     const target=root.querySelector('#scene-validation');if(!target)return;
@@ -41,7 +42,10 @@
     if(invalid){target.textContent=`${invalid.closest('label')?.textContent.trim()}: ${invalid.validationMessage}`;return;}
     const s=scene(), visible=s.layers.filter(l=>l.visible&&variation(l).chance>0);
     const missing=s.layers.filter(l=>!assets().some(a=>a.key===l.asset));
+    const current=layer(), a=assets().find(a=>a.key===current.asset);
+    const offscreen=a&&current.visible&&!current.repeat_x&&(current.x>=64||current.y>=64||current.x+a.width<=0||current.y+a.height<=0);
     target.textContent=missing.length?`Missing artwork: ${missing.map(layerName).join(', ')}`:
+      offscreen?'Selected layer is outside the neutral preview. Adjust its position or tilt to bring it into view.':
       !visible.length?'No visible layers. Only the base color will appear.':
       s.activity&&!visible.some(l=>l.travel>0||variation(l).travel>0)?'This activity has no moving layers. Increase a layer’s travel to add scrolling.':'Scene fields are valid.';
   }
@@ -84,7 +88,7 @@
   root.addEventListener('input',()=>checks());
   root.addEventListener('click',e=>{
     const control=/** @type {HTMLElement} */(e.target).closest('button');
-    if(control&&!['scene-save','scene-reload','scene-undo'].includes(control.id)&&!validFields()){
+    if(control&&!control.closest('.jd-step')&&!['scene-save','scene-reload','scene-undo'].includes(control.id)&&!validFields()){
       e.preventDefault();e.stopImmediatePropagation();
     }
   },true);
@@ -235,7 +239,7 @@
     const s = scene(), l = layer();
     root.innerHTML = `<h2>Background scenes</h2>
       <p class="scene-help">Build places from reusable artwork. Preview tilt and travel here, then save and test the scene in the engine.</p>
-      <div class="scene-actions"><button id="scene-save">Save</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
+      <div class="scene-actions"><button id="scene-save">Save backgrounds</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
       <nav class="scene-nav" aria-label="Background navigation">
       <label>Find background<input id="scene-search" type="search" placeholder="Name or activity" value="${esc(query)}"></label>
       <label>Scene<select id="scene-select"></select></label>
