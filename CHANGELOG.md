@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.18.0](https://github.com/jrepp/jelligothci/compare/v0.17.1...v0.18.0) (2026-10-23)
+
+
+### Features
+
+* add activity scrolling backgrounds and improve scene authoring ([50557a9](https://github.com/jrepp/jelligothci/commit/50557a924db95879fd80999677841ecc7f125d38))
+* add activity scrolling backgrounds and improve scene authoring ([#93](https://github.com/jrepp/jelligothci/issues/93)) ([50557a9](https://github.com/jrepp/jelligothci/commit/50557a924db95879fd80999677841ecc7f125d38))
+* add activity scrolling backgrounds and scene authoring navigation ([423cd16](https://github.com/jrepp/jelligothci/commit/423cd1625cd8eb7e38eb53857e34d11faa6612df))
+* **studio:** streamline mobile tracker authoring and sound selection ([#91](https://github.com/jrepp/jelligothci/issues/91)) ([1b799f0](https://github.com/jrepp/jelligothci/commit/1b799f0fb69695d670c9b194d27e6f01b64384c1))
+
+
+### Bug Fixes
+
+* **studio:** polish background editing feedback and touch recovery ([67c01d1](https://github.com/jrepp/jelligothci/commit/67c01d1c77f1f3f41954d07dc60e58cf4f34fe1b))
+* **studio:** polish background editing feedback and touch recovery ([47a9e37](https://github.com/jrepp/jelligothci/commit/47a9e377b75716c9aa68b38c128371674e325646))
+* **studio:** polish background editing feedback and touch recovery ([#94](https://github.com/jrepp/jelligothci/issues/94)) ([67c01d1](https://github.com/jrepp/jelligothci/commit/67c01d1c77f1f3f41954d07dc60e58cf4f34fe1b))
+* **studio:** preserve invalid behavior and activity input for correction ([4d1a9f5](https://github.com/jrepp/jelligothci/commit/4d1a9f594cf0fad25d10b98d39fd1a1c09d548f3))
+* **studio:** preserve invalid behavior and activity input for correction ([46f8498](https://github.com/jrepp/jelligothci/commit/46f8498a9322226cf26d2afc94379e3ea2b388a0))
+* **studio:** preserve invalid behavior and activity input for correction ([#95](https://github.com/jrepp/jelligothci/issues/95)) ([4d1a9f5](https://github.com/jrepp/jelligothci/commit/4d1a9f594cf0fad25d10b98d39fd1a1c09d548f3))
+
 ## [0.17.1](https://github.com/jrepp/jelligothci/compare/v0.17.0...v0.17.1) (2026-10-21)
 
 
