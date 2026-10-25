@@ -3326,6 +3326,166 @@
       ],
       "palette": "earth-kit",
       "purpose": "Reusable markings activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 1013,
+      "key": "creatures.cacti-idle-a",
+      "path": "creatures/cacti-idle-a.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        13,
+        28,
+        30
+      ],
+      "form": "cacti",
+      "pose": "idle-a"
+    },
+    {
+      "id": 1014,
+      "key": "creatures.cacti-idle-b",
+      "path": "creatures/cacti-idle-b.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        3,
+        15,
+        29,
+        30
+      ],
+      "form": "cacti",
+      "pose": "idle-b"
+    },
+    {
+      "id": 1015,
+      "key": "creatures.cacti-eating",
+      "path": "creatures/cacti-eating.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        13,
+        28,
+        30
+      ],
+      "form": "cacti",
+      "pose": "eating"
+    },
+    {
+      "id": 1016,
+      "key": "creatures.cacti-happy",
+      "path": "creatures/cacti-happy.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        11,
+        28,
+        30
+      ],
+      "form": "cacti",
+      "pose": "happy"
+    },
+    {
+      "id": 1017,
+      "key": "creatures.cacti-asleep",
+      "path": "creatures/cacti-asleep.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        3,
+        18,
+        29,
+        30
+      ],
+      "form": "cacti",
+      "pose": "asleep"
+    },
+    {
+      "id": 1018,
+      "key": "creatures.cacti-unwell",
+      "path": "creatures/cacti-unwell.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        3,
+        15,
+        29,
+        30
+      ],
+      "form": "cacti",
+      "pose": "unwell"
+    },
+    {
+      "id": 1019,
+      "key": "creatures.cacti-curious",
+      "path": "creatures/cacti-curious.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        4,
+        13,
+        29,
+        30
+      ],
+      "form": "cacti",
+      "pose": "curious"
+    },
+    {
+      "id": 1020,
+      "key": "creatures.cacti-content",
+      "path": "creatures/cacti-content.png",
+      "kind": "creatures",
+      "width": 32,
+      "height": 32,
+      "pivot": [
+        16,
+        30
+      ],
+      "bounds": [
+        3,
+        15,
+        29,
+        30
+      ],
+      "form": "cacti",
+      "pose": "content"
     }
   ],
   "clips": [
@@ -3805,6 +3965,94 @@
         700
       ],
       "loop": true
+    },
+    {
+      "id": 5017,
+      "key": "cacti.idle",
+      "frames": [
+        "creatures.cacti-idle-a"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5018,
+      "key": "cacti.idle-alt",
+      "frames": [
+        "creatures.cacti-idle-b"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5019,
+      "key": "cacti.curious",
+      "frames": [
+        "creatures.cacti-curious"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5020,
+      "key": "cacti.content",
+      "frames": [
+        "creatures.cacti-content"
+      ],
+      "durations_ms": [
+        900
+      ],
+      "loop": false
+    },
+    {
+      "id": 5021,
+      "key": "cacti.eating",
+      "frames": [
+        "creatures.cacti-eating"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5022,
+      "key": "cacti.happy",
+      "frames": [
+        "creatures.cacti-happy"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5023,
+      "key": "cacti.asleep",
+      "frames": [
+        "creatures.cacti-asleep"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
+    },
+    {
+      "id": 5024,
+      "key": "cacti.unwell",
+      "frames": [
+        "creatures.cacti-unwell"
+      ],
+      "durations_ms": [
+        450
+      ],
+      "loop": false
     }
   ],
   "palettes": {

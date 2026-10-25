@@ -63,6 +63,13 @@
       "unlock_prize": 7,
       "hint": "CATCH MOON CHARM",
       "evolution_set": 1
+    },
+    {
+      "id": 10,
+      "name": "MY PET",
+      "unlock_prize": 1,
+      "hint": "CACTI",
+      "evolution_set": 3
     }
   ],
   "forms": [
@@ -89,6 +96,12 @@
       "name": "BABY AXO",
       "portrait": 1201,
       "art": "axolotl-baby"
+    },
+    {
+      "id": 4,
+      "name": "MY PET",
+      "portrait": 1013,
+      "art": "cacti"
     }
   ],
   "evolution_sets": [
@@ -107,6 +120,13 @@
         2
       ],
       "growth_ticks": 600
+    },
+    {
+      "id": 3,
+      "forms": [
+        4
+      ],
+      "growth_ticks": 0
     }
   ],
   "newborn": {
