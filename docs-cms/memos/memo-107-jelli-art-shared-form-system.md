@@ -3,7 +3,7 @@ title: Jelli Art shared form layout and validation
 author: Codex
 created: 2026-10-22T04:56:08Z
 tags: [jelli-art, memo, responsive, validation]
-id: memo-102
+id: memo-107
 project_id: jelligotchi
 doc_uuid: a391b252-05d0-4e81-bb77-9904222753eb
 ---

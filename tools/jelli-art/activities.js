@@ -19,14 +19,15 @@
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="activities" aria-pressed="false">Activities</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="activities" class="hidden"></div>');
   const root = document.getElementById('activities');
+  const design=/** @type {any} */(window).JelliDesign;
+  design.guardFields(root,'#ac-revert');
   window.JelliShell?.registerViewRoot('activities');
   /** @type {any} */ (window).JelliDesign.watch(root);
   document.head.insertAdjacentHTML('beforeend', `<style>
     #activities{container:ac/inline-size}
-    .ac-grid{display:grid;grid-template-columns:190px minmax(0,600px) 220px;gap:20px}
-    .ac-grid>*{min-width:0}.ac-list{display:grid;gap:6px;align-content:start}
-    .ac-fields>.sf-field{margin:12px 0}.ac-fields fieldset label{margin:8px 0}
-    .ac-fields fieldset{min-width:0}.ac-fields input[type=number]{font-variant-numeric:tabular-nums}
+    .ac-grid{display:grid;grid-template-columns:190px minmax(260px,600px) 220px;gap:24px}
+    .ac-list{display:grid;gap:6px;align-content:start}.ac-fields label{display:block;margin:12px 0}
+    .ac-fields input,.ac-fields select{margin-left:8px;max-width:260px}.ac-fields input[type=number]{width:90px}
     #ac-preview{image-rendering:pixelated;background:#171b26;border-radius:50%;width:220px;height:220px}
     /* The view's own width decides (RFC-007): list beside the fields with the preview above them, and under 800 px
      * one column with the preview pinned on top. */
@@ -36,11 +37,10 @@
     }
     @container ac (max-width:800px){
       .ac-grid{display:flex;flex-direction:column;gap:16px}.ac-grid>*{min-width:0}.ac-list{grid-template-columns:repeat(3,1fr)}
-      .ac-grid>aside{order:-1;align-self:stretch;width:100%;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;border:0;display:grid;grid-template-columns:minmax(0,1fr) 130px;align-items:center;gap:12px}
-      .ac-grid>aside p{display:none}.ac-grid>aside label{min-width:0;margin:0}
+      .ac-grid>aside{order:-1;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;border:0;flex-direction:row;align-items:center;gap:12px}
+      .ac-grid>aside p{display:none}.ac-grid>aside label{display:flex;align-items:center;gap:8px}
       #ac-preview{width:130px;height:130px}
     }
-    @container ac (max-width:520px){.ac-list{grid-template-columns:repeat(2,minmax(0,1fr))}.ac-list button{min-width:0;overflow-wrap:anywhere}}
   </style>`);
   function sync() {
     if (base === D.activity_sha) return;
@@ -93,6 +93,7 @@
       <p>Reward ranges include jitter and this pet’s activity bonus. Existing sleep-habit effects on fun/connection and favorite-time extras also apply; meters cap at 100.</p>
       <div id="ac-effects"></div></div>
       <aside class="studio-form"><label>Preview pet<select id="ac-form">${opts(forms.map(f=>[f.id,f.name]),previewForm)}</select></label><canvas id="ac-preview" width="220" height="220" aria-label="Approximate activity animation thumbnail"></canvas><p>Approximate animation thumbnail. Actor and prop sizes and motion differ from the engine. Save and use Test in game to verify actual placement and location.</p></aside></div>`;
+    root.querySelectorAll('input[type=number]:not([data-bonus]),input[type=time]').forEach(el=>{/** @type {HTMLInputElement} */(el).required=true;});
     /** @type {NodeListOf<HTMLButtonElement>} */ (root.querySelectorAll('button[data-activity]')).forEach(b => b.onclick=()=>{selected=Number(b.dataset.activity);render();});
     const formSelect = /** @type {HTMLSelectElement} */ (root.querySelector('#ac-form'));
     formSelect.onchange=()=>{previewForm=Number(formSelect.value);render();};
@@ -158,7 +159,7 @@
   }
   let saveState = 'idle';
   async function save() {
-    if (saveState === 'saving' || !dirty()) return;
+    if (saveState === 'saving' || !design.validFields(root) || !dirty()) return;
     const sent = clone(work);
     saveState = 'saving'; render();
     try {

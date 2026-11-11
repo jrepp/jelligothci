@@ -80,6 +80,7 @@ def generate(output):
     chunks.extend(["};", "", "const JelliAsset *jelli_asset_find(uint32_t id)", "{", "    for (unsigned i = 0u; i < sizeof(assets) / sizeof(assets[0]); ++i) {", "        if (assets[i].id == id)", "            return &assets[i];", "    }", "    return 0;", "}", "", "const uint8_t *jelli_asset_glyph(uint8_t codepoint)", "{", "    if (codepoint < 32u || codepoint > 127u)", "        codepoint = (uint8_t)'?';", "    return &font_glyphs[(unsigned)(codepoint - 32u) * 12u];", "}", ""])
     chunks.extend(creature_data.emit(manifest))
     scenes = json.loads((ROOT / "content/scenes.json").read_text())
+    scene_data.validate_bindings(scenes, json.loads((ROOT / "content/activities.json").read_text())["moments"])
     chunks.append(scene_data.emit(scenes, manifest))
     effects_path = ROOT / "content/effects.json"
     effects = json.loads(effects_path.read_text()) if effects_path.exists() else effect_data.initial(manifest)
