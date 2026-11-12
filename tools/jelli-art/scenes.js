@@ -79,7 +79,7 @@
   S.clipsDirty = () => oldDirty?.() || dirty();
   shell.registerDirty('scenes', {label:'Scenes', mode:'scenes', check:dirty});
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="scenes" aria-pressed="false">Scenes</button>');
-  document.querySelector('main').insertAdjacentHTML('beforeend', '<section id="scenes" class="hidden"></section>');
+  document.querySelector('main').insertAdjacentHTML('beforeend', '<section id="scenes" class="hidden studio-form"></section>');
   shell.registerViewRoot('scenes');
   const root = document.getElementById('scenes');
   // The shared shortcut router skips form fields; saving must still work there.
@@ -249,7 +249,7 @@
     const s = scene(), l = layer();
     root.innerHTML = `<h2>Background scenes</h2>
       <p class="scene-help">Build places from reusable artwork. Preview tilt and travel here, then save and test the scene in the engine.</p>
-      <div class="scene-actions"><button id="scene-save">Save backgrounds</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
+      <div class="scene-actions sf-actions"><button id="scene-save">Save backgrounds</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
       <nav class="scene-nav" aria-label="Background navigation">
       <label>Find background<input id="scene-search" type="search" placeholder="Name or activity" value="${esc(query)}"></label>
       <label>Scene<select id="scene-select"></select></label>

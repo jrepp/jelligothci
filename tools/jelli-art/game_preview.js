@@ -41,9 +41,8 @@
     }
     .gp-form fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 10px;padding:8px 10px}
     .gp-form legend{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 4px}
-    .gp-row{display:grid;grid-template-columns:110px 1fr;gap:6px;align-items:center;margin:4px 0}
-    .gp-row label{font-size:12px;color:var(--muted)}.gp-row input[type=number]{width:96px}
-    .gp-row select{max-width:none;width:100%}.gp-check{display:flex;gap:6px;align-items:center;margin:4px 0;font-size:12px}
+    .gp-row{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin:8px 0}
+    .gp-row label{font-size:12px;color:var(--muted)}.gp-check{display:flex;gap:8px;align-items:center;margin:4px 0;font-size:12px}
     .gp-form [aria-invalid=true]{outline:2px solid var(--bad);outline-offset:1px}
     .gp-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
     .gp-unsaved{margin:6px 0;color:var(--warn);font-size:12px}.gp-actions .gp-unsaved{flex:1 1 100%;margin:0}
@@ -144,7 +143,7 @@
     const entry = entryOf(sc.pet); if (!sc.pet) sc.pet = entry.name;
     if (!entry.forms.some(f => f.name === sc.form)) sc.form = entry.forms[0]?.name || '';
     const ring = !!pageOf(sc.page)?.ring;
-    return `<form class="gp-form" id="gp-form" novalidate>
+    return `<form class="gp-form studio-form" id="gp-form" novalidate>
       <fieldset><legend>Pet</legend>
         <div class="gp-row"><label for="gp-pet">Pet</label><select id="gp-pet" data-k="pet">${cat.entries.map(e => opt(e.name, e.name, sc.pet)).join('')}</select></div>
         <div class="gp-row"><label for="gp-form-pick">Form</label><select id="gp-form-pick" data-k="form">${entry.forms.map(f => opt(f.name, f.name, sc.form)).join('')}</select></div>
@@ -184,7 +183,7 @@
         ${num('advance_s', 'Simulate first (s)', sc.advance_s, 0, cat.limits.advance_s, 1, 'Runs the game this many seconds before the first frame (needs decay, behaviour may change).')}
         ${check('live', 'Advance the game between frames', sc.live)}
       </fieldset>
-      <div class="gp-actions"><button type="submit" class="primary" id="gp-render"${busy || !cat.available ? ' disabled' : ''}>${busy ? 'Rendering…' : 'Render in engine'}</button>
+      <div class="gp-actions sf-actions"><button type="submit" class="primary" id="gp-render"${busy || !cat.available ? ' disabled' : ''}>${busy ? 'Rendering…' : 'Render in engine'}</button>
         <button type="button" id="gp-reset">Reset scenario</button></div>
       ${check('auto', 'Render after every save', autoRender)}
     </form>`;

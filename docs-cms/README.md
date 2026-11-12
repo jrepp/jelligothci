@@ -48,6 +48,8 @@ Three event-specific celebrations and USB deployment:
 [memo-087](memos/memo-087-event-celebrations-and-device-validation.md).
 Responsive Jelli Art navigation and interaction polish:
 [memo-088](memos/memo-088-jelli-art-responsive-navigation.md).
+Shared Jelli Art form layout and responsive validation:
+[memo-107](memos/memo-107-jelli-art-shared-form-system.md).
 Character palette-swap authoring and reusable generation:
 [memo-090](memos/memo-090-character-palette-swaps.md).
 Generated asset final-newline packaging regression:
