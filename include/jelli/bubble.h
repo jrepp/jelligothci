@@ -26,6 +26,7 @@ typedef struct {
 } JelliBubble;
 /* Init/retry preserve only selected assistance; retry retains completed levels/score. */
 void jelli_bubble_init(JelliBubble *lab, unsigned assist);
+void jelli_bubble_init_seeded(JelliBubble *lab, unsigned assist, uint32_t seed);
 void jelli_bubble_retry(JelliBubble *lab);
 bool jelli_bubble_same(const JelliBubble *a, const JelliBubble *b);
 bool jelli_bubble_valid(const JelliBubble *lab);

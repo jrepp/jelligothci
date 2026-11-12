@@ -306,7 +306,7 @@ bool jelli_pet_collectible_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
     }
     if (ui->page == JELLI_UI_COLLECTIBLE_PLAY &&
         game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE && !game->collectible.paused &&
-        x >= 174 && x < 366 && y >= 50 && y < 370)
+        x >= 125 && x < 341 && y >= 50 && y < 390)
         jelli_pet_bubble_action(ui, game, 3u);
     return true;
 }

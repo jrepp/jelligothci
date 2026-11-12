@@ -10,7 +10,7 @@ bool jelli_pet_bubble_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButt
     if (slot != 6u)
         return false;
     unsigned assist = ui->last_view.collectible.bubble.assist;
-    *button = (JelliPetUiButton){.bounds = {374u, 267u, 68u, 52u},
+    *button = (JelliPetUiButton){.bounds = {354u, 267u, 78u, 52u},
                                  .scale = 1u,
                                  .label = assists[assist <= JELLI_BUBBLE_MANUAL ? assist : 0u]};
     return true;
@@ -67,33 +67,34 @@ static void cell_draw(Canvas *c, unsigned cell, int x, int y)
 static void counter(Canvas *c, const char *label, unsigned value, int y, unsigned scale)
 {
     char text[12];
-    jelli_canvas_text(c, label, 62, y, 2u, MINT);
+    jelli_canvas_text(c, label, 48, y, 1u, MINT);
     int n = snprintf(text, sizeof(text), "%u", value);
     if (n > 0 && (size_t)n < sizeof(text))
-        jelli_canvas_text(c, text, 62, y + 21, scale, PALE);
+        jelli_canvas_text(c, text, 48, y + 15, scale, PALE);
 }
 
 void jelli_pet_bubble_draw(Canvas *c, const JelliCollectibleSession *session)
 {
     const JelliBubble *lab = &session->bubble;
-    counter(c, "SCORE", lab->score, 112, lab->score < 10000u ? 3u : 2u);
-    counter(c, "LEVEL", lab->level + 1u, 179, 3u);
-    counter(c, "VIRUS", jelli_bubble_viruses(lab), 246, 3u);
-    jelli_canvas_rect(c, 171, 47, 198, 326, TEAL);
+    counter(c, "SCORE", lab->score, 112, lab->score < 1000u ? 2u : 1u);
+    counter(c, "LEVEL", lab->level + 1u, 179, 2u);
+    counter(c, "VIRUS", jelli_bubble_viruses(lab), 246, 2u);
+    jelli_canvas_rect(c, 122, 47, 222, 346, PALE);
+    jelli_canvas_rect(c, 125, 50, 216, 340, TEAL);
     for (unsigned i = 0u; i < JELLI_BUBBLE_CELLS; ++i) {
-        int x = 190 + (int)(i % JELLI_BUBBLE_WIDTH) * 32;
-        int y = 66 + (int)(i / JELLI_BUBBLE_WIDTH) * 32;
-        jelli_canvas_rect(c, x - 16, y - 16, 31, 31, i < JELLI_BUBBLE_WIDTH ? 0x49a8u : BG);
+        int x = 143 + (int)(i % JELLI_BUBBLE_WIDTH) * 36;
+        int y = 67 + (int)(i / JELLI_BUBBLE_WIDTH) * 34;
+        jelli_canvas_rect(c, x - 18, y - 17, 35, 33, i < JELLI_BUBBLE_WIDTH ? 0x49a8u : BG);
         cell_draw(c, lab->cells[i], x, y);
     }
     if (lab->status == JELLI_BUBBLE_RUNNING) {
-        int x = 190 + (int)lab->x * 32, y = 66 + (int)lab->y * 32;
+        int x = 143 + (int)lab->x * 36, y = 67 + (int)lab->y * 34;
         cell_draw(c, lab->color, x, y);
-        cell_draw(c, lab->color, x + (lab->vertical ? 0 : 32), y + (lab->vertical ? 32 : 0));
+        cell_draw(c, lab->color, x + (lab->vertical ? 0 : 36), y + (lab->vertical ? 34 : 0));
     }
-    jelli_canvas_text(c, "NEXT", 386, 150, 1u, MINT);
-    cell_draw(c, lab->cursor % 3u + 1u, 389, 181);
-    cell_draw(c, lab->cursor % 3u + 1u, 421, 181);
+    jelli_canvas_text(c, "NEXT", 368, 150, 1u, MINT);
+    cell_draw(c, lab->cursor % 3u + 1u, 373, 181);
+    cell_draw(c, lab->cursor % 3u + 1u, 405, 181);
 }
 
 static void bubble_feedback(JelliPetUi *ui, const JelliCollectibleSession *before,

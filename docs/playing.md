@@ -574,28 +574,34 @@ Craft the Bubble Lab cartridge from its recipe in the unowned cartridge card.
 Ingredients remain owned, and every pet can play an owned cartridge. The current
 recipe is defined in [the crafting table](../core/collectible.c).
 
-Clear the stationary, spiky viruses by making horizontal or vertical lines of
-four matching symbols/colors. Medicine arrives as pairs: swipe left/right to
+Clear the stationary, spiky viruses by connecting four or more matching
+symbols/colors along their edges. Squares, bends, and branches count; diagonal
+contact alone does not. Medicine arrives as pairs: swipe left/right to
 move, tap the well to rotate, and swipe down to drop to the next support.
 Desktop arrows mirror swipes, with Up rotating. Quick gestures queue in order;
 [the bounded input controller](../core/collectible_bubble_control.c) consumes one
 per simulation tick. Full queues reject further gestures; pause and retry discard
-queued input. A blocked rotation or move leaves the pair in place.
+queued input. Rotating at the right wall slides the pair inward if there is space. Other blocked
+moves leave it in place; accepted moves restart the automatic fall delay.
 
 After landing, each medicine half falls independently. Only the floor or a cell
 below supports it; a side neighbor never does. Clears and gravity resolve before
-testing the danger row or blocked spawn. Clear every virus to advance, then finish
+testing whether the next pair can spawn. Clear every virus to advance, then finish
 all three levels for the centered star celebration and automatic shelf return.
-A full well or exhausted supply shows the sad watching pet briefly, then returns
+A blocked spawn or exhausted Normal-mode supply shows the sad watching pet briefly, then returns
 to the cartridge shelf. Reopening Bubble Lab retries the current level; completed
 levels and their score remain intact. A misplaced pair can be recovered with later
 matching pairs. Both cartridge games return automatically after a five-second centered
 win celebration or a two-second sad loss reaction, without a replay menu.
 
-The pace control cycles Normal, Relax, and Manual. Manual stops automatic falling;
+New runs start in Manual, without time pressure. The pace control cycles Normal,
+Relax, and Manual. Relax and Manual replenish the pair supply. Manual stops automatic falling;
 downward swipes still drop a pair. All modes have the same objectives and scoring.
 The [rule implementation](../core/collectible_bubble.c) owns well dimensions,
-authored layouts, supply, timing, score and cascade limits. Symbols supplement
+seeded layouts, supply, timing, score and cascade limits. Each level shuffles
+three separate color towers across the well; later levels add taller towers.
+The repeating color supply keeps those layouts solvable. Retries regenerate
+the current difficulty while preserving completed-level score. Symbols supplement
 color; medicine has smooth edges while fixed viruses have spikes. Existing mute
 and reduced-motion behavior is preserved.
 

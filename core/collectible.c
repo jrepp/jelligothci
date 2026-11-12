@@ -136,7 +136,8 @@ JelliResult jelli_collectible_play(JelliGame *game, unsigned prize)
         if (s->mode == JELLI_COLLECTIBLE_CHAIN)
             jelli_chain_init(&s->chain, false);
         if (s->mode == JELLI_COLLECTIBLE_BUBBLE)
-            jelli_bubble_init(&s->bubble, JELLI_BUBBLE_NORMAL);
+            jelli_bubble_init_seeded(&s->bubble, JELLI_BUBBLE_MANUAL,
+                                     generation + game->cartridge_stats[1].plays);
     }
     if (pet->collectible_progress.special_unlocked & (1u << prize))
         special_reaction(pet);

@@ -16,6 +16,8 @@ static void spawn(JelliBubble *lab)
     lab->vertical = 0u;
     lab->ticks = 0u;
     lab->color = (uint8_t)(lab->cursor % 3u + 1u);
+    if (lab->cursor == JELLI_BUBBLE_PAIRS && lab->assist != JELLI_BUBBLE_NORMAL)
+        lab->cursor = 0u;
     if (lab->cursor == JELLI_BUBBLE_PAIRS)
         lab->status = JELLI_BUBBLE_EMPTY;
     else if (!fits(lab, lab->x, lab->y, lab->vertical))
@@ -24,26 +26,46 @@ static void spawn(JelliBubble *lab)
         ++lab->cursor;
 }
 
-static void level_init(JelliBubble *lab, unsigned level, unsigned score, unsigned assist)
+static uint32_t random_next(uint32_t *seed)
+{
+    /* Defined unsigned wrap; injected seed makes generation reproducible. */
+    *seed = *seed * UINT32_C(1664525) + UINT32_C(1013904223);
+    return *seed;
+}
+
+static void level_init(JelliBubble *lab, unsigned level, unsigned score, unsigned assist,
+                       uint32_t seed)
 {
     *lab = (JelliBubble){.level = (uint8_t)level,
                          .score = (uint16_t)score,
                          .level_score = (uint16_t)score,
                          .assist = (uint8_t)assist};
-    /* Three separate color columns. Each level adds a row of stationary viruses.
-     * Vertical matching-color pairs solve every authored well; spare columns and
-     * a repeated supply leave room to recover from misplaced pairs. */
+    uint8_t columns[JELLI_BUBBLE_WIDTH] = {0u, 1u, 2u, 3u, 4u, 5u};
+    for (unsigned i = JELLI_BUBBLE_WIDTH - 1u; i > 0u; --i) {
+        unsigned j = (random_next(&seed) >> 16u) % (i + 1u);
+        uint8_t saved = columns[i];
+        columns[i] = columns[j];
+        columns[j] = saved;
+    }
+    /* Separate single-color towers stay solvable with the fair three-color supply.
+     * Their positions vary; increasing heights add targets and reduce headroom. */
     for (unsigned row = 0u; row <= level; ++row)
         for (unsigned color = 1u; color <= 3u; ++color)
-            lab->cells[(JELLI_BUBBLE_HEIGHT - 1u - row) * JELLI_BUBBLE_WIDTH + color * 2u - 1u] =
-                (uint8_t)(color | 4u);
+            lab->cells[(JELLI_BUBBLE_HEIGHT - 1u - row) * JELLI_BUBBLE_WIDTH +
+                       columns[color - 1u]] = (uint8_t)(color | 4u);
     spawn(lab);
+}
+
+void jelli_bubble_init_seeded(JelliBubble *lab, unsigned assist, uint32_t seed)
+{
+    if (lab && assist <= JELLI_BUBBLE_MANUAL)
+        level_init(lab, 0u, 0u, assist, seed);
 }
 
 void jelli_bubble_init(JelliBubble *lab, unsigned assist)
 {
     if (lab && assist <= JELLI_BUBBLE_MANUAL)
-        level_init(lab, 0u, 0u, assist);
+        level_init(lab, 0u, 0u, assist, 1u);
 }
 
 void jelli_bubble_retry(JelliBubble *lab)
@@ -51,9 +73,10 @@ void jelli_bubble_retry(JelliBubble *lab)
     if (!jelli_bubble_valid(lab))
         return;
     if (lab->status == JELLI_BUBBLE_WON)
-        jelli_bubble_init(lab, lab->assist);
+        jelli_bubble_init_seeded(lab, lab->assist, (uint32_t)lab->score + lab->cursor);
     else
-        level_init(lab, lab->level, lab->level_score, lab->assist);
+        level_init(lab, lab->level, lab->level_score, lab->assist,
+                   (uint32_t)lab->score + lab->cursor);
 }
 
 unsigned jelli_bubble_viruses(const JelliBubble *lab)
@@ -102,10 +125,14 @@ bool jelli_bubble_move(JelliBubble *lab, int dx, bool rotate)
         return false;
     int x = (int)lab->x + dx;
     unsigned vertical = rotate ? 1u - lab->vertical : lab->vertical;
+    if (rotate && x > 0 && !fits(lab, (unsigned)x, lab->y, vertical) &&
+        fits(lab, (unsigned)x - 1u, lab->y, vertical))
+        --x; /* A rotation against the right wall slides one cell inward. */
     if (x < 0 || !fits(lab, (unsigned)x, lab->y, vertical))
         return false;
     lab->x = (uint8_t)x;
     lab->vertical = (uint8_t)vertical;
+    lab->ticks = 0u;
     return true;
 }
 
@@ -132,38 +159,49 @@ static void gravity(JelliBubble *lab)
 
 static unsigned mark_runs(const JelliBubble *lab, bool *marked)
 {
+    bool visited[JELLI_BUBBLE_CELLS] = {false};
+    uint8_t group[JELLI_BUBBLE_CELLS];
     unsigned count = 0u;
-    for (unsigned cell = 0u; cell < JELLI_BUBBLE_CELLS; ++cell) {
-        unsigned color = lab->cells[cell] & 3u;
-        if (!color)
+    for (unsigned start = 0u; start < JELLI_BUBBLE_CELLS; ++start) {
+        unsigned color = lab->cells[start] & 3u;
+        if (!color || visited[start])
             continue;
-        for (unsigned axis = 0u; axis < 2u; ++axis) {
-            unsigned stride = axis ? JELLI_BUBBLE_WIDTH : 1u;
-            unsigned remaining = axis ? JELLI_BUBBLE_HEIGHT - cell / JELLI_BUBBLE_WIDTH
-                                      : JELLI_BUBBLE_WIDTH - cell % JELLI_BUBBLE_WIDTH;
-            unsigned length = 1u;
-            for (; length < remaining; ++length)
-                if ((lab->cells[cell + length * stride] & 3u) != color)
-                    break;
-            if (length >= 4u)
-                for (unsigned i = 0u; i < length; ++i) {
-                    unsigned index = cell + i * stride;
-                    count += marked[index] ? 0u : 1u;
-                    marked[index] = true;
+        unsigned length = 1u;
+        group[0] = (uint8_t)start;
+        visited[start] = true;
+        for (unsigned head = 0u; head < length; ++head) {
+            unsigned cell = group[head], x = cell % JELLI_BUBBLE_WIDTH;
+            const unsigned neighbors[4] = {
+                x ? cell - 1u : cell, x + 1u < JELLI_BUBBLE_WIDTH ? cell + 1u : cell,
+                cell >= JELLI_BUBBLE_WIDTH ? cell - JELLI_BUBBLE_WIDTH : cell,
+                cell + JELLI_BUBBLE_WIDTH < JELLI_BUBBLE_CELLS ? cell + JELLI_BUBBLE_WIDTH : cell};
+            for (unsigned n = 0u; n < 4u; ++n) {
+                unsigned next = neighbors[n];
+                if (!visited[next] && (lab->cells[next] & 3u) == color) {
+                    visited[next] = true;
+                    group[length++] = (uint8_t)next;
                 }
+            }
         }
+        if (length >= 4u)
+            for (unsigned i = 0u; i < length; ++i) {
+                marked[group[i]] = true;
+                ++count;
+            }
     }
     return count;
 }
 
 static void resolve(JelliBubble *lab)
 {
-    gravity(lab);
     /* Every successful pass removes at least four cells. */
     for (unsigned cascade = 1u; cascade <= JELLI_BUBBLE_CELLS / 4u; ++cascade) {
         bool marked[JELLI_BUBBLE_CELLS] = {false};
-        if (!mark_runs(lab, marked))
-            break;
+        if (!mark_runs(lab, marked)) {
+            gravity(lab);
+            if (!mark_runs(lab, marked))
+                break;
+        }
         unsigned points = 0u;
         for (unsigned i = 0u; i < JELLI_BUBBLE_CELLS; ++i)
             if (marked[i]) {
@@ -186,21 +224,20 @@ void jelli_bubble_drop(JelliBubble *lab)
         return;
     }
     unsigned cell = lab->y * JELLI_BUBBLE_WIDTH + lab->x;
+    unsigned stride = lab->vertical ? JELLI_BUBBLE_WIDTH : 1u;
+    if (cell >= JELLI_BUBBLE_CELLS || stride >= JELLI_BUBBLE_CELLS - cell)
+        return;
     lab->cells[cell] = lab->color;
-    lab->cells[cell + (lab->vertical ? JELLI_BUBBLE_WIDTH : 1u)] = lab->color;
+    lab->cells[cell + stride] = lab->color;
     resolve(lab);
     if (!jelli_bubble_viruses(lab)) {
         if (lab->level + 1u == JELLI_BUBBLE_LEVELS)
             lab->status = JELLI_BUBBLE_WON;
         else
-            level_init(lab, lab->level + 1u, lab->score, lab->assist);
+            level_init(lab, lab->level + 1u, lab->score, lab->assist,
+                       (uint32_t)lab->score + lab->level);
         return;
     }
-    for (unsigned x = 0u; x < JELLI_BUBBLE_WIDTH; ++x)
-        if (lab->cells[x]) {
-            lab->status = JELLI_BUBBLE_TOP;
-            return;
-        }
     spawn(lab);
 }
 
