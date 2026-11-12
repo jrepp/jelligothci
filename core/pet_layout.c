@@ -55,7 +55,7 @@ bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool men
     if (!slot) {
         *button = (JelliPetUiButton){
             .bounds =
-                menu_open ? (JelliRect){185u, 414u, 96u, 52u} : (JelliRect){161u, 388u, 144u, 64u},
+                menu_open ? (JelliRect){173u, 383u, 120u, 65u} : (JelliRect){143u, 368u, 180u, 80u},
             .label = !menu_open ? "MENU" : (page == JELLI_UI_HOME ? "CLOSE" : "BACK"),
             .icon = !menu_open ? JELLI_ASSET_MENUS_MORE
                                : (page == JELLI_UI_HOME ? JELLI_ASSET_MENUS_CLOSE

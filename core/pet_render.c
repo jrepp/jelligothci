@@ -248,7 +248,7 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
     jelli_pet_actor_layout(ui, &view);
     if (tile_only) {
         surface->damage = (JelliRect){90u, 282u, 286u, 100u};
-        jelli_pet_draw_tile(surface, &view);
+        jelli_pet_draw_tile(surface, &view, ui);
     } else {
         surface->damage = (JelliRect){0u, 0u, JELLI_WIDTH, JELLI_HEIGHT};
         jelli_pet_draw(surface, game, ui, &view);

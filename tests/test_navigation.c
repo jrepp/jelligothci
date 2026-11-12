@@ -287,8 +287,30 @@ static void menu_guidance(void)
     CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "HYDRATION FULL") == 0);
 }
 
+static void bottom_button_bounds(void)
+{
+    JelliGame game;
+    JelliPetUi ui;
+    JelliPetUiButton button;
+    jelli_game_init(&game);
+    jelli_pet_ui_init(&ui);
+    CHECK(jelli_pet_ui_control(&ui, 0u, false, &button));
+    CHECK(button.bounds.x == 143u && button.bounds.y == 368u && button.bounds.width == 180u &&
+          button.bounds.height == 80u);
+    jelli_pet_ui_tap(&ui, &game, 142, 410);
+    CHECK(!ui.menu_open);
+    jelli_pet_ui_tap(&ui, &game, 143, 410);
+    CHECK(ui.menu_open);
+    CHECK(jelli_pet_ui_control(&ui, 0u, false, &button));
+    CHECK(button.bounds.x == 173u && button.bounds.y == 383u && button.bounds.width == 120u &&
+          button.bounds.height == 65u);
+    jelli_pet_ui_tap(&ui, &game, 292, 410);
+    CHECK(!ui.menu_open);
+}
+
 int main(void)
 {
+    bottom_button_bounds();
     navigation();
     main_menu_choices();
     menu_guidance();

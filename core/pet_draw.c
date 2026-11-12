@@ -56,10 +56,13 @@ static void draw_tile(Canvas c, const JelliPetRenderKey *view)
     tile(&c, view, view->stat_index, 90);
 }
 
-void jelli_pet_draw_tile(JelliSurface *surface, const JelliPetRenderKey *view)
+static void menu_button(Canvas *c, const JelliPetUi *ui);
+
+void jelli_pet_draw_tile(JelliSurface *surface, const JelliPetRenderKey *view, const JelliPetUi *ui)
 {
     Canvas c = {surface, 90, 282, 376, 382, 0, false, view->assets};
     draw_tile(c, view);
+    menu_button(&c, ui);
 }
 
 static const char *result_status(JelliResult result)
@@ -122,23 +125,32 @@ static const char *status(const JelliPetRenderKey *v, char *buffer, size_t capac
     return jelli_pet_behavior_caption(v);
 }
 
+static void button_pill(Canvas *c, int x, int y, int w, int h, uint16_t color)
+{
+    int radius = (h - 1) / 2;
+    jelli_canvas_rect(c, x + radius, y, w - 2 * radius, h, color);
+    jelli_canvas_disk(c, x + radius, y + radius, radius, color);
+    jelli_canvas_disk(c, x + w - radius - 1, y + radius, radius, color);
+}
+
 static void menu_button(Canvas *c, const JelliPetUi *ui)
 {
-    if (ui->menu_open) {
-        jelli_canvas_disk(c, 233, 462, 48, TEAL);
-        jelli_canvas_centered(c, ui->page == JELLI_UI_HOME ? "CLOSE" : "BACK", 432, 2u, PALE);
-        return;
-    }
-    jelli_canvas_rect(c, 193, 388, 80, 64, TEAL);
-    jelli_canvas_disk(c, 193, 420, 32, TEAL);
-    jelli_canvas_disk(c, 273, 420, 32, TEAL);
     JelliPetUiButton button;
     if (!jelli_pet_ui_control(ui, 0u, false, &button))
         return;
-    int width = 40 + (int)(strlen(button.label) * 16u);
-    int left = 233 - width / 2;
-    jelli_canvas_centered_sprite(c, button.icon, left + 16, 419, button.scale);
-    jelli_canvas_text(c, button.label, left + 40, 407, 2u, PALE);
+    int x = (int)button.bounds.x, y = (int)button.bounds.y;
+    int w = (int)button.bounds.width, h = (int)button.bounds.height;
+    button_pill(c, x, y, w, h, INK);
+    button_pill(c, x + 3, y + 3, w - 6, h - 10, MINT);
+    button_pill(c, x + 6, y + 7, w - 12, h - 17, TEAL);
+    if (ui->menu_open) {
+        jelli_canvas_centered(c, button.label, y + 20, 2u, PALE);
+    } else {
+        int width = 40 + (int)(strlen(button.label) * 16u);
+        int left = 233 - width / 2;
+        jelli_canvas_centered_sprite(c, button.icon, left + 16, y + 35, button.scale);
+        jelli_canvas_text(c, button.label, left + 40, y + 23, 2u, PALE);
+    }
 }
 
 static void keyboard_focus(Canvas *c, const JelliPetUi *ui, bool asleep)

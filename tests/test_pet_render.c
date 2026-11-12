@@ -34,8 +34,12 @@ static void test_render(JelliGame *game, JelliPetUi *ui)
     jelli_pet_render(&surface, game, ui, 101u, false);
     CHECK(surface.damage.width == 0u && surface.damage.height == 0u);
     game->pets[game->active].needs[JELLI_SATIETY] = 400u;
+    memcpy(comparison, pixels, sizeof(comparison));
     jelli_pet_render(&surface, game, ui, 102u, false);
     CHECK(surface.damage.width == 286u && surface.damage.height == 100u);
+    for (unsigned y = 368u; y < 382u; ++y)
+        for (unsigned x = 143u; x < 323u; ++x)
+            CHECK(pixels[y * STRIDE + x] == comparison[y * STRIDE + x]);
     jelli_pet_render(&surface, game, ui, 900u, false);
     CHECK(surface.damage.width == JELLI_WIDTH && surface.damage.height == JELLI_HEIGHT);
 }
