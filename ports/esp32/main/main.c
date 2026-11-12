@@ -6,6 +6,7 @@
 #include "session.h"
 #include "rtc_clock.h"
 #include "touch_input.h"
+#include "case_button.h"
 #include "network.h"
 #include "validation/experiments.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
@@ -24,6 +25,7 @@ enum { FRAME_MS = 16 };
 
 typedef struct {
     JelliGesture gesture;
+    JelliCaseButton button;
     JelliTouchGuard touch;
     JelliDisplayOutput display;
     QueueHandle_t input;
@@ -39,7 +41,15 @@ static uint64_t now_ms(void *ctx)
 }
 static bool poll_input(void *ctx, JelliInput *input)
 {
-    return xQueueReceive(((Board *)ctx)->input, input, 0) == pdTRUE;
+    Board *board = ctx;
+    if (board->button.blank) {
+        /* Only touch events enter this bounded queue. Drop stale gestures. */
+        for (unsigned i = 0; i < 8u; ++i)
+            if (xQueueReceive(board->input, input, 0) != pdTRUE)
+                break;
+        return false;
+    }
+    return xQueueReceive(board->input, input, 0) == pdTRUE;
 }
 static void touch_event(lv_event_t *event)
 {
@@ -50,7 +60,7 @@ static void touch_event(lv_event_t *event)
     lv_point_t point;
     lv_indev_get_point(device, &point);
     lv_event_code_t code = lv_event_get_code(event);
-    if (jelli_experiments_filter_touch(code)) {
+    if (b->button.blank || jelli_experiments_filter_touch(code)) {
         b->gesture.active = false;
         return;
     }
@@ -86,6 +96,13 @@ static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *se
     unsigned frames = 0;
     for (;;) {
         uint64_t start = now_ms(NULL);
+        jelli_case_button_poll(&board->button, start);
+        if (board->button.blank) {
+            JelliInput discarded;
+            for (unsigned i = 0; i < 8u; ++i)
+                if (xQueueReceive(board->input, &discarded, 0) != pdTRUE)
+                    break;
+        }
         bool frozen = jelli_debug_wire_poll(engine, start);
         jelli_experiments_poll(&board->display, engine);
         jelli_network_poll(engine, session, frozen);
@@ -161,6 +178,8 @@ void app_main(void)
     ESP_ERROR_CHECK(jelli_display_transfer_wait_ready(&board.display.transfer));
     JelliDisplayDriver display_driver = jelli_display_output_driver(&board.display);
     ESP_ERROR_CHECK(jelli_display_brightness(display_driver, 60));
+
+    jelli_case_button_init(&board.button, &board.display, &board.touch);
 
     JelliPlatform platform = {&board, now_ms, poll_input, present, paused};
     JelliSurface surface = {.pixels = board.display.engine_pixels,
