@@ -268,8 +268,7 @@ tracks the current acceptance boundary and recovery instructions.
 ## Board validation profiles
 
 When changing ESP32 board support or experiment interfaces, build
-`make esp-build`, `./scripts/esp validate`, and `./scripts/esp factory`. CI compiles all three against the pinned
-SDK. These use separate generated SDK configurations and output directories.
+`make esp-build`, `./scripts/esp validate`, and `./scripts/esp factory`. PR CI compiles the normal profile against the pinned SDK; the nightly release workflow and manual firmware runs compile all three. These use separate generated SDK configurations and output directories.
 Run `python3 tools/debug/check_firmware_profile.py normal build/esp32` and
 `python3 tools/debug/check_firmware_profile.py power build/esp32-power` to verify
 isolation; also run `python3 tools/debug/check_firmware_profile.py factory build/esp32-factory`.

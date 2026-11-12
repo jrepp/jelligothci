@@ -1,12 +1,18 @@
 name: Release validation
 on:
-  pull_request:
+  # Nightly validates and retains complete packages without publishing a release.
+  schedule:
+    - cron: '17 8 * * *'
   workflow_dispatch:
     inputs:
       ref:
         description: Git ref to validate (defaults to this commit)
         type: string
         required: false
+      validate_only:
+        description: Validate a release candidate without platform packaging
+        type: boolean
+        default: false
       publish:
         description: Attach validated game, artwork, preview, and source to an existing release
         type: boolean
@@ -22,17 +28,37 @@ on:
 permissions:
   contents: read
 jobs:
-  core:
-    uses: ./.github/workflows/core.yml
-    with:
-      ref: ${{ inputs.ref || github.sha }}
-  validate:
+  resolve:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Pin the source revision for every job
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  core:
+    needs: resolve
+    uses: ./.github/workflows/core.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+  validate:
+    needs: resolve
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Reject conflicting publication options
+        if: ${{ inputs.publish && inputs.validate_only }}
+        run: |
+          echo 'validate_only cannot publish release assets' >&2
+          exit 1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
           persist-credentials: false
       - name: Install SDL build dependencies
         timeout-minutes: 5
@@ -42,8 +68,15 @@ jobs:
       - run: ./scripts/release-validate
       - run: make hooks-check
       - run: make sanitize
+  firmware-profiles:
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.validate_only) }}
+    needs: resolve
+    uses: ./.github/workflows/firmware.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
   windows-package:
-    needs: [core, validate]
+    if: ${{ !inputs.validate_only }}
+    needs: [resolve, core, validate]
     runs-on: windows-2025
     timeout-minutes: 30
     defaults:
@@ -52,7 +85,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ inputs.ref || github.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
           persist-credentials: false
       - name: Read dependency pins
         id: pins
@@ -81,8 +114,9 @@ jobs:
           name: windows-game
           path: build/windows-release/*.zip
           if-no-files-found: error
+          retention-days: ${{ github.event_name == 'schedule' && 14 || 90 }}
   package:
-    needs: [core, validate, windows-package]
+    needs: [resolve, core, validate, windows-package]
     runs-on: macos-15
     timeout-minutes: 25
     permissions:
@@ -90,7 +124,8 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ inputs.ref || github.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
+          fetch-depth: 0 # Publication verifies the original tag against this SHA.
           persist-credentials: false
       - name: Build native game and art preview
         run: |
@@ -130,3 +165,4 @@ jobs:
           name: validated-release-downloads
           path: build/release/*
           if-no-files-found: error
+          retention-days: ${{ github.event_name == 'schedule' && 14 || 90 }}

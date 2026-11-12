@@ -104,7 +104,13 @@ gh run view <run-id> --repo jrepp/jelligothci --log-failed
 
 If a bot PR has blocked checks, inspect the revision before an authorized
 maintainer approves execution. Candidate validation is also explicitly dispatched
-by Release Please; check that run rather than assuming ordinary PR events fired.
+by Release Please without platform packaging; check that run rather than assuming
+ordinary PR events fired. Full platform packages are built nightly and on manual
+or tag release runs. Each run resolves its requested ref to a single commit for all
+jobs; the original tag is retained for publication verification. Scheduled artifacts
+are retained with their workflow run; they are not published as a release. The
+[CI timing baseline](memo-109-ci-nightly-packaging.md) separates queue and execution
+time and describes post-landing checks.
 Use the revision actually checked out by the job, not only the workflow's main
 branch SHA, when assessing a manual dispatch with a ref input.
 
@@ -116,6 +122,8 @@ weaken warnings or checks to repair infrastructure failures.
 ```sh
 # Validate without publishing; replace the example with the intended ref.
 gh workflow run release.yml --repo jrepp/jelligothci -f ref=main
+# Validate metadata/core/sanitizers without packaging the candidate.
+gh workflow run release.yml --repo jrepp/jelligothci -f ref=main -F validate_only=true
 # Retry publication only after diagnosing failure and checking this release/tag.
 gh workflow run release.yml --repo jrepp/jelligothci -f ref=v0.1.1 -F publish=true
 ```

@@ -35,7 +35,7 @@ jobs:
           RELEASE_PR: ${{ steps.release.outputs.pr }}
         run: |
           branch=$(printf '%s' "$RELEASE_PR" | jq -r '.headBranchName')
-          gh workflow run release.yml --ref main -f ref="$branch"
+          gh workflow run release.yml --ref main -f ref="$branch" -F validate_only=true
           gh workflow run jelli-art.yml --ref main -f ref="$branch"
   release:
     needs: prepare

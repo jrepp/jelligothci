@@ -27,11 +27,18 @@ To reproduce packages on macOS after `make test`, build the preview with
 Manual publication also accepts an existing `dev-` tag for development releases,
 without changing the Release Please-managed semantic version.
 The release record is created before checks finish; verify the release workflow
-is green and its assets are present before using a release.
+is green and its assets are present before using a release. The same release
+workflow runs nightly against main and retains packaged downloads as workflow
+artifacts without publishing them. Each run resolves its requested ref once and
+checks out that commit for every platform. Manual runs package the requested ref and
+build all firmware profiles unless `validate_only` is set. PR checks compile the normal firmware; nightly runs also
+compile the power and factory profiles.
 
 ```sh
 ./scripts/release-validate  # metadata plus core CMake build/test
-# Revalidate a candidate; omit publish to avoid changing release assets.
+# Validate a candidate without packaging or publishing.
+gh workflow run release.yml -f ref=main -F validate_only=true
+# Build all release artifacts without publishing.
 gh workflow run release.yml -f ref=main
 # Retry asset publication for an existing release after investigating failure.
 gh workflow run release.yml -f ref=v0.1.0 -F publish=true
