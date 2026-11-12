@@ -32,6 +32,16 @@ checks. Only after validation are source archives and checksums attached.
 The GitHub Release record can exist before asset validation finishes; use the
 workflow result and uploaded checksums as the publication health evidence.
 
+On 2026-11-12 the owner requested shorter PR checks and repeatable nightly
+platform packaging. PRs retain Linux core, desktop and firmware compilation,
+metadata/version validation, and visual evidence. The reusable release workflow
+runs the complete packaging path nightly and keeps its artifacts on the workflow
+run; manual and tag-triggered calls use the same path. Generated release candidates
+explicitly dispatch validation without platform packaging. Release publication
+continues to require a matching tag and successful full validation. Normal firmware
+builds run on PRs; nightly runs also compile the diagnostic profiles and test the
+core on macOS and Windows.
+
 The initial manifest baseline is 0.0.0; the first feature release is 0.1.0.
 The initial releases contained source only. On 2026-10-08 the user requested
 packaged native-game, editable-art, and preview downloads. The release workflow

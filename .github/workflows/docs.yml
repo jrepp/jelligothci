@@ -1,5 +1,8 @@
 name: Documentation
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   validate:
     runs-on: ubuntu-24.04
@@ -8,3 +11,7 @@ jobs:
         with:
           fetch-depth: 0
       - run: make docs-check
+      - name: Validate release metadata and incremental version propagation
+        run: |
+          ./scripts/release-validate --metadata-only
+          python3 tests/test_build_version.py

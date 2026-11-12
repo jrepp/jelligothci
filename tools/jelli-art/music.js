@@ -15,7 +15,7 @@
   const dirty=()=>!!work&&JSON.stringify(work)!==JSON.stringify(loaded);
   const cell=()=>work.patterns[pattern][row][channel];
   document.getElementById('views').insertAdjacentHTML('beforeend','<button data-view="music" aria-pressed="false">Music</button>');
-  document.querySelector('main').insertAdjacentHTML('beforeend','<section id="music" class="hidden" aria-label="Music tracker"></section>');H.registerViewRoot('music');
+  document.querySelector('main').insertAdjacentHTML('beforeend','<section id="music" class="hidden studio-form" aria-label="Music tracker"></section>');H.registerViewRoot('music');
   const root=document.getElementById('music'),f=id=>/** @type {HTMLInputElement} */(root.querySelector(`#mu-${id}`));
   H.registerDirty('music',{label:'Tracker module',mode:'music',check:dirty});const oldDirty=S.clipsDirty;S.clipsDirty=()=>oldDirty?.()||dirty();
   document.head.insertAdjacentHTML('beforeend',`<style>
@@ -80,7 +80,7 @@
     const openDetails=Array.from(root.querySelectorAll('details[open]')).map(el=>el.id);
     const c=cell(),sample=work.samples[instrument-1],sampleNames=work.samples.map((s,i)=>[i+1,`${hex(i+1)} ${s.name||'(empty)'}`]);
     root.innerHTML=`<h2>Music tracker</h2><p>Four PCM channels · standard ProTracker MOD · 30-second record preview</p>
-    <div class="mu-controls"><label class="mu-song-label">Record<select id="mu-song">${options(catalog.map(s=>[s[0],`${s[1]} · ${s[2]}`]),song)}</select></label><button id="mu-save">Save MOD</button><button id="mu-undo">Undo</button><span id="mu-status" role="status"></span></div>
+    <div class="mu-controls sf-actions"><label class="mu-song-label">Record<select id="mu-song">${options(catalog.map(s=>[s[0],`${s[1]} · ${s[2]}`]),song)}</select></label><button id="mu-save">Save MOD</button><button id="mu-undo">Undo</button><span id="mu-status" role="status"></span></div>
     <div class="mu-controls"><button id="mu-play">Play (F5)</button><button id="mu-pause">Pause</button><button id="mu-stop">Stop (F8)</button><span id="mu-playing" role="status">Stopped</span></div>
     <details id="mu-files"><summary>Record settings &amp; files</summary><div class="mu-controls"><label>Module title<input id="mu-title" maxlength="20" pattern="[ -~]*" value="${esc(work.title)}" ${editable?'':'disabled'}></label><button id="mu-reload">Reload saved</button><button id="mu-export">Export MOD</button><label>Import MOD<input id="mu-import" type="file" accept=".mod" ${editable?'':'disabled'}></label></div></details>
     <label>Preview progress<progress id="mu-time" max="30" value="0"></progress></label>

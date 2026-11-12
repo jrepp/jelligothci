@@ -2,8 +2,14 @@ name: Firmware profiles
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -15,11 +21,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [normal, power, factory]
+        # PRs compile the shipping firmware; nightly and manual runs also build
+        # both diagnostic profiles. A single normal build still checks isolation.
+        profile: ${{ fromJSON((github.event_name == 'pull_request' || github.event_name == 'push') && '["normal"]' || '["normal","power","factory"]') }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
       - name: Install build prerequisites
         run: sudo apt-get update && sudo apt-get install -y git wget flex bison gperf python3 python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
       - name: Check factory transcript validation

@@ -26,6 +26,12 @@ mode and run CTest. The tests use checks that remain active in Release builds.
 Treat compiler warnings as errors and fail if no tests are discovered. Let all
 matrix jobs finish so one platform's failure does not hide another's results.
 
+On 2026-11-12 the owner requested Linux-only PR validation on the default hosted
+runner. PRs and main pushes now run the Linux core job; nightly, manual full
+release validation, and tag releases opt into the complete three-platform matrix.
+Manual Core portability dispatches default to the complete matrix. This supersedes
+the earlier all-platform PR cadence while retaining the portability checks.
+
 Keep the Linux SDL/sanitizer job as separate coverage. This matrix does not
 install SDL, bootstrap ESP-IDF, flash a board, or validate a graphical host.
 

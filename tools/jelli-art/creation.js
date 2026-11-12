@@ -11,19 +11,20 @@
   /** @type {any} */ (window).JelliDesign?.watch(root);
   let kind = 'pet', snapshot, pendingCreated;
   const options = (items, value, label) => items.map(item => `<option value="${esc(value(item))}">${esc(label(item))}</option>`).join('');
-  const field = (label, html) => `<label style="display:block;margin:12px 0">${label} ${html}</label>`;
+  const field = (label, html) => `<label class="sf-field">${label}${html}</label>`;
   const hexOf = (data, index) => '#' + Array.from(data.subarray(index, index + 3), value => value.toString(16).padStart(2, '0')).join('');
   function render() {
     if (root.querySelector('form')) return;
     snapshot = D.creation;
     if (!snapshot) { root.innerHTML = '<h2>New</h2><p>Creation is unavailable for this served checkout.</p>'; return; }
     root.innerHTML = `<h2>New</h2><p>Create saved artwork, then paint it and test the saved scene in the engine.</p>
-      <form id="creation-form" style="max-width:640px">
+      <form id="creation-form" class="studio-form">
+      <div class="sf-grid">
       ${field('Create', `<select name="kind"><option value="pet">Pet and form</option><option value="effects">Effect sprite</option><option value="icons">Icon artwork</option><option value="props">Prop artwork</option><option value="prizes">Present artwork</option><option value="backgrounds">Background artwork</option></select>`)}
       ${field('Identity', '<input name="key" required pattern="[a-z][a-z0-9-]{0,39}" maxlength="40" placeholder="my-pet">')}
       ${field('Display name', '<input name="name" required pattern="[A-Z0-9 ]{1,16}" maxlength="16" placeholder="MY PET">')}
-      <div id="creation-fields"></div><button type="submit">Create and paint</button>
-      <button type="button" id="creation-reload">Reload creation sources</button><p id="creation-message" role="status" aria-live="polite"></p></form>`;
+      </div><div id="creation-fields" class="sf-grid"></div><div class="sf-actions"><button type="submit" class="primary">Create and paint</button>
+      <button type="button" id="creation-reload">Reload creation sources</button><p id="creation-message" role="status" aria-live="polite"></p></div></form>`;
     const form = root.querySelector('form'), selector = /** @type {HTMLSelectElement} */ (form.elements.namedItem('kind'));
     selector.value = kind;
     selector.onchange = () => { kind = selector.value; details(); };
@@ -61,7 +62,7 @@
         ${field('Placement pivot x', '<input name="pivot_x" type="number" required min="0">')}
         ${field('Placement pivot y', '<input name="pivot_y" type="number" required min="0">')}
         ${kind==='prizes'?field('Collectible registration', '<select name="collectible" required><option value="">Choose</option><option value="false">Artwork only</option><option value="true">Register as a collectible prize</option></select>'):''}
-        ${kind==='backgrounds'?`${field('Use', '<select name="background_use"><option value="location">Background and location</option><option value="layer">Reusable scene layer only</option></select>')}<fieldset id="creation-location"><legend>Location</legend>${field('Location identity (letters and underscores)', '<input name="location_key" required pattern="[a-z][a-z_]*">')}${field('Location name', '<input name="location_name" required maxlength="12" pattern="[A-Z0-9 ]+">')}${field('Environment', '<select name="outdoors" required><option value="">Choose</option><option value="false">Indoors</option><option value="true">Outdoors</option></select>')}</fieldset>`:''}
+        ${kind==='backgrounds'?`${field('Use', '<select name="background_use"><option value="location">Background and location</option><option value="layer">Reusable scene layer only</option></select>')}<fieldset id="creation-location" class="sf-wide"><legend>Location</legend><div class="sf-grid">${field('Location identity (letters and underscores)', '<input name="location_key" required pattern="[a-z][a-z_]*">')}${field('Location name', '<input name="location_name" required maxlength="12" pattern="[A-Z0-9 ]+">')}${field('Environment', '<select name="outdoors" required><option value="">Choose</option><option value="false">Indoors</option><option value="true">Outdoors</option></select>')}</div></fieldset>`:''}
         <p>A visible starter marker makes the new artwork paintable. Present artwork becomes collectible only when registration is selected.</p>`;
       const size = /** @type {HTMLSelectElement} */ (fields.querySelector('[name=size]'));
       const pivot = () => { const n=Number(size.value); /** @type {HTMLInputElement} */ (fields.querySelector('[name=pivot_x]')).value=String(Math.floor(n/2)); /** @type {HTMLInputElement} */ (fields.querySelector('[name=pivot_y]')).value=String(n-2); };

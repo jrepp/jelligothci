@@ -4,7 +4,7 @@ Start here for a new checkout. You do not need the original chat, an agent,
 private runner access, or the maintainer's sibling repositories to develop the
 core, SDL host, docs, or firmware.
 
-The private GitHub repository is named `jrepp/jelligothci`; the application and
+The GitHub repository is named `jrepp/jelligothci`; the application and
 usual local directory are named `jelligotchi`. Ask a repository maintainer for
 GitHub access. Host SSH access is a separate operator responsibility.
 
@@ -12,7 +12,7 @@ GitHub access. Host SSH access is a separate operator responsibility.
 
 | Work | macOS | Linux | Native Windows |
 | --- | --- | --- | --- |
-| C11 core with CMake | Tested locally and in CI | Tested in CI, hosted and private | Tested in CI with MSVC |
+| C11 core with CMake | Tested locally and in nightly/release CI | Tested in hosted PR CI | Tested in nightly/release CI with MSVC |
 | SDL desktop and sanitizers | Tested locally | Tested in hosted CI | Not validated |
 | Bash wrappers, docs, C checks, hooks | Tested locally | Tested in hosted CI | Git Bash alone is not a validated full toolchain |
 | ESP-IDF bootstrap and firmware build | Tested locally | Supported wrapper path; fresh-machine setup not yet verified | Use the Linux path under WSL; USB forwarding is not verified |
@@ -235,16 +235,14 @@ physical observations separately from serial logs. This project targets SKU
 
 ## CI without private infrastructure
 
-Local checks require no hosting credentials. Core workflows fall back to their
-hosted configuration when private-runner variables are unset or false; there
-is no automatic fallback for an already queued private job. A separate copy or
-fork should leave both private-runner opt-ins disabled unless its own host policy
-has been deployed and verified. Never copy App keys into the project.
+Local checks require no hosting credentials. PR and main-branch core workflows
+run on GitHub-hosted Ubuntu. The nightly, manual full release, and tag release
+checks also exercise the core on hosted macOS and Windows. The separate runner
+canary remains an operator tool; it does not route ordinary PR checks.
 
-On the current upstream private repository, fork PR workflows are disabled.
+Fork workflow behavior depends on repository settings and approval policy.
 Coordinate contribution access with a maintainer; do not assume a fork will run
-CI. A repository collaborator's branch can trigger private Linux jobs when the
-upstream opt-in is enabled. See the runbook for the ownership/trust boundary.
+CI. See the runbook for the ownership and trust boundary.
 
 ## Fresh-environment acceptance
 
@@ -268,8 +266,7 @@ tracks the current acceptance boundary and recovery instructions.
 ## Board validation profiles
 
 When changing ESP32 board support or experiment interfaces, build
-`make esp-build`, `./scripts/esp validate`, and `./scripts/esp factory`. CI compiles all three against the pinned
-SDK. These use separate generated SDK configurations and output directories.
+`make esp-build`, `./scripts/esp validate`, and `./scripts/esp factory`. PR CI compiles the normal profile against the pinned SDK; the nightly release workflow and manual firmware runs compile all three. These use separate generated SDK configurations and output directories.
 Run `python3 tools/debug/check_firmware_profile.py normal build/esp32` and
 `python3 tools/debug/check_firmware_profile.py power build/esp32-power` to verify
 isolation; also run `python3 tools/debug/check_firmware_profile.py factory build/esp32-factory`.

@@ -49,8 +49,12 @@ jobs:
           done
       - name: JSDoc type check (error count must not grow)
         run: tools/jelli-art/typecheck/check.sh
-  ui-tests:
-    name: Studio UI tests
+  ui-shards:
+    name: Studio UI shard ${{ matrix.shard }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     # The reference renderer for the screenshot baselines; tools/jelli-art/ui_tests/run.sh pins the same image.
@@ -65,25 +69,63 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Views, accessibility and keyboard
+        shell: bash
         env:
           JELLI_UI_CONTAINER: "1"
           JELLI_UI_SCREENSHOTS: "1"
-        run: tools/jelli-art/ui_tests/run.sh
-      - name: Upload screenshots, axe reports and chrome budget
-        if: failure()
+          JELLI_UI_SHARD: ${{ matrix.shard }}
+        run: |
+          set -o pipefail
+          mkdir -p build/ui-tests
+          python3 tests/test_ui_shards.py
+          python3 tools/jelli-art/ui_tests/shards.py "$JELLI_UI_SHARD" > build/ui-tests/shard-files.txt
+          tools/jelli-art/ui_tests/run.sh --durations=0 2>&1 | tee build/ui-tests/pytest.log
+      - name: Summarize browser shard
+        if: always()
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          {
+            echo "### Studio UI shard $SHARD"
+            echo
+            if [ -f build/ui-tests/shard-files.txt ]; then
+              echo 'Selected test files:'
+              echo '```'
+              cat build/ui-tests/shard-files.txt
+              echo '```'
+            fi
+            if [ -f build/ui-tests/pytest.log ]; then
+              echo 'Test result and timing:'
+              echo '```'
+              tail -n 5 build/ui-tests/pytest.log
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload screenshots, test timings and axe reports
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ui-tests
+          name: ui-tests-shard-${{ matrix.shard }}
           path: build/ui-tests
           if-no-files-found: ignore
           retention-days: 14
+  ui-tests:
+    name: Studio UI tests
+    if: ${{ always() }}
+    needs: ui-shards
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every browser shard to pass
+        env:
+          SHARD_RESULT: ${{ needs.ui-shards.result }}
+        run: test "$SHARD_RESULT" = success
   image:
-    needs: studio-tests
+    outputs:
+      revision: ${{ steps.meta.outputs.revision }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
-      packages: write
     env:
       REF: ${{ inputs.ref || github.sha }}
       PUBLISH: ${{ inputs.publish && 'true' || 'false' }}
@@ -132,6 +174,49 @@ jobs:
       - name: Container logs
         if: always()
         run: docker logs jelli-art 2>&1 | tail -50 || true
+  publish:
+    if: ${{ inputs.publish }}
+    needs: [studio-tests, ui-tests, image]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REF: ${{ inputs.ref || github.sha }}
+      PUBLISH: 'true'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.image.outputs.revision }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve version and image name
+        id: meta
+        run: |
+          version=$(tr -d '[:space:]' < tools/jelli-art/VERSION)
+          if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "tools/jelli-art/VERSION must be MAJOR.MINOR.PATCH, got '$version'" >&2; exit 1
+          fi
+          if [[ "$PUBLISH" == "true" && "$REF" != "jelli-art-v$version" ]]; then
+            echo "publishing requires ref jelli-art-v$version, got '$REF'" >&2; exit 1
+          fi
+          test "$(git rev-parse "refs/tags/$REF^{commit}")" = "$(git rev-parse HEAD)"
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          {
+            echo "version=$version"
+            echo "image=ghcr.io/$owner/jelli-art"
+            echo "revision=$(git rev-parse HEAD)"
+            echo "short=$(git rev-parse --short=12 HEAD)"
+          } >> "$GITHUB_OUTPUT"
+      - name: Build image
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          REVISION: ${{ steps.meta.outputs.revision }}
+        run: |
+          docker build -f tools/jelli-art/Containerfile \
+            --build-arg STUDIO_VERSION="$VERSION" --build-arg SOURCE_REVISION="$REVISION" \
+            -t jelli-art:ci .
       - name: Publish semver tags to GHCR
         if: env.PUBLISH == 'true'
         env:
