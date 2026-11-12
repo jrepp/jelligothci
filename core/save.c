@@ -370,6 +370,7 @@ bool jelli_save_decode_workspace(JelliSave *save, const uint8_t *bytes, size_t s
     if (get_u8(&reader) != SAVE_CONTENT_VERSION || get_u8(&reader) != 0u || get_u8(&reader) != 0u)
         reader.failed = true;
     (void)read_game(&reader, &candidate->game);
+    jelli_save_migrate_v20_food(&candidate->game, reader.version);
     /* Catalog edits may move an entry to another evolution set (e.g. BUBBLE). */
     jelli_collection_normalize(&candidate->game);
     if (reader.failed || reader.offset != reader.size || candidate->game.resuming ||

@@ -1,5 +1,8 @@
 # Jelligotchi project memory
 
+Local save format 20 recovery and checkpoint evidence:
+[memo-111](memos/memo-111-local-save-format-20.md).
+
 This docs-cms stores technical decisions, proposals, requirements, and findings
 alongside the code. Start with [memo-001: Shapes MVP foundation and validation
 status](memos/memo-001-shapes-mvp-foundation.md) and
