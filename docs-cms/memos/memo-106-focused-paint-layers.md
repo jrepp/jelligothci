@@ -97,3 +97,16 @@ it avoids cascading a replacement when its target is also another source color.
 The creation integration suite passed 20 tests, including same-size and resized
 layered palette variants. The combined creation browser suite passed all nine
 cases, including saved-copy palette authoring and full-clip frame duplication.
+
+# Reviewed Linux screenshot references
+
+[CI run 43181794481](https://github.com/jrepp/jelligothci/actions/runs/43181794481)
+at `5efd3e2` passed the backend and packaged-image jobs. Its browser job passed
+335 cases and failed only the six expected old screenshots: Review desktop and
+phone, Paint creature desktop/tablet/phone, and Paint icon desktop. All six actual
+Linux/amd64 images were inspected before replacing those exact references.
+The tablet image confirms separated transport, thumbnails, and guide controls.
+The relevant Paint, Review, shell, and flip-book source is unchanged between that
+revision and the integrated palette revision `5f7c116`; its later differences
+are creation/palette integration and the creation fixture readiness correction.
+The resulting latest-head CI must still pass before landing.
