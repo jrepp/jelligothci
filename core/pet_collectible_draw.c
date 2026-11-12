@@ -12,8 +12,7 @@ static void control(Canvas *c, const JelliPetUi *ui, unsigned slot, bool dim)
     if (!jelli_pet_collectible_button(ui, slot, &b))
         return;
     if (!slot) {
-        jelli_canvas_disk(c, 233, 462, 48, TEAL);
-        jelli_canvas_centered(c, "BACK", 432, 2u, PALE);
+        jelli_pet_draw_menu_button(c, ui);
         return;
     }
     if (ui->page == JELLI_UI_GIFT_SHELF && ui->gift_category == 2u && slot >= 5u) {

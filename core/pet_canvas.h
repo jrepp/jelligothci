@@ -17,6 +17,7 @@ typedef struct {
     const JelliAssetSet *assets;
 } Canvas;
 
+void jelli_pet_draw_menu_button(Canvas *c, const JelliPetUi *ui);
 bool jelli_canvas_in_round(int x, int y);
 void jelli_canvas_pixel(Canvas *c, int x, int y, uint16_t color);
 void jelli_canvas_rect(Canvas *c, int x, int y, int w, int h, uint16_t color);

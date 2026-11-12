@@ -129,8 +129,6 @@ const char *jelli_pet_menu_hint(const JelliPetUi *ui, const JelliGame *game)
         return "NO GIFTS LEFT";
     if (ui->result != JELLI_OK)
         return "";
-    if (ui->page == JELLI_UI_HOME)
-        return "CHOOSE A MENU";
     if (ui->page == JELLI_UI_HEALTH)
         return "TAP TO START";
     return "";

@@ -250,6 +250,9 @@ static void recovery_progress(void)
 
 static void menu_guidance(void)
 {
+    CHECK(jelli_pet_ui_starts(JELLI_UI_MOMENTS, 1u));
+    CHECK(!jelli_pet_ui_starts(JELLI_UI_MOMENTS, 6u));
+    CHECK(!jelli_pet_ui_starts(JELLI_UI_MOMENTS, 0u));
     JelliGame game;
     JelliPetUi ui;
     jelli_game_init(&game);
@@ -302,7 +305,7 @@ static void bottom_button_bounds(void)
     jelli_pet_ui_tap(&ui, &game, 143, 410);
     CHECK(ui.menu_open);
     CHECK(jelli_pet_ui_control(&ui, 0u, false, &button));
-    CHECK(button.bounds.x == 173u && button.bounds.y == 383u && button.bounds.width == 120u &&
+    CHECK(button.bounds.x == 173u && button.bounds.y == 390u && button.bounds.width == 120u &&
           button.bounds.height == 65u);
     jelli_pet_ui_tap(&ui, &game, 292, 410);
     CHECK(!ui.menu_open);

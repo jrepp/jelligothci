@@ -128,8 +128,7 @@ void jelli_pet_tune_start(JelliPetUi *ui, const JelliGame *game, unsigned song)
 bool jelli_pet_tune_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *b)
 {
     if (!slot) {
-        *b = (JelliPetUiButton){.bounds = {185u, 414u, 96u, 52u}, .label = "BACK", .scale = 2u};
-        return true;
+        return jelli_pet_ui_button(JELLI_UI_CARE, 0u, false, true, b);
     }
     if (slot != 1u || !ui->tune.paused)
         return false;

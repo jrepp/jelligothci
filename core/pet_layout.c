@@ -12,7 +12,7 @@ static uint32_t action_icon(JelliPetUiAction action, bool asleep)
         [JELLI_UI_ACTION_FEED] = JELLI_ASSET_MENUS_FOOD,
         [JELLI_UI_ACTION_CARE] = JELLI_ASSET_MENUS_CARE,
         [JELLI_UI_ACTION_REST_WAKE] = JELLI_ASSET_MENUS_REST,
-        [JELLI_UI_ACTION_COLLECTION] = JELLI_ASSET_MENUS_COLLECTION,
+        [JELLI_UI_ACTION_COLLECTION] = JELLI_ASSET_MENUS_GIFTS,
         [JELLI_UI_ACTION_MORE] = JELLI_ASSET_MENUS_GIFTS,
         [JELLI_UI_ACTION_SETTINGS] = JELLI_ASSET_MENUS_SETTINGS,
         [JELLI_UI_ACTION_BASIC_CARE] = JELLI_ASSET_ICONS_BASIC_CARE,
@@ -25,7 +25,7 @@ static uint32_t action_icon(JelliPetUiAction action, bool asleep)
         [JELLI_UI_ACTION_SWITCH_PET] = JELLI_ASSET_MENUS_COLLECTION,
         [JELLI_UI_ACTION_BEDTIME] = JELLI_ASSET_ICONS_REST,
         [JELLI_UI_ACTION_SAVE] = JELLI_ASSET_ICONS_CONFIRM,
-        [JELLI_UI_ACTION_MOMENTS] = JELLI_ASSET_MENUS_MOMENTS,
+        [JELLI_UI_ACTION_MOMENTS] = JELLI_ASSET_ICONS_PLAY,
         [JELLI_UI_ACTION_SUGGEST] = JELLI_ASSET_MENUS_MOMENTS,
         [JELLI_UI_ACTION_HEALTH] = JELLI_ASSET_HEALTH_MEDICINE,
         [JELLI_UI_ACTION_WATER] = JELLI_ASSET_MENUS_WATER,
@@ -55,7 +55,7 @@ bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool men
     if (!slot) {
         *button = (JelliPetUiButton){
             .bounds =
-                menu_open ? (JelliRect){173u, 383u, 120u, 65u} : (JelliRect){143u, 368u, 180u, 80u},
+                menu_open ? (JelliRect){173u, 390u, 120u, 65u} : (JelliRect){143u, 368u, 180u, 80u},
             .label = !menu_open ? "MENU" : (page == JELLI_UI_HOME ? "CLOSE" : "BACK"),
             .icon = !menu_open ? JELLI_ASSET_MENUS_MORE
                                : (page == JELLI_UI_HOME ? JELLI_ASSET_MENUS_CLOSE
@@ -115,7 +115,8 @@ bool jelli_pet_ring_button(const JelliPetUi *ui, unsigned slot, bool asleep,
 
 bool jelli_pet_ui_starts(unsigned page, unsigned slot)
 {
-    return page == JELLI_UI_MOMENTS || (page == JELLI_UI_HOME && slot == 1u) ||
+    return (page == JELLI_UI_MOMENTS && slot > 0u && slot < 6u) ||
+           (page == JELLI_UI_HOME && slot == 1u) ||
            (page == JELLI_UI_CARE && (slot == 1u || slot == 2u || slot == 3u));
 }
 

@@ -89,7 +89,7 @@ static bool music_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *
 {
     if (!ui->menu_open || ui->page != JELLI_UI_SETTINGS || ui->clock_edit || slot != 7u)
         return false;
-    *button = (JelliPetUiButton){.bounds = {165u, 356u, 136u, 48u},
+    *button = (JelliPetUiButton){.bounds = {165u, 342u, 136u, 48u},
                                  .label = ui->last_view.activity_music_enabled ? "BG MUSIC ON"
                                                                                : "BG MUSIC OFF",
                                  .scale = 1u};

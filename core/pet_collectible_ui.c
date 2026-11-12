@@ -66,7 +66,7 @@ static bool session_finished(const JelliCollectibleSession *s)
 static bool session_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *b)
 {
     if (!slot)
-        return button(b, 185u, 414u, 96u, 52u, "BACK");
+        return jelli_pet_ui_button(JELLI_UI_CARE, 0u, false, true, b);
     if (jelli_pet_collectible_lost(&ui->last_view.collectible))
         return false;
     if (ui->last_view.collectible.mode == JELLI_COLLECTIBLE_BUBBLE && !ui->collectible_menu &&
@@ -99,7 +99,7 @@ static bool detail_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton 
                 : "PLAY";
         if (slot == 1u)
             return button(b, 137u, 104u, 192u, 192u, label);
-        return slot == 2u && button(b, 113u, 348u, 240u, 52u, label);
+        return slot == 2u && button(b, 113u, 320u, 240u, 52u, label);
     }
     if (slot != 1u)
         return false;
@@ -109,7 +109,7 @@ static bool detail_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton 
                         : ui->collectible_confirm == 2u ? "REPLACE? PLAY"
                         : owned                         ? "PLAY"
                                                         : "CRAFT";
-    return button(b, 113u, 334u, 240u, 52u, label);
+    return button(b, 113u, 320u, 240u, 52u, label);
 }
 
 bool jelli_pet_collectible_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *b)
@@ -121,7 +121,7 @@ bool jelli_pet_collectible_button(const JelliPetUi *ui, unsigned slot, JelliPetU
     if (ui->page == JELLI_UI_COLLECTIBLE_PLAY)
         return session_button(ui, slot, b);
     if (!slot)
-        return button(b, 185u, 414u, 96u, 52u, "BACK");
+        return jelli_pet_ui_button(JELLI_UI_CARE, 0u, false, true, b);
     if (ui->page == JELLI_UI_COLLECTION) {
         static const char *const labels[] = {"PRESENTS", "CARTRIDGES", "RECORDS"};
         return slot <= 3u &&
@@ -131,7 +131,7 @@ bool jelli_pet_collectible_button(const JelliPetUi *ui, unsigned slot, JelliPetU
         if (ui->gift_category == 2u)
             return jelli_pet_library_button(ui, slot, b);
         if (slot == 5u || slot == 6u)
-            return button(b, slot == 5u ? 103u : 253u, 340u, 110u, 48u,
+            return button(b, slot == 5u ? 103u : 253u, 328u, 110u, 48u,
                           slot == 5u ? "PREV" : "NEXT");
         unsigned prize =
             jelli_pet_collectible_prize(ui->gift_category, ui->gift_page * 4u + slot - 1u);

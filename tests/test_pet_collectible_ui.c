@@ -86,7 +86,10 @@ static void playable_controls_and_pause(void)
     snapshot("collectible-categories.ppm");
     press(2u);
     CHECK(engine.ui.page == JELLI_UI_GIFT_SHELF);
-    CHECK(pixels[430u * JELLI_WIDTH + 233u] != pixels[400u * JELLI_WIDTH + 233u]);
+    JelliPetUiButton back;
+    CHECK(jelli_pet_ui_control(&engine.ui, 0u, false, &back));
+    CHECK(pixels[(back.bounds.y + back.bounds.height / 2u) * JELLI_WIDTH + 233u] !=
+          pixels[(back.bounds.y - 5u) * JELLI_WIDTH + 233u]);
     snapshot("collectible-cartridges.ppm");
     press(1u);
     CHECK(engine.ui.page == JELLI_UI_PRESENT_ACTION);
@@ -97,7 +100,7 @@ static void playable_controls_and_pause(void)
     snapshot("collectible-chain.ppm");
     engine.ui.collectible_win_ms = 1800u;
     render();
-    CHECK(pixels[440u * JELLI_WIDTH + 233u] != pixels[400u * JELLI_WIDTH + 233u]);
+    CHECK(pixels[440u * JELLI_WIDTH + 233u] != pixels[385u * JELLI_WIDTH + 233u]);
     snapshot("collectible-win.ppm");
     engine.ui.collectible_win_ms = 0u;
     render();
@@ -143,7 +146,7 @@ static void confirm_and_cancel_replacement(void)
     CHECK(engine.ui.last_view.collectible.record_cursor == JELLI_RECORD_SAMPLES / 2u);
     JelliPetUiButton menu;
     CHECK(jelli_pet_ui_control(&engine.ui, 0u, false, &menu));
-    CHECK(pixels[440u * JELLI_WIDTH + 233u] != pixels[400u * JELLI_WIDTH + 233u]);
+    CHECK(pixels[440u * JELLI_WIDTH + 233u] != pixels[385u * JELLI_WIDTH + 233u]);
     CHECK(strcmp(menu.label, "BACK") == 0);
     snapshot("collectible-record.ppm");
     press(0u);
@@ -349,8 +352,33 @@ static void background_music_setting(void)
     CHECK(engine.game.activity_music_enabled);
 }
 
+static void bottom_navigation(void)
+{
+    reset();
+    JelliPetUiButton back, action;
+    CHECK(jelli_pet_ui_control(&engine.ui, 0u, false, &back));
+    CHECK(back.bounds.x == 173u && back.bounds.y >= 390u && back.bounds.width == 120u &&
+          back.bounds.height == 65u);
+    CHECK(pixels[(back.bounds.y + 1u) * JELLI_WIDTH + 233u] == 0x4989u);
+    jelli_pet_ui_tap(&engine.ui, &engine.game, 172, 420);
+    CHECK(engine.ui.page == JELLI_UI_COLLECTION);
+    jelli_pet_ui_tap(&engine.ui, &engine.game, 173, 420);
+    CHECK(engine.ui.page == JELLI_UI_HOME);
+    reset();
+    press(2u);
+    CHECK(jelli_pet_ui_control(&engine.ui, 0u, false, &back));
+    CHECK(jelli_pet_ui_control(&engine.ui, 5u, false, &action));
+    CHECK(action.bounds.y + action.bounds.height <= back.bounds.y);
+    press(1u);
+    /* Check the resting detail layout, outside the timed launch animation. */
+    engine.ui.collectible_launch_pending = false;
+    CHECK(jelli_pet_ui_control(&engine.ui, 2u, false, &action));
+    CHECK(action.bounds.y + action.bounds.height <= back.bounds.y);
+}
+
 int main(void)
 {
+    bottom_navigation();
     automatic_launch_timing_and_cancel();
     launch_reduced_motion_and_interruption();
     bubble_feedback();
