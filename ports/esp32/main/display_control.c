@@ -2,27 +2,29 @@
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
 #include "esp_lcd_co5300.h"
 
-static JelliDeviceResult brightness(void *ctx, unsigned percent)
+/* Caller holds the display lock. */
+JelliDeviceResult jelli_display_brightness_locked(JelliDisplayOutput *output, unsigned percent)
 {
-    JelliDisplayOutput *output = ctx;
     if (percent > 100u)
         return JELLI_DEVICE_INVALID;
-    esp_err_t locked = bsp_display_lock(100);
-    if (locked != ESP_OK)
-        return locked == ESP_FAIL ? JELLI_DEVICE_IO : locked;
-    if (!output->transfer.panel) {
-        bsp_display_unlock();
+    if (!output->transfer.panel)
         return JELLI_DEVICE_UNAVAILABLE;
-    }
-    /* The BSP setter discards this driver's SPI error. Keep the requested
-     * percent here; a cache-derived byte->percent round trip loses precision. */
     esp_err_t result =
         esp_lcd_panel_co5300_set_brightness(output->transfer.panel, (uint8_t)percent);
     output->brightness_known = result == ESP_OK;
     if (result == ESP_OK)
         output->brightness_percent = percent;
-    bsp_display_unlock();
     return result == ESP_FAIL ? JELLI_DEVICE_IO : result;
+}
+
+static JelliDeviceResult brightness(void *ctx, unsigned percent)
+{
+    esp_err_t locked = bsp_display_lock(100);
+    if (locked != ESP_OK)
+        return locked == ESP_FAIL ? JELLI_DEVICE_IO : locked;
+    JelliDeviceResult result = jelli_display_brightness_locked(ctx, percent);
+    bsp_display_unlock();
+    return result;
 }
 
 JelliDisplayDriver jelli_display_output_driver(JelliDisplayOutput *output)

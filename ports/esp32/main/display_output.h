@@ -19,6 +19,8 @@ typedef struct {
 
 /* Startup allocations: two 434,312-byte PSRAM frames plus 128 bytes of guards.
  * Engine task owns state; canvas access also holds the BSP display mutex. */
+/* Caller must hold the BSP display lock. */
+JelliDeviceResult jelli_display_brightness_locked(JelliDisplayOutput *output, unsigned percent);
 JelliDisplayDriver jelli_display_output_driver(JelliDisplayOutput *output);
 void jelli_display_output_init(JelliDisplayOutput *output);
 void jelli_display_output_present(JelliDisplayOutput *output, const JelliSurface *surface,
