@@ -565,7 +565,14 @@ tools/jelli-art/typecheck/check.sh` rewrites the list.
 ```sh
 tools/jelli-art/ui_tests/run.sh                    # in the pinned Playwright image (podman or docker)
 JELLI_UI_UPDATE=1 tools/jelli-art/ui_tests/run.sh  # rewrite the aria and axe baselines
+JELLI_UI_SHARD=0 tools/jelli-art/ui_tests/run.sh   # run one CI shard (0, 1 or 2)
 ```
+
+CI partitions browser test files across three isolated runners. The deterministic
+[shard planner](ui_tests/shards.py) discovers Python test files and verifies that
+each occurs once; `python3 tests/test_ui_shards.py` checks the partition contract.
+The `Studio UI tests` aggregate fails if any shard fails or is cancelled. Without
+`JELLI_UI_SHARD`, the command above still runs the complete suite.
 
 The [UI requirements](ui_tests/requirements.in) include the CMake version pinned in
 [toolchain.env](../../toolchain.env), because browser creation and duplication tests

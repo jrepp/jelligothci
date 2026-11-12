@@ -11,6 +11,7 @@ from test_creation import creator  # noqa: F401 - real copied-checkout fixture
 def open_scenes(page):
     page.evaluate("JelliShell.activateMode('scenes')")
     expect(page.locator("#scene-canvas")).to_be_visible()
+    expect(page.locator("#scene-engine")).to_be_enabled()
 
 
 def test_scene_motion_shared_library_and_save(creator):
@@ -372,3 +373,33 @@ def test_mobile_stepper_can_repair_invalid_background_field(creator):
     expect(field).to_have_value('1')
     page.locator('#scene-next').click()
     expect(page.locator('#scene-select')).to_have_value('garden-walk')
+
+
+def test_airplane_ambient_motion_and_palette_visitor(creator):
+    page = creator['page']
+    open_scenes(page)
+    page.locator('#scene-select').select_option('airplane')
+    page.locator('#scene-pet').uncheck()
+    page.locator('#scene-speed').fill('0')
+    before = page.locator('#scene-canvas').evaluate('(c)=>c.toDataURL()')
+    page.locator('#scene-play').click()
+    page.wait_for_function('(before)=>document.querySelector("#scene-canvas").toDataURL()!==before', arg=before)
+    page.locator('#scene-play').click()
+    frozen = page.locator('#scene-canvas').evaluate('(c)=>c.toDataURL()')
+    page.wait_for_timeout(250)
+    assert page.locator('#scene-canvas').evaluate('(c)=>c.toDataURL()') == frozen
+    page.locator('[data-layer="3"]').click()
+    page.get_by_text('Ambient motion', exact=True).click()
+    page.locator('[data-motion="bounce"]').fill('4')
+    page.locator('[data-motion="bounce"]').press('Tab')
+    page.locator('#scene-save').click()
+    expect(page.locator('#scene-status')).to_have_text('Saved')
+    doc = json.loads((creator['content'] / 'scenes.json').read_text())
+    airplane = next(s for s in doc['scenes'] if s['key'] == 'airplane')
+    assert airplane['activity'] == 'TRAVELING'
+    assert airplane['layers'][-1]['motion']['bounce'] == 4
+    page.locator('#scene-copy').click()
+    page.locator('#scene-save').click()
+    expect(page.locator('#scene-status')).to_have_text('Saved')
+    doc = json.loads((creator['content'] / 'scenes.json').read_text())
+    assert 'activity' not in doc['scenes'][-1]

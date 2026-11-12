@@ -33,6 +33,7 @@ static void coverage(void)
         for (unsigned step = 1; step <= 64; ++step) {
             jelli_pet_activity_scene(&ui, &game, (uint64_t)i * 1000u + (uint64_t)step * 250u,
                                      false);
+            jelli_pet_scene_update(&ui, (uint64_t)i * 1000u + (uint64_t)step * 250u);
             jelli_pet_scene_prepare(&ui);
             moved |= memcmp(original, ui.activity_scene.pixels, sizeof(original)) != 0;
         }

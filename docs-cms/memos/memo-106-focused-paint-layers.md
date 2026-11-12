@@ -129,3 +129,25 @@ scrolls the persistent workspace scroller and then waits for the fitted canvas,
 so it cannot retain the canvas handle across replacement. Both selection cases
 wait after changing tools. All five focused copy/selection, fitted-pen, and touch
 target cases passed; their original behavior and pixel assertions are retained.
+
+# Background refresh failure handling
+
+At `440676f`, [run 43187981127](https://github.com/jrepp/jelligothci/actions/runs/43187981127)
+passed 351 browser cases and all screenshots, but creation recovery captured an
+unhandled fetch rejection. The stack identified `poll()` awaiting `reload()`:
+version checks handled network failures, while fetching changed artwork did not.
+The background reload now reports the failure and returns with its old version
+and working data intact, allowing the next background check to retry.
+
+The existing creation recovery case now drives both failed and successful
+background checks explicitly while retaining assertions for saved artwork,
+disabled duplicate submission, persistent creation feedback, and the explicit
+Reload creation sources recovery action. Main `049604a` was integrated cleanly
+in the same increment, including the approved Linux PR checks and UI shards.
+
+The deterministic creation recovery regression passed, including failed and
+successful background fetches and explicit user recovery. The broader focused
+run passed its first two cases, then lost the Podman connection during its third
+case (container wait/remove EOF and a refused VM socket). That interrupted run
+does not establish a broader suite result. JavaScript type checks and document
+validation passed; isolated current-head GitHub CI must establish the full result.

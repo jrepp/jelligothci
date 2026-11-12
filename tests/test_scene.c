@@ -155,6 +155,30 @@ static void maximum_capacity(void)
     CHECK(!jelli_scene_compose(&scene, views, JELLI_SCENE_LAYER_CAPACITY, true));
 }
 
+static void ambient_motion(void)
+{
+    JelliSceneDefinition moving = definition;
+    moving.layers[0].ambient_speed = -16;
+    moving.layers[0].ambient_cycle_ms = 12000;
+    moving.layers[0].bounce = 3;
+    moving.layers[0].bounce_ms = 600;
+    CHECK(jelli_scene_init(&scene, &moving));
+    jelli_scene_animate(&scene, 300);
+    CHECK(scene.ambient_x[0] == -4 && scene.ambient_y[0] == -3);
+    jelli_scene_animate(&scene, 600);
+    CHECK(scene.ambient_x[0] == -9 && scene.ambient_y[0] == 0);
+    jelli_scene_animate(&scene, 12000);
+    CHECK(scene.ambient_x[0] == 0 && scene.ambient_y[0] == 0);
+    jelli_scene_animate(&scene, UINT64_MAX);
+    CHECK(scene.ambient_x[0] >= -192 && scene.ambient_x[0] <= 0);
+    CHECK(scene.ambient_y[0] >= -3 && scene.ambient_y[0] <= 0);
+    moving.layers[0].bounce_ms = 0;
+    CHECK(!jelli_scene_init(&scene, &moving));
+    moving.layers[0].bounce_ms = 600;
+    moving.layers[0].ambient_cycle_ms = 0;
+    CHECK(!jelli_scene_init(&scene, &moving));
+}
+
 int main(void)
 {
     sampling_and_motion();
@@ -162,6 +186,7 @@ int main(void)
     failure_atomicity();
     clipped_and_hidden();
     maximum_capacity();
+    ambient_motion();
     printf("Scene transforms/composition passed; persistent cache: %zu bytes\n", sizeof(scene));
     return 0;
 }

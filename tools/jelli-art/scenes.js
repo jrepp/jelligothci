@@ -7,6 +7,7 @@
   const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
   let work, loaded, base, limits = {scenes:32, layers:12}, editable = false;
   let selected = 0, layerIndex = 0, saving = false, loading = false, frame = 0, previousTime = 0;
+  let ambientTime = 0;
   let travel = 0, tiltX = 0, tiltY = 0, playing = false, speed = 8, showPet = true;
   let solo = false, variationOpen = false, undo = [], redo = [], checkpoint = null;
   let query = '';
@@ -23,7 +24,7 @@
     const next=work.scenes.findIndex(s=>s.key===key); if(next<0)return;
     positions.set(scene().key,layerIndex); selected=next;
     layerIndex=asset?Math.max(0,scene().layers.findIndex(l=>l.asset===asset)):Math.min(positions.get(key)||0,scene().layers.length-1);
-    travel=tiltX=tiltY=0;solo=false;speed=scene().speed||8;
+    ambientTime=travel=tiltX=tiltY=0;solo=false;speed=scene().speed||8;
     if(!matches().includes(scene()))query='';
     render();input('#scene-select').focus();
   }
@@ -47,7 +48,7 @@
     target.textContent=missing.length?`Missing artwork: ${missing.map(layerName).join(', ')}`:
       offscreen?'Selected layer is outside the neutral preview. Adjust its position or tilt to bring it into view.':
       !visible.length?'No visible layers. Only the base color will appear.':
-      s.activity&&!visible.some(l=>l.travel>0||variation(l).travel>0)?'This activity has no moving layers. Increase a layer’s travel to add scrolling.':'Scene fields are valid.';
+      s.activity&&!visible.some(l=>l.travel>0||variation(l).travel>0||l.motion?.speed||l.motion?.bounce)?'This activity has no moving layers. Increase a layer’s travel to add scrolling.':'Scene fields are valid.';
   }
   function usage() {
     const l=layer(), related=work.scenes.filter(s=>s.layers.some(other=>other.asset===l.asset));
@@ -78,7 +79,7 @@
   S.clipsDirty = () => oldDirty?.() || dirty();
   shell.registerDirty('scenes', {label:'Scenes', mode:'scenes', check:dirty});
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="scenes" aria-pressed="false">Scenes</button>');
-  document.querySelector('main').insertAdjacentHTML('beforeend', '<section id="scenes" class="hidden"></section>');
+  document.querySelector('main').insertAdjacentHTML('beforeend', '<section id="scenes" class="hidden studio-form"></section>');
   shell.registerViewRoot('scenes');
   const root = document.getElementById('scenes');
   // The shared shortcut router skips form fields; saving must still work there.
@@ -196,7 +197,11 @@
     const canvas = /** @type {HTMLCanvasElement} */ (root.querySelector('#scene-canvas'));
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    if (playing && previousTime) travel += Math.min(100, now - previousTime) / 1000 * speed;
+    if (playing && previousTime) {
+      const elapsed = Math.min(100, now - previousTime);
+      travel += elapsed / 1000 * speed;
+      ambientTime = Math.min(Number.MAX_SAFE_INTEGER, ambientTime + elapsed);
+    }
     previousTime = now;
     // Integral percentages have a common 6400px period for the authored 64px kit.
     // Keep preview travel bounded; arbitrary image widths are supported below.
@@ -208,8 +213,13 @@
       if (!l.visible) continue;
       const p = decoded[l.asset]?.after;
       if (!p) continue;
-      const x = Math.round(l.x - tiltX * l.tilt_x - travel * l.travel / 100);
-      const y = Math.round(l.y - tiltY * l.tilt_y);
+      const m = l.motion;
+      const dx = m ? Math.trunc((ambientTime % m.cycle_ms) * m.speed / 1000) : 0;
+      const tick = m ? ambientTime % m.bounce_ms : 0;
+      const half = m ? Math.floor(m.bounce_ms / 2) : 1;
+      const dy = m ? -Math.floor(Math.min(tick, m.bounce_ms-tick) * m.bounce / half) : 0;
+      const x = dx + Math.round(l.x - tiltX * l.tilt_x - travel * l.travel / 100);
+      const y = dy + Math.round(l.y - tiltY * l.tilt_y);
       if (l.repeat_x) {
         const start = ((x % p.w) + p.w) % p.w - p.w;
         for (let at = start; at < 64; at += p.w) ctx.drawImage(p.img, at, y);
@@ -239,7 +249,7 @@
     const s = scene(), l = layer();
     root.innerHTML = `<h2>Background scenes</h2>
       <p class="scene-help">Build places from reusable artwork. Preview tilt and travel here, then save and test the scene in the engine.</p>
-      <div class="scene-actions"><button id="scene-save">Save backgrounds</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
+      <div class="scene-actions sf-actions"><button id="scene-save">Save backgrounds</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
       <nav class="scene-nav" aria-label="Background navigation">
       <label>Find background<input id="scene-search" type="search" placeholder="Name or activity" value="${esc(query)}"></label>
       <label>Scene<select id="scene-select"></select></label>
@@ -277,6 +287,10 @@
       <div class="scene-actions" role="group" aria-label="Nudge layer one pixel">
       <button data-nudge="x:-1" aria-label="Move layer left one pixel">← Left</button><button data-nudge="x:1" aria-label="Move layer right one pixel">Right →</button>
       <button data-nudge="y:-1" aria-label="Move layer up one pixel">↑ Up</button><button data-nudge="y:1" aria-label="Move layer down one pixel">Down ↓</button></div>
+      <details><summary>Ambient motion</summary>
+      <p class="scene-help">Moves independently of travel while the preview plays.</p>
+      ${[['speed','Ambient speed (px/s)',-32,32],['cycle_ms','Cycle (ms)',1,60000],['bounce','Bounce height (px)',0,8],['bounce_ms','Bounce period (ms)',200,4000]].map(([key,label,min,max])=>`<label>${label}<input data-motion="${key}" type="number" required min="${min}" max="${max}" step="1" value="${(l.motion||{speed:0,cycle_ms:12000,bounce:0,bounce_ms:600})[key]}"></label>`).join('')}
+      </details>
       <details id="scene-variation" ${variationOpen?'open':''}><summary>Layer variation</summary>
       ${[['seed','Layer seed',65535],['x','Horizontal jitter (±px)',16],['y','Vertical jitter (±px)',16],['travel','Travel variation (±percentage points)',100],['chance','Appearance chance (%)',100]].map(([key,label,max])=>`<label>${label}<input data-random="${key}" type="number" required min="0" max="${max}" step="1" value="${variation(l)[key]}"></label>`).join('')}
       <p class="scene-help">Jitter and speed variation are bounded around the values above; appearance is chosen per layer, not per repeat. Keep ground layers at zero vertical jitter and 100% appearance. Layer seeds stay with layers when reordered.</p>
@@ -345,6 +359,14 @@
         status();
       };
     });
+    root.querySelectorAll('[data-motion]').forEach(el => {
+      const field=/** @type {HTMLInputElement} */ (el);
+      field.oninput=()=>{
+        if(!field.checkValidity() || field.value==='') return;
+        l.motion={...(l.motion||{speed:0,cycle_ms:12000,bounce:0,bounce_ms:600}),[field.dataset.motion]:Number(field.value)};
+        status();
+      };
+    });
     input('#scene-fill').oninput = () => { s.fill=input('#scene-fill').value; status(); };
     input('#scene-asset').onchange = () => { l.asset=input('#scene-asset').value; status(); };
     button('#scene-paint').onclick = () => { S.openPaint(l.asset, {label:s.name, back:()=>{navigate(s.key,l.asset);shell.activateMode('scenes');}}); };
@@ -372,7 +394,7 @@
     input('#scene-speed').oninput=()=>{speed=Number(input('#scene-speed').value);};
     input('#scene-pet').onchange=()=>{showPet=input('#scene-pet').checked;};
     button('#scene-play').onclick=()=>{playing=!playing;button('#scene-play').textContent=playing?'Pause travel':'Play travel';};
-    button('#scene-reset').onclick=()=>{playing=false;travel=tiltX=tiltY=0;render();};
+    button('#scene-reset').onclick=()=>{playing=false;ambientTime=travel=tiltX=tiltY=0;render();};
     // Read-only trials must disable structural edits as well as property edits.
     for (const id of ['copy','add']) if (!editable || loading) button(`#scene-${id}`).disabled=true;
     status(); frame=requestAnimationFrame(draw);
@@ -384,9 +406,9 @@
     if (work && draft?.data?.version === 1 && draft.data.scenes?.length) {
       work=clone(draft.data);base=draft.base;selected=layerIndex=0;resetHistory();
       shell.notify('Restored unsaved scene edits. Save to keep them.',{tone:'warn'});
+      if(state.view==='scenes')render();
     }
     window.JelliDrafts?.track('scenes','scenes',{dirty,base:()=>base,data:()=>work});
-    if(state.view==='scenes')render();
   };
   shell.registerShortcuts?.('Scenes', [
     {keys:['Mod+S'],description:'Save scene edits'},

@@ -81,13 +81,28 @@ def test_new_view_starts_and_creates_saved_asset_in_paint(creator):
 
 def test_creation_saved_but_reload_failed_keeps_feedback_and_retry(creator):
     page = creator["page"]
+    # Drive the background refresh deterministically while /api/data is down,
+    # rather than depending on the two-second timer racing the foreground save.
+    page.add_init_script("""const originalInterval = window.setInterval;
+      window.setInterval = (fn, delay, ...args) => {
+        if (delay === 2000) { window.testPoll = fn; return 0; }
+        return originalInterval(fn, delay, ...args);
+      };""")
+    page.reload()
+    page.wait_for_function("() => document.body.dataset.ready === 'true'")
+    page.evaluate("JelliShell.activateMode('creation')")
     form = icon_fields(page, "refresh-recovery")
     page.route("**/api/data?**", lambda route: route.abort())
     form.get_by_role("button", name="Create and paint").click()
     expect(page.locator("#creation-message")).to_contain_text("Created and saved icons.refresh-recovery", timeout=30000)
     expect(form.get_by_role("button", name="Create and paint")).to_be_disabled()
     assert (creator["source"] / "icons/refresh-recovery.png").is_file()
+    page.evaluate("() => window.testPoll()")
+    expect(page.locator("#creation-message")).to_contain_text("Created and saved icons.refresh-recovery")
     page.unroute("**/api/data?**")
+    page.evaluate("() => window.testPoll()")
+    page.wait_for_function("() => D.assets.some(a => a.key === 'icons.refresh-recovery')")
+    expect(page.locator("#creation-message")).to_contain_text("Created and saved icons.refresh-recovery")
     form.get_by_role("button", name="Reload creation sources").click()
     page.wait_for_function("() => state.key === 'icons.refresh-recovery' && state.mode === 'paint'")
 

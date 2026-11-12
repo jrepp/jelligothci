@@ -5,13 +5,16 @@
 
 /* Opt-in presentation override, independent of saved location/gameplay. Caller
  * supplies persistent cache storage; failure leaves the old selection unchanged.
- * Definition keys come from content/scenes.json. Clear restores flat locations. */
+ * Definition keys come from content/scenes.json. Clear returns to automatic
+ * activity selection, or the flat location otherwise. */
 bool jelli_pet_scene_select(JelliPetUi *ui, JelliScene *scene, const char *key);
 void jelli_pet_scene_clear(JelliPetUi *ui);
 /* Called once before render-key construction. Resolves all current asset views,
  * retaining the complete cached image if a view fails validation. No IO or heap.
  * Hosts replacing pixels in-place must set ui->rendered=false, as live reload does. */
 void jelli_pet_scene_prepare(JelliPetUi *ui);
+/* Advance independent ambient layer motion from presentation time. */
+void jelli_pet_scene_update(JelliPetUi *ui, uint64_t animation_ms);
 
 /* Automatic Activities-menu backdrop. An explicit caller-owned override wins.
  * Uses presentation time only; never changes location, rewards or saved state. */

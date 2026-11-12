@@ -45,6 +45,34 @@
     button.primary{background:var(--primary);color:var(--on-primary);border-color:var(--primary);font-weight:700}
     button:disabled{opacity:.45;cursor:default}
     select:focus-visible,[role=button]:focus-visible,canvas:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    /* Persistent editor forms opt in to this contract. Paint rails, timelines and tracker cells stay compact. */
+    .studio-form{container:studio-form/inline-size;min-width:0}
+    #creation-form{max-width:720px}#creation-fields>p{grid-column:1/-1}
+    .studio-form .sf-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;align-items:start}
+    .studio-form .sf-wide{grid-column:1/-1}
+    .studio-form .sf-field,.studio-form label:not(.sf-check){display:grid;gap:5px;min-width:0;align-content:start;color:var(--muted);font-size:12px}
+    .studio-form .sf-field>input:not(:where([type=checkbox],[type=radio],[type=range],[type=color],[type=file])),
+    .studio-form .sf-field>select,.studio-form .sf-field>textarea,
+    .studio-form label>input:not(:where([type=checkbox],[type=radio],[type=range],[type=color],[type=file])),
+    .studio-form label>select,.studio-form label>textarea,.studio-form .jd-step>input[type=number],
+    .studio-form .gp-row>input,.studio-form .gp-row>select{box-sizing:border-box;width:100%;min-width:0;max-width:none;min-height:38px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--raised);color:var(--ink);font:inherit;font-size:13px}
+    .studio-form textarea{resize:vertical;line-height:1.45}
+    .studio-form label>.jd-step{display:flex;width:100%;min-width:0}.studio-form .jd-step>input{flex:1 1 0;min-width:0}
+    .studio-form :is(input,select,textarea,button):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .studio-form :is(input,select,textarea):not([type=range]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]){transition:border-color .14s ease,background-color .14s ease}
+    .studio-form :is(input,select,textarea):disabled{opacity:.65;cursor:not-allowed}
+    .studio-form :is(input,textarea)[readonly]{background:var(--panel);color:var(--muted)}
+    .studio-form .sf-check,.studio-form label:has(> input[type=checkbox]){display:flex;align-items:center;gap:8px;min-width:0;min-height:38px;color:var(--ink);font-size:12px}
+    .studio-form .sf-check>input,.studio-form label>input[type=checkbox]{flex:none;margin:0}
+    .studio-form .sf-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0}
+    .studio-form .sf-actions [role=status]{flex:1 1 100%;min-width:0}
+    .studio-form .sf-fieldset,.studio-form fieldset{min-width:0;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:12px 0}
+    .studio-form legend{padding:0 4px;color:var(--muted);font-size:12px;font-weight:600}
+    .studio-form .sf-help{color:var(--muted);font-size:12px;line-height:1.45;margin:4px 0 10px}
+    @container studio-form (max-width:559px){.studio-form .sf-grid{grid-template-columns:minmax(0,1fr)}}
+    @media(hover:hover){.studio-form :is(input,select,textarea):not(:disabled):not([readonly]):hover{border-color:var(--accent)}}
+    @media(any-pointer:coarse){.studio-form :is(input,select,textarea,button):not([type=checkbox]):not([type=radio]):not([type=color]){min-height:var(--tap,44px)}.studio-form .sf-check,.studio-form label:has(> input[type=checkbox]){min-height:var(--tap,44px)}}
+    @media(prefers-reduced-motion:reduce){.studio-form :is(input,select,textarea){transition:none!important}}
     .paint-chip{display:grid;grid-template-columns:auto;justify-items:center;gap:3px;background:var(--raised);border:2px solid transparent;border-radius:8px;padding:6px;cursor:pointer;min-width:62px;font:10px ui-monospace,monospace;color:var(--muted);position:relative}
     .paint-chip .sw{width:34px;height:34px;border-radius:6px;border:1px solid #fff3}
     .paint-chip[aria-pressed=true]{border-color:var(--ink);color:var(--ink)}
@@ -305,7 +333,12 @@
     // A foreground reload may start while the version request is in flight.
     // Background polling must not invalidate the refresh awaited by creation/save.
     if (pendingReloads || !version || version === D.version) return;
-    await reload(); rerender();
+    try { await reload(); }
+    catch (error) {
+      status(`Refreshing from disk failed: ${error.message}. The next background check will retry.`, 'warn');
+      return;
+    }
+    rerender();
     status(Object.keys(edits).some(dirty) ? 'Files changed on disk; your unsaved edits were kept' : 'Updated from disk', 'warn');
   }
   function rerender() { renderTotals(); renderKinds(); renderList(); renderView(); }

@@ -41,6 +41,8 @@ bool jelli_pet_scene_select(JelliPetUi *ui, JelliScene *scene, const char *key)
         !jelli_scene_compose(scene, images, definition->count, true))
         return false;
     ui->scene = scene;
+    ui->scene_automatic = false;
+    ui->scene_clock_started = false;
     ui->scene_assets = ui->assets;
     ui->rendered = false;
     return true;
@@ -50,6 +52,8 @@ void jelli_pet_scene_clear(JelliPetUi *ui)
 {
     if (ui && ui->scene) {
         ui->scene = NULL;
+        ui->scene_automatic = false;
+        ui->scene_clock_started = false;
         ui->scene_assets = NULL;
         ui->rendered = false;
     }
@@ -65,4 +69,20 @@ void jelli_pet_scene_prepare(JelliPetUi *ui)
         jelli_scene_compose(ui->scene, images, definition->count,
                             !ui->rendered || ui->assets != ui->scene_assets))
         ui->scene_assets = ui->assets;
+}
+
+void jelli_pet_scene_update(JelliPetUi *ui, uint64_t animation_ms)
+{
+    if (!ui || !ui->scene)
+        return;
+    if (!ui->scene_clock_started || animation_ms < ui->scene_anchor_ms) {
+        ui->scene_anchor_ms = animation_ms;
+        ui->scene_clock_started = true;
+        ui->scene_elapsed_ms = 0;
+    }
+    uint64_t elapsed = animation_ms - ui->scene_anchor_ms;
+    ui->scene_anchor_ms = animation_ms;
+    /* Drop stall backlog; unsigned elapsed accumulation wraps harmlessly after centuries. */
+    ui->scene_elapsed_ms += elapsed > 250u ? 250u : elapsed;
+    jelli_scene_animate(ui->scene, ui->scene_elapsed_ms);
 }

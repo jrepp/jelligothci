@@ -1104,6 +1104,34 @@
       "pose": "snuggle",
       "prize": "teddy-bear",
       "daily_reward": true
+    },
+    {
+      "id": 24,
+      "name": "TRAVELING",
+      "kind": "play",
+      "suggest_hour": -1,
+      "gains": {},
+      "costs": {},
+      "icon": 2013,
+      "prop": 0,
+      "duration_s": 30,
+      "start_minute": 0,
+      "end_minute": 1440,
+      "forms": [],
+      "random_weight": 0,
+      "requires": -1,
+      "animation": "watch",
+      "jitter_pct": 0,
+      "bonuses": [],
+      "locations": [
+        "home",
+        "garden",
+        "park",
+        "pond",
+        "beach",
+        "library"
+      ],
+      "randomize_location": false
     }
   ],
   "favorites": {

@@ -220,6 +220,7 @@ void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *
         return;
     uint64_t time = paused && ui->rendered ? ui->last_animation_phase : animation_ms;
     jelli_pet_activity_scene(ui, game, time, paused);
+    jelli_pet_scene_update(ui, time);
     jelli_pet_scene_prepare(ui);
     JelliPetRenderKey view = render_key(game, ui, time, paused);
     jelli_pet_actor_clip(ui, &view, time);
