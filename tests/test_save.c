@@ -136,6 +136,7 @@ static void failed_decodes_preserve_output(void)
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
     broken[4] = JELLI_SAVE_VERSION + 1u;
+    repair_checksum(broken, size);
     CHECK(!jelli_save_decode(&output, broken, size));
     CHECK(unchanged(&output, &saved_output));
     memcpy(broken, bytes, size);
@@ -169,6 +170,7 @@ static void invalid_fields_are_rejected(void)
     bytes[64] = 0u;
     bytes[65] = 0u;
     bytes[176] = (uint8_t)JELLI_EATING;
+    bytes[4] = 19u;
     repair_checksum(bytes, size);
     CHECK(!jelli_save_decode(&output, bytes, size));
     CHECK(unchanged(&output, &saved_output));
