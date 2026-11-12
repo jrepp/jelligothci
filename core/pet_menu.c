@@ -82,10 +82,10 @@ const char *jelli_pet_menu_title(const JelliPetUi *ui)
 static const char *exercise_hint(const JelliPet *pet)
 {
     if (pet->needs[JELLI_SATIETY] < jelli_exercise.fullness_cost)
-        return "CARE > FEED FIRST";
+        return "FOOD FIRST";
     if (pet->hydration <
         jelli_activity_cost(pet, JELLI_ACTIVITY_HYDRATION, jelli_exercise.hydration_cost))
-        return "CARE > WATER FIRST";
+        return "WATER FIRST";
     if (pet->needs[JELLI_ENERGY] <
         jelli_activity_cost(pet, JELLI_ENERGY, jelli_exercise.energy_cost))
         return "REST FOR ENERGY";
@@ -114,23 +114,21 @@ static const char *not_ready_hint(const JelliPetUi *ui, const JelliGame *game)
 const char *jelli_pet_menu_hint(const JelliPetUi *ui, const JelliGame *game)
 {
     if (ui->result == JELLI_ASLEEP)
-        return "SETTINGS > WAKE";
+        return "CARE > WAKE";
     if (ui->result == JELLI_BUSY)
         return "WAIT FOR ACTIVITY";
     if (ui->result == JELLI_NOT_READY)
         return not_ready_hint(ui, game);
-    if (ui->result == JELLI_FULL && ui->page == JELLI_UI_CARE && ui->attempted_slot == 6u)
+    if (ui->result == JELLI_FULL && ui->page == JELLI_UI_HOME && ui->attempted_slot == 1u)
+        return "TUMMY FULL";
+    if (ui->result == JELLI_FULL && ui->page == JELLI_UI_HOME && ui->attempted_slot == 2u)
         return "HYDRATION FULL";
-    if (ui->result == JELLI_NO_ITEM && ui->page == JELLI_UI_MOMENTS)
-        return "FEED > GET FOOD";
     if (ui->result == JELLI_FULL && ui->page == JELLI_UI_SETTINGS)
         return game->volume ? "VOLUME MAX" : "MUTED";
     if (ui->result == JELLI_NO_ITEM && ui->page == JELLI_UI_MORE)
         return "NO GIFTS LEFT";
     if (ui->result != JELLI_OK)
         return "";
-    if (ui->page == JELLI_UI_HOME)
-        return "CHOOSE A MENU";
     if (ui->page == JELLI_UI_HEALTH)
         return "TAP TO START";
     return "";

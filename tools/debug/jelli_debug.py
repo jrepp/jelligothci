@@ -242,6 +242,9 @@ def main():
     tap = commands.add_parser("tap")
     tap.add_argument("x", type=int, choices=range(466), metavar="X[0..465]")
     tap.add_argument("y", type=int, choices=range(466), metavar="Y[0..465]")
+    hold = commands.add_parser("hold")
+    hold.add_argument("x", type=int, choices=range(466), metavar="X[0..465]")
+    hold.add_argument("y", type=int, choices=range(466), metavar="Y[0..465]")
     tunables = commands.add_parser("tunables", help="List tunable values, ranges, and sources")
     tunables.add_argument("--device", action="store_true", help="ESP32 persistent device settings")
     tunables.add_argument("--creature", type=int, default=0, help="Stable pet ID; default is global")
@@ -379,8 +382,8 @@ def main():
             result = client.request(f"sound {cue} {args.volume}")
         elif args.command == "swipe":
             result = client.request(f"swipe {('up', 'down', 'left', 'right').index(args.direction)}")
-        elif args.command == "tap":
-            result = client.request(f"tap {args.x} {args.y}")
+        elif args.command in ("tap", "hold"):
+            result = client.request(f"{args.command} {args.x} {args.y}")
         else:
             result = client.screenshot(args.output)
         print(json.dumps(result, indent=2))

@@ -59,7 +59,7 @@ with tempfile.TemporaryDirectory(prefix='jelli-clock-') as folder:
         assert all(0 <= score <= 1000 for score in habits['scores'].values())
         assert client.request('sleep-log')['sessions'] == []
         client.press('MENU')
-        client.press('SETTINGS')
+        client.press('CARE')
         for _ in range(9):
             client.press('REST')
             client.press('WAKE')

@@ -276,8 +276,8 @@ clamps to the endpoint; animation speed does not depend on update frequency.
 Space pauses circle motion on desktop, while color feedback continues.
 
 The reusable `JelliColorTween` in `include/jelli/animation.h` uses caller-owned
-storage, integer channel interpolation, and no heap allocation. Input draining remains bounded;
-the ESP32 queue drops a new event when full. See
+storage, integer channel interpolation, and no heap allocation. Input draining remains bounded. If the ESP32 touch queue fills, it discards
+queued gestures and cancels the active contact. See
 [ADR-009](../docs-cms/adr/adr-009-bounded-input-color-animation.md) for the contract.
 
 
@@ -316,6 +316,15 @@ Its explicit INT2 opt-in does not establish wake readiness on another board.
 `JelliTouchGuard` applies fault cancellation before host gesture translation and
 requires a valid release before a new contact. Its guard and gesture share one
 owner or host lock. ESP32 uses the LVGL lock; SDL runs them on its event thread.
+
+Touch hosts send press, movement cancellation and release-derived tap, swipe or
+long-press events. Holding the closed MENU control for three seconds opens
+Settings; the engine uses the injected monotonic clock to draw progress and
+consumes the release. Touch errors, movement outside the MENU control,
+focus loss, display blanking and debug capture cancel an in-progress hold.
+The shared gesture classifier rejects clock reversal and emits a long press only
+on a stationary release. The debug command `hold X Y` invokes the semantic long-press action directly;
+it does not exercise timing or physical touch.
 
 Use `make core-test` for fake transport and service tests, `make test` for the
 SDL integration, and `make sanitize` for memory/undefined-behavior checks.

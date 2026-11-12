@@ -98,6 +98,5 @@ void jelli_pet_collectible_win_draw(Canvas *c, const JelliPetUi *ui, const Jelli
                               ? "LAB COMPLETE - ALL 3 LEVELS!"
                               : "7 JELLIS - YOU DID IT!",
                           354, 1u, PALE);
-    jelli_canvas_disk(c, 233, 462, 48, TEAL);
-    jelli_canvas_centered(c, "BACK", 432, 2u, PALE);
+    jelli_pet_draw_menu_button(c, ui);
 }

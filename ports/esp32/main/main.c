@@ -51,6 +51,17 @@ static bool poll_input(void *ctx, JelliInput *input)
     }
     return xQueueReceive(board->input, input, 0) == pdTRUE;
 }
+static void queue_touch(Board *board, JelliInput input)
+{
+    if (xQueueSend(board->input, &input, 0) != pdTRUE) {
+        /* Discard stale input and cancel the contact if its end cannot be queued. */
+        (void)xQueueReset(board->input);
+        board->gesture.active = false;
+        input = (JelliInput){.kind = JELLI_PRESS_CANCEL};
+        (void)xQueueSend(board->input, &input, 0);
+    }
+}
+static void cancel_touch(void *ctx) { queue_touch(ctx, (JelliInput){.kind = JELLI_PRESS_CANCEL}); }
 static void touch_event(lv_event_t *event)
 {
     Board *b = lv_event_get_user_data(event);
@@ -64,15 +75,25 @@ static void touch_event(lv_event_t *event)
         b->gesture.active = false;
         return;
     }
-    if (code == LV_EVENT_PRESSED)
-        jelli_gesture_begin(&b->gesture, point.x, point.y);
-    else if (code == LV_EVENT_PRESS_LOST)
+    if (code == LV_EVENT_PRESSED) {
+        jelli_gesture_begin_at(&b->gesture, point.x, point.y, now_ms(b));
+        JelliInput input = {JELLI_PRESS_BEGIN, point.x, point.y};
+        queue_touch(b, input);
+    } else if (code == LV_EVENT_PRESSING && b->gesture.active &&
+               (point.x != b->gesture.last_x || point.y != b->gesture.last_y)) {
+        (void)jelli_gesture_move(&b->gesture, point.x, point.y);
+        JelliInput input = {JELLI_PRESS_MOVE, point.x, point.y};
+        queue_touch(b, input);
+    } else if (code == LV_EVENT_PRESS_LOST) {
         b->gesture.active = false;
-    else if (code == LV_EVENT_RELEASED) {
+        JelliInput input = {.kind = JELLI_PRESS_CANCEL};
+        queue_touch(b, input);
+    } else if (code == LV_EVENT_RELEASED) {
         JelliInput input;
         /* The LVGL task produces events; the engine task consumes them. */
-        if (jelli_gesture_end(&b->gesture, point.x, point.y, &input))
-            (void)xQueueSend(b->input, &input, 0);
+        if (!jelli_gesture_end_at(&b->gesture, point.x, point.y, now_ms(b), &input))
+            input = (JelliInput){.kind = JELLI_PRESS_CANCEL};
+        queue_touch(b, input);
     }
 }
 static void present(void *ctx, const JelliSurface *surface)
@@ -98,6 +119,8 @@ static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *se
         uint64_t start = now_ms(NULL);
         jelli_case_button_poll(&board->button, start);
         if (board->button.blank) {
+            engine->hold_active = false;
+            engine->hold_consumed = true;
             JelliInput discarded;
             for (unsigned i = 0; i < 8u; ++i)
                 if (xQueueReceive(board->input, &discarded, 0) != pdTRUE)
@@ -152,6 +175,8 @@ void app_main(void)
     ESP_ERROR_CHECK(bsp_display_lock(UINT32_MAX));
     ESP_ERROR_CHECK(
         jelli_touch_input_init(&board.touch, &board.gesture, bsp_display_get_input_dev()));
+    board.touch.cancel = cancel_touch;
+    board.touch.cancel_ctx = &board;
     jelli_display_transfer_attach(&board.display.transfer, display);
     lv_timer_set_period(lv_display_get_refr_timer(display), FRAME_MS);
     lv_obj_t *screen = lv_screen_active();
@@ -168,6 +193,7 @@ void app_main(void)
     lv_obj_remove_flag(board.display.canvas, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(board.display.canvas, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_PRESSED, &board);
+    lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_PRESSING, &board);
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_RELEASED, &board);
     lv_obj_add_event_cb(board.display.canvas, touch_event, LV_EVENT_PRESS_LOST, &board);
     /* LVGL's task owns refresh work and its stack. Wait for the custom draw

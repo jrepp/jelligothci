@@ -13,8 +13,7 @@ static void controls(Canvas *c, const JelliPetUi *ui)
         if (!jelli_pet_collectible_button(ui, slot, &b))
             continue;
         if (!slot) {
-            jelli_canvas_disk(c, 233, 462, 48, TEAL);
-            jelli_canvas_centered(c, "BACK", 432, 2u, PALE);
+            jelli_pet_draw_menu_button(c, ui);
             continue;
         }
         jelli_canvas_rect(c, (int)b.bounds.x, (int)b.bounds.y, (int)b.bounds.width,

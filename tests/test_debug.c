@@ -111,7 +111,7 @@ static int parser_tests(void)
     CHECK(contains("\"creature\":{\"pose\":") && contains("\"behavior\":\"\"") &&
           contains("\"mess\":false"));
     request("@J1 1 press 0 0\n");
-    request("@J1 2 press 0 1\n");
+    request("@J1 2 press 0 4\n");
     CHECK(engine.ui.page == JELLI_UI_CARE);
     request("@J1 3 press 0 1\n");
     CHECK(contains("page_changed"));

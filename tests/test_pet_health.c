@@ -40,8 +40,8 @@ static void test_clicker(void)
         jelli_pet_ui_init(&ui);
         JelliSurface s = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
         press(&ui, &g, 0u);
-        press(&ui, &g, 1u); /* CARE */
-        press(&ui, &g, 5u); /* HEALTH */
+        press(&ui, &g, 4u); /* CARE */
+        press(&ui, &g, 4u); /* HEALTH */
         CHECK(ui.page == JELLI_UI_HEALTH);
         press(&ui, &g, kind + 1u);
         CHECK(ui.page == (JelliPetPage)(JELLI_UI_BRUSH + kind));

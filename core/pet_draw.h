@@ -18,6 +18,7 @@ void jelli_pet_draw(JelliSurface *surface, const JelliGame *game, const JelliPet
 void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const JelliPetUi *ui,
                            const JelliPetRenderKey *view, JelliRect region);
 void jelli_pet_draw_particles(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui);
-void jelli_pet_draw_tile(JelliSurface *surface, const JelliPetRenderKey *view);
+void jelli_pet_draw_tile(JelliSurface *surface, const JelliPetRenderKey *view,
+                         const JelliPetUi *ui);
 void jelli_pet_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliPetRenderKey *view);
 #endif

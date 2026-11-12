@@ -83,7 +83,6 @@ static void legacy_totals(JelliGame *game, JelliPet *pet)
 {
     switch ((JelliActivity)pet->activity) {
     case JELLI_EATING:
-        --game->food;
         pet->moment_rewards[JELLI_SATIETY] = jelli_foods[pet->food_type].fullness;
         pet->moment_rewards[JELLI_ACTIVITY_HYDRATION] = jelli_foods[pet->food_type].hydration;
         break;

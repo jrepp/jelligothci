@@ -12,7 +12,7 @@ static uint32_t action_icon(JelliPetUiAction action, bool asleep)
         [JELLI_UI_ACTION_FEED] = JELLI_ASSET_MENUS_FOOD,
         [JELLI_UI_ACTION_CARE] = JELLI_ASSET_MENUS_CARE,
         [JELLI_UI_ACTION_REST_WAKE] = JELLI_ASSET_MENUS_REST,
-        [JELLI_UI_ACTION_COLLECTION] = JELLI_ASSET_MENUS_COLLECTION,
+        [JELLI_UI_ACTION_COLLECTION] = JELLI_ASSET_MENUS_GIFTS,
         [JELLI_UI_ACTION_MORE] = JELLI_ASSET_MENUS_GIFTS,
         [JELLI_UI_ACTION_SETTINGS] = JELLI_ASSET_MENUS_SETTINGS,
         [JELLI_UI_ACTION_BASIC_CARE] = JELLI_ASSET_ICONS_BASIC_CARE,
@@ -25,7 +25,7 @@ static uint32_t action_icon(JelliPetUiAction action, bool asleep)
         [JELLI_UI_ACTION_SWITCH_PET] = JELLI_ASSET_MENUS_COLLECTION,
         [JELLI_UI_ACTION_BEDTIME] = JELLI_ASSET_ICONS_REST,
         [JELLI_UI_ACTION_SAVE] = JELLI_ASSET_ICONS_CONFIRM,
-        [JELLI_UI_ACTION_MOMENTS] = JELLI_ASSET_MENUS_MOMENTS,
+        [JELLI_UI_ACTION_MOMENTS] = JELLI_ASSET_ICONS_PLAY,
         [JELLI_UI_ACTION_SUGGEST] = JELLI_ASSET_MENUS_MOMENTS,
         [JELLI_UI_ACTION_HEALTH] = JELLI_ASSET_HEALTH_MEDICINE,
         [JELLI_UI_ACTION_WATER] = JELLI_ASSET_MENUS_WATER,
@@ -55,7 +55,7 @@ bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool men
     if (!slot) {
         *button = (JelliPetUiButton){
             .bounds =
-                menu_open ? (JelliRect){185u, 414u, 96u, 52u} : (JelliRect){161u, 388u, 144u, 64u},
+                menu_open ? (JelliRect){173u, 390u, 120u, 65u} : (JelliRect){143u, 368u, 180u, 80u},
             .label = !menu_open ? "MENU" : (page == JELLI_UI_HOME ? "CLOSE" : "BACK"),
             .icon = !menu_open ? JELLI_ASSET_MENUS_MORE
                                : (page == JELLI_UI_HOME ? JELLI_ASSET_MENUS_CLOSE
@@ -85,7 +85,13 @@ unsigned jelli_pet_moment(const JelliPet *pet)
 
 unsigned jelli_pet_suggested_moment(const JelliPet *pet, const JelliPetUi *ui)
 {
-    return jelli_moment_suggested(jelli_pet_clock_minute(ui, pet) / 60u);
+    unsigned choice = jelli_moment_suggested(jelli_pet_clock_minute(ui, pet) / 60u);
+    if (jelli_moments[choice].kind == JELLI_MOMENT_FEED) {
+        for (unsigned i = 0u; i < jelli_moment_count; ++i)
+            if (jelli_moments[i].kind != JELLI_MOMENT_FEED)
+                return i;
+    }
+    return choice;
 }
 
 unsigned jelli_pet_stat_score(uint16_t value)
@@ -109,20 +115,43 @@ bool jelli_pet_ring_button(const JelliPetUi *ui, unsigned slot, bool asleep,
 
 bool jelli_pet_ui_starts(unsigned page, unsigned slot)
 {
-    return page == JELLI_UI_MOMENTS ||
-           (page == JELLI_UI_CARE && (slot == 1u || slot == 3u || slot == 4u));
+    return (page == JELLI_UI_MOMENTS && slot > 0u && slot < 6u) ||
+           (page == JELLI_UI_HOME && slot == 1u) ||
+           (page == JELLI_UI_CARE && (slot == 1u || slot == 2u || slot == 3u));
+}
+
+unsigned jelli_pet_activity_count(void)
+{
+    unsigned count = 1u; /* Exercise follows the authored play moments. */
+    for (unsigned i = 0u; i < jelli_moment_count; ++i)
+        if (jelli_moments[i].kind != JELLI_MOMENT_FEED)
+            ++count;
+    return count;
+}
+
+static unsigned activity_choice(unsigned page, unsigned slot)
+{
+    unsigned position = page * 5u + slot - 1u;
+    for (unsigned i = 0u; i < jelli_moment_count; ++i) {
+        if (jelli_moments[i].kind == JELLI_MOMENT_FEED)
+            continue;
+        if (position == 0u)
+            return i;
+        --position;
+    }
+    return position == 0u ? jelli_moment_count : jelli_moment_count + 1u;
 }
 
 unsigned jelli_pet_activity_choice(const JelliPetUi *ui, unsigned slot)
 {
-    return (unsigned)ui->activity_page * 5u + slot - 1u;
+    return activity_choice(ui->activity_page, slot);
 }
 
 bool jelli_pet_activity_button(unsigned page, unsigned slot, bool asleep, JelliPetUiButton *button)
 {
     if (!slot || slot > 6u || !jelli_pet_ui_button(JELLI_UI_MOMENTS, slot, asleep, true, button))
         return false;
-    unsigned choice = page * 5u + slot - 1u;
+    unsigned choice = activity_choice(page, slot);
     if (slot == 6u) {
         button->label = "MORE";
         button->icon = JELLI_ASSET_MENUS_MORE;

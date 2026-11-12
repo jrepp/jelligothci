@@ -41,7 +41,6 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         debug.press("CARE")
         assert debug.state()["visual"]["page"] == "care"
         debug.press("BACK")
-        debug.press("SETTINGS")
         debug.press("PETS")
         assert debug.state()["visual"]["page"] == "pets"
         debug.press("JELLI")
@@ -57,6 +56,9 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         debug.press("BACK")
         debug.press("BACK")
         debug.press("BACK")
+        debug.press("CLOSE")
+        debug.request("hold 233 408")
+        assert debug.state()["visual"]["page"] == "settings"
         debug.press("CLOCK")
         minute = debug.state()["visual"]["clock_minute"]
         debug.press("HOUR +")

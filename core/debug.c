@@ -86,7 +86,10 @@ static void tap(JelliDebug *debug, JelliPetEngine *engine, uint32_t id, char **w
         jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"busy\"}");
         return;
     }
-    jelli_pet_ui_tap(&engine->ui, &engine->game, (int)x, (int)y);
+    if (!strcmp(words[2], "hold"))
+        jelli_pet_ui_long_press(&engine->ui, &engine->game, (int)x, (int)y);
+    else
+        jelli_pet_ui_tap(&engine->ui, &engine->game, (int)x, (int)y);
     jelli_debug_response(debug, id, "{\"ok\":true,\"input\":\"delivered\"}");
 }
 
@@ -142,7 +145,7 @@ static bool input_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t id
         press(debug, engine, id, words, count);
     else if (!strcmp(words[2], "swipe"))
         swipe(debug, engine, id, words, count);
-    else if (!strcmp(words[2], "tap"))
+    else if (!strcmp(words[2], "tap") || !strcmp(words[2], "hold"))
         tap(debug, engine, id, words, count);
     else
         return false;
@@ -181,6 +184,8 @@ static void dispatch_command(JelliDebug *debug, JelliPetEngine *engine, uint32_t
             jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"busy\"}");
             return;
         }
+        engine->hold_active = false;
+        engine->hold_consumed = true;
         debug->captured = true;
         debug->capture_start = now;
         debug->capture_activity = now;

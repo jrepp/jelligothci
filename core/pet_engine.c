@@ -1,4 +1,5 @@
 #include "jelli/pet_engine.h"
+#include "jelli/gesture.h"
 #include "pet_gallery.h"
 #include "pet_feedback.h"
 #include "pet_collectible_ui.h"
@@ -58,14 +59,55 @@ static void advance(JelliPetEngine *engine, uint64_t elapsed)
         jelli_game_advance(&engine->game, elapsed);
 }
 
+static bool consume_input(JelliPetEngine *engine, JelliInput input)
+{
+    if (engine->hold_active &&
+        (input.kind == JELLI_PRESS_CANCEL ||
+         ((input.kind == JELLI_PRESS_MOVE || input.kind == JELLI_LONG_PRESS) &&
+          !jelli_pet_ui_menu_hit(&engine->ui, &engine->game, input.x, input.y))))
+        engine->hold_consumed = true;
+    if (input.kind == JELLI_PRESS_BEGIN)
+        engine->hold_consumed = false;
+    else if (input.kind != JELLI_PRESS_MOVE) {
+        engine->hold_active = false;
+        if (engine->hold_consumed && (input.kind == JELLI_TAP || input.kind == JELLI_SWIPE ||
+                                      input.kind == JELLI_LONG_PRESS)) {
+            engine->hold_consumed = false;
+            return true;
+        }
+    }
+    return false;
+}
+
 static void input_event(JelliPetEngine *engine, JelliInput input)
 {
+    if (consume_input(engine, input))
+        return;
     switch (input.kind) {
     case JELLI_QUIT:
         engine->running = false;
         break;
     case JELLI_TAP:
         if (!engine->game.resuming)
+            jelli_pet_ui_tap(&engine->ui, &engine->game, input.x, input.y);
+        break;
+    case JELLI_PRESS_BEGIN:
+        engine->hold_active = jelli_pet_ui_menu_hit(&engine->ui, &engine->game, input.x, input.y);
+        engine->hold_started_ms = engine->last_ms;
+        engine->hold_x = input.x;
+        engine->hold_y = input.y;
+        break;
+    case JELLI_PRESS_MOVE:
+        if (engine->hold_active &&
+            !jelli_pet_ui_menu_hit(&engine->ui, &engine->game, input.x, input.y))
+            engine->hold_active = false;
+        break;
+    case JELLI_PRESS_CANCEL:
+        break;
+    case JELLI_LONG_PRESS:
+        if (jelli_pet_ui_menu_hit(&engine->ui, &engine->game, input.x, input.y))
+            jelli_pet_ui_long_press(&engine->ui, &engine->game, input.x, input.y);
+        else
             jelli_pet_ui_tap(&engine->ui, &engine->game, input.x, input.y);
         break;
     case JELLI_SWIPE:
@@ -93,6 +135,27 @@ static void rewards(JelliPetEngine *engine)
     if (ui->rewards.completed != completed) {
         ui->save_requested = true;
         ui->save_status = JELLI_SAVE_PENDING;
+    }
+}
+
+static void update_hold(JelliPetEngine *engine, uint64_t now)
+{
+    if (engine->hold_active &&
+        (now < engine->hold_started_ms || engine->ui.menu_open || engine->game.resuming)) {
+        engine->hold_active = false;
+        engine->hold_consumed = true;
+    }
+    uint64_t held = engine->hold_active ? now - engine->hold_started_ms : 0u;
+    if (engine->hold_active && held >= JELLI_HOLD_MS) {
+        engine->hold_active = false;
+        engine->hold_consumed = true;
+        jelli_pet_ui_long_press(&engine->ui, &engine->game, engine->hold_x, engine->hold_y);
+        held = 0u;
+    }
+    uint8_t progress = (uint8_t)(held / (JELLI_HOLD_MS / 12u));
+    if (progress != engine->ui.hold_progress) {
+        engine->ui.hold_progress = progress;
+        engine->ui.rendered = false;
     }
 }
 
@@ -139,6 +202,7 @@ bool jelli_pet_frame(JelliPetEngine *engine)
                            jelli_effect_triggers, engine->animation_ms,
                            was_resuming || engine->game.resuming, engine->paused);
     jelli_pet_gallery_update(&engine->ui, &engine->game, engine->animation_ms);
+    update_hold(engine, now);
     jelli_pet_render(&engine->surface, &engine->game, &engine->ui, engine->animation_ms,
                      engine->paused);
     engine->platform.present(engine->platform.ctx, &engine->surface);

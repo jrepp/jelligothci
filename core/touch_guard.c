@@ -3,6 +3,8 @@
 void jelli_touch_guard_apply(JelliTouchGuard *guard, bool failed, uint8_t *count)
 {
     if (failed) {
+        if (guard->gesture->active && guard->cancel)
+            guard->cancel(guard->cancel_ctx);
         guard->awaiting_release = true;
         guard->gesture->active = false;
         *count = 0;

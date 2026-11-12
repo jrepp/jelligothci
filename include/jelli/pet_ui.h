@@ -263,6 +263,7 @@ typedef struct {
     bool save_requested, time_unavailable;
     uint8_t save_status;
     bool scene_automatic, scene_clock_started;
+    uint8_t hold_progress;
     bool rendered, menu_open, clock_known;
     uint8_t stat_offset;
     bool sound_pending, sound_played;
@@ -297,6 +298,7 @@ JelliPetUiAction jelli_pet_routine_action(unsigned page);
 uint32_t jelli_pet_health_icon(unsigned activity);
 /* Moment ID (content/activities.json) for a moment action; false for other actions. */
 bool jelli_pet_activity_button(unsigned page, unsigned slot, bool asleep, JelliPetUiButton *button);
+unsigned jelli_pet_activity_count(void);
 unsigned jelli_pet_activity_choice(const JelliPetUi *ui, unsigned slot);
 bool jelli_pet_moment_for_action(JelliPetUiAction action, unsigned *moment);
 void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game);
@@ -314,6 +316,8 @@ JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsign
 uint16_t jelli_pet_clock_minute(const JelliPetUi *ui, const JelliPet *pet);
 bool jelli_pet_clock_button(bool editing, unsigned slot, JelliPetUiButton *button);
 void jelli_pet_clock_action(JelliPetUi *ui, unsigned slot);
+bool jelli_pet_ui_menu_hit(const JelliPetUi *ui, const JelliGame *game, int x, int y);
+void jelli_pet_ui_long_press(JelliPetUi *ui, JelliGame *game, int x, int y);
 void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy);
 void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y);
 void jelli_pet_render(JelliSurface *surface, const JelliGame *game, JelliPetUi *ui,

@@ -56,7 +56,7 @@ bool jelli_frame(JelliEngine *e)
             e->running = false;
             return false;
         }
-        if (input.kind == JELLI_TAP) {
+        if (input.kind == JELLI_TAP || input.kind == JELLI_LONG_PRESS) {
             if (visible_tap(input))
                 change_colors(e);
             continue;

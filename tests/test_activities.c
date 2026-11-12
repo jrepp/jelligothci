@@ -39,9 +39,9 @@ static void meals_charge_once(void)
     jelli_game_init(&game);
     unsigned food = game.food;
     CHECK(moment(&game, 0u) == JELLI_OK && game.pets[0].activity == JELLI_EATING);
-    CHECK(game.food == food - 1u && game.pets[0].moment == 1u);
+    CHECK(game.food == food && game.pets[0].moment == 1u);
     finish_activity(&game);
-    CHECK(game.food == food - 1u && game.pets[0].digesting > 0u);
+    CHECK(game.food == food && game.pets[0].digesting > 0u);
 }
 
 static void reading_moment(void)

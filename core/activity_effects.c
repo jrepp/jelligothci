@@ -89,14 +89,12 @@ const char *jelli_moment_cost_hint(const JelliPet *pet, unsigned id)
 
 void jelli_moment_charge(JelliGame *game, JelliPet *pet, unsigned id)
 {
-    const JelliMoment *m = &jelli_moments[id];
-    /* The command validates every cost before mutating any meter or inventory. */
+    (void)game;
+    /* The command validates every cost before mutating any meter. */
     for (unsigned i = 0u; i < JELLI_ACTIVITY_METERS; ++i) {
         uint16_t *value = meter(pet, i);
         *value = (uint16_t)(*value - jelli_moment_cost(pet, id, i));
     }
-    if (m->kind == JELLI_MOMENT_FEED)
-        --game->food;
 }
 
 unsigned jelli_moment_bonus_percent(const JelliPet *pet, unsigned id)

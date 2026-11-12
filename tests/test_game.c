@@ -53,11 +53,11 @@ static void feed_reward_and_full_claim(void)
     test_game_pair(&game);
     game.food = JELLI_STACK_LIMIT;
     CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_OK);
-    CHECK(game.food == JELLI_STACK_LIMIT - 1u);
+    CHECK(game.food == JELLI_STACK_LIMIT);
     advance_ms(&game, 4900u);
-    CHECK(game.food == JELLI_STACK_LIMIT - 1u && !game.pets[0].reward_pending);
+    CHECK(game.food == JELLI_STACK_LIMIT && !game.pets[0].reward_pending);
     advance_ms(&game, 100u);
-    CHECK(game.food == JELLI_STACK_LIMIT - 1u && game.pets[0].reward_pending);
+    CHECK(game.food == JELLI_STACK_LIMIT && game.pets[0].reward_pending);
     CHECK(command(&game, JELLI_CMD_CLAIM, 1u, 0u) == JELLI_FULL);
     CHECK(game.pets[0].reward_pending && !game.pets[0].reward_claimed);
     game.food = 17u;
@@ -103,7 +103,7 @@ static void zero_inventory_recovery(void)
         game.pets[0].needs[i] = 0u;
     game.pets[0].health = JELLI_UNWELL;
     CHECK(jelli_game_valid(&game));
-    CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_NO_ITEM);
+    CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_OK);
     CHECK(command(&game, JELLI_CMD_CARE, 1u, 0u) == JELLI_OK);
     CHECK(game.pets[0].health == JELLI_RECOVERING);
     CHECK(command(&game, JELLI_CMD_CARE, 1u, 0u) == JELLI_BUSY);
@@ -125,9 +125,9 @@ static void care_cancels_and_wakes_without_cost(void)
     CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_OK);
     CHECK(command(&game, JELLI_CMD_CARE, 1u, 0u) == JELLI_OK);
     CHECK(game.pets[0].activity == JELLI_CARING && game.pets[0].health == JELLI_RECOVERING);
-    CHECK(game.food == 4u && !game.pets[0].asleep);
+    CHECK(game.food == 5u && !game.pets[0].asleep);
     advance_ms(&game, 30000u);
-    CHECK(game.food == 4u && game.pets[0].health == JELLI_WELL);
+    CHECK(game.food == 5u && game.pets[0].health == JELLI_WELL);
     CHECK(!game.pets[0].reward_pending);
     CHECK(command(&game, JELLI_CMD_REST, 1u, 0u) == JELLI_OK);
     CHECK(game.pets[0].asleep);

@@ -162,29 +162,24 @@ static void reset_hunger_grace(JelliPet *pet)
         pet->hunger_due = saturating_add(pet->ticks, UINT64_C(6000));
 }
 
-static void finish_meal(JelliGame *game, JelliPet *pet, bool streamed)
+static void finish_meal(JelliPet *pet, bool streamed)
 {
-    if (streamed || game->food > 0u) {
-        bool useful =
-            streamed ? (pet->moment_pulse & 128u) != 0u : pet->needs[JELLI_SATIETY] < 700u;
+    bool useful = streamed ? (pet->moment_pulse & 128u) != 0u : pet->needs[JELLI_SATIETY] < 700u;
+    jelli_habits_record_meal(&pet->habits, pet->ticks);
+    const JelliFood *food = &jelli_foods[pet->food_type];
+    if (!streamed)
+        adjust_need(pet, JELLI_SATIETY, food->fullness);
+    jelli_potty_eat(pet);
+    if (food->hydration) {
         if (!streamed)
-            --game->food;
-        jelli_habits_record_meal(&pet->habits, pet->ticks);
-        const JelliFood *food = &jelli_foods[pet->food_type];
-        if (!streamed)
-            adjust_need(pet, JELLI_SATIETY, food->fullness);
-        jelli_potty_eat(pet);
-        if (food->hydration) {
-            if (!streamed)
-                jelli_hydration_add(pet, food->hydration);
-            jelli_potty_drink(pet);
-        }
-        adjust_need(pet, JELLI_HYGIENE, -10);
-        if (useful && !pet->reward_claimed) {
-            pet->reward_pending = true;
-            if (pet->feeds < UINT16_MAX)
-                ++pet->feeds;
-        }
+            jelli_hydration_add(pet, food->hydration);
+        jelli_potty_drink(pet);
+    }
+    adjust_need(pet, JELLI_HYGIENE, -10);
+    if (useful && !pet->reward_claimed) {
+        pet->reward_pending = true;
+        if (pet->feeds < UINT16_MAX)
+            ++pet->feeds;
     }
 }
 
@@ -192,7 +187,7 @@ static void apply_care_effect(JelliGame *game, JelliPet *pet, bool streamed)
 {
     switch ((JelliActivity)pet->activity) {
     case JELLI_EATING:
-        finish_meal(game, pet, streamed);
+        finish_meal(pet, streamed);
         pet->activity = JELLI_IDLE;
         pet->interaction_due = 0u;
         break;

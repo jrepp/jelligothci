@@ -6,5 +6,4 @@
 /* Per-pet fields appended in save versions 9 and later, written after every older block. */
 void jelli_save_write_tail(Writer *writer, const JelliGame *game);
 void jelli_save_read_tail(Reader *reader, JelliGame *game);
-void jelli_save_migrate_v20_food(JelliGame *game, unsigned version);
 #endif

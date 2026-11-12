@@ -62,11 +62,11 @@ static void local_v20_unlimited_food_migration(void)
     bytes[65] = 0u;
     repair_checksum(bytes, size);
     CHECK(jelli_save_decode(&loaded, bytes, size));
-    CHECK(loaded.game.food == 1u && loaded.game.pets[0].activity == JELLI_EATING);
+    CHECK(loaded.game.food == 0u && loaded.game.pets[0].activity == JELLI_EATING);
     CHECK(loaded.game.pets[0].reward_claimed && loaded.game.pets[1].reward_pending);
     bytes[4] = 19u;
     repair_checksum(bytes, size);
-    CHECK(!jelli_save_decode(&loaded, bytes, size));
+    CHECK(jelli_save_decode(&loaded, bytes, size));
     bytes[64] = 1u;
     repair_checksum(bytes, size);
     CHECK(jelli_save_decode(&loaded, bytes, size));
@@ -80,22 +80,40 @@ static void local_v20_streamed_meal_completes(void)
     original.game.food = 1u;
     CHECK(jelli_game_command(&original.game,
                              (JelliCommand){.kind = JELLI_CMD_FEED, .actor_id = 1u}) == JELLI_OK);
-    CHECK(original.game.food == 0u && original.game.pets[0].moment_pulse != 0u);
+    CHECK(original.game.food == 1u && original.game.pets[0].moment_pulse != 0u);
     uint32_t meals = original.game.pets[0].habits.lifetime_meals;
     uint16_t satiety = original.game.pets[0].needs[JELLI_SATIETY];
     size_t size = encode(&original, bytes);
     CHECK(jelli_save_decode(&loaded, bytes, size));
-    CHECK(loaded.game.food == 0u);
+    CHECK(loaded.game.food == 1u);
     advance_ms(&loaded.game, 5000u);
     CHECK(loaded.game.pets[0].activity == JELLI_IDLE);
     CHECK(loaded.game.pets[0].habits.lifetime_meals == meals + 1u);
     CHECK(loaded.game.pets[0].needs[JELLI_SATIETY] > satiety);
 }
 
+static void legacy_food_type_completes(void)
+{
+    JelliSave original = fixture(), loaded;
+    uint8_t bytes[JELLI_SAVE_CAPACITY];
+    original.game.food = 0u;
+    original.game.pets[0].activity = JELLI_EATING;
+    original.game.pets[0].food_type = 1u;
+    original.game.pets[0].interaction_due = original.game.pets[0].ticks + 50u;
+    uint32_t meals = original.game.pets[0].habits.lifetime_meals;
+    size_t size = encode(&original, bytes);
+    CHECK(jelli_save_decode(&loaded, bytes, size));
+    CHECK(loaded.game.food == 0u);
+    advance_ms(&loaded.game, 5000u);
+    CHECK(loaded.game.pets[0].activity == JELLI_IDLE);
+    CHECK(loaded.game.pets[0].habits.lifetime_meals == meals + 1u);
+}
+
 int main(void)
 {
     local_v20_unlimited_food_migration();
     local_v20_streamed_meal_completes();
+    legacy_food_type_completes();
     puts("PASS: local format 20 migration");
     return 0;
 }

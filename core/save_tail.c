@@ -57,17 +57,3 @@ void jelli_save_read_tail(Reader *reader, JelliGame *game)
         }
     }
 }
-
-/* The local v20 writer made food unlimited without changing the wire layout.
- * Reserve enough stock for ordinary meals already in flight on this engine. */
-void jelli_save_migrate_v20_food(JelliGame *game, unsigned version)
-{
-    if (version != 20u || game->count > JELLI_PET_CAPACITY)
-        return;
-    unsigned meals = 0u;
-    for (unsigned i = 0u; i < game->count; ++i)
-        if (game->pets[i].activity == JELLI_EATING && !game->pets[i].moment_pulse)
-            ++meals;
-    if (game->food < meals)
-        game->food = (uint16_t)meals;
-}
