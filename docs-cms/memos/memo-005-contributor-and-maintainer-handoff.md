@@ -144,6 +144,17 @@ actual runner. Apply the same procedure to the macOS variable if it was enabled.
 Use hosting's signed installer and rollback runbook for policy changes. Check
 cleanup as well as job success before enabling private routing again.
 
+## Observed recovery, 2026-11-12
+
+During PR checks, `PRIVATE_LINUX_RUNNERS` was still true while the repository's
+private Linux runners were offline, leaving required Linux jobs queued. The
+maintainer set the variable to `false` and restarted the queued Core portability
+and Release validation runs for PR #98. The routing change affects new jobs;
+queued jobs do not migrate automatically. The host policy and runner profile
+were not changed. Verify the restarted jobs' runner attribution and results;
+leave hosted routing enabled until private host health is verified. This is a
+dated observation, not evidence that the private runners have recovered.
+
 # Local toolchain and USB recovery
 
 | Symptom | Diagnostic and bounded next step |
