@@ -11,6 +11,7 @@ from test_creation import creator  # noqa: F401 - real copied-checkout fixture
 def open_scenes(page):
     page.evaluate("JelliShell.activateMode('scenes')")
     expect(page.locator("#scene-canvas")).to_be_visible()
+    expect(page.locator("#scene-engine")).to_be_enabled()
 
 
 def test_scene_motion_shared_library_and_save(creator):

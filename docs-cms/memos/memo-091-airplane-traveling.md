@@ -138,3 +138,11 @@ This adds 204,800 bytes to the desktop reload workspace across two banks and sta
 firmware does not allocate these banks. The full-catalog native byte oracle now uses
 a 32 KiB block and passed all 12 cases. The animation authoring suite passed all
 13 cases after the limits were aligned. Current PR CI must verify the merged head.
+
+The scene layout browser case encountered a detached canvas while the asynchronous
+scene load replaced the editor DOM. Scene boot no longer redraws a second time
+unless a draft is restored, and the test waits for the loaded editor before
+interacting. Both layout viewports and draft recovery passed in the pinned Linux
+browser. A concurrently loaded local desktop run hit the server suite's 270-second
+watchdog while requesting `/api/data`; current PR checks provide the independent
+full-run result. The pinned ESP-IDF firmware build passed without a device flash.

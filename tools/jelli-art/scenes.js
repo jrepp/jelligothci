@@ -406,9 +406,9 @@
     if (work && draft?.data?.version === 1 && draft.data.scenes?.length) {
       work=clone(draft.data);base=draft.base;selected=layerIndex=0;resetHistory();
       shell.notify('Restored unsaved scene edits. Save to keep them.',{tone:'warn'});
+      if(state.view==='scenes')render();
     }
     window.JelliDrafts?.track('scenes','scenes',{dirty,base:()=>base,data:()=>work});
-    if(state.view==='scenes')render();
   };
   shell.registerShortcuts?.('Scenes', [
     {keys:['Mod+S'],description:'Save scene edits'},
