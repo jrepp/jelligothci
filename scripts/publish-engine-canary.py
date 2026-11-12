@@ -1,17 +1,24 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.15,<3.16"
+# dependencies = ["Pillow==13.0.0"]
+# ///
 """Publish a bounded, static CI canary from a completed trusted workflow run."""
 import base64
 import io
 import json
 import os
 import re
-import struct
 import subprocess
 import sys
 import zipfile
 
+from PIL import Image
+
 MAX_ZIP = 50 * 1024 * 1024
 MAX_PNG = 10 * 1024 * 1024
+MAX_ENTRIES = 128
+CANARY_SIZE = (1398, 1584)
 MARKER = '<!-- jelli-engine-canary -->'
 
 
@@ -29,15 +36,22 @@ def extract_png(data):
     if len(data) > MAX_ZIP:
         raise ValueError('artifact archive exceeds size limit')
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
-        entries = [entry for entry in archive.infolist() if entry.filename == 'canary.png']
+        members = archive.infolist()
+        if len(members) > MAX_ENTRIES:
+            raise ValueError('artifact contains too many files')
+        entries = [entry for entry in members if entry.filename == 'canary.png']
         if len(entries) != 1 or entries[0].file_size > MAX_PNG or entries[0].file_size < 33:
             raise ValueError('artifact must contain one bounded root canary.png')
         png = archive.read(entries[0])
-    if png[:8] != b'\x89PNG\r\n\x1a\n' or png[12:16] != b'IHDR':
-        raise ValueError('invalid PNG header')
-    width, height = struct.unpack('>II', png[16:24])
-    if not 1 <= width <= 4096 or not 1 <= height <= 4096:
-        raise ValueError('invalid PNG dimensions')
+    try:
+        with Image.open(io.BytesIO(png)) as image:
+            image.verify()
+        with Image.open(io.BytesIO(png)) as image:
+            if image.format != 'PNG' or image.size != CANARY_SIZE:
+                raise ValueError(f'canary must be a {CANARY_SIZE[0]}x{CANARY_SIZE[1]} PNG')
+            image.load()
+    except (OSError, SyntaxError) as error:
+        raise ValueError('invalid or truncated PNG') from error
     return png
 
 
@@ -45,6 +59,19 @@ def current_pr(repo, number, sha):
     pr = api(f'repos/{repo}/pulls/{number}')
     return (pr['state'] == 'open' and pr['head']['sha'] == sha and
             pr['head']['repo'] is not None and pr['head']['repo']['full_name'].lower() == repo.lower())
+
+
+def find_existing_comment(comments, run_id):
+    matches = [c for c in comments if c['user']['login'] == 'github-actions[bot]' and MARKER in c['body']]
+    numbered = []
+    for comment in matches:
+        match = re.search(r'<!-- jelli-engine-canary-run:(\d+) -->', comment['body'])
+        if match:
+            numbered.append((int(match.group(1)), comment))
+    if numbered and max(number for number, _ in numbered) > run_id:
+        return None, True
+    newest = max(numbered, key=lambda item: item[0])[1] if numbered else (matches[-1] if matches else None)
+    return newest, False
 
 
 def main():
@@ -74,12 +101,10 @@ def main():
         comments.extend(batch)
         if len(batch) < 100:
             break
-    existing = next((c for c in comments if c['user']['login'] == 'github-actions[bot]' and MARKER in c['body']), None)
-    if existing:
-        previous = re.search(r'<!-- jelli-engine-canary-run:(\d+) -->', existing['body'])
-        if previous and int(previous.group(1)) > run_id:
-            print('A newer run already published; skipping.')
-            return
+    existing, newer_published = find_existing_comment(comments, run_id)
+    if newer_published:
+        print('A newer run already published; skipping.')
+        return
     # The publisher never checks out the PR or interprets its contents as code.
     blob = api(f'repos/{repo}/git/blobs', 'POST', {'content': base64.b64encode(png).decode(), 'encoding': 'base64'})['sha']
     tree = api(f'repos/{repo}/git/trees', 'POST', {'tree': [{'path': 'canary.png', 'mode': '100644', 'type': 'blob', 'sha': blob}]})['sha']
