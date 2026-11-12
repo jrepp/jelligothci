@@ -330,3 +330,11 @@ and sanitizer runs were stopped while the unrelated Jelli Art server suite was
 waiting under concurrent load; they are not claimed as passes. Current PR CI
 must supply full-suite and firmware evidence. No device flash or physical
 touch/display validation was performed.
+
+PR #102's first `validate` and `hooks` jobs both failed on formatting in the
+new group test. The earlier local lint enumerated tracked files while this test
+was still untracked. The pinned formatter corrected the test; subsequent checks
+include it in Git's file inventory. Follow the existing
+[setup guidance](../../CONTRIBUTING.md#clone-and-prepare) to stage new sources
+before running tracked-file checks. This correction changes formatting only;
+current-head CI remains the authority for the required PR checks.
