@@ -86,3 +86,14 @@ Waiting for the existing `body[data-ready=true]` contract before starting editor
 interactions made all four numeric validation cases pass with their original
 guard assertions. The explicit reload in the full-clip case continues to test
 early Paint entry before that readiness boundary.
+
+# Palette variant integration
+
+After PR #98 landed as `47977a3`, its palette-aware clone conflicted with the
+layer-aware resize in `creation.py`. The combined path resizes the document and
+then maps both the visible composite and every hidden layer simultaneously.
+This preserves layer names, selection, visibility, locks, and source PNG bytes;
+it avoids cascading a replacement when its target is also another source color.
+The creation integration suite passed 20 tests, including same-size and resized
+layered palette variants. The combined creation browser suite passed all nine
+cases, including saved-copy palette authoring and full-clip frame duplication.

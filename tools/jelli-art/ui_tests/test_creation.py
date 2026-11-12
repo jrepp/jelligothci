@@ -113,6 +113,12 @@ def test_new_pet_wizard_creates_distinct_form_and_catalog_entry(creator):
     form.locator('[name="key"]').fill("browser-pet")
     form.locator('[name="name"]').fill("BROWSER PET")
     form.locator('[name="template_form"]').select_option("baby")
+    color = form.locator('[data-source-color]').first
+    source_color = color.get_attribute("data-source-color")
+    preview = form.locator('#creation-palette-preview')
+    before = preview.evaluate('(canvas) => canvas.toDataURL()')
+    color.fill("#123456")
+    assert preview.evaluate('(canvas) => canvas.toDataURL()') != before
     form.locator('[name="size"]').select_option("48")
     form.locator('[name="gameplay_policy"]').select_option("copy-template")
     form.locator('[name="evolution"]').select_option("single-form")
@@ -121,12 +127,26 @@ def test_new_pet_wizard_creates_distinct_form_and_catalog_entry(creator):
     form.locator('[name="portrait_scale"]').fill("3")
     form.locator('[name="unlock_prize"]').select_option("1")
     form.locator('[name="hint"]').fill("CATCH BUTTERFLY")
+    page.evaluate("window.originalPaintDirty = Studio.paintDirty; Studio.paintDirty = () => true")
+    color.fill("#123457")
+    expect(preview).to_be_hidden()
+    form.get_by_role("button", name="Create and paint").click()
+    expect(page.locator('#creation-message')).to_contain_text('Save or revert template')
+    pets = json.loads((creator["content"] / "pets.json").read_text())
+    assert not any(p['art'] == 'browser-pet' for p in pets['forms'])
+    page.evaluate("Studio.paintDirty = window.originalPaintDirty")
+    color.fill("#123456")
+    expect(preview).to_be_visible()
     form.get_by_role("button", name="Create and paint").click()
     page.wait_for_function("() => state.key?.startsWith('creatures.browser-pet-') && state.mode === 'paint'", timeout=30000)
     pets = json.loads((creator["content"] / "pets.json").read_text())
     assert pets["entries"][-1]["name"] == "BROWSER PET"
     assert pets["forms"][-1]["art"] == "browser-pet"
     assert pets["evolution_sets"][-1]["growth_ticks"] == 0
+    manifest = json.loads((creator["source"] / "assets.json").read_text())
+    frame = next(a for a in manifest["assets"] if a.get("form") == "browser-pet")
+    assert frame["palette_source"]["map"] == {source_color: "#123456"}
+    assert "#123456" in frame["palette"]
 
 
 @pytest.mark.parametrize("kind", ["prizes", "backgrounds"])

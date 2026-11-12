@@ -453,6 +453,33 @@ first. **Duplicate frame** in Paint's flip-book copies the saved image to a new
 asset and inserts it after the current frame when the clip has room; a full clip
 keeps the copy in the library. Creature's timeline also provides frame duplication.
 
+### Create a palette variant
+
+In **New → Pet and form**, select an artwork template, then change its optional
+**Palette swap** color controls. Each control names the original color; its value
+is the replacement. Keep the original canvas size to preserve pixel geometry.
+The creator copies every saved frame and clip, preserves transparency and clip
+timing, and records the source frame and color map in each new asset's
+`palette_source` metadata. The result has its own palette and can be painted
+independently. Later edits to the source do not automatically regenerate a copy.
+New pets still require explicit gameplay and unlock choices.
+
+For reusable scene art that does not need a new collectible pet, use the same
+[palette swap helper](../tools/jelli-art/palette_swap.py) from an asset generator
+or export a single frame:
+
+```sh
+./scripts/uv run --python 3.12 tools/jelli-art/palette_swap.py source.png variant.png --map colors.json
+```
+
+The JSON map uses lowercase RGB hex strings, for example
+`{"#f69b86": "#80b8e0"}` (replace the source color with one actually in the
+image). Substitutions happen simultaneously, so exchanging two colors does not
+cascade. Unmapped pixels and alpha are preserved. The command refuses existing
+output paths and unknown source colors. Keep the map and original frame reference
+with the generator so variants can be rebuilt; register generated artwork through
+the normal manifest workflow before using it in game content.
+
 ## Add a creature
 
 Creatures are data ([ADR-012](../docs-cms/adr/adr-012-data-driven-creature-species-and-presentation.md)).
