@@ -18,6 +18,7 @@ import creation
 import animation
 import creatures
 import storage
+import palette_swap
 
 
 class CreationTest(unittest.TestCase):
@@ -247,6 +248,65 @@ class CreationTest(unittest.TestCase):
             with self.assertRaises(creation.CreationError):
                 self.create({**self.pet_request(), **change})
             self.assertEqual(before, self.snapshot())
+
+    def test_palette_swap_preserves_frames_clips_and_source(self):
+        from PIL import Image
+        original = creation.read(self.source / "assets.json")
+        source_files = {a["path"]: (self.source / a["path"]).read_bytes() for a in original["assets"]}
+        remap = {original["palette"][0]: "#123456"}
+        self.create({**self.pet_request(), "palette_map": remap})
+        manifest = creation.read(self.source / "assets.json")
+        for asset in manifest["assets"]:
+            if asset.get("form") != "new-jelli":
+                continue
+            old = next(a for a in original["assets"] if a["key"] == asset["palette_source"]["asset"])
+            with Image.open(self.source / old["path"]) as source, Image.open(self.source / asset["path"]) as result:
+                self.assertEqual(result.convert("RGBA").tobytes(), palette_swap.remap_image(source, remap).tobytes())
+                self.assertEqual(result.getchannel("A").tobytes(), source.convert("RGBA").getchannel("A").tobytes())
+            self.assertEqual(asset["pivot"], old["pivot"])
+            self.assertEqual(asset["bounds"], old["bounds"])
+            self.assertEqual(asset["palette_source"]["map"], remap)
+            self.assertEqual(asset["palette"], list(dict.fromkeys(remap.get(c, c)
+                             for c in creatures.palette_colours(original, old))))
+        for clip in manifest["clips"]:
+            if clip["key"].startswith("new-jelli."):
+                old = next(c for c in original["clips"] if c["key"] == clip["key"].replace("new-jelli.", "baby."))
+                self.assertEqual({k:v for k,v in clip.items() if k not in ("id", "key", "frames")},
+                                 {k:v for k,v in old.items() if k not in ("id", "key", "frames")})
+                self.assertEqual(clip["frames"], [k.replace("creatures.baby-", "creatures.new-jelli-") for k in old["frames"]])
+        self.assertEqual(source_files, {path: (self.source / path).read_bytes() for path in source_files})
+
+    def test_invalid_palette_swap_is_transactional(self):
+        before = self.snapshot()
+        for remap in ({}, [], {"#FFFFFF": "#123456"}, {"#ffffff": "bad"}, {"#123456": "#654321"}):
+            with self.assertRaises(creation.CreationError):
+                self.create({**self.pet_request(), "palette_map": remap})
+            self.assertEqual(before, self.snapshot())
+
+    def test_palette_swap_is_simultaneous_and_keeps_alpha(self):
+        from PIL import Image
+        image = Image.new("RGBA", (3, 1))
+        image.putdata([(255, 0, 0, 255), (0, 255, 0, 127), (255, 0, 0, 0)])
+        result = palette_swap.remap_image(image, {"#ff0000": "#00ff00", "#00ff00": "#0000ff"})
+        self.assertEqual(list(result.getdata()), [(0, 255, 0, 255), (0, 0, 255, 127), (255, 0, 0, 0)])
+
+    def test_palette_swap_cli_preserves_source_and_refuses_overwrite(self):
+        from PIL import Image
+        import subprocess
+        source, output, colors = (self.root / name for name in ("input.png", "output.png", "colors.json"))
+        Image.new("RGBA", (2, 2), (255, 0, 0, 127)).save(source)
+        colors.write_text('{"#ff0000": "#0000ff"}')
+        command = [sys.executable, str(HERE / "palette_swap.py"), str(source), str(output), "--map", str(colors)]
+        before = source.read_bytes()
+        subprocess.run(command, check=True, capture_output=True)
+        with Image.open(output) as image:
+            self.assertEqual(image.getpixel((0, 0)), (0, 0, 255, 127))
+        self.assertEqual(source.read_bytes(), before)
+        self.assertNotEqual(subprocess.run(command, capture_output=True).returncode, 0)
+        output.unlink()
+        colors.write_text('{"#00ff00": "#0000ff"}')
+        self.assertNotEqual(subprocess.run(command, capture_output=True).returncode, 0)
+        self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":

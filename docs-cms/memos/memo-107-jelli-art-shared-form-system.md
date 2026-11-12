@@ -66,3 +66,14 @@ field cases then passed 2/2. `git diff --check` and the commit hooks passed.
 The fix is committed locally at `d9d78cec2ac082150d164af6de1c0dd7317c3155`;
 GitHub has not yet run checks for that revision. Physical iPadOS Safari and
 post-push CI remain unverified.
+
+# Base synchronization after character palette variants (2026-11-12)
+
+When PR #98 landed as `47977a3`, GitHub marked PR #99 conflicting. Merging the
+new base required combining the README's links to both memos and retaining
+both the shared `.sf-field` creation markup and the palette-preview `hexOf`
+helper in `creation.js`. The Activities layout merged cleanly with the new
+palette authoring changes. The focused pinned-renderer palette creation and
+persistent field cases passed 3/3, with screenshot comparisons enabled;
+`make docs-check` and `make docs-fix` passed without repairs. Exact-head CI for
+the synchronized branch remains pending after push.
