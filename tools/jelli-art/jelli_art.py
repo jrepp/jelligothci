@@ -51,6 +51,7 @@ import lint_rules  # noqa: E402
 import profiles  # noqa: E402
 import request_body  # noqa: E402
 import storage  # noqa: E402
+import paint_layers  # noqa: E402
 from git_sync import GitSync  # noqa: E402
 from metrics import Metrics  # noqa: E402
 
@@ -74,14 +75,14 @@ CREATURE_JS = HERE / "creature.js"
 BEHAVIOUR_JS = HERE / "behaviour.js"
 SHELL_JS = HERE / "shell.js"  # first: the page frame and window.JelliShell, which later scripts use
 # touch.js (RFC-007) right after the shell: pointer routing, gestures and touch sizing that panels use.
-PAGE_SCRIPTS = (HERE / "icons.js", SHELL_JS, HERE / "touch.js", HERE / "lint.js", HERE / "paint_tools.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
+PAGE_SCRIPTS = (HERE / "icons.js", SHELL_JS, HERE / "touch.js", HERE / "lint.js", HERE / "paint_tools.js", HERE / "paint_layers.js", STUDIO_JS, CREATURE_JS, HERE / "animation.js", HERE / "flipbook.js", BEHAVIOUR_JS, HERE / "simulator.js",
                 HERE / "reactions.js", HERE / "game_preview.js", HERE / "lint_ui.js", HERE / "activities.js", HERE / "creation.js", HERE / "scene_variation.js", HERE / "scenes.js", HERE / "effect_model.js", HERE / "effects.js", HERE / "music.js")
 EDITABLE_CONTENT = ("behaviors", "creatures", "activities")
 STUDIO_VERSION = (HERE / "VERSION").read_text().strip()
 GIT = None  # GitSync when committing saves
 MAX_BODY = 1 << 20
 # The drafts API (window.JelliDrafts); pages call it only after boot, so its place in the list does not matter.
-PAGE_SCRIPTS += (HERE / "drafts.js",)
+PAGE_SCRIPTS += (HERE / "drafts.js", HERE / "paint_workspace.js",)
 HEX_COLOUR = re.compile(r"#[0-9a-fA-F]{6}")
 LOCK = storage.WriteLock()  # every save holds it: one writer per served root, across studio processes
 METRICS = Metrics()  # scraped at /metrics by prom-nuc through the nuc gateway
@@ -156,6 +157,8 @@ def payload(before):
     for record in records:
         record["hand_painted"] = record["key"] in painted
         record.update(details[record["key"]])
+        with Image.open(SOURCE / paths[record["key"]]) as image:
+            record["paint_document"] = paint_layers.read(image)
         record["sha"] = storage.digest(SOURCE / paths[record["key"]])  # the base a paint save sends back
     return {"live": True, "before_label": before, "after_label": "working tree", "version": version(),
             "studio_version": STUDIO_VERSION, "palette": manifest["palette"], "assets": records,
@@ -296,7 +299,7 @@ def record(paths, subject, artist):
         return {"git_error": str(error), "git_queued": True}
 
 
-def save_asset(key, pixels, artist="", base=None):
+def save_asset(key, pixels, artist="", base=None, document=None):
     """Write one sprite. base is the PNG hash the page loaded (record["sha"]); a mismatch is refused."""
     with LOCK:
         manifest = read_manifest()
@@ -308,6 +311,12 @@ def save_asset(key, pixels, artist="", base=None):
         if base is not None and base != current:
             raise StaleError(f"{key} changed on disk since you loaded it; reload to see the new version", current)
         image = image_from_pixels(asset, pixels)
+        if document is not None:
+            image.info[paint_layers.KEY] = json.dumps(paint_layers.validate(document, image), separators=(",", ":"))
+        else:
+            with Image.open(path) as original:
+                if paint_layers.KEY in original.info:
+                    raise StudioError("This asset has layers; reload before saving it")
         data = storage.png_bytes(image)
         asset["bounds"] = list(image.getchannel("A").getbbox())
         files = [(path, data), (MANIFEST, storage.json_bytes(manifest))]
@@ -458,8 +467,9 @@ def set_palette_slot(index, color, artist="", base=None):
                 continue
             path = asset_path(asset)
             image = Image.open(path).convert("RGBA")
+            layers_changed = paint_layers.remap(image, old, new)
             data = [(new + (255,)) if p[3] and p[:3] == old else p for p in image.getdata()]
-            if data != list(image.getdata()):
+            if layers_changed or data != list(image.getdata()):
                 image.putdata(data)
                 files.append((path, storage.png_bytes(image)))
                 changed.append(asset["key"])
@@ -621,7 +631,7 @@ POSTS = {  # path -> handler(body); every field is type-checked so a bad request
     "/api/effects": save_effects,
     "/api/create": create_content,
     "/api/save": lambda b: save_asset(F(b, "key", str), F(b, "pixels", list), request_body.artist(b),
-                                      F(b, "base", str, required=False)),
+                                      F(b, "base", str, required=False), F(b, "document", dict, required=False)),
     "/api/tidy": lambda b: tidy(F(b, "key", str), F(b, "pixels", list)),
     "/api/lint-waiver": lambda b: set_waiver(F(b, "key", str), F(b, "rules", list),
                                              F(b, "reason", str, required=False, default=""), request_body.artist(b),

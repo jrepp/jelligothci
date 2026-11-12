@@ -11,6 +11,7 @@ from PIL import Image
 import animation
 import creatures
 import profiles
+import paint_layers
 import storage
 import palette_swap
 
@@ -136,7 +137,7 @@ def pet_candidate(manifest, docs, images, used, reserved_keys, request, source):
         if old.get("form") != template["art"]:
             continue
         image = Image.open(storage.confined(source, old["path"])).convert("RGBA")
-        image = image.resize((size, size), Image.Resampling.NEAREST)
+        image = paint_layers.resize(image, (size, size))
         palette = {"palette": old["palette"]} if "palette" in old else {}
         if remap is not None:
             image = palette_swap.remap_image(image, remap)

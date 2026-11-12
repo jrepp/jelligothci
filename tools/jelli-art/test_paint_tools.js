@@ -248,3 +248,21 @@ for (const [name, fn] of groups) {
   try { fn(); console.log(`ok   ${name}`); } catch (err) { failed++; console.log(`FAIL ${name}\n     ${err.message}`); }
 }
 process.exit(failed ? 1 : 0);
+
+// Layers preserve hidden pixels and restore the complete document through history.
+{
+  const L = require('./paint_layers.js');
+  const p = {w: 2, h: 1, data: new Uint8ClampedArray([255,0,0,255, 0,0,0,0])};
+  const doc = L.create(p);
+  doc.layers.push({name:'Top', visible:true, locked:false, data:new Uint8ClampedArray([0,0,255,255, 0,255,0,255])});
+  const saved = L.snapshot(doc);
+  assert.deepStrictEqual([...L.composite(doc,p).data], [0,0,255,255, 0,255,0,255]);
+  doc.layers[1].visible = false;
+  assert.deepStrictEqual([...L.composite(doc,p).data], [...p.data]);
+  doc.layers[1].data.fill(0);
+  const restored = L.restore(saved);
+  assert.strictEqual(restored.layers[1].name, 'Top');
+  assert.deepStrictEqual([...L.composite(restored,p).data], [0,0,255,255, 0,255,0,255]);
+  restored.layers.reverse();
+  assert.deepStrictEqual([...L.composite(restored,p).data], [255,0,0,255, 0,255,0,255]);
+}

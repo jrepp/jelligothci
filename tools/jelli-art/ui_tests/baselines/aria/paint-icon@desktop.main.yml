@@ -1,24 +1,15 @@
 - main:
   - tabpanel "Paint":
-    - heading "icons.food" [level=2]
-    - text: 16×16 · ID 2002 · device 6× 0 px changed specks 0 → 0 colours 3 → 3 / max 6 lint pass Zoom · 32×
+    - navigation "Paint asset navigation":
+      - button "← Back to review"
+      - strong: icons.food
+      - button "Browse assets"
+    - text: Zoom · 32×
     - group "Zoom · 32×":
       - button "Zoom out": −
       - button "Fit"
       - button "Device"
       - button "Zoom in": +
-    - text: Backdrop
-    - group "Backdrop":
-      - button "scene"
-      - button "black"
-      - button "ring" [pressed]
-      - button "panel"
-      - button "checker"
-      - button "paper"
-    - text: Overlays
-    - group "Overlays":
-      - button "Grid" [pressed]
-      - button "Issues"
     - toolbar "Paint commands":
       - group "History":
         - button "Undo" [disabled]
@@ -31,48 +22,29 @@
       - group "Drawing options":
         - button "Pixel-perfect"
         - button "Mirror"
-      - text: Alt-click picks a colour
     - toolbar "Paint tools":
       - group "Tools":
         - button "Pencil" [pressed]
         - button "Eraser"
         - button "Fill"
-        - button "Pick colour"
-        - button "Shade"
-        - button "Line"
-        - button "Rectangle"
-        - button "Ellipse"
         - button "Select"
-        - button "Magic wand"
         - button "Hand"
-    - text: paint · 32× Hover or focus the canvas
+      - button "More tools"
+    - text: icons.food · 16 × 16 · 32× Hover or focus the canvas
     - application "icons.food, 16 by 16 pixels"
-    - group:
-      - text: Properties
-      - group:
-        - text: Transform & selection Transform
-        - group "Transform":
-          - button "Flip horizontally": ⇋
-          - button "Flip vertically": ⇅
-          - button "Rotate clockwise": ↻
-          - button "Rotate anticlockwise": ↺
-        - text: Nudge
-        - group "Nudge":
-          - button "Nudge left": ←
-          - button "Nudge up": ↑
-          - button "Nudge down": ↓
-          - button "Nudge right": →
-          - button "Wrap"
-        - text: Replace colour
-        - group "Replace colour":
-          - combobox "Replace colour":
-            - 'option "ink #291b35 · 47 px" [selected]'
-            - 'option "sea #43bca2 · 36 px"'
-            - 'option "coral #fa8c99 · 30 px"'
-          - button "→ paint colour"
-      - group: Symmetry
-      - group: View & input
-      - group: Clean up & restore
+    - heading "Layers 1/8" [level=3]
+    - list "Artwork layers, top first":
+      - listitem:
+        - button "Select Artwork" [pressed]: Artwork
+        - button "Show Artwork" [pressed]: ◉
+        - button "Lock Artwork": □
+    - textbox "Layer name": Artwork
+    - button "+ Layer"
+    - button "Duplicate"
+    - button "Move layer up" [disabled]: ↑
+    - button "Move layer down" [disabled]: ↓
+    - button "Delete layer" [disabled]
+    - group: Properties
     - heading "Paint colours · shared palette" [level=3]
     - group "Main and secondary colours":
       - 'button "Main #291b35. Choose a colour from the palette"':
@@ -131,15 +103,8 @@
     - group "more":
       - text: more
       - button "eraser right-click · transparent · secondary colour": eraser right-click
-      - button "Choose a custom colour": custom pick…
+      - button "Custom pick… choose a colour": Custom pick…
     - group: About the colours
-    - text: before /tmp/jelli-ui-tests/before compare with
-    - combobox "compare with":
-      - option "/tmp/jelli-ui-tests/before" [selected]
-      - option "Last save (HEAD)"
-    - img "icons.food before (/tmp/jelli-ui-tests/before)"
-    - text: history click a step to go back
-    - list "history click a step to go back":
-      - listitem:
-        - button "1. Opened"
-    - paragraph: "Right-click paints the secondary colour, which is transparent until you set one, so it erases (with Fill, the whole touching area) · X swaps colours · Alt-click picks, Alt+right-click picks the secondary · hold Space to peek at before · Ctrl/⌘+wheel zooms; Hand (H) or middle-drag pans. Keyboard: Tab to the canvas to show the cursor; arrows move it, Enter or Space applies the tool, Shift+arrows draw, Esc hides it. ? lists every shortcut."
+    - group: History & comparison
+    - group: Canvas help
+    - group: Canvas options

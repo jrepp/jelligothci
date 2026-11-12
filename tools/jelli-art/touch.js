@@ -387,7 +387,7 @@
     if (!drawerOn()) return;
     if (open) {
       if (!aside.hasAttribute('tabindex')) aside.tabIndex = -1;
-      /** @type {HTMLElement} */ (aside.querySelector('input, [aria-selected=true], .item, button, [tabindex]') || aside).focus({preventScroll: true});
+      /** @type {HTMLElement} */ ([...aside.querySelectorAll('input, [aria-selected=true], .item, button, [tabindex]')].find(el => el.checkVisibility()) || aside).focus({preventScroll: true});
     } else if (aside.contains(document.activeElement) || document.activeElement === document.body) btn.focus();
   }
   function wireList() {
@@ -449,6 +449,6 @@
   }
 
   window.JelliTouch = {T, kind, coarse, pencilOnly, setPencilOnly, onPencilOnly, offerPencilOnly, gestures, registerGestures,
-    info, popover, hidePopover, setList};
+    info, popover, hidePopover, setList, drawerOn};
   window.addEventListener('DOMContentLoaded', init);
 })();

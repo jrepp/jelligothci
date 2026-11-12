@@ -52,6 +52,13 @@
       .fb-strip button{min-width:var(--tap);min-height:var(--tap)}.fb .link,.fb-more>summary{min-height:var(--tap);display:inline-flex;align-items:center}
     }
     .fb-strip button.off{border-color:var(--warn)}.fb-strip button.off span:first-of-type::before{content:'⚠ '}
+    .paint-dock{container:flipbook / inline-size}
+    @container flipbook (max-width:700px){
+      .fb{grid-template-columns:auto minmax(0,1fr)}
+      .fb-controls>.seg{flex-wrap:wrap}
+      .fb-strip{grid-column:1 / -1}
+      .fb-more{grid-column:1 / -1;justify-self:end}
+    }
   </style>`);
 
   /* ---------- which clip frame is on the canvas ---------- */

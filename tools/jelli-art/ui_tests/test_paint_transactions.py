@@ -45,7 +45,7 @@ def test_save_acknowledges_only_submitted_pixels_and_keeps_later_draft(browser, 
         assert page.evaluate("() => Studio.paintDirty(state.key)")
         expect(page.locator("#save")).to_be_enabled()
         page.wait_for_function("() => !!JelliDrafts.get('paint', state.key)")
-        assert page.evaluate("() => Array.from(JelliDrafts.decodeBytes(JelliDrafts.get('paint', state.key).data))") == later_pixels
+        assert page.evaluate("() => Array.from(JelliLayers.composite(JelliLayers.unpack(JelliDrafts.get('paint', state.key).data), decoded[state.key].after).data)") == later_pixels
         page.locator("#save").click()
         page.wait_for_function("() => Studio.paintSaving(state.key)")
         assert pending[0].request.post_data_json["base"] == "submitted-sha"

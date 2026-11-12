@@ -283,6 +283,38 @@ class CreationTest(unittest.TestCase):
                 self.create({**self.pet_request(), "palette_map": remap})
             self.assertEqual(before, self.snapshot())
 
+    def test_palette_variant_clone_preserves_resized_hidden_layers(self):
+        import base64
+        from PIL import Image
+        import paint_layers
+        original = creation.read(self.source / "assets.json")
+        frame = next(a for a in original["assets"] if a.get("form") == "baby")
+        path = self.source / frame["path"]
+        image = Image.open(path).convert("RGBA")
+        encoded = base64.b64encode(image.tobytes()).decode("ascii")
+        image.info[paint_layers.KEY] = json.dumps({"version": 1, "active": 1, "layers": [
+            {"name": "Artwork", "visible": True, "locked": False, "data": encoded},
+            {"name": "Hidden sketch", "visible": False, "locked": True, "data": encoded}]})
+        path.write_bytes(storage.png_bytes(image))
+        source_bytes = path.read_bytes()
+        first, second = original["palette"][:2]
+        remap = {first: second, second: "#123456"}
+        for size in (32, 48):
+            key = f"layer-{size}"
+            self.create({**self.pet_request(), "key": key, "name": f"LAYER{size}",
+                         "size": size, "palette_map": remap})
+            manifest = creation.read(self.source / "assets.json")
+            target = next(a for a in manifest["assets"] if a.get("palette_source", {}).get("asset") == frame["key"] and a.get("form") == key)
+            with Image.open(self.source / target["path"]) as saved:
+                doc = paint_layers.read(saved)
+                self.assertEqual(doc["active"], 1)
+                self.assertFalse(doc["layers"][1]["visible"])
+                self.assertTrue(doc["layers"][1]["locked"])
+                flat = Image.frombytes("RGBA", image.size, image.tobytes())
+                expected = palette_swap.remap_image(flat.resize((size, size), Image.Resampling.NEAREST), remap)
+                self.assertEqual(base64.b64decode(doc["layers"][1]["data"]), expected.tobytes())
+            self.assertEqual(path.read_bytes(), source_bytes)
+
     def test_palette_swap_is_simultaneous_and_keeps_alpha(self):
         from PIL import Image
         image = Image.new("RGBA", (3, 1))

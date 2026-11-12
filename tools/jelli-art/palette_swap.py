@@ -4,11 +4,13 @@
 # ///
 """Explicit, simultaneous RGB substitutions for authored character variants."""
 import argparse
+import base64
 import json
 from pathlib import Path
 import re
 
 from PIL import Image
+import paint_layers
 
 
 def validate_mapping(mapping, palette=None):
@@ -28,11 +30,17 @@ def validate_mapping(mapping, palette=None):
 def remap_image(image, mapping):
     """Keep geometry and alpha exactly; each pixel is looked up only once."""
     validate_mapping(mapping)
+    document = paint_layers.read(image)
     lookup = {tuple(bytes.fromhex(a[1:])): tuple(bytes.fromhex(b[1:]))
               for a, b in mapping.items()}
     result = image.convert("RGBA")
     result.putdata([(*lookup.get(pixel[:3], pixel[:3]), pixel[3]) if pixel[3] else pixel
                     for pixel in result.getdata()])
+    if document:
+        for layer in document["layers"]:
+            pixels = Image.frombytes("RGBA", image.size, base64.b64decode(layer["data"]))
+            layer["data"] = base64.b64encode(remap_image(pixels, mapping).tobytes()).decode("ascii")
+        result.info[paint_layers.KEY] = json.dumps(paint_layers.validate(document, result), separators=(",", ":"))
     return result
 
 

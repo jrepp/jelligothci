@@ -20,8 +20,7 @@
       "button[data-i=\"0\"]",
       "button[data-i=\"1\"]",
       "button[data-i=\"2\"]",
-      "button[data-i=\"3\"]",
-      "div[aria-label=\"Choose a custom colour\"]"
+      "button[data-i=\"3\"]"
     ]
   },
   "paint-creature@desktop-light": {
@@ -29,8 +28,7 @@
       "button[data-i=\"0\"]",
       "button[data-i=\"1\"]",
       "button[data-i=\"2\"]",
-      "button[data-i=\"3\"]",
-      "div[aria-label=\"Choose a custom colour\"]"
+      "button[data-i=\"3\"]"
     ]
   },
   "paint-creature@phone": {
@@ -38,8 +36,7 @@
       "button[data-i=\"0\"]",
       "button[data-i=\"1\"]",
       "button[data-i=\"2\"]",
-      "button[data-i=\"3\"]",
-      "div[aria-label=\"Choose a custom colour\"]"
+      "button[data-i=\"3\"]"
     ]
   },
   "paint-creature@tablet": {
@@ -50,21 +47,9 @@
       "button[data-i=\"3\"]"
     ]
   },
-  "paint-icon@desktop": {
-    "label-content-name-mismatch": [
-      "div[aria-label=\"Choose a custom colour\"]"
-    ]
-  },
-  "paint-icon@desktop-light": {
-    "label-content-name-mismatch": [
-      "div[aria-label=\"Choose a custom colour\"]"
-    ]
-  },
-  "paint-icon@phone": {
-    "label-content-name-mismatch": [
-      "div[aria-label=\"Choose a custom colour\"]"
-    ]
-  },
+  "paint-icon@desktop": {},
+  "paint-icon@desktop-light": {},
+  "paint-icon@phone": {},
   "paint-icon@tablet": {},
   "review-detail@desktop": {},
   "review-detail@desktop-light": {},

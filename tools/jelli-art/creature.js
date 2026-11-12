@@ -369,7 +369,7 @@
     play.drawn = {}; schedule();
   }
   function paint(key) {
-    state.view = 'detail'; state.mode = 'paint'; select(key);
+    S.openPaint(key, {label: 'creature timeline', back: () => window.JelliAnimation.backToTimeline()});
   }
 
   /* ---------- save ---------- */

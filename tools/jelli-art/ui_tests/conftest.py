@@ -170,6 +170,10 @@ def settle(context, studio, view, viewport):
         raise AssertionError(f"{view}@{viewport}: page data never loaded: {state}; events: {events[-20:]}") from error
     page.wait_for_load_state("networkidle")
     page.locator(VIEWS[view]["primary"]).first.wait_for(state="attached")
+    if view == "game":
+        # The panel exists before its async catalogue arrives. Capture the
+        # settled form, not a viewport-dependent race with the Loading text.
+        page.locator("#gp-pet").wait_for(state="visible")
     page.evaluate("() => document.fonts.ready.then(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))))")
     return page
 
