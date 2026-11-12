@@ -46,6 +46,7 @@ jobs:
     uses: ./.github/workflows/core.yml
     with:
       ref: ${{ needs.resolve.outputs.sha }}
+      cross_platform: ${{ !inputs.validate_only }}
   validate:
     needs: resolve
     runs-on: ubuntu-24.04

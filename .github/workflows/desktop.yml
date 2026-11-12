@@ -42,4 +42,3 @@ jobs:
             echo
             echo "[Download engine evidence]($ARTIFACT_URL)"
           } >> "$GITHUB_STEP_SUMMARY"
-      - run: make core-test

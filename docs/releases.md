@@ -50,8 +50,8 @@ validation after tagging, without a stored personal access token. The repository
 must allow GitHub Actions to create pull requests. CMake and ESP-IDF both read
 `VERSION`; generated build metadata therefore follows the release version.
 
-Private Linux core jobs install the pinned CMake package through repository-local
-uv. The shared runner image provides the compiler and Make.
+PR and main-branch core checks use GitHub-hosted Ubuntu. Nightly, manual full
+release, and tag release validation also run native macOS and Windows core tests.
 
 External workflow actions use full commit SHAs with release-version comments.
 Hosted OS labels are explicit: Ubuntu 24.04, macOS 15, Windows 2025. GitHub still

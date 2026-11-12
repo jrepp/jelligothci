@@ -19,11 +19,29 @@ all firmware profiles. Release Please candidate dispatches use validation-only m
 tag publication still requires the matching tag and an existing release.
 
 PRs and pushes to main compile the shipping firmware; nightly and manual full
-release runs compile normal, power and factory profiles. Cross-platform core tests,
-Linux SDL/sanitizers, Studio tests, and existing required check names stay in PR CI.
+release runs compile normal, power and factory profiles. PRs run Linux core tests
+on GitHub-hosted Ubuntu, Linux SDL/sanitizers and Studio tests. Full nightly and
+manual releases retain macOS and Windows core tests; tag releases retain the
+three-platform matrix. The Linux core, desktop, docs, hooks and Studio checks
+remain PR checks.
 Platform packaging and Windows-specific SDL paths are verified nightly and at
 release instead of by the PR packaging job. Pinned browser tests and the Studio
-image remain separate PR checks. Branch pushes no longer duplicate PR runs.
+image remain separate PR checks. Browser files are distributed deterministically
+across three isolated runners with exact-once file coverage; `Studio UI tests`
+aggregates their results. Each shard retains its selected file list, test timings,
+screenshots and accessibility reports for 14 days, including successful runs.
+Image build and Studio tests run concurrently. Image
+publication remains gated by the image smoke and both Studio test jobs. Branch
+pushes no longer duplicate PR runs. On 2026-11-12 the maintainer removed the
+macOS and Windows core contexts from the required-check ruleset while retaining
+the other protections; the full platform matrix still runs in release validation.
+The first local pinned-container collection on the sharded implementation found
+149, 107 and 89 cases respectively, 345 total; file-level balancing uses source
+size as an estimate, so actual timing needs measurement on the next CI run.
+In the pinned Linux ARM container, selected game-view checks passed 4/4 on shard
+0, persistent-form checks passed 2/2 on shard 1, and the airplane ambient-motion
+check passed 1/1 on shard 2. These focused samples and collection do not establish
+a complete green browser run; inspect all three final PR jobs and the aggregate.
 
 # Baseline evidence
 
