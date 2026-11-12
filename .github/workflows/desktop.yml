@@ -1,5 +1,8 @@
 name: Desktop
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   test:
     runs-on: ubuntu-24.04
@@ -12,4 +15,27 @@ jobs:
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y ninja-build libsdl2-dev
       - run: make sanitize
+      - name: Test engine evidence tooling
+        run: ./scripts/uv run --script tests/test_engine_evidence.py
+      - name: Capture SDL engine evidence
+        run: ./scripts/uv run --script scripts/engine-evidence.py --binary build/sanitize/jelligotchi --output build/engine-evidence
+      - name: Upload engine evidence
+        id: engine-evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: engine-evidence-${{ github.sha }}
+          path: build/engine-evidence/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Add engine evidence link to summary
+        env:
+          ARTIFACT_URL: ${{ steps.engine-evidence.outputs.artifact-url }}
+        run: |
+          {
+            echo '## SDL engine evidence'
+            echo
+            echo 'Rendered every authored scene at an early frame and during travel. Download the artifact for raw PNGs, contact sheets, and the provenance manifest.'
+            echo
+            echo "[Download engine evidence]($ARTIFACT_URL)"
+          } >> "$GITHUB_STEP_SUMMARY"
       - run: make core-test
