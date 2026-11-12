@@ -160,11 +160,13 @@ static void bubble_controls_and_checkpoint_replacement(void)
     CHECK(engine.ui.page == JELLI_UI_COLLECTIBLE_PLAY);
     CHECK(engine.game.collectible.mode == JELLI_COLLECTIBLE_BUBBLE);
     snapshot("bubble-lab.ppm");
+    CHECK(engine.game.collectible.bubble.assist == JELLI_BUBBLE_MANUAL);
+    press(6u);
     press(6u);
     press(6u);
     CHECK(engine.game.collectible.bubble.assist == JELLI_BUBBLE_MANUAL);
     jelli_pet_ui_swipe(&engine.ui, &engine.game, -80, 0);
-    jelli_pet_ui_tap(&engine.ui, &engine.game, 350,
+    jelli_pet_ui_tap(&engine.ui, &engine.game, 130,
                      360); /* Newly enlarged well area rotates too. */
     CHECK(engine.game.collectible.bubble.input_count == 2u);
     jelli_collectible_tick(&engine.game);

@@ -299,3 +299,34 @@ were excluded from this local correction run; the earlier CI failure reported
 only the gallery assertion. Documentation validation and repair checks passed
 without repairs, and the C size gate passed. Required PR checks still need to
 pass on the corrected revision before merge.
+
+# 2026-11-12: forgiving connected matches and varied wells
+
+The owner requested any four touching matching pieces to clear, a larger board
+with a light outline, more forgiving play, and randomized progressive levels.
+The [matcher](../../core/collectible_bubble.c) now uses an iterative bounded
+flood fill for edge-connected components, including square and bent groups.
+Its queue and visited arrays each have one entry per board cell; each cell is
+enqueued once, with no heap allocation or recursion. The saved board layout
+and codec remain unchanged.
+
+New sessions start in Manual. Assisted modes replenish supply, successful moves
+restart fall timing, and right-wall rotations can shift inward. A piece in the
+top row no longer ends the run if the next pair can still spawn. Seeded column
+shuffling retains three separately solvable color towers, with taller towers
+on later levels. Session generation/play counters seed the first level; stored
+score/cursor counters seed progression and retries. This is deterministic
+variation, not cryptographic randomness.
+
+The [board renderer](../../core/pet_bubble.c) enlarges the playfield and adds a
+pale outline; its tap area follows the larger board. Shape symbols remain.
+[Group and generation tests](../../tests/test_bubble_groups.c) cover squares,
+bends, branches, diagonal/non-wrapping boundaries, the three-piece threshold,
+and complete solutions for 100 seeded progressive runs. The core suite passed 48/48; focused desktop and ASan/UBSan gameplay/UI cases
+passed 3/3 each. The native UI test emitted `bubble-lab.ppm`; visual inspection
+caught the observer overlapping the enlarged well, so it and its props were
+moved into the side gutter and the frame was rendered again. Full local desktop
+and sanitizer runs were stopped while the unrelated Jelli Art server suite was
+waiting under concurrent load; they are not claimed as passes. Current PR CI
+must supply full-suite and firmware evidence. No device flash or physical
+touch/display validation was performed.

@@ -43,9 +43,12 @@ static void authored_solutions_and_mistake(void)
                 highest_level = lab.level;
                 CHECK(jelli_bubble_viruses(&lab) == (lab.level + 1u) * 3u);
             }
-            unsigned column = lab.color * 2u - 1u;
+            unsigned column = 0u;
+            for (unsigned i = 0u; i < JELLI_BUBBLE_CELLS; ++i)
+                if (lab.cells[i] == (lab.color | 4u))
+                    column = i % JELLI_BUBBLE_WIDTH;
             if (mistake && !pair)
-                column = 0u; /* A reasonable misplaced first pair remains recoverable. */
+                column = (column + 1u) % JELLI_BUBBLE_WIDTH; /* Recover a misplaced pair. */
             place(&lab, column);
         }
         CHECK(lab.status == JELLI_BUBBLE_WON && highest_level == 2u);
@@ -65,9 +68,8 @@ static void support_rotation_and_clears(void)
     CHECK(lab.cells[4u * 6u + 3u] == 0u && lab.cells[5u * 6u + 2u] == 6u);
     lab.x = 5u;
     lab.vertical = 1u;
-    JelliBubble before = lab;
-    CHECK(!jelli_bubble_move(&lab, 0, true));
-    CHECK(jelli_bubble_same(&before, &lab));
+    CHECK(jelli_bubble_move(&lab, 0, true));
+    CHECK(lab.x == 4u && !lab.vertical);
     CHECK(!jelli_bubble_move(&lab, 1, false));
     jelli_bubble_init(&lab, 0u);
     memset(lab.cells, 0, sizeof(lab.cells));
@@ -291,6 +293,8 @@ static void queued_swipes(void)
     game.prizes.origin_pet[JELLI_COLLECTIBLE_BUBBLE_PRIZE] = game.pets[0].id;
     CHECK(jelli_collectible_play(&game, JELLI_COLLECTIBLE_BUBBLE_PRIZE) == JELLI_OK);
     CHECK(jelli_collectible_control(&game, JELLI_COLLECTIBLE_MANUAL) == JELLI_OK);
+    memset(game.collectible.bubble.cells, 0, sizeof(game.collectible.bubble.cells));
+    game.collectible.bubble.cells[59] = 6u;
     const unsigned inputs[] = {JELLI_COLLECTIBLE_LEFT, JELLI_COLLECTIBLE_LEFT, JELLI_COLLECTIBLE_UP,
                                JELLI_COLLECTIBLE_DOWN};
     for (unsigned i = 0u; i < 4u; ++i)

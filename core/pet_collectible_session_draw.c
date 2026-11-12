@@ -54,6 +54,13 @@ static bool cheering(const JelliPetUi *ui, const JelliGame *game)
             game->pets[game->active].reaction == JELLI_REACTION_TOUCH_HAPPY);
 }
 
+static void cheer_sprite(Canvas *c, unsigned asset, unsigned beat, bool celebrate, bool bubble)
+{
+    int x = bubble ? 83 : 94, y = bubble ? 326 : 363;
+    jelli_canvas_centered_sprite(c, asset, x + (beat ? 3 : 0), y - (celebrate && beat ? 8 : 0),
+                                 bubble ? 1u : 3u);
+}
+
 static void cheer(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
 {
     const JelliPet *pet = &game->pets[game->active];
@@ -66,12 +73,12 @@ static void cheer(Canvas *c, const JelliPetUi *ui, const JelliGame *game)
         return;
     unsigned beat = cheer_beat(ui, game, celebrate);
     unsigned frame = beat % clip->count;
-    jelli_canvas_centered_sprite(c, clip->frames[frame], 94 + (beat ? 3 : 0),
-                                 363 - (celebrate && beat ? 8 : 0), 3u);
-    if (!ui->tune.song && game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE) {
+    bool bubble = !ui->tune.song && game->collectible.mode == JELLI_COLLECTIBLE_BUBBLE;
+    cheer_sprite(c, clip->frames[frame], beat, celebrate, bubble);
+    if (bubble) {
         int shake = beat ? 7 : 0;
-        jelli_canvas_centered_sprite(c, JELLI_ASSET_HEALTH_MEDICINE, 64, 353 - shake, 2u);
-        jelli_canvas_centered_sprite(c, JELLI_ASSET_HEALTH_SHOT, 134, 353 + shake, 2u);
+        jelli_canvas_centered_sprite(c, JELLI_ASSET_HEALTH_MEDICINE, 62, 358 - shake, 1u);
+        jelli_canvas_centered_sprite(c, JELLI_ASSET_HEALTH_SHOT, 100, 358 + shake, 1u);
     }
     if (lost) {
         jelli_canvas_disk(c, 72, 368, 4, 0x4e9fu);
