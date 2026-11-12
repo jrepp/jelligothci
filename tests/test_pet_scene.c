@@ -95,6 +95,41 @@ static void background_sampling(JelliSurface *surface)
         CHECK(pixels[i] == 0xdead && pixels[COUNT + GUARD + i] == 0xdead);
 }
 
+static void traveling_scene(JelliSurface *surface)
+{
+    jelli_game_init(&game);
+    game.clock_known = true;
+    game.clock_minute = 720;
+    game.pets[0].location = 1;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_MOMENT, game.pets[0].id, 24}) ==
+          JELLI_OK);
+    jelli_pet_render(surface, &game, &ui, 1000, false);
+    CHECK(ui.scene == &ui.activity_scene && ui.scene_automatic);
+    CHECK(game.pets[0].location == 1);
+    CHECK(!strcmp(ui.scene->definition->key, "airplane"));
+    uint32_t revision = ui.scene->revision;
+    jelli_pet_render(surface, &game, &ui, 1250, false);
+    CHECK(ui.scene->revision != revision);
+    revision = ui.scene->revision;
+    jelli_pet_render(surface, &game, &ui, 5000, true);
+    CHECK(ui.scene->revision == revision);
+    CHECK(ui.scene_elapsed_ms == 250);
+    jelli_pet_render(surface, &game, &ui, 100000, false);
+    CHECK(ui.scene_elapsed_ms == 500); /* No stall catch-up. */
+    for (unsigned i = 0; i < 40u; ++i)
+        jelli_game_advance(&game, 800);
+    jelli_pet_render(surface, &game, &ui, 100001, false);
+    CHECK(!ui.scene && !ui.last_view.scene_pixels);
+    CHECK(jelli_pet_scene_select(&ui, &scene, "market-street"));
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_MOMENT, game.pets[0].id, 24}) ==
+          JELLI_OK);
+    jelli_pet_render(surface, &game, &ui, 100002, false);
+    CHECK(!strcmp(scene.definition->key, "market-street") && !ui.scene_automatic);
+    for (unsigned i = 0; i < 40u; ++i)
+        jelli_game_advance(&game, 800);
+    jelli_pet_scene_clear(&ui);
+}
+
 int main(void)
 {
     for (unsigned i = 0; i < COUNT + 2 * GUARD; ++i)
@@ -125,6 +160,7 @@ int main(void)
     jelli_pet_scene_clear(&ui);
     render(&surface);
     CHECK(surface.damage.width == JELLI_WIDTH && !ui.last_view.scene_pixels);
+    traveling_scene(&surface);
     printf("Pet scene rendering/restore passed; UI=%zu, cache=%zu bytes\n", sizeof(ui),
            sizeof(scene));
     return 0;

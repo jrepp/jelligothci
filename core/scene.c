@@ -4,6 +4,14 @@
 enum { PHASE_ONE = 25600 };
 _Static_assert(sizeof(JelliScene) <= 9216u, "Scene cache exceeds 9 KiB budget");
 
+static bool valid_motion(const JelliSceneLayer *layer)
+{
+    return layer->ambient_speed >= -32 && layer->ambient_speed <= 32 &&
+           (!layer->ambient_speed || layer->ambient_cycle_ms) &&
+           layer->ambient_cycle_ms <= 60000u && layer->bounce <= 8u &&
+           (!layer->bounce || (layer->bounce_ms >= 200u && layer->bounce_ms <= 4000u));
+}
+
 static bool valid_definition(const JelliSceneDefinition *definition)
 {
     if (!definition || !definition->count || definition->count > JELLI_SCENE_LAYER_CAPACITY)
@@ -13,7 +21,7 @@ static bool valid_definition(const JelliSceneDefinition *definition)
         if (!layer->width || layer->width > JELLI_SCENE_IMAGE_LIMIT || !layer->height ||
             layer->height > JELLI_SCENE_IMAGE_LIMIT || layer->x < -256 || layer->x > 256 ||
             layer->y < -256 || layer->y > 256 || layer->tilt_x > 16u || layer->tilt_y > 16u ||
-            layer->travel > 100u || (layer->travel && !layer->repeat_x))
+            layer->travel > 100u || (layer->travel && !layer->repeat_x) || !valid_motion(layer))
             return false;
     }
     return true;
@@ -92,15 +100,38 @@ bool jelli_scene_images_valid(const JelliSceneDefinition *definition, const Jell
     return true;
 }
 
+void jelli_scene_animate(JelliScene *scene, uint64_t elapsed_ms)
+{
+    if (!scene || !scene->definition)
+        return;
+    for (unsigned i = 0; i < scene->definition->count; ++i) {
+        const JelliSceneLayer *layer = &scene->definition->layers[i];
+        int32_t phase =
+            layer->ambient_cycle_ms ? (int32_t)(elapsed_ms % layer->ambient_cycle_ms) : 0;
+        int16_t x = (int16_t)(phase * layer->ambient_speed / 1000);
+        int16_t y = 0;
+        if (layer->bounce) {
+            unsigned tick = (unsigned)(elapsed_ms % layer->bounce_ms);
+            unsigned half = layer->bounce_ms / 2u;
+            unsigned rise = tick < half ? tick : layer->bounce_ms - tick;
+            y = (int16_t)(-(int)(rise * layer->bounce / half));
+        }
+        if (layer->visible && (x != scene->ambient_x[i] || y != scene->ambient_y[i]))
+            scene->dirty = true;
+        scene->ambient_x[i] = x;
+        scene->ambient_y[i] = y;
+    }
+}
+
 static void composite_layer(JelliScene *scene, unsigned index, const JelliSceneImage *image)
 {
     const JelliSceneLayer *layer = &scene->definition->layers[index];
     for (unsigned y = 0; y < JELLI_SCENE_SIZE; ++y) {
-        int row = (int)y - scene->y[index];
+        int row = (int)y - scene->y[index] - scene->ambient_y[index];
         if (row < 0 || row >= image->height)
             continue;
         for (unsigned x = 0; x < JELLI_SCENE_SIZE; ++x) {
-            int column = (int)x - scene->x[index];
+            int column = (int)x - scene->x[index] - scene->ambient_x[index];
             if (layer->repeat_x)
                 column = (int)modulo(column, image->width);
             if (column < 0 || column >= image->width)

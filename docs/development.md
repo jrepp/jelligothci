@@ -208,6 +208,13 @@ cache; explicit preview scenes take precedence. Activity completion and resume
 clear automatic scenery without changing saved locations. Motion uses presentation
 time, preserves fractional progress, pauses with rendering, and drops stall backlog
 beyond 250 ms. Firmware uses this same path; orientation input remains unimplemented.
+The [Traveling activity](../content/activities.json) selects the airplane cabin.
+It has no rewards, costs, or random selection. Optional layer `motion` fields in
+[the schema](../tools/assets/scene_data.py) add independent ambient speed, cycle
+duration, and triangular bounce. The presentation clock freezes while paused,
+drops stall backlog, and resets after clock reversal. Jelli Art previews these
+transforms while travel is playing. See [airplane evidence](../docs-cms/memos/memo-091-airplane-traveling.md).
+
 See [runtime measurements and validation](../docs-cms/memos/memo-080-background-scene-runtime.md).
 
 ## Bounded working storage

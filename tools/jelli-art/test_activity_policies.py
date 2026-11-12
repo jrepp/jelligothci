@@ -22,13 +22,13 @@ class ActivityPoliciesTest(unittest.TestCase):
         activities.validate(doc, REPO, REPO / 'content', self.manifest)
 
     def test_visible_policies_survive_serialization_and_generator(self):
-        recipe = copy.deepcopy(self.doc['moments'][-1])
+        recipe = copy.deepcopy(next(m for m in self.doc['moments'] if m['name'] == 'SNUGGLE'))
         recipe.update(id=len(self.doc['moments']), name='NEW HUG', daily_reward=False,
                       pose='happy', prize='teddy-bear')
         self.doc['moments'].append(recipe)
         reloaded = json.loads(json.dumps(self.doc))
         self.validate(reloaded)
-        self.assertTrue(reloaded['moments'][-2]['daily_reward'])
+        self.assertTrue(next(m for m in reloaded['moments'] if m['name'] == 'SNUGGLE')['daily_reward'])
         self.assertFalse(reloaded['moments'][-1]['daily_reward'])
         self.assertEqual(reloaded['moments'][-1]['prize'], 'teddy-bear')
 
