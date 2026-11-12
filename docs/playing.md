@@ -136,8 +136,8 @@ record](../docs-cms/memos/memo-009-wired-debug-interface-and-validation.md).
 
 ## Large ring controls and moments
 
-Tap MENU for care, moments, gifts, and settings. Pet switching and sleep/wake live
-in Settings.
+Tap MENU for Food, Water, Play, Care, Pets, and Gifts. Care contains Rest/Wake
+and Settings.
 Only useful actions occupy ring positions. The bottom arrow BACK is the only
 return action; X CLOSE dismisses the home ring. There is no separate confirm or
 save button: successful actions request a save. The home tile shows one stat at a
@@ -304,7 +304,8 @@ portable debug protocol, saves, rendering, and headless SDL game. For a local
 Windows SDL build, install the pinned uv from `toolchain.env`, build/install SDL2,
 and configure CMake with its install directory in `CMAKE_PREFIX_PATH`.
 
-Settings now owns pet selection, sleep/wake, bedtime, and a large local/pet clock.
+Care contains Rest/Wake and Settings; Settings also retains pet selection,
+bedtime, and the local/pet clock.
 Back and Close are labeled controls at the bottom of the round screen. Ring icons
 travel out/in on menu changes; CLI presses wait for the ring to settle. Shots
 and medicine have per-pet cooldowns. Shot progress survives menu changes. The desktop checkpoint codec now
@@ -337,7 +338,7 @@ those buttons. Settings shows the VERSION-derived build number in large text.
 
 ## Linked sleep, habits, and checkpoints
 
-Settings REST starts both your bedtime record and the pet's sleep; WAKE ends both.
+Care REST starts both your bedtime record and the pet's sleep; WAKE ends both.
 Manual bedtime stays active until you wake it. Automatic pet naps do not create
 personal sleep records. Recent sessions and cumulative sleep duration are
 stored, with known wall timestamps distinguished from simulation-only durations.
@@ -377,7 +378,7 @@ memory import/export remains planned.
 
 ## Pet collection and putting presents away
 
-Settings → Pets opens a collection grid. Tap a slot for its unlock hint or owned
+Menu → Pets opens a collection grid. Tap a slot for its unlock hint or owned
 pet details. Bring out activates that pet; browsing and viewing Evolutions do
 not switch pets. Back returns to the previous collection view. Linked sleep and
 unfinished activities block activation, with a reason shown in the detail view.
@@ -421,12 +422,11 @@ Older firmware cannot read v9; keep a backup before downgrading.
 
 ## Food, water, and exercise
 
-Care → Feed opens a grid of meals, fruit, and soup. Each costs a shared food
-item when eating starts. When food runs out, tap GET FOOD to refill portions.
-Labels stay readable even when actions are disabled. Care → Water fills
-hydration without spending food. Swipe the home stat tile to Hydration.
+Menu → Food starts a meal using the default food, with no inventory needed.
+Menu → Water fills hydration. Labels stay readable even when actions are disabled.
+Swipe the home stat tile to Hydration.
 
-Activities → Exercise starts a barbell workout. Its duration, costs, and rewards
+Play → Exercise starts a barbell workout. Its duration, costs, and rewards
 are authored in [`content/exercise.json`](../content/exercise.json).
 The action is disabled while asleep, busy, or short of those resources. It uses
 fullness already eaten, so it does not spend another food inventory item. Costs
@@ -474,7 +474,7 @@ one batch after a timing stall. They do not appear while the pet is asleep.
 Touch the sleeping pet on the main scene or in a care activity to wake it.
 A short rest says GROGGY... without a bonding reward. A good rest shows a brief
 surprised pose, then HAPPY, and grants a bonding reward.
-Settings → Wake and automatic wake-ups use the same rule. Current thresholds
+Care → Wake and automatic wake-ups use the same rule. Current thresholds
 are authored in [content/wake.json](../content/wake.json).
 
 Elapsed sleep is saved across restarts, and waking consumes that duration so
@@ -492,8 +492,8 @@ address their respective meters; they do not replace Basic Care treatment.
 ## Menu labels and unavailable actions
 
 Every ring control now shows its action name alongside the icon, including when
-unavailable. Activities (formerly Moments) contains Breakfast, Tea, Going Out,
-Movie, and Exercise. Page headings identify the open menu. Bottom Back returns
+unavailable. Play contains activities including Tea, Going Out, Movie, and
+Exercise. Page headings identify the open menu. Bottom Back returns
 one level; Close leaves the root menu. Neither removes a held present: use Put
 Away on that present's action panel.
 
@@ -502,8 +502,7 @@ cooldown explains DOSE GIVEN - WAIT. An unavailable exercise explains whether to
 water, or rest. A sleeping pet in an activity shows TOUCH PET TO WAKE.
 
 Settings shows Bedtime +1H, Pets, Rest/Wake, VOL −/+, and an EDIT clock control.
-The clock editor names Zone, Hour, and Minute adjustments. Food's GET FOOD button
-refills the inventory when it is empty.
+The clock editor names Zone, Hour, and Minute adjustments.
 
 The [complete menu audit](../docs-cms/memos/memo-030-menu-clarity-audit.md) records
 all pages, their actions, and the remaining physical-device verification.

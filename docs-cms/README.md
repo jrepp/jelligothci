@@ -1,5 +1,8 @@
 # Jelligotchi project memory
 
+Flattened main menu and direct food evidence:
+[memo-113](memos/memo-113-flattened-main-menu.md).
+
 Local save format 20 recovery and checkpoint evidence:
 [memo-111](memos/memo-111-local-save-format-20.md).
 
