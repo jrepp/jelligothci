@@ -42,7 +42,7 @@ def creator(tmp_path, page):
                              "localStorage.setItem('jelli-review:artist','\"Test Artist\"');"
                              f"localStorage.setItem('jelli-review:before',{json.dumps(json.dumps(str(tmp_path / 'before')))});")
         errors = []
-        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.on("pageerror", lambda error: errors.append(str(error) + "\n" + error.stack))
         page.goto(url)
         page.wait_for_function("() => typeof D !== 'undefined' && D.assets?.length > 0")
         expect(page.get_by_role("tab", name="New", exact=True)).to_be_visible()

@@ -122,6 +122,9 @@
     document.documentElement.classList.toggle('paint-browse', browsing && painting);
     document.getElementById('paint-navigation')?.remove();
     document.getElementById('review-paint')?.remove();
+    // Mode tabs can be used while boot is still decoding artwork. Boot will
+    // render again after choosing the first valid asset.
+    if (!asset()) return result;
     if (!painting) {
       if (state.view === 'detail' && asset()?.kind !== 'font') {
         const button = document.createElement('button'); button.id = 'review-paint'; button.textContent = 'Paint this artwork';
