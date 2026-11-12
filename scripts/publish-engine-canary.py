@@ -15,11 +15,13 @@ import zipfile
 
 from PIL import Image
 
-MAX_ZIP = 50 * 1024 * 1024
+MAX_ZIP = 2 * 1024 * 1024
+MAX_LEGACY_ZIP = 50 * 1024 * 1024
 MAX_PNG = 10 * 1024 * 1024
 MAX_ENTRIES = 128
 CANARY_SIZE = (1398, 1584)
 MARKER = '<!-- jelli-engine-canary -->'
+ARTIFACT_PREFIX = 'engine-canary-'
 
 
 def api(path, method='GET', body=None, raw=False):
@@ -32,8 +34,8 @@ def api(path, method='GET', body=None, raw=False):
     return result if raw else json.loads(result)
 
 
-def extract_png(data):
-    if len(data) > MAX_ZIP:
+def extract_png(data, max_zip=MAX_ZIP):
+    if len(data) > max_zip:
         raise ValueError('artifact archive exceeds size limit')
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         members = archive.infolist()
@@ -74,6 +76,26 @@ def find_existing_comment(comments, run_id):
     return newest, False
 
 
+def canary_artifacts(artifacts):
+    return [artifact for artifact in artifacts
+            if artifact['name'].startswith(ARTIFACT_PREFIX) and not artifact['expired']]
+
+
+def select_artifact(artifacts):
+    dedicated = canary_artifacts(artifacts)
+    if dedicated:
+        if len(dedicated) != 1 or dedicated[0]['size_in_bytes'] > MAX_ZIP:
+            raise ValueError('expected one bounded dedicated engine canary artifact')
+        return dedicated[0], MAX_ZIP
+    legacy = [artifact for artifact in artifacts
+              if artifact['name'].startswith('engine-evidence-') and not artifact['expired']]
+    if not legacy:
+        return None, None
+    if len(legacy) != 1 or legacy[0]['size_in_bytes'] > MAX_LEGACY_ZIP:
+        raise ValueError('expected one bounded legacy engine evidence artifact')
+    return legacy[0], MAX_LEGACY_ZIP
+
+
 def main():
     repo = os.environ['GITHUB_REPOSITORY']
     event = json.load(open(os.environ['GITHUB_EVENT_PATH'], encoding='utf-8'))
@@ -90,11 +112,11 @@ def main():
         print('Pull request has moved or closed; skipping.')
         return
     artifacts = api(f'repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100')['artifacts']
-    matches = [a for a in artifacts if a['name'].startswith('engine-evidence-') and not a['expired']]
-    if len(matches) != 1 or matches[0]['size_in_bytes'] > MAX_ZIP:
-        raise ValueError('expected one bounded engine evidence artifact')
-    artifact = matches[0]
-    png = extract_png(api(f"repos/{repo}/actions/artifacts/{artifact['id']}/zip", raw=True))
+    artifact, max_zip = select_artifact(artifacts)
+    if artifact is None:
+        print('Run has no engine canary artifact; skipping.')
+        return
+    png = extract_png(api(f"repos/{repo}/actions/artifacts/{artifact['id']}/zip", raw=True), max_zip)
     comments = []
     for page in range(1, 101):
         batch = api(f'repos/{repo}/issues/{number}/comments?per_page=100&page={page}')
@@ -114,7 +136,7 @@ def main():
         print('Pull request moved during publication; skipping.')
         return
     branch = f'ci-evidence/pr-{number}'
-    # refs are per PR, and the workflow serializes publishers across all runs.
+    # Refs are per PR, and the workflow serializes publishers for each PR.
     try:
         api(f'repos/{repo}/git/refs', 'POST', {'ref': f'refs/heads/{branch}', 'sha': commit})
     except subprocess.CalledProcessError:

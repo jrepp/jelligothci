@@ -84,3 +84,25 @@ explicitly uses Bash so the captured test log retains the pipeline's failure
 status; the next current-head CI run must establish full-suite results. The
 pinned-container shard samples and exact-once collection checks above predate
 this CI shell fix and do not establish the revised workflow's outcome.
+
+## Post-landing timing snapshot
+
+PR #101 revision `31a94a3` passed all required checks. Queue is job creation to
+start; execution is start to completion. The three UI shards each queued for
+about 3 seconds and ran for 5m 29s, 4m 20s and 3m 47s. The aggregate job queued
+for about 3 seconds and took 4 seconds after its prerequisites completed. From
+the first shard's creation to aggregate completion, the suite took 5m 39s,
+compared with 12m 17s for the unsharded PR #97 UI check (including its queue).
+The [shard jobs](https://github.com/jrepp/jelligothci/actions/runs/43189723767)
+and [aggregate job](https://github.com/jrepp/jelligothci/actions/runs/43189723767/job/131088597561)
+are linked for inspection.
+
+The [Desktop test](https://github.com/jrepp/jelligothci/actions/runs/43189723814/job/131085667030)
+ran 4m 44s after a 3-second queue. The [normal firmware build](https://github.com/jrepp/jelligothci/actions/runs/43189723701/job/131085667055)
+ran 3m 09s after a 3-second queue. The earliest jobs to final aggregate
+completion spanned 6 minutes, compared with 25m 46s for the previous full
+release-validation critical path. The [PR #101 check set](https://github.com/jrepp/jelligothci/pull/101)
+and its successful [head revision](https://github.com/jrepp/jelligothci/commit/31a94a38235643368bb235944c945d10c54a4661)
+record the validation context. These runs used different revisions and runner
+loads, so the figures are observed results rather than a controlled benchmark;
+check queues and the slower required check can shift future PR completion time.
