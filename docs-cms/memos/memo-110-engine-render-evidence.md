@@ -49,3 +49,26 @@ human visual quality. Run the focused script contract tests with
   Jelli Art server integration test locally when this memo was committed; the
   complete sanitizer CTest result is not claimed here. The Desktop CI workflow
   continues to run the complete sanitizer suite.
+
+## Nine-scenario gameplay canary
+
+The [native gameplay canary](../../scripts/gameplay-canary.py) generates one
+3×3 `canary.png` alongside the scene sheets. It covers four pet forms, the main
+and care menus, breakfast, a collection with a gift, a celebration, and two
+scene backdrops. The workflow retains the nine original PPM frames, PNG copies,
+engine JSON state and expected values, exact commands, source and binary hashes,
+worktree status, and a separate no-effect control. State checks verify each
+scenario's pet, form, menu and relevant activity or collection state. Pixel
+differences against same-state controls check that the celebration and garden
+scene are visible. The native preview configures the pet and page state for each
+scenario and uses the game command path for breakfast; it does not replay touch
+inputs. These images are engine evidence, not a physical-device test.
+
+The initial local canary rejected the collection screen because it uses only four
+colors, fewer than a blanket eight-color threshold despite visibly containing its
+menu. Requiring three colors, together with the collection state assertion and
+visual review, accepts that real low-color screen while rejecting blank frames.
+The nine-scenario grid and all frames were rendered and inspected locally; the
+focused canary contract tests passed. CI results must be checked on the final PR
+revision. The initial direct run used the current native preview binary and did not
+flash or exercise a physical device.
