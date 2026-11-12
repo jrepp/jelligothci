@@ -43,6 +43,7 @@ void jelli_pet_activity_scene(JelliPetUi *ui, const JelliGame *game, uint64_t ti
         ui->activity_scene_remainder = 0;
         if (!jelli_pet_scene_select(ui, &ui->activity_scene, definition->key))
             return;
+        ui->scene_automatic = true;
         ui->activity_scene_pet = pet->id;
         ui->activity_scene_due = pet->interaction_due;
         elapsed = 0u;

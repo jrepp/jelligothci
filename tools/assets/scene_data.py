@@ -50,7 +50,14 @@ def validate(doc, manifest):
                 raise ValueError(f"Choose 1..{MAX_LAYERS} layers")
             for layer_index, layer in enumerate(scene["layers"], 1):
                 try:
-                    fields(layer, "asset x y tilt_x tilt_y travel repeat_x visible", "Layer", "name random")
+                    fields(layer, "asset x y tilt_x tilt_y travel repeat_x visible", "Layer", "name random motion")
+                    if "motion" in layer:
+                        motion = layer["motion"]
+                        fields(motion, "speed cycle_ms bounce bounce_ms", "Ambient motion")
+                        integer(motion["speed"], -32, 32, "Ambient speed")
+                        integer(motion["cycle_ms"], 1, 60000, "Ambient cycle")
+                        integer(motion["bounce"], 0, 8, "Bounce height")
+                        integer(motion["bounce_ms"], 200, 4000, "Bounce period")
                     if "name" in layer and (not isinstance(layer["name"], str) or
                                             not layer["name"].strip() or len(layer["name"]) > 48):
                         raise ValueError("Layer names need 1..48 characters")
@@ -147,6 +154,9 @@ def emit(doc, manifest):
                       str(layer["x"]), str(layer["y"]), f'{layer["tilt_x"]}u',
                       f'{layer["tilt_y"]}u', f'{layer["travel"]}u',
                       str(layer["repeat_x"]).lower(), str(layer["visible"]).lower()]
+            motion = layer.get("motion", {"speed": 0, "cycle_ms": 0, "bounce": 0, "bounce_ms": 0})
+            values.extend([str(motion["speed"]), str(motion["cycle_ms"]),
+                           str(motion["bounce_ms"]), str(motion["bounce"])])
             lines.append("        {" + ", ".join(values) + "},")
         binding = json.dumps(scene["activity"]) if "activity" in scene else "NULL"
         lines.append(f'    }}, .activity = {binding}, .speed = {scene.get("speed", 0)}u}},')

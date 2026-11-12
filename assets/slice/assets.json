@@ -3326,6 +3326,175 @@
       ],
       "palette": "earth-kit",
       "purpose": "Reusable markings activity layer; native geometry in activity_backgrounds.py"
+    },
+    {
+      "id": 11020,
+      "key": "backgrounds.airplane-sky",
+      "path": "backgrounds/airplane-sky.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "palette": [
+        "#293644",
+        "#42566a",
+        "#63798b",
+        "#8da0a8",
+        "#c2cbc4",
+        "#ebe5d3",
+        "#fff4cf",
+        "#8ac3d1",
+        "#b9dde1",
+        "#e4f2e9",
+        "#7c6962",
+        "#ad9382"
+      ],
+      "purpose": "Airplane travel kit; reproducible in source/airplane_art.py"
+    },
+    {
+      "id": 11021,
+      "key": "backgrounds.airplane-clouds",
+      "path": "backgrounds/airplane-clouds.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        9,
+        64,
+        29
+      ],
+      "palette": [
+        "#293644",
+        "#42566a",
+        "#63798b",
+        "#8da0a8",
+        "#c2cbc4",
+        "#ebe5d3",
+        "#fff4cf",
+        "#8ac3d1",
+        "#b9dde1",
+        "#e4f2e9",
+        "#7c6962",
+        "#ad9382"
+      ],
+      "purpose": "Airplane travel kit; reproducible in source/airplane_art.py"
+    },
+    {
+      "id": 11022,
+      "key": "backgrounds.airplane-cabin",
+      "path": "backgrounds/airplane-cabin.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "palette": [
+        "#293644",
+        "#42566a",
+        "#63798b",
+        "#8da0a8",
+        "#c2cbc4",
+        "#ebe5d3",
+        "#fff4cf",
+        "#8ac3d1",
+        "#b9dde1",
+        "#e4f2e9",
+        "#7c6962",
+        "#ad9382"
+      ],
+      "purpose": "Airplane travel kit; reproducible in source/airplane_art.py"
+    },
+    {
+      "id": 11023,
+      "key": "backgrounds.airplane-visitor",
+      "path": "backgrounds/airplane-visitor.png",
+      "kind": "backgrounds",
+      "width": 64,
+      "height": 64,
+      "pivot": [
+        32,
+        32
+      ],
+      "bounds": [
+        0,
+        0,
+        13,
+        9
+      ],
+      "palette": [
+        "#291b35",
+        "#49334f",
+        "#72516b",
+        "#346b9b",
+        "#65a7d5",
+        "#a4d9ed",
+        "#e2f5fa",
+        "#7655a3",
+        "#a47bdb",
+        "#d2b8f3",
+        "#fff4cf",
+        "#ffffff",
+        "#d84f70",
+        "#fa8c99",
+        "#f5c764",
+        "#ae7855"
+      ],
+      "purpose": "Airplane travel kit; reproducible in source/airplane_art.py"
+    },
+    {
+      "id": 2013,
+      "key": "icons.airplane",
+      "path": "icons/airplane.png",
+      "kind": "icons",
+      "width": 16,
+      "height": 16,
+      "pivot": [
+        8,
+        8
+      ],
+      "bounds": [
+        2,
+        1,
+        15,
+        16
+      ],
+      "palette": [
+        "#293644",
+        "#42566a",
+        "#63798b",
+        "#8da0a8",
+        "#c2cbc4",
+        "#ebe5d3",
+        "#fff4cf",
+        "#8ac3d1",
+        "#b9dde1",
+        "#e4f2e9",
+        "#7c6962",
+        "#ad9382"
+      ],
+      "purpose": "Airplane travel kit; reproducible in source/airplane_art.py"
     }
   ],
   "clips": [

@@ -53,6 +53,28 @@ class SceneTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, r"Scene 2 .*Layer 2: x"):
             scene_data.validate(self.doc, self.manifest)
 
+    def test_airplane_motion_bounds_and_binding(self):
+        scene = next(s for s in self.doc['scenes'] if s['key'] == 'airplane')
+        self.assertEqual(scene['activity'], 'TRAVELING')
+        visitor = scene['layers'][-1]
+        for field, value in [('speed', 33), ('cycle_ms', 0), ('cycle_ms', 60001),
+                             ('bounce', 9), ('bounce_ms', 0)]:
+            bad = copy.deepcopy(self.doc)
+            bad['scenes'][-1]['layers'][-1]['motion'][field] = value
+            with self.assertRaises(ValueError):
+                scenes.validate(bad, self.manifest)
+        duplicate = copy.deepcopy(self.doc)
+        duplicate['scenes'][0]['activity'] = 'TRAVELING'
+        duplicate['scenes'][0]['speed'] = 1
+        with self.assertRaises(ValueError):
+            scenes.validate(duplicate, self.manifest)
+        # A full pass followed by a genuinely empty aisle interval.
+        motion = visitor['motion']
+        x = lambda t: visitor['x'] + int(t % motion['cycle_ms'] * motion['speed'] / 1000)
+        self.assertGreater(x(0), 64)
+        self.assertTrue(-13 < x(5500) < 64)
+        self.assertLess(x(10000), -13)
+
     def test_generated_asset_translation_unit_ends_with_newline(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "jelli_assets.c"
