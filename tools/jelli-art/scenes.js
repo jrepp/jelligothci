@@ -10,6 +10,53 @@
   let ambientTime = 0;
   let travel = 0, tiltX = 0, tiltY = 0, playing = false, speed = 8, showPet = true;
   let solo = false, variationOpen = false, undo = [], redo = [], checkpoint = null;
+  let query = '', paintOrigin = null;
+  const positions = new Map();
+  const matches = () => work.scenes.filter(s => `${s.name} ${s.activity||''} ${s.key}`.toLowerCase().includes(query.toLowerCase().trim()));
+  function validFields() {
+    const invalid = /** @type {HTMLInputElement} */ (root.querySelector('input:invalid'));
+    if (!invalid) return true;
+    invalid.closest('details')?.setAttribute('open','');
+    invalid.reportValidity(); invalid.focus(); checks(); return false;
+  }
+  function navigate(key, asset = null) {
+    if (!validFields()) {input('#scene-select').value=scene().key;input('#scene-related').value='';return;}
+    const next=work.scenes.findIndex(s=>s.key===key); if(next<0)return;
+    positions.set(scene().key,layerIndex); selected=next;
+    layerIndex=asset?Math.max(0,scene().layers.findIndex(l=>l.asset===asset)):Math.min(positions.get(key)||0,scene().layers.length-1);
+    ambientTime=travel=tiltX=tiltY=0;solo=false;speed=scene().speed||8;
+    if(!matches().includes(scene()))query='';
+    render();input('#scene-select').focus();
+  }
+  const edited = s => JSON.stringify(s)!==JSON.stringify(loaded?.scenes.find(old=>old.key===s.key));
+  function navigator() {
+    const list=matches(), at=list.indexOf(scene());
+    const choices=list.includes(scene())?list:[scene(),...list];
+    input('#scene-select').innerHTML=options(choices.map(s=>[s.key,`${s.name}${s.activity?' · '+s.activity:''}${edited(s)?' · edited':''}`]),scene().key);
+    button('#scene-prev').disabled=at<=0;
+    button('#scene-next').disabled=at<0||at===list.length-1;
+    root.querySelector('#scene-count').textContent=list.length?`${list.length} matching backgrounds · ${work.scenes.filter(edited).length} edited`:'No matches — current background kept open';
+  }
+  function checks() {
+    const target=root.querySelector('#scene-validation');if(!target)return;
+    const invalid=/** @type {HTMLInputElement} */(root.querySelector('input:invalid'));
+    if(invalid){target.textContent=`${invalid.closest('label')?.textContent.trim()}: ${invalid.validationMessage}`;return;}
+    const s=scene(), visible=s.layers.filter(l=>l.visible&&variation(l).chance>0);
+    const missing=s.layers.filter(l=>!assets().some(a=>a.key===l.asset));
+    const current=layer(), a=assets().find(a=>a.key===current.asset);
+    const offscreen=a&&current.visible&&!current.repeat_x&&(current.x>=64||current.y>=64||current.x+a.width<=0||current.y+a.height<=0);
+    target.textContent=missing.length?`Missing artwork: ${missing.map(layerName).join(', ')}`:
+      offscreen?'Selected layer is outside the neutral preview. Adjust its position or tilt to bring it into view.':
+      !visible.length?'No visible layers. Only the base color will appear.':
+      s.activity&&!visible.some(l=>l.travel>0||variation(l).travel>0||l.motion?.speed||l.motion?.bounce)?'This activity has no moving layers. Increase a layer’s travel to add scrolling.':'Scene fields are valid.';
+  }
+  function usage() {
+    const l=layer(), related=work.scenes.filter(s=>s.layers.some(other=>other.asset===l.asset));
+    const a=assets().find(a=>a.key===l.asset);
+    root.querySelector('#scene-art-info').textContent=`${a?`${a.width} × ${a.height} px · `:''}Used in ${related.length} backgrounds. Painting changes this artwork everywhere.`;
+    input('#scene-related').innerHTML=options([['','Open another background using this art'],...related.filter(s=>s!==scene()).map(s=>[s.key,s.name])],'');
+    input('#scene-related').disabled=related.length<2;
+  }
   const snapshot = () => ({data:clone(work), selected, layerIndex});
   function resetHistory() { undo=[]; redo=[]; checkpoint=work ? snapshot() : null; }
   function remember() {
@@ -39,11 +86,19 @@
   root.addEventListener('keydown',e=>{
     if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}
   });
+  root.addEventListener('input',()=>checks());
+  root.addEventListener('click',e=>{
+    const control=/** @type {HTMLElement} */(e.target).closest('button');
+    if(control&&!control.closest('.jd-step')&&!['scene-save','scene-reload','scene-undo'].includes(control.id)&&!validFields()){
+      e.preventDefault();e.stopImmediatePropagation();
+    }
+  },true);
   /** @type {any} */ (window).JelliDesign?.watch(root);
   const input = selector => /** @type {HTMLInputElement} */ (root.querySelector(selector));
   const button = selector => /** @type {HTMLButtonElement} */ (root.querySelector(selector));
   document.head.insertAdjacentHTML('beforeend', `<style>
     #scenes{container:scenes/inline-size; padding:12px}
+    .scene-nav{display:grid;grid-template-columns:minmax(140px,1fr) minmax(180px,2fr);gap:8px 16px;margin:12px 0}.scene-nav label{display:grid;gap:4px}.scene-nav input,.scene-nav select{width:100%;min-width:0;max-width:none;box-sizing:border-box}.scene-nav button{min-height:44px}@container scenes (max-width:520px){.scene-nav{grid-template-columns:1fr}}
     .scene-layout{display:grid;grid-template-columns:200px minmax(240px,1fr) 240px;gap:20px;align-items:start}
     .scene-layout section,.scene-layout aside{min-width:0}
     .scene-layout fieldset{min-width:0;margin:0}
@@ -84,7 +139,7 @@
     root.querySelectorAll('[data-layer-label]').forEach(el=>{
       const i=Number(el.getAttribute('data-layer-label'));el.textContent=layerLabel(scene().layers[i],i);
     });
-    const option=root.querySelector('#scene-select option:checked'); if(option)option.textContent=scene().name;
+    navigator(); checks(); usage();
 
     const el = root.querySelector('#scene-status');
     if (el) el.textContent = saving ? 'Saving…' : dirty() ? 'Unsaved changes' : base === null ? 'Starter scene — save to create' : 'Saved';
@@ -112,7 +167,8 @@
       // A load must never replace edits made while the response was pending.
       if (JSON.stringify(work) === startedWith) {
         loaded = clone(result.data); work = clone(loaded); base = result.base;
-        limits = result.limits; editable = result.editable; selected = 0; layerIndex = 0;
+        const key=checkpoint?.data?.scenes[ selected ]?.key;
+        limits = result.limits; editable = result.editable; selected = Math.max(0,work.scenes.findIndex(s=>s.key===key)); layerIndex = Math.min(layerIndex,scene().layers.length-1);
         resetHistory();
         if (discard) window.JelliDrafts?.drop('scenes', 'scenes');
       } else S.status('Kept scene edits made while reload was pending.', 'warn');
@@ -121,8 +177,7 @@
   }
   async function save() {
     if (saving || loading || !editable) return false;
-    const invalid=/** @type {HTMLInputElement} */ (root.querySelector('input:invalid'));
-    if(invalid){invalid.closest('details')?.setAttribute('open','');invalid.reportValidity();invalid.focus();return false;}
+    if(!validFields())return false;
     if(!dirty() && base!==null) return true;
     const sent = clone(work), sentBase = base;
     saving = true; status();
@@ -144,7 +199,8 @@
     const ctx = canvas.getContext('2d');
     if (playing && previousTime) {
       const elapsed = Math.min(100, now - previousTime);
-      travel += elapsed / 1000 * speed; ambientTime = Math.min(Number.MAX_SAFE_INTEGER, ambientTime + elapsed);
+      travel += elapsed / 1000 * speed;
+      ambientTime = Math.min(Number.MAX_SAFE_INTEGER, ambientTime + elapsed);
     }
     previousTime = now;
     // Integral percentages have a common 6400px period for the authored 64px kit.
@@ -193,17 +249,24 @@
     const s = scene(), l = layer();
     root.innerHTML = `<h2>Background scenes</h2>
       <p class="scene-help">Build places from reusable artwork. Preview tilt and travel here, then save and test the scene in the engine.</p>
-      <div class="scene-actions"><button id="scene-save">Save</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
+      <div class="scene-actions"><button id="scene-save">Save backgrounds</button><button id="scene-undo">Undo</button><button id="scene-redo">Redo</button><button id="scene-reload" ${saving?'disabled':''}>Reload saved</button><button id="scene-engine">Test saved scene in game</button><span id="scene-status" role="status"></span></div>
+      <nav class="scene-nav" aria-label="Background navigation">
+      <label>Find background<input id="scene-search" type="search" placeholder="Name or activity" value="${esc(query)}"></label>
+      <label>Scene<select id="scene-select"></select></label>
+      <div class="scene-actions"><button id="scene-prev">Previous background</button><button id="scene-next">Next background</button></div>
+      <p id="scene-count" class="scene-help" role="status"></p></nav>
+      <p id="scene-validation" role="status" class="scene-help"></p>
       <div class="scene-layout"><section aria-label="Scenes and layers">
-      <label>Scene<select id="scene-select">${options(work.scenes.map(s=>[s.key,s.name]),s.key)}</select></label>
       <button id="scene-copy" ${work.scenes.length>=limits.scenes?'disabled':''}>Duplicate scene</button>
 
       <h3>Layers</h3><p class="scene-help">Back to front. Select a layer to edit its motion.</p>
       <div class="scene-list">${s.layers.map((l,i)=>`<button data-layer="${i}" aria-pressed="${i===layerIndex}"><img alt="" src="${esc(D.assets.find(a=>a.key===l.asset)?.after||'')}"><span data-layer-label="${i}">${esc(layerLabel(l,i))}</span></button>`).join('')}</div>
       <label>Art library<select id="scene-library">${options(assets().map(a=>[a.key,a.key.replace('backgrounds.','')]),l.asset)}</select></label>
       <button id="scene-add" ${s.layers.length>=limits.layers?'disabled':''}>Add artwork layer</button>
-      <p class="scene-help">Artwork is shared between scenes. Paint changes every scene using it.</p><fieldset ${!editable||loading?'disabled':''}><legend>Scene settings</legend>      <label>Scene name<input id="scene-name" maxlength="48" required value="${esc(s.name)}"></label>
-      <label>Scene seed<input id="scene-seed" type="number" min="0" max="65535" step="1" value="${s.seed||0}"></label>
+      <p class="scene-help">Artwork is shared between scenes. Paint changes every scene using it.</p><fieldset ${!editable||loading?'disabled':''}><legend>Scene settings</legend>      <label>Scene name<input id="scene-name" maxlength="48" required pattern=".*\\S.*" value="${esc(s.name)}"></label>
+      <label>Activity background<select id="scene-activity">${options([['','Preview only'],...(D.activity_data?.moments||[]).map(m=>[m.name,m.name]),['WORKOUT','WORKOUT']],s.activity||'')}</select></label>
+      ${s.activity?`<label>Activity speed (px/s)<input id="scene-activity-speed" type="number" required min="1" max="32" step="1" value="${s.speed}"></label>`:''}
+      <label>Scene seed<input id="scene-seed" type="number" required min="0" max="65535" step="1" value="${s.seed||0}"></label>
       <button id="scene-reroll">Try another variation</button>
       <p class="scene-help">Set layer variation first, then change the seed to try another arrangement. Save the seed to reproduce it in Test in game.</p>
 <label>Base color<input id="scene-fill" type="color" value="${s.fill}"></label></fieldset></section>
@@ -214,17 +277,22 @@
       <label>Pet reference<input id="scene-pet" type="checkbox" ${showPet?'checked':''}></label></div>
       <div class="scene-actions"><button id="scene-play">${playing?'Pause travel':'Play travel'}</button><button id="scene-reset">Reset motion</button><output id="scene-travel-value"></output><button id="scene-solo" aria-pressed="${solo}">${solo?'Show all layers':'Preview selected layer only'}</button></div></section>
       <section class="scene-inspector" aria-label="Layer properties"><fieldset ${!editable||loading?'disabled':''}><legend>Selected layer</legend>
-      <label>Layer name<input id="scene-layer-name" maxlength="48" required value="${esc(layerName(l))}"></label>
+      <label>Layer name<input id="scene-layer-name" maxlength="48" required pattern=".*\\S.*" value="${esc(layerName(l))}"></label>
       <div class="scene-actions"><button id="scene-duplicate" ${s.layers.length>=limits.layers?'disabled':''}>Duplicate layer</button><button id="scene-back" ${layerIndex===0?'disabled':''}>Move back</button><button id="scene-front" ${layerIndex===s.layers.length-1?'disabled':''}>Move forward</button><button id="scene-remove" ${s.layers.length===1?'disabled':''}>Remove layer</button></div>
       <label>Artwork<select id="scene-asset">${options(assets().map(a=>[a.key,a.key]),l.asset)}</select></label>
       <button id="scene-paint">Paint artwork</button>
-      ${[['x','Horizontal position',-256,256],['y','Vertical position',-256,256],['tilt_x','Horizontal tilt (px)',0,16],['tilt_y','Vertical tilt (px)',0,16],['travel','Travel speed (%)',0,100]].map(([key,label,min,max])=>`<label>${label}<input data-number="${key}" type="number" min="${min}" max="${max}" step="1" value="${l[key]}"></label>`).join('')}
+      <p id="scene-art-info" class="scene-help"></p>
+      <label>Shared artwork backgrounds<select id="scene-related"></select></label>
+      ${[['x','Horizontal position',-256,256],['y','Vertical position',-256,256],['tilt_x','Horizontal tilt (px)',0,16],['tilt_y','Vertical tilt (px)',0,16],['travel','Travel speed (%)',0,100]].map(([key,label,min,max])=>`<label>${label}<input data-number="${key}" type="number" required min="${min}" max="${max}" step="1" value="${l[key]}"></label>`).join('')}
+      <div class="scene-actions" role="group" aria-label="Nudge layer one pixel">
+      <button data-nudge="x:-1" aria-label="Move layer left one pixel">← Left</button><button data-nudge="x:1" aria-label="Move layer right one pixel">Right →</button>
+      <button data-nudge="y:-1" aria-label="Move layer up one pixel">↑ Up</button><button data-nudge="y:1" aria-label="Move layer down one pixel">Down ↓</button></div>
       <details><summary>Ambient motion</summary>
-      <p class="scene-help">Moves independently of travel while the preview plays. Long cycles leave visitors off screen between passes; repeating cloud layers loop behind the cabin.</p>
-      ${[['speed','Ambient speed (px/s)',-32,32],['cycle_ms','Cycle (ms)',1,60000],['bounce','Bounce height (px)',0,8],['bounce_ms','Bounce period (ms)',200,4000]].map(([key,label,min,max])=>`<label>${label}<input data-motion="${key}" type="number" min="${min}" max="${max}" step="1" value="${(l.motion||{speed:0,cycle_ms:12000,bounce:0,bounce_ms:600})[key]}"></label>`).join('')}
+      <p class="scene-help">Moves independently of travel while the preview plays.</p>
+      ${[['speed','Ambient speed (px/s)',-32,32],['cycle_ms','Cycle (ms)',1,60000],['bounce','Bounce height (px)',0,8],['bounce_ms','Bounce period (ms)',200,4000]].map(([key,label,min,max])=>`<label>${label}<input data-motion="${key}" type="number" required min="${min}" max="${max}" step="1" value="${(l.motion||{speed:0,cycle_ms:12000,bounce:0,bounce_ms:600})[key]}"></label>`).join('')}
       </details>
       <details id="scene-variation" ${variationOpen?'open':''}><summary>Layer variation</summary>
-      ${[['seed','Layer seed',65535],['x','Horizontal jitter (±px)',16],['y','Vertical jitter (±px)',16],['travel','Travel variation (±percentage points)',100],['chance','Appearance chance (%)',100]].map(([key,label,max])=>`<label>${label}<input data-random="${key}" type="number" min="0" max="${max}" step="1" value="${variation(l)[key]}"></label>`).join('')}
+      ${[['seed','Layer seed',65535],['x','Horizontal jitter (±px)',16],['y','Vertical jitter (±px)',16],['travel','Travel variation (±percentage points)',100],['chance','Appearance chance (%)',100]].map(([key,label,max])=>`<label>${label}<input data-random="${key}" type="number" required min="0" max="${max}" step="1" value="${variation(l)[key]}"></label>`).join('')}
       <p class="scene-help">Jitter and speed variation are bounded around the values above; appearance is chosen per layer, not per repeat. Keep ground layers at zero vertical jitter and 100% appearance. Layer seeds stay with layers when reordered.</p>
       <p id="scene-resolved" class="scene-help"></p></details>
       <label>Repeat horizontally<input id="scene-repeat" type="checkbox" ${l.repeat_x?'checked':''}></label>
@@ -246,22 +314,21 @@
       copy.random={...variation(l)};s.layers.splice(layerIndex+1,0,copy);layerIndex++;render();
     };
     button('#scene-reload').onclick = () => load(true);
-    root.querySelectorAll('[data-motion]').forEach(el=>{
-      const control=/** @type {HTMLInputElement} */(el);
-      control.onchange=()=>{
-        if(!control.checkValidity() || control.value==='') return;
-        l.motion ||= {speed:0,cycle_ms:12000,bounce:0,bounce_ms:600};
-        l.motion[control.dataset.motion]=Number(control.value);status();
-      };
-    });
-    input('#scene-select').onchange = () => { selected = work.scenes.findIndex(s=>s.key===input('#scene-select').value); layerIndex=0; ambientTime=travel=0; render(); };
+    input('#scene-search').oninput=()=>{query=input('#scene-search').value;navigator();};
+    input('#scene-select').onchange=()=>navigate(input('#scene-select').value);
+    input('#scene-related').onchange=()=>navigate(input('#scene-related').value,l.asset);
+    for(const [id,step] of [['prev',-1],['next',1]])button(`#scene-${id}`).onclick=()=>{
+      const list=matches(), next=list[list.indexOf(scene())+Number(step)];if(next)navigate(next.key);
+    };
     root.querySelectorAll('[data-layer]').forEach((el) => {
       /** @type {HTMLButtonElement} */ (el).onclick = () => { layerIndex = Number(el.getAttribute('data-layer')); render(); };
     });
+    button('#scene-activity').onchange=()=>{if(!validFields()){button('#scene-activity').value=s.activity||'';return;}const value=button('#scene-activity').value;if(value&&work.scenes.some(other=>other!==s&&other.activity===value)){S.status('That activity already has a scene. Edit its existing scene or unbind it first.','bad');render();return;}if(value){s.activity=value;s.speed=s.speed||1;}else{delete s.activity;delete s.speed;}render();};
+    if(s.activity)input('#scene-activity-speed').oninput=()=>{const field=input('#scene-activity-speed');if(field.checkValidity()){s.speed=Number(field.value);status();}};
     button('#scene-copy').onclick = () => {
       const copy = clone(s); let n = 1;
       while (work.scenes.some(s=>s.key===`scene-${n}`)) n++;
-      delete copy.activity;
+      delete copy.activity;delete copy.speed;
       copy.key=`scene-${n}`; copy.name=`${s.name.slice(0,42)} copy`;
       work.scenes.push(copy); selected=work.scenes.length-1; layerIndex=0; render();
     };
@@ -292,9 +359,17 @@
         status();
       };
     });
+    root.querySelectorAll('[data-motion]').forEach(el => {
+      const field=/** @type {HTMLInputElement} */ (el);
+      field.oninput=()=>{
+        if(!field.checkValidity() || field.value==='') return;
+        l.motion={...(l.motion||{speed:0,cycle_ms:12000,bounce:0,bounce_ms:600}),[field.dataset.motion]:Number(field.value)};
+        status();
+      };
+    });
     input('#scene-fill').oninput = () => { s.fill=input('#scene-fill').value; status(); };
     input('#scene-asset').onchange = () => { l.asset=input('#scene-asset').value; status(); };
-    button('#scene-paint').onclick = () => { state.key=l.asset; shell.activateMode('paint'); };
+    button('#scene-paint').onclick = () => { paintOrigin={key:s.key,asset:l.asset};state.key=l.asset; shell.activateMode('paint'); };
     root.querySelectorAll('[data-number]').forEach(el => {
       const field = /** @type {HTMLInputElement} */ (el);
       field.oninput = () => {
@@ -303,6 +378,10 @@
         if (l.travel) { l.repeat_x=true; input('#scene-repeat').checked=true; }
         status();
       };
+    });
+    root.querySelectorAll('[data-nudge]').forEach(el=>{
+      const control=/** @type {HTMLButtonElement} */(el), [axis,delta]=control.dataset.nudge.split(':');
+      control.onclick=()=>{l[axis]=Math.max(-256,Math.min(256,l[axis]+Number(delta)));input(`[data-number=${axis}]`).value=String(l[axis]);status();};
     });
     input('#scene-repeat').onchange = () => { l.repeat_x=input('#scene-repeat').checked; if (!l.repeat_x) {l.travel=0; input('[data-number=travel]').value='0';if(l.random)l.random.travel=0;input('[data-random=travel]').value='0';} status(); };
     input('#scene-visible').onchange = () => {l.visible=input('#scene-visible').checked;status();};
@@ -339,7 +418,17 @@
   const previous = renderView, keys = S.keydown;
   renderView = () => {
     cancelAnimationFrame(frame);
-    if (state.view !== 'scenes') {root.classList.add('hidden');return previous();}
+    document.getElementById('scene-return')?.remove();
+    if (state.view !== 'scenes') {
+      root.classList.add('hidden');const result=previous();
+      if(state.view==='detail'&&state.mode==='paint'&&paintOrigin&&state.key===paintOrigin.asset){
+        const back=document.createElement('button');back.id='scene-return';
+        back.textContent=`Back to ${work.scenes.find(s=>s.key===paintOrigin.key)?.name||'background'}`;
+        back.style.minHeight='44px';document.getElementById('stage').before(back);
+        back.onclick=()=>{navigate(paintOrigin.key,paintOrigin.asset);shell.activateMode('scenes');};
+      }
+      return result;
+    }
     shell.showOnly('scenes'); render();
   };
   S.keydown = e => {

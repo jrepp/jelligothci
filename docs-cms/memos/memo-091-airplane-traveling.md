@@ -22,7 +22,7 @@ balancing requirement.
 
 # Implementation
 
-The [airplane scene](../../content/scenes.json) binds the appended Traveling ID.
+The [airplane scene](../../content/scenes.json) binds the stable Traveling activity name.
 The [pixel geometry recipe](../../assets/slice/source/airplane_art.py) draws the
 cabin and seat, and creates the blue aisle visitor by remapping existing baby Jelli
 art through the source recipe’s simultaneous RGB remapper. The visitor
@@ -37,18 +37,18 @@ The [portable compositor](../../core/scene.c) uses independent integer transform
 clouds repeat horizontally while the visitor spends part of each cycle off screen.
 There is no runtime RNG or spawn allocation. Animation advances with the injected
 presentation clock, freezes during pause, resets on reversal and drops stall
-backlog. The [binding](../../core/pet_scene.c) clears when the activity ends,
+backlog. The [activity presenter](../../core/pet_activity_scene.c) clears the binding when the activity ends,
 retains explicit diagnostic overrides, and publishes only complete resolved scenes.
 
-SDL and the preview tool reuse their existing caller-owned scene caches. Firmware
-binds one static cache after initialization; no cache lives on a task stack and no
-steady-state heap allocation is introduced. The [development guide](../../docs/development.md#layered-background-presentation)
+All hosts use the persistent activity scene cache owned by the UI; explicit scene
+previews use caller-owned caches. No cache lives on a frame stack and no steady-state
+heap allocation is introduced. The [development guide](../../docs/development.md#layered-background-presentation)
 owns the reusable runtime contract. The studio Ambient motion inspector previews
 and saves these fields, and scene duplication drops the unique activity binding.
 
 # Resource evidence
 
-Native macOS measurements from this increment, not device timing:
+Native macOS measurements from the original increment, before activity-scene integration; not device timing:
 
 - `sizeof(JelliScene)` is 8,352 bytes; the existing compile-time 9 KiB ceiling passes.
   `sizeof(JelliPetUi)` is 8,656 bytes. Firmware cache allocation is static internal
@@ -108,5 +108,33 @@ case (15 total). A separate pinned Paint run with screenshot comparison enabled
 also passed. No accessibility or screenshot baseline was changed. These local
 results do not substitute for required checks on the eventual PR head.
 
-Firmware compilation is assigned to the prepared integration checkout; no flashing
-or physical display/touch testing is authorized or performed.
+Firmware compilation was assigned to the prepared integration checkout; no flashing
+or physical display/touch testing was performed.
+
+# 2026-11-12 integration with activity backgrounds
+
+PR #97 conflicted with the activity scene work already on main. The merge retains
+main's name-based activity bindings, automatic scrolling, explicit-preview priority,
+and one UI-owned scene cache. The airplane keeps its independent cloud and visitor
+motion, which advances through the same presentation clock. Duplicate scene copies
+clear both the activity binding and its travel speed. Art IDs that collided with
+newer activity backgrounds were reassigned in the manifest.
+
+The first local merge build failed because the game preview still called the removed
+activity-cache binding API. Removing that call and using the UI cache restored the
+preview build. A direct system Python invocation of the asset builder also lacked
+Pillow; the repository-managed Python environment ran the scene suite and asset
+embedding successfully. The integration runtime reported `sizeof(JelliPetUi)` as
+18,408 bytes and `sizeof(JelliScene)` as 8,352 bytes on the native host. These are
+host sizes, not device memory or frame-time measurements. Physical behavior remains
+unverified; firmware and current PR checks are tracked independently.
+
+The combined artwork uses 242,240 live pixels and 30,280 mask bytes. The first
+combined desktop run exceeded the prior 229,376-pixel bank and the pack oracle's
+16 KiB metadata block. The SDL bank and its shared exporter/authoring limits now
+hold 262,144 pixels and 32,768 mask bytes, leaving room for nearly five additional
+64×64 assets; the 576 KiB staging cap covers those maxima and metadata allowances.
+This adds 204,800 bytes to the desktop reload workspace across two banks and staging;
+firmware does not allocate these banks. The full-catalog native byte oracle now uses
+a 32 KiB block and passed all 12 cases. The animation authoring suite passed all
+13 cases after the limits were aligned. Current PR CI must verify the merged head.

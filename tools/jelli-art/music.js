@@ -8,9 +8,9 @@
   const note=p=>p?`${names[periods.indexOf(p)%12]}${Math.floor(periods.indexOf(p)/12)+1}`:'---';
   const hex=(n,size=2)=>n.toString(16).toUpperCase().padStart(size,'0');
   const blank=()=>({sample:0,period:0,effect:0,param:0});
-  let work,loaded,base,catalog=[],song='morning-tea',editable=false,busy=false,pattern=0,row=0,channel=0,instrument=1,octave=2,step=1;
+  let work,loaded,base,catalog=[],samplePresets=[],preset='',song='morning-tea',editable=false,busy=false,pattern=0,row=0,channel=0,instrument=1,octave=2,step=1;
   let undo=[],clipboard=null,context=null,sources=[],gains=[],timer=0,started=0,generation=0,paused=false,shown=false;
-  let mixerOpen=innerWidth>700;
+  let mixerOpen=innerWidth>700,soundQuery='',soundCategory='';
   const levels=[64,64,64,64],muted=[false,false,false,false];
   const dirty=()=>!!work&&JSON.stringify(work)!==JSON.stringify(loaded);
   const cell=()=>work.patterns[pattern][row][channel];
@@ -25,14 +25,26 @@
   #music .mu-check{display:flex;align-items:center;gap:5px}#music fieldset{min-width:0;border:1px solid var(--line);border-radius:8px;margin:12px 0;padding:10px}
   .mu-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px}.mu-layout>*{min-width:0}.mu-scroll{max-height:580px;overflow:auto;border:1px solid var(--line);border-radius:6px}
   #mu-grid{border-collapse:collapse;width:100%;table-layout:fixed;font:12px ui-monospace,monospace}#mu-grid th{position:sticky;top:0;background:var(--panel,var(--bg));z-index:1;padding:6px 2px}
+  #mu-grid tbody th{top:auto}#mu-grid thead th:first-child{z-index:3}
   #mu-grid th:first-child{width:30px}#mu-grid td{padding:0}#mu-grid td button{font:inherit;white-space:nowrap;padding:5px 1px;width:100%;min-height:32px;border-radius:0;border:0;background:transparent}
   #mu-grid tr:nth-child(4n+1){background:var(--line)}#mu-grid button[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:-2px;background:var(--bg)}
   .mu-mix{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.mu-mix input[type=range]{width:100%;min-width:0}#mu-wave{width:100%;height:80px;background:var(--bg);border:1px solid var(--line)}
   #music .mu-song-label{width:min(100%,187px)}#mu-song{width:100%}#mu-time{width:min(100%,460px)}.mu-help{color:var(--muted);font-size:13px}#mu-sample{width:100%}
   @container music (max-width:850px){.mu-layout{grid-template-columns:1fr}.mu-scroll{max-height:420px}}
-  @container music (max-width:390px){#mu-grid{font-size:10px}.mu-mix{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .mu-sound-browser{border:1px solid var(--line);border-radius:8px;padding:0 10px;margin:8px 0}.mu-sound-browser select,.mu-sound-browser input{width:100%}.mu-sound-browser .mu-controls button{flex:1}.mu-sound-browser p{overflow-wrap:anywhere}
+  .mu-pad{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.mu-pad button{touch-action:manipulation}
+  .mu-navigation{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.mu-navigation button{flex:1;white-space:nowrap}
+  #music summary{padding:12px 0;cursor:pointer}#music .mu-cell-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}#music .mu-cell-fields select{width:100%}
+  @container music (max-width:600px){
+    #music button,#music select,#music input{min-height:44px}#music input,#music select{font-size:16px}
+    #mu-grid{min-width:540px;font-size:12px}#mu-grid td button{min-height:44px}
+    .mu-scroll{max-height:240px}#mu-grid th:first-child{position:sticky;left:0;z-index:2;background:var(--panel,var(--bg))}
+    .mu-navigation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}#music>p{display:none}.mu-controls>*{max-width:100%}.mu-mix{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @container music (max-width:330px){.mu-pad{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @media (pointer:coarse){#music button,#music select,#music input,#mu-grid td button{min-height:44px}}
   </style>`);
-  function stop(){generation++;for(const source of sources){source.onended=null;source.stop();source.disconnect();}sources=[];for(const gain of gains)gain.disconnect();gains=[];clearInterval(timer);paused=false;if(f('playing'))f('playing').textContent='Stopped';if(f('pause'))f('pause').textContent='Pause';if(f('time'))f('time').value='0';}
+  function stop(){generation++;for(const source of sources){source.onended=null;source.stop();source.disconnect();}sources=[];for(const gain of gains)gain.disconnect();gains=[];clearInterval(timer);paused=false;if(f('playing'))f('playing').textContent='Stopped';if(f('sound-status'))f('sound-status').textContent='Stopped';if(f('pause'))f('pause').textContent='Pause';if(f('time'))f('time').value='0';}
   function status(){H.sync();if(!work)return;f('status').textContent=busy?'Working…':dirty()?'Unsaved changes':base===null?'New module — save to create':'Saved';f('save').disabled=busy||!editable||(!dirty()&&base!==null);f('play').disabled=busy;f('reload').disabled=busy;f('undo').disabled=!undo.length||!editable;}
   function remember(){undo.push(clone(work));if(undo.length>20)undo.shift();stop();}
   function changed(focus=false){render();if(focus)/** @type {HTMLElement} */(root.querySelector(`[data-row="${row}"][data-channel="${channel}"]`))?.focus();}
@@ -40,7 +52,7 @@
     if(busy)return false;
     if(discard&&dirty()&&!await H.confirm('Discard unsaved tracker edits?',{confirmLabel:'Discard and load'}))return false;
     stop();busy=true;const before=JSON.stringify(work);
-    try{const r=await S.api('GET',`/api/music?song=${encodeURIComponent(next)}`);if(before!==JSON.stringify(work))throw Error('Module changed while loading; your edits are preserved.');work=clone(r.data);loaded=clone(work);base=r.base;editable=r.editable;catalog=r.songs;song=next;pattern=row=channel=0;undo=[];if(discard)window.JelliDrafts?.drop('music','module');return true;}
+    try{const r=await S.api('GET',`/api/music?song=${encodeURIComponent(next)}`);if(before!==JSON.stringify(work))throw Error('Module changed while loading; your edits are preserved.');work=clone(r.data);loaded=clone(work);base=r.base;editable=r.editable;catalog=r.songs;samplePresets=r.sample_presets||[];if(!samplePresets.some(p=>p.id===preset))preset=samplePresets[0]?.id||'';song=next;pattern=row=channel=0;undo=[];if(discard)window.JelliDrafts?.drop('music','module');return true;}
     catch(e){S.status(e.message,'bad',true);return false;}finally{busy=false;if(state.view==='music')render();}
   }
   async function save(){
@@ -64,34 +76,91 @@
   function redrawWave(){const canvas=/** @type {HTMLCanvasElement} */(root.querySelector('#mu-wave')),ctx=canvas.getContext('2d'),pcm=work.samples[instrument-1].pcm;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle='#9b8cdb';ctx.beginPath();for(let x=0;x<canvas.width;x++){const v=pcm[Math.floor(x*pcm.length/canvas.width)]||0,y=40-v/128*36;if(x)ctx.lineTo(x,y);else ctx.moveTo(x,y);}ctx.stroke();}
   function render(){
     if(!work){root.innerHTML='<h2>Music tracker</h2><p>Loading records…</p>';return;}
+    const scroll=root.querySelector('.mu-scroll'),scrollTop=scroll?.scrollTop||0,scrollLeft=scroll?.scrollLeft||0,active=document.activeElement,focusId=root.contains(active)?active.id:'';
+    const openDetails=Array.from(root.querySelectorAll('details[open]')).map(el=>el.id);
     const c=cell(),sample=work.samples[instrument-1],sampleNames=work.samples.map((s,i)=>[i+1,`${hex(i+1)} ${s.name||'(empty)'}`]);
     root.innerHTML=`<h2>Music tracker</h2><p>Four PCM channels · standard ProTracker MOD · 30-second record preview</p>
-    <div class="mu-controls"><label class="mu-song-label">Record<select id="mu-song">${options(catalog.map(s=>[s[0],`${s[1]} · ${s[2]}`]),song)}</select></label><label>Module title<input id="mu-title" maxlength="20" pattern="[ -~]*" value="${esc(work.title)}" ${editable?'':'disabled'}></label><button id="mu-save">Save MOD</button><button id="mu-reload">Reload saved</button><button id="mu-undo">Undo</button><span id="mu-status" role="status"></span></div>
-    <div class="mu-controls"><button id="mu-play">Play (F5)</button><button id="mu-pause">Pause</button><button id="mu-stop">Stop (F8)</button><button id="mu-export">Export MOD</button><label>Import MOD<input id="mu-import" type="file" accept=".mod" ${editable?'':'disabled'}></label><span id="mu-playing" role="status">Stopped</span></div>
+    <div class="mu-controls"><label class="mu-song-label">Record<select id="mu-song">${options(catalog.map(s=>[s[0],`${s[1]} · ${s[2]}`]),song)}</select></label><button id="mu-save">Save MOD</button><button id="mu-undo">Undo</button><span id="mu-status" role="status"></span></div>
+    <div class="mu-controls"><button id="mu-play">Play (F5)</button><button id="mu-pause">Pause</button><button id="mu-stop">Stop (F8)</button><span id="mu-playing" role="status">Stopped</span></div>
+    <details id="mu-files"><summary>Record settings &amp; files</summary><div class="mu-controls"><label>Module title<input id="mu-title" maxlength="20" pattern="[ -~]*" value="${esc(work.title)}" ${editable?'':'disabled'}></label><button id="mu-reload">Reload saved</button><button id="mu-export">Export MOD</button><label>Import MOD<input id="mu-import" type="file" accept=".mod" ${editable?'':'disabled'}></label></div></details>
     <label>Preview progress<progress id="mu-time" max="30" value="0"></progress></label>
     <details id="mu-mixer" ${mixerOpen?'open':''}><summary>Four-channel mixer (preview only)</summary><fieldset><legend class="sr-only">Mixer channels</legend><div class="mu-mix">${levels.map((v,i)=>`<div><label>Channel ${i+1} gain<input type="range" min="0" max="64" value="${v}" data-level="${i}"></label><label class="mu-check"><input type="checkbox" data-mute="${i}" ${muted[i]?'checked':''}>Mute ${i+1}</label></div>`).join('')}</div></fieldset></details>
-    <div class="mu-layout"><div><div class="mu-controls"><label>Pattern<select id="mu-pattern">${options(work.patterns.map((_,i)=>[i,hex(i)]),pattern)}</select></label><label>Octave<input id="mu-octave" type="number" min="1" max="3" value="${octave}"></label><label>Row step<input id="mu-step" type="number" min="0" max="16" value="${step}"></label><button id="mu-copy">Copy pattern</button><button id="mu-paste" ${editable?'':'disabled'}>Paste pattern</button><button id="mu-new" ${editable?'':'disabled'}>New pattern</button></div>
-    <label>Order list (decimal pattern numbers)<input id="mu-orders" value="${work.orders.join(', ')}" ${editable?'':'disabled'}></label>
-    <p class="mu-help">Arrow keys move. Z–M and Q–U enter notes; the upper keyboard row adds an octave. Delete clears a cell. Space pauses/resumes; F5 plays; F8 stops. Ctrl/Cmd+Shift+C/V copies/pastes a pattern.</p>
+    <div class="mu-layout"><div><div class="mu-controls"><label>Pattern<select id="mu-pattern">${options(work.patterns.map((_,i)=>[i,hex(i)]),pattern)}</select></label></div><details id="mu-arrange"><summary>Arrange patterns</summary><div class="mu-controls"><button id="mu-copy">Copy pattern</button><button id="mu-paste" ${editable?'':'disabled'}>Paste pattern</button><button id="mu-new" ${editable?'':'disabled'}>New pattern</button></div>
+    <label>Order list (decimal pattern numbers)<input id="mu-orders" value="${work.orders.join(', ')}" ${editable?'':'disabled'}></label></details>
+    <details id="mu-shortcuts"><summary>Keyboard shortcuts</summary><p class="mu-help">Arrow keys move. Z–M and Q–U enter notes; the upper keyboard row adds an octave. Delete clears a cell. Space pauses/resumes; F5 plays; F8 stops. Ctrl/Cmd+Shift+C/V copies/pastes a pattern.</p></details>
     <div class="mu-scroll"><table id="mu-grid" aria-label="Four-channel pattern"><thead><tr><th scope="col">Row</th>${[1,2,3,4].map(i=>`<th scope="col">Channel ${i}</th>`).join('')}</tr></thead><tbody>${work.patterns[pattern].map((r,y)=>`<tr><th scope="row">${hex(y)}</th>${r.map((v,x)=>`<td><button data-row="${y}" data-channel="${x}" tabindex="${y===row&&x===channel?0:-1}" aria-pressed="${y===row&&x===channel}" aria-label="${note(v.period)} ${hex(v.sample)} ${hex(v.effect,1)}${hex(v.param)}, row ${y}, channel ${x+1}">${note(v.period)} ${hex(v.sample)} ${hex(v.effect,1)}${hex(v.param)}</button></td>`).join('')}</tr>`).join('')}</tbody></table></div>
-    <fieldset><legend>Selected cell: row ${row}, channel ${channel+1}</legend><div class="mu-controls"><label>Note<select id="mu-note" ${editable?'':'disabled'}>${options([[0,'No note'],...periods.map(p=>[p,note(p)])],c.period)}</select></label><label>Sample<select id="mu-cell-sample" ${editable?'':'disabled'}>${options([[0,'Keep current'],...sampleNames],c.sample)}</select></label><label>Effect<select id="mu-effect" ${editable?'':'disabled'}>${options([[0,'None'],[12,'C — volume'],[15,'F — speed/tempo']],c.effect)}</select></label><label>Value (decimal)<input id="mu-param" type="number" min="0" max="255" value="${c.param}" ${editable?'':'disabled'}></label><button id="mu-clear" ${editable?'':'disabled'}>Clear cell</button></div><p class="mu-help">C: volume 0–64. F: speed 1–31 ticks/row, or tempo 32–255 BPM. Other effects and finetuning are rejected on import.</p></fieldset></div>
+    <fieldset id="mu-editor"><legend>Selected cell: row ${row}, channel ${channel+1}</legend>
+    <div class="mu-navigation" aria-label="Move selected cell"><button id="mu-prev-row" aria-label="Previous row">↑ Row</button><button id="mu-next-row" aria-label="Next row">↓ Row</button><button id="mu-prev-channel" aria-label="Previous channel">← Channel</button><button id="mu-next-channel" aria-label="Next channel">Channel →</button></div>
+    <div class="mu-controls"><label>Octave<input id="mu-octave" type="number" min="1" max="3" value="${octave}"></label><label>Row step<input id="mu-step" type="number" min="0" max="16" value="${step}"></label></div><label>Entry instrument<select id="mu-entry-sample">${options(sampleNames.filter(([v])=>work.samples[Number(v)-1].pcm.length||v===instrument),instrument)}</select></label><div class="mu-controls"><button id="mu-entry-preview" ${sample.pcm.length?'':'disabled'}>Hear instrument</button></div>
+    <details id="mu-sounds" class="mu-sound-browser"><summary>Browse sample library</summary>
+    <div class="mu-controls mu-cell-fields"><label>Sound category<select id="mu-sound-category">${options([['','All sounds'],...Array.from(new Set(samplePresets.map(p=>p.category||'Other'))).map(n=>[n,n])],soundCategory)}</select></label><label>Search sounds<input id="mu-sound-search" type="search" value="${esc(soundQuery)}" placeholder="Find sound"></label></div>
+    <p id="mu-sound-count" class="mu-help" role="status"></p><label>Sample preset<select id="mu-preset"></select></label>
+    <p id="mu-preset-info" class="mu-help"></p><div class="mu-controls"><button id="mu-preset-preview">Preview sound</button><button id="mu-preset-stop">Stop sound</button></div><p id="mu-sound-status" role="status">Choose a sound to preview.</p>
+    <div class="mu-controls"><button id="mu-add-preset">Use in empty slot</button><button id="mu-load-preset">Replace instrument ${hex(instrument)}</button></div><p class="mu-help">An empty slot keeps existing notes unchanged. Replacing instrument ${hex(instrument)} changes its sound in every pattern. Both support Undo.</p></details>
+    <p class="mu-help">Tap a note to enter it and advance by Row step. Octave sets the note pad pitch.</p>
+    <div class="mu-pad" role="group" aria-label="Enter notes">${names.map((n,i)=>`<button id="mu-key-${i}" data-note="${i}" ${editable?'':'disabled'} aria-label="Enter ${n}${octave}">${n}${octave}</button>`).join('')}</div>
+    <div class="mu-controls mu-cell-fields"><label>Note<select id="mu-note" ${editable?'':'disabled'}>${options([[0,'No note'],...periods.map(p=>[p,note(p)])],c.period)}</select></label><label>Sample<select id="mu-cell-sample" ${editable?'':'disabled'}>${options([[0,'Keep current'],...sampleNames],c.sample)}</select></label><label>Effect<select id="mu-effect" ${editable?'':'disabled'}>${options([[0,'None'],[12,'C — volume'],[15,'F — speed/tempo']],c.effect)}</select></label><label>Value (decimal)<input id="mu-param" type="number" min="0" max="255" value="${c.param}" ${editable?'':'disabled'}></label><button id="mu-clear" ${editable?'':'disabled'}>Clear cell</button></div><p class="mu-help">C: volume 0–64. F: speed 1–31 ticks/row, or tempo 32–255 BPM. Other effects and finetuning are rejected on import.</p></fieldset></div>
     <aside aria-label="Sample manager"><fieldset><legend>Sample manager</legend><label>Instrument<select id="mu-sample">${options(sampleNames,instrument)}</select></label><canvas id="mu-wave" width="280" height="80" aria-label="Sample waveform"></canvas><p>${sample.pcm.length} bytes · ${work.samples.reduce((n,s)=>n+s.pcm.length,0)} / 32768 total</p><label>Sample name<input id="mu-sample-name" maxlength="22" pattern="[ -~]*" value="${esc(sample.name)}" ${editable?'':'disabled'}></label><div class="mu-controls"><label>Volume<input id="mu-volume" type="number" min="0" max="64" value="${sample.volume}" ${editable?'':'disabled'}></label><label>Loop start<input id="mu-loop-start" type="number" min="0" max="${sample.pcm.length}" step="2" value="${sample.loop_start}" ${editable?'':'disabled'}></label><label>Loop length<input id="mu-loop-length" type="number" min="0" max="${sample.pcm.length}" step="2" value="${sample.loop_length}" ${editable?'':'disabled'}></label></div><button id="mu-sample-play">Audition sample</button><label>Replace sample (8-bit mono WAV / signed PCM)<input id="mu-upload" type="file" accept=".wav,.pcm,.raw" ${editable?'':'disabled'}></label><p class="mu-help">At most 8192 bytes each. Loop positions use bytes; lengths are even. Zero disables looping. MOD stores no sample rate: imported data plays at tracker pitch.</p></fieldset></aside></div>`;
-    bind();redrawWave();status();
+    for(const id of openDetails)/** @type {HTMLDetailsElement} */(root.querySelector(`#${id}`)).open=true;
+    bind();refreshSounds();redrawWave();status();
+    const nextScroll=root.querySelector('.mu-scroll');nextScroll.scrollTop=scrollTop;nextScroll.scrollLeft=scrollLeft;
+    if(focusId)/** @type {HTMLElement} */(root.querySelector(`#${focusId}`))?.focus({preventScroll:true});
   }
   function edit(fn){if(!editable)return;remember();fn();changed();}
   function bind(){
     f('mixer').ontoggle=()=>{mixerOpen=/** @type {HTMLDetailsElement} */(root.querySelector('#mu-mixer')).open;};
     f('song').onchange=async()=>{const next=f('song').value;if(!await load(next,true))f('song').value=song;};f('reload').onclick=()=>load(song,true);f('save').onclick=save;f('play').onclick=play;f('pause').onclick=pause;f('stop').onclick=stop;
     f('title').oninput=()=>{work.title=f('title').value;status();};f('undo').onclick=()=>{if(!undo.length)return;stop();work=undo.pop();pattern=Math.min(pattern,work.patterns.length-1);changed();};
-    f('pattern').onchange=()=>{stop();pattern=Number(f('pattern').value);changed();};f('octave').onchange=()=>{octave=Math.max(1,Math.min(3,Number(f('octave').value)));};f('step').onchange=()=>{step=Math.max(0,Math.min(16,Number(f('step').value)));};
+    f('pattern').onchange=()=>{stop();pattern=Number(f('pattern').value);changed();};f('octave').onchange=()=>{octave=Math.max(1,Math.min(3,Number(f('octave').value)));changed();};f('step').onchange=()=>{step=Math.max(0,Math.min(16,Number(f('step').value)));};
     f('copy').onclick=()=>{clipboard=clone(work.patterns[pattern]);H.announce('Pattern copied');};f('paste').onclick=()=>{if(clipboard)edit(()=>{work.patterns[pattern]=clone(clipboard);});};
     f('new').onclick=()=>{if(work.patterns.length>=16||work.orders.length>=16){S.status('At most 16 patterns and 16 order entries.','warn');return;}edit(()=>{work.patterns.push(Array.from({length:64},()=>Array.from({length:4},blank)));pattern=work.patterns.length-1;work.orders.push(pattern);});};
     f('orders').onchange=()=>{const parts=f('orders').value.split(',').map(v=>v.trim());const values=parts.map(Number);if(parts.some(v=>!/^\d+$/.test(v))||values.length>16||values.some(v=>v>=work.patterns.length)||Math.max(...values)!==work.patterns.length-1){S.status('Use 1–16 pattern numbers; include the highest pattern.','bad');f('orders').value=work.orders.join(', ');return;}edit(()=>{work.orders=values;});};
     root.querySelectorAll('[data-row]').forEach(n=>{n.addEventListener('click',()=>{row=Number(n.getAttribute('data-row'));channel=Number(n.getAttribute('data-channel'));changed(true);});n.addEventListener('keydown',trackerKey);});
+    for(const [id,dy,dx] of [['prev-row',-1,0],['next-row',1,0],['prev-channel',0,-1],['next-channel',0,1]])f(id).onclick=()=>{row=(row+Number(dy)+64)%64;channel=(channel+Number(dx)+4)%4;changed();revealCell();};
+    f('entry-sample').onchange=()=>{stop();instrument=Number(f('entry-sample').value);changed();};
+    root.querySelectorAll('[data-note]').forEach(n=>n.addEventListener('click',()=>{edit(()=>{cell().period=periods[(octave-1)*12+Number(n.getAttribute('data-note'))];cell().sample=instrument;row=(row+step)%64;});revealCell();}));
     f('note').onchange=()=>edit(()=>{cell().period=Number(f('note').value);if(cell().period&&!cell().sample)cell().sample=instrument;});f('cell-sample').onchange=()=>edit(()=>{cell().sample=Number(f('cell-sample').value);});f('effect').onchange=()=>edit(()=>{cell().effect=Number(f('effect').value);cell().param=cell().effect===15?6:0;});f('param').onchange=()=>edit(()=>{cell().param=Number(f('param').value);});f('clear').onclick=()=>edit(()=>{work.patterns[pattern][row][channel]=blank();});
+    f('sound-search').oninput=()=>{soundQuery=f('sound-search').value;refreshSounds();};
+    f('sound-category').onchange=()=>{soundCategory=f('sound-category').value;refreshSounds();};
+    f('preset').onchange=()=>{stop();preset=f('preset').value;refreshSounds();};
+    f('preset-preview').onclick=()=>{const selected=samplePresets.find(p=>p.id===preset);if(selected)audition(selected.sample);};
+    f('preset-stop').onclick=stop;f('entry-preview').onclick=()=>audition();
+    f('add-preset').onclick=()=>applyPreset(true);f('load-preset').onclick=()=>applyPreset(false);
     f('sample').onchange=()=>{stop();instrument=Number(f('sample').value);changed();};for(const [id,key] of [['sample-name','name'],['volume','volume'],['loop-start','loop_start'],['loop-length','loop_length']])f(id).onchange=()=>edit(()=>{work.samples[instrument-1][key]=key==='name'?f(id).value:Number(f(id).value);});
     root.querySelectorAll('[data-level]').forEach(n=>{const el=/** @type {HTMLInputElement} */(n);el.oninput=()=>{const i=Number(el.dataset.level);levels[i]=Number(el.value);if(gains[i])gains[i].gain.value=muted[i]?0:levels[i]/64;};});root.querySelectorAll('[data-mute]').forEach(n=>{const el=/** @type {HTMLInputElement} */(n);el.onchange=()=>{const i=Number(el.dataset.mute);muted[i]=el.checked;if(gains[i])gains[i].gain.value=muted[i]?0:levels[i]/64;};});
-    f('import').onchange=()=>importFile('module');f('upload').onchange=()=>importFile('sample');f('export').onclick=exportFile;f('sample-play').onclick=audition;
+    f('import').onchange=()=>importFile('module');f('upload').onchange=()=>importFile('sample');f('export').onclick=exportFile;f('sample-play').onclick=()=>audition();
+  }
+  function emptySlot(){
+    const used=new Set(work.patterns.flat(2).map(c=>c.sample));
+    return work.samples.findIndex((s,i)=>!s.pcm.length&&!used.has(i+1));
+  }
+  function refreshSounds(){
+    const query=soundQuery.trim().toLowerCase(),matches=samplePresets.filter(p=>(!soundCategory||p.category===soundCategory)&&`${p.name} ${p.category||''}`.toLowerCase().includes(query));
+    if(!matches.some(p=>p.id===preset))preset=matches[0]?.id||'';
+    f('preset').innerHTML=options(matches.map(p=>[p.id,p.name]),preset);f('preset').disabled=!matches.length;
+    f('sound-count').textContent=`${matches.length} sounds`;
+    const selected=matches.find(p=>p.id===preset),available=!!selected;
+    f('preset-info').textContent=selected?`${selected.category||'Sound'} · ${selected.sample.pcm.length} bytes · ${selected.sample.loop_length?'Looped':'One-shot'}`:'No matching sounds. Try another name or category.';
+    f('preset-preview').disabled=!available;f('load-preset').disabled=!available||!editable;
+    f('add-preset').disabled=!available||!editable||emptySlot()<0;
+    f('add-preset').textContent=emptySlot()<0?'No empty slots':'Use in empty slot';
+  }
+  function applyPreset(useEmpty){
+    if(!editable)return;const selected=samplePresets.find(p=>p.id===preset),slot=useEmpty?emptySlot():instrument-1;if(!selected||slot<0)return;
+    const total=work.samples.reduce((n,s,i)=>n+(i===slot?0:s.pcm.length),0)+selected.sample.pcm.length;
+    if(total>32768){f('sound-status').textContent='Not enough sample memory. Replace a larger instrument or shorten a sample.';return;}
+    edit(()=>{work.samples[slot]=clone(selected.sample);instrument=slot+1;});
+    /** @type {HTMLDetailsElement} */(root.querySelector('#mu-sounds')).open=false;
+    f('key-0').focus({preventScroll:true});f('key-0').scrollIntoView({block:'nearest'});
+    H.announce(`${selected.name} ready in instrument ${hex(instrument)}. Tap a note to enter it.`);
+  }
+  function revealCell(){
+    const scroller=root.querySelector('.mu-scroll'),selected=root.querySelector('#mu-grid button[aria-pressed=true]');
+    const box=scroller.getBoundingClientRect(),target=selected.getBoundingClientRect();
+    if(target.bottom>box.bottom)scroller.scrollTop+=target.bottom-box.bottom;
+    if(target.top<box.top+40)scroller.scrollTop+=target.top-box.top-40;
+    if(target.right>box.right)scroller.scrollLeft+=target.right-box.right;
+    if(target.left<box.left+32)scroller.scrollLeft+=target.left-box.left-32;
   }
   function trackerKey(e){
     if(e.ctrlKey||e.metaKey||e.altKey)return;let handled=true;
@@ -110,9 +179,9 @@
     catch(e){S.status(e.message,'bad',true);}
   }
   async function exportFile(){try{const r=await S.api('POST','/api/music/export',{data:work}),bytes=Uint8Array.from(atob(r.file),c=>c.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:'audio/mod'})),a=document.createElement('a');a.href=url;a.download=`${song}.mod`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){S.status(e.message,'bad',true);}}
-  async function audition(){stop();const sample=work.samples[instrument-1];if(!sample.pcm.length)return;try{context??=new AudioContext();await context.resume();const buffer=context.createBuffer(1,sample.pcm.length,22050);buffer.getChannelData(0).set(sample.pcm.map(n=>n/128));const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;source.playbackRate.value=8287/22050;source.loop=sample.loop_length>0;source.loopStart=sample.loop_start/22050;source.loopEnd=(sample.loop_start+sample.loop_length)/22050;gain.gain.value=sample.volume/64*.3;source.connect(gain);gain.connect(context.destination);sources=[source];gains=[gain];source.start();source.stop(context.currentTime+2);f('playing').textContent='Auditioning sample';source.onended=()=>{f('playing').textContent='Stopped';sources=[];};}catch(e){S.status(e.message,'bad',true);}}
+  async function audition(sample=work.samples[instrument-1]){stop();const token=generation;if(!sample.pcm.length)return;try{context??=new AudioContext();await context.resume();if(token!==generation)return;const buffer=context.createBuffer(1,sample.pcm.length,22050);buffer.getChannelData(0).set(sample.pcm.map(n=>n/128));const source=context.createBufferSource(),gain=context.createGain();source.buffer=buffer;source.playbackRate.value=(3546895/periods[(octave-1)*12])/22050;source.loop=sample.loop_length>0;source.loopStart=sample.loop_start/22050;source.loopEnd=(sample.loop_start+sample.loop_length)/22050;gain.gain.value=sample.volume/64*.3;source.connect(gain);gain.connect(context.destination);sources=[source];gains=[gain];source.start();source.stop(context.currentTime+2);f('playing').textContent='Auditioning sample';f('sound-status').textContent=`Previewing ${sample.name} at C-${octave}`;source.onended=()=>{f('playing').textContent='Stopped';f('sound-status').textContent='Preview finished';sources=[];};}catch(e){S.status(e.message,'bad',true);}}
   const boot=S.boot;S.boot=async()=>{await boot();await load();const d=window.JelliDrafts?.restore('music','module',base);if(d?.data?.doc?.patterns&&catalog.some(s=>s[0]===d.data.song)){if(d.data.song!==song)await load(d.data.song);work=clone(d.data.doc);base=d.base;H.notify('Restored unsaved tracker module.',{tone:'warn'});}window.JelliDrafts?.track('music','module',{dirty,base:()=>base,data:()=>({song,doc:work})});if(state.view==='music')render();};
   const previous=renderView;renderView=()=>{if(state.view!=='music'){shown=false;stop();return previous();}H.showOnly('music');render();if(!shown){shown=true;requestAnimationFrame(()=>document.getElementById('tab-music')?.scrollIntoView({block:'nearest',inline:'nearest'}));}};document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
-  const keys=S.keydown;S.keydown=e=>{if(state.view!=='music')return keys?.(e);const typing=e.target.closest('input,textarea,select');if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();return true;}if(typing)return true;if((e.metaKey||e.ctrlKey)&&e.shiftKey&&['c','v'].includes(e.key.toLowerCase())){e.preventDefault();f(e.key.toLowerCase()==='c'?'copy':'paste').click();}else if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){e.preventDefault();f('undo').click();}else if(e.key==='F5'){e.preventDefault();play();}else if(e.key==='F8'||e.key==='Escape'){e.preventDefault();stop();}else if(e.code==='Space'){e.preventDefault();pause();}return true;};
+  const keys=S.keydown;S.keydown=e=>{if(state.view!=='music')return keys?.(e);const typing=e.target.closest('input,textarea,select');if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();return true;}if(typing)return true;if((e.metaKey||e.ctrlKey)&&e.shiftKey&&['c','v'].includes(e.key.toLowerCase())){e.preventDefault();f(e.key.toLowerCase()==='c'?'copy':'paste').click();}else if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){e.preventDefault();f('undo').click();}else if(e.key==='F5'){e.preventDefault();play();}else if(e.key==='F8'||e.key==='Escape'){e.preventDefault();stop();}else if(e.code==='Space'&&!e.target.closest('button,summary')){e.preventDefault();pause();}return true;};
   H.registerShortcuts('Music',[{keys:['F5'],description:'Play module from beginning'},{keys:['Space'],description:'Pause or resume'},{keys:['F8','Escape'],description:'Stop preview'},{keys:['Mod+S'],description:'Save MOD'},{keys:['Mod+Shift+C','Mod+Shift+V'],description:'Copy or paste pattern'},{keys:['Mod+Z'],description:'Undo tracker edit'}]);
 })();

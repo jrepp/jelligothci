@@ -19,6 +19,8 @@
   document.getElementById('views').insertAdjacentHTML('beforeend', '<button data-view="activities" aria-pressed="false">Activities</button>');
   document.querySelector('main').insertAdjacentHTML('beforeend', '<div id="activities" class="hidden"></div>');
   const root = document.getElementById('activities');
+  const design=/** @type {any} */(window).JelliDesign;
+  design.guardFields(root,'#ac-revert');
   window.JelliShell?.registerViewRoot('activities');
   /** @type {any} */ (window).JelliDesign.watch(root);
   document.head.insertAdjacentHTML('beforeend', `<style>
@@ -91,6 +93,7 @@
       <p>Reward ranges include jitter and this pet’s activity bonus. Existing sleep-habit effects on fun/connection and favorite-time extras also apply; meters cap at 100.</p>
       <div id="ac-effects"></div></div>
       <aside><label>Preview pet<select id="ac-form">${opts(forms.map(f=>[f.id,f.name]),previewForm)}</select></label><canvas id="ac-preview" width="220" height="220" aria-label="Approximate activity animation thumbnail"></canvas><p>Approximate animation thumbnail. Actor and prop sizes and motion differ from the engine. Save and use Test in game to verify actual placement and location.</p></aside></div>`;
+    root.querySelectorAll('input[type=number]:not([data-bonus]),input[type=time]').forEach(el=>{/** @type {HTMLInputElement} */(el).required=true;});
     /** @type {NodeListOf<HTMLButtonElement>} */ (root.querySelectorAll('button[data-activity]')).forEach(b => b.onclick=()=>{selected=Number(b.dataset.activity);render();});
     const formSelect = /** @type {HTMLSelectElement} */ (root.querySelector('#ac-form'));
     formSelect.onchange=()=>{previewForm=Number(formSelect.value);render();};
@@ -156,7 +159,7 @@
   }
   let saveState = 'idle';
   async function save() {
-    if (saveState === 'saving' || !dirty()) return;
+    if (saveState === 'saving' || !design.validFields(root) || !dirty()) return;
     const sent = clone(work);
     saveState = 'saving'; render();
     try {

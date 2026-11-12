@@ -1,7 +1,6 @@
 #include "jelli/sound.h"
 #include "jelli/gesture.h"
 #include "jelli/pet_engine.h"
-#include "jelli/pet_scene.h"
 #include "debug_wire.h"
 #include "sound_output.h"
 #include "session.h"
@@ -126,7 +125,6 @@ void app_main(void)
 {
     static Board board;
     static JelliPetEngine engine;
-    static JelliScene activity_scene; /* Bounded presentation cache; never on the task stack. */
     static JelliEspSession session;
     static JelliRegisterIo rtc_io;
     jelli_display_output_init(&board.display);
@@ -170,7 +168,6 @@ void app_main(void)
                             .height = JELLI_HEIGHT,
                             .stride = JELLI_WIDTH};
     ESP_ERROR_CHECK(jelli_pet_init(&engine, platform, surface) ? ESP_OK : ESP_FAIL);
-    jelli_pet_scene_bind_activities(&engine.ui, &activity_scene);
     jelli_pet_bind_devices(&engine, (JelliMotionDriver){0}, display_driver);
     JelliClockDriver clock = jelli_rtc_clock_open(&rtc_io, bsp_i2c_get_handle());
     jelli_esp_session_open(&session, &engine, clock);

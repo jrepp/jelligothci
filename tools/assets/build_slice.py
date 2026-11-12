@@ -33,9 +33,9 @@ PALETTE_ROWS = {"unramped": "other", "unramped_only": "palette", "extras": "more
 RESERVED_ROWS = set(PALETTE_ROWS.values())
 # Real limits the art must fit: the SDL live-reload pack buffer and its banks
 # (ports/sdl/asset_reload.h). Firmware embeds the same art with ample flash headroom.
-PACK_CEILING = 524288  # JELLI_ASSET_PACK_CAPACITY: 512 KiB desktop staging buffer.
-LIVE_PIXEL_CAPACITY = 229376
-LIVE_MASK_CAPACITY = 28672
+PACK_CEILING = 589824  # JELLI_ASSET_PACK_CAPACITY: 576 KiB desktop staging buffer.
+LIVE_PIXEL_CAPACITY = 262144
+LIVE_MASK_CAPACITY = 32768
 
 
 def require(condition, message):
@@ -143,7 +143,9 @@ def load_assets():
         full = (SOURCE / path).resolve()
         require(SOURCE.resolve() in full.parents, f"Path escapes source root: {path}")
         image = Image.open(full).convert("RGBA")
-        require(image.size in expected[asset["kind"]], f"Wrong dimensions: {key}")
+        valid_size = (all(1 <= n <= 256 for n in image.size) if asset["kind"] == "backgrounds"
+                      else image.size in expected[asset["kind"]])
+        require(valid_size, f"Wrong dimensions: {key}")
         require(image.size == (asset["width"], asset["height"]), f"Manifest dimensions: {key}")
         require(set(image.getchannel("A").getdata()) <= {0, 255}, f"Nonbinary alpha: {key}")
         asset_palette = {tuple(bytes.fromhex(c[1:])) for c in palette_colours(manifest, asset)}

@@ -101,19 +101,18 @@ static void traveling_scene(JelliSurface *surface)
     game.clock_known = true;
     game.clock_minute = 720;
     game.pets[0].location = 1;
-    jelli_pet_scene_bind_activities(&ui, &scene);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_MOMENT, game.pets[0].id, 24}) ==
           JELLI_OK);
     jelli_pet_render(surface, &game, &ui, 1000, false);
-    CHECK(ui.scene == &scene && ui.scene_automatic);
+    CHECK(ui.scene == &ui.activity_scene && ui.scene_automatic);
     CHECK(game.pets[0].location == 1);
-    CHECK(!strcmp(scene.definition->key, "airplane"));
-    uint32_t revision = scene.revision;
+    CHECK(!strcmp(ui.scene->definition->key, "airplane"));
+    uint32_t revision = ui.scene->revision;
     jelli_pet_render(surface, &game, &ui, 1250, false);
-    CHECK(scene.revision != revision);
-    revision = scene.revision;
+    CHECK(ui.scene->revision != revision);
+    revision = ui.scene->revision;
     jelli_pet_render(surface, &game, &ui, 5000, true);
-    CHECK(scene.revision == revision);
+    CHECK(ui.scene->revision == revision);
     CHECK(ui.scene_elapsed_ms == 250);
     jelli_pet_render(surface, &game, &ui, 100000, false);
     CHECK(ui.scene_elapsed_ms == 500); /* No stall catch-up. */

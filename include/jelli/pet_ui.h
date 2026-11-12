@@ -210,7 +210,10 @@ typedef struct {
     bool effect_bound;
     JelliScene *scene; /* Optional caller-owned scene cache; outlives this binding. */
     const JelliAssetSet *scene_assets;
-    JelliScene *activity_scene; /* Optional caller-owned cache, never allocated by the UI. */
+    JelliScene activity_scene; /* Fixed UI-owned cache; never allocated on a frame stack. */
+    uint64_t activity_scene_ms, activity_scene_due;
+    uint32_t activity_scene_pet;
+    int32_t activity_scene_remainder;
     uint64_t scene_anchor_ms, scene_elapsed_ms;
     /* Borrowed immutable metadata; no runtime alpha scans or allocation. */
     const JelliAsset *actor_frame;

@@ -380,7 +380,6 @@ int main(int argc, char **argv)
     jelli_game_init(&game);
     game.events = &events;
     jelli_pet_ui_init(&ui);
-    jelli_pet_scene_bind_activities(&ui, &scene);
     if (apply_pet(&scenario) || apply_state(&scenario))
         return 3;
     if (scenario.scene && !jelli_pet_scene_select(&ui, &scene, scenario.scene)) {

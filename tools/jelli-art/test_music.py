@@ -37,6 +37,36 @@ class MusicTests(unittest.TestCase):
         self.raw = (ROOT/'content/music/morning-tea.mod').read_bytes()
         self.doc = music_data.music_mod.decode(self.raw)
 
+    def test_original_presets_are_bounded_deterministic_mod_samples(self):
+        presets = music_data.sample_presets()
+        self.assertEqual(presets, music_data.sample_presets())
+        self.assertLessEqual(len(presets), len(music_data.initial()['samples']))
+        self.assertEqual({preset['category'] for preset in presets},
+                         {'Keys', 'Bass', 'Leads', 'Mallets', 'Percussion'})
+        self.assertEqual(len({preset['id'] for preset in presets}), len(presets))
+        doc = music_data.initial()
+        total = 0
+        for index, preset in enumerate(presets):
+            sample = preset['sample']
+            self.assertEqual(preset['name'], sample['name'])
+            self.assertTrue(any(sample['pcm']))
+            self.assertLessEqual(max(abs(n) for n in sample['pcm']), 127)
+            self.assertEqual(sample['pcm'][0], 0)
+            if sample['loop_length']:
+                self.assertEqual(sample['loop_length'], len(sample['pcm']))
+                self.assertLessEqual(abs(sample['pcm'][-1] - sample['pcm'][0]),
+                                     max(abs(a - b) for a, b in zip(sample['pcm'], sample['pcm'][1:])))
+            else:
+                self.assertEqual(sample['pcm'][-1], 0)
+            total += len(sample['pcm'])
+            doc['samples'][index] = sample
+        self.assertLessEqual(total, music_data.music_mod.MAX_SAMPLE_BYTES)
+        self.assertEqual(music_data.music_mod.decode(music_data.music_mod.encode(doc)), doc)
+        # Callers can edit a loaded preset without changing the shared library.
+        presets[0]['sample']['pcm'][0] = 127
+        self.assertEqual(music_data.sample_presets()[0]['sample']['pcm'][0], 0)
+        self.assertEqual(studio.music_document()['sample_presets'], music_data.sample_presets())
+
     def test_atomic_save_stale_readonly_concurrent_writers(self):
         with tempfile.TemporaryDirectory() as temp, \
                 patch.object(studio, 'CONTENT', Path(temp)), \

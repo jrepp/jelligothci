@@ -27,7 +27,8 @@ typedef struct {
     uint16_t fill;
     uint8_t count;
     JelliSceneLayer layers[JELLI_SCENE_LAYER_CAPACITY];
-    uint8_t activity; /* Stable activity ID + 1; zero means no automatic binding. */
+    const char *activity; /* Optional stable moment name, or WORKOUT. */
+    uint8_t speed;        /* Automatic source pixels/second. */
 } JelliSceneDefinition;
 
 /* Borrowed native-endian RGB565 and MSB-first binary coverage. Capacities count

@@ -4,7 +4,6 @@
 
 bool jelli_sdl_scene_open(JelliScenePreview *preview, JelliPetUi *ui, const JelliOptions *options)
 {
-    jelli_pet_scene_bind_activities(ui, &preview->scene);
     if (!options->scene)
         return true;
     if (!jelli_pet_scene_select(ui, &preview->scene, options->scene)) {

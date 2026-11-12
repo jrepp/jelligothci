@@ -3,14 +3,14 @@
 
 #include "jelli/pet_engine.h"
 
-/* 512 KiB staging buffer covers one bank's payload plus record metadata. */
-#define JELLI_ASSET_PACK_CAPACITY 524288u
+/* 576 KiB staging buffer covers one bank's payload plus record metadata. */
+#define JELLI_ASSET_PACK_CAPACITY 589824u
 #define JELLI_ASSET_PACK_COUNT 192u
 
 typedef struct {
     JelliAsset descriptors[JELLI_ASSET_PACK_COUNT];
-    uint16_t pixels[229376u]; /* Bounded studio artwork bank; includes layered scenes. */
-    uint8_t masks[28672u], glyphs[1152u];
+    uint16_t pixels[262144u]; /* Bounded studio artwork bank; includes layered scenes. */
+    uint8_t masks[32768u], glyphs[1152u];
     JelliAssetSet set;
 } JelliAssetBank;
 

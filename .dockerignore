@@ -7,6 +7,7 @@
 !tools/assets/scene_data.py
 !tools/assets/effect_data.py
 !tools/audio/build_music.py
+!tools/audio/music_samples.py
 !tools/jelli-art/
 tools/jelli-art/__pycache__/
 tools/jelli-art/ui_tests/

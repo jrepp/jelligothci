@@ -71,41 +71,9 @@ void jelli_pet_scene_prepare(JelliPetUi *ui)
         ui->scene_assets = ui->assets;
 }
 
-void jelli_pet_scene_bind_activities(JelliPetUi *ui, JelliScene *cache)
+void jelli_pet_scene_update(JelliPetUi *ui, uint64_t animation_ms)
 {
-    if (!ui)
-        return;
-    if (ui->scene_automatic)
-        jelli_pet_scene_clear(ui);
-    ui->activity_scene = cache;
-}
-
-static void activity_scene(JelliPetUi *ui, const JelliPet *pet)
-{
-    if (!ui->activity_scene || (ui->scene && !ui->scene_automatic))
-        return;
-    const char *key = NULL;
-    if (pet->moment)
-        for (unsigned i = 0; i < jelli_scene_definition_count; ++i)
-            if (jelli_scene_definitions[i].activity == pet->moment) {
-                key = jelli_scene_definitions[i].key;
-                break;
-            }
-    if (!key) {
-        if (ui->scene_automatic)
-            jelli_pet_scene_clear(ui);
-    } else if (!ui->scene || strcmp(ui->scene->definition->key, key) != 0) {
-        if (jelli_pet_scene_select(ui, ui->activity_scene, key))
-            ui->scene_automatic = true;
-    }
-}
-
-void jelli_pet_scene_update(JelliPetUi *ui, const JelliPet *pet, uint64_t animation_ms)
-{
-    if (!ui || !pet)
-        return;
-    activity_scene(ui, pet);
-    if (!ui->scene)
+    if (!ui || !ui->scene)
         return;
     if (!ui->scene_clock_started || animation_ms < ui->scene_anchor_ms) {
         ui->scene_anchor_ms = animation_ms;

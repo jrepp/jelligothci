@@ -109,3 +109,78 @@ late `/api/data` lint-error test. Running the suite alone afterward passed all
 deadlock; CPU contention is suspected, but not proven. CTest now runs that suite
 serially without increasing its existing timeouts. An isolated local pass does
 not establish current-head CI success.
+
+
+# Mobile authoring and sample presets
+
+The owner requested mobile tracker authoring improvements and delegated a new
+sample set. The [tracker](../../tools/jelli-art/music.js) now provides a touch
+note pad, entry-instrument selection and row/channel navigation. Phone layouts
+keep readable cells in a horizontally scrolling grid with larger touch targets.
+Record settings, file operations, arrangement controls and keyboard help use
+expandable sections; focus, expanded sections and grid scroll survive edits.
+
+The [preset generator](../../tools/audio/music_samples.py) adds original looped
+melodic sounds and one-shot percussion/plucked sounds without rewriting existing
+records or changing the legacy sample bank. The sample manager replaces a chosen
+slot explicitly, checks the combined PCM budget and supports undo. Presets travel
+through the existing Music API and are packaged with the studio's audio tooling.
+
+A validation run overlapped edits to the API and its imported module and observed
+an AttributeError for the new preset function. This was an inconsistent live
+working-tree run; validation was restarted after both files were stable. An
+initial phone accessibility pass also found abbreviated channel button text did
+not match its accessible label. Full channel labels resolved that finding without
+adding an accessibility exception.
+
+The final focused pinned ARM64 Chromium run passed all fourteen Music cases,
+including finger-event note entry at narrow phone and tablet sizes, saved note
+pitch/instrument, focus and scroll preservation, preset replacement/undo and
+persistence, conflict cancellation and existing audio preview. Reviewed phone
+and desktop screenshots and all three viewport accessibility snapshots were
+updated for the intended controls; Music axe baselines remain empty. These are
+browser emulation results, not physical touchscreen or listening evidence.
+
+The sample work passed the Music API, compiler and MOD codec suites. It verified
+bounded deterministic data, MOD round trips, distinct nonzero rendered audio,
+one-shot decay and loop tails. Legacy generator output remained byte-identical.
+An ARM64 image build and real-entrypoint smoke passed health, studio HTML, asset
+data and the Music preset response; the temporary container and image were
+removed. JavaScript type checking added no baseline errors, and static container
+layout validation passed. These local results do not establish current-head CI
+or deployment success.
+
+All eleven Studio CTest suites passed via
+`ctest --test-dir build/desktop --output-on-failure -R jelli_art -j 1`, including
+server saves and game-preview staging. The standalone tidy suite also passed.
+
+The complete pinned ARM64 browser run,
+`JELLI_UI_SCREENSHOTS=1 tools/jelli-art/ui_tests/run.sh -q`, passed all 321 cases,
+including screenshot comparisons and accessibility checks. It emitted twelve
+Pillow `getdata()` deprecation warnings from the existing screenshot comparison
+helper; these remain follow-up maintenance, not failed checks. Documentation
+validation and repair both passed without repairs.
+
+
+## Expanded library and mobile sound selection
+
+The owner subsequently requested more PCM samples and a selection flow integrated
+with mobile note editing. The [library](../../tools/audio/music_samples.py)
+adds categorized bass, lead, keyboard, mallet and percussion sounds. The expanded
+bank measured 16,448 PCM bytes across 24 presets in this revision; the original
+preset sounds and legacy song generator output were preserved.
+
+The inline sound browser sits beside Entry instrument. Category/search filtering
+and octave-aware audition do not dirty the document. Authors can add a sound to
+an unused empty slot or explicitly replace the selected instrument throughout
+all patterns. Referenced empty slots are reserved. Both actions check memory,
+support undo, close the browser and focus the note pad; unused empty slots no
+longer fill the entry-instrument menu. Advanced sample editing remains in the
+sample manager. Browser audio startup now checks cancellation after resuming
+its context, and focused buttons retain native Space activation.
+
+The initial follow-up focused run passed seventeen Music cases, including
+search/no-results, category filtering, preview without edits, unused-slot
+allocation and saved note entry at phone/tablet widths. The earlier full-suite
+results above predate this expanded picker; final revision checks are recorded
+with the publication evidence.

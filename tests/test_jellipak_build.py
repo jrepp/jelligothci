@@ -187,7 +187,7 @@ class ArtworkBuildTest(unittest.TestCase):
         captured = []
         encoder = self.compiler.lz4.block.compress
         with mock.patch.object(self.compiler.lz4.block, "compress", wraps=encoder) as compress:
-            data, report = self.compiler.compile_art(manifest, images, 16384, captured)
+            data, report = self.compiler.compile_art(manifest, images, 32768, captured)
         # The oracle must be the exact buffers presented to the encoder, before
         # codec selection or pack parsing can reconstruct an equivalent stream.
         self.assertEqual([raw for _, raw in captured],
