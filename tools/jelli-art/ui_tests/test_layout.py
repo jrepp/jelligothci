@@ -258,6 +258,30 @@ def wait_fit(page):
     page.evaluate("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))")
 
 
+@pytest.mark.parametrize("width,height", [(820, 1180), (390, 844)])
+def test_narrow_paint_dock_keeps_transport_and_guides_apart(browser, studio, width, height):
+    context = browser.new_context(viewport={"width": width, "height": height},
+                                  color_scheme="dark", reduced_motion="reduce")
+    try:
+        page = settle(context, studio, PAINT, "narrow-dock")
+        layout = page.evaluate("""() => {
+          const rect = el => { const r=el.getBoundingClientRect();
+            return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}; };
+          return {dock:rect(document.querySelector('.fb')),
+            controls:[...document.querySelectorAll('.fb-controls button, .fb-more>summary')].map(rect),
+            strip:rect(document.querySelector('.fb-strip'))};
+        }""")
+        for i, box in enumerate(layout["controls"]):
+            assert layout["dock"]["left"] <= box["left"] < box["right"] <= layout["dock"]["right"], layout
+            for other in layout["controls"][i+1:]:
+                assert (box["right"] <= other["left"] or other["right"] <= box["left"] or
+                        box["bottom"] <= other["top"] or other["bottom"] <= box["top"]), layout
+        assert layout["strip"]["width"] >= 100, layout
+        assert layout["strip"]["right"] <= layout["dock"]["right"], layout
+    finally:
+        context.close()
+
+
 def test_paint_refits_on_resize_and_keeps_a_chosen_zoom(page_at):
     page = page_at("1440x900")
     seen = []

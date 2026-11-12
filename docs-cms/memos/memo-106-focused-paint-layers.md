@@ -53,3 +53,28 @@ The new desktop/phone layer, draft and attachment workflows passed; the pinned
 view/accessibility refresh passed all its cases and removed the former custom
 colour-label violations. Linux/amd64 screenshot references remain to be reviewed
 from CI; local ARM screenshots are evidence, not substituted reference pixels.
+
+# PR remediation, 2026-11-12
+
+The full-clip duplication browser case exposed a startup race: data became
+available before boot selected a valid asset, so clicking Paint could dereference
+an absent asset in its new navigation. The workspace now defers that navigation
+until boot has selected the asset. The fixture retains browser exception stacks
+to make any future failure actionable.
+
+The game phone accessibility reference captured transient Loading text. The view
+fixture now waits for the pet selector after the asynchronous catalogue loads;
+the reviewed reference matches the settled desktop/tablet form.
+
+Visual review also found overlapping flip-book controls in the narrower tablet
+canvas column. A container query on the dock arranges its controls and frame
+strip according to their available width. Screenshot references must come from
+the fresh Linux/amd64 CI artifact after those layout checks complete.
+
+Verification: the frame-copy regressions passed both full and non-full cases;
+the settled game view passed all four focused view/accessibility cases. Both
+contextual layer cases and all five existing canvas/dock geometry cases passed.
+The two new narrow-dock cases assert disjoint transport/guide rectangles and a
+usable frame strip at phone and tablet widths. Documentation validation and
+repair passed without repairs. The interrupted broad local run is not counted
+as a suite pass; current-head CI and its screenshot review remain required.
