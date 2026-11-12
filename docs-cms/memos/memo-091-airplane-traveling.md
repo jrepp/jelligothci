@@ -129,10 +129,11 @@ embedding successfully. The integration runtime reported `sizeof(JelliPetUi)` as
 host sizes, not device memory or frame-time measurements. Physical behavior remains
 unverified; firmware and current PR checks are tracked independently.
 
-The combined artwork uses 242,240 live pixels and 30,280 mask bytes. The first
-combined desktop run exceeded the prior 229,376-pixel bank and the pack oracle's
+The combined artwork uses 241,216 live pixels and 30,152 mask bytes; a test adding
+one frame required 242,240 pixels and 30,280 mask bytes. The first combined desktop
+run exceeded the prior 229,376-pixel bank and the pack oracle's
 16 KiB metadata block. The SDL bank and its shared exporter/authoring limits now
-hold 262,144 pixels and 32,768 mask bytes, leaving room for nearly five additional
+hold 262,144 pixels and 32,768 mask bytes, leaving room for five additional
 64×64 assets; the 576 KiB staging cap covers those maxima and metadata allowances.
 This adds 204,800 bytes to the desktop reload workspace across two banks and staging;
 firmware does not allocate these banks. The full-catalog native byte oracle now uses
