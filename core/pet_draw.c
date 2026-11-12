@@ -366,6 +366,8 @@ void jelli_pet_draw_region(JelliSurface *surface, const JelliGame *game, const J
     jelli_pet_effect_draw(&c, ui, JELLI_EFFECT_FOREGROUND);
     jelli_pet_menu_ring(&c, game, ui);
     jelli_pet_draw_menu_button(&c, ui);
+    if (!ui->menu_open && ui->hold_progress)
+        jelli_canvas_rect(&c, 163, 434, (int)ui->hold_progress * 11, 5, MINT);
     keyboard_focus(&c, ui, view->asleep);
 }
 

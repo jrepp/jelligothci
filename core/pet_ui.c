@@ -28,7 +28,7 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_FEED, "FOOD", NULL},
                                       {JELLI_UI_ACTION_PLAY, "QUICK PLAY", NULL},
                                       {JELLI_UI_ACTION_HEALTH, "HEALTH", NULL},
                                       {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"},
-                                      {JELLI_UI_ACTION_SETTINGS, "SETTINGS", NULL}},
+                                      {0}},
                                      {{JELLI_UI_ACTION_GIFT, "GIFT", NULL},
                                       {JELLI_UI_ACTION_CLAIM, "CLAIM", NULL},
                                       {JELLI_UI_ACTION_TRAVEL, "TRAVEL", NULL}},
@@ -270,6 +270,30 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
         jelli_pet_feedback(ui, game, before, actor_id, back, x, y);
         return;
     }
+}
+
+bool jelli_pet_ui_menu_hit(const JelliPetUi *ui, const JelliGame *game, int x, int y)
+{
+    JelliPetUiButton button;
+    return ui && game && !ui->menu_open && !game->resuming && jelli_game_valid(game) && x >= 0 &&
+           y >= 0 && x < JELLI_WIDTH && y < JELLI_HEIGHT &&
+           jelli_pet_ui_control(ui, 0u, game->pets[game->active].asleep, &button) &&
+           hit_button(&button, x, y);
+}
+
+void jelli_pet_ui_long_press(JelliPetUi *ui, JelliGame *game, int x, int y)
+{
+    if (!jelli_pet_ui_menu_hit(ui, game, x, y))
+        return;
+    const JelliPet *pet = &game->pets[game->active];
+    JelliEventSnapshot before = jelli_game_observe(game, pet);
+    ui->menu_open = true;
+    ui->page = JELLI_UI_SETTINGS;
+    ui->result = JELLI_OK;
+    jelli_game_emit(game, JELLI_EVENT_INPUT, JELLI_UI_ACTION_SETTINGS, JELLI_OK, (uint32_t)ui->page,
+                    pet, before);
+    ui->sound_pending = true;
+    ui->sound_cue = (uint8_t)(JELLI_SOUND_CONFIRM + 1u);
 }
 
 void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)

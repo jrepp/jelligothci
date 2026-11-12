@@ -27,6 +27,9 @@ typedef struct {
     JelliPetCelebration celebrations;
     uint64_t last_ms;
     uint64_t animation_ms;
+    uint64_t hold_started_ms;
+    int hold_x, hold_y;
+    bool hold_active, hold_consumed;
     JelliMusicDriver music_driver;
     uint32_t music_serial, music_cursor, music_pet, music_generation;
     uint8_t music_volume, music_song;

@@ -136,8 +136,9 @@ record](../docs-cms/memos/memo-009-wired-debug-interface-and-validation.md).
 
 ## Large ring controls and moments
 
-Tap MENU for Food, Water, Play, Care, Pets, and Gifts. Care contains Rest/Wake
-and Settings.
+Tap MENU for Food, Water, Play, Care, Pets, and Gifts. Care contains Rest/Wake.
+Hold the closed MENU button for three seconds to open Settings; a short tap
+opens the regular menu.
 Only useful actions occupy ring positions. The bottom arrow BACK is the only
 return action; X CLOSE dismisses the home ring. There is no separate confirm or
 save button: successful actions request a save. The home tile shows one stat at a
@@ -304,8 +305,8 @@ portable debug protocol, saves, rendering, and headless SDL game. For a local
 Windows SDL build, install the pinned uv from `toolchain.env`, build/install SDL2,
 and configure CMake with its install directory in `CMAKE_PREFIX_PATH`.
 
-Care contains Rest/Wake and Settings; Settings also retains pet selection,
-bedtime, and the local/pet clock.
+Care contains Rest/Wake. Hold the closed MENU button for three seconds to
+open Settings, which retains pet selection, bedtime, and the local/pet clock.
 Back and Close are labeled controls at the bottom of the round screen. Ring icons
 travel out/in on menu changes; CLI presses wait for the ring to settle. Shots
 and medicine have per-pet cooldowns. Shot progress survives menu changes. The desktop checkpoint codec now

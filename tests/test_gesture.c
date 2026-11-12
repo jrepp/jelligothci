@@ -32,6 +32,16 @@ int main(void)
     jelli_gesture_begin(&gesture, 200, 200);
     CHECK(!jelli_gesture_end(&gesture, 466, 200, &input));
     CHECK(!gesture.active);
+    jelli_gesture_begin_at(&gesture, 200, 200, 100u);
+    CHECK(jelli_gesture_end_at(&gesture, 200, 200, 3099u, &input) && input.kind == JELLI_TAP);
+    jelli_gesture_begin_at(&gesture, 200, 200, 100u);
+    CHECK(jelli_gesture_end_at(&gesture, 200, 200, 3100u, &input) &&
+          input.kind == JELLI_LONG_PRESS);
+    jelli_gesture_begin_at(&gesture, 200, 200, 100u);
+    CHECK(jelli_gesture_move(&gesture, 219, 200));
+    CHECK(!jelli_gesture_end_at(&gesture, 200, 200, 4000u, &input));
+    jelli_gesture_begin_at(&gesture, 200, 200, 5000u);
+    CHECK(!jelli_gesture_end_at(&gesture, 200, 200, 100u, &input));
     puts("Gesture thresholds, tap exclusivity, diagonals and bounds verified.");
     return 0;
 }

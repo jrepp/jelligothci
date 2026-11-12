@@ -75,6 +75,53 @@ static void clock_pause_and_input(JelliSurface surface)
     CHECK(!jelli_pet_frame(&engine));
 }
 
+static void menu_hold(JelliSurface surface)
+{
+    Fake fake = {0};
+    JelliPetEngine engine;
+    CHECK(jelli_pet_init(&engine, (JelliPlatform){&fake, now_ms, poll, present, NULL}, surface));
+    send(&fake, JELLI_PRESS_BEGIN, 233, 420);
+    CHECK(jelli_pet_frame(&engine));
+    send(&fake, JELLI_PRESS_MOVE, 260, 420);
+    CHECK(jelli_pet_frame(&engine));
+    fake.now = 2999u;
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(!engine.ui.menu_open && engine.ui.hold_progress == 11u);
+    /* The frame reads fake.now through the platform callback. */
+    // cppcheck-suppress redundantAssignment
+    fake.now = 3000u;
+    CHECK(jelli_pet_frame(&engine));
+    CHECK(engine.ui.menu_open && engine.ui.page == JELLI_UI_SETTINGS);
+    send(&fake, JELLI_SWIPE, 0, 80);
+    CHECK(jelli_pet_frame(&engine) && engine.ui.page == JELLI_UI_SETTINGS);
+    engine.ui.menu_open = false;
+    engine.ui.page = JELLI_UI_HOME;
+    send(&fake, JELLI_PRESS_BEGIN, 233, 420);
+    CHECK(jelli_pet_frame(&engine));
+    send(&fake, JELLI_PRESS_CANCEL, 0, 0);
+    CHECK(jelli_pet_frame(&engine));
+    fake.now += 4000u;
+    CHECK(jelli_pet_frame(&engine) && !engine.ui.menu_open);
+    send(&fake, JELLI_LONG_PRESS, 233, 420);
+    CHECK(jelli_pet_frame(&engine) && !engine.ui.menu_open);
+    send(&fake, JELLI_PRESS_BEGIN, 143, 400);
+    CHECK(jelli_pet_frame(&engine));
+    send(&fake, JELLI_PRESS_MOVE, 142, 400);
+    CHECK(jelli_pet_frame(&engine));
+    send(&fake, JELLI_LONG_PRESS, 143, 400);
+    CHECK(jelli_pet_frame(&engine) && !engine.ui.menu_open);
+    send(&fake, JELLI_PRESS_BEGIN, 233, 420);
+    CHECK(jelli_pet_frame(&engine));
+    fake.now = 1u; /* A reversed clock cancels the pending hold and its release. */
+    CHECK(jelli_pet_frame(&engine));
+    send(&fake, JELLI_TAP, 233, 420);
+    CHECK(jelli_pet_frame(&engine) && !engine.ui.menu_open);
+    send(&fake, JELLI_PRESS_BEGIN, 233, 420);
+    CHECK(jelli_pet_frame(&engine));
+    send(&fake, JELLI_TAP, 233, 420);
+    CHECK(jelli_pet_frame(&engine) && engine.ui.menu_open && engine.ui.page == JELLI_UI_HOME);
+}
+
 static void resume_blocks_final_batch(JelliSurface surface)
 {
     Fake fake = {0};
@@ -177,6 +224,7 @@ int main(void)
     chain_sounds(surface);
     motion_devices(surface);
     clock_pause_and_input(surface);
+    menu_hold(surface);
     resume_blocks_final_batch(surface);
     printf("Pet engine checks passed; game=%zu, pet-engine=%zu bytes\n", sizeof(JelliGame),
            sizeof(JelliPetEngine));

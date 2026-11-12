@@ -56,8 +56,9 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         debug.press("BACK")
         debug.press("BACK")
         debug.press("BACK")
-        debug.press("CARE")
-        debug.press("SETTINGS")
+        debug.press("CLOSE")
+        debug.request("hold 233 408")
+        assert debug.state()["visual"]["page"] == "settings"
         debug.press("CLOCK")
         minute = debug.state()["visual"]["clock_minute"]
         debug.press("HOUR +")

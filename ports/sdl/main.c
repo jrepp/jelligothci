@@ -74,19 +74,32 @@ static bool poll_input(void *ctx, JelliInput *input)
             /* SDL's logical-size renderer transforms mouse events for us. */
             uint8_t contacts = 1;
             jelli_touch_guard_apply(&d->touch_guard, false, &contacts);
-            if (contacts)
-                jelli_gesture_begin(&d->gesture, event.button.x, event.button.y);
+            if (contacts) {
+                jelli_gesture_begin_at(&d->gesture, event.button.x, event.button.y, now_ms(d));
+                *input = (JelliInput){JELLI_PRESS_BEGIN, event.button.x, event.button.y};
+                return true;
+            }
+        }
+        if (event.type == SDL_MOUSEMOTION && d->gesture.active &&
+            (event.motion.x != d->gesture.last_x || event.motion.y != d->gesture.last_y)) {
+            (void)jelli_gesture_move(&d->gesture, event.motion.x, event.motion.y);
+            *input = (JelliInput){JELLI_PRESS_MOVE, event.motion.x, event.motion.y};
+            return true;
         }
         if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT) {
             uint8_t contacts = 0;
             jelli_touch_guard_apply(&d->touch_guard, false, &contacts);
-            if (jelli_gesture_end(&d->gesture, event.button.x, event.button.y, input))
-                return true;
+            if (!jelli_gesture_end_at(&d->gesture, event.button.x, event.button.y, now_ms(d),
+                                      input))
+                *input = (JelliInput){.kind = JELLI_PRESS_CANCEL};
+            return true;
         }
         if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
             uint8_t contacts = 0;
             jelli_touch_guard_apply(&d->touch_guard, true, &contacts);
             jelli_sdl_focus_lost(d->pet_engine);
+            *input = (JelliInput){.kind = JELLI_PRESS_CANCEL};
+            return true;
         }
     }
     return false;

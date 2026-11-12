@@ -134,8 +134,7 @@ static void test_navigation_and_actions(void)
 
     jelli_game_init(&game);
     jelli_pet_ui_init(&ui);
-    tap_item(&ui, &game, 3u); /* CARE. */
-    tap_item(&ui, &game, 5u); /* SETTINGS. */
+    jelli_pet_ui_long_press(&ui, &game, 233, 420); /* SETTINGS. */
     CHECK(ui.page == JELLI_UI_SETTINGS);
     uint32_t bedtime = game.pets[game.active].bedtime;
     tap_item(&ui, &game, 0u);
