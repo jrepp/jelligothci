@@ -69,6 +69,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Views, accessibility and keyboard
+        shell: bash
         env:
           JELLI_UI_CONTAINER: "1"
           JELLI_UI_SCREENSHOTS: "1"

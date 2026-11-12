@@ -74,3 +74,13 @@ its source SHA, all firmware profiles, artifact names, archive checksums and
 retention. Inspect the first scheduled run independently. A tag release must continue
 to validate the original tag against the pinned commit before publication. Keep
 host build, firmware build, and physical device evidence separate.
+
+## Shard shell correction
+
+On PR #101 revision `1830808`, [shards 1 and 2](https://github.com/jrepp/jelligothci/actions/runs/43189414232)
+failed before collection because container job steps defaulted to `sh`, which
+rejects `set -o pipefail`. The browser assertions did not run. The test step now
+explicitly uses Bash so the captured test log retains the pipeline's failure
+status; the next current-head CI run must establish full-suite results. The
+pinned-container shard samples and exact-once collection checks above predate
+this CI shell fix and do not establish the revised workflow's outcome.
