@@ -45,6 +45,7 @@ def creator(tmp_path, page):
         page.on("pageerror", lambda error: errors.append(str(error) + "\n" + error.stack))
         page.goto(url)
         page.wait_for_function("() => typeof D !== 'undefined' && D.assets?.length > 0")
+        page.wait_for_function("() => document.body.dataset.ready === 'true'")
         expect(page.get_by_role("tab", name="New", exact=True)).to_be_visible()
         page.get_by_role("tab", name="New", exact=True).click()
         expect(page.locator("#creation-form")).to_be_visible()

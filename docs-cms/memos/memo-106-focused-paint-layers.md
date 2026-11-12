@@ -78,3 +78,11 @@ The two new narrow-dock cases assert disjoint transport/guide rectangles and a
 usable frame strip at phone and tablet widths. Documentation validation and
 repair passed without repairs. The interrupted broad local run is not counted
 as a suite pass; current-head CI and its screenshot review remain required.
+
+The clean broad rerun passed its first 16 cases, then exposed the same premature
+readiness assumption in the creation fixture: the numeric guard test entered a
+field while boot could still replace its editor. The exact case passed on main.
+Waiting for the existing `body[data-ready=true]` contract before starting editor
+interactions made all four numeric validation cases pass with their original
+guard assertions. The explicit reload in the full-clip case continues to test
+early Paint entry before that readiness boundary.
