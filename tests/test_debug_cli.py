@@ -51,7 +51,7 @@ try:
     except client.DebugError as exc:
         assert "page_changed" in str(exc)
     debug.press("BACK")
-    debug.press("SETTINGS")
+    debug.press("CARE")
     debug.press("REST")
     assert debug.state()["visual"]["asleep"]
     with tempfile.TemporaryDirectory() as folder:
