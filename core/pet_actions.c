@@ -46,7 +46,7 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
 {
     /* Command per action; -1 for actions that navigate or are handled by their page. */
     static const int8_t kinds[JELLI_UI_ACTION_COUNT] = {
-        [JELLI_UI_ACTION_FEED] = -1,
+        [JELLI_UI_ACTION_FEED] = JELLI_CMD_FEED,
         [JELLI_UI_ACTION_CARE] = -1,
         [JELLI_UI_ACTION_REST_WAKE] = JELLI_CMD_REST,
         [JELLI_UI_ACTION_COLLECTION] = -1,

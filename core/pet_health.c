@@ -241,7 +241,7 @@ void jelli_pet_ui_back(JelliPetUi *ui)
         if (ui->page == JELLI_UI_FOOD)
             ui->page = JELLI_UI_CARE;
         else if (ui->page == JELLI_UI_PETS)
-            ui->page = JELLI_UI_SETTINGS;
+            ui->page = JELLI_UI_HOME;
         else if (ui->page == JELLI_UI_PET_DETAIL)
             ui->page = JELLI_UI_PETS;
         else if (ui->page == JELLI_UI_EVOLUTIONS)
@@ -258,7 +258,7 @@ void jelli_pet_ui_back(JelliPetUi *ui)
     }
     if (ui->menu_open && jelli_pet_page_is_routine(ui->page))
         ui->page = JELLI_UI_HEALTH;
-    else if (ui->menu_open && ui->page == JELLI_UI_HEALTH)
+    else if (ui->menu_open && (ui->page == JELLI_UI_SETTINGS || ui->page == JELLI_UI_HEALTH))
         ui->page = JELLI_UI_CARE;
     else if (ui->menu_open && ui->page != JELLI_UI_HOME)
         ui->page = JELLI_UI_HOME;

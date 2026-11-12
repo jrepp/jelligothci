@@ -17,18 +17,18 @@ typedef struct {
 } UiAction;
 
 /* Empty slots are neither drawn nor hit-tested. Slot IDs remain stable for debug clients. */
-static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_CARE, "CARE", NULL},
-                                      {JELLI_UI_ACTION_MOMENTS, "ACTIVITIES", NULL},
-                                      {0},
-                                      {0},
-                                      {JELLI_UI_ACTION_COLLECTION, "GIFTS", NULL},
-                                      {JELLI_UI_ACTION_SETTINGS, "SETTINGS", NULL}},
-                                     {{JELLI_UI_ACTION_FEED, "FEED", NULL},
-                                      {JELLI_UI_ACTION_BASIC_CARE, "BASIC CARE", NULL},
+static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_FEED, "FOOD", NULL},
+                                      {JELLI_UI_ACTION_WATER, "WATER", NULL},
+                                      {JELLI_UI_ACTION_MOMENTS, "PLAY", NULL},
+                                      {JELLI_UI_ACTION_CARE, "CARE", NULL},
+                                      {JELLI_UI_ACTION_SWITCH_PET, "PETS", NULL},
+                                      {JELLI_UI_ACTION_COLLECTION, "GIFTS", NULL}},
+                                     {{JELLI_UI_ACTION_BASIC_CARE, "BASIC CARE", NULL},
                                       {JELLI_UI_ACTION_CLEAN_WAKE, "CLEAN", NULL},
-                                      {JELLI_UI_ACTION_PLAY, "PLAY", NULL},
+                                      {JELLI_UI_ACTION_PLAY, "QUICK PLAY", NULL},
                                       {JELLI_UI_ACTION_HEALTH, "HEALTH", NULL},
-                                      {JELLI_UI_ACTION_WATER, "WATER", NULL}},
+                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"},
+                                      {JELLI_UI_ACTION_SETTINGS, "SETTINGS", NULL}},
                                      {{JELLI_UI_ACTION_GIFT, "GIFT", NULL},
                                       {JELLI_UI_ACTION_CLAIM, "CLAIM", NULL},
                                       {JELLI_UI_ACTION_TRAVEL, "TRAVEL", NULL}},
@@ -73,9 +73,7 @@ JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep)
 
 static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 {
-    if (action == JELLI_UI_ACTION_FEED)
-        ui->page = JELLI_UI_FOOD;
-    else if (action == JELLI_UI_ACTION_SWITCH_PET)
+    if (action == JELLI_UI_ACTION_SWITCH_PET)
         ui->page = JELLI_UI_PETS;
     else if (action == JELLI_UI_ACTION_MOMENTS)
         ui->page = JELLI_UI_MOMENTS;
@@ -183,7 +181,7 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
     } else if (ui->page == JELLI_UI_MOMENTS) {
         if (slot == 6u) {
             ui->activity_page =
-                (uint8_t)((ui->activity_page + 1u) % ((jelli_moment_count + 5u) / 5u));
+                (uint8_t)((ui->activity_page + 1u) % ((jelli_pet_activity_count() + 4u) / 5u));
             ui->result = JELLI_OK;
             return;
         }

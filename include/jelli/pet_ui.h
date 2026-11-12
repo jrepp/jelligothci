@@ -297,6 +297,7 @@ JelliPetUiAction jelli_pet_routine_action(unsigned page);
 uint32_t jelli_pet_health_icon(unsigned activity);
 /* Moment ID (content/activities.json) for a moment action; false for other actions. */
 bool jelli_pet_activity_button(unsigned page, unsigned slot, bool asleep, JelliPetUiButton *button);
+unsigned jelli_pet_activity_count(void);
 unsigned jelli_pet_activity_choice(const JelliPetUi *ui, unsigned slot);
 bool jelli_pet_moment_for_action(JelliPetUiAction action, unsigned *moment);
 void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game);

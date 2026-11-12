@@ -42,6 +42,8 @@ static void navigation(void)
     CHECK(ui.last_view.ring_visible == 255 && !ui.last_view.ring_moving);
     ui.page = JELLI_UI_SETTINGS;
     jelli_pet_ui_swipe(&ui, &game, 0, 80);
+    CHECK(ui.menu_open && ui.page == JELLI_UI_CARE);
+    jelli_pet_ui_swipe(&ui, &game, 0, 80);
     CHECK(ui.menu_open && ui.page == JELLI_UI_HOME);
     jelli_pet_ui_swipe(&ui, &game, 0, 80);
     CHECK(!ui.menu_open);
@@ -79,40 +81,61 @@ static void clock_controls(void)
     jelli_pet_ui_swipe(&ui, &game, 0, 80);
     CHECK(!ui.clock_edit && ui.page == JELLI_UI_SETTINGS && ui.menu_open);
     jelli_pet_ui_swipe(&ui, &game, 0, 80);
-    CHECK(ui.page == JELLI_UI_HOME && ui.menu_open);
+    CHECK(ui.page == JELLI_UI_CARE && ui.menu_open);
 }
 static void unavailable_actions(void)
 {
     JelliGame game;
     JelliPetUi ui;
-    JelliEventLog events = {0};
     jelli_game_init(&game);
     jelli_pet_ui_init(&ui);
-    game.events = &events;
+    game.food = 0u;
     ui.menu_open = true;
-    ui.page = JELLI_UI_CARE;
-    jelli_pet_ui_tap(&ui, &game, 110, 111);
-    CHECK(ui.page == JELLI_UI_FOOD && game.pets[0].activity == JELLI_IDLE);
-    ui.sound_pending = false;
-    events = (JelliEventLog){0};
-    game.food = 0;
-    CHECK(jelli_pet_ui_available(&ui, &game, 1) == JELLI_NO_ITEM);
-    CHECK(events.sequence == 0 && game.pets[0].activity == JELLI_IDLE);
-    jelli_pet_render(&surface, &game, &ui, 0, false);
-    CHECK(ui.last_view.unavailable & 2u);
-    jelli_pet_ui_tap(&ui, &game, 110, 111);
-    CHECK(ui.result == JELLI_NO_ITEM && !ui.sound_pending);
-    CHECK(game.pets[0].activity == JELLI_IDLE && !ui.save_requested);
-    game.food = 1;
-    jelli_pet_render(&surface, &game, &ui, 0, false);
-    CHECK(!(ui.last_view.unavailable & 2u));
+    CHECK(jelli_pet_ui_available(&ui, &game, 1u) == JELLI_OK);
     jelli_pet_ui_tap(&ui, &game, 110, 111);
     CHECK(ui.result == JELLI_OK && game.pets[0].activity == JELLI_EATING);
-    CHECK(!ui.menu_open && ui.page == JELLI_UI_HOME);
+    CHECK(!ui.menu_open && ui.page == JELLI_UI_HOME && game.food == 0u);
+    for (unsigned i = 0u; i < 10u; ++i)
+        jelli_game_advance(&game, 500u);
+    CHECK(game.food == 0u && game.pets[0].activity == JELLI_IDLE);
     ui.menu_open = true;
-    ui.page = JELLI_UI_MOMENTS;
-    CHECK(jelli_pet_ui_available(&ui, &game, 2) == JELLI_BUSY);
-    CHECK(jelli_pet_ui_available(&ui, &game, 0) == JELLI_OK);
+    game.pets[0].needs[JELLI_SATIETY] = 1000u;
+    jelli_pet_ui_tap(&ui, &game, 110, 111);
+    CHECK(ui.result == JELLI_FULL && strcmp(jelli_pet_menu_hint(&ui, &game), "TUMMY FULL") == 0);
+    jelli_pet_ui_tap(&ui, &game, 356, 111); /* Water. */
+    CHECK(ui.result == JELLI_OK && !ui.menu_open);
+}
+
+static void main_menu_choices(void)
+{
+    static const char *const labels[] = {"FOOD", "WATER", "PLAY", "CARE", "PETS", "GIFTS"};
+    for (unsigned slot = 1u; slot <= 6u; ++slot) {
+        JelliPetUiButton button;
+        CHECK(jelli_pet_ui_button(JELLI_UI_HOME, slot, false, true, &button));
+        CHECK(strcmp(button.label, labels[slot - 1u]) == 0);
+        CHECK(button.bounds.width == 96u && button.bounds.height == 96u);
+    }
+    unsigned seen = 0u;
+    JelliPetUi ui;
+    jelli_pet_ui_init(&ui);
+    for (unsigned n = 0u; n < jelli_pet_activity_count(); ++n) {
+        ui.activity_page = (uint8_t)(n / 5u);
+        unsigned choice = jelli_pet_activity_choice(&ui, n % 5u + 1u);
+        if (choice < jelli_moment_count) {
+            CHECK(jelli_moments[choice].kind != JELLI_MOMENT_FEED);
+            ++seen;
+        } else {
+            CHECK(choice == jelli_moment_count && n + 1u == jelli_pet_activity_count());
+        }
+    }
+    CHECK(seen + 1u == jelli_pet_activity_count());
+    ui.menu_open = true;
+    ui.page = JELLI_UI_SETTINGS;
+    jelli_pet_ui_back(&ui);
+    CHECK(ui.page == JELLI_UI_CARE);
+    ui.page = JELLI_UI_PETS;
+    jelli_pet_ui_back(&ui);
+    CHECK(ui.page == JELLI_UI_HOME);
 }
 
 static void reversal_and_pause(void)
@@ -178,32 +201,6 @@ static void volume_controls(void)
     CHECK(game.volume == 20u && ui.page == JELLI_UI_SETTINGS && ui.menu_open);
 }
 
-static void refill_food(void)
-{
-    JelliGame game;
-    JelliPetUi ui;
-    jelli_game_init(&game);
-    jelli_pet_ui_init(&ui);
-    game.food = 0u;
-    ui.menu_open = true;
-    ui.page = JELLI_UI_FOOD;
-    CHECK(jelli_pet_ui_available(&ui, &game, 1u) == JELLI_NO_ITEM);
-    CHECK(jelli_pet_ui_available(&ui, &game, 9u) == JELLI_OK);
-    CHECK(game.food == 0u);
-    jelli_pet_ui_tap(&ui, &game, 329, 322);
-    CHECK(game.food == 5u && ui.save_requested);
-    CHECK(ui.page == JELLI_UI_FOOD && ui.menu_open);
-    CHECK(jelli_pet_ui_available(&ui, &game, 9u) == JELLI_FULL);
-    jelli_pet_ui_tap(&ui, &game, 329, 322);
-    CHECK(game.food == 5u);
-    CHECK(jelli_pet_ui_available(&ui, &game, 1u) == JELLI_OK);
-    jelli_pet_ui_tap(&ui, &game, 137, 130);
-    CHECK(game.pets[0].activity == JELLI_EATING && !ui.menu_open);
-    for (unsigned i = 0u; i < 10u; ++i)
-        jelli_game_advance(&game, 500u);
-    CHECK(game.food == 4u);
-}
-
 static void feedback(void)
 {
     JelliGame game;
@@ -213,7 +210,7 @@ static void feedback(void)
     jelli_pet_ui_tap(&ui, &game, 233, 420);
     CHECK(ui.menu_open && jelli_particles_count(&ui.particles) == 0u);
     CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 0u) == JELLI_SOUND_CONFIRM + 1u);
-    jelli_pet_ui_tap(&ui, &game, 110, 111);
+    jelli_pet_ui_tap(&ui, &game, 356, 355);
     CHECK(ui.page == JELLI_UI_CARE && jelli_particles_count(&ui.particles) == 0u);
     CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 200u) == JELLI_SOUND_CONFIRM + 1u);
     jelli_pet_ui_tap(&ui, &game, 233, 440);
@@ -223,9 +220,9 @@ static void feedback(void)
     CHECK(!ui.menu_open && jelli_particles_count(&ui.particles) == 0u);
     CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 600u) == JELLI_SOUND_BACK + 1u);
     ui.menu_open = true;
-    ui.page = JELLI_UI_CARE;
+    ui.page = JELLI_UI_HOME;
     game.pets[0].hydration = 200u;
-    jelli_pet_ui_tap(&ui, &game, 61, 233); /* Water. */
+    jelli_pet_ui_tap(&ui, &game, 356, 111); /* Water. */
     CHECK(game.pets[0].hydration > 200u && jelli_particles_count(&ui.particles) > 0u);
     CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 800u) == JELLI_SOUND_PET + 1u);
     CHECK(jelli_pet_ui_sound(&ui, &game.pets[0], 801u) == 0u);
@@ -259,18 +256,18 @@ static void menu_guidance(void)
     jelli_pet_ui_init(&ui);
     ui.menu_open = true;
     ui.page = JELLI_UI_MOMENTS;
-    ui.activity_page = (uint8_t)(jelli_moment_count / 5u);
+    ui.activity_page = (uint8_t)((jelli_pet_activity_count() - 1u) / 5u);
     game.pets[0].needs[JELLI_SATIETY] = 0;
     game.pets[0].hydration = 0;
     game.pets[0].needs[JELLI_ENERGY] = 0;
-    unsigned exercise_slot = jelli_moment_count % 5u + 1u;
+    unsigned exercise_slot = (jelli_pet_activity_count() - 1u) % 5u + 1u;
     JelliPetUiButton exercise;
     CHECK(jelli_pet_ui_control(&ui, exercise_slot, false, &exercise));
     jelli_pet_ui_tap(&ui, &game, (int)(exercise.bounds.x + 48u), (int)(exercise.bounds.y + 48u));
     CHECK(ui.result == JELLI_NOT_READY && ui.attempted_slot == exercise_slot);
-    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "CARE > FEED FIRST") == 0);
+    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "FOOD FIRST") == 0);
     game.pets[0].needs[JELLI_SATIETY] = 500;
-    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "CARE > WATER FIRST") == 0);
+    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "WATER FIRST") == 0);
     game.pets[0].hydration = 500;
     CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "REST FOR ENERGY") == 0);
     ui.page = JELLI_UI_HEALTH;
@@ -282,10 +279,10 @@ static void menu_guidance(void)
     CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "DOSE GIVEN - WAIT") == 0);
     jelli_pet_render(&surface, &game, &ui, 0u, false);
     CHECK(ui.last_view.unavailable & (1u << 2u));
-    ui.page = JELLI_UI_CARE;
+    ui.page = JELLI_UI_HOME;
     game.pets[0].hydration = 1000;
     ui.last_view.ring_moving = false;
-    jelli_pet_ui_tap(&ui, &game, 61, 233);
+    jelli_pet_ui_tap(&ui, &game, 356, 111);
     CHECK(ui.result == JELLI_FULL);
     CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "HYDRATION FULL") == 0);
 }
@@ -293,10 +290,10 @@ static void menu_guidance(void)
 int main(void)
 {
     navigation();
+    main_menu_choices();
     menu_guidance();
     feedback();
     recovery_progress();
-    refill_food();
     volume_controls();
     clock_controls();
     unavailable_actions();

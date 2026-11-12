@@ -89,7 +89,7 @@ static bool bedtime_pending(const JelliPet *pet)
     return jelli_game_window(pet, NULL) && pet->ticks >= pet->wake_override_until;
 }
 
-static JelliResult start_feed(const JelliGame *game, JelliPet *pet, uint32_t food)
+static JelliResult start_feed(JelliPet *pet, uint32_t food)
 {
     if (pet->asleep)
         return JELLI_ASLEEP;
@@ -97,10 +97,10 @@ static JelliResult start_feed(const JelliGame *game, JelliPet *pet, uint32_t foo
         return JELLI_BUSY;
     if (pet->activity != JELLI_IDLE)
         return JELLI_BUSY;
-    if (food >= jelli_food_count)
+    if (food != 0u)
         return JELLI_INVALID_TARGET;
-    if (game->food == 0u)
-        return JELLI_NO_ITEM;
+    if (pet->needs[JELLI_SATIETY] >= 1000u)
+        return JELLI_FULL;
     if (!begin_activity(pet, JELLI_EATING, 50u))
         return JELLI_NOT_READY;
     pet->food_type = (uint8_t)food;
@@ -309,7 +309,7 @@ static JelliResult moment(JelliGame *game, JelliPet *pet, uint32_t choice)
     uint64_t duration = (uint64_t)m->duration_s * 10u;
     if (UINT64_MAX - pet->ticks < duration)
         return JELLI_NOT_READY;
-    JelliResult result = m->kind == JELLI_MOMENT_FEED ? start_feed(game, pet, 0u) : start_play(pet);
+    JelliResult result = m->kind == JELLI_MOMENT_FEED ? start_feed(pet, 0u) : start_play(pet);
     if (result != JELLI_OK)
         return result;
     pet->interaction_due = pet->ticks + duration;
@@ -341,7 +341,7 @@ static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliP
     case JELLI_CMD_WATER:
         return jelli_drink_water(pet);
     case JELLI_CMD_FEED:
-        return start_feed(game, pet, command.value);
+        return start_feed(pet, command.value);
     case JELLI_CMD_PLAY:
         return start_play(pet);
     case JELLI_CMD_CLEAN:

@@ -55,7 +55,7 @@ static void test_timed_effects(void)
         finish(&g);
         CHECK(g.pets[0].activity == JELLI_IDLE);
         if (actions[i] == JELLI_CMD_FEED) {
-            CHECK(g.food == food - 1u && g.pets[0].needs[JELLI_SATIETY] > 700u);
+            CHECK(g.food == food && g.pets[0].needs[JELLI_SATIETY] > 700u);
             CHECK(g.pets[0].feeds == 1u && g.pets[0].reward_pending);
         } else if (actions[i] == JELLI_CMD_PLAY) {
             CHECK(g.pets[0].needs[JELLI_AMUSEMENT] > 700u);

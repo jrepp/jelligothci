@@ -94,11 +94,11 @@ static void cancelled_food_is_not_free(void)
     game.pets[0].needs[JELLI_SATIETY] = 200u;
     unsigned food = game.food;
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_FEED, 1u, 0u}) == JELLI_OK);
-    CHECK(game.food == food - 1u && game.pets[0].needs[JELLI_SATIETY] > 200u);
+    CHECK(game.food == food && game.pets[0].needs[JELLI_SATIETY] > 200u);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_CARE, 1u, 0u}) == JELLI_OK);
     CHECK(!game.pets[0].moment_pulse && jelli_game_valid(&game));
     advance(&game, 300u);
-    CHECK(game.food == food - 1u && !game.pets[0].reward_pending);
+    CHECK(game.food == food && !game.pets[0].reward_pending);
 }
 
 static void malformed_checkpoint_rejected(void)
