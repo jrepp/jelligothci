@@ -121,3 +121,11 @@ Selection/nudge assertions remain intact; selection, fitted pen painting, and
 both touch-size control cases passed all four focused cases after correction.
 The Linux run above had already passed this case; its slower dispatch masked the
 local timing difference. No complete local suite pass is claimed.
+
+At `f367ae2`, [run 43185768171](https://github.com/jrepp/jelligothci/actions/runs/43185768171)
+passed all screenshot references and 341 browser cases, but the copy-selection
+case failed while scrolling a canvas that auto-fit detached. Readiness now
+scrolls the persistent workspace scroller and then waits for the fitted canvas,
+so it cannot retain the canvas handle across replacement. Both selection cases
+wait after changing tools. All five focused copy/selection, fitted-pen, and touch
+target cases passed; their original behavior and pixel assertions are retained.
