@@ -54,6 +54,11 @@ apply to this private repository. That is not proof that all workflow approvals
 are disabled: bot-created release PR runs required approval during initial
 validation. The explicit candidate dispatch handles the release validation path.
 
+On 2026-11-12 the maintainer updated ruleset `main: required checks` to remove
+`Core on macos` and `Core on windows` from PR requirements for Linux-only PR
+validation. The remaining contexts are `Core on linux`, `test`, `hooks`,
+`validate`, `Studio tests`, and `image`. Other protections were retained.
+
 This is a dated snapshot. It excludes host-side credentials and does not imply
 there are no account-level settings outside the inspected APIs. Reinspect with
 your own authenticated GitHub identity when reproducing or changing operations:
@@ -78,10 +83,10 @@ required-check enforcement has not been established by this inspection.
 
 # Contributor execution boundary
 
-The core workflow has no event-level trust filter beyond the repository runner
-variables. With private Linux enabled, collaborator pushes and PR jobs that run
-can use Artemis. Restrict write access accordingly. Ordinary contributors need
-neither host SSH nor the runner App credentials. Credentials remain on hosts.
+Core PR and main-branch checks use hosted Ubuntu. Nightly, full manual and tag
+release checks also use hosted macOS and Windows. The separate runner-router
+canary can still exercise an admitted private runner. Ordinary contributors need
+neither host SSH nor runner App credentials; credentials remain on hosts.
 
 Enabling external/fork PR execution is a separate maintainer policy change;
 do not enable it as part of cloning or contributor setup. Review the private
@@ -104,7 +109,13 @@ gh run view <run-id> --repo jrepp/jelligothci --log-failed
 
 If a bot PR has blocked checks, inspect the revision before an authorized
 maintainer approves execution. Candidate validation is also explicitly dispatched
-by Release Please; check that run rather than assuming ordinary PR events fired.
+by Release Please without platform packaging; check that run rather than assuming
+ordinary PR events fired. Full platform packages are built nightly and on manual
+or tag release runs. Each run resolves its requested ref to a single commit for all
+jobs; the original tag is retained for publication verification. Scheduled artifacts
+are retained with their workflow run; they are not published as a release. The
+[CI timing baseline](memo-109-ci-nightly-packaging.md) separates queue and execution
+time and describes post-landing checks.
 Use the revision actually checked out by the job, not only the workflow's main
 branch SHA, when assessing a manual dispatch with a ref input.
 
@@ -116,6 +127,8 @@ weaken warnings or checks to repair infrastructure failures.
 ```sh
 # Validate without publishing; replace the example with the intended ref.
 gh workflow run release.yml --repo jrepp/jelligothci -f ref=main
+# Validate metadata/core/sanitizers without packaging the candidate.
+gh workflow run release.yml --repo jrepp/jelligothci -f ref=main -F validate_only=true
 # Retry publication only after diagnosing failure and checking this release/tag.
 gh workflow run release.yml --repo jrepp/jelligothci -f ref=v0.1.1 -F publish=true
 ```
@@ -128,21 +141,11 @@ see [memo-017](memo-017-release-downloads-and-expressive-slice.md). Preserve pub
 
 # Runner recovery
 
-If private jobs remain queued, inspect the repository variables and workflow
-labels, then consult the hosting operator for host/router health and admission.
-Do not distribute App keys or change host profiles from this repository.
-
-An authorized maintainer can restore hosted Linux for subsequent jobs:
-
-```sh
-gh variable set PRIVATE_LINUX_RUNNERS --repo jrepp/jelligothci --body false
-```
-
-An already queued job does not migrate. After changing routing, cancel the
-obsolete queued run and dispatch a new run with the intended ref; verify its
-actual runner. Apply the same procedure to the macOS variable if it was enabled.
-Use hosting's signed installer and rollback runbook for policy changes. Check
-cleanup as well as job success before enabling private routing again.
+Ordinary core CI no longer routes through private runner variables. If the
+separately dispatched private runner canary remains queued, inspect its labels
+and consult the hosting operator for admission and host health. Do not distribute
+App keys or change host profiles from this repository. Use hosting's signed
+installer and rollback runbook for policy changes.
 
 ## Observed recovery, 2026-11-12
 
@@ -153,7 +156,9 @@ and Release validation runs for PR #98. The routing change affects new jobs;
 queued jobs do not migrate automatically. The host policy and runner profile
 were not changed. Verify the restarted jobs' runner attribution and results;
 leave hosted routing enabled until private host health is verified. This is a
-dated observation, not evidence that the private runners have recovered.
+dated observation, not evidence that the private runners have recovered. The
+core workflow later moved ordinary PR and release checks to hosted runners, so
+the old opt-in variables no longer control that workflow.
 
 # Local toolchain and USB recovery
 
