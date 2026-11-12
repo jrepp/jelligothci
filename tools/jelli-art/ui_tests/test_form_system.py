@@ -58,10 +58,13 @@ def test_persistent_editor_fields_fit_their_labels(creator, width, height):
         ("scenes", "#scene-name", "#scenes label:has(#scene-name)", "#scene-name"),
         ("effects", "#fx-name", "#effects label:has(#fx-name)", "#fx-name"),
         ("game", "#gp-form", "#game .gp-row:has(#gp-pet)", "#gp-pet"),
-        ("music", "#mu-title", "#music label:has(#mu-title)", "#mu-title"),
+        ("music", "#mu-files", "#music label:has(#mu-title)", "#mu-title"),
     ]
     for mode, ready, label, control in cases:
         open_mode(page, mode, ready)
+        if mode == "music":
+            # The title is in the intentionally collapsed files disclosure.
+            page.locator("#mu-files").evaluate("details => { details.open = true; }")
         box = geometry(page, label, control)
         assert box["control"]["height"] >= 38, (mode, box)
         assert box["control"]["left"] >= box["label"]["left"] - 1, (mode, box)

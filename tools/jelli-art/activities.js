@@ -37,9 +37,10 @@
     }
     @container ac (max-width:800px){
       .ac-grid{display:flex;flex-direction:column;gap:16px}.ac-grid>*{min-width:0}.ac-list{grid-template-columns:repeat(3,1fr)}
-      .ac-grid>aside{order:-1;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0;border:0;flex-direction:row;align-items:center;gap:12px}
+      .ac-grid>aside{display:flex;flex-wrap:wrap;order:-1;position:sticky;top:0;z-index:5;width:100%;box-sizing:border-box;background:var(--bg);padding:6px 0;border:0;flex-direction:row;align-items:center;gap:12px}
       .ac-grid>aside p{display:none}.ac-grid>aside label{display:flex;align-items:center;gap:8px}
-      #ac-preview{width:130px;height:130px}
+      .ac-grid>aside label{flex:1 1 140px;min-width:0}.ac-grid>aside #ac-form{min-width:0;flex:1 1 auto}
+      #ac-preview{width:130px;height:130px;flex:0 0 130px}
     }
   </style>`);
   function sync() {
