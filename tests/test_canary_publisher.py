@@ -74,6 +74,22 @@ class PublisherTest(unittest.TestCase):
         self.assertEqual(existing['id'], 30)
         self.assertFalse(newer)
 
+    def test_only_unexpired_dedicated_artifacts_are_selected(self):
+        records = [
+            {'name': 'engine-evidence-abc', 'expired': False},
+            {'name': 'engine-canary-expired', 'expired': True},
+            {'name': 'engine-canary-abc', 'expired': False},
+        ]
+        self.assertEqual(publisher.canary_artifacts(records), [records[2]])
+
+    def test_dedicated_artifact_preferred_with_legacy_fallback(self):
+        legacy = {'name': 'engine-evidence-old', 'expired': False, 'size_in_bytes': 1000}
+        dedicated = {'name': 'engine-canary-new', 'expired': False, 'size_in_bytes': 500}
+        artifact, limit = publisher.select_artifact([legacy])
+        self.assertEqual((artifact, limit), (legacy, publisher.MAX_LEGACY_ZIP))
+        artifact, limit = publisher.select_artifact([legacy, dedicated])
+        self.assertEqual((artifact, limit), (dedicated, publisher.MAX_ZIP))
+
 
 if __name__ == '__main__':
     unittest.main()

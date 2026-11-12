@@ -31,6 +31,16 @@ jobs:
           path: build/engine-evidence/
           if-no-files-found: error
           retention-days: 14
+      - name: Upload inline engine canary and provenance
+        id: engine-canary
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: engine-canary-${{ github.sha }}
+          path: |
+            build/engine-evidence/canary.png
+            build/engine-evidence/canary/manifest.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Add engine evidence link to summary
         env:
           ARTIFACT_URL: ${{ steps.engine-evidence.outputs.artifact-url }}
@@ -41,4 +51,6 @@ jobs:
             echo 'The artifact includes a nine-scenario native gameplay grid, individual raw frames and state reports, plus all authored scenes at early and travel frames.'
             echo
             echo "[Download engine evidence]($ARTIFACT_URL)"
+            echo
+            echo 'The trusted publisher uses the separate engine-canary artifact so catalog growth does not affect inline PR images.'
           } >> "$GITHUB_STEP_SUMMARY"
