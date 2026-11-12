@@ -246,3 +246,5 @@ Final 0.17.1 / Studio 0.15.1 release evidence:
 
 Pull request SDL engine render evidence and its validation limits:
 [memo-110](memos/memo-110-engine-render-evidence.md).
+
+Case PWR display blanking and input handling: [memo-112](memos/memo-112-case-button-display-blanking.md).

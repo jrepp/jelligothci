@@ -18,6 +18,8 @@ void jelli_case_button_init(JelliCaseButton *button, JelliDisplayOutput *display
         i2c_master_bus_add_device(bsp_i2c_get_handle(), &config, &button->io) != ESP_OK) {
         button->io = NULL;
         ESP_LOGW(TAG, "PWR input unavailable");
+    } else {
+        ESP_LOGI(TAG, "PWR input ready on EXIO4");
     }
 }
 
@@ -39,6 +41,7 @@ static void toggle(JelliCaseButton *button)
     button->touch->gesture->active = false;
     button->touch->awaiting_release = true;
     bsp_display_unlock();
+    ESP_LOGI(TAG, "Display %s by PWR", button->blank ? "blanked" : "restored");
 }
 
 void jelli_case_button_poll(JelliCaseButton *button, uint64_t now)
