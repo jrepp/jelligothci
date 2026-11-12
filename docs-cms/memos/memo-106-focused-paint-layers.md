@@ -110,3 +110,14 @@ The relevant Paint, Review, shell, and flip-book source is unchanged between tha
 revision and the integrated palette revision `5f7c116`; its later differences
 are creation/palette integration and the creation fixture readiness correction.
 The resulting latest-head CI must still pass before landing.
+
+The reviewed references also passed all 16 focused local view cases with
+screenshot comparison enabled. The broad local run at `b2bfb5d` passed 304 cases,
+then exposed a CDP coordinate race in the selection-row test: after selecting the
+tool, pen-down at x=365.5 hit a surrounding div while the refitted canvas started
+at x=372. The browser test now waits for rendered zoom to match `Studio.fitZoom`
+before deriving synthetic pen coordinates, including after changing tools.
+Selection/nudge assertions remain intact; selection, fitted pen painting, and
+both touch-size control cases passed all four focused cases after correction.
+The Linux run above had already passed this case; its slower dispatch masked the
+local timing difference. No complete local suite pass is claimed.

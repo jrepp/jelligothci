@@ -21,6 +21,10 @@ LAND, PORT = "ipad-landscape", "ipad-portrait"
 def ready(page):
     """The canvas in view, at the zoom the page chose (the fit; UX M2-B closed the blind spot of forcing 4x)."""
     page.locator("#stage .paint-canvas canvas").scroll_into_view_if_needed()
+    page.wait_for_function("""() => {
+      const a=byKey[state.key], c=document.querySelector('#stage .paint-canvas canvas');
+      return state.zoom !== null || c.getBoundingClientRect().width / a.width === Studio.fitZoom(a);
+    }""")
     return page
 
 
@@ -374,6 +378,9 @@ def test_select_copy_modifier_copies_the_selection(paint):
     x, y = blank_run(page, 8)
     row_stroke(page, x, y, 2)
     page.locator("#tools [data-tool=select]").tap()
+    # Selection controls change the canvas fit. CDP input bypasses locator
+    # stability checks, so wait for the fitted canvas before deriving points.
+    ready(page)
     pen_stroke(page, [screen(page, x, y), screen(page, x + 1, y)])
     assert page.evaluate("() => !!state.sel")
     page.locator("#qb-pick").tap()  # Copy
