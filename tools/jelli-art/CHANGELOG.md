@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.17.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.16.0...jelli-art-v0.17.0) (2026-11-12)
+
+
+### Features
+
+* add Traveling activity and animated airplane cabin ([#97](https://github.com/jrepp/jelligothci/issues/97)) ([3dfeeef](https://github.com/jrepp/jelligothci/commit/3dfeeefee9702be9f2f81ea0fd965790f095b92a))
+* **jelli-art:** author character palette variants ([#98](https://github.com/jrepp/jelligothci/issues/98)) ([47977a3](https://github.com/jrepp/jelligothci/commit/47977a305986f941c635f667ef344007f2d00d1d))
+* **studio:** focus Paint on assets with layers and attachment guides ([#96](https://github.com/jrepp/jelligothci/issues/96)) ([fda610e](https://github.com/jrepp/jelligothci/commit/fda610edf64ce58bdbbfbf021646e3702795d5b2))
+* unify Jelli Art persistent forms ([#99](https://github.com/jrepp/jelligothci/issues/99)) ([955b750](https://github.com/jrepp/jelligothci/commit/955b75081952709a8c74319ed1f9e2b9de81c344))
+
 ## [0.16.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.15.1...jelli-art-v0.16.0) (2026-10-23)
 
 
