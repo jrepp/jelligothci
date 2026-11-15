@@ -261,3 +261,5 @@ Pull request SDL engine render evidence and its validation limits:
 [memo-110](memos/memo-110-engine-render-evidence.md).
 
 Case PWR display blanking and input handling: [memo-112](memos/memo-112-case-button-display-blanking.md).
+
+Hidden activity training and save migration: [ADR-017](adr/adr-017-hidden-rpg-stats.md) and [memo-119](memos/memo-119-hidden-rpg-stats-validation.md).

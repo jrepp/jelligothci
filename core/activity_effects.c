@@ -34,7 +34,10 @@ unsigned jelli_moment_cost(const JelliPet *pet, unsigned id, unsigned index)
 {
     if (id >= jelli_moment_count || index >= JELLI_ACTIVITY_METERS)
         return 0u;
-    return jelli_activity_cost(pet, index, jelli_moments[id].costs[index]);
+    unsigned cost = jelli_activity_cost(pet, index, jelli_moments[id].costs[index]);
+    unsigned stat = jelli_moments[id].balance_stat;
+    unsigned discount = stat && stat <= JELLI_RPG_STAT_COUNT ? pet->rpg_stats[stat - 1u] / 50u : 0u;
+    return (cost * (100u - discount) + 99u) / 100u;
 }
 
 unsigned jelli_moment_location(const JelliPet *pet, unsigned id)

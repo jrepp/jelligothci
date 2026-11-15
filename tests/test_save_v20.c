@@ -29,7 +29,7 @@ static size_t encode(const JelliSave *save, uint8_t *bytes)
 {
     size_t size = jelli_save_encode(save, bytes, JELLI_SAVE_CAPACITY);
     CHECK(size != 0u && save->game.count <= JELLI_PET_CAPACITY);
-    size_t removed = (size_t)save->game.count * 38u;
+    size_t removed = TEST_SAVE_V21_BYTES(save->game.count);
     CHECK(size > removed + 8u);
     memmove(bytes + size - 8u - removed, bytes + size - 8u, 8u);
     size -= removed;

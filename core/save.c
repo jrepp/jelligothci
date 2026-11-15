@@ -2,6 +2,7 @@
 #include "save_codec.h"
 #include "save_tail.h"
 #include "invitation_save.h"
+#include "rpg_save.h"
 #include "jelli/collection.h"
 #include "collectible_save.h"
 
@@ -224,6 +225,7 @@ static void write_game(Writer *writer, const JelliGame *game)
     jelli_save_write_tail(writer, game);
     jelli_collectible_save_write(writer, game);
     jelli_invitation_save_write(writer, game);
+    jelli_rpg_save_write(writer, game);
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -284,6 +286,7 @@ static bool read_game(Reader *reader, JelliGame *game)
     jelli_save_read_tail(reader, game);
     jelli_collectible_save_read(reader, game);
     jelli_invitation_save_read(reader, game);
+    jelli_rpg_save_read(reader, game);
     return !reader->failed;
 }
 

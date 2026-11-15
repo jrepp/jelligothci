@@ -9,6 +9,8 @@
 #define JELLI_ACTIVITY_BOND 6u
 #define JELLI_ACTIVITY_BONUSES 8u
 #define JELLI_MOMENT_NEVER_SUGGESTED 255u
+#define JELLI_RPG_STAT_COUNT 3u
+enum { JELLI_RPG_STRENGTH, JELLI_RPG_DEXTERITY, JELLI_RPG_INTELLIGENCE };
 
 typedef enum { JELLI_MOMENT_FEED, JELLI_MOMENT_PLAY } JelliMomentKind;
 
@@ -61,6 +63,7 @@ typedef struct {
     uint8_t invitation_weight; /* Zero excludes this activity from leisure invitations. */
     uint16_t invitation_minutes;
     bool invitation_relax_window;
+    uint8_t rpg_gains[JELLI_RPG_STAT_COUNT], balance_stat; /* 0 = none; otherwise stat + 1. */
 } JelliMoment;
 
 typedef struct {
