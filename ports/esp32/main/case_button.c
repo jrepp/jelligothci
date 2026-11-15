@@ -23,11 +23,13 @@ void jelli_case_button_init(JelliCaseButton *button, JelliDisplayOutput *display
     }
 }
 
-static void toggle(JelliCaseButton *button)
+bool jelli_case_button_set_blank(JelliCaseButton *button, bool blank)
 {
+    if (button->blank == blank)
+        return true;
     if (bsp_display_lock(100) != ESP_OK) {
         ESP_LOGW(TAG, "Display lock unavailable");
-        return;
+        return false;
     }
     unsigned target = button->blank ? button->restore_brightness : 0u;
     if (!button->blank)
@@ -35,23 +37,27 @@ static void toggle(JelliCaseButton *button)
     if (jelli_display_brightness_locked(button->display, target) != JELLI_DEVICE_OK) {
         bsp_display_unlock();
         ESP_LOGW(TAG, "Display brightness change failed");
-        return;
+        return false;
     }
-    button->blank = !button->blank;
+    button->blank = blank;
     button->touch->gesture->active = false;
     button->touch->awaiting_release = true;
     bsp_display_unlock();
-    ESP_LOGI(TAG, "Display %s by PWR", button->blank ? "blanked" : "restored");
+    ESP_LOGI(TAG, "Display %s", button->blank ? "blanked" : "restored");
+    return true;
 }
 
-void jelli_case_button_poll(JelliCaseButton *button, uint64_t now)
+bool jelli_case_button_poll(JelliCaseButton *button, uint64_t now, bool panel_sleeping)
 {
     uint8_t level = 0;
     const uint8_t input_register = 0;
     if (!button->io)
-        return;
+        return false;
     bool valid =
         i2c_master_transmit_receive(button->io, &input_register, 1, &level, 1, 10) == ESP_OK;
-    if (jelli_case_button_sample(&button->state, valid, (level & IO_EXPANDER_PIN_NUM_4) != 0, now))
-        toggle(button);
+    bool pressed =
+        jelli_case_button_sample(&button->state, valid, (level & IO_EXPANDER_PIN_NUM_4) != 0, now);
+    if (pressed && !panel_sleeping)
+        (void)jelli_case_button_set_blank(button, !button->blank);
+    return pressed;
 }

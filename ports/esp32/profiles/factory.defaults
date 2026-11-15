@@ -1,1 +1,5 @@
 CONFIG_JELLI_FACTORY_FIRMWARE=y
+
+# Factory validation does not use the game sleep manager.
+CONFIG_PM_ENABLE=n
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=n

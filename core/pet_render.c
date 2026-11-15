@@ -50,6 +50,9 @@ static void activity_key(const JelliPet *pet, uint64_t time, JelliPetRenderKey *
 
 static void settings_key(const JelliGame *game, const JelliPetUi *ui, JelliPetRenderKey *key)
 {
+    key->battery_reading_valid = ui->battery_reading_valid;
+    key->battery_status[0] = ui->battery_status[0];
+    key->battery_status[1] = ui->battery_status[1];
     key->battery_mv = ui->battery_mv;
     key->battery_percent = ui->battery_percent;
     key->battery_present = ui->battery_present;
@@ -212,13 +215,19 @@ static bool same_pet_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
     return true;
 }
 
+static bool same_battery_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
+{
+    return a->battery_reading_valid == b->battery_reading_valid &&
+           a->battery_status[0] == b->battery_status[0] &&
+           a->battery_status[1] == b->battery_status[1] && a->battery_mv == b->battery_mv &&
+           a->battery_percent == b->battery_percent && a->battery_present == b->battery_present &&
+           a->battery_voltage_valid == b->battery_voltage_valid &&
+           a->battery_gauge_valid == b->battery_gauge_valid;
+}
+
 static bool same_render_key(const JelliPetRenderKey *a, const JelliPetRenderKey *b)
 {
-    return a->battery_mv == b->battery_mv && a->battery_percent == b->battery_percent &&
-           a->battery_present == b->battery_present &&
-           a->battery_voltage_valid == b->battery_voltage_valid &&
-           a->battery_gauge_valid == b->battery_gauge_valid &&
-           a->activity_music_enabled == b->activity_music_enabled &&
+    return same_battery_key(a, b) && a->activity_music_enabled == b->activity_music_enabled &&
            a->effect_tick == b->effect_tick && a->scene_pixels == b->scene_pixels &&
            a->scene_revision == b->scene_revision && a->care_seconds == b->care_seconds &&
            a->volume == b->volume && a->hydration == b->hydration && a->assets == b->assets &&

@@ -15,5 +15,6 @@ typedef struct {
 } JelliCaseButton;
 void jelli_case_button_init(JelliCaseButton *button, JelliDisplayOutput *display,
                             JelliTouchGuard *touch);
-void jelli_case_button_poll(JelliCaseButton *button, uint64_t now);
+bool jelli_case_button_set_blank(JelliCaseButton *button, bool blank);
+bool jelli_case_button_poll(JelliCaseButton *button, uint64_t now, bool panel_sleeping);
 #endif

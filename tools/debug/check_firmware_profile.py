@@ -16,9 +16,12 @@ def main():
     sources = {Path(command['file']).as_posix() for command in commands}
     probes = {name for name in sources if '/main/validation/' in name}
     assert bool(probes) == (enabled or factory), f'Unexpected experiment sources: {probes}'
-    for flag in ('JELLI_POWER_EXPERIMENTS', 'PM_ENABLE', 'PM_PROFILING',
-                 'FREERTOS_USE_TICKLESS_IDLE'):
+    for flag in ('JELLI_POWER_EXPERIMENTS', 'PM_PROFILING'):
         assert (f'CONFIG_{flag}=y' in config.splitlines()) == enabled, flag
+    for flag in ('PM_ENABLE', 'FREERTOS_USE_TICKLESS_IDLE'):
+        assert (f'CONFIG_{flag}=y' in config.splitlines()) == (not factory), flag
+    if not factory:
+        assert 'CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y' in config.splitlines()
     if not enabled:
         assert not any(f'CONFIG_JELLI_MEMORY_TRIAL={mode}' in config.splitlines() for mode in (1, 2))
     assert ('CONFIG_JELLI_FACTORY_FIRMWARE=y' in config.splitlines()) == factory

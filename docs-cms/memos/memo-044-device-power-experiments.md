@@ -192,3 +192,60 @@ routing through the expander, PMIC rail sequencing, and QMI8658/ES7210 unused
 peripheral states remain follow-up experiments requiring their exact protocols.
 Deep sleep is deferred until trusted time and overnight save/journal recovery
 have dedicated tests; it is not a drop-in replacement for this light-sleep trial.
+
+
+# Normal firmware integration follow-up
+
+The normal build now enables SDK power management and tickless idle at compile
+time but requests automatic light sleep only while the screen is blank, the
+PMIC reports battery power, the case button is available, networking is offline,
+and the pet is not resuming. The inactivity timeout is 60 seconds. The engine
+continues bounded game advancement and session checkpoints with periodic task
+wakeups. A touch interrupt, case button, external power, or failed PMIC reading
+ends the sleep policy. The PMIC worker samples more often while blank. Setup
+errors restore the prior power policy, display and audio before retrying; an
+unknown power source never enables sleep. Battery Settings separately shows
+plugged and charging states based on PMIC status.
+
+The first build linked while its source list was being edited and failed with
+undefined policy functions. A subsequent configured build includes those
+sources. Host policy and rendering tests exercise source gating, timeout and
+charging transitions. Physical battery-only entry, touch and button wake, panel
+recovery, sound, and current savings remain unverified; light-sleep policy
+enablement and display blanking do not prove the CPU actually slept.
+
+The first all-files static-analysis pass found four function complexity limits;
+the battery comparison, sampling, and power-policy logic were split and the
+next hook run passed. The final normal firmware was rebuilt incrementally and
+flashed after a private NVS backup; transfer hashes verified. The board's PMIC
+reported external power and charging-phase status on the preceding image.
+Physical battery-only entry and wake on this revision remain awaiting a device
+check. The 60-second timeout and both wake options were confirmed by the owner.
+
+A later commit hook found formatting violations in newly added files that had
+not been included by the earlier tracked-file formatter; formatting them after
+staging fixed the issue. The broad desktop run timed out in the unrelated
+Jelli Art server test; the separate result and any retry are recorded alongside
+this validation rather than treating the partial run as a pass.
+
+The hosted normal firmware build then failed its profile-isolation check because
+that check still expected PM and tickless idle to be disabled. The normal
+profile now requires both, while the factory profile explicitly disables them
+and the power profile retains profiling. The isolation check was updated to
+verify those distinct configurations; rerun results are tracked on the PR.
+
+The revised factory profile built and passed the isolation checker. A commit
+attempt failed because the local 1Password signing agent returned an error; an
+unsigned local commit preserved the fix. Signing-agent availability remains an
+owner-environment issue and does not establish a build or device fault.
+
+The initial integration polled the expander-backed case button every 250 ms;
+short presses could fall entirely between polls. The interval was reduced to
+50 ms, with the existing debounce, to improve wake responsiveness. Physical
+button timing and the additional wakeup energy remain to be measured.
+
+A GPIO wake can occur while the adapter task is paused, so the integration
+also checks the touch interrupt level after scheduler wake in addition to the
+recorded interrupt timestamp. This avoids depending solely on delivery of a
+normal interrupt callback across sleep. Pulse timing and physical wake remain
+to be verified on the board.

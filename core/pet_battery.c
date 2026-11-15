@@ -13,6 +13,11 @@ void jelli_pet_draw_battery(Canvas *c, const JelliPetUi *ui)
     else
         size = snprintf(value, sizeof(value), "%s",
                         ui->battery_present ? "BAT UNKNOWN" : "BAT UNAVAILABLE");
+    if (ui->battery_reading_valid && (ui->battery_status[0] & 0x20u)) {
+        bool charging = ui->battery_present && (ui->battery_status[1] & 0x60u) == 0x20u &&
+                        (ui->battery_status[1] & 0x07u) < 4u;
+        jelli_canvas_centered(c, charging ? "CHARGING" : "PLUGGED", 122, 2u, MINT);
+    }
     if (size > 0 && (size_t)size < sizeof(value))
         jelli_canvas_centered(c, value, 78, 2u, PALE);
     if (ui->battery_gauge_valid) {

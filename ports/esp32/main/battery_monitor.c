@@ -76,6 +76,8 @@ static void sample_task(void *ctx)
                 pending |= JELLI_POWER_DISPLAY_CHANGE;
             if (have_context && next.pet_asleep != context.pet_asleep)
                 pending |= JELLI_POWER_PET_SLEEP_CHANGE;
+            if (next.display_blank != context.display_blank)
+                next_sample = 0u;
             context = next;
             have_context = true;
         }
@@ -90,7 +92,7 @@ static void sample_task(void *ctx)
                 pending |= JELLI_POWER_SOURCE_CHANGE;
             reading = next_reading;
             (void)xQueueOverwrite(readings, &reading);
-            next_sample = now + 30000u;
+            next_sample = now + (context.display_blank ? 1000u : 30000u);
         }
         if (last_write && now - last_write >= 1200000u)
             pending |= JELLI_POWER_PERIODIC;

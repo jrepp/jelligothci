@@ -42,6 +42,16 @@ static void test_battery_settings(void)
     CHECK(pixels[110u * STRIDE + 200u] == 0x18e3u);
     CHECK(region_changed(150u, 76u, 166u, 44u));
     memcpy(comparison, pixels, sizeof(comparison));
+    ui.battery_reading_valid = true;
+    ui.battery_status[0] = 0x20u;
+    ui.battery_status[1] = 0x22u;
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(region_changed(180u, 122u, 106u, 12u));
+    memcpy(comparison, pixels, sizeof(comparison));
+    ui.battery_status[1] = 0x04u;
+    jelli_pet_render(&surface, &game, &ui, 0u, false);
+    CHECK(region_changed(180u, 122u, 106u, 12u));
+    memcpy(comparison, pixels, sizeof(comparison));
     ui.battery_voltage_valid = false;
     ui.battery_gauge_valid = false;
     ui.battery_present = false;
