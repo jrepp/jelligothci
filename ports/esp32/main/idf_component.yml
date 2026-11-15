@@ -1,5 +1,0 @@
-dependencies:
-  idf: ">=6.1,<6.2"
-  waveshare/esp32_s3_touch_amoled_1_75: "==3.0.1"
-  espressif/esp_lcd_co5300: "==2.2.0"
-  lvgl/lvgl: "==9.3.0"
