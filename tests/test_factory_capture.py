@@ -8,9 +8,9 @@ import factory_capture as factory
 
 
 def snapshot():
-    state = {'ok': True, 'schema': 3, 'run': 1, 'boot': 7, 'board': 'waveshare-31261',
+    state = {'ok': True, 'schema': 4, 'run': 1, 'boot': 7, 'board': 'waveshare-31261',
              'profile': 'factory-smoke', 'device': '907069fe21dc', 'elf_sha256': 'a' * 64,
-             'status': 'incomplete', 'scope': 'all', 'passed': 6, 'errors': 0,
+             'status': 'incomplete', 'scope': 'all', 'passed': 7, 'errors': 0,
              'skipped': 4, 'pending': 0, 'acceptance': False}
     results = []
     for name in sorted(factory.EXPECTED):
@@ -37,7 +37,7 @@ class Station:
     def request(self, command):
         self.calls.append(command)
         if command == 'capabilities':
-            return {'protocol': 1, 'profile': 'factory-smoke', 'factory_schema': 3, 'board': 'waveshare-31261'}
+            return {'protocol': 1, 'profile': 'factory-smoke', 'factory_schema': 4, 'board': 'waveshare-31261'}
         if command == 'factory tests':
             return {'tests': [{'id': r['id'], 'supported': r['status'] == 'pass', 'required': True} for r in self.results]}
         if command == 'factory run':
@@ -57,7 +57,7 @@ class FactoryCaptureTests(unittest.TestCase):
     def test_malformed_results_fail_closed(self):
         good_state, good_results = snapshot()
         variants = [(good_state, good_results[:-1]), (good_state, good_results + [good_results[0]])]
-        for key, value in (('schema', 1), ('board', 'other'), ('acceptance', True), ('passed', 7)):
+        for key, value in (('schema', 1), ('board', 'other'), ('acceptance', True), ('passed', 8)):
             variants.append((dict(good_state, **{key: value}), good_results))
         for key, value in (('run', 2), ('boot', 8), ('status', 'pending')):
             bad = copy.deepcopy(good_results)
@@ -79,7 +79,7 @@ class FactoryCaptureTests(unittest.TestCase):
         state, results = snapshot()
         item = next(r for r in results if r['id'] == 'rtc.snapshot')
         item.update(status='error', error=263, valid=11)
-        state.update(status='error', errors=1, passed=5)
+        state.update(status='error', errors=1, passed=6)
         self.assertEqual(factory.validate(state, results), 1)
 
     def test_observations_preserve_rtc_uncertainty(self):
@@ -92,17 +92,34 @@ class FactoryCaptureTests(unittest.TestCase):
         rtc.update(status='error', valid=4)
         self.assertNotIn('rtc', factory.observations(results))
 
+    def test_power_values_require_enabled_channels_and_complete_sample(self):
+        _, results = snapshot()
+        sample = next(r for r in results if r['id'] == 'pmic.telemetry')
+        values = {reg: pair for pair in sample['samples'] for reg in [pair[0]]}
+        values[0][1] = 8
+        values[0x30][1] = 5
+        values[0x34][1], values[0x35][1] = 0x10, 0x68
+        values[0x38][1], values[0x39][1] = 0x13, 0x88
+        power = factory.observations(results)['power']
+        self.assertEqual(power['battery_mv'], 4200)
+        self.assertEqual(power['vbus_mv'], 5000)
+        self.assertIsNone(power['system_mv'])
+        values[0][1] = 0
+        self.assertIsNone(factory.observations(results)['power']['battery_mv'])
+        sample.update(status='error', valid=3)
+        self.assertNotIn('power', factory.observations(results))
+
     def test_hardware_error_is_failure(self):
         state, results = snapshot()
         next(r for r in results if r['id'] == 'pmic.read').update(status='error', error=263)
-        state.update(status='error', errors=1, passed=5)
+        state.update(status='error', errors=1, passed=6)
         self.assertEqual(factory.validate(state, results), 1)
 
     def test_capture_queries_retained_results_and_never_retries_run(self):
         station = Station()
         self.assertEqual(factory.capture(station.request)[0], 2)
         self.assertEqual(station.calls.count('factory run'), 1)
-        self.assertEqual(sum(c.startswith('factory result ') for c in station.calls), 10)
+        self.assertEqual(sum(c.startswith('factory result ') for c in station.calls), 11)
 
     def test_wrong_profile_does_not_run(self):
         calls = []

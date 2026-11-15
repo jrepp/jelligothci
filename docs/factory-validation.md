@@ -53,14 +53,14 @@ Discover a profile before choosing commands:
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" factory status
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" factory run
 # Or isolate one test:
-./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" factory run pmic.read
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" factory run pmic.telemetry
 # Use the run ID returned by the device, then query until status is no longer running:
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" factory status
-./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" factory result RUN_ID pmic.read
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" factory result RUN_ID pmic.telemetry
 ```
 
 `capabilities` reports protocol 1, compiled profile/board, supported command
-names and factory schema **3**. Game commands are absent from factory firmware;
+names and factory schema **4**. Game commands are absent from factory firmware;
 `state`, `capture`, and care commands return `unsupported_command`. Station
 state checks use `factory status`, which has factory meanings rather than game
 state fields. Normal/power firmware retains its existing game-state contract.
@@ -97,6 +97,7 @@ error code and elapsed microseconds. Pass meanings are intentionally narrow:
 | `psram.scratch` | Pattern checks in a scratch region | That region passed; not full RAM coverage |
 | `pmic.read` | Read selected AXP2101 registers | Register transactions succeeded; not rail correctness |
 | `pmic.inventory` | Read allowlisted AXP configuration/status registers | Transactions succeeded; no rail, charging or gauge accuracy claim |
+| `pmic.telemetry` | Read source status, ADC enable, voltage pairs and IRQ status | Transactions succeeded; voltage accuracy and current remain unverified |
 | `imu.identity` | Read QMI8658 identity, revision and selected controls | Transactions succeeded and identity matched; not motion accuracy |
 | `rtc.snapshot` | Coherent PCF85063 calendar and timer-control snapshot | Transactions succeeded; not trusted UTC or retention |
 | `display.visible` | Skip: external observation required | Nothing |
@@ -112,7 +113,7 @@ sets time. Reading an address pointer is the only I2C write phase. IMU status/FI
 registers are excluded. Reads are bounded and stop on first error. Current
 register selections and timeouts live with the
 [board probes](../ports/esp32/main/validation/boards/).
-Schema 3 updates the catalog and required host validation; old schema 2 captures
+Schema 4 adds the telemetry case and required host validation; older captures
 remain historical evidence and are rejected by the new station tool.
 
 Failed reads leave individual value slots zero; never interpret measurements
@@ -150,3 +151,11 @@ See [validation layout](../ports/esp32/main/validation/README.md),
 [power evidence](../docs-cms/memos/memo-044-device-power-experiments.md).
 
 The impact-ranked validation methodology is in [device validation passes](device-validation-passes.md).
+
+`pmic.telemetry` captures battery, VBUS and system ADC pairs in high/low bursts,
+source status and latched IRQ status without acknowledging events. The station
+reports millivolts only for enabled ADC channels; disabled channels are null.
+Battery voltage is also null when the PMIC reports no battery present.
+These readings require comparison with a meter and do not measure current or
+validate battery percentage. A new run replaces retained results; use the
+station capture for persistent, timestamped records.

@@ -29,7 +29,7 @@ static void status(JelliDebugProtocol *protocol, uint32_t id)
         protocol, id,
         snprintf(
             body, sizeof(body),
-            "{\"ok\":true,\"schema\":3,\"board\":\"waveshare-31261\",\"profile\":\"factory-smoke\","
+            "{\"ok\":true,\"schema\":4,\"board\":\"waveshare-31261\",\"profile\":\"factory-smoke\","
             "\"boot\":%lu,\"run\":%lu,\"device\":\"%s\",\"elf_sha256\":\"%s\","
             "\"status\":\"%s\",\"scope\":\"%s\",\"passed\":%u,\"errors\":%u,\"skipped\":%u,"
             "\"pending\":%u,\"acceptance\":false}",
@@ -114,7 +114,7 @@ void jelli_factory_command(void *ctx, uint32_t id, char **words, unsigned count)
     if (count == 3u && !strcmp(words[2], "capabilities")) {
         jelli_debug_protocol_response(protocol, id,
                                       "{\"ok\":true,\"protocol\":1,\"profile\":\"factory-smoke\","
-                                      "\"board\":\"waveshare-31261\",\"factory_schema\":3,"
+                                      "\"board\":\"waveshare-31261\",\"factory_schema\":4,"
                                       "\"commands\":[\"capabilities\",\"factory\"]}");
         return;
     }

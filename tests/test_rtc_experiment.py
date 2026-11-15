@@ -9,7 +9,7 @@ from rtc_experiment import calendar, compare
 
 class RtcTests(unittest.TestCase):
     def sample(self, second, run, start):
-        return {'status': {'schema': 3, 'board': 'waveshare-31261',
+        return {'status': {'schema': 4, 'board': 'waveshare-31261',
                           'profile': 'factory-smoke', 'boot': 1, 'device': '907069fe21dc',
                           'elf_sha256': 'a' * 64, 'run': run},
                 'start': start, 'end': start + .1,

@@ -87,3 +87,28 @@ all opportunities have now been validated.
 - [Factory workflow and schema](../../docs/factory-validation.md)
 - [Research basis](memo-047-device-capabilities-and-experiment-backlog.md)
 - [Shared transport](memo-046-shared-factory-debug-path.md)
+
+# Factory power telemetry follow-up (2026-11-15)
+
+Factory schema 4 adds `pmic.telemetry` to the existing retained-run protocol and
+station validator. It reads source status, ADC enables, battery/VBUS/system
+voltage pairs and latched IRQ status without changing ADC, charging, rails or
+interrupt acknowledgements. Enabled voltage channels are decoded by the station;
+disabled channels remain unavailable. The [factory contract](../../docs/factory-validation.md)
+describes commands and limits.
+
+The factory image built from the local worktree with ESP-IDF 6.1 and was flashed
+to the currently discovered ESP32-S3; transfer hashes verified. The current main
+branch pins ESP-IDF 5.5.5, so that build requires separate validation. One unattended USB-connected run completed with seven
+passes, four fixture-dependent skips and no probe errors. The battery ADC reported
+3575 mV with ADC enable 0x03; VBUS and system ADC channels were disabled. Raw
+IRQ bytes were 0x90, 0xa0 and 0x68. The RTC oscillator-stop flag was set; time
+trust remains unverified. This is one uncalibrated snapshot, not external voltage,
+current, sleep, charging or battery-life evidence. Capture and flash logs are in
+ignored `build/factory-battery-20261115` and `build/battery-*-flash.log`.
+
+The normal game image was rebuilt and restored with verified transfer hashes;
+its remote `capabilities` returned the game profile and `state` reported a
+rendered home screen. Physical display and touch were not checked. The factory
+probe does not add persistent in-game event logging or establish power behavior
+across sleep. Further measurements require controlled power stimuli and a meter.

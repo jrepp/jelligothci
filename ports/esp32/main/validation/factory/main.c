@@ -19,7 +19,7 @@ void app_main(void)
 {
     jelli_debug_usb_init();
     jelli_factory_init();
-    ESP_LOGI("factory", "@J1 debug ready; factory schema 2; explicit runs only");
+    ESP_LOGI("factory", "@J1 debug ready; factory schema 4; explicit runs only");
     for (;;) {
         jelli_debug_usb_poll(&protocol, feed, &protocol, (uint64_t)esp_timer_get_time() / 1000u);
         jelli_factory_poll();

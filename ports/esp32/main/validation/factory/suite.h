@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-enum { JELLI_FACTORY_TEST_COUNT = 10 };
+enum { JELLI_FACTORY_TEST_COUNT = 11 };
 typedef struct {
     const char *id, *status;
     bool supported;

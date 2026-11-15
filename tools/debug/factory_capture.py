@@ -13,18 +13,19 @@ from jelli_debug import Client, RecordedWire, open_serial
 
 EXPECTED = {'identity', 'psram.scratch', 'pmic.read', 'display.visible',
             'touch.physical', 'audio.audible', 'power.current',
-            'pmic.inventory', 'imu.identity', 'rtc.snapshot'}
+            'pmic.inventory', 'imu.identity', 'rtc.snapshot', 'pmic.telemetry'}
 INVENTORIES = {
     'pmic.inventory': (0x34, [0, 1, 3, 0x18, 0x20, 0x21, 0x26, 0x30, 0x40,
                              0x41, 0x42, 0x48, 0x49, 0x4a, 0x61, 0x62, 0x63,
                              0x64, 0x80, 0x82, 0x90, 0x91, 0x92, 0x93, 0xa4]),
+    'pmic.telemetry': (0x34, [0, 1, 0x30, 0x34, 0x35, 0x38, 0x39, 0x3a, 0x3b, 0x48, 0x49, 0x4a]),
     'imu.identity': (0x6b, list(range(9))),
     'rtc.snapshot': (0x51, list(range(11)) + [17]),
 }
 
 
 def identity(state):
-    if (state.get('schema') != 3 or state.get('board') != 'waveshare-31261'
+    if (state.get('schema') != 4 or state.get('board') != 'waveshare-31261'
             or state.get('profile') != 'factory-smoke'
             or type(state.get('boot')) is not int or not 0 <= state['boot'] <= 0xFFFFFFFF
             or not re.fullmatch('[0-9a-f]{12}', state.get('device', ''))
@@ -102,6 +103,18 @@ def observations(results):
             report['imu'] = {'revision': values[1], 'accelerometer_enabled': bool(values[8] & 1),
                              'gyroscope_enabled': bool(values[8] & 2),
                              'oscillator_disabled': bool(values[2] & 1)}
+        elif name == 'pmic.telemetry':
+            enabled = values[0x30]
+            report['power'] = {'status_raw': [values[0], values[1]],
+                               'battery_present': bool(values[0] & 8),
+                               'vbus_good': bool(values[0] & 0x20),
+                               'current_direction_raw': (values[1] >> 5) & 3,
+                               'irq_status_raw': [values[0x48], values[0x49], values[0x4a]],
+                               'adc_enable_raw': enabled,
+                               'battery_mv': ((values[0x34] & 0x3f) << 8 | values[0x35]) if enabled & 1 and values[0] & 8 else None,
+                               'vbus_mv': ((values[0x38] & 0x3f) << 8 | values[0x39]) if enabled & 4 else None,
+                               'system_mv': ((values[0x3a] & 0x3f) << 8 | values[0x3b]) if enabled & 8 else None,
+                               'voltage_accuracy': 'not_validated'}
         else:
             report['pmic'] = {'adc_enable_raw': values[0x30],
                               'gauge_raw': values[0xa4], 'gauge_accuracy': 'not_validated',
@@ -112,7 +125,7 @@ def observations(results):
 def capture(request, timeout=10):
     caps = request('capabilities')
     if (caps.get('protocol') != 1 or caps.get('profile') != 'factory-smoke'
-            or caps.get('factory_schema') != 3 or caps.get('board') != 'waveshare-31261'):
+            or caps.get('factory_schema') != 4 or caps.get('board') != 'waveshare-31261'):
         raise ValueError('Expected factory firmware; no run submitted')
     before = request('factory status')
     cookie = identity(before)
