@@ -8,6 +8,8 @@
 #include "touch_input.h"
 #include "case_button.h"
 #include "battery_monitor.h"
+#include "auto_sleep.h"
+#include "auto_sleep_policy.h"
 #include "network.h"
 #include "validation/experiments.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
@@ -40,6 +42,10 @@ typedef struct {
 typedef struct {
     JelliGesture gesture;
     JelliCaseButton button;
+    JelliAutoSleep sleep;
+    uint64_t last_activity_ms, sleep_retry_ms;
+    uint32_t sleep_touch_irq;
+    bool prior_blank;
     JelliTouchGuard touch;
     JelliDisplayOutput display;
     QueueHandle_t input;
@@ -68,6 +74,7 @@ static bool poll_input(void *ctx, JelliInput *input)
     if (xQueueReceive(b->input, &queued, 0) != pdTRUE)
         return false;
     *input = queued.input;
+    b->last_activity_ms = now_ms(NULL);
     if (input->kind == JELLI_POINTER_UP && b->touch_trace_count < TOUCH_TRACE_CAPACITY) {
         b->touch_trace[b->touch_trace_count++] = (TouchTrace){
             .press_irq_us = queued.press_irq_us,
@@ -145,13 +152,73 @@ static void paused(void *ctx, bool value)
     ESP_LOGI(TAG, "Animation %s", value ? "paused" : "running");
 }
 
+/* The engine owns this state; touch IRQ timestamps cross tasks under the touch lock. */
+static void sleep_wake(Board *board, bool battery, bool eligible, bool touch, bool button,
+                       uint64_t now)
+{
+    if (jelli_auto_sleep_should_wake(board->sleep.active, eligible, board->button.blank, touch,
+                                     button)) {
+        jelli_auto_sleep_leave(&board->sleep, &board->display);
+        if (touch || button || !battery)
+            (void)jelli_case_button_set_blank(&board->button, false);
+        board->last_activity_ms = now;
+        board->prior_blank = board->button.blank;
+    } else if (!board->sleep.active && touch) {
+        (void)jelli_case_button_set_blank(&board->button, false);
+        board->last_activity_ms = now;
+        board->prior_blank = board->button.blank;
+    }
+}
+
+static void sleep_enter(Board *board, bool eligible, uint64_t now)
+{
+    if (eligible && !board->button.blank && jelli_auto_sleep_idle(now, board->last_activity_ms) &&
+        jelli_case_button_set_blank(&board->button, true)) {
+        board->prior_blank = true;
+        board->sleep_touch_irq = jelli_touch_input_irq_timestamp_us();
+    }
+    if (eligible && board->button.blank && !board->sleep.active && now >= board->sleep_retry_ms &&
+        !jelli_auto_sleep_enter(&board->sleep, &board->display))
+        board->sleep_retry_ms = now + 10000u;
+}
+
+static bool battery_sleep_poll(JelliPetEngine *engine, Board *board, JelliEspSession *session,
+                               uint64_t now, bool button_pressed, bool frozen)
+{
+    if (frozen)
+        return false;
+    bool battery = engine->ui.battery_reading_valid && (engine->ui.battery_status[0] & 0x20u) == 0u;
+    uint32_t irq = jelli_touch_input_irq_timestamp_us();
+    if (board->button.blank != board->prior_blank) {
+        board->prior_blank = board->button.blank;
+        board->sleep_touch_irq = irq;
+        board->last_activity_ms = now;
+    }
+    bool touch = board->button.blank && irq != board->sleep_touch_irq;
+    bool eligible = jelli_auto_sleep_allowed(engine->ui.battery_reading_valid,
+                                             engine->ui.battery_status[0], board->button.io != NULL,
+                                             jelli_network_idle_offline(), engine->game.resuming);
+    sleep_wake(board, battery, eligible, touch, button_pressed, now);
+    sleep_enter(board, eligible, now);
+    if (!board->sleep.active)
+        return false;
+    uint64_t elapsed = now >= engine->last_ms ? now - engine->last_ms : 0u;
+    if (!engine->paused)
+        jelli_game_advance(&engine->game, elapsed);
+    engine->last_ms = now;
+    jelli_esp_session_update(session, engine, false);
+    vTaskDelay(pdMS_TO_TICKS(250));
+    return true;
+}
+
 static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *session)
 {
     uint64_t report_start = now_ms(NULL);
     unsigned frames = 0;
+    board->last_activity_ms = now_ms(NULL);
     for (;;) {
         uint64_t start = now_ms(NULL);
-        jelli_case_button_poll(&board->button, start);
+        bool button_pressed = jelli_case_button_poll(&board->button, start, board->sleep.active);
         if (board->button.blank) {
             jelli_pet_pointer(&engine->ui, &engine->game,
                               (JelliInput){.kind = JELLI_POINTER_CANCEL}, start);
@@ -160,6 +227,8 @@ static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *se
         bool frozen = jelli_debug_wire_poll(engine, start);
         if (!frozen)
             jelli_battery_monitor_poll(engine, board->button.blank, start);
+        if (battery_sleep_poll(engine, board, session, start, button_pressed, frozen))
+            continue;
         jelli_experiments_poll(&board->display, engine);
         jelli_network_poll(engine, session, frozen);
         jelli_esp_session_update(session, engine, frozen);

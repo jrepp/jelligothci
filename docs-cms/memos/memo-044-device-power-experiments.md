@@ -192,3 +192,38 @@ routing through the expander, PMIC rail sequencing, and QMI8658/ES7210 unused
 peripheral states remain follow-up experiments requiring their exact protocols.
 Deep sleep is deferred until trusted time and overnight save/journal recovery
 have dedicated tests; it is not a drop-in replacement for this light-sleep trial.
+
+
+# Normal firmware integration follow-up
+
+The normal build now enables SDK power management and tickless idle at compile
+time but requests automatic light sleep only while the screen is blank, the
+PMIC reports battery power, the case button is available, networking is offline,
+and the pet is not resuming. The inactivity timeout is 60 seconds. The engine
+continues bounded game advancement and session checkpoints with periodic task
+wakeups. A touch interrupt, case button, external power, or failed PMIC reading
+ends the sleep policy. The PMIC worker samples more often while blank. Setup
+errors restore the prior power policy, display and audio before retrying; an
+unknown power source never enables sleep. Battery Settings separately shows
+plugged and charging states based on PMIC status.
+
+The first build linked while its source list was being edited and failed with
+undefined policy functions. A subsequent configured build includes those
+sources. Host policy and rendering tests exercise source gating, timeout and
+charging transitions. Physical battery-only entry, touch and button wake, panel
+recovery, sound, and current savings remain unverified; light-sleep policy
+enablement and display blanking do not prove the CPU actually slept.
+
+The first all-files static-analysis pass found four function complexity limits;
+the battery comparison, sampling, and power-policy logic were split and the
+next hook run passed. The final normal firmware was rebuilt incrementally and
+flashed after a private NVS backup; transfer hashes verified. The board's PMIC
+reported external power and charging-phase status on the preceding image.
+Physical battery-only entry and wake on this revision remain awaiting a device
+check. The 60-second timeout and both wake options were confirmed by the owner.
+
+A later commit hook found formatting violations in newly added files that had
+not been included by the earlier tracked-file formatter; formatting them after
+staging fixed the issue. The broad desktop run timed out in the unrelated
+Jelli Art server test; the separate result and any retry are recorded alongside
+this validation rather than treating the partial run as a pass.

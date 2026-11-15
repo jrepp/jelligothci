@@ -85,10 +85,11 @@ port again, and retry. USB detection alone does not validate display or touch.
 Current firmware bring-up checks: confirm the pet and legible menu appear,
 buttons match touch coordinates, care completes, Rest/Wake changes the pose,
 and the display survives reset. The pet simulation's sleep state does not put
-the board into hardware sleep. Firmware checkpoints to NVS and reads the board RTC
+the board into hardware sleep by itself. On battery, the normal firmware can
+enter automatic light sleep after an inactivity timeout. Firmware checkpoints to NVS and reads the board RTC
 after a debug clock sync or a successful network time sync. Unknown or backward time grants no offline
-progress. Hardware sleep, battery charging, RTC battery retention, and physical
-interaction remain unverified.
+progress. Automatic sleep, touch wake, battery-current savings, battery charging accuracy,
+and RTC battery retention require physical verification.
 
 The current pet/debug firmware has been flashed successfully; serial startup
 verified PSRAM, display/touch driver initialization, and both ready messages.
@@ -107,8 +108,9 @@ References:
 
 ## Battery and power history
 
-Settings shows the AXP2101 battery voltage and its estimated gauge percentage
-when available. The gauge model and voltage accuracy have not been calibrated;
+Settings shows the AXP2101 estimated gauge percentage when available, plus
+`CHARGING` when the PMIC reports charging current and a charging phase, or
+`PLUGGED` when external power is present without that charging indication. The gauge model and voltage accuracy have not been calibrated;
 a missing battery, disabled ADC, or failed read is not a zero reading. The
 normal firmware never changes charge, rail, ADC or gauge configuration. Sampling
 runs on a separate worker, so I2C and flash writes do not run in the render loop.
@@ -120,7 +122,20 @@ latest PMIC read succeeded; `millivolts` and `estimated_percent` are null when
 unavailable. A source status is an observation, not an electrical current or
 energy measurement. The power history records boot/reset, sampled source changes,
 display blanking and pet sleep changes, and periodic battery samples. Display
-blanking and pet sleep do not mean that the ESP32 entered hardware sleep.
+blanking and pet sleep do not prove that the ESP32 entered hardware sleep.
+
+On battery, the normal firmware blanks the display after 60 seconds without
+input and attempts SDK automatic light sleep while networking is disabled and
+the case button is available. It pauses the display adapter, sleeps the panel,
+closes audio, and enables GPIO touch wake with periodic scheduler wakeups. A
+touch, case-button press, external power, or unavailable PMIC reading restores
+normal operation. Failed setup restores the resources and retries later. USB
+power disables this policy; PMIC changes can take one sample interval to appear.
+The game and checkpoint continue to advance while the screen is blank. The
+power log records display and source changes, not proof of actual MCU sleep or
+energy savings. See [sleep policy](../ports/esp32/main/auto_sleep_policy.c),
+[adapter integration](../ports/esp32/main/auto_sleep.c), and
+[memo-044](../docs-cms/memos/memo-044-device-power-experiments.md).
 
 History is stored separately from the checkpoint in NVS. The [worker](../ports/esp32/main/battery_monitor.c)
 samples every 30 seconds, records a periodic sample every 20 minutes, and

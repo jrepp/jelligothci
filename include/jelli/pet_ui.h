@@ -170,6 +170,8 @@ typedef struct {
     uint16_t battery_mv;
     uint8_t battery_percent;
     bool battery_present, battery_voltage_valid, battery_gauge_valid;
+    bool battery_reading_valid;
+    uint8_t battery_status[2];
     bool activity_music_enabled;
     uint16_t food;
     uint16_t gifts;
