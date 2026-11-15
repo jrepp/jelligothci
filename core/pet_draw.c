@@ -19,10 +19,10 @@
 
 static void tile(Canvas *c, const JelliPetRenderKey *v, unsigned index, int x)
 {
-    static const char *const labels[] = {"UNHAPPY", "HUNGER",     "TIRED",      "DIRTY", "BORED",
-                                         "LONELY",  "NEEDS LOVE", "MORE SLEEP", "THIRST"};
+    static const char *const labels[] = {"MOOD",    "FOOD", "ENERGY", "CLEAN", "FUN",
+                                         "FRIENDS", "LOVE", "SLEEP",  "WATER"};
     index %= JELLI_PET_STAT_COUNT;
-    unsigned score = 100u - (v->stat_value > 1000u ? 100u : v->stat_value / 10u);
+    unsigned score = v->stat_value > 1000u ? 100u : v->stat_value / 10u;
     jelli_canvas_rect(c, x, 284, 286, 96, INK);
     jelli_canvas_rect(c, x + 4, 288, 278, 88, BG);
     jelli_canvas_rect(c, x + 12, 296, 76, 72, INK);
@@ -33,7 +33,7 @@ static void tile(Canvas *c, const JelliPetRenderKey *v, unsigned index, int x)
             height = 10u;
         if (height)
             jelli_canvas_rect(c, x + 12, 368 - (int)step * 12 - (int)height, 76, (int)height,
-                              score > 75u ? PINK : TEAL);
+                              score < 25u ? PINK : TEAL);
     }
     uint32_t icon = index == 8u   ? JELLI_ASSET_MENUS_WATER
                     : index == 7u ? JELLI_ASSET_ICONS_REST
