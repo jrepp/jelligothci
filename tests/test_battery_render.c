@@ -38,13 +38,15 @@ static void test_battery_settings(void)
     ui.battery_percent = 10;
     jelli_pet_render(&surface, &game, &ui, 0u, false);
     CHECK(surface.damage.width == JELLI_WIDTH);
-    CHECK(region_changed(160u, 76u, 146u, 32u));
+    CHECK(pixels[110u * STRIDE + 175u] == 0x8736u);
+    CHECK(pixels[110u * STRIDE + 200u] == 0x18e3u);
+    CHECK(region_changed(150u, 76u, 166u, 44u));
     memcpy(comparison, pixels, sizeof(comparison));
     ui.battery_voltage_valid = false;
     ui.battery_gauge_valid = false;
     ui.battery_present = false;
     jelli_pet_render(&surface, &game, &ui, 0u, false);
-    CHECK(region_changed(160u, 76u, 146u, 32u));
+    CHECK(region_changed(150u, 76u, 166u, 44u));
 }
 
 int main(void)
