@@ -8,7 +8,8 @@
 
 /* NVS is shared with saves. Reserve space for the game and disable logging on
  * low space or an ambiguous write; never erase an existing namespace. */
-enum { RESERVED_NVS_ENTRIES = 256 };
+/* An 8192-byte checkpoint needs 256 data entries plus NVS blob metadata. */
+enum { RESERVED_NVS_ENTRIES = 260 };
 static nvs_handle_t storage;
 static JelliPowerRecord records[JELLI_POWER_LOG_CAPACITY];
 static portMUX_TYPE lock = portMUX_INITIALIZER_UNLOCKED;

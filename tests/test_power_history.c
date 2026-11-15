@@ -103,7 +103,7 @@ int main(int argc, char **argv)
     jelli_power_history_init();
     JelliPowerRecord record = {.boot = 42u, .reasons = JELLI_POWER_BOOT};
     if (!strcmp(argv[1], "low")) {
-        available = 259u;
+        available = 263u; /* Includes the entries needed for the new record. */
         jelli_power_history_append(record);
         status();
         CHECK(strstr(response, "\"ready\":false") && !commits);
