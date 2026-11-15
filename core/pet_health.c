@@ -107,8 +107,7 @@ bool jelli_pet_ui_control(const JelliPetUi *ui, unsigned slot, bool asleep,
     if (ui->menu_open && jelli_pet_collectible_page(ui->page))
         return jelli_pet_collectible_button(ui, slot, button);
     if (ui->menu_open && jelli_pet_discovery_slot(ui, slot))
-        return ui->page == JELLI_UI_HOME ? jelli_pet_home_button(ui, slot, asleep, button)
-                                         : jelli_pet_discovery_button(ui, slot, asleep, button);
+        return jelli_pet_discovery_control(ui, slot, asleep, button);
     if (jelli_pet_collection_button(ui, slot, button))
         return true;
     if (jelli_pet_gallery_button(ui, slot, button))
@@ -271,11 +270,22 @@ void jelli_pet_ui_back(JelliPetUi *ui)
         }
         return;
     }
+    if (ui->quick_menu) {
+        ui->quick_menu = false;
+        ui->menu_open = false;
+        ui->page = JELLI_UI_HOME;
+        return;
+    }
     if (ui->clock_edit) {
         ui->clock_edit = false;
         return;
     }
-    if (jelli_pet_page_is_routine(ui->page))
+    if (jelli_pet_page_is_routine(ui->page) && ui->quick_return) {
+        ui->quick_return = false;
+        ui->quick_menu = true;
+        ui->page = JELLI_UI_MOMENTS;
+        ui->activity_snapshot = true;
+    } else if (jelli_pet_page_is_routine(ui->page))
         ui->page = JELLI_UI_HEALTH;
     else if (ui->page == JELLI_UI_HEALTH)
         ui->page = (JelliPetPage)ui->health_return;

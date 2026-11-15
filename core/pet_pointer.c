@@ -13,6 +13,8 @@ static bool inside(JelliRect r, int x, int y, int margin)
 
 bool jelli_pet_actor_hit(const JelliPetUi *ui, const JelliGame *game, int x, int y)
 {
+    if (!ui->menu_open && x >= 90 && x < 376 && y >= 282 && y < 382)
+        return false;
     if (ui->menu_open || game->resuming || ui->effect ||
         (game->collectible.active && !game->collectible.paused) ||
         jelli_pet_page_is_routine(ui->page) || x < 0 || y < 0 || x >= JELLI_WIDTH ||

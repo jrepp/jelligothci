@@ -326,3 +326,6 @@ After the accessibility updates, the latest Studio UI run found the expected
 visual difference from the Bond field. The CI-generated desktop screenshot was
 reviewed for the labelled control and layout and adopted as the new baseline.
 The subsequent PR revision requires its own hosted checks.
+The first quick-menu static check exceeded several existing complexity limits.
+Selection, rendering and activation responsibilities were split into smaller
+helpers; the focused discovery and navigation tests pass after the refactor.

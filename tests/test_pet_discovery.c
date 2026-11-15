@@ -31,6 +31,31 @@ static void pointer(JelliInputKind kind, uint64_t now)
 {
     jelli_pet_pointer(&ui, &game, (JelliInput){kind, 233, 200}, now);
 }
+static void quick_clean(void)
+{
+    init();
+    game.pets[0].needs[JELLI_HYGIENE] = 200u;
+    ui.last_view.stat_index = 3u;
+    jelli_pet_pointer(&ui, &game, (JelliInput){JELLI_POINTER_DOWN, 230, 330}, 0u);
+    jelli_pet_pointer(&ui, &game, (JelliInput){JELLI_POINTER_UP, 230, 330}, 100u);
+    CHECK(ui.quick_menu && ui.menu_open && ui.page == JELLI_UI_MOMENTS);
+    CHECK(ui.quick_count > 0u && ui.quick_count <= 4u);
+    JelliPetUiButton button;
+    CHECK(jelli_pet_quick_button(&ui, 1u, false, &button));
+    CHECK(strcmp(button.label, "WASH") == 0);
+    CHECK(jelli_pet_quick_available(&ui, &game, 1u) == JELLI_OK);
+    jelli_pet_render(&surface, &game, &ui, 1000u, false);
+    jelli_pet_render(&surface, &game, &ui, 2000u, false);
+    jelli_pet_ui_tap(&ui, &game, (int)(button.bounds.x + 48u), (int)(button.bounds.y + 48u));
+    CHECK(!ui.quick_menu && ui.page == JELLI_UI_WASH);
+    init();
+    game.pets[0].needs[JELLI_HYGIENE] = 200u;
+    ui.last_view.stat_index = 3u;
+    CHECK(jelli_pet_quick_open(&ui, &game, 230, 330));
+    game.pets[0].asleep = true;
+    CHECK(jelli_pet_quick_available(&ui, &game, 1u) != JELLI_OK);
+}
+
 static void gestures(void)
 {
     init();
@@ -277,6 +302,7 @@ static void capture(const char *path)
 }
 int main(void)
 {
+    quick_clean();
     scene_target_priority();
     changing_pet_cancels_hold();
     home_discovery();

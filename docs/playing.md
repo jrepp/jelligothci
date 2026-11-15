@@ -168,8 +168,9 @@ Only useful actions occupy ring positions. The bottom arrow BACK is the only
 return action; X CLOSE dismisses the home ring. There is no separate confirm or
 save button: successful actions request a save. The home tile shows one stat at a
 time: Mood, Food, Energy, Clean, Fun, Friends, Love, Sleep, or Water. Swipe
-sideways to choose. A fuller meter always means the pet is doing better; helping
-the pet fills it. Completed activities briefly animate
+sideways to choose. Tap a meter to open up to four available activities that
+help it; for example, Clean can lead straight to Wash. A fuller meter always
+means the pet is doing better; helping the pet fills it. Completed activities briefly animate
 each improved stat in sequence; passive changes and debug cheats do not trigger
 that celebration.
 Scene taps open navigation without comfort or wake effects. Each pet retains

@@ -112,6 +112,8 @@ static JelliResult menu_available(JelliPetUi *ui, const JelliGame *game, unsigne
     }
     if (jelli_pet_page_is_routine(ui->page) && ui->clicker_done)
         return JELLI_NOT_READY;
+    if (jelli_pet_quick_active(ui, slot))
+        return jelli_pet_quick_available(ui, game, slot);
     if (jelli_pet_discovery_slot(ui, slot)) {
         if (ui->page == JELLI_UI_MOMENTS && slot == 6u)
             return JELLI_OK;

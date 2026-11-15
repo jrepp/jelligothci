@@ -109,6 +109,8 @@ bool jelli_pet_ring_button(const JelliPetUi *ui, unsigned slot, bool asleep,
         return jelli_pet_clock_button(true, slot, button);
     if (v->ring_page == JELLI_UI_HOME && (slot == 1u || slot == 6u))
         return jelli_pet_home_button(ui, slot, asleep, button);
+    if (v->ring_page == JELLI_UI_MOMENTS && slot && ui->quick_menu)
+        return jelli_pet_quick_button(ui, slot, asleep, button);
     if (v->ring_page == JELLI_UI_MOMENTS && slot)
         return jelli_pet_discovery_button(ui, slot, asleep, button);
     return jelli_pet_ui_button((JelliPetPage)v->ring_page, slot, asleep, true, button);

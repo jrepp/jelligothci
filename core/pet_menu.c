@@ -50,7 +50,7 @@ void jelli_pet_menu_ring(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
         JelliPetUiButton b;
         if (!jelli_pet_ring_button(ui, slot, game->pets[game->active].asleep, &b))
             continue;
-        uint16_t edge = v->ring_page == JELLI_UI_MOMENTS && slot < 6u &&
+        uint16_t edge = jelli_pet_discovery_badge(ui, v->ring_page, slot) &&
                                 jelli_pet_activity_choice(ui, slot) ==
                                     jelli_pet_suggested_moment(&game->pets[game->active], ui)
                             ? GOLD
@@ -73,7 +73,7 @@ void jelli_pet_menu_ring(Canvas *c, const JelliGame *game, const JelliPetUi *ui)
             int radius = 7 + (v->discovery_pulse == 2u ? 3 : 0);
             jelli_canvas_disk(c, x + 33, y - 33, radius, GOLD);
         }
-        if (v->ring_page == JELLI_UI_MOMENTS && slot < 6u) {
+        if (jelli_pet_discovery_badge(ui, v->ring_page, slot)) {
             unsigned id = jelli_pet_activity_choice(ui, slot);
             if (id < jelli_moment_count && (ui->ready_offers & (UINT32_C(1) << id))) {
                 jelli_canvas_disk(c, x - 32, y - 32, 9, GOLD);
@@ -90,6 +90,8 @@ const char *jelli_pet_menu_title(const JelliPetUi *ui)
     static const char *const titles[] = {"MENU",     "CARE",       "PET MENU", "PRESENTS",
                                          "SETTINGS", "ACTIVITIES", "CARE",     "BRUSH",
                                          "MEDICINE", "SHOT",       "BATH",     "YOGA"};
+    if (ui->quick_menu && ui->page == JELLI_UI_MOMENTS)
+        return "QUICK CARE";
     if (ui->page == JELLI_UI_SETTINGS && ui->clock_edit)
         return "CLOCK";
     return (unsigned)ui->page < sizeof(titles) / sizeof(titles[0]) ? titles[ui->page] : "MENU";
@@ -110,6 +112,8 @@ static const char *exercise_hint(const JelliPet *pet)
 
 static const char *not_ready_hint(const JelliPetUi *ui, const JelliGame *game)
 {
+    if (ui->quick_menu)
+        return "NOT READY NOW";
     if (ui->page == JELLI_UI_HEALTH && (ui->attempted_slot == 2u || ui->attempted_slot == 3u))
         return "ALL DONE - WAIT";
     if (ui->page == JELLI_UI_MOMENTS ||

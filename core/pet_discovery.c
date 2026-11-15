@@ -2,6 +2,20 @@
 #include "jelli/invitations.h"
 #include "jelli/activities.h"
 
+bool jelli_pet_discovery_badge(const JelliPetUi *ui, unsigned page, unsigned slot)
+{
+    return page == JELLI_UI_MOMENTS && !ui->quick_menu && slot < 6u;
+}
+
+bool jelli_pet_discovery_control(const JelliPetUi *ui, unsigned slot, bool asleep,
+                                 JelliPetUiButton *button)
+{
+    if (ui->quick_menu)
+        return jelli_pet_quick_button(ui, slot, asleep, button);
+    return ui->page == JELLI_UI_HOME ? jelli_pet_home_button(ui, slot, asleep, button)
+                                     : jelli_pet_discovery_button(ui, slot, asleep, button);
+}
+
 bool jelli_pet_discovery_slot(const JelliPetUi *ui, unsigned slot)
 {
     return slot >= 1u && slot <= 6u &&
@@ -59,8 +73,8 @@ static void snapshot(JelliPetUi *ui, const JelliGame *game)
 
 static void acknowledge(JelliPetUi *ui, JelliGame *game)
 {
-    if (!ui->menu_open || ui->page != JELLI_UI_MOMENTS || ui->last_view.ring_moving ||
-        ui->last_view.ring_page != JELLI_UI_MOMENTS ||
+    if (!ui->menu_open || ui->quick_menu || ui->page != JELLI_UI_MOMENTS ||
+        ui->last_view.ring_moving || ui->last_view.ring_page != JELLI_UI_MOMENTS ||
         ui->last_view.activity_page != ui->activity_page || !ui->last_view.ring_visible)
         return;
     for (unsigned slot = 1u; slot <= 5u; ++slot) {

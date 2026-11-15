@@ -289,6 +289,9 @@ typedef struct {
     uint8_t routine_goals[6];
     uint8_t pointer_page, pointer_form, pointer_location, pointer_activity, hold_progress;
     bool pointer_menu, pointer_pet_target, pointer_moved, pointer_consumed;
+    bool quick_menu, quick_return;
+    uint8_t quick_count, quick_choices[4];
+    uint32_t quick_pet_id;
     bool activity_snapshot;
     uint8_t activity_choices[34], activity_count;
     uint8_t home_choices[2];
@@ -331,6 +334,15 @@ void jelli_pet_home_refresh(JelliPetUi *ui, const JelliGame *game);
 unsigned jelli_pet_home_choice(const JelliPetUi *ui, unsigned slot);
 bool jelli_pet_home_button(const JelliPetUi *ui, unsigned slot, bool asleep,
                            JelliPetUiButton *button);
+bool jelli_pet_quick_active(const JelliPetUi *ui, unsigned slot);
+bool jelli_pet_quick_open(JelliPetUi *ui, const JelliGame *game, int x, int y);
+bool jelli_pet_quick_button(const JelliPetUi *ui, unsigned slot, bool asleep,
+                            JelliPetUiButton *button);
+JelliResult jelli_pet_quick_available(JelliPetUi *ui, const JelliGame *game, unsigned slot);
+unsigned jelli_pet_quick_choice(const JelliPetUi *ui, unsigned slot);
+bool jelli_pet_discovery_badge(const JelliPetUi *ui, unsigned page, unsigned slot);
+bool jelli_pet_discovery_control(const JelliPetUi *ui, unsigned slot, bool asleep,
+                                 JelliPetUiButton *button);
 bool jelli_pet_discovery_slot(const JelliPetUi *ui, unsigned slot);
 JelliCommand jelli_pet_activity_command(const JelliGame *game, unsigned choice);
 unsigned jelli_pet_activity_pages(const JelliPetUi *ui);
