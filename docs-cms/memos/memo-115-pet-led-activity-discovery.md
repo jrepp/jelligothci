@@ -311,3 +311,9 @@ a provisional choice pending owner preference.
 
 The first Snuggle hook run also rejected an implicit string-comparison test;
 the test now compares the result explicitly before the hooks are rerun.
+
+Studio CI exposed preview scenarios using a low default bond after the Snuggle
+gate. The preview now accepts an explicit bond value, and Snuggle completion
+fixtures set the threshold. One first local retry also compared against the old
+default bond; aligning the baseline with the scenario fixed that assertion.
+The latest hosted PR revision must still pass its own checks.

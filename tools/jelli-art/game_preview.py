@@ -175,7 +175,8 @@ def parse_scenario(raw, cat):
     if unknown:
         errors.append({"field": "needs", "message": f"unknown needs {', '.join(unknown)}"})
     needs = [_integer(needs_raw, n, 0, 1000, 700, errors, "needs.") for n in NEEDS]
-    s = {"potty": _integer(raw, "potty", 0, 1000, 0, errors), "minute": _integer(raw, "minute", -1, 1439, -1, errors),
+    s = {"bond": _integer(raw, "bond", 0, 1000, 100, errors),
+         "potty": _integer(raw, "potty", 0, 1000, 0, errors), "minute": _integer(raw, "minute", -1, 1439, -1, errors),
          "tilt_x": _integer(raw, "tilt_x", -100, 100, 0, errors),
          "tilt_y": _integer(raw, "tilt_y", -100, 100, 0, errors),
          "travel_speed": _integer(raw, "travel_speed", -32, 32, 0, errors),
@@ -191,7 +192,7 @@ def parse_scenario(raw, cat):
         errors.append({"field": "menu", "message": f"the {page_names[page]} page has no ring menu"})
     if errors:
         raise ScenarioError(errors)
-    argv = ["--location", cat["locations"][location]["id"] if location is not None else 0,
+    argv = ["--bond", s["bond"], "--location", cat["locations"][location]["id"] if location is not None else 0,
             "--present", cat["prizes"][present]["id"] + 1 if present is not None else 0,
             "--present_state", ("none", "offered", "owned").index(present_state),
             "--completion", ("running", "first", "repeat").index(completion), "--entry", entry["id"], "--form", form["id"], "--page", page, "--needs", ",".join(map(str, needs)),

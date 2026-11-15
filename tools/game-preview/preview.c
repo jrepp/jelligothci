@@ -25,7 +25,7 @@
 #define PREVIEW_PATH_CAPACITY 1024u
 
 typedef struct {
-    long entry, form, page, menu, behavior, potty, mess, asleep, moment, minute;
+    long entry, form, page, menu, behavior, potty, mess, asleep, moment, minute, bond;
     long start_ms, step_ms, frames, advance_s, live;
     long location, present, present_state, completion;
     long tilt_x, tilt_y, travel_speed;
@@ -54,6 +54,7 @@ static const Option options[] = {
     OPTION(menu, 0, 1),
     OPTION(behavior, 0, JELLI_BEHAVIOR_STATE_CAPACITY),
     OPTION(potty, 0, 1000),
+    OPTION(bond, 0, 1000),
     OPTION(mess, 0, 1),
     OPTION(asleep, 0, 1),
     OPTION(moment, 0, JELLI_MOMENT_CAPACITY),
@@ -133,7 +134,7 @@ static bool parse_option(const char *name, const char *value, Scenario *scenario
 
 static bool parse_args(int argc, char **argv, Scenario *scenario)
 {
-    *scenario = (Scenario){.entry = 1, .minute = -1, .step_ms = 200, .frames = 1};
+    *scenario = (Scenario){.entry = 1, .minute = -1, .step_ms = 200, .frames = 1, .bond = 100};
     for (unsigned i = 0u; i < JELLI_NEED_COUNT; ++i)
         scenario->needs[i] = 700;
     if (argc % 2 != 1)
@@ -172,6 +173,7 @@ static const char *apply_pet(const Scenario *s)
     for (unsigned i = 0u; i < JELLI_NEED_COUNT; ++i)
         pet->needs[i] = (uint16_t)s->needs[i];
     pet->potty = (uint16_t)s->potty;
+    pet->bond = (uint16_t)s->bond;
     if ((unsigned)s->location >= jelli_location_count)
         return fail("unknown location");
     pet->location = (uint8_t)s->location;

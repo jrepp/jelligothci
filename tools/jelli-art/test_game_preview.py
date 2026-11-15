@@ -326,7 +326,7 @@ class RealEngineTest(unittest.TestCase):
             path.write_bytes(original)
 
     def test_daily_snuggle_completion_uses_engine_policy(self):
-        scenario = {"pet": "BUBBLE", "form": "BABY AXO", "moment": "SNUGGLE", "frames": 1,
+        scenario = {"pet": "BUBBLE", "form": "BABY AXO", "moment": "SNUGGLE", "bond": 250, "frames": 1,
                     "minute": 540}
         first = self.service.render({**scenario, "completion": "first"})["engine"]
         repeat = self.service.render({**scenario, "completion": "repeat"})["engine"]
@@ -339,7 +339,7 @@ class RealEngineTest(unittest.TestCase):
         self.assertLess(abs(first["needs"][1] - repeat["needs"][1]), 10)
 
     def test_completion_rewards_with_simulation_and_live_frames(self):
-        scenario = {"pet": "BUBBLE", "moment": "SNUGGLE", "minute": 540}
+        scenario = {"pet": "BUBBLE", "moment": "SNUGGLE", "bond": 250, "minute": 540}
         advanced = self.service.render({**scenario, "frames": 1, "advance_s": 8})["engine"]
         live = self.service.render({**scenario, "frames": 2, "step_ms": 8000, "live": True})["engine"]
         self.assertEqual(advanced["offered"], 10)
@@ -356,11 +356,11 @@ class RealEngineTest(unittest.TestCase):
         recipe["daily_reward"] = False
         recipe["jitter_pct"] = 0
         path.write_text(json.dumps(doc))
-        scenario = {"pet": "BUBBLE", "moment": "SNUGGLE", "frames": 1, "minute": 540}
+        scenario = {"pet": "BUBBLE", "moment": "SNUGGLE", "bond": 250, "frames": 1, "minute": 540}
         try:
             first = self.service.render({**scenario, "completion": "first"})["engine"]
             repeat = self.service.render({**scenario, "completion": "repeat"})["engine"]
-            initial = self.service.render({"pet": "BUBBLE", "frames": 1})["engine"]["bond"]
+            initial = self.service.render({"pet": "BUBBLE", "bond": 250, "frames": 1})["engine"]["bond"]
             self.assertEqual(repeat["bond"] - initial, (first["bond"] - initial) * 2)
             self.assertGreater(first["needs"][1] - repeat["needs"][1], 20)
         finally:
