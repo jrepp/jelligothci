@@ -238,3 +238,8 @@ The revised factory profile built and passed the isolation checker. A commit
 attempt failed because the local 1Password signing agent returned an error; an
 unsigned local commit preserved the fix. Signing-agent availability remains an
 owner-environment issue and does not establish a build or device fault.
+
+The initial integration polled the expander-backed case button every 250 ms;
+short presses could fall entirely between polls. The interval was reduced to
+50 ms, with the existing debounce, to improve wake responsiveness. Physical
+button timing and the additional wakeup energy remain to be measured.

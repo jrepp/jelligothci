@@ -207,7 +207,8 @@ static bool battery_sleep_poll(JelliPetEngine *engine, Board *board, JelliEspSes
         jelli_game_advance(&engine->game, elapsed);
     engine->last_ms = now;
     jelli_esp_session_update(session, engine, false);
-    vTaskDelay(pdMS_TO_TICKS(250));
+    /* PWR is on an I2C expander without a direct wake IRQ; poll promptly. */
+    vTaskDelay(pdMS_TO_TICKS(50));
     return true;
 }
 
