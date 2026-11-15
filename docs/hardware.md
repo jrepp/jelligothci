@@ -126,7 +126,9 @@ History is stored separately from the checkpoint in NVS. The [worker](../ports/e
 samples every 30 seconds, records a periodic sample every 20 minutes, and
 coalesces rapid events; the [32-record ring](../include/jelli/power_log.h)
 retains at most about 10 hours of periodic samples when no events replace them.
-The log reserves NVS space for the game. Writes stop and `powerlog` reports an error if
+Before a history write, the worker checks available NVS entries against a
+checkpoint reserve. Fragmentation and other writes can still prevent a later
+checkpoint. History writes stop and `powerlog` reports an error if
 storage cannot be read or safely written; existing NVS is never erased. Records
 include a boot nonce and monotonic milliseconds; wall time is meaningful only
 when its valid flag is set. Transitions can be coalesced and source changes are
