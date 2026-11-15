@@ -175,6 +175,26 @@ static void finish_event(const JelliPetUi *ui, JelliGame *game, uint32_t sequenc
         game->events->input = 0u;
 }
 
+static void activate_quick(JelliPetUi *ui, JelliGame *game, unsigned slot)
+{
+    unsigned choice = jelli_pet_quick_choice(ui, slot);
+    if (choice >= 128u) {
+        ui->quick_return = choice - 128u == JELLI_UI_ACTION_WASH;
+        ui->quick_menu = false;
+        execute(ui, game, (JelliPetUiAction)(choice - 128u));
+    } else {
+        JelliCommand command = jelli_pet_activity_command(game, choice);
+        ui->result = jelli_game_command(game, command);
+        if (ui->result == JELLI_OK) {
+            ui->quick_menu = false;
+            ui->menu_open = false;
+            ui->page = JELLI_UI_HOME;
+            ui->save_requested = true;
+            ui->save_status = JELLI_SAVE_PENDING;
+        }
+    }
+}
+
 static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
 {
     if (slot == 0u) {
@@ -186,6 +206,8 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
         ui->save_requested = true;
         ui->save_status = JELLI_SAVE_PENDING;
         ui->result = JELLI_OK;
+    } else if (jelli_pet_quick_active(ui, slot)) {
+        activate_quick(ui, game, slot);
     } else if (jelli_pet_discovery_slot(ui, slot)) {
         if (ui->page == JELLI_UI_MOMENTS && slot == 6u) {
             ui->activity_page = (uint8_t)((ui->activity_page + 1u) % jelli_pet_activity_pages(ui));
@@ -233,8 +255,8 @@ static void sync_clock(const JelliPetUi *ui, JelliGame *game)
 /* Things in the scene take taps before the controls: a falling present, a mess, the pet. */
 static bool scene_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
 {
-    return jelli_pet_gallery_tap(ui, game, x, y) || jelli_pet_tap_mess(ui, game, x, y) ||
-           jelli_pet_touch_actor(ui, game, x, y);
+    return jelli_pet_quick_open(ui, game, x, y) || jelli_pet_gallery_tap(ui, game, x, y) ||
+           jelli_pet_tap_mess(ui, game, x, y) || jelli_pet_touch_actor(ui, game, x, y);
 }
 
 void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
