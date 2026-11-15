@@ -41,9 +41,32 @@ static void real_v21_checkpoint(void)
           loaded.game.pets[0].rpg_stats[1] == 0u && loaded.game.pets[0].rpg_stats[2] == 0u);
 }
 
+static void completion_trains_once(void)
+{
+    JelliSave save = {0}, loaded;
+    jelli_game_init(&save.game);
+    JelliPet *pet = &save.game.pets[0];
+    for (unsigned i = 0u; i < JELLI_NEED_COUNT; ++i)
+        pet->needs[i] = 700u;
+    pet->hydration = 700u;
+    CHECK(jelli_game_command(&save.game, (JelliCommand){JELLI_CMD_MOMENT, pet->id, 4u}) ==
+          JELLI_OK);
+    CHECK(pet->rpg_stats[JELLI_RPG_INTELLIGENCE] == 0u);
+    uint8_t bytes[JELLI_SAVE_CAPACITY];
+    size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
+    CHECK(size && jelli_save_decode(&loaded, bytes, size));
+    for (unsigned i = 0u; i < 20u; ++i)
+        jelli_game_advance(&loaded.game, 800u);
+    CHECK(loaded.game.pets[0].rpg_stats[JELLI_RPG_INTELLIGENCE] == 10u);
+    for (unsigned i = 0u; i < 20u; ++i)
+        jelli_game_advance(&loaded.game, 800u);
+    CHECK(loaded.game.pets[0].rpg_stats[JELLI_RPG_INTELLIGENCE] == 10u);
+}
+
 int main(void)
 {
     real_v21_checkpoint();
+    completion_trains_once();
     JelliSave save = {0}, loaded;
     jelli_game_init(&save.game);
     JelliPet *pet = &save.game.pets[0];
