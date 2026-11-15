@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.20.0](https://github.com/jrepp/jelligothci/compare/v0.19.0...v0.20.0) (2026-11-15)
+
+
+### Features
+
+* add pet-led activity discovery ([9e4d888](https://github.com/jrepp/jelligothci/commit/9e4d888aa82e21194f99ac43ebc033190a9ecc14))
+* celebrate care pips and brighten meters ([2031004](https://github.com/jrepp/jelligothci/commit/20310049df4b2b0b258530556c975c9e82ad61fc))
+* choose locations and interrupt activities ([4db2d0b](https://github.com/jrepp/jelligothci/commit/4db2d0b2d32ff1db74cbbac80be2ef42368890f8))
+* **factory:** capture battery and power telemetry ([6b377cd](https://github.com/jrepp/jelligothci/commit/6b377cdb5104d1ccd77600298f813dc91b9f77d2))
+* open quick activities from pet meters ([3cfbc8f](https://github.com/jrepp/jelligothci/commit/3cfbc8f473c04467c7fbe9de8b639a4dda964e0a))
+* require bond before snuggle invitations ([e2138d8](https://github.com/jrepp/jelligothci/commit/e2138d8d72cbfdef22b23b93f205c320ebe6c211))
+* show battery status and persist power history ([332f294](https://github.com/jrepp/jelligothci/commit/332f294a44a9508039d025c2c6925bca80319b70))
+* train hidden stats through moments ([cd6aed7](https://github.com/jrepp/jelligothci/commit/cd6aed7e373248e94a6e8c0b56ae4d77191c4d39))
+
+
+### Bug Fixes
+
+* clear the settings heading above the battery meter ([d8ef3eb](https://github.com/jrepp/jelligothci/commit/d8ef3eb6bdf04ea513d6361e7fa938ddd0acfe16))
+* **factory:** report current schema at startup ([3bbae15](https://github.com/jrepp/jelligothci/commit/3bbae15e32fd1603f9288bd1707672536106daf4))
+* preserve activity status precedence ([264675d](https://github.com/jrepp/jelligothci/commit/264675dcdfa425439f1de1118f7270e48c94a78f))
+* preview snuggle with explicit bond ([110ca55](https://github.com/jrepp/jelligothci/commit/110ca5546a672750140249c07c5405e2c1350090))
+* reserve checkpoint metadata alongside payload ([f070b81](https://github.com/jrepp/jelligothci/commit/f070b818b5a74dd676815961c323896d99946d91))
+
 ## [0.19.0](https://github.com/jrepp/jelligothci/compare/v0.18.0...v0.19.0) (2026-11-12)
 
 

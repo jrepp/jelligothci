@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.17.0...jelli-art-v0.17.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* preview snuggle with explicit bond ([110ca55](https://github.com/jrepp/jelligothci/commit/110ca5546a672750140249c07c5405e2c1350090))
+
 ## [0.17.0](https://github.com/jrepp/jelligothci/compare/jelli-art-v0.16.0...jelli-art-v0.17.0) (2026-11-12)
 
 
