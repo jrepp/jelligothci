@@ -233,3 +233,8 @@ that check still expected PM and tickless idle to be disabled. The normal
 profile now requires both, while the factory profile explicitly disables them
 and the power profile retains profiling. The isolation check was updated to
 verify those distinct configurations; rerun results are tracked on the PR.
+
+The revised factory profile built and passed the isolation checker. A commit
+attempt failed because the local 1Password signing agent returned an error; an
+unsigned local commit preserved the fix. Signing-agent availability remains an
+owner-environment issue and does not establish a build or device fault.
