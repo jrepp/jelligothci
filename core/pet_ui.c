@@ -80,6 +80,7 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 {
     if (action == JELLI_UI_ACTION_SWITCH_PET) {
         ui->pets_return = (uint8_t)ui->page;
+        ui->pets_page = 0u;
         ui->page = JELLI_UI_PETS;
     } else if (action == JELLI_UI_ACTION_MOMENTS)
         ui->page = JELLI_UI_MOMENTS;
@@ -154,6 +155,8 @@ static unsigned input_code(const JelliPetUi *ui, unsigned slot, bool asleep)
         return !ui->menu_open              ? JELLI_INPUT_OPEN_MENU
                : ui->page == JELLI_UI_HOME ? JELLI_INPUT_CLOSE_MENU
                                            : JELLI_INPUT_BACK;
+    if (ui->page == JELLI_UI_SETTINGS && !ui->clock_edit && slot == 8u)
+        return JELLI_UI_ACTION_SWITCH_PET;
     if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u))
         return ui->clock_edit ? JELLI_INPUT_CLOCK + slot : JELLI_INPUT_CLOCK;
     if (jelli_pet_discovery_slot(ui, slot))
@@ -208,17 +211,29 @@ static void activate_location(JelliPetUi *ui, JelliGame *game, unsigned slot)
     }
 }
 
+static bool settings_extra(JelliPetUi *ui, JelliGame *game, unsigned slot)
+{
+    if (ui->page != JELLI_UI_SETTINGS || ui->clock_edit || (slot != 7u && slot != 8u))
+        return false;
+    if (slot == 8u) {
+        (void)navigate(ui, JELLI_UI_ACTION_SWITCH_PET);
+    } else {
+        game->activity_music_enabled = !game->activity_music_enabled;
+        ++game->revision;
+        ui->save_requested = true;
+        ui->save_status = JELLI_SAVE_PENDING;
+    }
+    ui->result = JELLI_OK;
+    return true;
+}
+
 static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
 {
     if (slot == 0u) {
         jelli_pet_ui_back(ui);
         ui->result = JELLI_OK;
-    } else if (ui->page == JELLI_UI_SETTINGS && slot == 7u) {
-        game->activity_music_enabled = !game->activity_music_enabled;
-        ++game->revision;
-        ui->save_requested = true;
-        ui->save_status = JELLI_SAVE_PENDING;
-        ui->result = JELLI_OK;
+    } else if (settings_extra(ui, game, slot)) {
+        return;
     } else if (jelli_pet_location_active(ui, slot)) {
         activate_location(ui, game, slot);
     } else if (jelli_pet_quick_active(ui, slot)) {

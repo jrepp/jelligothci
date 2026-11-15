@@ -156,12 +156,7 @@ static void settings_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui
     if (ui->result == JELLI_OK && ui->clock_edit)
         jelli_canvas_centered(c, JELLI_VERSION_LABEL, 374, 1u, PALE);
     if (!ui->clock_edit) {
-        JelliPetUiButton music;
-        if (jelli_pet_ui_control(ui, 7u, pet->asleep, &music)) {
-            jelli_canvas_rect(c, (int)music.bounds.x, (int)music.bounds.y, (int)music.bounds.width,
-                              (int)music.bounds.height, TEAL);
-            jelli_canvas_centered(c, music.label, (int)music.bounds.y + 19, 1u, PALE);
-        }
+        jelli_pet_draw_settings_buttons(c, ui, pet->asleep);
     }
     if (!ui->clock_edit)
         jelli_pet_draw_battery(c, ui);

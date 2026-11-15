@@ -19,6 +19,7 @@ typedef struct {
 
 void jelli_pet_meter_tile(Canvas *c, const JelliPetRenderKey *view, unsigned index, int x);
 void jelli_pet_draw_battery(Canvas *c, const JelliPetUi *ui);
+void jelli_pet_draw_settings_buttons(Canvas *c, const JelliPetUi *ui, bool asleep);
 void jelli_pet_draw_menu_button(Canvas *c, const JelliPetUi *ui);
 bool jelli_canvas_in_round(int x, int y);
 void jelli_canvas_pixel(Canvas *c, int x, int y, uint16_t color);
