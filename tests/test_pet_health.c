@@ -35,6 +35,29 @@ static void press(JelliPetUi *ui, JelliGame *game, unsigned slot)
                      (int)(b.bounds.y + b.bounds.height / 2u));
 }
 
+static void test_pip_celebration(void)
+{
+    for (unsigned kind = 0u; kind < 2u; ++kind) {
+        JelliGame game;
+        JelliPetUi ui;
+        test_game_pair(&game);
+        jelli_pet_ui_init(&ui);
+        jelli_pet_ui_swipe(&ui, &game, 0, 80);
+        press(&ui, &game, 2u);
+        press(&ui, &game, 2u);
+        press(&ui, &game, kind ? 4u : 1u);
+        JelliSurface surface = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
+        jelli_pet_render(&surface, &game, &ui, 0u, false);
+        memset(&ui.particles, 0, sizeof(ui.particles));
+        jelli_pet_health_tap(&ui, &game);
+        CHECK(ui.result == JELLI_OK && jelli_particles_count(&ui.particles) == 16u);
+        memset(&ui.particles, 0, sizeof(ui.particles));
+        CHECK(jelli_tunable_set(&ui.tunables, 0u, JELLI_TUNE_BURST_COUNT, 0u));
+        jelli_pet_health_tap(&ui, &game);
+        CHECK(ui.result == JELLI_OK && jelli_particles_count(&ui.particles) == 0u);
+    }
+}
+
 static void test_clicker(void)
 {
     for (unsigned kind = 0; kind < 4u; ++kind) {
@@ -359,6 +382,7 @@ int main(void)
     test_idle_coos();
     test_routine_tuning();
     test_atmosphere_and_sound();
+    test_pip_celebration();
     test_clicker();
     test_cached_centroid();
     puts(

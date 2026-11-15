@@ -193,6 +193,19 @@ bool jelli_pet_health_select(JelliPetUi *ui, const JelliGame *game, JelliPetUiAc
     return true;
 }
 
+static void celebrate_pip(JelliPetUi *ui, const JelliPet *pet)
+{
+    unsigned amount = jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_BURST_COUNT);
+    if (amount > JELLI_PARTICLE_CAPACITY / 2u)
+        amount = JELLI_PARTICLE_CAPACITY / 2u;
+    unsigned spread = jelli_tunable_get(&ui->tunables, pet->id, pet->form, JELLI_TUNE_SPREAD);
+    int pip_x = 233 - (int)(ui->clicker_goal ? ui->clicker_goal - 1u : 0u) * 10 +
+                (int)(ui->clicker_hits - 1u) * 20;
+    unsigned top = ui->actor_bounds.y > 196u ? ui->actor_bounds.y - 104u : 92u;
+    jelli_particles_burst_tuned(&ui->particles, pip_x, 366, true, amount, spread);
+    jelli_particles_burst_tuned(&ui->particles, 233, (int)top + 48, true, amount, spread);
+}
+
 void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game)
 {
     if (ui->clicker_pet != game->pets[game->active].id) {
@@ -211,6 +224,7 @@ void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game)
         game, (JelliCommand){JELLI_CMD_HEALTH, ui->clicker_pet, jelli_pet_health_action(ui)});
     if (ui->result == JELLI_OK) {
         ++ui->clicker_hits;
+        celebrate_pip(ui, &game->pets[game->active]);
         JelliCommand next = {JELLI_CMD_HEALTH, ui->clicker_pet, jelli_pet_health_action(ui)};
         bool satisfied = ui->page == JELLI_UI_BRUSH &&
                          jelli_game_check(game, next, &ui->action_scratch) == JELLI_FULL;

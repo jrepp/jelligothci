@@ -17,37 +17,6 @@
 #define JELLI_VERSION_LABEL "UNVERSIONED" /* Standalone static-analysis build. */
 #endif
 
-static void tile(Canvas *c, const JelliPetRenderKey *v, unsigned index, int x)
-{
-    static const char *const labels[] = {"MOOD",    "FOOD", "ENERGY", "CLEAN", "FUN",
-                                         "FRIENDS", "LOVE", "SLEEP",  "WATER"};
-    index %= JELLI_PET_STAT_COUNT;
-    unsigned score = v->stat_value > 1000u ? 100u : v->stat_value / 10u;
-    jelli_canvas_rect(c, x, 284, 286, 96, INK);
-    jelli_canvas_rect(c, x + 4, 288, 278, 88, BG);
-    jelli_canvas_rect(c, x + 12, 296, 76, 72, INK);
-    unsigned fill = score * 60u / 100u;
-    for (unsigned step = 0u; step < 6u; ++step) {
-        unsigned height = fill > step * 10u ? fill - step * 10u : 0u;
-        if (height > 10u)
-            height = 10u;
-        if (height)
-            jelli_canvas_rect(c, x + 12, 368 - (int)step * 12 - (int)height, 76, (int)height,
-                              score < 25u ? PINK : TEAL);
-    }
-    uint32_t icon = index == 8u   ? JELLI_ASSET_MENUS_WATER
-                    : index == 7u ? JELLI_ASSET_ICONS_REST
-                    : index == 6u ? JELLI_ASSET_EFFECTS_HEART
-                    : !index      ? JELLI_ASSET_METERS_SOCIAL
-                                  : JELLI_ASSET_METER_BASE + index;
-    jelli_canvas_sprite(c, icon, x + 18, 300, 2u);
-    char number[4];
-    int size = snprintf(number, sizeof(number), "%u", score);
-    if (size > 0 && (size_t)size < sizeof(number))
-        jelli_canvas_text(c, number, x + 112, 287, 4u, PALE);
-    jelli_canvas_text(c, labels[index], x + 112, 344, 2u, MINT);
-}
-
 static void draw_tile(Canvas c, const JelliPetRenderKey *view)
 {
     if (c.left < 90)
@@ -59,7 +28,7 @@ static void draw_tile(Canvas c, const JelliPetRenderKey *view)
     if (c.bottom > 382)
         c.bottom = 382;
     jelli_canvas_rect(&c, 90, 282, 286, 100, BG);
-    tile(&c, view, view->stat_index, 90);
+    jelli_pet_meter_tile(&c, view, view->stat_index, 90);
 }
 
 void jelli_pet_draw_tile(JelliSurface *surface, const JelliPetRenderKey *view, const JelliPetUi *ui)
@@ -266,7 +235,7 @@ static void activity(Canvas *c, const JelliPetUi *ui)
     for (unsigned i = 0; i < ui->clicker_goal; ++i)
         jelli_canvas_disk(
             c, 233 - (int)(ui->clicker_goal ? ui->clicker_goal - 1u : 0u) * 10 + (int)i * 20, 366,
-            5, i < ui->clicker_hits ? GOLD : INK);
+            7, i < ui->clicker_hits ? GOLD : INK);
     char message[24];
     const char *label = b.label;
     if (ui->last_view.asleep)

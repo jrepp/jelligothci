@@ -96,5 +96,5 @@ void jelli_pet_timing(JelliPetUi *ui, const JelliPet *pet, uint64_t time, JelliP
                                   !ui->menu_open, &ui->stat_offset, &view->stat_value);
     view->stat_index = ui->stat_offset;
     view->reward_index = ui->rewards.index;
-    view->tile_phase = 0u;
+    view->tile_phase = view->reward_active ? (uint16_t)((time / 150u) % 2u) : 0u;
 }
