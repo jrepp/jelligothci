@@ -243,3 +243,9 @@ The initial integration polled the expander-backed case button every 250 ms;
 short presses could fall entirely between polls. The interval was reduced to
 50 ms, with the existing debounce, to improve wake responsiveness. Physical
 button timing and the additional wakeup energy remain to be measured.
+
+A GPIO wake can occur while the adapter task is paused, so the integration
+also checks the touch interrupt level after scheduler wake in addition to the
+recorded interrupt timestamp. This avoids depending solely on delivery of a
+normal interrupt callback across sleep. Pulse timing and physical wake remain
+to be verified on the board.

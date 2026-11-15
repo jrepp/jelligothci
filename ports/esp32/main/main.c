@@ -18,6 +18,7 @@
 #include "pipeline_profile.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -182,6 +183,12 @@ static void sleep_enter(Board *board, bool eligible, uint64_t now)
         board->sleep_retry_ms = now + 10000u;
 }
 
+static bool sleep_touch_pending(const Board *board, uint32_t irq)
+{
+    return board->button.blank && (irq != board->sleep_touch_irq ||
+                                   (board->sleep.active && gpio_get_level(BSP_LCD_TOUCH_INT) == 0));
+}
+
 static bool battery_sleep_poll(JelliPetEngine *engine, Board *board, JelliEspSession *session,
                                uint64_t now, bool button_pressed, bool frozen)
 {
@@ -194,7 +201,7 @@ static bool battery_sleep_poll(JelliPetEngine *engine, Board *board, JelliEspSes
         board->sleep_touch_irq = irq;
         board->last_activity_ms = now;
     }
-    bool touch = board->button.blank && irq != board->sleep_touch_irq;
+    bool touch = sleep_touch_pending(board, irq);
     bool eligible = jelli_auto_sleep_allowed(engine->ui.battery_reading_valid,
                                              engine->ui.battery_status[0], board->button.io != NULL,
                                              jelli_network_idle_offline(), engine->game.resuming);
