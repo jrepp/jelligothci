@@ -301,3 +301,13 @@ the incremental firmware rebuilt and the board was flashed again after another
 private NVS backup. Transfer hashes verified and the debug endpoint reported a
 present battery, available history and retained previous records. The reserve
 is a space check, not a guarantee against fragmentation or concurrent writes.
+
+
+The Snuggle activity now has an authored minimum bond, enforced for ordinary
+selection and invitations. The initial boundary tests exposed two existing
+Snuggle fixtures with lower bond; updating those fixtures to represent an
+unlocked pet restored the reward and creature tests. The default threshold is
+a provisional choice pending owner preference.
+
+The first Snuggle hook run also rejected an implicit string-comparison test;
+the test now compares the result explicitly before the hooks are rerun.

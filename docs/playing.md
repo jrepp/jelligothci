@@ -419,7 +419,8 @@ BUBBLE, unlocked by the Bubble Gem, hatches as BABY AXO and grows into the
 axolotl. Evolution preserves identity and the collection slot. Stored pets
 remain frozen. NEW marks a newly acquired companion until its details are viewed.
 
-BABY AXO has its own SNUGGLE activity at home. The first snuggle each local day
+BABY AXO has its own SNUGGLE activity at home after reaching the minimum bond
+set in the [activity catalog](../content/activities.json). The first snuggle each local day
 costs energy, gives rewards, and offers the TEDDY BEAR present, which can be
 given to another pet like any present. Later snuggles that day replay the hug
 for free, with no costs or rewards; the limit survives save and reload

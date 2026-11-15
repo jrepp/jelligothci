@@ -266,6 +266,7 @@ static void baby_axolotl_snuggles_cries_and_sleeps(void)
     JelliGame game;
     JelliPetUi ui;
     baby_axolotl_game(&game);
+    game.pets[game.active].bond = 250u;
     jelli_pet_ui_init(&ui);
     game.clock_known = true;
     game.clock_minute = 780u;

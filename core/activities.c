@@ -57,7 +57,7 @@ static bool unlocked(const JelliGame *game, const JelliPet *pet, unsigned id)
 {
     const JelliMoment *m = &jelli_moments[id];
     unsigned minute = activity_minute(game, pet);
-    if (minute < m->start_minute || minute >= m->end_minute)
+    if (pet->bond < m->min_bond || minute < m->start_minute || minute >= m->end_minute)
         return false;
     if (m->forms && (pet->form >= 32u || !(m->forms & (UINT32_C(1) << pet->form))))
         return false;
@@ -95,6 +95,8 @@ JelliResult jelli_moment_available(const JelliGame *game, const JelliPet *pet, u
 {
     if (id >= jelli_moment_count || id >= JELLI_MOMENT_CAPACITY)
         return JELLI_INVALID_TARGET;
+    if (pet->bond < jelli_moments[id].min_bond)
+        return JELLI_NOT_READY;
     if (pet->asleep)
         return JELLI_ASLEEP;
     if (pet->activity != JELLI_IDLE)
@@ -147,7 +149,7 @@ const char *jelli_moment_hint(const JelliGame *game, const JelliPet *pet, unsign
     if (m->forms && (pet->form >= 32u || !(m->forms & (UINT32_C(1) << pet->form))))
         return "FOR ANOTHER PET";
     unsigned minute = activity_minute(game, pet);
-    if (minute < m->start_minute || minute >= m->end_minute)
+    if (pet->bond < m->min_bond || minute < m->start_minute || minute >= m->end_minute)
         return m->window_hint;
     if (m->requires && (pet->activity_day != jelli_activity_day(game, pet) ||
                         !(pet->completed_moments & (UINT32_C(1) << (m->requires - 1u)))))
