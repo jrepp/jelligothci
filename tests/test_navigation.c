@@ -279,7 +279,7 @@ static void menu_guidance(void)
     CHECK(jelli_pet_ui_control(&ui, 2u, false, &button));
     jelli_pet_ui_tap(&ui, &game, 356, 111);
     CHECK(ui.result == JELLI_NOT_READY && ui.page == JELLI_UI_HEALTH);
-    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "DOSE GIVEN - WAIT") == 0);
+    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "ALL DONE - WAIT") == 0);
     jelli_pet_render(&surface, &game, &ui, 0u, false);
     CHECK(ui.last_view.unavailable & (1u << 2u));
     ui.page = JELLI_UI_HOME;
@@ -287,7 +287,7 @@ static void menu_guidance(void)
     ui.last_view.ring_moving = false;
     jelli_pet_ui_tap(&ui, &game, 405, 233);
     CHECK(ui.result == JELLI_FULL);
-    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "HYDRATION FULL") == 0);
+    CHECK(strcmp(jelli_pet_menu_hint(&ui, &game), "NOT THIRSTY") == 0);
 }
 
 static void bottom_button_bounds(void)
