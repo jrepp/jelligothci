@@ -95,12 +95,12 @@ JelliResult jelli_moment_available(const JelliGame *game, const JelliPet *pet, u
 {
     if (id >= jelli_moment_count || id >= JELLI_MOMENT_CAPACITY)
         return JELLI_INVALID_TARGET;
-    if (pet->bond < jelli_moments[id].min_bond)
-        return JELLI_NOT_READY;
     if (pet->asleep)
         return JELLI_ASLEEP;
     if (pet->activity != JELLI_IDLE)
         return JELLI_BUSY;
+    if (pet->bond < jelli_moments[id].min_bond)
+        return JELLI_NOT_READY;
     if (!jelli_invitation_grants(game, pet, id) &&
         (!unlocked(game, pet, id) ||
          (jelli_moments[id].random_weight && random_choice(game, pet) != id)))
