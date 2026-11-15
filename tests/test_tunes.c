@@ -1,4 +1,5 @@
 #include "game_fixture.h"
+#include "save_layout.h"
 #include "jelli/save.h"
 #include "jelli/music.h"
 #include <stdio.h>
@@ -41,16 +42,19 @@ int main(void)
     CHECK(!loaded.game.activity_music_enabled && loaded.game.cartridge_stats[1].plays == 2u);
     CHECK(!loaded.game.prizes.owned && !loaded.game.pets[0].collectible_progress.record_rewarded);
     loaded.sequence = 321u;
-    bytes[size - 10u] |= 1u; /* A rare record cannot be unlocked by a discovery bit. */
+    bytes[size - 10u - TEST_SAVE_V21_BYTES(saved.game.count)] |=
+        1u; /* A rare record cannot be unlocked by a discovery bit. */
     repair(size);
     CHECK(!jelli_save_decode(&loaded, bytes, size) && loaded.sequence == 321u);
     size = jelli_save_encode(&saved, bytes, sizeof(bytes));
-    bytes[size - 9u] |= 0x80u; /* Future/unsupported song bit. */
+    bytes[size - 9u - TEST_SAVE_V21_BYTES(saved.game.count)] |=
+        0x80u; /* Future/unsupported song bit. */
     repair(size);
     CHECK(!jelli_save_decode(&loaded, bytes, size) && loaded.sequence == 321u);
     size = jelli_save_encode(&saved, bytes, sizeof(bytes));
-    memmove(bytes + size - 10u, bytes + size - 8u, 8u);
-    size -= 2u;
+    size_t removed = 2u + TEST_SAVE_V21_BYTES(saved.game.count);
+    memmove(bytes + size - 8u - removed, bytes + size - 8u, 8u);
+    size -= removed;
     bytes[4] = 18u;
     repair(size);
     CHECK(jelli_save_decode(&loaded, bytes, size));

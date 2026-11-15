@@ -84,6 +84,12 @@ static void input_event(JelliPetEngine *engine, JelliInput input)
     if (consume_input(engine, input))
         return;
     switch (input.kind) {
+    case JELLI_POINTER_DOWN:
+    case JELLI_POINTER_MOVE:
+    case JELLI_POINTER_UP:
+    case JELLI_POINTER_CANCEL:
+        jelli_pet_pointer(&engine->ui, &engine->game, input, engine->last_ms);
+        break;
     case JELLI_QUIT:
         engine->running = false;
         break;
@@ -140,8 +146,9 @@ static void rewards(JelliPetEngine *engine)
 
 static void update_hold(JelliPetEngine *engine, uint64_t now)
 {
-    if (engine->hold_active &&
-        (now < engine->hold_started_ms || engine->ui.menu_open || engine->game.resuming)) {
+    if (!engine->hold_active)
+        return; /* Pointer contacts own their own hold feedback. */
+    if (now < engine->hold_started_ms || engine->ui.menu_open || engine->game.resuming) {
         engine->hold_active = false;
         engine->hold_consumed = true;
     }
@@ -179,6 +186,7 @@ bool jelli_pet_frame(JelliPetEngine *engine)
         jelli_pet_rewards_cancel(&engine->ui.rewards);
         engine->ui.rewards.cursor = engine->events.sequence;
     }
+    jelli_pet_discovery_update(&engine->ui, &engine->game, now);
     JelliInput input;
     for (unsigned n = 0;
          engine->platform.poll && n < 32 && engine->platform.poll(engine->platform.ctx, &input);
@@ -197,6 +205,8 @@ bool jelli_pet_frame(JelliPetEngine *engine)
     if (!was_resuming && !engine->paused)
         jelli_pet_chain_feedback(&engine->ui, &previous_collectible, &engine->game.collectible);
     jelli_pet_bubble_checkpoint(&engine->ui, &previous_collectible, &engine->game.collectible);
+    jelli_pet_pointer_update(&engine->ui, &engine->game, now);
+    jelli_pet_discovery_update(&engine->ui, &engine->game, now);
     jelli_pet_music_sync(engine);
     jelli_pet_celebrations(&engine->celebrations, &engine->ui, &engine->game, &engine->events,
                            jelli_effect_triggers, engine->animation_ms,

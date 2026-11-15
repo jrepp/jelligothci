@@ -32,7 +32,11 @@ typedef enum {
     JELLI_LONG_PRESS,
     JELLI_PRESS_BEGIN,
     JELLI_PRESS_MOVE,
-    JELLI_PRESS_CANCEL
+    JELLI_PRESS_CANCEL,
+    JELLI_POINTER_DOWN,
+    JELLI_POINTER_MOVE,
+    JELLI_POINTER_UP,
+    JELLI_POINTER_CANCEL
 } JelliInputKind;
 typedef struct {
     JelliInputKind kind;

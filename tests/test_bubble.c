@@ -1,6 +1,7 @@
 #include "game_fixture.h"
 #include "jelli/collectible.h"
 #include "jelli/save.h"
+#include "save_layout.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -199,8 +200,8 @@ static void legacy_and_invalid_payload(void)
     test_game_pair(&save.game);
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 63u);
-    memmove(bytes + size - 10u, bytes + size - 8u, 8u);
-    size -= 2u;
+    memmove(bytes + size - 10u - TEST_SAVE_V21_BYTES(save.game.count), bytes + size - 8u, 8u);
+    size -= 2u + TEST_SAVE_V21_BYTES(save.game.count);
     bytes[4] = 18u;
     memmove(bytes + size - 61u, bytes + size - 8u, 8u);
     size -= 53u;
@@ -213,8 +214,8 @@ static void legacy_and_invalid_payload(void)
     CHECK(jelli_collectible_play(&save.game, JELLI_COLLECTIBLE_BUBBLE_PRIZE) == JELLI_OK);
     size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 10u);
-    memmove(bytes + size - 10u, bytes + size - 8u, 8u);
-    size -= 2u;
+    memmove(bytes + size - 10u - TEST_SAVE_V21_BYTES(save.game.count), bytes + size - 8u, 8u);
+    size -= 2u + TEST_SAVE_V21_BYTES(save.game.count);
     bytes[4] = 18u;
     bytes[size - 61u] = 1u; /* Earlier v18 prototype lacks cartridge statistics. */
     memmove(bytes + size - 17u, bytes + size - 8u, 8u);
@@ -225,8 +226,8 @@ static void legacy_and_invalid_payload(void)
     CHECK(!loaded.game.cartridge_stats[1].plays);
     size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size > 10u);
-    memmove(bytes + size - 10u, bytes + size - 8u, 8u);
-    size -= 2u;
+    memmove(bytes + size - 10u - TEST_SAVE_V21_BYTES(save.game.count), bytes + size - 8u, 8u);
+    size -= 2u + TEST_SAVE_V21_BYTES(save.game.count);
     bytes[4] = 18u;
     bytes[size - 61u] = 4u; /* Unknown content identity preserves output. */
     repair(bytes, size);

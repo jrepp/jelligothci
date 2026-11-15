@@ -101,8 +101,8 @@ Headless mode injects a simulated clock; `--demo` scripts the care loop.
 Interactive mode injects SDL's monotonic clock. Tests inject their own time and
 input, so they never wait for animation to advance.
 
-Click/tap the labeled buttons to navigate Home, Care, More, Collection, and
-Settings. Space pauses live care on desktop; Escape exits. The baby evolves
+Tap the pet for the home wheel: fixed care entries on the right and ready
+activities on the left. Hold for Settings or swipe down from the closed scene. Space pauses live care on desktop; Escape exits. The baby evolves
 according to the game-time rules in [core/game_time.c](../core/game_time.c).
 Stored pets freeze until selected. Bedtime is a pet-relative routine, independent
 of your computer's local time zone.
@@ -400,3 +400,24 @@ switching pets or a care/sleep interruption ends the transient replay. Rare
 records continue through their existing sample-clock progress and bounded reward
 policy. Both use the shared café renderer and existing pet animations. See
 [memo-098](../docs-cms/memos/memo-098-encountered-tune-library.md) for verification.
+
+
+## Pet invitation and pointer contracts
+
+[RFC-013](../docs-cms/rfcs/rfc-013-pet-led-activity-discovery.md) is implemented through
+[invitation reconciliation](../core/invitations.c),
+[explicit serialization](../core/invitation_save.c), and
+[UI discovery projection](../core/pet_discovery.c) and
+[home shortcuts](../core/pet_home.c). The ledger belongs to each pet;
+preflight copies it without consuming offers. Rendering does not mutate it.
+The engine reconciles offers before input and presentation, including after resume.
+Keep retirement, command acceptance and UI eligibility on the same authored rules.
+
+Pointer input supplements semantic TAP/SWIPE for hosts that support a continuous
+press. DOWN begins one gesture; MOVE records excursion; UP resolves it; CANCEL
+ends it without action. Hosts must cancel on focus loss, lost contact, display
+sleep or queue overflow. The engine owns hold timing and target capture; adapters
+do not independently synthesize a second tap after UP. The legacy semantic input
+path remains for keyboard, debug and the shapes demo. See
+[pointer implementation](../core/pet_pointer.c) and
+[validation evidence](../docs-cms/memos/memo-115-pet-led-activity-discovery.md).

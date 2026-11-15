@@ -112,7 +112,7 @@ static void ring_icon_scale_follows_width(void)
     CHECK(checked > 20u);
 }
 
-static void health_yoga_uses_the_authored_activity(void)
+static void activities_yoga_uses_the_authored_activity(void)
 {
     JelliGame game;
     JelliPetUi ui;
@@ -125,11 +125,17 @@ static void health_yoga_uses_the_authored_activity(void)
         if (jelli_moment_available(&game, &game.pets[0], 8u) == JELLI_OK)
             break;
     }
-    ui.page = JELLI_UI_HEALTH;
+    ui.page = JELLI_UI_MOMENTS;
     ui.menu_open = true;
+    jelli_pet_discovery_refresh(&ui, &game, 0u);
+    unsigned yoga = 0u;
+    while (yoga < ui.activity_count && ui.activity_choices[yoga] != 8u)
+        ++yoga;
+    CHECK(yoga < ui.activity_count);
+    ui.activity_page = (uint8_t)(yoga / 5u);
     render(&game, &ui, 0u);
     render(&game, &ui, 2000u);
-    tap(&ui, &game, 5u);
+    tap(&ui, &game, yoga % 5u + 1u);
     CHECK(ui.result == JELLI_OK && game.pets[0].moment == 9u);
     CHECK(game.pets[0].activity == JELLI_PLAYING && !ui.menu_open);
     CHECK(ui.save_requested);
@@ -137,7 +143,7 @@ static void health_yoga_uses_the_authored_activity(void)
 
 int main(void)
 {
-    health_yoga_uses_the_authored_activity();
+    activities_yoga_uses_the_authored_activity();
     ring_icon_scale_follows_width();
     ring_items_come_from_data();
     potty_routine_from_the_ring();

@@ -32,7 +32,7 @@ static void workout_and_resume(void)
     CHECK(pet->needs[JELLI_ENERGY] == energy - 65u);
     CHECK(jelli_game_command(&save.game, workout) == JELLI_BUSY);
     CHECK(pet->hydration == water - jelli_exercise.hydration_cost);
-    CHECK(save.game.food == 5u);
+    CHECK(save.game.food == 0u);
     advance(&save.game, jelli_exercise.duration_ticks / 2u);
     uint8_t bytes[JELLI_SAVE_CAPACITY];
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));

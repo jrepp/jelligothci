@@ -1,4 +1,5 @@
 #include "jelli/activities.h"
+#include "jelli/invitations.h"
 
 unsigned jelli_moment_suggested(unsigned hour)
 {
@@ -98,8 +99,9 @@ JelliResult jelli_moment_available(const JelliGame *game, const JelliPet *pet, u
         return JELLI_ASLEEP;
     if (pet->activity != JELLI_IDLE)
         return JELLI_BUSY;
-    if (!unlocked(game, pet, id) ||
-        (jelli_moments[id].random_weight && random_choice(game, pet) != id))
+    if (!jelli_invitation_grants(game, pet, id) &&
+        (!unlocked(game, pet, id) ||
+         (jelli_moments[id].random_weight && random_choice(game, pet) != id)))
         return JELLI_NOT_READY;
     if (!jelli_moment_free_play(game, pet, id) && jelli_moment_cost_hint(pet, id)[0])
         return JELLI_NOT_READY;

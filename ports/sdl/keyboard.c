@@ -19,6 +19,10 @@ static bool focus_step(JelliPetEngine *pet, bool reverse)
 
 static bool activate(JelliPetEngine *pet, unsigned slot, JelliInput *input)
 {
+    if (!pet->ui.menu_open && slot == 0u) {
+        *input = (JelliInput){JELLI_SWIPE, 0, -80};
+        return true;
+    }
     JelliPetUiButton button;
     if (!jelli_pet_ui_control(&pet->ui, slot, pet->game.pets[pet->game.active].asleep, &button))
         return false;

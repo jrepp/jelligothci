@@ -74,6 +74,18 @@ def main():
             assert value["visual"]["menu_open"] == opened, value
         return value
 
+    def close_menu():
+        for _ in range(8):
+            if not state()["visual"]["menu_open"]:
+                return
+            cli("press", "0")
+        raise AssertionError("menu did not close")
+
+    def settings():
+        close_menu()
+        cli("swipe", "down")
+        state("settings", True)
+
     try:
         initial = state()
         asleep = initial["visual"]["asleep"]
@@ -84,41 +96,43 @@ def main():
                 cli("press", "0")
             cli("press", "CLOSE")
         closed = state("home", False)
-        assert [b["label"] for b in cli("buttons")] == ["MENU"]
+        assert [b["label"] for b in cli("buttons")] == ["PET"]
         cli("press", "CARE", error="Button must uniquely match")
         cli("press", "7", error="Button must uniquely match")
         cli("tap", "466", "0", error="invalid choice")
         assert state("home", False)["visual"]["asleep"] == asleep
-        cli("press", "menu")
-        assert len(state("home", True)["buttons"]) == 5
+        cli("press", "PET")
+        assert {"FOOD", "WATER", "CARE", "ACTIVITIES", "CLOSE"}.issubset(
+            {b["label"] for b in state("home", True)["buttons"]})
         cli("press", "CARE")
-        assert "BACK" in [b["label"] for b in state("care", True)["buttons"]]
+        assert "BACK" in [b["label"] for b in state("health", True)["buttons"]]
         cli("press", "0")
         state("home", True)
-        cli("tap", "356", "111")
+        cli("press", "ACTIVITIES")
         moments = state("moments", True)
-        assert {"BREAKFAST", "TEA", "GOING OUT", "MOVIE", "BACK"}.issubset(
-            {b["label"] for b in moments["buttons"]})
+        assert all(b["enabled"] for b in moments["buttons"])
+        assert "BACK" in {b["label"] for b in moments["buttons"]}
         screenshot = args.output.resolve() / "moments.png"
         cli("screenshot", str(screenshot))
         validate_png(screenshot)
         captured = json.loads(screenshot.with_suffix(".png.json").read_text())
         assert captured["capture"] and captured["visual"]["page"] == "moments"
         state("moments", True)  # separate CLI process: released capture and reconnect work
-        cli("press", "BACK")
-        cli("press", "SETTINGS")
+        settings()
         cli("press", "WAKE" if asleep else "REST")
         assert state()["visual"]["asleep"] != asleep
+        settings()
         cli("press", "REST" if asleep else "WAKE")
         assert state()["visual"]["asleep"] == asleep
         if args.health:
             if asleep:
+                settings()
                 cli("press", "WAKE")
-            cli("press", "BACK")
+            close_menu()
+            cli("press", "PET")
             cli("press", "CARE")
-            cli("press", "HEALTH")
             for label, page in (("BRUSH TEETH", "brush"), ("MEDICINE", "medicine"),
-                                ("SHOT", "shot"), ("WASH", "wash"), ("STRETCH", "stretch")):
+                                ("SHOT", "shot"), ("WASH", "wash")):
                 cli("press", label)
                 before = state(page, True)
                 assert len(before["buttons"]) == 2 and before["visual"]["clicker_hits"] == 0
@@ -141,17 +155,10 @@ def main():
                 assert after["visual"]["bond"] == before["visual"]["bond"]
                 cli("press", "BACK")
                 state("health", True)
-            cli("press", "0")
-            state("care", True)
-            cli("press", "BACK")
-            state("home", True)
             if asleep:
-                cli("press", "SETTINGS")
+                settings()
                 cli("press", "REST")
-                cli("press", "BACK")
-        if state()["visual"]["page"] != "home":
-            cli("press", "BACK")
-        cli("press", "CLOSE")
+        close_menu()
         end = state("home", False)
         assert end["ticks"] >= closed["ticks"], "world clock regressed"
         if args.tunables:

@@ -66,7 +66,12 @@ bool jelli_pet_collection_button(const JelliPetUi *ui, unsigned slot, JelliPetUi
 
 JelliResult jelli_pet_collection_available(JelliPetUi *ui, const JelliGame *game, unsigned slot)
 {
-    int index = jelli_collection_find(game, selected(ui));
+    int index = jelli_collection_find(game, ui->page == JELLI_UI_PETS ? slot : selected(ui));
+    if (ui->page == JELLI_UI_PETS && index >= 0 && (unsigned)index != game->active)
+        return jelli_game_check(
+            game,
+            (JelliCommand){JELLI_CMD_ACTIVATE, game->pets[game->active].id, game->pets[index].id},
+            &ui->action_scratch);
     if (ui->page == JELLI_UI_EVOLUTIONS)
         return index < 0
                    ? JELLI_NOT_READY
@@ -88,12 +93,25 @@ void jelli_pet_collection_select(JelliPetUi *ui, JelliGame *game, unsigned slot)
     if (ui->page == JELLI_UI_PETS) {
         ui->selected_pet = (uint8_t)slot;
         ui->selected_form = 0u;
-        ui->page = JELLI_UI_PET_DETAIL;
         uint16_t bit = (uint16_t)(1u << (slot - 1u));
         if (game->new_pets & bit) {
             game->new_pets &= (uint16_t)~bit;
             ui->save_requested = true;
             ui->save_status = JELLI_SAVE_PENDING;
+        }
+        int index = jelli_collection_find(game, slot);
+        if (index >= 0 && (unsigned)index != game->active) {
+            ui->result = jelli_game_command(game, (JelliCommand){JELLI_CMD_ACTIVATE,
+                                                                 game->pets[game->active].id,
+                                                                 game->pets[index].id});
+            if (ui->result == JELLI_OK) {
+                ui->menu_open = false;
+                ui->page = JELLI_UI_HOME;
+                ui->save_requested = true;
+                ui->save_status = JELLI_SAVE_PENDING;
+            }
+        } else {
+            ui->page = JELLI_UI_PET_DETAIL;
         }
     } else if (ui->page == JELLI_UI_EVOLUTIONS) {
         int index = jelli_collection_find(game, selected(ui));

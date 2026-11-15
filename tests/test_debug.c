@@ -106,13 +106,13 @@ static int parser_tests(void)
 {
     request("@J1 1 state\r\n");
     CHECK(contains("\"page\":\"home\""));
-    CHECK(contains("\"label\":\"MENU\""));
+    CHECK(contains("\"label\":\"PET\""));
     CHECK(contains("\"collection\":{\"owned_count\":0,\"owned_mask\":0,\"discovered_mask\":0"));
     CHECK(contains("\"creature\":{\"pose\":") && contains("\"behavior\":\"\"") &&
           contains("\"mess\":false"));
-    request("@J1 1 press 0 0\n");
-    request("@J1 2 press 0 4\n");
-    CHECK(engine.ui.page == JELLI_UI_CARE);
+    request("@J1 1 swipe 1\n");
+    request("@J1 2 press 4 2\n");
+    CHECK(engine.ui.page == JELLI_UI_MORE);
     request("@J1 3 press 0 1\n");
     CHECK(contains("page_changed"));
     request("@J1 4 tap 4294967296 0\n");
@@ -120,9 +120,9 @@ static int parser_tests(void)
     request("@J1 5 tap -1 0\n");
     CHECK(contains("range"));
     request("@J1 6 tap 465 465\n");
-    CHECK(engine.ui.page == JELLI_UI_CARE);
-    request("@J1 7 press 1 0\n");
-    CHECK(engine.ui.page == JELLI_UI_HOME);
+    CHECK(engine.ui.page == JELLI_UI_MORE);
+    request("@J1 7 press 2 0\n");
+    CHECK(engine.ui.page == JELLI_UI_SETTINGS);
     request("@J1 8 tap 0 0 extra\n");
     CHECK(contains("range"));
     request("log noise\n");
@@ -169,13 +169,13 @@ static int reply_capacity_tests(void)
 {
     /* The largest reply (a six-item ring with labels) still fits with the creature block. */
     engine.ui.menu_open = true;
-    engine.ui.page = JELLI_UI_MOMENTS;
+    engine.ui.page = JELLI_UI_HEALTH;
     for (unsigned frame = 0u; frame < 2u; ++frame) { /* Start, then settle, the ring. */
         clock_ms += 5000u;
         (void)jelli_pet_frame(&engine);
     }
     request("@J1 10 state\n");
-    CHECK(debug.protocol.reply_size > 0u && contains("\"creature\"") && contains("READING"));
+    CHECK(debug.protocol.reply_size > 0u && contains("\"creature\"") && contains("BRUSH TEETH"));
     return 0;
 }
 

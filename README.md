@@ -27,9 +27,11 @@ First builds download the pinned local Python and asset tools. Setup for other
 platforms is in [CONTRIBUTING.md](CONTRIBUTING.md). The executable starts an
 unsaved session unless given `--save BASE`; `make run` enables saves.
 
-Tap MENU or swipe up to open the ring; swipe down goes back or closes it. Swipe
-sideways on the main scene to change the visible stat. Settings contains pet
-selection, sleep/wake, and the clock. Space pauses; Escape quits. The
+Tap the pet or swipe up to open the ring; hold the pet for three seconds to open
+Settings. Food, Water and Care stay on the right; two ready shortcuts and
+Activities sit on the left. Care opens individual health and hygiene routines.
+Swipe down opens Settings from the closed scene, or goes back in a menu. Swipe
+sideways on the main scene to change the visible stat. Settings contains Pet Menu for pets and gifts, sleep/wake, and the clock. Space pauses; Escape quits. The
 [playing guide](docs/playing.md) covers gameplay, saves, debug commands, and
 offline progress.
 

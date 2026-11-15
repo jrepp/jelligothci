@@ -23,7 +23,7 @@ static void heal(JelliPet *pet)
 static bool parse(char **words, unsigned count, unsigned *code, uint32_t *value)
 {
     static const char *const names[] = {"fullness", "energy", "clean", "fun", "connection",
-                                        "bond",     "food",   "gifts", "heal"};
+                                        "bond",     "",       "gifts", "heal"};
     if (count < 4u)
         return false;
     for (unsigned i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
@@ -42,14 +42,12 @@ static bool apply(JelliGame *game, unsigned code, uint32_t value)
 {
     JelliPet *pet = &game->pets[game->active];
     JelliPet previous = *pet;
-    uint16_t food = game->food, gifts = game->gifts;
+    uint16_t gifts = game->gifts;
     if (code < JELLI_NEED_COUNT) {
         pet->needs[code] = (uint16_t)(value * 10u);
         pet->need_remainders[code] = 0u;
     } else if (code == 5u) {
         pet->bond = (uint16_t)(value * 10u);
-    } else if (code == 6u) {
-        game->food = (uint16_t)value;
     } else if (code == 7u) {
         game->gifts = (uint16_t)value;
     } else {
@@ -58,7 +56,6 @@ static bool apply(JelliGame *game, unsigned code, uint32_t value)
     if (jelli_game_valid(game))
         return true;
     *pet = previous;
-    game->food = food;
     game->gifts = gifts;
     return false;
 }

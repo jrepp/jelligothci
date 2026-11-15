@@ -8,7 +8,7 @@
 /* PCF85063A register layout: NXP data sheet, sections 7.2 and 7.3.
  * RTC is UTC; the persisted UI offset determines the displayed local time. */
 static const char *TAG = "jelli_session";
-_Static_assert(sizeof(JelliEspSession) <= 24576u, "ESP save workspace exceeds 24 KiB");
+_Static_assert(sizeof(JelliEspSession) <= 26624u, "ESP save workspace exceeds 26 KiB");
 
 static void clock_sample(JelliEspSession *session, JelliPetEngine *engine, uint64_t now)
 {

@@ -68,9 +68,8 @@ int main(void)
     CHECK(engine.ui.last_view.pets_owned == UINT16_MAX);
     CHECK(engine.ui.last_view.pets_new & UINT16_C(0x8000));
     press(16u);
-    CHECK(engine.ui.page == JELLI_UI_PET_DETAIL && engine.ui.selected_pet == 16u);
+    CHECK(!engine.ui.menu_open && engine.ui.selected_pet == 16u);
     CHECK((engine.game.new_pets & UINT16_C(0x8000)) == 0u);
-    press(1u);
     CHECK(engine.game.pets[engine.game.active].collection_entry == 16u);
     puts("PASS: sixteen-family rendering, 48px compact icon fit and last-family navigation");
     return 0;

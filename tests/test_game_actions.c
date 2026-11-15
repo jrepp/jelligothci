@@ -56,7 +56,7 @@ static void test_timed_effects(void)
         CHECK(g.pets[0].activity == JELLI_IDLE);
         if (actions[i] == JELLI_CMD_FEED) {
             CHECK(g.food == food && g.pets[0].needs[JELLI_SATIETY] > 700u);
-            CHECK(g.pets[0].feeds == 1u && g.pets[0].reward_pending);
+            CHECK(g.pets[0].feeds == 0u && !g.pets[0].reward_pending);
         } else if (actions[i] == JELLI_CMD_PLAY) {
             CHECK(g.pets[0].needs[JELLI_AMUSEMENT] > 700u);
             CHECK(g.pets[0].needs[JELLI_ENERGY] < 500u);
@@ -86,9 +86,9 @@ static void test_instant_effects(void)
     CHECK(command(&g, JELLI_CMD_BEDTIME, bedtime) == JELLI_NOT_READY);
     g.pets[0].reward_pending = true;
     uint16_t food = g.food;
-    CHECK(command(&g, JELLI_CMD_CLAIM, 0u) == JELLI_OK);
-    CHECK(g.food == food + 3u && g.pets[0].reward_claimed && !g.pets[0].reward_pending);
-    CHECK(command(&g, JELLI_CMD_CLAIM, 0u) == JELLI_NOT_READY);
+    CHECK(command(&g, JELLI_CMD_CLAIM, 0u) == JELLI_INVALID_TARGET);
+    CHECK(g.food == food && !g.pets[0].reward_claimed);
+    g.pets[0].reward_pending = false;
     CHECK(command(&g, JELLI_CMD_ACTIVATE, g.pets[1].id) == JELLI_OK && g.active == 1u);
     CHECK(command(&g, JELLI_CMD_ACTIVATE, g.pets[1].id) == JELLI_NOT_READY);
 }

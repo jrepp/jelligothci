@@ -4,7 +4,6 @@
 #include "pet_gallery.h"
 #include "pet_collectible_ui.h"
 #include "pet_collection.h"
-#include "pet_food.h"
 #include "pet_feedback.h"
 #include "pet_behavior_draw.h"
 #include "jelli/sound.h"
@@ -17,24 +16,27 @@ typedef struct {
 } UiAction;
 
 /* Empty slots are neither drawn nor hit-tested. Slot IDs remain stable for debug clients. */
-static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_FEED, "FOOD", NULL},
+static const UiAction pages[7][6] = {{{0},
+                                      {JELLI_UI_ACTION_FEED, "FOOD", NULL},
                                       {JELLI_UI_ACTION_WATER, "WATER", NULL},
-                                      {JELLI_UI_ACTION_MOMENTS, "PLAY", NULL},
-                                      {JELLI_UI_ACTION_CARE, "CARE", NULL},
-                                      {JELLI_UI_ACTION_SWITCH_PET, "PETS", NULL},
-                                      {JELLI_UI_ACTION_COLLECTION, "GIFTS", NULL}},
-                                     {{JELLI_UI_ACTION_BASIC_CARE, "BASIC CARE", NULL},
-                                      {JELLI_UI_ACTION_CLEAN_WAKE, "CLEAN", NULL},
-                                      {JELLI_UI_ACTION_PLAY, "QUICK PLAY", NULL},
-                                      {JELLI_UI_ACTION_HEALTH, "HEALTH", NULL},
-                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"},
+                                      {JELLI_UI_ACTION_HEALTH, "CARE", NULL},
+                                      {JELLI_UI_ACTION_MOMENTS, "ACTIVITIES", NULL},
                                       {0}},
-                                     {{JELLI_UI_ACTION_GIFT, "GIFT", NULL},
-                                      {JELLI_UI_ACTION_CLAIM, "CLAIM", NULL},
-                                      {JELLI_UI_ACTION_TRAVEL, "TRAVEL", NULL}},
+                                     {{JELLI_UI_ACTION_FEED, "FEED", NULL},
+                                      {JELLI_UI_ACTION_HEALTH, "CARE", NULL},
+                                      {JELLI_UI_ACTION_CLEAN_WAKE, "CLEAN", NULL},
+                                      {JELLI_UI_ACTION_MOMENTS, "ACTIVITIES", NULL},
+                                      {JELLI_UI_ACTION_HEALTH, "CARE", NULL},
+                                      {JELLI_UI_ACTION_WATER, "WATER", NULL}},
+                                     {{JELLI_UI_ACTION_CLEAN_WAKE, "CLEAN", NULL},
+                                      {JELLI_UI_ACTION_HEALTH, "CARE", NULL},
+                                      {JELLI_UI_ACTION_SWITCH_PET, "PETS", NULL},
+                                      {JELLI_UI_ACTION_COLLECTION, "GIFTS", NULL},
+                                      {JELLI_UI_ACTION_SETTINGS, "SETTINGS", NULL},
+                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"}},
                                      {{0}},
                                      {{JELLI_UI_ACTION_BEDTIME, "BEDTIME +1H", NULL},
-                                      {JELLI_UI_ACTION_SWITCH_PET, "PETS", NULL},
+                                      {JELLI_UI_ACTION_MORE, "PET MENU", NULL},
                                       {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"},
                                       {0},
                                       {JELLI_UI_ACTION_VOLUME_DOWN, "VOL -", NULL},
@@ -49,14 +51,17 @@ static const UiAction pages[7][6] = {{{JELLI_UI_ACTION_FEED, "FOOD", NULL},
                                       {JELLI_UI_ACTION_MEDICINE, "MEDICINE", NULL},
                                       {JELLI_UI_ACTION_SHOT, "SHOT", NULL},
                                       {JELLI_UI_ACTION_WASH, "WASH", NULL},
-                                      {JELLI_UI_ACTION_STRETCH, "YOGA", NULL},
+                                      {JELLI_UI_ACTION_REST_WAKE, "REST", "WAKE"},
                                       {JELLI_UI_ACTION_POTTY, "POTTY", NULL}}};
 
 void jelli_pet_ui_init(JelliPetUi *ui)
 {
     if (ui == NULL)
         return;
-    *ui = (JelliPetUi){.page = JELLI_UI_HOME, .result = JELLI_OK};
+    *ui = (JelliPetUi){.page = JELLI_UI_HOME,
+                       .result = JELLI_OK,
+                       .health_return = JELLI_UI_CARE,
+                       .pets_return = JELLI_UI_SETTINGS};
 }
 
 JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep)
@@ -73,9 +78,10 @@ JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep)
 
 static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
 {
-    if (action == JELLI_UI_ACTION_SWITCH_PET)
+    if (action == JELLI_UI_ACTION_SWITCH_PET) {
+        ui->pets_return = (uint8_t)ui->page;
         ui->page = JELLI_UI_PETS;
-    else if (action == JELLI_UI_ACTION_MOMENTS)
+    } else if (action == JELLI_UI_ACTION_MOMENTS)
         ui->page = JELLI_UI_MOMENTS;
     else if (action == JELLI_UI_ACTION_CARE)
         ui->page = JELLI_UI_CARE;
@@ -83,9 +89,10 @@ static bool navigate(JelliPetUi *ui, JelliPetUiAction action)
         ui->page = JELLI_UI_COLLECTION;
     else if (action == JELLI_UI_ACTION_MORE)
         ui->page = JELLI_UI_MORE;
-    else if (action == JELLI_UI_ACTION_SETTINGS)
+    else if (action == JELLI_UI_ACTION_SETTINGS) {
+        ui->settings_return = JELLI_UI_HOME;
         ui->page = JELLI_UI_SETTINGS;
-    else if (action == JELLI_UI_ACTION_HOME)
+    } else if (action == JELLI_UI_ACTION_HOME)
         ui->page = JELLI_UI_HOME;
     else
         return false;
@@ -128,7 +135,8 @@ static void execute(JelliPetUi *ui, JelliGame *game, JelliPetUiAction action)
         result = jelli_game_command(game, command);
     ui->result = result;
     if (result == JELLI_OK &&
-        (game->pets[game->active].activity != JELLI_IDLE || action == JELLI_UI_ACTION_WATER) &&
+        (game->pets[game->active].activity != JELLI_IDLE || action == JELLI_UI_ACTION_WATER ||
+         action == JELLI_UI_ACTION_REST_WAKE) &&
         action != JELLI_UI_ACTION_SAVE && action != JELLI_UI_ACTION_VOLUME_DOWN &&
         action != JELLI_UI_ACTION_VOLUME_UP) {
         ui->menu_open = false;
@@ -148,7 +156,7 @@ static unsigned input_code(const JelliPetUi *ui, unsigned slot, bool asleep)
                                            : JELLI_INPUT_BACK;
     if (ui->page == JELLI_UI_SETTINGS && (ui->clock_edit || slot == 4u))
         return ui->clock_edit ? JELLI_INPUT_CLOCK + slot : JELLI_INPUT_CLOCK;
-    if (ui->page == JELLI_UI_MOMENTS)
+    if (jelli_pet_discovery_slot(ui, slot))
         return JELLI_UI_ACTION_SUGGEST;
     if (ui->page >= JELLI_UI_PETS)
         return JELLI_INPUT_COLLECTION + slot;
@@ -178,17 +186,15 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
         ui->save_requested = true;
         ui->save_status = JELLI_SAVE_PENDING;
         ui->result = JELLI_OK;
-    } else if (ui->page == JELLI_UI_MOMENTS) {
-        if (slot == 6u) {
-            ui->activity_page =
-                (uint8_t)((ui->activity_page + 1u) % ((jelli_pet_activity_count() + 4u) / 5u));
+    } else if (jelli_pet_discovery_slot(ui, slot)) {
+        if (ui->page == JELLI_UI_MOMENTS && slot == 6u) {
+            ui->activity_page = (uint8_t)((ui->activity_page + 1u) % jelli_pet_activity_pages(ui));
             ui->result = JELLI_OK;
             return;
         }
-        unsigned choice = jelli_pet_activity_choice(ui, slot);
-        JelliCommand command = {
-            choice == jelli_moment_count ? JELLI_CMD_EXERCISE : JELLI_CMD_MOMENT,
-            game->pets[game->active].id, choice == jelli_moment_count ? 0u : choice};
+        unsigned choice = ui->page == JELLI_UI_HOME ? jelli_pet_home_choice(ui, slot)
+                                                    : jelli_pet_activity_choice(ui, slot);
+        JelliCommand command = jelli_pet_activity_command(game, choice);
         ui->result = jelli_game_command(game, command);
         if (ui->result == JELLI_OK) {
             ui->menu_open = false;
@@ -196,8 +202,6 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
             ui->save_requested = true;
             ui->save_status = JELLI_SAVE_PENDING;
         }
-    } else if (ui->page == JELLI_UI_FOOD) {
-        jelli_pet_food_select(ui, game, slot);
     } else if (ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS) {
         jelli_pet_collection_select(ui, game, slot);
 
@@ -239,6 +243,7 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
         x >= 466 || y >= 466)
         return;
     sync_clock(ui, game);
+    jelli_pet_discovery_refresh(ui, game, ui->last_animation_phase);
     if (jelli_pet_collectible_tap(ui, game, x, y))
         return;
     if (scene_tap(ui, game, x, y))
@@ -266,6 +271,7 @@ void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
         bool back = !slot && ui->menu_open;
         uint32_t actor_id = game->pets[game->active].id;
         activate_slot(ui, game, slot);
+        jelli_pet_discovery_refresh(ui, game, ui->last_animation_phase);
         finish_event(ui, game, sequence, code, before);
         jelli_pet_feedback(ui, game, before, actor_id, back, x, y);
         return;
@@ -306,6 +312,12 @@ void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)
     if (dy < 0 && !ui->menu_open) {
         jelli_pet_ui_back(ui);
         code = JELLI_INPUT_OPEN_MENU;
+    } else if (dy > 0 && !ui->menu_open) {
+        ui->menu_open = true;
+        ui->page = JELLI_UI_SETTINGS;
+        ui->settings_return = JELLI_UI_HOME;
+        ui->clock_edit = false;
+        code = JELLI_UI_ACTION_SETTINGS;
     } else if (dy > 0 && ui->menu_open) {
         code = ui->page == JELLI_UI_HOME ? JELLI_INPUT_CLOSE_MENU : JELLI_INPUT_BACK;
         jelli_pet_ui_back(ui);
@@ -321,6 +333,7 @@ void jelli_pet_ui_swipe(JelliPetUi *ui, JelliGame *game, int dx, int dy)
     ui->sound_pending = true;
     ui->sound_cue = (uint8_t)((dy > 0 ? JELLI_SOUND_BACK : JELLI_SOUND_CONFIRM) + 1u);
     ui->result = JELLI_OK;
+    jelli_pet_discovery_refresh(ui, game, ui->last_animation_phase);
     const JelliPet *pet = &game->pets[game->active];
     jelli_game_emit(game, JELLI_EVENT_INPUT, code, JELLI_OK, (uint32_t)ui->page, pet,
                     jelli_game_observe(game, pet));

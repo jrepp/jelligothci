@@ -122,6 +122,10 @@ Next increment: [RFC-002: Pet memory and persistent activities](rfcs/rfc-002-pet
 
 ## Proposed game architecture
 
+Pet-led menu entry, thought bubbles and ready activity discovery:
+[RFC-013](rfcs/rfc-013-pet-led-activity-discovery.md) (draft), with
+[implementation and validation evidence](memos/memo-115-pet-led-activity-discovery.md).
+
 Gift acquisition, two-gift recipes and proposed activity toys:
 [RFC-012](rfcs/rfc-012-gift-crafting-and-activity-ledger.md) (draft), with
 [gameplay and accessibility review](memos/memo-092-gift-gameplay-and-accessibility-review.md).
@@ -142,6 +146,9 @@ artwork, local HTML preview, export checks, and remaining integration work.
 
 Latest sprite alignment: [memo-014](memos/memo-014-creature-contact-anchors.md).
 Latest healthy activities and action audit: [memo-015](memos/memo-015-healthy-activities-and-action-audit.md).
+
+Gameplay action checks, design feedback for ages three to four, and touch
+latency investigation: [memo-108](memos/memo-108-gameplay-and-touch-latency-review.md).
 
 Latest UI work: [memo-011](memos/memo-011-readable-rings-moments-and-particles.md).
 Requested design concept: [PRD-001: Moments and readable care](prd/prd-001-moments-and-readable-care.md).

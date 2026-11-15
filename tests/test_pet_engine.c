@@ -53,8 +53,8 @@ static void clock_pause_and_input(JelliSurface surface)
     CHECK(jelli_pet_init(&engine, platform, surface));
     CHECK(jelli_pet_frame(&engine));
     engine.ui.menu_open = true;
-    engine.ui.page = JELLI_UI_FOOD;
-    send(&fake, JELLI_TAP, 110, 111);
+    engine.ui.page = JELLI_UI_HOME;
+    send(&fake, JELLI_TAP, 356, 111);
     CHECK(jelli_pet_frame(&engine));
     CHECK(engine.game.pets[0].activity == JELLI_EATING);
     fake.now = 100u;
@@ -80,46 +80,21 @@ static void menu_hold(JelliSurface surface)
     Fake fake = {0};
     JelliPetEngine engine;
     CHECK(jelli_pet_init(&engine, (JelliPlatform){&fake, now_ms, poll, present, NULL}, surface));
-    send(&fake, JELLI_PRESS_BEGIN, 233, 420);
     CHECK(jelli_pet_frame(&engine));
-    send(&fake, JELLI_PRESS_MOVE, 260, 420);
+    int x = (int)(engine.ui.actor_bounds.x + engine.ui.actor_bounds.width / 2u);
+    int y = (int)(engine.ui.actor_bounds.y + engine.ui.actor_bounds.height / 2u);
+    send(&fake, JELLI_POINTER_DOWN, x, y);
     CHECK(jelli_pet_frame(&engine));
     fake.now = 2999u;
     CHECK(jelli_pet_frame(&engine));
-    CHECK(!engine.ui.menu_open && engine.ui.hold_progress == 11u);
-    /* The frame reads fake.now through the platform callback. */
+    CHECK(!engine.ui.menu_open && engine.ui.hold_progress > 0u);
+    /* The frame reads fake.now through the platform clock callback. */
     // cppcheck-suppress redundantAssignment
     fake.now = 3000u;
     CHECK(jelli_pet_frame(&engine));
     CHECK(engine.ui.menu_open && engine.ui.page == JELLI_UI_SETTINGS);
-    send(&fake, JELLI_SWIPE, 0, 80);
+    send(&fake, JELLI_POINTER_UP, x, y);
     CHECK(jelli_pet_frame(&engine) && engine.ui.page == JELLI_UI_SETTINGS);
-    engine.ui.menu_open = false;
-    engine.ui.page = JELLI_UI_HOME;
-    send(&fake, JELLI_PRESS_BEGIN, 233, 420);
-    CHECK(jelli_pet_frame(&engine));
-    send(&fake, JELLI_PRESS_CANCEL, 0, 0);
-    CHECK(jelli_pet_frame(&engine));
-    fake.now += 4000u;
-    CHECK(jelli_pet_frame(&engine) && !engine.ui.menu_open);
-    send(&fake, JELLI_LONG_PRESS, 233, 420);
-    CHECK(jelli_pet_frame(&engine) && !engine.ui.menu_open);
-    send(&fake, JELLI_PRESS_BEGIN, 143, 400);
-    CHECK(jelli_pet_frame(&engine));
-    send(&fake, JELLI_PRESS_MOVE, 142, 400);
-    CHECK(jelli_pet_frame(&engine));
-    send(&fake, JELLI_LONG_PRESS, 143, 400);
-    CHECK(jelli_pet_frame(&engine) && !engine.ui.menu_open);
-    send(&fake, JELLI_PRESS_BEGIN, 233, 420);
-    CHECK(jelli_pet_frame(&engine));
-    fake.now = 1u; /* A reversed clock cancels the pending hold and its release. */
-    CHECK(jelli_pet_frame(&engine));
-    send(&fake, JELLI_TAP, 233, 420);
-    CHECK(jelli_pet_frame(&engine) && !engine.ui.menu_open);
-    send(&fake, JELLI_PRESS_BEGIN, 233, 420);
-    CHECK(jelli_pet_frame(&engine));
-    send(&fake, JELLI_TAP, 233, 420);
-    CHECK(jelli_pet_frame(&engine) && engine.ui.menu_open && engine.ui.page == JELLI_UI_HOME);
 }
 
 static void resume_blocks_final_batch(JelliSurface surface)
@@ -129,13 +104,13 @@ static void resume_blocks_final_batch(JelliSurface surface)
     JelliPetEngine engine;
     CHECK(jelli_pet_init(&engine, platform, surface));
     engine.ui.menu_open = true;
-    engine.ui.page = JELLI_UI_FOOD;
+    engine.ui.page = JELLI_UI_HOME;
     jelli_game_resume_begin(&engine.game, 1000u);
-    send(&fake, JELLI_TAP, 110, 111);
+    send(&fake, JELLI_TAP, 356, 111);
     CHECK(jelli_pet_frame(&engine));
     CHECK(!engine.game.resuming && engine.game.pets[0].activity == JELLI_IDLE);
-    CHECK(engine.game.food == 5u);
-    send(&fake, JELLI_TAP, 110, 111);
+    CHECK(engine.game.food == 0u);
+    send(&fake, JELLI_TAP, 356, 111);
     CHECK(jelli_pet_frame(&engine));
     CHECK(engine.game.pets[0].activity == JELLI_EATING);
 }

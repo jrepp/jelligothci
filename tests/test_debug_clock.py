@@ -58,11 +58,15 @@ with tempfile.TemporaryDirectory(prefix='jelli-clock-') as folder:
         assert set(habits['scores']) == {'sleep', 'food', 'play'}
         assert all(0 <= score <= 1000 for score in habits['scores'].values())
         assert client.request('sleep-log')['sessions'] == []
-        client.press('MENU')
-        client.press('CARE')
+        client.request('swipe 1')
+        # Exercise journal overflow through real UI commands without timing nine
+        # copies of the decorative transitions; default-speed navigation ran above.
+        client.request('tune 0 ui.animation_scale_pct 25')
         for _ in range(9):
             client.press('REST')
+            client.request('swipe 1')
             client.press('WAKE')
+            client.request('swipe 1')
         log = client.request('sleep-log')
         assert len(log['sessions']) == 8 and not log['active']
         assert all(s['real_duration'] and s['flags'] & 3 == 3 for s in log['sessions'])

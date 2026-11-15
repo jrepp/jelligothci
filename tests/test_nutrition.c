@@ -31,7 +31,7 @@ static void water_and_time(void)
     CHECK(one.hydration == 0u && one.hydration_remainder == 0u);
     pet->hydration = 0u;
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_WATER, 1u, 0u}) == JELLI_OK);
-    CHECK(pet->hydration == 1000u && game.food == 5u);
+    CHECK(pet->hydration == 1000u && game.food == 0u);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_WATER, 1u, 0u}) == JELLI_FULL);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_PLAY, 1u, 0u}) == JELLI_OK);
     pet->hydration = 400u;
@@ -93,7 +93,7 @@ static void food_choices(void)
     test_game_pair(&game);
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_FEED, 1u, 9u}) ==
           JELLI_INVALID_TARGET);
-    CHECK(game.food == 5u && game.pets[0].activity == JELLI_IDLE);
+    CHECK(game.food == 0u && game.pets[0].activity == JELLI_IDLE);
     game.food = 0u;
     CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_FEED, 1u, 1u}) ==
           JELLI_INVALID_TARGET);

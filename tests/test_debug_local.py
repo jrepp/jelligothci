@@ -37,10 +37,11 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         assert debug.state()["visual"]["stat_index"] == 1
         debug.request("swipe 3")
         assert debug.state()["visual"]["stat_index"] == 0
-        debug.request("swipe 0")
-        debug.press("CARE")
-        assert debug.state()["visual"]["page"] == "care"
+        debug.request("swipe 1")
+        debug.press("PET MENU")
+        assert debug.state()["visual"]["page"] == "more"
         debug.press("BACK")
+        debug.press("PET MENU")
         debug.press("PETS")
         assert debug.state()["visual"]["page"] == "pets"
         debug.press("JELLI")
@@ -56,9 +57,7 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         debug.press("BACK")
         debug.press("BACK")
         debug.press("BACK")
-        debug.press("CLOSE")
-        debug.request("hold 233 408")
-        assert debug.state()["visual"]["page"] == "settings"
+        debug.press("BACK")  # Pet menu back to Settings.
         debug.press("CLOCK")
         minute = debug.state()["visual"]["clock_minute"]
         debug.press("HOUR +")
@@ -82,6 +81,8 @@ with tempfile.TemporaryDirectory(prefix="jelli-local-") as directory:
         resumed = debug.state()
         assert resumed["capture"] == 0
         assert resumed["ticks"] - capture["ticks"] < 5
+        debug.request("swipe 1")
+        debug.press("PET MENU")
         debug.press("WAKE")
         assert not debug.state()["visual"]["asleep"]
         wire.close()
