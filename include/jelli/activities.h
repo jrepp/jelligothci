@@ -47,7 +47,8 @@ typedef struct {
     uint8_t jitter_pct, bonus_count;
     JelliActivityBonus bonuses[JELLI_ACTIVITY_BONUSES];
     uint16_t duration_s, start_minute, end_minute;
-    uint32_t forms; /* Zero permits every form; otherwise one bit per stable form ID. */
+    uint16_t min_bond; /* 0..1000, a hard requirement even for invitations. */
+    uint32_t forms;    /* Zero permits every form; otherwise one bit per stable form ID. */
     uint8_t random_weight,
         requires,
     animation;           /* requires: ID + 1, zero means none. */

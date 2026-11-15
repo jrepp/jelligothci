@@ -68,7 +68,9 @@
       - checkbox "Asleep (REST command)"
       - text: Asleep (REST command)
       - checkbox "Potty mess on the floor"
-      - text: Potty mess on the floor Potty urge
+      - text: Potty mess on the floor Bond
+      - spinbutton "Bond": "100"
+      - text: Potty urge
       - spinbutton "Potty urge": "0"
     - group "Needs (0–1000)":
       - text: Needs (0–1000) satiety

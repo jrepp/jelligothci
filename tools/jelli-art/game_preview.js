@@ -15,7 +15,7 @@
     art: 'Art check (build_slice / embed_slice)', compile: 'C compile', build: 'Build', render: 'Render', timeout: 'Timed out',
     tools: 'Build tools', unavailable: 'Unavailable'};
   const SAVE_URLS = new Set(['/api/save', '/api/clips', '/api/creatures', '/api/content', '/api/palette', '/api/create', '/api/scenes', '/api/effects']);
-  const defaults = {effect:'', scene:'', tilt_x:0, tilt_y:0, travel_speed:0, location: '', present: '', present_state: 'none', completion: 'running', pet: '', form: '', page: 'home', menu: false, behavior: '', moment: '', asleep: false, mess: false, potty: 0,
+  const defaults = {effect:'', scene:'', tilt_x:0, tilt_y:0, travel_speed:0, location: '', present: '', present_state: 'none', completion: 'running', pet: '', form: '', page: 'home', menu: false, behavior: '', moment: '', asleep: false, mess: false, potty: 0, bond: 100,
     needs: {satiety: 700, energy: 700, hygiene: 700, amusement: 700, social: 700}, clock: false, minute: 540,
     start_ms: 0, frames: 12, step_ms: 200, advance_s: 0, live: false};
   const sc = Object.assign(structuredClone(defaults), store.get('game-scenario', {}));
@@ -65,7 +65,7 @@
     const out = {pet: sc.pet, form: sc.form, page: sc.page, menu: sc.menu && !!pageOf(sc.page)?.ring, behavior: sc.behavior,
       effect:sc.effect, scene:sc.scene, tilt_x:sc.tilt_x, tilt_y:sc.tilt_y, travel_speed:sc.travel_speed,
       location: sc.location, present: sc.present, present_state: sc.present_state, completion: sc.completion,
-      moment: sc.asleep ? '' : sc.moment, asleep: sc.asleep, mess: sc.mess, potty: sc.potty, needs: sc.needs,
+      moment: sc.asleep ? '' : sc.moment, asleep: sc.asleep, mess: sc.mess, potty: sc.potty, bond: sc.bond, needs: sc.needs,
       minute: sc.clock ? sc.minute : -1, start_ms: sc.start_ms, frames: sc.frames, step_ms: sc.step_ms, advance_s: sc.advance_s, live: sc.live};
     return out;
   }
@@ -153,7 +153,7 @@
         <div class="gp-note">Completion runs real commands and simulation. Repeated daily recipes pay costs and rewards only on the first run.</div>
         ${sc.asleep ? '<div class="gp-note" id="gp-moment-help">A sleeping pet cannot run a moment.</div>' : ''}
         ${check('asleep', 'Asleep (REST command)', sc.asleep)}${check('mess', 'Potty mess on the floor', sc.mess)}
-        ${num('potty', 'Potty urge', sc.potty, 0, 1000, 10)}
+        ${num('bond', 'Bond', sc.bond, 0, 1000, 10)}${num('potty', 'Potty urge', sc.potty, 0, 1000, 10)}
       </fieldset>
       ${cat.effects?.length ? `<fieldset><legend>Celebration</legend><label>Saved effect<select data-k="effect">${opt('','None',sc.effect)}${cat.effects.map(e=>opt(e.key,e.name,sc.effect)).join('')}</select></label></fieldset>` : ''}
       ${cat.scenes?.length ? `<fieldset><legend>Background motion</legend>

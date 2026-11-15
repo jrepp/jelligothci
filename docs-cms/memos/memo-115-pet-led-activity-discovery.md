@@ -301,3 +301,28 @@ the incremental firmware rebuilt and the board was flashed again after another
 private NVS backup. Transfer hashes verified and the debug endpoint reported a
 present battery, available history and retained previous records. The reserve
 is a space check, not a guarantee against fragmentation or concurrent writes.
+
+
+The Snuggle activity now has an authored minimum bond, enforced for ordinary
+selection and invitations. The initial boundary tests exposed two existing
+Snuggle fixtures with lower bond; updating those fixtures to represent an
+unlocked pet restored the reward and creature tests. The default threshold is
+a provisional choice pending owner preference.
+
+The first Snuggle hook run also rejected an implicit string-comparison test;
+the test now compares the result explicitly before the hooks are rerun.
+
+Studio CI exposed preview scenarios using a low default bond after the Snuggle
+gate. The preview now accepts an explicit bond value, and Snuggle completion
+fixtures set the threshold. One first local retry also compared against the old
+default bond; aligning the baseline with the scenario fixed that assertion.
+The latest hosted PR revision must still pass its own checks.
+The next Snuggle CI revision passed the scenario tests but failed the Studio
+accessibility baselines because the new Bond control changed the accessibility
+tree. The three viewport baselines were updated to include the labelled control;
+the current PR revision's UI checks still need to verify the complete view.
+
+After the accessibility updates, the latest Studio UI run found the expected
+visual difference from the Bond field. The CI-generated desktop screenshot was
+reviewed for the labelled control and layout and adopted as the new baseline.
+The subsequent PR revision requires its own hosted checks.

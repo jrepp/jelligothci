@@ -43,6 +43,30 @@ static void crc(size_t n)
     }
 }
 
+static void snuggle_bond_gate(void)
+{
+    init();
+    JelliPet *pet = &save.game.pets[0];
+    unsigned id = 0u;
+    while (id < jelli_moment_count && strcmp(jelli_moments[id].name, "SNUGGLE") != 0)
+        ++id;
+    CHECK(id < jelli_moment_count && jelli_moments[id].min_bond == 250u);
+    pet->form = 3u;
+    pet->bond = 249u;
+    CHECK(!jelli_moment_identity_allowed(&save.game, pet, id));
+    CHECK(jelli_moment_available(&save.game, pet, id) == JELLI_NOT_READY);
+    pet->invitations.pending = UINT32_C(1) << id;
+    pet->invitations.announced = pet->invitations.pending;
+    pet->invitations.leisure = (uint8_t)(id + 1u);
+    pet->invitations.leisure_until = 1000u;
+    pet->invitations.clock_basis = 1u;
+    CHECK(!jelli_invitation_grants(&save.game, pet, id));
+    CHECK(jelli_moment_available(&save.game, pet, id) == JELLI_NOT_READY);
+    pet->bond = 250u;
+    CHECK(jelli_moment_identity_allowed(&save.game, pet, id));
+    CHECK(jelli_moment_available(&save.game, pet, id) == JELLI_OK);
+}
+
 static void persisted_and_consumed(void)
 {
     init();
@@ -208,6 +232,7 @@ static void codec_boundaries(void)
 
 int main(void)
 {
+    snuggle_bond_gate();
     per_pet_offers();
     persisted_and_consumed();
     retirement_and_clock();

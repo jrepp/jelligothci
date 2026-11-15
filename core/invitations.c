@@ -38,7 +38,8 @@ bool jelli_moment_identity_allowed(const JelliGame *game, const JelliPet *pet, u
     if (id >= jelli_moment_count)
         return false;
     const JelliMoment *m = &jelli_moments[id];
-    return (!m->forms || (pet->form < 32u && (m->forms & (UINT32_C(1) << pet->form)))) &&
+    return pet->bond >= m->min_bond &&
+           (!m->forms || (pet->form < 32u && (m->forms & (UINT32_C(1) << pet->form)))) &&
            (!m->requires || (pet->activity_day == jelli_activity_day(game, pet) &&
                              (pet->completed_moments & (UINT32_C(1) << (m->requires - 1u)))));
 }

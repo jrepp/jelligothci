@@ -204,6 +204,7 @@ static void snuggle_offers_a_giftable_teddy(void)
     rewards = (JelliPetRewards){0};
     game.events = &events;
     game.active = 2u;
+    game.pets[2].bond = 250u;
     game.clock_known = true;
     game.clock_minute = 780u;
     CHECK(game.pets[2].form == 3u);
