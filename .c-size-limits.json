@@ -1,5 +1,0 @@
-{
-  "max_function_nloc": 80,
-  "max_file_lines": 400,
-  "max_cyclomatic_complexity": 20
-}
