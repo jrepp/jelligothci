@@ -305,11 +305,14 @@ Display brightness requests accept 0..100 and return the actual adapter result.
 A failed request may have reached hardware and is not automatically retried.
 Sleep/wake policy is outside this interface.
 
-The `drivers/` C11 library contains QMI8658 and PCF85063 protocols. Provide a
+The `drivers/` C11 library contains QMI8658, PCF85063 and read-only AXP2101 protocols. Provide a
 `JelliRegisterIo` with a bounded read/write implementation and, for QMI setup,
 injected time/delay callbacks. Transfers use at most 16 bytes. Board addresses,
 GPIO routing, interrupt evidence and bus locking stay in ports. QMI setup and
-cleanup are synchronous host operations, never engine/ISR callbacks. The power
+cleanup are synchronous host operations, never engine/ISR callbacks. The ESP32 battery worker
+performs AXP reads and bounded NVS history writes outside the engine, publishes
+the latest reading through a one-element queue, and retains no SDK objects in
+the portable game core. The power
 profile uses the same tested driver; normal and factory images exclude it.
 Its explicit INT2 opt-in does not establish wake readiness on another board.
 

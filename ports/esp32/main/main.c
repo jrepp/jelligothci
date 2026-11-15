@@ -7,6 +7,7 @@
 #include "rtc_clock.h"
 #include "touch_input.h"
 #include "case_button.h"
+#include "battery_monitor.h"
 #include "network.h"
 #include "validation/experiments.h"
 #include "bsp/esp32_s3_touch_amoled_1_75.h"
@@ -127,6 +128,8 @@ static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *se
                     break;
         }
         bool frozen = jelli_debug_wire_poll(engine, start);
+        if (!frozen)
+            jelli_battery_monitor_poll(engine, board->button.blank, start);
         jelli_experiments_poll(&board->display, engine);
         jelli_network_poll(engine, session, frozen);
         jelli_esp_session_update(session, engine, frozen);
@@ -216,6 +219,8 @@ void app_main(void)
     jelli_pet_bind_devices(&engine, (JelliMotionDriver){0}, display_driver);
     JelliClockDriver clock = jelli_rtc_clock_open(&rtc_io, bsp_i2c_get_handle());
     jelli_esp_session_open(&session, &engine, clock);
+    if (!jelli_battery_monitor_start(bsp_i2c_get_handle()))
+        ESP_LOGW(TAG, "Battery monitor unavailable");
     ESP_LOGI(TAG, "Pet slice ready: tap menus; NVS checkpoint and RTC session initialized");
     if (!jelli_sound_output_init())
         ESP_LOGW(TAG, "Sound unavailable; game remains playable");

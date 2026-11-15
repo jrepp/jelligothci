@@ -223,7 +223,7 @@ def main():
     transport.add_argument("--socket", help="Local SDL Unix socket; defaults to build/jelli-debug.sock")
     parser.add_argument("--timeout", type=float, default=3.0)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("ports", "state", "buttons", "habits", "sleep-log", "capabilities"):
+    for name in ("ports", "state", "buttons", "habits", "sleep-log", "capabilities", "battery"):
         commands.add_parser(name)
     factory = commands.add_parser("factory", help="Factory capabilities, state and retained results")
     factory.add_argument("action", choices=("status", "tests", "run", "result"))
@@ -231,6 +231,8 @@ def main():
     power = commands.add_parser("power", help="ESP32 reversible power diagnostics")
     power.add_argument("action", nargs="?", choices=("result", "locks", "run"))
     power.add_argument("mode", nargs="?", choices=("delay", "blank", "pause", "off", "panel", "audio", "reset50", "reset100", "light", "touch", "auto"))
+    powerlog = commands.add_parser("powerlog", help="ESP32 persisted power history, newest first")
+    powerlog.add_argument("offset", nargs="?", type=int, choices=range(32))
     clock = commands.add_parser("clock", help="Read clock, or explicitly sync/set UTC time")
     clock.add_argument("action", nargs="?", choices=("sync", "set"))
     clock.add_argument("seconds", nargs="?", type=int, help="UTC Unix seconds for set")
@@ -335,6 +337,8 @@ def main():
                 parser.error("power run requires a mode; other power commands do not accept one")
             result = client.request("power" + (f" {args.action}" if args.action else "") +
                                     (f" {args.mode}" if args.mode else ""))
+        elif args.command == "powerlog":
+            result = client.request("powerlog" + (f" {args.offset}" if args.offset is not None else ""))
         elif args.command == "effect":
             if not args.key or not args.key.isascii() or not all(c.isalnum() or c in "_-" for c in args.key):
                 parser.error("effect needs an authored key or stop")
@@ -353,7 +357,7 @@ def main():
                 result = client.set_clock(args.seconds, args.offset)
             else:
                 result = client.request("clock")
-        elif args.command in ("habits", "sleep-log", "capabilities"):
+        elif args.command in ("habits", "sleep-log", "capabilities", "battery"):
             result = client.request(args.command)
         elif args.command == "state":
             result = client.state()
