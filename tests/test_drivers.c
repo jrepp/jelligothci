@@ -1,3 +1,4 @@
+#include "jelli/drivers/axp2101.h"
 #include "jelli/drivers/pcf85063.h"
 #include "jelli/drivers/qmi8658.h"
 #include <stdio.h>
@@ -12,7 +13,7 @@
     } while (0)
 
 typedef struct {
-    uint8_t regs[128];
+    uint8_t regs[256];
     uint64_t now;
     unsigned calls, fail_at, waits, writes, acks;
     bool stuck_done, stuck_ack, frozen_time, wom, qmi;
@@ -62,6 +63,41 @@ static void wait_ms(void *ctx, unsigned ms)
 static JelliRegisterIo transport(Fake *f)
 {
     return (JelliRegisterIo){f, read_regs, write_regs, now_ms, wait_ms};
+}
+static void axp_sample(void)
+{
+    Fake f = {0};
+    f.regs[0] = 0x28;
+    f.regs[0x30] = 1;
+    f.regs[0x34] = 0x10;
+    f.regs[0x35] = 0x68;
+    f.regs[0xa4] = 55;
+    JelliAxp2101Sample sample = {0};
+    CHECK(jelli_axp2101_sample(transport(&f), &sample) == JELLI_DEVICE_OK);
+    CHECK(sample.battery_present && sample.voltage_valid && sample.battery_mv == 4200);
+    CHECK(sample.gauge_valid && sample.gauge_percent == 55 && !f.writes);
+    for (unsigned failure = 1; failure <= f.calls; ++failure) {
+        Fake bad = f;
+        bad.calls = 0;
+        bad.fail_at = failure;
+        JelliAxp2101Sample output = sample;
+        CHECK(jelli_axp2101_sample(transport(&bad), &output) == 99);
+        CHECK(output.battery_mv == sample.battery_mv && output.status[0] == sample.status[0] &&
+              output.status[1] == sample.status[1] && output.adc_enable == sample.adc_enable &&
+              output.gauge_percent == sample.gauge_percent &&
+              output.battery_present == sample.battery_present &&
+              output.voltage_valid == sample.voltage_valid &&
+              output.gauge_valid == sample.gauge_valid && !bad.writes);
+    }
+    f.regs[0] = 0;
+    f.calls = 0;
+    CHECK(jelli_axp2101_sample(transport(&f), &sample) == JELLI_DEVICE_OK);
+    CHECK(!sample.battery_present && !sample.voltage_valid && !sample.gauge_valid);
+    f.regs[0] = 8;
+    f.regs[0x30] = 0;
+    f.regs[0xa4] = 255;
+    CHECK(jelli_axp2101_sample(transport(&f), &sample) == JELLI_DEVICE_OK);
+    CHECK(!sample.voltage_valid && !sample.gauge_valid);
 }
 static void reset_qmi(Fake *f)
 {
@@ -195,6 +231,7 @@ static void rtc_partial_writes(void)
 }
 int main(void)
 {
+    axp_sample();
     qmi_success();
     qmi_failures();
     qmi_fault_sweep();

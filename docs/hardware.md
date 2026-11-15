@@ -105,6 +105,37 @@ References:
 - [Waveshare BSP 3.0.1](https://components.espressif.com/components/waveshare/esp32_s3_touch_amoled_1_75/versions/3.0.1/readme)
 
 
+## Battery and power history
+
+Settings shows the AXP2101 battery voltage and its estimated gauge percentage
+when available. The gauge model and voltage accuracy have not been calibrated;
+a missing battery, disabled ADC, or failed read is not a zero reading. The
+normal firmware never changes charge, rail, ADC or gauge configuration. Sampling
+runs on a separate worker, so I2C and flash writes do not run in the render loop.
+
+Use `./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" battery` for the most
+recent sample, `powerlog` for storage status, and `powerlog 0` for the newest
+retained record (`1` is the previous record). `available` reports whether the
+latest PMIC read succeeded; `millivolts` and `estimated_percent` are null when
+unavailable. A source status is an observation, not an electrical current or
+energy measurement. The power history records boot/reset, sampled source changes,
+display blanking and pet sleep changes, and periodic battery samples. Display
+blanking and pet sleep do not mean that the ESP32 entered hardware sleep.
+
+History is stored separately from the checkpoint in NVS. The [worker](../ports/esp32/main/battery_monitor.c)
+samples every 30 seconds, records a periodic sample every 20 minutes, and
+coalesces rapid events; the [32-record ring](../include/jelli/power_log.h)
+retains at most about 10 hours of periodic samples when no events replace them.
+The log reserves NVS space for the game. Writes stop and `powerlog` reports an error if
+storage cannot be read or safely written; existing NVS is never erased. Records
+include a boot nonce and monotonic milliseconds; wall time is meaningful only
+when its valid flag is set. Transitions can be coalesced and source changes are
+sampled, so short events can be missed. See the [record flags and codec](../include/jelli/power_log.h),
+[worker](../ports/esp32/main/battery_monitor.c), and
+[storage and command implementation](../ports/esp32/main/power_history.c).
+Battery-current measurement, hardware sleep and gauge accuracy still need an
+external fixture and physical verification.
+
 ## Wi-Fi, time sync, and OTA
 
 The new ESP32 network path is compiled but not yet verified on a device. Wi-Fi

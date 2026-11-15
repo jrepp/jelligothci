@@ -190,6 +190,8 @@ static void settings_info(Canvas *c, const JelliGame *game, const JelliPetUi *ui
             jelli_canvas_centered(c, music.label, (int)music.bounds.y + 19, 1u, PALE);
         }
     }
+    if (!ui->clock_edit)
+        jelli_pet_draw_battery(c, ui);
     if (ui->result != JELLI_OK)
         jelli_canvas_caption(c, jelli_pet_menu_hint(ui, game), 280, PALE);
 }

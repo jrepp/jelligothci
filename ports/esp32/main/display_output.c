@@ -1,3 +1,4 @@
+#include "power_history.h"
 #include "display_output.h"
 #ifdef CONFIG_JELLI_POWER_EXPERIMENTS
 #include "span_benchmark.h"
@@ -203,6 +204,26 @@ static void NOINLINE_ATTR report_health(const JelliDisplayOutput *output, JelliD
         jelli_debug_response(debug, id, body);
 }
 
+static void report_battery(JelliDebug *debug, const JelliPetUi *ui, uint32_t id)
+{
+    static char body[256]; /* Main-task command scratch; never used concurrently. */
+    char voltage[12] = "null", percent[8] = "null";
+    if (ui->battery_voltage_valid)
+        (void)snprintf(voltage, sizeof(voltage), "%u", (unsigned)ui->battery_mv);
+    if (ui->battery_gauge_valid)
+        (void)snprintf(percent, sizeof(percent), "%u", (unsigned)ui->battery_percent);
+    int size = snprintf(body, sizeof(body),
+                        "{\"ok\":true,\"available\":%s,\"present\":%s,"
+                        "\"millivolts\":%s,\"estimated_percent\":%s,\"status\":[%u,%u]}",
+                        ui->battery_reading_valid ? "true" : "false",
+                        ui->battery_present ? "true" : "false", voltage, percent,
+                        ui->battery_status[0], ui->battery_status[1]);
+    if (size > 0 && (size_t)size < sizeof(body))
+        jelli_debug_response(debug, id, body);
+    else
+        jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"report\"}");
+}
+
 bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEngine *engine,
                                   uint32_t id, char **words, unsigned count)
 {
@@ -213,16 +234,25 @@ bool jelli_display_output_command(void *ctx, JelliDebug *debug, const JelliPetEn
             debug, id,
             "{\"ok\":true,\"protocol\":1,\"profile\":\"power\","
             "\"board\":\"waveshare-31261\",\"commands\":[" JELLI_DEBUG_GAME_COMMANDS_JSON
-            ",\"display\",\"network\",\"ota\",\"power\"]}");
+            ",\"display\",\"network\",\"ota\",\"power\",\"battery\",\"powerlog\"]}");
 #else
         jelli_debug_response(
             debug, id,
             "{\"ok\":true,\"protocol\":1,\"profile\":\"game\","
             "\"board\":\"waveshare-31261\",\"commands\":[" JELLI_DEBUG_GAME_COMMANDS_JSON
-            ",\"display\",\"network\",\"ota\"]}");
+            ",\"display\",\"network\",\"ota\",\"battery\",\"powerlog\"]}");
 #endif
         return true;
     }
+    if (count >= 3u && !strcmp(words[2], "battery")) {
+        if (count == 3u)
+            report_battery(debug, &engine->ui, id);
+        else
+            jelli_debug_response(debug, id, "{\"ok\":false,\"error\":\"syntax\"}");
+        return true;
+    }
+    if (jelli_power_history_command(debug, id, words, count))
+        return true;
     if (jelli_experiments_command(ctx, debug, id, words, count))
         return true;
     if (count < 3u || strcmp(words[2], "display"))
