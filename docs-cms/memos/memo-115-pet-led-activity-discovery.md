@@ -321,3 +321,8 @@ The next Snuggle CI revision passed the scenario tests but failed the Studio
 accessibility baselines because the new Bond control changed the accessibility
 tree. The three viewport baselines were updated to include the labelled control;
 the current PR revision's UI checks still need to verify the complete view.
+
+After the accessibility updates, the latest Studio UI run found the expected
+visual difference from the Bond field. The CI-generated desktop screenshot was
+reviewed for the labelled control and layout and adopted as the new baseline.
+The subsequent PR revision requires its own hosted checks.
