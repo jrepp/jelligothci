@@ -329,3 +329,6 @@ The subsequent PR revision requires its own hosted checks.
 The first quick-menu static check exceeded several existing complexity limits.
 Selection, rendering and activation responsibilities were split into smaller
 helpers; the focused discovery and navigation tests pass after the refactor.
+
+The quick-menu and location-wheel branches overlapped in navigation code during
+stacking. Both paths were reconciled, then their focused tests rerun.

@@ -90,6 +90,8 @@ const char *jelli_pet_menu_title(const JelliPetUi *ui)
     static const char *const titles[] = {"MENU",     "CARE",       "PET MENU", "PRESENTS",
                                          "SETTINGS", "ACTIVITIES", "CARE",     "BRUSH",
                                          "MEDICINE", "SHOT",       "BATH",     "YOGA"};
+    if (ui->location_menu && ui->page == JELLI_UI_MOMENTS)
+        return "LOCATIONS";
     if (ui->quick_menu && ui->page == JELLI_UI_MOMENTS)
         return "QUICK CARE";
     if (ui->page == JELLI_UI_SETTINGS && ui->clock_edit)

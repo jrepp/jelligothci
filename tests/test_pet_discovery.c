@@ -56,6 +56,21 @@ static void quick_clean(void)
     CHECK(jelli_pet_quick_available(&ui, &game, 1u) != JELLI_OK);
 }
 
+static void location_selector(void)
+{
+    init();
+    jelli_pet_pointer(&ui, &game, (JelliInput){JELLI_POINTER_DOWN, 233, 60}, 0u);
+    jelli_pet_pointer(&ui, &game, (JelliInput){JELLI_POINTER_UP, 233, 60}, 100u);
+    CHECK(ui.location_menu && ui.menu_open && ui.page == JELLI_UI_MOMENTS);
+    JelliPetUiButton button;
+    CHECK(jelli_pet_location_button(&ui, 2u, false, &button));
+    CHECK(strcmp(button.label, "GARDEN") == 0);
+    jelli_pet_render(&surface, &game, &ui, 1000u, false);
+    jelli_pet_render(&surface, &game, &ui, 2000u, false);
+    jelli_pet_ui_tap(&ui, &game, (int)(button.bounds.x + 48u), (int)(button.bounds.y + 48u));
+    CHECK(!ui.location_menu && !ui.menu_open && game.pets[0].location == 1u);
+}
+
 static void gestures(void)
 {
     init();
@@ -303,6 +318,7 @@ static void capture(const char *path)
 int main(void)
 {
     quick_clean();
+    location_selector();
     scene_target_priority();
     changing_pet_cancels_hold();
     home_discovery();

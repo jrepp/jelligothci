@@ -195,6 +195,19 @@ static void activate_quick(JelliPetUi *ui, JelliGame *game, unsigned slot)
     }
 }
 
+static void activate_location(JelliPetUi *ui, JelliGame *game, unsigned slot)
+{
+    JelliCommand command = {JELLI_CMD_TRAVEL, ui->location_pet_id, slot - 1u};
+    ui->result = jelli_game_command(game, command);
+    if (ui->result == JELLI_OK) {
+        ui->location_menu = false;
+        ui->menu_open = false;
+        ui->page = JELLI_UI_HOME;
+        ui->save_requested = true;
+        ui->save_status = JELLI_SAVE_PENDING;
+    }
+}
+
 static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
 {
     if (slot == 0u) {
@@ -206,6 +219,8 @@ static void activate_slot(JelliPetUi *ui, JelliGame *game, unsigned slot)
         ui->save_requested = true;
         ui->save_status = JELLI_SAVE_PENDING;
         ui->result = JELLI_OK;
+    } else if (jelli_pet_location_active(ui, slot)) {
+        activate_location(ui, game, slot);
     } else if (jelli_pet_quick_active(ui, slot)) {
         activate_quick(ui, game, slot);
     } else if (jelli_pet_discovery_slot(ui, slot)) {
@@ -255,8 +270,9 @@ static void sync_clock(const JelliPetUi *ui, JelliGame *game)
 /* Things in the scene take taps before the controls: a falling present, a mess, the pet. */
 static bool scene_tap(JelliPetUi *ui, JelliGame *game, int x, int y)
 {
-    return jelli_pet_quick_open(ui, game, x, y) || jelli_pet_gallery_tap(ui, game, x, y) ||
-           jelli_pet_tap_mess(ui, game, x, y) || jelli_pet_touch_actor(ui, game, x, y);
+    return jelli_pet_location_open(ui, game, x, y) || jelli_pet_quick_open(ui, game, x, y) ||
+           jelli_pet_gallery_tap(ui, game, x, y) || jelli_pet_tap_mess(ui, game, x, y) ||
+           jelli_pet_touch_actor(ui, game, x, y);
 }
 
 void jelli_pet_ui_tap(JelliPetUi *ui, JelliGame *game, int x, int y)

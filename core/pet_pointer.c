@@ -11,9 +11,15 @@ static bool inside(JelliRect r, int x, int y, int margin)
            x < (int)(r.x + r.width) + margin && y < (int)(r.y + r.height) + margin;
 }
 
+static bool screen_control(int x, int y)
+{
+    return (x >= 100 && x < 366 && y >= 50 && y < 72) ||
+           (x >= 90 && x < 376 && y >= 282 && y < 382);
+}
+
 bool jelli_pet_actor_hit(const JelliPetUi *ui, const JelliGame *game, int x, int y)
 {
-    if (!ui->menu_open && x >= 90 && x < 376 && y >= 282 && y < 382)
+    if (!ui->menu_open && screen_control(x, y))
         return false;
     if (ui->menu_open || game->resuming || ui->effect ||
         (game->collectible.active && !game->collectible.paused) ||

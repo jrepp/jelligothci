@@ -31,6 +31,10 @@ ESP32 ports. A separate Linux job runs the SDL smoke test and sanitizers.
 
 ## Pet invitations and navigation
 
+Tap the location name at the top of the home screen to choose another place.
+Changing places interrupts the current activity; already paid costs are not
+refunded and unfinished rewards are not granted.
+
 Tap the pet to open the main wheel; this does not comfort or wake it. Hold the
 pet continuously for three seconds to open Settings, using the visible progress
 bar. Moving away cancels the hold. The bottom control goes back one menu level
