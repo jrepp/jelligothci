@@ -111,7 +111,7 @@ static const char *exercise_hint(const JelliPet *pet)
 static const char *not_ready_hint(const JelliPetUi *ui, const JelliGame *game)
 {
     if (ui->page == JELLI_UI_HEALTH && (ui->attempted_slot == 2u || ui->attempted_slot == 3u))
-        return "DOSE GIVEN - WAIT";
+        return "ALL DONE - WAIT";
     if (ui->page == JELLI_UI_MOMENTS ||
         (ui->page == JELLI_UI_HOME && (ui->attempted_slot == 1u || ui->attempted_slot == 6u))) {
         unsigned id = ui->page == JELLI_UI_HOME ? jelli_pet_home_choice(ui, ui->attempted_slot)
@@ -143,9 +143,9 @@ const char *jelli_pet_menu_hint(const JelliPetUi *ui, const JelliGame *game)
         return not_ready_hint(ui, game);
     if (ui->result == JELLI_FULL && ((ui->page == JELLI_UI_CARE && ui->attempted_slot == 6u) ||
                                      (ui->page == JELLI_UI_HOME && ui->attempted_slot == 3u)))
-        return "HYDRATION FULL";
+        return "NOT THIRSTY";
     if (ui->result == JELLI_FULL && ui->page == JELLI_UI_HOME && ui->attempted_slot == 2u)
-        return "FULLNESS FULL";
+        return "TUMMY FULL";
     if (ui->result == JELLI_FULL && ui->page == JELLI_UI_SETTINGS)
         return game->volume ? "VOLUME MAX" : "MUTED";
     if (ui->result == JELLI_NO_ITEM && ui->page == JELLI_UI_MORE)
