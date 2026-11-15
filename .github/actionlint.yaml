@@ -1,5 +1,0 @@
-self-hosted-runner:
-  labels:
-    - router-small
-    - macos
-    - arm64
