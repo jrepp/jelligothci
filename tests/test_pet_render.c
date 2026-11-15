@@ -90,64 +90,13 @@ static void test_page_items(void)
                   (button.label[0] != '\0'));
         }
     }
-    CHECK(jelli_pet_ui_item(JELLI_UI_CARE, 1u, true).action == JELLI_UI_ACTION_CLEAN_WAKE);
-    CHECK(strcmp(jelli_pet_ui_item(JELLI_UI_CARE, 1u, true).label, "CLEAN") == 0);
-    CHECK(jelli_pet_ui_item(JELLI_UI_SETTINGS, 1u, false).action == JELLI_UI_ACTION_SWITCH_PET);
+    CHECK(jelli_pet_ui_item(JELLI_UI_CARE, 2u, true).action == JELLI_UI_ACTION_CLEAN_WAKE);
+    CHECK(strcmp(jelli_pet_ui_item(JELLI_UI_CARE, 2u, true).label, "CLEAN") == 0);
+    CHECK(jelli_pet_ui_item(JELLI_UI_SETTINGS, 1u, false).action == JELLI_UI_ACTION_MORE);
     CHECK(jelli_pet_ui_item(JELLI_UI_SETTINGS, 0u, false).action == JELLI_UI_ACTION_BEDTIME);
 }
 
-static void tap_item(JelliPetUi *ui, JelliGame *game, unsigned item)
-{
-    if (!ui->menu_open)
-        jelli_pet_ui_tap(ui, game, 233, 420);
-    JelliPetUiButton button;
-    CHECK(jelli_pet_ui_control(ui, item + 1u, game->pets[game->active].asleep, &button));
-    jelli_pet_ui_tap(ui, game, (int)(button.bounds.x + 48u), (int)(button.bounds.y + 48u));
-}
-
-static void test_navigation_and_actions(void)
-{
-    JelliGame game;
-    JelliPetUi ui;
-    jelli_game_init(&game);
-    jelli_pet_ui_init(&ui);
-    tap_item(&ui, &game, 3u); /* CARE. */
-    CHECK(ui.page == JELLI_UI_CARE);
-    tap_item(&ui, &game, 1u); /* CLEAN. */
-    CHECK(game.pets[game.active].activity == JELLI_CLEANING);
-    for (unsigned step = 0u; step < 10u; ++step)
-        jelli_game_advance(&game, 1000u);
-    CHECK(game.pets[game.active].activity == JELLI_IDLE);
-    jelli_pet_ui_tap(&ui, &game, 233, 420);
-    CHECK(ui.page == JELLI_UI_HOME);
-    tap_item(&ui, &game, 5u); /* GIFTS. */
-    CHECK(ui.page == JELLI_UI_COLLECTION);
-    CHECK(game.pets[game.active].activity == JELLI_IDLE);
-    CHECK(ui.save_requested);
-
-    jelli_game_init(&game);
-    jelli_pet_ui_init(&ui);
-    tap_item(&ui, &game, 4u); /* PETS. */
-    CHECK(ui.page == JELLI_UI_PETS);
-    CHECK(game.active == 0u);
-    CHECK(!ui.save_requested);
-
-    jelli_game_init(&game);
-    jelli_pet_ui_init(&ui);
-    jelli_pet_ui_long_press(&ui, &game, 233, 420); /* SETTINGS. */
-    CHECK(ui.page == JELLI_UI_SETTINGS);
-    uint32_t bedtime = game.pets[game.active].bedtime;
-    tap_item(&ui, &game, 0u);
-    CHECK(game.pets[game.active].bedtime == (bedtime + 1u) % 24u);
-    CHECK(ui.save_status == JELLI_SAVE_PENDING && ui.save_requested);
-
-    game.resuming = true;
-    game.resume_remaining_ms = 60000u;
-    uint8_t page = (uint8_t)ui.page;
-    jelli_pet_ui_tap(&ui, &game, 233, 420);
-    CHECK((uint8_t)ui.page == page);
-    CHECK(game.pets[game.active].bedtime == (bedtime + 1u) % 24u);
-}
+#include "ui_navigation_fixture.h"
 
 static void test_ring_moments_and_meter(void)
 {
@@ -157,9 +106,9 @@ static void test_ring_moments_and_meter(void)
     jelli_pet_ui_init(&ui);
     jelli_pet_ui_tap(&ui, &game, 110, 111);
     CHECK(!ui.menu_open && ui.page == JELLI_UI_HOME);
-    jelli_pet_ui_tap(&ui, &game, 233, 420);
+    jelli_pet_ui_swipe(&ui, &game, 0, ui.menu_open ? 80 : -80);
     CHECK(ui.menu_open);
-    tap_item(&ui, &game, 2u); /* PLAY. */
+    tap_item(&ui, &game, 4u);
     CHECK(ui.page == JELLI_UI_MOMENTS);
     CHECK(jelli_pet_moment(&game.pets[0]) == 0u);
     ui.clock_known = true;
@@ -172,18 +121,18 @@ static void test_ring_moments_and_meter(void)
     CHECK(jelli_pet_moment(&game.pets[0]) == 2u);
     game.pets[0].phase_offset = 19u * 36000u;
     CHECK(jelli_pet_moment(&game.pets[0]) == 6u);
-    tap_item(&ui, &game, 1u); /* GOING OUT (feed moments are omitted). */
+    tap_moment(&ui, &game, 2u);
     CHECK(game.pets[0].location == 1u);
     CHECK(game.pets[0].activity == JELLI_PLAYING);
     for (unsigned i = 0; i < 10u; ++i)
         jelli_game_advance(&game, 800u);
     CHECK(!ui.menu_open && ui.page == JELLI_UI_HOME);
-    tap_item(&ui, &game, 2u); /* Reopen Play after the outing. */
-    tap_item(&ui, &game, 3u); /* Reading is always available. */
+    tap_item(&ui, &game, 4u);   /* Reopen Moments after the outing. */
+    tap_moment(&ui, &game, 4u); /* Reading is always available. */
     CHECK(game.pets[0].activity == JELLI_PLAYING);
-    jelli_pet_ui_tap(&ui, &game, 233, 420);
+    jelli_pet_ui_swipe(&ui, &game, 0, ui.menu_open ? 80 : -80);
     CHECK(ui.menu_open && ui.page == JELLI_UI_HOME);
-    jelli_pet_ui_tap(&ui, &game, 233, 420);
+    jelli_pet_ui_swipe(&ui, &game, 0, ui.menu_open ? 80 : -80);
     CHECK(!ui.menu_open);
     jelli_pet_ui_tap(&ui, &game, 233, 332);
     CHECK(ui.stat_offset == 0u);

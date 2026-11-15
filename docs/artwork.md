@@ -561,3 +561,22 @@ events replace the pending one. The shipped bindings select
 **Evolution — a new chapter**, **New gift — discovery**, and **Present accepted — thank you**, respectively. Acceptance celebrates a
 successful collected-present transfer or a completed inventory-gift action.
 The saved-effect preview tests the choreography directly, not the gameplay trigger path.
+
+
+## Author pet activity invitations
+
+Activities may include an optional `invitation` object in
+[the activity catalog](../content/activities.json). It contains `weight` for the
+leisure selection pool, `minutes` for the offer lifetime, and `relax_window` to
+permit accepting that offer outside the ordinary catalog time window. Omitting
+the object excludes a recipe from the leisure pool; timed discovery can still
+advertise an eligible recipe. Invitations apply to play recipes. They preserve
+form restrictions, prerequisites, costs and daily reward limits.
+
+The [shared CMake validator](../cmake/JelliActivities.cmake) owns accepted ranges
+and is also used by Studio saves. Existing recipe edits preserve the object.
+Edit these policy fields in the catalog; the current Studio form does not expose
+invitation tuning controls. Rebuild to apply recipe changes. Keep activity IDs
+and names stable because saved pending offers refer to them. See
+[the implementation record](../docs-cms/memos/memo-115-pet-led-activity-discovery.md)
+for generator, persistence and clock behavior.

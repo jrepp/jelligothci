@@ -25,6 +25,10 @@ static void check_unchanged(const JelliGame *before, const JelliGame *after)
 
 static void press(JelliPetUi *ui, JelliGame *game, unsigned slot)
 {
+    if (!slot && !ui->menu_open) {
+        jelli_pet_ui_swipe(ui, game, 0, -80);
+        return;
+    }
     JelliPetUiButton b;
     CHECK(jelli_pet_ui_control(ui, slot, game->pets[game->active].asleep, &b));
     jelli_pet_ui_tap(ui, game, (int)(b.bounds.x + b.bounds.width / 2u),
@@ -39,9 +43,9 @@ static void test_clicker(void)
         test_game_pair(&g);
         jelli_pet_ui_init(&ui);
         JelliSurface s = {pixels, JELLI_WIDTH, JELLI_HEIGHT, JELLI_WIDTH, {0}};
-        press(&ui, &g, 0u);
-        press(&ui, &g, 4u); /* CARE */
-        press(&ui, &g, 4u); /* HEALTH */
+        jelli_pet_ui_swipe(&ui, &g, 0, 80);
+        press(&ui, &g, 2u); /* PET MENU */
+        press(&ui, &g, 2u); /* HEALTH */
         CHECK(ui.page == JELLI_UI_HEALTH);
         press(&ui, &g, kind + 1u);
         CHECK(ui.page == (JelliPetPage)(JELLI_UI_BRUSH + kind));
@@ -74,7 +78,9 @@ static void test_clicker(void)
         press(&ui, &g, 0u);
         CHECK(ui.page == JELLI_UI_HEALTH);
         press(&ui, &g, 0u);
-        CHECK(ui.page == JELLI_UI_CARE);
+        CHECK(ui.page == JELLI_UI_MORE);
+        press(&ui, &g, 0u);
+        CHECK(ui.page == JELLI_UI_SETTINGS && ui.menu_open);
         press(&ui, &g, 0u);
         CHECK(ui.page == JELLI_UI_HOME && ui.menu_open);
     }

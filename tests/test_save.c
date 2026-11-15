@@ -74,8 +74,8 @@ static JelliSave fixture(void)
     save.game.pets[0].hunger_low = true;
     for (size_t i = 0; i < JELLI_NEED_COUNT; ++i)
         save.game.pets[0].need_remainders[i] = (uint16_t)(10u + i);
-    save.game.pets[0].reward_claimed = true;
-    save.game.pets[1].reward_pending = true;
+    save.game.pets[0].reward_claimed = false;
+    save.game.pets[1].reward_pending = false;
     save.game.sleep_log =
         (JelliSleepLog){.total_seconds = 3600u, .head = 1u, .count = 1u, .pet_id = 1u};
     save.game.sleep_log.sessions[0] = (JelliSleepSession){.bed_unix_seconds = 1700000000u,
@@ -98,7 +98,7 @@ static void round_trip_is_canonical(void)
     CHECK(decoded.sequence == original.sequence && decoded.anchor_valid);
     CHECK(decoded.game.backlog_ms == 50u && decoded.game.pets[0].hunger_low);
     CHECK(decoded.game.pets[0].need_remainders[0] == 10u);
-    CHECK(decoded.game.pets[0].reward_claimed && decoded.game.pets[1].reward_pending);
+    CHECK(!decoded.game.pets[0].reward_claimed && !decoded.game.pets[1].reward_pending);
     CHECK(decoded.game.sleep_log.total_seconds == 3600u);
     CHECK(decoded.game.sleep_log.sessions[0].wake_unix_seconds == 1700003600u);
     CHECK(decoded.game.timezone_minutes == -330 && decoded.game.clock_adjust == 25);
@@ -167,12 +167,11 @@ static void invalid_fields_are_rejected(void)
     CHECK(!jelli_save_decode(&output, bytes, size));
     CHECK(unchanged(&output, &saved_output));
     size = encode(&original, bytes);
-    bytes[64] = 0u;
-    bytes[65] = 0u;
-    bytes[176] = (uint8_t)JELLI_EATING;
-    bytes[4] = 19u;
+    bytes[66] = 0u; /* A running gift still requires its reserved inventory. */
+    bytes[67] = 0u;
+    bytes[176] = (uint8_t)JELLI_GIVING;
     repair_checksum(bytes, size);
-    CHECK(jelli_save_decode(&output, bytes, size));
+    CHECK(!jelli_save_decode(&output, bytes, size));
     output = saved_output;
     size = encode(&original, bytes);
     bytes[157] = 0x58u;
@@ -232,14 +231,14 @@ static void interaction_claim_and_sleep_round_trip(void)
     check_same_save(&saved, &loaded);
 
     saved.game.active = 1u;
-    CHECK(jelli_game_command(&saved.game,
-                             (JelliCommand){.kind = JELLI_CMD_CLAIM, .actor_id = 2u}) == JELLI_OK);
+    CHECK(jelli_game_command(&saved.game, (JelliCommand){.kind = JELLI_CMD_CLAIM,
+                                                         .actor_id = 2u}) == JELLI_INVALID_TARGET);
     size = encode(&saved, bytes);
     CHECK(jelli_save_decode(&loaded, bytes, size));
     uint16_t food_after_claim = loaded.game.food;
-    CHECK(loaded.game.pets[1].reward_claimed && !loaded.game.pets[1].reward_pending);
+    CHECK(!loaded.game.pets[1].reward_claimed && !loaded.game.pets[1].reward_pending);
     CHECK(jelli_game_command(&loaded.game, (JelliCommand){.kind = JELLI_CMD_CLAIM,
-                                                          .actor_id = 2u}) == JELLI_NOT_READY);
+                                                          .actor_id = 2u}) == JELLI_INVALID_TARGET);
     CHECK(loaded.game.food == food_after_claim);
 
     saved = fixture();

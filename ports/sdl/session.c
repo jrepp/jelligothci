@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 
-_Static_assert(sizeof(JelliSession) <= 16384u, "Save workspace exceeds 16 KiB budget");
+_Static_assert(sizeof(JelliSession) <= 18432u, "Save workspace exceeds 18 KiB budget");
 
 static uint64_t wall_time(const JelliSession *session, const JelliOptions *options,
                           uint64_t monotonic_ms, bool *valid)

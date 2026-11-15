@@ -42,16 +42,15 @@ try:
     assert capabilities["protocol"] == 1 and "state" in capabilities["commands"]
     assert "factory" not in capabilities["commands"]
     assert debug.state()["visual"]["page"] == "home"
-    debug.press("MENU")
-    debug.press("CARE")
-    assert debug.state()["visual"]["page"] == "care"
+    debug.request("swipe 1")
+    debug.press("PET MENU")
+    assert debug.state()["visual"]["page"] == "more"
     try:
         debug.request("press 0 1")
         raise AssertionError("stale-page press accepted")
     except client.DebugError as exc:
         assert "page_changed" in str(exc)
     debug.press("BACK")
-    debug.press("CARE")
     debug.press("REST")
     assert debug.state()["visual"]["asleep"]
     with tempfile.TemporaryDirectory() as folder:
@@ -76,6 +75,8 @@ try:
         assert raw[:4] == b"\x00\x00\x00\x00"  # round corner is black
         assert len(set(raw)) > 10  # actual rendered content, not a blank capture
     assert debug.state()["capture"] == 0
+    debug.request("swipe 1")
+    debug.press("PET MENU")
     debug.press("WAKE")
     assert not debug.state()["visual"]["asleep"]
 finally:

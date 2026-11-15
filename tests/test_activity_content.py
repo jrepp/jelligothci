@@ -31,6 +31,10 @@ with tempfile.TemporaryDirectory(prefix='jelli-activity-refs-') as scratch:
 
     check(original, True, 'valid catalog')
     mutations = [
+        lambda d: d['moments'][4].update(invitation={'weight': 0, 'minutes': 90, 'relax_window': True}),
+        lambda d: d['moments'][4].update(invitation={'weight': 1, 'minutes': 181, 'relax_window': True}),
+        lambda d: d['moments'][4].update(invitation={'weight': 1, 'minutes': 90, 'relax_window': 1}),
+        lambda d: d['moments'][0].update(invitation={'weight': 1, 'minutes': 90, 'relax_window': True}),
         lambda d: d['moments'][4].update(locations=['moon']),
         lambda d: d['moments'][4].update(locations=[]),
         lambda d: d['moments'][4].update(locations=['home', 'home']),

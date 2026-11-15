@@ -57,6 +57,9 @@ typedef struct {
     uint8_t pose, prize;
     /* Only the first run each local day pays costs and gives rewards and its prize. */
     bool daily_reward;
+    uint8_t invitation_weight; /* Zero excludes this activity from leisure invitations. */
+    uint16_t invitation_minutes;
+    bool invitation_relax_window;
 } JelliMoment;
 
 typedef struct {

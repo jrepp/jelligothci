@@ -7,6 +7,7 @@
 #include "jelli/behavior.h"
 #include "jelli/collectible.h"
 #include "jelli/music.h"
+#include "jelli/invitations.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -41,7 +42,6 @@ void jelli_game_init(JelliGame *game)
         return;
     *game = (JelliGame){.volume = JELLI_VOLUME_DEFAULT, .activity_music_enabled = true};
     game->count = 1u;
-    game->food = jelli_collection_start.food;
     game->gifts = jelli_collection_start.gifts;
     game->pets[0] = jelli_collection_new_pet(1u, 1u);
     jelli_collection_unlock(game);
@@ -139,7 +139,8 @@ static bool pet_lifecycle_valid(const JelliPet *pet)
 
 static bool pet_valid(const JelliPet *pet)
 {
-    return jelli_collectible_progress_valid(&pet->collectible_progress) &&
+    return jelli_invitations_valid(&pet->invitations) &&
+           jelli_collectible_progress_valid(&pet->collectible_progress) &&
            jelli_prize_progress_valid(&pet->prize_progress) && jelli_habits_valid(&pet->habits) &&
            pet->habits.cursor_ticks <= pet->ticks && pet->shot_goal <= 3u &&
            pet->shot_hits <= pet->shot_goal &&

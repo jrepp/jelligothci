@@ -32,7 +32,7 @@ static void initialization_and_validation(void)
     JelliGame game;
     test_game_pair(&game);
     CHECK(jelli_game_valid(&game));
-    CHECK(game.count == 2u && game.active == 0u && game.food == 5u && game.gifts == 3u);
+    CHECK(game.count == 2u && game.active == 0u && game.food == 0u && game.gifts == 3u);
     CHECK(game.pets[0].id == 1u && game.pets[1].id == 2u);
     jelli_game_advance(&game, 100u);
     CHECK(!game.pets[0].asleep);
@@ -51,26 +51,19 @@ static void feed_reward_and_full_claim(void)
 {
     JelliGame game;
     test_game_pair(&game);
-    game.food = JELLI_STACK_LIMIT;
+    CHECK(game.food == 0u);
     CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_OK);
-    CHECK(game.food == JELLI_STACK_LIMIT);
     advance_ms(&game, 4900u);
-    CHECK(game.food == JELLI_STACK_LIMIT && !game.pets[0].reward_pending);
+    CHECK(game.pets[0].activity == JELLI_EATING && !game.pets[0].reward_pending);
     advance_ms(&game, 100u);
-    CHECK(game.food == JELLI_STACK_LIMIT && game.pets[0].reward_pending);
-    CHECK(command(&game, JELLI_CMD_CLAIM, 1u, 0u) == JELLI_FULL);
-    CHECK(game.pets[0].reward_pending && !game.pets[0].reward_claimed);
-    game.food = 17u;
-    CHECK(command(&game, JELLI_CMD_CLAIM, 1u, 0u) == JELLI_OK);
-    CHECK(game.food == 20u && !game.pets[0].reward_pending && game.pets[0].reward_claimed);
-    CHECK(command(&game, JELLI_CMD_CLAIM, 1u, 0u) == JELLI_NOT_READY);
-    CHECK(game.food == 20u);
-    CHECK(jelli_game_valid(&game));
+    CHECK(game.pets[0].activity == JELLI_IDLE && !game.pets[0].reward_pending);
+    CHECK(game.pets[0].needs[JELLI_SATIETY] > 700u);
+    CHECK(command(&game, JELLI_CMD_CLAIM, 1u, 0u) == JELLI_INVALID_TARGET);
+    CHECK(game.food == 0u && !game.pets[0].reward_claimed);
     game.pets[0].needs[JELLI_SATIETY] = 400u;
-    JelliResult repeated_feed = command(&game, JELLI_CMD_FEED, 1u, 0u);
-    CHECK(repeated_feed == JELLI_OK);
+    CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_OK);
     advance_ms(&game, 5000u);
-    CHECK(game.pets[0].reward_claimed && !game.pets[0].reward_pending);
+    CHECK(game.food == 0u && !game.pets[0].reward_pending);
     CHECK(jelli_game_valid(&game));
 }
 
@@ -125,9 +118,9 @@ static void care_cancels_and_wakes_without_cost(void)
     CHECK(command(&game, JELLI_CMD_FEED, 1u, 0u) == JELLI_OK);
     CHECK(command(&game, JELLI_CMD_CARE, 1u, 0u) == JELLI_OK);
     CHECK(game.pets[0].activity == JELLI_CARING && game.pets[0].health == JELLI_RECOVERING);
-    CHECK(game.food == 5u && !game.pets[0].asleep);
+    CHECK(game.food == 0u && !game.pets[0].asleep);
     advance_ms(&game, 30000u);
-    CHECK(game.food == 5u && game.pets[0].health == JELLI_WELL);
+    CHECK(game.food == 0u && game.pets[0].health == JELLI_WELL);
     CHECK(!game.pets[0].reward_pending);
     CHECK(command(&game, JELLI_CMD_REST, 1u, 0u) == JELLI_OK);
     CHECK(game.pets[0].asleep);

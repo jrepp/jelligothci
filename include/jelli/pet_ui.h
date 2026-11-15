@@ -2,6 +2,7 @@
 #define JELLI_PET_UI_H
 
 #include "jelli/engine.h"
+#include "jelli/gesture.h"
 #include "jelli/assets.h"
 #include "jelli/game.h"
 #include "jelli/particles.h"
@@ -32,7 +33,7 @@ typedef enum {
     JELLI_UI_PET_DETAIL,
     JELLI_UI_EVOLUTIONS,
     JELLI_UI_PRESENT_ACTION,
-    JELLI_UI_FOOD,
+    JELLI_UI_FOOD, /* Reserved page ID; Food is a direct root action. */
     JELLI_UI_GIFT_SHELF,
     JELLI_UI_COLLECTIBLE_PLAY,
     JELLI_UI_TUNE_PLAY,
@@ -123,6 +124,8 @@ typedef struct {
     uint8_t exercise_bob; /* Barbell frame 0/1 while exercising. */
     uint8_t night, mood, reaction, care_blocked, ring_page, ring_visible;
     bool ring_moving, clock_edit, ring_clock_edit;
+    uint32_t unseen_offers, ready_offers;
+    uint8_t discovery_icon, discovery_pulse, hold_progress;
     uint32_t unavailable;
     uint16_t stat_value, sleep_score;
     uint32_t prize_owned, prize_discovered;
@@ -230,6 +233,7 @@ typedef struct {
     uint8_t gift_category, gift_page;
     JelliPetPage present_return;
     JelliGame action_scratch; /* Fixed preflight workspace; never placed on the ESP task stack. */
+    uint64_t pointer_ms, discovery_ms, bubble_emit_ms;
     uint64_t tile_anchor_ms, idle_anchor_ms, last_animation_phase, last_pet_ticks;
     uint64_t last_sound_ms, coo_anchor_ms, night_anchor_ms, sleep_emit_ms, ring_anchor_ms;
     JelliPetRenderKey last_view;
@@ -238,6 +242,7 @@ typedef struct {
     int actor_x, actor_y;
     uint8_t actor_scale; /* Pixel multiplier from the active form's creature profile. */
     uint8_t collectible_confirm;
+    uint32_t pointer_pet, discovery_pet, ready_offers, unseen_offers, activity_offers, home_offers;
     uint32_t clicker_pet, routine_random, tuning_revision, tuning_pet;
     JelliResult result;
     uint8_t activity_page;
@@ -246,6 +251,7 @@ typedef struct {
     uint16_t collectible_win_ms, collectible_launch_ms;
     bool collectible_launch_pending;
     uint32_t result_until_ms, last_revision, coo_pet;
+    JelliGesture pointer;
     JelliRect actor_bounds;
     JelliParticles particles;
     uint64_t wall_set_seconds;
@@ -266,7 +272,6 @@ typedef struct {
     bool save_requested, time_unavailable;
     uint8_t save_status;
     bool scene_automatic, scene_clock_started;
-    uint8_t hold_progress;
     uint16_t battery_mv;
     uint8_t battery_percent;
     bool battery_present, battery_voltage_valid, battery_gauge_valid;
@@ -279,14 +284,30 @@ typedef struct {
     bool atmosphere_ready, sleep_emitted;
     bool keyboard_focus;
     uint8_t keyboard_slot;
-    uint64_t bubble_emit_ms;
     uint8_t bubble_mode;
     bool bubble_emitted;
     uint8_t routine_goals[6];
+    uint8_t pointer_page, pointer_form, pointer_location, pointer_activity, hold_progress;
+    bool pointer_menu, pointer_pet_target, pointer_moved, pointer_consumed;
+    bool activity_snapshot;
+    uint8_t activity_choices[34], activity_count;
+    uint8_t home_choices[2];
+    bool home_snapshot;
+    uint8_t discovery_icon, discovery_pulse;
+    uint8_t health_return, pets_return, settings_return;
+
 } JelliPetUi;
 
 bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y);
 void jelli_pet_ui_init(JelliPetUi *ui);
+bool jelli_pet_actor_hit(const JelliPetUi *ui, const JelliGame *game, int x, int y);
+void jelli_pet_pointer(JelliPetUi *ui, JelliGame *game, JelliInput input, uint64_t now);
+void jelli_pet_pointer_update(JelliPetUi *ui, const JelliGame *game, uint64_t now);
+void jelli_pet_discovery_refresh(JelliPetUi *ui, JelliGame *game, uint64_t now);
+void jelli_pet_discovery_update(JelliPetUi *ui, JelliGame *game, uint64_t now);
+bool jelli_pet_discovery_button(const JelliPetUi *ui, unsigned slot, bool asleep,
+                                JelliPetUiButton *button);
+
 JelliPetUiItem jelli_pet_ui_item(JelliPetPage page, unsigned item, bool asleep);
 bool jelli_pet_ui_button(JelliPetPage page, unsigned slot, bool asleep, bool menu_open,
                          JelliPetUiButton *button);
@@ -306,7 +327,13 @@ JelliPetUiAction jelli_pet_routine_action(unsigned page);
 uint32_t jelli_pet_health_icon(unsigned activity);
 /* Moment ID (content/activities.json) for a moment action; false for other actions. */
 bool jelli_pet_activity_button(unsigned page, unsigned slot, bool asleep, JelliPetUiButton *button);
-unsigned jelli_pet_activity_count(void);
+void jelli_pet_home_refresh(JelliPetUi *ui, const JelliGame *game);
+unsigned jelli_pet_home_choice(const JelliPetUi *ui, unsigned slot);
+bool jelli_pet_home_button(const JelliPetUi *ui, unsigned slot, bool asleep,
+                           JelliPetUiButton *button);
+bool jelli_pet_discovery_slot(const JelliPetUi *ui, unsigned slot);
+JelliCommand jelli_pet_activity_command(const JelliGame *game, unsigned choice);
+unsigned jelli_pet_activity_pages(const JelliPetUi *ui);
 unsigned jelli_pet_activity_choice(const JelliPetUi *ui, unsigned slot);
 bool jelli_pet_moment_for_action(JelliPetUiAction action, unsigned *moment);
 void jelli_pet_health_tap(JelliPetUi *ui, JelliGame *game);

@@ -143,9 +143,6 @@ void jelli_moment_reward(const JelliGame *game, JelliPet *pet)
         return;
     unsigned id = pet->moment - 1u;
     const JelliMoment *m = &jelli_moments[id];
-    bool useful_meal =
-        m->kind == JELLI_MOMENT_FEED &&
-        (pet->moment_pulse ? (pet->moment_pulse & 128u) != 0u : pet->needs[JELLI_SATIETY] < 700u);
     if (!pet->moment_pulse) {
         unsigned factor =
             jelli_moment_bonus_percent(pet, id) * jelli_moment_jitter_percent(pet, id);
@@ -157,11 +154,6 @@ void jelli_moment_reward(const JelliGame *game, JelliPet *pet)
     if (m->kind == JELLI_MOMENT_FEED) {
         jelli_habits_record_meal(&pet->habits, pet->ticks);
         jelli_potty_eat(pet);
-        if (useful_meal && !pet->reward_claimed) {
-            pet->reward_pending = true;
-            if (pet->feeds < UINT16_MAX)
-                ++pet->feeds;
-        }
     }
     if (m->gains[JELLI_ACTIVITY_HYDRATION])
         jelli_potty_drink(pet);

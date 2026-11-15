@@ -1,6 +1,7 @@
 #include "jelli/save.h"
 #include "save_codec.h"
 #include "save_tail.h"
+#include "invitation_save.h"
 #include "jelli/collection.h"
 #include "collectible_save.h"
 
@@ -128,6 +129,8 @@ static void read_pet(Reader *reader, JelliPet *pet)
     (void)read_bool(reader, &pet->hunger_counted);
     (void)read_bool(reader, &pet->reward_pending);
     (void)read_bool(reader, &pet->reward_claimed);
+    pet->reward_pending = false;
+    pet->reward_claimed = false;
     if (reader->version >= 2u) {
         pet->shot_until = get_u64(reader);
         pet->medicine_until = get_u64(reader);
@@ -220,6 +223,7 @@ static void write_game(Writer *writer, const JelliGame *game)
     put_u8(writer, game->volume);
     jelli_save_write_tail(writer, game);
     jelli_collectible_save_write(writer, game);
+    jelli_invitation_save_write(writer, game);
 }
 
 static bool read_game(Reader *reader, JelliGame *game)
@@ -229,7 +233,8 @@ static bool read_game(Reader *reader, JelliGame *game)
     game->resume_remaining_ms = get_u64(reader);
     game->backlog_ms = get_u32(reader);
     game->revision = get_u32(reader);
-    game->food = get_u16(reader);
+    (void)get_u16(reader); /* Legacy food inventory; feeding no longer uses stock. */
+    game->food = 0u;
     game->gifts = get_u16(reader);
     game->count = get_u8(reader);
     game->active = get_u8(reader);
@@ -270,12 +275,15 @@ static bool read_game(Reader *reader, JelliGame *game)
         }
     }
     if (reader->version >= 6u)
-        for (unsigned i = 0u; i < game->count; ++i)
-            game->pets[i].food_type = get_u8(reader);
+        for (unsigned i = 0u; i < game->count; ++i) {
+            (void)get_u8(reader); /* Legacy meal variant; saves now use one Food action. */
+            game->pets[i].food_type = 0u;
+        }
     game->activity_music_enabled = true;
     game->volume = reader->version >= 7u ? get_u8(reader) : JELLI_VOLUME_DEFAULT;
     jelli_save_read_tail(reader, game);
     jelli_collectible_save_read(reader, game);
+    jelli_invitation_save_read(reader, game);
     return !reader->failed;
 }
 

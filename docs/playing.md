@@ -29,6 +29,32 @@ with SDL disabled. This checks host portability independently of the SDL and
 ESP32 ports. A separate Linux job runs the SDL smoke test and sanitizers.
 
 
+## Pet invitations and navigation
+
+Tap the pet to open the main wheel; this does not comfort or wake it. Hold the
+pet continuously for three seconds to open Settings, using the visible progress
+bar. Moving away cancels the hold. The bottom control goes back one menu level
+or closes the root wheel. Swipe up or press Enter on desktop to open the wheel.
+Swipe down from the closed scene is an alternative Settings route. Wake is in
+Care and Settings. Settings → Pet Menu provides Pets and Gifts.
+
+A small thought bubble means the pet has an unseen activity invitation. Open the
+wheel: the left half has two ready shortcuts plus Activities; the right half
+has Food, Water and Care. Ready invitations take priority. Activities contains
+ready choices, including ordinary Play and Exercise, with pagination only when
+needed. Unavailable activities are omitted when the view opens. Inspecting an invitation
+acknowledges it, while selecting it starts the activity. Ignoring an invitation
+has no added penalty. Some invitations permit leisure activities outside their
+ordinary window or hourly selection; meal timing, prerequisites, costs and reward
+limits still apply. Authored policies live in [activity content](../content/activities.json).
+
+Pending invitations and acknowledgement survive saving and restarting. Wake
+removes expired offers before displaying cues; still-valid offers remain pending.
+An activity that becomes busy or unaffordable can return when its requirements
+are met, if its invitation has not expired. Offers do not extend their deadline
+while the device is asleep. When real time is unavailable, leisure invitations
+use the simulated clock and timed invitations wait for known time.
+
 ## Debug CLI
 
 The desktop app and ESP32 share the same state, button, tap, and screenshot
@@ -38,9 +64,8 @@ already-running app to enable the new interface. From a second terminal:
 ```sh
 ./scripts/jelli-debug state
 ./scripts/jelli-debug buttons
-./scripts/jelli-debug press MENU
-./scripts/jelli-debug press CARE
-./scripts/jelli-debug press "BASIC CARE"
+./scripts/jelli-debug press PET
+./scripts/jelli-debug press "CARE"
 ./scripts/jelli-debug screenshot build/local-screen.png
 ```
 
@@ -71,9 +96,8 @@ reads the engine buffer; it cannot verify the pixels shown by the physical panel
 export JELLI_DEBUG_PORT=/dev/cu.usbmodem...  # Linux typically /dev/ttyACM...
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" state
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" buttons
-./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" press MENU
-./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" press CARE
-./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" press "BASIC CARE"
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" press PET
+./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" press "CARE"
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" tap 114 332
 ./scripts/jelli-debug --port "$JELLI_DEBUG_PORT" screenshot build/pet-live.png
 ```
@@ -136,28 +160,27 @@ record](../docs-cms/memos/memo-009-wired-debug-interface-and-validation.md).
 
 ## Large ring controls and moments
 
-Tap MENU for Food, Water, Play, Care, Pets, and Gifts. Care contains Rest/Wake.
-Hold the closed MENU button for three seconds to open Settings; a short tap
-opens the regular menu.
+Tap the pet for the main wheel. Food and Water act directly; Care opens the
+health and hygiene routines without treating the pet. The left side offers two
+ready activity shortcuts and Activities for the rest. There is no separate Play
+or More entry. Hold the pet for Settings; its Pet Menu contains Pets and Gifts.
 Only useful actions occupy ring positions. The bottom arrow BACK is the only
 return action; X CLOSE dismisses the home ring. There is no separate confirm or
 save button: successful actions request a save. The home tile shows one stat at a
 time: Mood, Food, Energy, Hygiene, Play, Social, Bond, or Sleep. Swipe sideways
 to choose. Completed activities briefly count up each improved stat in sequence;
 passive changes and debug cheats do not trigger that celebration.
-Gentle touches improve mood; rapid repeated touches request space and then show
-an overwhelmed reaction. Sensitivity recovers with time. Each pet has stable
-moment preferences and time-of-day bonuses; current balance is a prototype.
+Scene taps open navigation without comfort or wake effects. Each pet retains
+its authored activity preferences and time-of-day bonuses.
 
 Night fades to darker gray with a crescent above the actor; icons gain a subtle
 cool tint. Sleeping pets emit medium-blue Z particles from
 half the visible sprite height above the cached centroid.
 
-MOMENTS offers breakfast, tea, going out, and a movie. The prototype maps these
-to existing feed, play, and travel actions. Both ports use UTC plus the configured
-local offset for suggestions; unknown clocks fall back to the pet relative day. Suggestions
-never lock actions. Distinct ritual scenes and effects are tracked in
-[PRD-001](../docs-cms/prd/prd-001-moments-and-readable-care.md).
+Activities uses the authored [catalog and invitation policies](../content/activities.json).
+Ready choices include timed meals, leisure and ordinary play. Invitations may
+relax selected leisure gates; meal windows and shared activation checks remain
+in effect. Unknown clocks use the documented invitation fallback above.
 
 Button presses emit short native confetti bursts, including while gameplay is
 paused. The rings/art/particles were flashed and externally tested; see
@@ -214,17 +237,16 @@ With a running local debug socket (or add `--port` for the ESP32), start at the
 closed home scene:
 
 ```sh
-./scripts/jelli-debug press MENU
+./scripts/jelli-debug press PET
 ./scripts/jelli-debug press CARE
-./scripts/jelli-debug press HEALTH
 ./scripts/jelli-debug press 'BRUSH TEETH'
 ./scripts/jelli-debug press 'BRUSH TEETH'  # one game-logic tap; inspect current stage and target
 ./scripts/jelli-debug state              # visual.clicker_hits, needs, bond, result
 ```
 
 The activity icon sits above the actor; touching the actor itself does not count.
-BACK walks activity → health → care → home. On the health ring use button `0` to
-select the bottom BACK unambiguously (the ring also contains BACK).
+BACK walks routine → Care → home when entered from the main wheel. Use button
+`0` to select the bottom Back control.
 The manual external acceptance script supports `--health` alongside `--tunables`;
 it checks every clicker, internal bond changes, completion guards, and screenshots.
 
@@ -291,7 +313,7 @@ including mixed-scope overrides. The old `ui.stat_hold_ms`/`ui.stat_slide_ms`
 settings are retained for compatibility but the single mood tile does not slide.
 
 The debug viewer includes an active-pet cheat panel: needs and bond accept 0–100,
-food and gifts 0–20, and Heal restores care needs and clears illness/touch stress.
+gifts accept 0–20, and Heal restores care needs and clears illness/touch stress.
 Changes appear as Debug events and obey active recovery/item reservations.
 CLI examples: `./scripts/jelli-debug cheat energy 75` and
 `./scripts/jelli-debug cheat heal` (add the usual socket or port option).
@@ -379,10 +401,10 @@ memory import/export remains planned.
 
 ## Pet collection and putting presents away
 
-Menu → Pets opens a collection grid. Tap a slot for its unlock hint or owned
-pet details. Bring out activates that pet; browsing and viewing Evolutions do
-not switch pets. Back returns to the previous collection view. Linked sleep and
-unfinished activities block activation, with a reason shown in the detail view.
+Settings → Pet Menu → Pets opens a collection grid. Tapping an owned inactive pet brings it out
+immediately; tap the active pet to inspect forms or a locked pet to see its
+unlock hint. Settings retains its Pets shortcut. Linked sleep and unfinished
+activities block activation with a reason shown in the collection view.
 
 Mint and Lilac occupy one Jelli family slot. A new game starts with Mint;
 growth unlocks Lilac. In Evolutions, tap either unlocked form to select it,
@@ -411,33 +433,33 @@ and compiles it for both hosts without a new runtime loader. Entry IDs are
 stable slot bindings; do not renumber them. This slice supports the existing
 two-form evolution set; unsupported form/set references fail the build.
 
-Save codec v9 reads v1–v8. The two legacy starter records merge into one Jelli
-slot: the active starter keeps its identity and full care state (otherwise the
-first starter is retained), and their reached forms are combined. Present
-origins and the linked sleep journal follow the retained identity. Other family
-records keep their state. A legacy Lilac also unlocks its Mint ancestor. The
-inactive duplicate starter's separate care history is not retained.
-Existing present discoveries can grant missing companions during migration.
-Older firmware cannot read v9; keep a backup before downgrading.
+Save codec v20 reads versions 1–19. Migration keeps the active starter's
+identity and care state when merging legacy starter records, combines their
+reached forms, and carries present origins and the linked sleep journal with the
+retained identity. The inactive duplicate starter's separate care history is
+not retained; other family records keep their state. A legacy Lilac also unlocks
+its Mint ancestor. Existing present discoveries can grant missing companions
+during migration. Older saves also migrate food stock and meal variants to the
+single direct Food action. Older firmware cannot read v20; keep a backup before
+downgrading.
 
 
 ## Food, water, and exercise
 
-Menu → Food starts a meal using the default food, with no inventory needed.
-Menu → Water fills hydration. Labels stay readable even when actions are disabled.
-Swipe the home stat tile to Hydration.
+Food starts one meal directly from the root menu. Feeding has no inventory or
+meal choice. Water fills hydration directly from the root menu. Swipe the home
+stat tile to Hydration.
 
-Play → Exercise starts a barbell workout. Its duration, costs, and rewards
+Activities → Exercise starts a barbell workout. Its duration, costs, and rewards
 are authored in [`content/exercise.json`](../content/exercise.json).
-The action is disabled while asleep, busy, or short of those resources. It uses
-fullness already eaten, so it does not spend another food inventory item. Costs
-are paid once and remain paid after saving/resuming or interrupting with care.
+The action is disabled while asleep, busy, or short of those resources. Its
+fullness cost comes from the satiety meter. Costs are paid once and remain paid
+after saving/resuming or interrupting with care.
 
-Food effects live in [content/food.json](../content/food.json); workout duration
-and effects live in [content/exercise.json](../content/exercise.json). CMake
-checks bounds and compiles both catalogs without a runtime parser. Keep food IDs
-stable because an unfinished meal stores its selected type. Older saves migrate
-hydration and resume an unfinished meal as its original type.
+The single Food effect lives in [content/food.json](../content/food.json);
+workout duration and effects live in [content/exercise.json](../content/exercise.json).
+CMake checks bounds and compiles both catalogs without a runtime parser. Older
+saves migrate unfinished meals to the single Food action.
 
 
 ## Volume
@@ -481,20 +503,22 @@ are authored in [content/wake.json](../content/wake.json).
 Elapsed sleep is saved across restarts, and waking consumes that duration so
 it cannot award another bonus after a save/reload. Old saves have no trustworthy
 rest-duration field and start it at zero. The brief expression itself is not
-saved. Touching an awake pet retains its ordinary petting behavior.
+saved. Tapping an awake pet opens navigation.
 
 ## Recovering an unwell pet
 
-The home status shows CARE > BASIC CARE when the pet needs treatment. Open Menu,
-choose Care, then Basic Care. A RECOVERING countdown shows the remaining time
-until the pet is well. Water, food, and rest
-address their respective meters; they do not replace Basic Care treatment.
+Open Care and choose an individual health or hygiene routine. Medicine and Shot
+use the existing recovery rules for an unwell pet. Opening Care itself does not
+heal, refill needs or start a recovery timer; the former Basic Care shortcut is
+removed. Food, water, rest and hygiene address their respective needs.
+See [health command handling](../core/game_commands.c) for the shared rules.
 
 ## Menu labels and unavailable actions
 
-Every ring control now shows its action name alongside the icon, including when
-unavailable. Play contains activities including Tea, Going Out, Movie, and
-Exercise. Page headings identify the open menu. Bottom Back returns
+Ring controls show their action names. Care options remain visible, including
+when a dose is cooling down. Activities and the left-hand home shortcuts contain
+choices that were ready when the view opened; targets stay fixed during the visit
+and recheck eligibility when selected. Page headings identify the open menu. Bottom Back returns
 one level; Close leaves the root menu. Neither removes a held present: use Put
 Away on that present's action panel.
 
@@ -502,11 +526,13 @@ Medicine and Shot remain visible while cooling down. Tapping either during its
 cooldown explains DOSE GIVEN - WAIT. An unavailable exercise explains whether to feed, offer
 water, or rest. A sleeping pet in an activity shows TOUCH PET TO WAKE.
 
-Settings shows Bedtime +1H, Pets, Rest/Wake, VOL −/+, and an EDIT clock control.
+Settings shows Bedtime +1H, Pet Menu, Rest/Wake, VOL −/+, and a Clock control.
 The clock editor names Zone, Hour, and Minute adjustments.
 
-The [complete menu audit](../docs-cms/memos/memo-030-menu-clarity-audit.md) records
-all pages, their actions, and the remaining physical-device verification.
+Owned inactive pets switch directly from the Pets grid; the active pet and locked
+entries still open details for form selection or unlock guidance. The [complete
+menu audit](../docs-cms/memos/memo-030-menu-clarity-audit.md) records earlier
+menu behavior and the remaining physical-device verification.
 
 
 ## Replay an authored celebration

@@ -23,6 +23,19 @@
 #include <string.h>
 
 enum { FRAME_MS = 16 };
+enum { TOUCH_TRACE_CAPACITY = 8 };
+
+typedef struct {
+    JelliInput input;
+    uint32_t press_irq_us, press_event_us;
+    uint32_t release_irq_us, release_event_us;
+} BoardInput;
+
+typedef struct {
+    uint32_t press_irq_us, press_event_us;
+    uint32_t release_irq_us, release_event_us;
+    uint32_t engine_poll_us;
+} TouchTrace;
 
 typedef struct {
     JelliGesture gesture;
@@ -32,6 +45,10 @@ typedef struct {
     QueueHandle_t input;
     uint64_t present_ms;
     uint64_t frame_started_us;
+    uint32_t press_irq_us, press_event_us;
+    uint32_t present_started_us, present_finished_us;
+    TouchTrace touch_trace[TOUCH_TRACE_CAPACITY];
+    uint8_t touch_trace_count;
 } Board;
 static const char *TAG = "jelligotchi";
 
@@ -42,27 +59,47 @@ static uint64_t now_ms(void *ctx)
 }
 static bool poll_input(void *ctx, JelliInput *input)
 {
-    Board *board = ctx;
-    if (board->button.blank) {
-        /* Only touch events enter this bounded queue. Drop stale gestures. */
-        for (unsigned i = 0; i < 8u; ++i)
-            if (xQueueReceive(board->input, input, 0) != pdTRUE)
-                break;
+    Board *b = ctx;
+    BoardInput queued;
+    if (b->button.blank) {
+        (void)xQueueReset(b->input);
         return false;
     }
-    return xQueueReceive(board->input, input, 0) == pdTRUE;
+    if (xQueueReceive(b->input, &queued, 0) != pdTRUE)
+        return false;
+    *input = queued.input;
+    if (input->kind == JELLI_POINTER_UP && b->touch_trace_count < TOUCH_TRACE_CAPACITY) {
+        b->touch_trace[b->touch_trace_count++] = (TouchTrace){
+            .press_irq_us = queued.press_irq_us,
+            .press_event_us = queued.press_event_us,
+            .release_irq_us = queued.release_irq_us,
+            .release_event_us = queued.release_event_us,
+            .engine_poll_us = (uint32_t)esp_timer_get_time(),
+        };
+    }
+    return true;
 }
-static void queue_touch(Board *board, JelliInput input)
+static void queue_touch(Board *b, JelliInput input)
 {
-    if (xQueueSend(board->input, &input, 0) != pdTRUE) {
-        /* Discard stale input and cancel the contact if its end cannot be queued. */
-        (void)xQueueReset(board->input);
-        board->gesture.active = false;
-        input = (JelliInput){.kind = JELLI_PRESS_CANCEL};
-        (void)xQueueSend(board->input, &input, 0);
+    BoardInput queued = {.input = input,
+                         .press_irq_us = b->press_irq_us,
+                         .press_event_us = b->press_event_us,
+                         .release_irq_us = jelli_touch_input_irq_timestamp_us(),
+                         .release_event_us = (uint32_t)esp_timer_get_time()};
+    if (xQueueSend(b->input, &queued, 0) != pdTRUE) {
+        /* Losing any pointer edge cancels the whole gesture, including a pending hold. */
+        xQueueReset(b->input);
+        queued.input = (JelliInput){.kind = JELLI_POINTER_CANCEL};
+        (void)xQueueSend(b->input, &queued, 0);
+        b->gesture.active = false;
     }
 }
-static void cancel_touch(void *ctx) { queue_touch(ctx, (JelliInput){.kind = JELLI_PRESS_CANCEL}); }
+
+static void cancel_touch(void *ctx)
+{
+    queue_touch(ctx, (JelliInput){.kind = JELLI_POINTER_CANCEL});
+}
+
 static void touch_event(lv_event_t *event)
 {
     Board *b = lv_event_get_user_data(event);
@@ -72,39 +109,35 @@ static void touch_event(lv_event_t *event)
     lv_point_t point;
     lv_indev_get_point(device, &point);
     lv_event_code_t code = lv_event_get_code(event);
-    if (b->button.blank || jelli_experiments_filter_touch(code)) {
+    if (b->button.blank || jelli_experiments_filter_touch(code) || code == LV_EVENT_PRESS_LOST ||
+        (code != LV_EVENT_PRESSED && !b->gesture.active)) {
         b->gesture.active = false;
+        queue_touch(b, (JelliInput){.kind = JELLI_POINTER_CANCEL});
         return;
     }
     if (code == LV_EVENT_PRESSED) {
-        jelli_gesture_begin_at(&b->gesture, point.x, point.y, now_ms(b));
-        JelliInput input = {JELLI_PRESS_BEGIN, point.x, point.y};
-        queue_touch(b, input);
-    } else if (code == LV_EVENT_PRESSING && b->gesture.active &&
-               (point.x != b->gesture.last_x || point.y != b->gesture.last_y)) {
-        (void)jelli_gesture_move(&b->gesture, point.x, point.y);
-        JelliInput input = {JELLI_PRESS_MOVE, point.x, point.y};
-        queue_touch(b, input);
-    } else if (code == LV_EVENT_PRESS_LOST) {
-        b->gesture.active = false;
-        JelliInput input = {.kind = JELLI_PRESS_CANCEL};
-        queue_touch(b, input);
+        b->press_irq_us = jelli_touch_input_irq_timestamp_us();
+        b->press_event_us = (uint32_t)esp_timer_get_time();
+        jelli_gesture_begin(&b->gesture, point.x, point.y);
+        queue_touch(b, (JelliInput){JELLI_POINTER_DOWN, point.x, point.y});
+    } else if (code == LV_EVENT_PRESSING) {
+        queue_touch(b, (JelliInput){JELLI_POINTER_MOVE, point.x, point.y});
     } else if (code == LV_EVENT_RELEASED) {
-        JelliInput input;
-        /* The LVGL task produces events; the engine task consumes them. */
-        if (!jelli_gesture_end_at(&b->gesture, point.x, point.y, now_ms(b), &input))
-            input = (JelliInput){.kind = JELLI_PRESS_CANCEL};
-        queue_touch(b, input);
+        b->gesture.active = false;
+        queue_touch(b, (JelliInput){JELLI_POINTER_UP, point.x, point.y});
     }
 }
+
 static void present(void *ctx, const JelliSurface *surface)
 {
     Board *b = ctx;
     jelli_profile_record(JELLI_PROFILE_ENGINE, b->frame_started_us, 0u);
     b->present_ms = 0;
+    b->present_started_us = (uint32_t)esp_timer_get_time();
     uint64_t start = now_ms(ctx);
     jelli_display_output_present(&b->display, surface, start);
     b->present_ms = now_ms(ctx) - start;
+    b->present_finished_us = (uint32_t)esp_timer_get_time();
 }
 static void paused(void *ctx, bool value)
 {
@@ -120,12 +153,9 @@ static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *se
         uint64_t start = now_ms(NULL);
         jelli_case_button_poll(&board->button, start);
         if (board->button.blank) {
-            engine->hold_active = false;
-            engine->hold_consumed = true;
-            JelliInput discarded;
-            for (unsigned i = 0; i < 8u; ++i)
-                if (xQueueReceive(board->input, &discarded, 0) != pdTRUE)
-                    break;
+            jelli_pet_pointer(&engine->ui, &engine->game,
+                              (JelliInput){.kind = JELLI_POINTER_CANCEL}, start);
+            (void)xQueueReset(board->input);
         }
         bool frozen = jelli_debug_wire_poll(engine, start);
         if (!frozen)
@@ -134,8 +164,34 @@ static void run_engine(JelliPetEngine *engine, Board *board, JelliEspSession *se
         jelli_network_poll(engine, session, frozen);
         jelli_esp_session_update(session, engine, frozen);
         board->frame_started_us = jelli_profile_now();
+        board->touch_trace_count = 0u;
+        board->present_started_us = 0u;
+        board->present_finished_us = 0u;
         if (!frozen && !jelli_pet_frame(engine))
             return;
+        if (!frozen) {
+            for (uint8_t i = 0u; i < board->touch_trace_count; ++i) {
+                const TouchTrace *trace = &board->touch_trace[i];
+                uint32_t press_irq_to_event = trace->press_event_us - trace->press_irq_us;
+                uint32_t last_irq_age_at_release = trace->release_event_us - trace->release_irq_us;
+                uint32_t release_to_engine = trace->engine_poll_us - trace->release_event_us;
+                uint32_t release_to_present =
+                    board->present_started_us ? board->present_started_us - trace->release_event_us
+                                              : 0u;
+                uint32_t present_copy = board->present_started_us
+                                            ? board->present_finished_us - board->present_started_us
+                                            : 0u;
+                bool release_irq_new = trace->release_irq_us != trace->press_irq_us;
+                ESP_LOGI(TAG,
+                         "Touch latency us: down-IRQ->press=%" PRIu32 " hold=%" PRIu32
+                         " last-IRQ-age-at-release=%" PRIu32 " irq-changed=%u "
+                         "release->engine=%" PRIu32 " release->present=%" PRIu32
+                         " present-copy=%" PRIu32,
+                         press_irq_to_event, trace->release_event_us - trace->press_event_us,
+                         last_irq_age_at_release, (unsigned)release_irq_new, release_to_engine,
+                         release_to_present, present_copy);
+            }
+        }
         unsigned cue =
             !frozen && !engine->paused
                 ? jelli_pet_ui_sound(&engine->ui, &engine->game.pets[engine->game.active], start)
@@ -171,7 +227,7 @@ void app_main(void)
     static JelliEspSession session;
     static JelliRegisterIo rtc_io;
     jelli_display_output_init(&board.display);
-    board.input = xQueueCreate(8, sizeof(JelliInput));
+    board.input = xQueueCreate(8, sizeof(BoardInput));
     ESP_ERROR_CHECK(board.input ? ESP_OK : ESP_ERR_NO_MEM);
     lv_display_t *display = jelli_display_prepare();
     ESP_ERROR_CHECK(display ? ESP_OK : ESP_FAIL);

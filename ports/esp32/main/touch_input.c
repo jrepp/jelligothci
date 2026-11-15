@@ -1,4 +1,28 @@
 #include "touch_input.h"
+#include "esp_attr.h"
+#include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+
+static portMUX_TYPE touch_irq_mux = portMUX_INITIALIZER_UNLOCKED;
+static uint32_t touch_irq_us;
+
+static void IRAM_ATTR touch_interrupt(esp_lcd_touch_handle_t tp, void *ctx)
+{
+    (void)tp;
+    (void)ctx;
+    uint32_t now = (uint32_t)esp_timer_get_time();
+    portENTER_CRITICAL_ISR(&touch_irq_mux);
+    touch_irq_us = now;
+    portEXIT_CRITICAL_ISR(&touch_irq_mux);
+}
+
+uint32_t jelli_touch_input_irq_timestamp_us(void)
+{
+    portENTER_CRITICAL(&touch_irq_mux);
+    uint32_t result = touch_irq_us;
+    portEXIT_CRITICAL(&touch_irq_mux);
+    return result;
+}
 
 esp_err_t jelli_touch_input_read(esp_lcd_touch_handle_t tp, esp_lcd_touch_point_data_t *points,
                                  uint8_t *count, uint8_t capacity, void *ctx)
@@ -17,7 +41,8 @@ esp_err_t jelli_touch_input_read(esp_lcd_touch_handle_t tp, esp_lcd_touch_point_
 esp_err_t jelli_touch_input_init(JelliTouchGuard *guard, JelliGesture *gesture, lv_indev_t *indev)
 {
     *guard = (JelliTouchGuard){.gesture = gesture};
-    const esp_lv_adapter_touch_callbacks_t callbacks = {.custom_touch_read = jelli_touch_input_read,
+    const esp_lv_adapter_touch_callbacks_t callbacks = {.on_interrupt = touch_interrupt,
+                                                        .custom_touch_read = jelli_touch_input_read,
                                                         .user_ctx = guard};
     return esp_lv_adapter_set_touch_callbacks(indev, &callbacks);
 }

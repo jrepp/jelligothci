@@ -82,7 +82,8 @@ static void meal_mess_and_upfront_play_cost(void)
     CHECK(game.pets[0].needs[JELLI_HYGIENE] == 670u);
     CHECK(game.pets[0].habits.lifetime_meals == 1u);
     game.food = 0u;
-    CHECK(command(&game, JELLI_CMD_FEED) == JELLI_OK);
+    game.pets[0].needs[JELLI_SATIETY] = 1000u;
+    CHECK(command(&game, JELLI_CMD_FEED) == JELLI_FULL);
     CHECK(game.pets[0].needs[JELLI_HYGIENE] == 670u);
 }
 

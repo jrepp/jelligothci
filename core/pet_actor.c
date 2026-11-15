@@ -119,12 +119,12 @@ uint16_t jelli_pet_background(uint8_t location, unsigned x, unsigned y)
     return a->pixels[row * a->width + column];
 }
 
-bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
+static bool routine_wake(JelliPetUi *ui, JelliGame *game, int x, int y)
 {
+    if (!ui->menu_open || !jelli_pet_page_is_routine(ui->page) || !game->pets[game->active].asleep)
+        return false;
     const JelliPet *pet = &game->pets[game->active];
-    bool activity_view = jelli_pet_page_is_routine(ui->page);
-    if ((ui->menu_open && (!activity_view || !pet->asleep)) || !ui->actor_frame ||
-        x < ui->actor_x || y < ui->actor_y)
+    if (!ui->actor_frame || x < ui->actor_x || y < ui->actor_y)
         return false;
     const JelliAsset *a = ui->actor_frame;
     unsigned scale = ui->actor_scale ? ui->actor_scale : 1u;
@@ -133,17 +133,28 @@ bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
     if (column >= a->width || row >= a->height ||
         !(a->mask[row * a->mask_stride + column / 8u] & (1u << (7u - column % 8u))))
         return false;
-    bool waking = pet->asleep;
-    ui->result = jelli_game_command(
-        game, (JelliCommand){waking ? JELLI_CMD_WAKE : JELLI_CMD_TOUCH, pet->id, 0u});
+    ui->result = jelli_game_command(game, (JelliCommand){JELLI_CMD_WAKE, pet->id, 0u});
     if (ui->result == JELLI_OK) {
         ui->save_requested = true;
         ui->save_status = JELLI_SAVE_PENDING;
         ui->sound_pending = true;
         ui->sound_cue = JELLI_SOUND_PET + 1u;
-        if (!waking || pet->wake_mood == JELLI_WAKE_HAPPY)
-            jelli_particles_burst(&ui->particles, x, y,
-                                  waking || pet->reaction == JELLI_REACTION_TOUCH_HAPPY);
+        if (pet->wake_mood == JELLI_WAKE_HAPPY)
+            jelli_particles_burst(&ui->particles, x, y, true);
     }
+    return true;
+}
+
+bool jelli_pet_touch_actor(JelliPetUi *ui, JelliGame *game, int x, int y)
+{
+    if (routine_wake(ui, game, x, y))
+        return true;
+    if (!jelli_pet_actor_hit(ui, game, x, y))
+        return false;
+    ui->menu_open = true;
+    ui->page = JELLI_UI_HOME;
+    ui->result = JELLI_OK;
+    ui->sound_pending = true;
+    ui->sound_cue = JELLI_SOUND_CONFIRM + 1u;
     return true;
 }

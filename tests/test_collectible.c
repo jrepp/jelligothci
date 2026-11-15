@@ -217,7 +217,7 @@ static void checkpoint_round_trip(void)
     CHECK(jelli_collectible_control(&save.game, JELLI_COLLECTIBLE_RESTART) == JELLI_OK);
     CHECK(jelli_collectible_record_progress(&save.game, JELLI_RECORD_SAMPLES) == JELLI_OK);
     CHECK(save.game.pets[0].needs[JELLI_AMUSEMENT] == morale);
-    CHECK(sizeof(JelliGame) < JELLI_SAVE_CAPACITY);
+    CHECK(sizeof(JelliGame) <= 9216u);
     printf("Collectible session: %zu; progress/pet: %zu; game: %zu\n",
            sizeof(JelliCollectibleSession), sizeof(JelliCollectibleProgress), sizeof(JelliGame));
 }

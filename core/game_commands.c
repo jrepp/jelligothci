@@ -4,6 +4,7 @@
 #include "jelli/collection.h"
 #include "game_internal.h"
 #include "jelli/activities.h"
+#include "jelli/invitations.h"
 #include "jelli/behavior.h"
 #include "jelli/nutrition.h"
 #include "jelli/collectible.h"
@@ -37,16 +38,9 @@ static uint64_t deadline_after(const JelliPet *pet, uint64_t duration)
 
 static JelliResult claim_reward(JelliGame *game, JelliPet *pet)
 {
-    if (pet->activity != JELLI_IDLE)
-        return JELLI_BUSY;
-    if (!pet->reward_pending || pet->reward_claimed)
-        return JELLI_NOT_READY;
-    if ((uint32_t)game->food + 3u > JELLI_STACK_LIMIT)
-        return JELLI_FULL;
-    game->food = (uint16_t)(game->food + 3u);
-    pet->reward_pending = false;
-    pet->reward_claimed = true;
-    return JELLI_OK;
+    (void)game;
+    (void)pet;
+    return JELLI_INVALID_TARGET;
 }
 
 static JelliResult activate_pet(JelliGame *game, JelliCommand command, const JelliPet *active)
@@ -103,7 +97,7 @@ static JelliResult start_feed(JelliPet *pet, uint32_t food)
         return JELLI_FULL;
     if (!begin_activity(pet, JELLI_EATING, 50u))
         return JELLI_NOT_READY;
-    pet->food_type = (uint8_t)food;
+    pet->food_type = 0u;
     return JELLI_OK;
 }
 
@@ -322,6 +316,7 @@ static JelliResult moment(JelliGame *game, JelliPet *pet, uint32_t choice)
     }
     pet->location = (uint8_t)jelli_moment_location(pet, choice);
     pet->moment = (uint8_t)(choice + 1u);
+    jelli_invitation_consume(pet, choice);
     return JELLI_OK;
 }
 
@@ -369,7 +364,7 @@ static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliP
     case JELLI_CMD_VOLUME:
         return jelli_game_set_volume(game, command.value);
     case JELLI_CMD_REFILL_FOOD:
-        return jelli_refill_food(game);
+        return JELLI_INVALID_TARGET;
     case JELLI_CMD_ACTIVATE:
         return activate_pet(game, command, pet);
     default:
@@ -388,7 +383,10 @@ JelliResult jelli_game_command_impl(JelliGame *game, JelliCommand command)
         return JELLI_INVALID_TARGET;
     if (command.kind >= JELLI_CMD_COLLECTIBLE_PLAY)
         return jelli_collectible_command(game, command);
-    if (game->collectible.active && command.kind != JELLI_CMD_VOLUME)
+    bool feed_during_paused_collectible =
+        command.kind == JELLI_CMD_FEED && game->collectible.active && game->collectible.paused;
+    if (game->collectible.active && command.kind != JELLI_CMD_VOLUME &&
+        !feed_during_paused_collectible)
         return JELLI_BUSY;
     uint64_t previous_due = pet->interaction_due;
     uint8_t previous_activity = pet->activity;

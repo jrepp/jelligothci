@@ -4,10 +4,9 @@
 #include "pet_gallery.h"
 #include "pet_collectible_ui.h"
 #include "pet_collection.h"
-#include "pet_food.h"
 
 /* Sixteen authored collection slots; caller-owned workspace remains off task stacks. */
-_Static_assert(sizeof(JelliGame) <= 8192u, "Action preflight workspace exceeds budget");
+_Static_assert(sizeof(JelliGame) <= 9216u, "Action preflight workspace exceeds budget");
 
 bool jelli_pet_moment_for_action(JelliPetUiAction action, unsigned *moment)
 {
@@ -52,7 +51,7 @@ bool jelli_pet_ui_command(const JelliPetUi *ui, const JelliGame *game, JelliPetU
         [JELLI_UI_ACTION_COLLECTION] = -1,
         [JELLI_UI_ACTION_MORE] = -1,
         [JELLI_UI_ACTION_SETTINGS] = -1,
-        [JELLI_UI_ACTION_BASIC_CARE] = JELLI_CMD_CARE,
+        [JELLI_UI_ACTION_BASIC_CARE] = -1 /* Retired UI shortcut; keep enum IDs stable. */,
         [JELLI_UI_ACTION_PLAY] = JELLI_CMD_PLAY,
         [JELLI_UI_ACTION_CLEAN_WAKE] = JELLI_CMD_CLEAN,
         [JELLI_UI_ACTION_HOME] = -1,
@@ -113,13 +112,12 @@ static JelliResult menu_available(JelliPetUi *ui, const JelliGame *game, unsigne
     }
     if (jelli_pet_page_is_routine(ui->page) && ui->clicker_done)
         return JELLI_NOT_READY;
-    if (ui->page == JELLI_UI_MOMENTS) {
-        if (slot == 6u)
+    if (jelli_pet_discovery_slot(ui, slot)) {
+        if (ui->page == JELLI_UI_MOMENTS && slot == 6u)
             return JELLI_OK;
-        unsigned choice = jelli_pet_activity_choice(ui, slot);
-        JelliCommand command = {
-            choice == jelli_moment_count ? JELLI_CMD_EXERCISE : JELLI_CMD_MOMENT,
-            game->pets[game->active].id, choice == jelli_moment_count ? 0u : choice};
+        unsigned choice = ui->page == JELLI_UI_HOME ? jelli_pet_home_choice(ui, slot)
+                                                    : jelli_pet_activity_choice(ui, slot);
+        JelliCommand command = jelli_pet_activity_command(game, choice);
         return jelli_game_check(game, command, &ui->action_scratch);
     }
     JelliPetUiAction action =
@@ -136,8 +134,6 @@ JelliResult jelli_pet_ui_available(JelliPetUi *ui, const JelliGame *game, unsign
 {
     if (ui->menu_open && jelli_pet_collectible_page(ui->page))
         return JELLI_OK; /* These pages explain missing items in details. */
-    if (slot && ui->page == JELLI_UI_FOOD)
-        return jelli_pet_food_available(ui, game, slot);
     if (slot && ui->page >= JELLI_UI_PETS && ui->page <= JELLI_UI_EVOLUTIONS)
         return jelli_pet_collection_available(ui, game, slot);
     if (slot && (ui->page == JELLI_UI_COLLECTION || ui->page == JELLI_UI_PRESENT_ACTION ||

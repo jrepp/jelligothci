@@ -59,11 +59,8 @@ with tempfile.TemporaryDirectory(prefix='jelli-assets-') as folder:
                 time.sleep(.01)
         client = module.Client(wire)
         wait_pixel(client, 0xf800)
-        client.press('MENU')
-        client.press('CARE')
+        client.request('swipe 1')
         client.press('REST')
-        client.press('BACK')
-        client.press('CLOSE')
         wait_pixel(client, 0xf800)
         before = client.state()
         artwork.write_bytes(pack(0x07e0, center=8193))  # In-range but false alpha centroid.

@@ -137,7 +137,12 @@
         "park",
         "beach"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 3,
@@ -181,7 +186,12 @@
       "locations": [
         "home"
       ],
-      "randomize_location": false
+      "randomize_location": false,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 4,
@@ -226,7 +236,12 @@
         "garden",
         "library"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 5,
@@ -405,7 +420,12 @@
         "park",
         "beach"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 9,
@@ -451,7 +471,12 @@
         "park",
         "beach"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 10,
@@ -499,7 +524,12 @@
       "locations": [
         "pond"
       ],
-      "randomize_location": false
+      "randomize_location": false,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 11,
@@ -545,7 +575,12 @@
         "pond",
         "beach"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 12,
@@ -588,7 +623,12 @@
         "home",
         "garden"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 13,
@@ -636,7 +676,12 @@
         "park",
         "library"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 14,
@@ -684,7 +729,12 @@
         "beach",
         "library"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 15,
@@ -730,7 +780,12 @@
         "pond",
         "library"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 16,
@@ -775,7 +830,12 @@
       "locations": [
         "garden"
       ],
-      "randomize_location": false
+      "randomize_location": false,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 17,
@@ -820,7 +880,12 @@
       "locations": [
         "park"
       ],
-      "randomize_location": false
+      "randomize_location": false,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 18,
@@ -866,7 +931,12 @@
         "park",
         "beach"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 19,
@@ -912,7 +982,12 @@
         "pond",
         "beach"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 20,
@@ -957,7 +1032,12 @@
       "locations": [
         "park"
       ],
-      "randomize_location": false
+      "randomize_location": false,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 21,
@@ -1004,7 +1084,12 @@
         "park",
         "pond"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 22,
@@ -1052,7 +1137,12 @@
         "home",
         "library"
       ],
-      "randomize_location": true
+      "randomize_location": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 23,
@@ -1103,7 +1193,12 @@
       "randomize_location": false,
       "pose": "snuggle",
       "prize": "teddy-bear",
-      "daily_reward": true
+      "daily_reward": true,
+      "invitation": {
+        "weight": 1,
+        "minutes": 90,
+        "relax_window": true
+      }
     },
     {
       "id": 24,

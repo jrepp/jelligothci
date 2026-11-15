@@ -98,7 +98,14 @@ typedef enum {
 } JelliResult;
 
 typedef struct {
+    uint64_t clock_high, next_generation, leisure_until;
+    uint32_t pending, seen, announced;
+    uint8_t leisure, clock_basis; /* leisure: activity ID + 1; basis: unknown/simulated/wall. */
+} JelliInvitations;
+
+typedef struct {
     uint32_t id;
+    JelliInvitations invitations;
     JelliHabits habits;
     JelliPrizeProgress prize_progress;
     JelliCollectibleProgress collectible_progress;
