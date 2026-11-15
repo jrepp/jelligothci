@@ -227,3 +227,9 @@ not been included by the earlier tracked-file formatter; formatting them after
 staging fixed the issue. The broad desktop run timed out in the unrelated
 Jelli Art server test; the separate result and any retry are recorded alongside
 this validation rather than treating the partial run as a pass.
+
+The hosted normal firmware build then failed its profile-isolation check because
+that check still expected PM and tickless idle to be disabled. The normal
+profile now requires both, while the factory profile explicitly disables them
+and the power profile retains profiling. The isolation check was updated to
+verify those distinct configurations; rerun results are tracked on the PR.
