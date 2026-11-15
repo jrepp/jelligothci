@@ -317,3 +317,7 @@ gate. The preview now accepts an explicit bond value, and Snuggle completion
 fixtures set the threshold. One first local retry also compared against the old
 default bond; aligning the baseline with the scenario fixed that assertion.
 The latest hosted PR revision must still pass its own checks.
+The next Snuggle CI revision passed the scenario tests but failed the Studio
+accessibility baselines because the new Bond control changed the accessibility
+tree. The three viewport baselines were updated to include the labelled control;
+the current PR revision's UI checks still need to verify the complete view.
