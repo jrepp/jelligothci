@@ -25,3 +25,7 @@ standalone analysis and the save codec exceeded its file-size limit. A fallback
 path and separate bounded RPG save module address those findings. Rerun results
 and firmware/physical evidence must be reported separately; rates remain
 unvalidated for play balance.
+The combined 16-pet capacity fixture encoded to 8,164 bytes in an 8,192-byte
+buffer, leaving 28 bytes for that fixture. Further persistent fields need a
+save-capacity and NVS-reserve review. The combined firmware built; physical
+device and play-balance evidence remain separate.
