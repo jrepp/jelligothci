@@ -139,7 +139,8 @@ static bool pet_lifecycle_valid(const JelliPet *pet)
 
 static bool pet_valid(const JelliPet *pet)
 {
-    return jelli_invitations_valid(&pet->invitations) &&
+    return pet->rpg_stats[0] <= 1000u && pet->rpg_stats[1] <= 1000u && pet->rpg_stats[2] <= 1000u &&
+           jelli_invitations_valid(&pet->invitations) &&
            jelli_collectible_progress_valid(&pet->collectible_progress) &&
            jelli_prize_progress_valid(&pet->prize_progress) && jelli_habits_valid(&pet->habits) &&
            pet->habits.cursor_ticks <= pet->ticks && pet->shot_goal <= 3u &&

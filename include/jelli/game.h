@@ -117,6 +117,7 @@ typedef struct {
     uint16_t needs[JELLI_NEED_COUNT];
     uint16_t need_remainders[JELLI_NEED_COUNT];
     uint16_t bond, feeds, neglect;
+    uint16_t rpg_stats[3]; /* Strength, dexterity, intelligence; each 0..1000. */
     uint16_t hydration, hydration_remainder;
     uint8_t form, location, shot_goal, shot_hits;
     uint8_t collection_entry, reached_forms, food_type;

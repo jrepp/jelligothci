@@ -136,9 +136,17 @@ void jelli_moment_claim(const JelliGame *game, JelliPet *pet, unsigned id)
 
 void jelli_moment_complete(const JelliGame *game, JelliPet *pet)
 {
-    if (game->resuming || !pet->moment || pet->moment > jelli_moment_count)
+    if (!pet->moment || pet->moment > jelli_moment_count)
         return;
-    mark_done(game, pet, pet->moment - 1u);
+    const JelliMoment *moment = &jelli_moments[pet->moment - 1u];
+    if (!(pet->behavior_flags & JELLI_PET_FLAG_FREE_PLAY)) {
+        for (unsigned i = 0u; i < JELLI_RPG_STAT_COUNT; ++i) {
+            unsigned value = pet->rpg_stats[i] + moment->rpg_gains[i];
+            pet->rpg_stats[i] = (uint16_t)(value > 1000u ? 1000u : value);
+        }
+    }
+    if (!game->resuming)
+        mark_done(game, pet, pet->moment - 1u);
 }
 
 const char *jelli_moment_hint(const JelliGame *game, const JelliPet *pet, unsigned id)

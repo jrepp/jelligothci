@@ -196,6 +196,8 @@
     {
       "id": 4,
       "name": "READING",
+      "training": {"intelligence": 10},
+      "balance_stat": "intelligence",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -378,6 +380,8 @@
     {
       "id": 8,
       "name": "YOGA",
+      "training": {"dexterity": 10},
+      "balance_stat": "dexterity",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -430,6 +434,8 @@
     {
       "id": 9,
       "name": "JOGGING",
+      "training": {"strength": 10},
+      "balance_stat": "strength",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -481,6 +487,8 @@
     {
       "id": 10,
       "name": "FISHING",
+      "training": {"dexterity": 10},
+      "balance_stat": "dexterity",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -633,6 +641,8 @@
     {
       "id": 13,
       "name": "CHESS",
+      "training": {"intelligence": 10},
+      "balance_stat": "intelligence",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -686,6 +696,8 @@
     {
       "id": 14,
       "name": "DRAWING",
+      "training": {"intelligence": 10},
+      "balance_stat": "intelligence",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -739,6 +751,8 @@
     {
       "id": 15,
       "name": "THINKING",
+      "training": {"intelligence": 10},
+      "balance_stat": "intelligence",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -790,6 +804,8 @@
     {
       "id": 16,
       "name": "GARDENING",
+      "training": {"strength": 10},
+      "balance_stat": "strength",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -840,6 +856,8 @@
     {
       "id": 17,
       "name": "SOCCER",
+      "training": {"dexterity": 10},
+      "balance_stat": "dexterity",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -890,6 +908,8 @@
     {
       "id": 18,
       "name": "VOLLEYBALL",
+      "training": {"dexterity": 10},
+      "balance_stat": "dexterity",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -941,6 +961,8 @@
     {
       "id": 19,
       "name": "SWIMMING",
+      "training": {"strength": 10},
+      "balance_stat": "strength",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {
@@ -992,6 +1014,8 @@
     {
       "id": 20,
       "name": "BASEBALL",
+      "training": {"dexterity": 10},
+      "balance_stat": "dexterity",
       "kind": "play",
       "suggest_hour": -1,
       "gains": {

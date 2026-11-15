@@ -212,7 +212,8 @@ static void codec_boundaries(void)
     (void)jelli_invitations_update(&save.game);
     size_t size = jelli_save_encode(&save, bytes, sizeof(bytes));
     CHECK(size);
-    bytes[size - 9u] = 255u; /* Final pet's invalid clock basis. */
+    bytes[size - 9u - TEST_SAVE_V22_BYTES(save.game.count)] =
+        255u; /* Final pet's invalid clock basis. */
     crc(size);
     CHECK(!jelli_save_decode_workspace(&loaded, bytes, size, &scratch));
     size = jelli_save_encode(&save, bytes, sizeof(bytes));
