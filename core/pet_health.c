@@ -270,6 +270,12 @@ void jelli_pet_ui_back(JelliPetUi *ui)
         }
         return;
     }
+    if (ui->location_menu) {
+        ui->location_menu = false;
+        ui->menu_open = false;
+        ui->page = JELLI_UI_HOME;
+        return;
+    }
     if (ui->quick_menu) {
         ui->quick_menu = false;
         ui->menu_open = false;

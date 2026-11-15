@@ -12,8 +12,36 @@
         }                                                                                          \
     } while (0)
 
+static void interrupted_moment(void)
+{
+    JelliGame game;
+    jelli_game_init(&game);
+    for (unsigned i = 0; i < JELLI_NEED_COUNT; ++i)
+        game.pets[0].needs[i] = 700u;
+    game.pets[0].hydration = 700u;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_MOMENT, 1u, 4u}) == JELLI_OK);
+    CHECK(game.pets[0].activity != JELLI_IDLE);
+    uint16_t bond = game.pets[0].bond;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_TRAVEL, 1u, 99u}) ==
+          JELLI_INVALID_TARGET);
+    CHECK(game.pets[0].activity != JELLI_IDLE);
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_TRAVEL, 1u, 1u}) == JELLI_OK);
+    CHECK(game.pets[0].location == 1u && game.pets[0].activity == JELLI_IDLE);
+    CHECK(!game.pets[0].moment && !game.pets[0].interaction_due);
+    for (unsigned i = 0u; i < 20u; ++i)
+        jelli_game_advance(&game, 800u);
+    CHECK(game.pets[0].bond == bond && jelli_game_valid(&game));
+    game.pets[0].health = JELLI_UNWELL;
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_CARE, 1u, 0u}) == JELLI_OK);
+    CHECK(game.pets[0].health == JELLI_RECOVERING);
+    CHECK(jelli_game_command(&game, (JelliCommand){JELLI_CMD_TRAVEL, 1u, 2u}) == JELLI_OK);
+    CHECK(game.pets[0].health == JELLI_UNWELL && game.pets[0].activity == JELLI_IDLE &&
+          jelli_game_valid(&game));
+}
+
 int main(void)
 {
+    interrupted_moment();
     CHECK(jelli_location_count == 6u && jelli_location_count <= JELLI_LOCATION_CAPACITY);
     CHECK(strcmp(jelli_locations[0].name, "HOME") == 0);
     CHECK(strcmp(jelli_locations[1].name, "GARDEN") == 0);

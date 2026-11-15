@@ -5,6 +5,7 @@
 
 unsigned jelli_game_preference_gain(const JelliGame *game, const JelliPet *pet, unsigned meter);
 void jelli_game_preference(const JelliGame *game, JelliPet *pet);
+JelliResult jelli_game_travel(JelliPet *pet, uint32_t location);
 JelliResult jelli_game_touch(JelliPet *pet);
 void jelli_pet_touch_decay(JelliPet *pet, uint64_t ticks);
 void jelli_game_endpoint(JelliGame *game, JelliPet *pet, uint64_t ticks, bool offline);

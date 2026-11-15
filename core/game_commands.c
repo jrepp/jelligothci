@@ -183,20 +183,6 @@ static JelliResult wake(JelliGame *game, JelliPet *pet)
     return JELLI_OK;
 }
 
-static JelliResult travel(JelliPet *pet, uint32_t location)
-{
-    if (pet->activity != JELLI_IDLE)
-        return JELLI_BUSY;
-    if (location >= jelli_location_count)
-        return JELLI_INVALID_TARGET;
-    if (pet->asleep)
-        return JELLI_ASLEEP;
-    if (pet->location == location)
-        return JELLI_NOT_READY;
-    pet->location = (uint8_t)location;
-    return JELLI_OK;
-}
-
 static JelliResult set_bedtime(JelliPet *pet, uint32_t hour)
 {
     if (hour > 23u)
@@ -352,7 +338,7 @@ static JelliResult dispatch_action(JelliGame *game, JelliCommand command, JelliP
     case JELLI_CMD_WAKE:
         return wake(game, pet);
     case JELLI_CMD_TRAVEL:
-        return travel(pet, command.value);
+        return jelli_game_travel(pet, command.value);
     case JELLI_CMD_BEDTIME:
         return set_bedtime(pet, command.value);
     case JELLI_CMD_MOMENT:
