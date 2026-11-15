@@ -85,7 +85,7 @@ static JelliPetRenderKey render_key(const JelliGame *game, JelliPetUi *ui, uint6
     jelli_pet_timing(ui, pet, animation_ms, &key);
     jelli_pet_gallery_key(ui, game, animation_ms, &key);
     jelli_pet_collectible_key(ui, game, &key);
-    jelli_pet_collection_key(ui, game, &key);
+    jelli_pet_collection_key(ui, game, animation_ms, &key);
     if (paused) {
         /* Pausing the pet must not strand navigation behind a frozen transition. */
         key.ring_visible =

@@ -148,6 +148,7 @@ typedef struct {
     uint8_t catch_phase;
     uint8_t selected_pet, selected_form, active_entry;
     uint8_t pet_forms[JELLI_PET_CAPACITY], pet_reached[JELLI_PET_CAPACITY];
+    uint8_t pet_states[JELLI_PET_CAPACITY], pets_page, pets_animation;
     uint16_t pets_owned, pets_new;
     bool reward_active;
     int16_t timezone_minutes;
@@ -228,7 +229,7 @@ typedef struct {
     uint64_t catch_anchor_ms, collectible_win_anchor, collectible_launch_anchor;
     uint32_t collectible_launch_pet;
     uint8_t latched_prize, highlighted_prize, catch_seen;
-    uint8_t selected_pet, selected_form;
+    uint8_t selected_pet, selected_form, pets_page;
     uint8_t sound_cue; /* One-based cue; zero defaults to menu confirmation. */
     uint8_t gift_category, gift_page;
     JelliPetPage present_return;

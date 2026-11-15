@@ -86,8 +86,13 @@ static bool routine_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton
 
 static bool music_button(const JelliPetUi *ui, unsigned slot, JelliPetUiButton *button)
 {
-    if (!ui->menu_open || ui->page != JELLI_UI_SETTINGS || ui->clock_edit || slot != 7u)
+    if (!ui->menu_open || ui->page != JELLI_UI_SETTINGS || ui->clock_edit ||
+        (slot != 7u && slot != 8u))
         return false;
+    if (slot == 8u) {
+        *button = (JelliPetUiButton){.bounds = {173u, 124u, 120u, 40u}, .label = "PETS"};
+        return true;
+    }
     *button = (JelliPetUiButton){.bounds = {165u, 342u, 136u, 48u},
                                  .label = ui->last_view.activity_music_enabled ? "BG MUSIC ON"
                                                                                : "BG MUSIC OFF",
