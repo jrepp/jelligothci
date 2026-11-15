@@ -10,7 +10,10 @@ static JelliInventory snapshots[JELLI_INVENTORY_COUNT] = {
      .registers = {0x00, 0x01, 0x03, 0x18, 0x20, 0x21, 0x26, 0x30, 0x40, 0x41, 0x42, 0x48, 0x49,
                    0x4a, 0x61, 0x62, 0x63, 0x64, 0x80, 0x82, 0x90, 0x91, 0x92, 0x93, 0xa4}},
     {.address = 0x6b, .count = 9, .registers = {0, 1, 2, 3, 4, 5, 6, 7, 8}},
-    {.address = 0x51, .count = 12, .registers = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 17}}};
+    {.address = 0x51, .count = 12, .registers = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 17}},
+    {.address = 0x34,
+     .count = 12,
+     .registers = {0x00, 0x01, 0x30, 0x34, 0x35, 0x38, 0x39, 0x3a, 0x3b, 0x48, 0x49, 0x4a}}};
 static i2c_master_dev_handle_t devices[JELLI_INVENTORY_COUNT];
 static esp_err_t errors[JELLI_INVENTORY_COUNT];
 
@@ -45,6 +48,8 @@ esp_err_t jelli_inventory_read(unsigned index)
         return errors[index];
     while (s->valid < s->count) {
         unsigned length = index == 2 && s->valid == 0 ? 11u : 1u;
+        if (index == 3 && (s->valid == 3 || s->valid == 5 || s->valid == 7))
+            length = 2u;
         esp_err_t error = i2c_master_transmit_receive(devices[index], &s->registers[s->valid], 1,
                                                       &s->values[s->valid], length, 50);
         if (error != ESP_OK)

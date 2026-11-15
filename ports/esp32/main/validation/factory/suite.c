@@ -24,7 +24,8 @@ static JelliFactoryTest tests[JELLI_FACTORY_TEST_COUNT] = {
     {.id = "power.current", .status = "not_run"},
     {.id = "pmic.inventory", .status = "not_run", .supported = true},
     {.id = "imu.identity", .status = "not_run", .supported = true},
-    {.id = "rtc.snapshot", .status = "not_run", .supported = true}};
+    {.id = "rtc.snapshot", .status = "not_run", .supported = true},
+    {.id = "pmic.telemetry", .status = "not_run", .supported = true}};
 
 void jelli_factory_init(void)
 {

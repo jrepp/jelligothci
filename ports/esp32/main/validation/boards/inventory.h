@@ -3,7 +3,7 @@
 #include "driver/i2c_master.h"
 #include <stdint.h>
 
-enum { JELLI_INVENTORY_COUNT = 3, JELLI_INVENTORY_REGS = 32 };
+enum { JELLI_INVENTORY_COUNT = 4, JELLI_INVENTORY_REGS = 32 };
 typedef struct {
     uint8_t address, count, valid;
     uint8_t registers[JELLI_INVENTORY_REGS], values[JELLI_INVENTORY_REGS];

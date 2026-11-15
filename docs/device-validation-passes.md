@@ -35,8 +35,7 @@ captures under a unique ignored `build/` experiment directory.
 
 Impact is expected user benefit, not a measured speedup or battery-life estimate.
 Dependencies can run earlier than their priority: read-only inventory is pass 0.
-All cases below beyond the inventory IDs are proposed experiments, not implemented
-factory commands.
+Except for `pmic.telemetry`, the cases below remain proposed experiments.
 
 | Rank / case | Hypothesis and A/B | Required measurement and gate | Prerequisite / cleanup |
 | --- | --- | --- | --- |
@@ -60,8 +59,8 @@ factory commands.
 
 ## Pass 0: available now
 
-Factory schema 3 adds `pmic.inventory`, `imu.identity` and `rtc.snapshot` to the
-existing smoke suite. Run the [build/flash/capture workflow](factory-validation.md).
+Factory schema 4 includes `pmic.inventory`, `pmic.telemetry`, `imu.identity` and
+`rtc.snapshot` in the existing smoke suite. Run the [build/flash/capture workflow](factory-validation.md).
 Retain two independent captures to inspect unchanged controls and RTC progression.
 Do not call a plausible/ticking calendar trusted UTC: the station has not read
 application trust metadata or established a time reference through this probe.
